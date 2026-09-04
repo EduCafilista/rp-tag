@@ -2,6 +2,8 @@
 
 **Mod para NeoForge 1.21.1** — mostra **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** no nome dos jogadores e adiciona o comando **`/rp`** para os próprios jogadores alternarem o modo. Feito para servidores de RPG.
 
+> 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas). Para publicar o projeto no GitHub, veja [PUBLICAR.md](PUBLICAR.md).
+
 ## ✨ O que ele faz
 
 - **Nome acima da cabeça (nametag)** — o nome ganha a tag entre parênteses com
