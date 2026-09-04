@@ -6,9 +6,9 @@ Mod NeoForge 1.21.1 que mostra (ʀᴘ)/(ᴏꜰꜰ ʀᴘ) no nome dos jogadores e
 
 **Mod para NeoForge 1.21.1** — mostra **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** no nome dos jogadores e adiciona o comando **`/rp`** para os próprios jogadores alternarem o modo. Feito para servidores de RPG.
 
-> 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas). Para publicar o projeto no GitHub, veja [PUBLICAR.md](PUBLICAR.md).
+>  **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas). Para publicar o projeto no GitHub, veja [PUBLICAR.md](PUBLICAR.md).
 
-## ✨ O que ele faz
+##  O que ele faz
 
 - **Nome acima da cabeça (nametag)** — o nome ganha a tag entre parênteses com
   fonte diferente (small capitals Unicode): **(ʀᴘ)** em **ciano** ou
@@ -28,7 +28,7 @@ Mod NeoForge 1.21.1 que mostra (ʀᴘ)/(ᴏꜰꜰ ʀᴘ) no nome dos jogadores e
   Por padrão, todo mundo começa em **OFF RP**.
 - **Sem dependências** — só precisa do NeoForge.
 
-## 📥 Instalação
+##  Instalação
 
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
@@ -48,7 +48,7 @@ Requisitos: **JDK 21** e internet.
 
 O jar sai em `build/libs/rptag-1.2.1.jar`.
 
-## 🎨 Personalizar
+##  Personalizar
 
 - **Texto e cores da tag**: `src/main/java/dev/rptag/RPTags.java`
   - `TAG_ON` / `TAG_OFF` — o texto (parênteses e small caps são aplicados automaticamente)
@@ -58,7 +58,7 @@ O jar sai em `build/libs/rptag-1.2.1.jar`.
 - **Mensagens do comando**: `RPCommands.java` e `ServerEvents.java`
 - **Versão do NeoForge**: `build.gradle`
 
-## 🗂 Estrutura
+##  Estrutura
 
 ```
 src/main/java/dev/rptag/
