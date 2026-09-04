@@ -1,8 +1,12 @@
 # RP Tag
 
+![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62a552) ![NeoForge](https://img.shields.io/badge/NeoForge-21.1.x-orange) ![License](https://img.shields.io/badge/Licen%C3%A7a-MIT-blue)
+
 **Mod para NeoForge 1.21.1** — mostra **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** no nome dos jogadores e adiciona o comando **`/rp`** para os próprios jogadores alternarem o modo. Feito para servidores de RPG.
 
-> 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas). Para publicar o projeto no GitHub, veja [PUBLICAR.md](PUBLICAR.md).
+> 📥 **Download:** baixe o `rptag-1.2.1.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases).
+>
+> 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
 ## ✨ O que ele faz
 
