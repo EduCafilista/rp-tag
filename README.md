@@ -4,7 +4,9 @@
 
 **Mod para NeoForge 1.21.1** — mostra **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** no nome dos jogadores e adiciona o comando **`/rp`** para os próprios jogadores alternarem o modo. Feito para servidores de RPG.
 
-> 📥 **Download:** baixe o `rptag-1.2.1.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases).
+> 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
+>
+> 📥 **Download:** baixe o `rptag-1.2.1.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-1.2.1.jar) (arquivo dentro do repositório).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 

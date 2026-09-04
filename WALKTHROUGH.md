@@ -2,6 +2,8 @@
 
 Guia passo a passo, do download até a tag aparecendo no jogo.
 
+> 🌎 **Idioma / Language:** **Português (BR)** | [English](WALKTHROUGH.en.md)
+
 ---
 
 ## Passo 0 — O que você precisa
