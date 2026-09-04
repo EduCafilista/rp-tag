@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="MIT"
+
+[[mods]]
+modId="rptag"
+version="1.2.1"
+displayName="RP Tag"
+authors="RP Tag"
+description='''
+Mostra (RP) ou (OFF RP) no nome dos jogadores e adiciona o comando /rp.
+A tag aparece no nome acima da cabeca, no chat e na lista de jogadores (TAB).
+'''
+
+[[dependencies.rptag]]
+    modId="neoforge"
+    type="required"
+    versionRange="[21.1.0,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.rptag]]
+    modId="minecraft"
+    type="required"
+    versionRange="[1.21.1,1.22)"
+    ordering="NONE"
+    side="BOTH"
