@@ -31,7 +31,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-1.2.1.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-2.0.0.jar` into the **server's** `mods/` folder.
    → the tag now works in **chat** and **TAB** for everyone.
 3. *(Optional)* Players who want the tag **above heads** drop the same jar into
    the **client's** `mods/` folder.
@@ -46,7 +46,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-1.2.1.jar`.
+The jar ends up at `build/libs/rptag-2.0.0.jar`.
 
 ## 🎨 Customizing
 

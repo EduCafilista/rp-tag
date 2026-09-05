@@ -2,6 +2,23 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.0.0] - 2026-09-05
+
+### Adicionado
+- **RP Persona** — `/persona criar <nome>` (liga o RP junto), `/persona idade`,
+  `/persona desc` (tooltip ao passar o mouse no nome), `/persona ver [jogador]`,
+  `/persona off`. O nome do personagem substitui o nick no nametag, chat e TAB.
+- **RP Chat** — chat comum agora e **local** (40 blocos) por padrao; `/g` global,
+  `/s` grito (100 blocos, CAIXA ALTA), `/w` sussurro (5 blocos), `/me` acao,
+  `/do` ambiente. Toggle: `/rp admin chatlocal on|off` (persistido no mundo).
+- **RP Roll** — `/roll` (d20), `/roll d100`, `/roll 2d6+1 [motivo]` com
+  decomposicao dos dados, anunciado por proximidade.
+- **Lore Zones** — `/lorezone criar|texto|som|remover|listar` (admin): regioes
+  que mostram titulo, subtítulo e som quando um jogador entra (1x por sessao).
+
+### Corrigido
+- Conflito do `/me` com o emote vanilla (remocao do comando vanilla na arvore).
+
 ## [1.2.1] - 2026-09-04
 
 ### Corrigido

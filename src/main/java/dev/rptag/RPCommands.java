@@ -60,6 +60,23 @@ public final class RPCommands {
             return Command.SINGLE_SUCCESS;
         }));
 
+        // /rp admin chatlocal on|off — apenas admins (liga/desliga o chat local)
+        root.then(Commands.literal("admin")
+                .requires(src -> src.hasPermission(2))
+                .then(Commands.literal("chatlocal")
+                        .then(Commands.literal("on").executes(ctx -> {
+                            RPWorldData.get(ctx.getSource().getServer()).setChatLocal(true);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Chat local LIGADO — o chat normal so aparece por perto (40 blocos). Use /g para global."), true);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .then(Commands.literal("off").executes(ctx -> {
+                            RPWorldData.get(ctx.getSource().getServer()).setChatLocal(false);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Chat local DESLIGADO — o chat normal e global de novo."), true);
+                            return Command.SINGLE_SUCCESS;
+                        }))));
+
         // /rp set <jogador> on|off — apenas admins
         root.then(Commands.literal("set")
                 .requires(src -> src.hasPermission(2))

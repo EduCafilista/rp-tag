@@ -25,7 +25,7 @@ cd rp-tag
 
 git init
 git add .
-git commit -m "RP Tag 1.2.1: tag (ʀᴘ)/(ᴏꜰꜰ ʀᴘ) no nome + comando /rp (NeoForge 1.21.1)"
+git commit -m "RP Tag 2.0.0: tag (ʀᴘ)/(ᴏꜰꜰ ʀᴘ) no nome + comando /rp (NeoForge 1.21.1)"
 git branch -M main
 git remote add origin https://github.com/SEU_USUARIO/rp-tag.git
 git push -u origin main
@@ -36,18 +36,18 @@ git push -u origin main
 ## 3. Criar a release com o jar
 
 ```bash
-git tag -a v1.2.1 -m "v1.2.1"
-git push origin v1.2.1
+git tag -a v2.0.0 -m "v2.0.0"
+git push origin v2.0.0
 ```
 
-Depois, no GitHub: **Releases → Draft a new release → escolha a tag `v1.2.1`**
-e anexe o arquivo **`rptag-1.2.1.jar`** (arraste o arquivo no campo de anexos).
+Depois, no GitHub: **Releases → Draft a new release → escolha a tag `v2.0.0`**
+e anexe o arquivo **`rptag-2.0.0.jar`** (arraste o arquivo no campo de anexos).
 
 **Release notes** (copie e cole):
 
 ---
 
-### RP Tag v1.2.1
+### RP Tag v2.0.0
 
 Primeira versão pública! 🎉
 
