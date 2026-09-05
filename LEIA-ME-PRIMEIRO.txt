@@ -1,0 +1,33 @@
+================================================================
+ RP TAG — COMO SUBIR ESTE PACOTE NO GITHUB (5 minutos)
+================================================================
+
+1) Acesse: https://github.com/EduCafilista/rp-tag
+
+2) Limpe o que esta errado la:
+   - Deleta o arquivo "WALKTROUGH.md" (esta com o nome errado/faltando o H)
+   - Depois voce vai substituir o README.md pelo deste zip (que nao esta duplicado)
+
+3) Faca o upload:
+   GitHub → Add file → Upload files → ARRASTE TODO O CONTEUDO
+   da pasta "rp-tag" deste zip para a raiz do repositorio.
+   IMPORTANTE: arraste as PASTAS "src" e "gradle" inteiras junto
+   (o GitHub mantem a estrutura ao arrastar pastas).
+   Inclui o "rptag-1.2.1.jar" — subindo ele na raiz, o link de
+   download direto do README comeca a funcionar sozinho.
+
+4) Escreva a mensagem do commit (ex.: "projeto completo + docs EN") e clique
+   em "Commit changes".
+
+5) Crie a RELEASE (onde a maioria baixa o mod):
+   Releases → Draft a new release → Choose a tag: digite "v1.2.1"
+   → + Create new tag on publish → anexe o "rptag-1.2.1.jar"
+   → cole as release notes (estao no PUBLICAR.md do seu projeto local,
+     nao precisa subir esse arquivo) → Publish release
+
+6) Teste: abra o README no GitHub e clique no link direto de download.
+   Deve baixar o jar na hora.
+
+Duvidas: WALKTHROUGH.md tem o guia de uso; PUBLICAR.md (local) tem o
+passo a passo detalhado de publicacao.
+================================================================
