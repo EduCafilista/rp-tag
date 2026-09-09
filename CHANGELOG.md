@@ -2,6 +2,29 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.4.0] - 2026-09-09
+
+### Adicionado
+- **EDITOR do balão em inventário** (`/balaoedit` ou `/balao`): um baú de 6
+  fileiras, 100% vanilla na tela — impossível de crashar pela GUI. Clique nas
+  cores (centro e borda), troque o fundo, ligue/desligue o modo balão e limpe
+  tudo. Fecha o baú = salva automaticamente.
+
+### Mudado
+- **Emojis agora por ARRASTAR**: pega o emoji na paleta e solta na caixinha
+  Antes / Meio / Depois do texto (ou Shift+clique manda direto pro Antes).
+  Novo: emoji no MEIO da mensagem!
+- Personalização por comando de chat REMOVIDA (`/balao cor`, `/balao borda`,
+  `/balao fundo`, `/balao emoji`, `/balao limpar`) — tudo agora no editor,
+  mais fácil para os jogadores. `/balao modo on|off` continua.
+
+### Corrigido
+- **Crash do cliente ao desenhar o balao (raiz encontrada nos fontes do 1.21.1)**:
+  o fundo agora usa BUFFER PROPRIO do mod e o flush acontece dentro da protecao
+  de erros — qualquer problema desliga os baloes com aviso no log, o jogo NUNCA
+  fecha. A emissao de vertices e identica a do vanilla (cor + UV + luz cheia) e
+  usa a textura branca NATIVA do jogo (zero risco de falha de textura).
+
 ## [2.3.1] - 2026-09-09
 
 ### Corrigido

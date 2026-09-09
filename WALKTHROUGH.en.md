@@ -13,9 +13,9 @@ Step-by-step guide, from download to the tag showing in game.
 | Minecraft **1.21.1** (Java Edition) | official launcher |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → version 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-2.3.1.jar` | this repository's *Releases* tab |
+| `rptag-2.4.0.jar` | this repository's *Releases* tab |
 
-> ⚠️ The mod version matches the game version: `rptag-2.3.1.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
+> ⚠️ The mod version matches the game version: `rptag-2.4.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
 
 ---
 
@@ -23,7 +23,7 @@ Step-by-step guide, from download to the tag showing in game.
 
 1. Install NeoForge on the server (the installer asks for the server folder path).
 2. Inside the server folder, open `mods/`.
-3. Copy `rptag-2.3.1.jar` into it.
+3. Copy `rptag-2.4.0.jar` into it.
 4. Start the server once to generate files (accept the EULA in `eula.txt` with `eula=true`).
 
 **How to know it worked:** in the boot log look for
@@ -40,7 +40,7 @@ Done — from this point the tag already works in **chat** and **TAB** for every
 
 1. In the launcher, create/edit the NeoForge 1.21.1 profile.
 2. Open the game folder ("open game folder" option in the launcher) and enter `mods/`.
-3. Copy the same `rptag-2.3.1.jar` there.
+3. Copy the same `rptag-2.4.0.jar` there.
 4. Join the server.
 
 Without the client mod you still see the tag in chat/TAB; with it, you also see **(ʀᴘ)** or **(ᴏꜰꜰ ʀᴘ)** floating above players' heads.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-The jar ends up at `build/libs/rptag-2.3.1.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
+The jar ends up at `build/libs/rptag-2.4.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
 
 ---
 
@@ -169,21 +169,25 @@ above your head** — perfect for eggs, kids and mic-less players.
 
 ---
 
-## 🥚 Modo balão e tela de personalização (novo na v2.3.0)
+## 🥚 Bubble mode and the inventory EDITOR (v2.4.0)
 
-**Para ovos, crianças e personagens sem voz:** a fala vira **só o balão** — nada no chat.
+**For eggs, kids and mic-less characters:** speech becomes **bubble-only** — nothing in chat.
 
-| Comando | Efeito |
+| Command | Effect |
 |---|---|
-| `/balao` | abre a TELA de personalização (cor, emojis, fundos — preview ao vivo) |
-| `/balao modo on` / `off` | liga/desliga o modo balão em si mesmo |
-| `/balao cor ciano` | cor da mensagem e do fundo |
-| `/balao emoji antes ✦` | emoji decorativo antes (ou "depois") |
-| `/balao borda ciano` | cor da BORDA do balao (ou `off` p/ remover) |
-| `/balao fundo noite` | fundo: translucido/escuro/claro/gradiente/papel/noite/madeira |
-| `/rp admin bolha <jogador> on` | *(admin)* ativa o modo balão para outro jogador |
-| `/rp admin bolhas off` | *(admin)* desliga balões do servidor inteiro |
+| `/balaoedit` | opens the **bubble EDITOR** (6-row chest, all clickable) |
+| `/balao` | opens the same editor |
+| `/balao modo on` / `off` | toggle bubble mode for yourself |
+| `/rp admin bolha <player> on` | *(admin)* enables bubble mode for another player |
+| `/rp admin bolhas off` | *(admin)* disables bubbles server-wide |
 
-Na tela do `/balao` você vê o preview do balão em tempo real, ajusta o
-Vermelho/Verde/Azul, clica nas cores rápidas, adiciona emojis (✦ ★ ♥ ⚔ ☾ ✿ ♪ ⚡)
-e escolhe o fundo — tudo salvo no servidor.
+### How to use the editor (`/balaoedit`)
+- **✿ Center color** — left-click cycles forward, right-click back (16 colors; the
+  leather item shows the real color!)
+- **▣ Border color** — click to cycle · **Shift+click removes** the border
+- **▤ Background** — click to cycle: Translucent, Dark, Light, Gradient, Paper, Night, Wood
+- **Emojis (✦ ★ ♥ ⚔ ☾ ✿ ♪ ⚡ ✧)** — **click to grab** an emoji, then **drop it in the
+  Before / Middle / After slot** — or **drag** it while holding the button!
+  (Shift+click sends an emoji straight to "Before"; Shift+click a slot to clear it)
+- **☾ Bubble mode** — toggle right there · **✖ Clear all** — back to defaults
+- **Close the chest = auto-saved.** Say something in chat and see your bubble! ✨

@@ -16,13 +16,14 @@ import dev.rptag.RPTagMod;
 
 /**
  * Fundos do balao de fala: cores solidas, gradiente e texturas
- * (papel/noite/madeira), borda opcional, e o "branco" usado como base.
+ * (papel/noite/madeira), borda opcional.
  *
- * <p>IMPORTANTE (fix da 2.3.0): para desenhar poligonos no MUNDO 3D usamos
- * {@link RenderType#text(ResourceLocation)} — o mesmo render type do texto das
- * nametags, que funciona no contexto de entidades. O RenderType.gui() usado
- * antes era de GUI e o fundo ficava INVISIVEL no mundo. A textura branca
- * (white.png) multiplica pela cor do vertice, entao vale para qualquer cor.
+ * <p>COMO O VANILLA FAZ (conferido no codigo decompilado 1.21.1): o fundo das
+ * nametags e desenhado pelo proprio Font com o render type de TEXTO e vertices
+ * {@code posicao + cor + UV + luz}. Reproduzimos EXATAMENTE essa emissao.
+ * Para cores solidas usamos a textura branca NATIVA do jogo
+ * (minecraft:textures/misc/white.png) multiplicada pela cor do vertice —
+ * nenhuma textura propria nova precisa carregar.
  */
 public final class BubbleBackgrounds {
 
@@ -38,7 +39,8 @@ public final class BubbleBackgrounds {
     public static final int BG_NOITE = 5;
     public static final int BG_MADEIRA = 6;
 
-    private static final ResourceLocation TEX_WHITE = ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/white.png");
+    /** Textura branca NATIVA do Minecraft (garantida, nunca falha ao carregar). */
+    private static final ResourceLocation TEX_WHITE = ResourceLocation.withDefaultNamespace("textures/misc/white.png");
     private static final ResourceLocation TEX_PAPEL = ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_papel.png");
     private static final ResourceLocation TEX_NOITE = ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_noite.png");
     private static final ResourceLocation TEX_MADEIRA = ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_madeira.png");
@@ -49,13 +51,13 @@ public final class BubbleBackgrounds {
     private BubbleBackgrounds() {
     }
 
-    /** @return o RenderType adequado ao estilo (funciona no mundo 3D e na GUI). */
+    /** @return o RenderType adequado ao estilo (funciona no mundo 3D). */
     public static RenderType typeFor(int background) {
         ResourceLocation tex = switch (background) {
             case BG_PAPEL -> TEX_PAPEL;
             case BG_NOITE -> TEX_NOITE;
             case BG_MADEIRA -> TEX_MADEIRA;
-            default -> TEX_WHITE; // translucido/escuro/claro/gradiente usam o branco
+            default -> TEX_WHITE; // translucido/escuro/claro/gradiente usam o branco nativo
         };
         return TEXT_TYPES.computeIfAbsent(tex, RenderType::text);
     }
@@ -80,7 +82,7 @@ public final class BubbleBackgrounds {
     }
 
     // =====================================================================
-    //  Desenho da capsula (usado pelo renderizador 3D e pelo preview 2D)
+    //  Desenho da capsula
     // =====================================================================
 
     /** Desenha a borda (capsula 1px maior) e depois a capsula principal. */
@@ -123,7 +125,7 @@ public final class BubbleBackgrounds {
         if (isTextured(background)) {
             texTriMap(vc, m, x0, y0, x1, y1, x2, y2, 0.0F, 0.0F, 1.0F, 1.0F);
         } else {
-            colorTri(vc, m, x0, y0, x1, y1, x2, y2, background, colorRGB);
+            colorTri(vc, m, x0, y0, x1, y1, x2, y2, background, colorRGB, 0.0F, 0.0F, 1.0F, 1.0F);
         }
     }
 
@@ -136,8 +138,8 @@ public final class BubbleBackgrounds {
             texTriMap(vc, m, ax, ay, bx, ay, ax, by, u0, v0, uw, vh);
             texTriMap(vc, m, ax, by, bx, ay, bx, by, u0, v0, uw, vh);
         } else {
-            colorTri(vc, m, ax, ay, bx, ay, ax, by, background, color);
-            colorTri(vc, m, ax, by, bx, ay, bx, by, background, color);
+            colorTri(vc, m, ax, ay, bx, ay, ax, by, background, color, u0, v0, uw, vh);
+            colorTri(vc, m, ax, by, bx, ay, bx, by, background, color, u0, v0, uw, vh);
         }
     }
 
@@ -155,21 +157,25 @@ public final class BubbleBackgrounds {
             if (isTextured(background)) {
                 texTriMap(vc, m, cx, cy, px0, py0, px1, py1, u0, v0, uw, vh);
             } else {
-                colorTri(vc, m, cx, cy, px0, py0, px1, py1, background, color);
+                colorTri(vc, m, cx, cy, px0, py0, px1, py1, background, color, u0, v0, uw, vh);
             }
         }
     }
 
-    /** Triangulo com cor (pode ser gradiente vertical: top = claro, bottom = escuro). */
+    /**
+     * Triangulo com COR (sem textura visivel: a textura branca nativa multiplica
+     * pela cor). Gradiente vertical: topo claro, base escura. A emissao e
+     * IDENTICA a do vanilla (cor + UV + luz) — nenhum atributo faltando.
+     */
     private static void colorTri(VertexConsumer vc, Matrix4f m,
             float x0, float y0, float x1, float y1, float x2, float y2,
-            int background, int color) {
+            int background, int color, float u0, float v0, float uw, float vh) {
         switch (background) {
             case BG_ESCURO -> {
-                solidTri(vc, m, x0, y0, x1, y1, x2, y2, 0xFF14141A);
+                solidTri(vc, m, x0, y0, x1, y1, x2, y2, 0xFF14141A, u0, v0, uw, vh);
             }
             case BG_CLARO -> {
-                solidTri(vc, m, x0, y0, x1, y1, x2, y2, 0xFFF4F0E8);
+                solidTri(vc, m, x0, y0, x1, y1, x2, y2, 0xFFF4F0E8, u0, v0, uw, vh);
             }
             case BG_GRADIENTE -> {
                 int base = color & 0xFFFFFF;
@@ -177,18 +183,31 @@ public final class BubbleBackgrounds {
                 int bottom = lighten(base, 0.62F);
                 float minY = Math.min(y0, Math.min(y1, y2));
                 float maxY = Math.max(y0, Math.max(y1, y2));
-                int c0 = perVertex(minY, maxY, top, bottom, y0);
-                int c1 = perVertex(minY, maxY, top, bottom, y1);
-                int c2 = perVertex(minY, maxY, top, bottom, y2);
-                vc.addVertex(m, x0, y0, 0.0F).setColor(c0);
-                vc.addVertex(m, x1, y1, 0.0F).setColor(c1);
-                vc.addVertex(m, x2, y2, 0.0F).setColor(c2);
-                vc.addVertex(m, x2, y2, 0.0F).setColor(c2);
+                vc.addVertex(m, x0, y0, 0.0F)
+                        .setColor(perVertex(minY, maxY, top, bottom, y0))
+                        .setUv(mapU(x0, u0, uw), mapV(y0, v0, vh)).setLight(LIGHT_FULLBRIGHT);
+                vc.addVertex(m, x1, y1, 0.0F)
+                        .setColor(perVertex(minY, maxY, top, bottom, y1))
+                        .setUv(mapU(x1, u0, uw), mapV(y1, v0, vh)).setLight(LIGHT_FULLBRIGHT);
+                vc.addVertex(m, x2, y2, 0.0F)
+                        .setColor(perVertex(minY, maxY, top, bottom, y2))
+                        .setUv(mapU(x2, u0, uw), mapV(y2, v0, vh)).setLight(LIGHT_FULLBRIGHT);
+                vc.addVertex(m, x2, y2, 0.0F)
+                        .setColor(perVertex(minY, maxY, top, bottom, y2))
+                        .setUv(mapU(x2, u0, uw), mapV(y2, v0, vh)).setLight(LIGHT_FULLBRIGHT);
             }
             default -> {
-                solidTri(vc, m, x0, y0, x1, y1, x2, y2, (0xE6 << 24) | (color & 0xFFFFFF));
+                solidTri(vc, m, x0, y0, x1, y1, x2, y2, (0xE6 << 24) | (color & 0xFFFFFF), u0, v0, uw, vh);
             }
         }
+    }
+
+    private static float mapU(float x, float u0, float uw) {
+        return uw == 0.0F ? 0.0F : (x - u0) / uw;
+    }
+
+    private static float mapV(float y, float v0, float vh) {
+        return vh == 0.0F ? 0.0F : (y - v0) / vh;
     }
 
     private static int perVertex(float minY, float maxY, int top, int bottom, float thisY) {
@@ -199,26 +218,24 @@ public final class BubbleBackgrounds {
         return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 
+    /** Triangulo de cor solida com emissao completa (cor + UV + luz, como o vanilla). */
     private static void solidTri(VertexConsumer vc, Matrix4f m,
-            float x0, float y0, float x1, float y1, float x2, float y2, int argb) {
-        vc.addVertex(m, x0, y0, 0.0F).setColor(argb);
-        vc.addVertex(m, x1, y1, 0.0F).setColor(argb);
-        vc.addVertex(m, x2, y2, 0.0F).setColor(argb);
-        vc.addVertex(m, x2, y2, 0.0F).setColor(argb);
+            float x0, float y0, float x1, float y1, float x2, float y2, int argb,
+            float u0, float v0, float uw, float vh) {
+        vc.addVertex(m, x0, y0, 0.0F).setColor(argb).setUv(mapU(x0, u0, uw), mapV(y0, v0, vh)).setLight(LIGHT_FULLBRIGHT);
+        vc.addVertex(m, x1, y1, 0.0F).setColor(argb).setUv(mapU(x1, u0, uw), mapV(y1, v0, vh)).setLight(LIGHT_FULLBRIGHT);
+        vc.addVertex(m, x2, y2, 0.0F).setColor(argb).setUv(mapU(x2, u0, uw), mapV(y2, v0, vh)).setLight(LIGHT_FULLBRIGHT);
+        vc.addVertex(m, x2, y2, 0.0F).setColor(argb).setUv(mapU(x2, u0, uw), mapV(y2, v0, vh)).setLight(LIGHT_FULLBRIGHT);
     }
 
-    /** Triangulo com UV mapeado pela caixa do balao (origem u0,v0; tamanho uw x vh). */
+    /** Triangulo com UV mapeado pela caixa do balao (texturas papel/noite/madeira). */
     private static void texTriMap(VertexConsumer vc, Matrix4f m,
             float x0, float y0, float x1, float y1, float x2, float y2,
             float u0, float v0, float uw, float vh) {
-        // emissao identica a do BakedGlyph do vanilla (setColor + setUv + setLight)
-        float uA = (x0 - u0) / uw, vA = (y0 - v0) / vh;
-        float uB = (x1 - u0) / uw, vB = (y1 - v0) / vh;
-        float uC = (x2 - u0) / uw, vC = (y2 - v0) / vh;
-        vc.addVertex(m, x0, y0, 0.0F).setColor(0xFFFFFFFF).setUv(uA, vA).setLight(LIGHT_FULLBRIGHT);
-        vc.addVertex(m, x1, y1, 0.0F).setColor(0xFFFFFFFF).setUv(uB, vB).setLight(LIGHT_FULLBRIGHT);
-        vc.addVertex(m, x2, y2, 0.0F).setColor(0xFFFFFFFF).setUv(uC, vC).setLight(LIGHT_FULLBRIGHT);
-        vc.addVertex(m, x2, y2, 0.0F).setColor(0xFFFFFFFF).setUv(uC, vC).setLight(LIGHT_FULLBRIGHT);
+        vc.addVertex(m, x0, y0, 0.0F).setColor(0xFFFFFFFF).setUv(mapU(x0, u0, uw), mapV(y0, v0, vh)).setLight(LIGHT_FULLBRIGHT);
+        vc.addVertex(m, x1, y1, 0.0F).setColor(0xFFFFFFFF).setUv(mapU(x1, u0, uw), mapV(y1, v0, vh)).setLight(LIGHT_FULLBRIGHT);
+        vc.addVertex(m, x2, y2, 0.0F).setColor(0xFFFFFFFF).setUv(mapU(x2, u0, uw), mapV(y2, v0, vh)).setLight(LIGHT_FULLBRIGHT);
+        vc.addVertex(m, x2, y2, 0.0F).setColor(0xFFFFFFFF).setUv(mapU(x2, u0, uw), mapV(y2, v0, vh)).setLight(LIGHT_FULLBRIGHT);
     }
 
     private static int lighten(int rgb, float factor) {

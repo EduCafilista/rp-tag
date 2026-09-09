@@ -2,11 +2,13 @@ package dev.rptag.client;
 
 import java.util.List;
 
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import dev.rptag.RPTagMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Player;
@@ -22,6 +24,11 @@ import org.joml.Matrix4f;
  * <p>Desenhado no RenderLivingEvent.Post (nao mexe no nametag): capsula
  * arredondada COM BORDA opcional, rabicho, texto quebrado em linhas COM
  * SOMBRA (legibilidade), emojis decorativos e fundo personalizavel.
+ *
+ * <p>A PROVA DE CRASH (2.4.0): o fundo e desenhado num BUFFER PROPRIO do mod,
+ * e o "flush" (que e onde qualquer problema de renderizacao explode) acontece
+ * DENTRO do nosso try/catch. Se qualquer erro ocorrer, os baloes sao desligados
+ * nesta sessao com um aviso no log — o jogo NUNCA fecha por causa do balao.
  */
 @EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class BubbleRenderer {
@@ -32,6 +39,10 @@ public final class BubbleRenderer {
     private static final int PAD_Y = 3;
     private static final int TAIL = 6;
     private static final double MAX_DISTANCE_SQ = 64.0 * 64.0;
+
+    /** Buffer exclusivo do balao — nao toca no buffer compartilhado do jogo. */
+    private static final MultiBufferSource.BufferSource BUBBLE_BUFFERS =
+            MultiBufferSource.immediate(new ByteBufferBuilder(786432));
 
     private BubbleRenderer() {
     }
@@ -49,7 +60,17 @@ public final class BubbleRenderer {
             // A PROVA DE CRASH: qualquer erro desliga os baloes desta sessao
             // (a tag RP, chat e comandos continuam funcionando) e registra o motivo.
             disabled = true;
+            safeFlushDiscard();
             RPTagMod.LOGGER.error("RP Tag: erro ao desenhar balao de fala - baloes desligados ate reiniciar o jogo", t);
+        }
+    }
+
+    /** Tenta descartar o buffer do balao sem lancar nova excecao. */
+    private static void safeFlushDiscard() {
+        try {
+            BUBBLE_BUFFERS.endBatch();
+        } catch (Throwable ignored) {
+            // nao importa: os baloes ja estao desligados
         }
     }
 
@@ -99,13 +120,16 @@ public final class BubbleRenderer {
         int packedLight = event.getPackedLight();
         int top = -(pillH - 8);
 
-        // fundo + borda (um unico buffer; render type de TEXTO: funciona no mundo)
-        var vcBg = event.getMultiBufferSource().getBuffer(BubbleBackgrounds.typeFor(background));
+        // fundo + borda + rabicho: BUFFER PROPRIO, emissao identica a do vanilla
+        var vcBg = BUBBLE_BUFFERS.getBuffer(BubbleBackgrounds.typeFor(background));
         BubbleBackgrounds.pillWithBorder(vcBg, matrix, x0, top, pillW, pillH,
                 background, bubble.colorRGB(), bubble.borderRGB());
         BubbleBackgrounds.tail(vcBg, matrix, -3, 7, 3, 7, 0, 7 + TAIL, background, bubble.colorRGB());
+        // flush DENTRO do try/catch: qualquer erro aqui e capturado (jogo nunca fecha)
+        BUBBLE_BUFFERS.endBatch();
 
         // texto: 1a passada apagada (levemente visivel atraves de paredes) + cheia COM SOMBRA
+        // (texto vai pelo buffer padrao das entidades, exatamente como a nametag do vanilla)
         int penY = top + PAD_Y;
         for (FormattedCharSequence line : lines) {
             int lineW = font.width(line);

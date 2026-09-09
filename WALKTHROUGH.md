@@ -13,9 +13,9 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 | Minecraft **1.21.1** (Java Edition) | launcher oficial |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → versão 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-2.3.1.jar` | a aba *Releases* deste repositório |
+| `rptag-2.4.0.jar` | a aba *Releases* deste repositório |
 
-> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-2.3.1.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
+> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-2.4.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
 
 ---
 
@@ -23,7 +23,7 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 
 1. Instale o NeoForge no servidor (o instalador pergunta o caminho da pasta do servidor).
 2. Na pasta do servidor, entre em `mods/`.
-3. Copie o `rptag-2.3.1.jar` para dentro dela.
+3. Copie o `rptag-2.4.0.jar` para dentro dela.
 4. Inicie o servidor uma vez para gerar os arquivos (aceite o EULA no `eula.txt` com `eula=true`).
 
 **Como saber se funcionou:** no log de boot procure a linha
@@ -40,7 +40,7 @@ Pronto — a partir daqui a tag já funciona no **chat** e na **TAB** para todos
 
 1. No launcher, crie/edite o perfil do NeoForge 1.21.1.
 2. Abra a pasta do jogo (opção "abrindo a pasta do jogo" no launcher) e entre em `mods/`.
-3. Copie o mesmo `rptag-2.3.1.jar` para lá.
+3. Copie o mesmo `rptag-2.4.0.jar` para lá.
 4. Entre no servidor.
 
 Sem o mod no cliente você ainda vê a tag no chat/TAB; com o mod, também vê **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** flutuando sobre a cabeça dos jogadores.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-O jar sai em `build/libs/rptag-2.3.1.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
+O jar sai em `build/libs/rptag-2.4.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
 
 ---
 
@@ -173,21 +173,25 @@ O texto do balão escolhe preto ou branco sozinho, de acordo com a cor de fundo.
 
 ---
 
-## 🥚 Modo balão e tela de personalização (novo na v2.3.0)
+## 🥚 Modo balão e EDITOR em inventário (v2.4.0)
 
 **Para ovos, crianças e personagens sem voz:** a fala vira **só o balão** — nada no chat.
 
 | Comando | Efeito |
 |---|---|
-| `/balao` | abre a TELA de personalização (cor, emojis, fundos — preview ao vivo) |
+| `/balaoedit` | abre o **EDITOR do balão** (baú de 6 fileiras, tudo clicável) |
+| `/balao` | abre o mesmo editor |
 | `/balao modo on` / `off` | liga/desliga o modo balão em si mesmo |
-| `/balao cor ciano` | cor da mensagem e do fundo |
-| `/balao emoji antes ✦` | emoji decorativo antes (ou "depois") |
-| `/balao borda ciano` | cor da BORDA do balao (ou `off` p/ remover) |
-| `/balao fundo noite` | fundo: translucido/escuro/claro/gradiente/papel/noite/madeira |
 | `/rp admin bolha <jogador> on` | *(admin)* ativa o modo balão para outro jogador |
 | `/rp admin bolhas off` | *(admin)* desliga balões do servidor inteiro |
 
-Na tela do `/balao` você vê o preview do balão em tempo real, ajusta o
-Vermelho/Verde/Azul, clica nas cores rápidas, adiciona emojis (✦ ★ ♥ ⚔ ☾ ✿ ♪ ⚡)
-e escolhe o fundo — tudo salvo no servidor.
+### Como usar o editor (`/balaoedit`)
+- **✿ Cor do CENTRO** — clique avança, botão direito volta (16 cores; o couro do
+  item mostra a cor de verdade!)
+- **▣ Cor da BORDA** — clique troca a cor · **Shift+clique remove** a borda
+- **▤ Fundo** — clique troca: Translúcido, Escuro, Claro, Gradiente, Papel, Noite, Madeira
+- **Emojis (✦ ★ ♥ ⚔ ☾ ✿ ♪ ⚡ ✧)** — **clique para pegar** o emoji e **solte na
+  caixinha Antes / Meio / Depois** do texto — ou **arraste** segurando o botão!
+  (Shift+clique no emoji manda direto pro "Antes"; Shift+clique na caixinha limpa ela)
+- **☾ Modo balão** — liga/desliga ali mesmo · **✖ Limpar tudo** — volta ao padrão
+- **Feche o baú = salva automaticamente.** Fale no chat e veja o balão! ✨

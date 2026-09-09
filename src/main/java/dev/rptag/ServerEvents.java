@@ -183,21 +183,4 @@ public final class ServerEvents {
         }
     }
 
-    // ================================================================
-    //  Salvamento do estilo do balao (tela de personalizacao)
-    // ================================================================
-
-    public static void handleUpdateBubbleStyle(final UpdateBubbleStylePayload payload, final IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player)) {
-                return;
-            }
-            BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(), payload.prefix(),
-                    payload.suffix(), payload.background());
-            RPWorldData.get(player.server).setStyle(player.getUUID(), style);
-            player.sendSystemMessage(Component.literal("Estilo do balao salvo! ")
-                    .withStyle(ChatFormatting.GREEN)
-                    .append(Component.literal("( experimente falar! )").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
-        });
-    }
 }
