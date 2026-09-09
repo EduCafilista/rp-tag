@@ -20,5 +20,7 @@ public final class ModNetworking {
                 ClientPayloadHandler::handleSync);
         registrar.playToClient(PersonaSyncPayload.TYPE, PersonaSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handlePersona);
+        registrar.playToClient(ChatBubblePayload.TYPE, ChatBubblePayload.STREAM_CODEC,
+                ClientPayloadHandler::handleBubble);
     }
 }

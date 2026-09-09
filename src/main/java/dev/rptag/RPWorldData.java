@@ -18,6 +18,8 @@ import net.minecraft.world.level.saveddata.SavedData;
  *   <li>estado (em RP ou nao) de cada jogador</li>
  *   <li>persona (personagem) de cada jogador</li>
  *   <li>preferencia de chat local ligado/desligado</li>
+ *   <li>cor pessoal de cada jogador (mensagem no chat + fundo do balao)</li>
+ *   <li>config de baloes de fala (global e por jogador)</li>
  * </ul>
  */
 public final class RPWorldData extends SavedData {
@@ -29,9 +31,15 @@ public final class RPWorldData extends SavedData {
     public static final int SHOUT_RANGE = 100;
     public static final int WHISPER_RANGE = 5;
 
+    /** Cor padrao (branco) quando o jogador nao escolheu nenhuma. */
+    public static final int DEFAULT_COLOR = 0xFFFFFF;
+
     private final Map<UUID, Boolean> states = new HashMap<>();
     private final Map<UUID, Persona> personas = new HashMap<>();
+    private final Map<UUID, Integer> colors = new HashMap<>();
+    private final Map<UUID, Boolean> bubbleOptOut = new HashMap<>();
     private boolean chatLocal = true;
+    private boolean bubblesOn = true;
 
     public static RPWorldData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
@@ -63,6 +71,48 @@ public final class RPWorldData extends SavedData {
         } else {
             personas.put(id, persona);
         }
+        setDirty();
+    }
+
+    // ==== cor pessoal (chat + balao) ====
+
+    public int getColor(UUID id) {
+        return colors.getOrDefault(id, DEFAULT_COLOR);
+    }
+
+    public void setColor(UUID id, int rgb) {
+        colors.put(id, rgb & 0xFFFFFF);
+        setDirty();
+    }
+
+    public boolean hasCustomColor(UUID id) {
+        return colors.containsKey(id);
+    }
+
+    public void clearColor(UUID id) {
+        colors.remove(id);
+        setDirty();
+    }
+
+    // ==== baloes de fala ====
+
+    /** Baloes ligados globalmente (toggle de admin). */
+    public boolean isBubblesOn() {
+        return bubblesOn;
+    }
+
+    public void setBubblesOn(boolean on) {
+        bubblesOn = on;
+        setDirty();
+    }
+
+    /** O jogador desligou os proprios baloes. */
+    public boolean isBubbleOptOut(UUID id) {
+        return bubbleOptOut.getOrDefault(id, false);
+    }
+
+    public void setBubbleOptOut(UUID id, boolean optOut) {
+        bubbleOptOut.put(id, optOut);
         setDirty();
     }
 
@@ -99,7 +149,27 @@ public final class RPWorldData extends SavedData {
         });
         tag.put("Personas", personas);
 
+        ListTag colors = new ListTag();
+        this.colors.forEach((id, rgb) -> {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", id);
+            e.putInt("Rgb", rgb);
+            colors.add(e);
+        });
+        tag.put("Colors", colors);
+
+        ListTag optOuts = new ListTag();
+        this.bubbleOptOut.forEach((id, opt) -> {
+            if (opt) {
+                CompoundTag e = new CompoundTag();
+                e.putUUID("Id", id);
+                optOuts.add(e);
+            }
+        });
+        tag.put("BubbleOptOut", optOuts);
+
         tag.putBoolean("ChatLocal", chatLocal);
+        tag.putBoolean("BubblesOn", bubblesOn);
         return tag;
     }
 
@@ -118,7 +188,19 @@ public final class RPWorldData extends SavedData {
             data.personas.put(e.getUUID("Id"), Persona.load(e.getCompound("Persona")));
         }
 
+        ListTag colors = tag.getList("Colors", Tag.TAG_COMPOUND);
+        for (int i = 0; i < colors.size(); i++) {
+            CompoundTag e = colors.getCompound(i);
+            data.colors.put(e.getUUID("Id"), e.getInt("Rgb"));
+        }
+
+        ListTag optOuts = tag.getList("BubbleOptOut", Tag.TAG_COMPOUND);
+        for (int i = 0; i < optOuts.size(); i++) {
+            data.bubbleOptOut.put(optOuts.getCompound(i).getUUID("Id"), true);
+        }
+
         data.chatLocal = tag.getBoolean("ChatLocal");
+        data.bubblesOn = !tag.contains("BubblesOn") || tag.getBoolean("BubblesOn");
         return data;
     }
 }

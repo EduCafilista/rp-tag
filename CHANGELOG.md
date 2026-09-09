@@ -2,6 +2,20 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.1.0] - 2026-09-09
+
+### Adicionado
+- **Balões de fala (chat bubbles)** — o que o jogador digita aparece num balão
+  arredondado com rabicho sobre a cabeça, com quebra de linha e tempo de
+  exibição proporcional ao tamanho da mensagem. Ideal para ovos, crianças e
+  quem não usa microfone. Gerado pelo servidor: todo mundo com o mod no
+  cliente vê os balões de todos (chat local, `/g`, `/s`, `/w` e `/me`).
+- **`/cor <cor>`** — cor pessoal de cada jogador: pinta a mensagem no chat E o
+  fundo do próprio balão. Aceita nomes em português (`ciano`), nomes do
+  Minecraft (`dark_aqua`) e hex (`#55FFFF`). Contraste do texto automático.
+- **`/bolha on|off`** — desliga os próprios balões.
+- **`/rp admin bolha on|off`** — liga/desliga balões do servidor inteiro.
+
 ## [2.0.0] - 2026-09-05
 
 ### Adicionado

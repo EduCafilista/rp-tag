@@ -75,6 +75,19 @@ public final class RPCommands {
                             ctx.getSource().sendSuccess(() -> Component.literal(
                                     "Chat local DESLIGADO — o chat normal e global de novo."), true);
                             return Command.SINGLE_SUCCESS;
+                        })))
+                .then(Commands.literal("bolha")
+                        .then(Commands.literal("on").executes(ctx -> {
+                            RPWorldData.get(ctx.getSource().getServer()).setBubblesOn(true);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Baloes de fala LIGADOS para todos."), true);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .then(Commands.literal("off").executes(ctx -> {
+                            RPWorldData.get(ctx.getSource().getServer()).setBubblesOn(false);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Baloes de fala DESLIGADOS para todos."), true);
+                            return Command.SINGLE_SUCCESS;
                         }))));
 
         // /rp set <jogador> on|off — apenas admins

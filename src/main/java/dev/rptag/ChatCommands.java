@@ -11,17 +11,15 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /**
- * Canais de chat RP:
+ * Canais de chat RP (com balao de fala sobre a cabeca):
  *
  * <ul>
- *   <li>{@code /g <msg>} — global (servidor inteiro)</li>
- *   <li>{@code /s <msg>} — grito (100 blocos, CAIXA ALTA)</li>
- *   <li>{@code /w <msg>} — sussurro (5 blocos, cinza italico)</li>
- *   <li>{@code /me <acao>} — acao do personagem (* Alex caminha...)</li>
- *   <li>{@code /do <descricao>} — descricao de ambiente (* a porta range...)</li>
+ *   <li>{@code /g <msg>} — global (servidor inteiro) + balao</li>
+ *   <li>{@code /s <msg>} — grito (100 blocos, CAIXA ALTA) + balao</li>
+ *   <li>{@code /w <msg>} — sussurro (5 blocos, italico) + balao italico</li>
+ *   <li>{@code /me <acao>} — acao do personagem + balao italico</li>
+ *   <li>{@code /do <descricao>} — descricao de ambiente (sem balao)</li>
  * </ul>
- *
- * <p>O chat vanilla (sem comando) tambem e local — veja {@code ServerEvents}.
  */
 @EventBusSubscriber(modid = RPTagMod.MODID)
 public final class ChatCommands {
@@ -51,7 +49,7 @@ public final class ChatCommands {
         // o /me vanilla (emote global) perderia por ordem de registro; remove ele
         removeVanillaCommand(event.getDispatcher(), "me");
 
-        // /g <msg> — global
+        // /g <msg> — global (+ balao para quem esta perto)
         event.getDispatcher().register(Commands.literal("g")
                 .then(Commands.argument("msg", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                         .executes(ctx -> {
@@ -61,12 +59,13 @@ public final class ChatCommands {
                                     .append(Component.literal("<"))
                                     .append(RPChat.displayName(player))
                                     .append(Component.literal("> "))
-                                    .append(Component.literal(msg))
+                                    .append(Component.literal(msg).withStyle(RPChat.messageStyle(player)))
                                     .append(Component.literal(" [global]").withStyle(ChatFormatting.DARK_GRAY)));
+                            RPChat.spawnBubble(player, msg, false);
                             return Command.SINGLE_SUCCESS;
                         })));
 
-        // /s <msg> — grito
+        // /s <msg> — grito (+ balao)
         event.getDispatcher().register(Commands.literal("s")
                 .then(Commands.argument("msg", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                         .executes(ctx -> {
@@ -77,10 +76,11 @@ public final class ChatCommands {
                                     .append(RPChat.displayName(player))
                                     .append(Component.literal("> grita: ").withStyle(ChatFormatting.DARK_GRAY))
                                     .append(Component.literal(msg.toUpperCase()).withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE)));
+                            RPChat.spawnBubble(player, msg, false);
                             return Command.SINGLE_SUCCESS;
                         })));
 
-        // /w <msg> — sussurro
+        // /w <msg> — sussurro (+ balao italico)
         event.getDispatcher().register(Commands.literal("w")
                 .then(Commands.argument("msg", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                         .executes(ctx -> {
@@ -90,10 +90,11 @@ public final class ChatCommands {
                                     .append(RPChat.displayName(player))
                                     .append(Component.literal(" sussurra: ").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC))
                                     .append(Component.literal(msg).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
+                            RPChat.spawnBubble(player, msg, true);
                             return Command.SINGLE_SUCCESS;
                         })));
 
-        // /me <acao>
+        // /me <acao> (+ balao italico)
         event.getDispatcher().register(Commands.literal("me")
                 .then(Commands.argument("acao", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                         .executes(ctx -> {
@@ -103,10 +104,11 @@ public final class ChatCommands {
                                     .append(Component.literal("✦ ").withStyle(ChatFormatting.DARK_PURPLE))
                                     .append(RPChat.displayName(player).withStyle(ChatFormatting.ITALIC))
                                     .append(Component.literal(" " + acao).withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.ITALIC)));
+                            RPChat.spawnBubble(player, "* " + acao, true);
                             return Command.SINGLE_SUCCESS;
                         })));
 
-        // /do <descricao de ambiente>
+        // /do <descricao de ambiente> (sem balao)
         event.getDispatcher().register(Commands.literal("do")
                 .then(Commands.argument("descricao", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                         .executes(ctx -> {

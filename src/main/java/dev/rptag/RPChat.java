@@ -3,11 +3,14 @@ package dev.rptag;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Formatador do chat por canal: monta os componentes e envia por proximidade.
+ * Formatador do chat por canal: monta os componentes, colore a mensagem com a
+ * cor pessoal do jogador e dispara os baloes de fala sobre a cabeca.
  */
 public final class RPChat {
 
@@ -29,15 +32,43 @@ public final class RPChat {
         return base.append(RPTags.tag(inRp));
     }
 
-    /** Chat comum (canal local): <Nome (ʀᴘ)> mensagem */
+    /** @return o estilo da mensagem com a cor pessoal do jogador (se definida). */
+    public static Style messageStyle(ServerPlayer player) {
+        RPWorldData data = RPWorldData.get(player.server);
+        if (data.hasCustomColor(player.getUUID())) {
+            return Style.EMPTY.withColor(TextColor.fromRgb(data.getColor(player.getUUID())));
+        }
+        return Style.EMPTY;
+    }
+
+    /** Mostra o balao de fala sobre a cabeca (se o recurso estiver ligado). */
+    public static void spawnBubble(ServerPlayer from, String rawText, boolean italic) {
+        RPWorldData data = RPWorldData.get(from.server);
+        if (!data.isBubblesOn() || data.isBubbleOptOut(from.getUUID())) {
+            return;
+        }
+        String text = rawText.length() > 96 ? rawText.substring(0, 93) + "..." : rawText;
+        int color = data.getColor(from.getUUID());
+        ChatBubblePayload payload = new ChatBubblePayload(from.getUUID(), text, color, italic);
+        for (ServerPlayer p : from.server.getPlayerList().getPlayers()) {
+            if (p.level() == from.level()
+                    && p.position().distanceToSqr(from.position()) <= 64.0 * 64.0) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p, payload);
+            }
+        }
+    }
+
+    /** Chat comum (canal local): <Nome (ʀᴘ)> mensagem + balao */
     public static void broadcastLocalChat(ServerPlayer from, String message, int range, boolean shout) {
         MutableComponent msg = Component.empty()
                 .append(Component.literal("<"))
                 .append(displayName(from))
                 .append(Component.literal("> "))
                 .append(Component.literal(shout ? message.toUpperCase() : message)
+                        .withStyle(messageStyle(from))
                         .withStyle(shout ? ChatFormatting.BOLD : ChatFormatting.WHITE));
-        RPChat.sendLocal(from, range, msg);
+        sendLocal(from, range, msg);
+        spawnBubble(from, message, false);
     }
 
     /** Envia a mensagem a todos os jogadores dentro do raio (mesmo mundo). */

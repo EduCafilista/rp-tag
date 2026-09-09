@@ -52,5 +52,6 @@ public final class ClientEvents {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientRPStates.clear();
         ClientPersonaCache.clear();
+        ClientBubbleCache.clear();
     }
 }

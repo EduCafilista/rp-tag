@@ -36,18 +36,18 @@ git push -u origin main
 ## 3. Criar a release com o jar
 
 ```bash
-git tag -a v2.0.0 -m "v2.0.0"
-git push origin v2.0.0
+git tag -a v2.1.0 -m "v2.1.0"
+git push origin v2.1.0
 ```
 
-Depois, no GitHub: **Releases → Draft a new release → escolha a tag `v2.0.0`**
-e anexe o arquivo **`rptag-2.0.0.jar`** (arraste o arquivo no campo de anexos).
+Depois, no GitHub: **Releases → Draft a new release → escolha a tag `v2.1.0`**
+e anexe o arquivo **`rptag-2.1.0.jar`** (arraste o arquivo no campo de anexos).
 
 **Release notes** (copie e cole):
 
 ---
 
-### RP Tag v2.0.0
+### RP Tag v2.1.0
 
 Primeira versão pública! 🎉
 
