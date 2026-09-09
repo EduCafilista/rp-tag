@@ -15,18 +15,18 @@ import dev.rptag.UpdateBubbleStylePayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * TELA DE PERSONALIZACAO DO BALAO (2.5.0) — bonita e facil:
+ * TELA DE PERSONALIZACAO DO BALAO — com SELETOR DE COR de arrastar.
+ *
+ * <p>NITIDEZA (fix 2.5.1): o fundo e um menu OPACO desenhado por nos. O
+ * {@code renderBackground} padrao do 1.21 aplica o DESFOQUE do mundo por cima
+ * do que ja foi desenhado (deixava o painel inteiro embaçado) — aqui isso
+ * NUNCA acontece: nada de blur, nada de transparencia, tudo pixel-perfect.
  *
  * <ul>
- *   <li>SELETOR DE COR de verdade: quadrado de brilho/saturacao + faixa de
- *       matiz — ARRASTA o mouse e escolhe QUALQUER cor</li>
- *   <li>Preview do balao ao vivo no topo</li>
- *   <li>Fundo (7 estilos), barra/borda (Auto + cores), emojis
- *       Antes/Meio/Depois e Modo balao em botoes grandes</li>
- *   <li>Salvar / Cancelar</li>
+ *   <li>Seletor: quadrado de brilho/saturacao + faixa de matiz (ARRASTA o mouse)</li>
+ *   <li>Preview do balao ao vivo · Fundo (7) · Barra (auto/cores/sem)</li>
+ *   <li>Emojis Antes / Meio / Depois · Modo balao · Salvar / Cancelar</li>
  * </ul>
- *
- * <p>Todo o desenho usa fills e widgets vanilla — nada que possa crashar.
  */
 public class BubbleStyleScreen extends Screen {
 
@@ -38,7 +38,7 @@ public class BubbleStyleScreen extends Screen {
 
     // geometria do painel
     private static final int PANEL_W = 262;
-    private static final int PANEL_H = 196;
+    private static final int PANEL_H = 200;
 
     // seletor
     private static final int SV_W = 106;
@@ -53,21 +53,18 @@ public class BubbleStyleScreen extends Screen {
     private boolean draggingHue = false;
 
     // areas (preenchidas no init)
-    private int px, py;       // canto do painel
-    private int svX, svY;     // seletor SV
-    private int hueY;         // faixa de matiz
+    private int px, py;
+    private int svX, svY, hueY;
+    private int emX, emY, emW;
 
     public BubbleStyleScreen(OpenBubbleStylePayload style) {
         super(Component.literal("Balão de Fala"));
-        applyPayload(style);
+        this.style = new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(),
+                style.mid(), style.suffix(), style.background());
         float[] hsb = rgbToHsv(style.colorRGB());
         this.hue = hsb[0];
         this.sat = hsb[1];
         this.val = hsb[2];
-    }
-
-    private void applyPayload(OpenBubbleStylePayload p) {
-        this.style = new BubbleStyle(p.colorRGB(), p.borderRGB(), p.prefix(), p.mid(), p.suffix(), p.background());
     }
 
     @Override
@@ -75,12 +72,14 @@ public class BubbleStyleScreen extends Screen {
         px = (this.width - PANEL_W) / 2;
         py = (this.height - PANEL_H) / 2;
         svX = px + 12;
-        svY = py + 52;
+        svY = py + 58;
         hueY = svY + SV_H + 6;
+        emX = px + 128;
+        emY = svY + 52;
+        emW = (PANEL_W - 128 - 12 - 8) / 3;
 
-        // coluna da direita
-        int bx = px + 12 + SV_W + 10;
-        int bw = PANEL_W - 12 - (12 + SV_W + 10);
+        int bx = px + 128;
+        int bw = PANEL_W - 128 - 12;
         addRenderableWidget(Button.builder(bgLabel(), b -> {
                     style = withBackground((style.background() + 1) % BG_NAMES.length);
                     b.setMessage(bgLabel());
@@ -90,26 +89,24 @@ public class BubbleStyleScreen extends Screen {
                     style = withBorder(BAR_VALUES[idx % BAR_VALUES.length]);
                     b.setMessage(barLabel());
                 }).bounds(bx, svY + 20, bw, 18).build());
-        int ew = (bw - 8) / 3;
-        addRenderableWidget(Button.builder(emojiLabel("Antes", style.prefix()), b -> {
+        addRenderableWidget(Button.builder(emojiGlyph(style.prefix()), b -> {
                     style = withPrefix(nextEmoji(style.prefix()));
-                    b.setMessage(emojiLabel("Antes", style.prefix()));
-                }).bounds(bx, svY + 40, ew, 18).build());
-        addRenderableWidget(Button.builder(emojiLabel("Meio", style.mid()), b -> {
+                    b.setMessage(emojiGlyph(style.prefix()));
+                }).bounds(emX, emY, emW, 18).build());
+        addRenderableWidget(Button.builder(emojiGlyph(style.mid()), b -> {
                     style = withMid(nextEmoji(style.mid()));
-                    b.setMessage(emojiLabel("Meio", style.mid()));
-                }).bounds(bx + ew + 4, svY + 40, ew, 18).build());
-        addRenderableWidget(Button.builder(emojiLabel("Depois", style.suffix()), b -> {
+                    b.setMessage(emojiGlyph(style.mid()));
+                }).bounds(emX + emW + 4, emY, emW, 18).build());
+        addRenderableWidget(Button.builder(emojiGlyph(style.suffix()), b -> {
                     style = withSuffix(nextEmoji(style.suffix()));
-                    b.setMessage(emojiLabel("Depois", style.suffix()));
-                }).bounds(bx + 2 * (ew + 4), svY + 40, ew, 18).build());
+                    b.setMessage(emojiGlyph(style.suffix()));
+                }).bounds(emX + 2 * (emW + 4), emY, emW, 18).build());
         addRenderableWidget(Button.builder(modeLabel(), b -> {
                     this.bubbleMode = !this.bubbleMode;
                     this.modeChanged = true;
                     b.setMessage(modeLabel());
-                }).bounds(bx, svY + 60, bw, 18).build());
+                }).bounds(bx, svY + 74, bw, 18).build());
 
-        // salvar / cancelar
         addRenderableWidget(Button.builder(Component.literal("✔ Salvar"), b -> saveAndClose())
                 .bounds(px + 12, py + PANEL_H - 24, 115, 18).build());
         addRenderableWidget(Button.builder(Component.literal("✖ Cancelar"), b -> onClose())
@@ -117,8 +114,24 @@ public class BubbleStyleScreen extends Screen {
     }
 
     // =====================================================================
-    //  Desenho
+    //  Desenho — TUDO opaco e pixel-perfect (zero blur)
     // =====================================================================
+
+    /**
+     * Fundo OPACO do menu. Sobrescreve o padrao do 1.21 (que aplica o desfoque
+     * do mundo por cima da tela — a causa do menu embaçado). Idempotente.
+     */
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        g.fill(0, 0, this.width, this.height, 0xFF0F1218);
+        // grade sutil do menu (crua e nitida)
+        for (int gx = 0; gx < this.width; gx += 16) {
+            g.fill(gx, 0, gx + 1, this.height, 0xFF141824);
+        }
+        for (int gy = 0; gy < this.height; gy += 16) {
+            g.fill(0, gy, this.width, gy + 1, 0xFF141824);
+        }
+    }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
@@ -127,26 +140,30 @@ public class BubbleStyleScreen extends Screen {
         renderPicker(g);
         renderPreview(g);
         super.render(g, mouseX, mouseY, partialTick);
-        g.drawCenteredString(this.font, "✦ Balão de Fala", this.width / 2, py + 8, 0xFFE8E8F2);
+        // rotulos dos emojis (em cima dos 3 botoes-glyph)
+        String[] heads = {"Antes", "Meio", "Depois"};
+        for (int i = 0; i < 3; i++) {
+            g.drawCenteredString(this.font, heads[i], emX + i * (emW + 4) + emW / 2, emY - 10, 0xFF9AA3B5);
+        }
+        g.drawCenteredString(this.font, "✦ Balão de Fala", this.width / 2, py + 8, 0xFFFFFFFF);
     }
 
     private void renderPanel(GuiGraphics g) {
-        // sombra do painel + moldura + fundo
-        g.fill(px + 3, py + 3, px + PANEL_W + 3, py + PANEL_H + 3, 0x66000000);
-        g.fill(px, py, px + PANEL_W, py + PANEL_H, 0xFFF2F3F7);
-        // moldura (4 faixas finas)
-        g.fill(px, py, px + PANEL_W, py + 1, 0xFF8B90A3);
-        g.fill(px, py + PANEL_H - 1, px + PANEL_W, py + PANEL_H, 0xFF8B90A3);
-        g.fill(px, py, px + 1, py + PANEL_H, 0xFF8B90A3);
-        g.fill(px + PANEL_W - 1, py, px + PANEL_W, py + PANEL_H, 0xFF8B90A3);
-        // faixa do seletor (fundo destacado atras do quadrado)
-        g.fill(svX - 1, svY - 1, svX + SV_W + 1, svY + SV_H + 1, 0xFF3A3F4C);
-        g.fill(svX - 1, hueY - 1, svX + SV_W + 1, hueY + HUE_H + 1, 0xFF3A3F4C);
+        // sombra + corpo + bisel estilo vanilla (claro em cima/esquerda)
+        g.fill(px + 4, py + 4, px + PANEL_W + 4, py + PANEL_H + 4, 0xAA000000);
+        g.fill(px, py, px + PANEL_W, py + PANEL_H, 0xFF232733);
+        g.fill(px, py, px + PANEL_W, py + 2, 0xFF3E4454);
+        g.fill(px, py, px + 2, py + PANEL_H, 0xFF3E4454);
+        g.fill(px, py + PANEL_H - 2, px + PANEL_W, py + PANEL_H, 0xFF12141B);
+        g.fill(px + PANEL_W - 2, py, px + PANEL_W, py + PANEL_H, 0xFF12141B);
+        // atras do seletor
+        g.fill(svX - 1, svY - 1, svX + SV_W + 1, svY + SV_H + 1, 0xFF12141B);
+        g.fill(svX - 1, hueY - 1, svX + SV_W + 1, hueY + HUE_H + 1, 0xFF12141B);
     }
 
-    /** Quadrado de saturacao/brilho + faixa de matiz + cursor. */
+    /** Quadrado de saturacao/brilho + faixa de matiz + cursor + hex. */
     private void renderPicker(GuiGraphics g) {
-        int cols = 30, rows = 20;
+        int cols = 26, rows = 15;
         float cw = SV_W / (float) cols, ch = SV_H / (float) rows;
         for (int cx = 0; cx < cols; cx++) {
             for (int cy = 0; cy < rows; cy++) {
@@ -156,46 +173,54 @@ public class BubbleStyleScreen extends Screen {
                         0xFF000000 | rgb);
             }
         }
-        // cursor do quadrado
+        // cursor do quadrado (contorno duplo: preto por fora, branco por dentro)
         int curX = svX + (int) (sat * SV_W) - 3;
         int curY = svY + (int) ((1 - val) * SV_H) - 3;
-        outline(g, curX, curY, 7, 7, 0xFFFFFFFF);
+        outline(g, curX, curY, 7, 7, 0xFF000000);
+        outline(g, curX + 1, curY + 1, 5, 5, 0xFFFFFFFF);
 
-        // faixa de matiz (arco-iris)
-        int hcols = 30;
+        // faixa de matiz
+        int hcols = 26;
         float hw = SV_W / (float) hcols;
         for (int i = 0; i < hcols; i++) {
             int rgb = Mth.hsvToRgb((i + 0.5F) / hcols, 1.0F, 1.0F);
             g.fill(svX + (int) (i * hw), hueY, svX + (int) ((i + 1) * hw) + 1, hueY + HUE_H, 0xFF000000 | rgb);
         }
         int hx = svX + (int) (hue * SV_W) - 2;
-        outline(g, hx, hueY - 1, 5, HUE_H + 2, 0xFFFFFFFF);
+        outline(g, hx, hueY - 1, 5, HUE_H + 2, 0xFF000000);
+        outline(g, hx + 1, hueY, 3, HUE_H, 0xFFFFFFFF);
 
-        // hex da cor
+        // hex + amostra da cor
         int rgb = currentRgb();
-        g.drawString(this.font, String.format("#%06X", rgb), svX, hueY + HUE_H + 8, 0xFF2A2E3A, false);
-        g.fill(svX + 62, hueY + HUE_H + 7, svX + 74, hueY + HUE_H + 18, 0xFF000000 | rgb);
-        outline(g, svX + 62, hueY + HUE_H + 7, 12, 11, 0xFF3A3F4C);
+        g.drawString(this.font, String.format("#%06X", rgb), svX, hueY + HUE_H + 9, 0xFFE8E8F2, true);
+        g.fill(svX + 66, hueY + HUE_H + 7, svX + 84, hueY + HUE_H + 20, 0xFF000000 | rgb);
+        outline(g, svX + 66, hueY + HUE_H + 7, 18, 13, 0xFF000000);
+        outline(g, svX + 67, hueY + HUE_H + 8, 16, 11, 0xFF3E4454);
     }
 
-    /** Preview do balao ao vivo (mesmo visual do mundo). */
+    /** Preview do balao ao vivo (mesmo visual do mundo) sobre faixa solida. */
     private void renderPreview(GuiGraphics g) {
         int background = style.background();
         int colorRGB = style.colorRGB() & 0xFFFFFF;
         String text = (style.prefix().isEmpty() ? "" : style.prefix() + " ")
                 + "sua fala aparece assim"
                 + (style.suffix().isEmpty() ? "" : " " + style.suffix());
+        int cx = this.width / 2;
+        int y = py + 28;
+
+        // faixa solida atras do preview (nada de transparencia)
+        g.fill(px + 12, py + 24, px + PANEL_W - 12, py + 50, 0xFF171A22);
+        outline(g, px + 12, py + 24, PANEL_W - 24, 26, 0xFF12141B);
+
         int pillW = Math.max(34, this.font.width(text) + 14);
         int sFull = Math.max(2, (pillW - 2) / 4);
-        int cx = this.width / 2;
-        int y = py + 26;
+        int bx = cx - (4 * sFull + 2) / 2;
 
         int rowFill = background == BubbleBackgrounds.BG_GRADIENTE
                 ? BubbleBackgrounds.gradientColorFor(colorRGB, 0.5F)
                 : BubbleBackgrounds.bgColorFor(background, colorRGB);
-        int bx = cx - (4 * sFull + 2) / 2;
 
-        // sombra + cartao (1 linha, cantos chanfrados) + barra de destaque
+        // sombra + cartao chanfrado + barra de destaque
         g.fill(bx + 2, y + 2, bx + 4 * (sFull - 2) + 4, y + 12, 0x5A000000);
         if ((rowFill >>> 24) != 0) {
             g.fill(bx + 4, y, bx + 4 * (sFull - 2) + 2, y + 10, rowFill);
@@ -334,8 +359,8 @@ public class BubbleStyleScreen extends Screen {
         return Component.literal("▣ Barra: " + BAR_NAMES[barIndex()]);
     }
 
-    private Component emojiLabel(String pos, String current) {
-        return Component.literal(pos + ": " + (current.isEmpty() ? "—" : current));
+    private Component emojiGlyph(String current) {
+        return Component.literal(current.isEmpty() ? "—" : current);
     }
 
     private Component modeLabel() {

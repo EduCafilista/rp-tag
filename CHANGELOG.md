@@ -2,6 +2,16 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.5.1] - 2026-09-09
+
+### Corrigido
+- **Menu de personalização embaçado**: o fundo padrão do 1.21 aplica o
+  DESFOQUE do mundo por cima da tela aberta — borrava o painel inteiro.
+  Agora a tela usa fundo OPACO próprio (nunca desfoque), com tema escuro
+  nítido e biséis estilo vanilla.
+- Botões de emoji não cortam mais o texto ("Depois" virou rótulo em cima
+  do botão + botão mostra só o símbolo).
+
 ## [2.5.0] - 2026-09-09
 
 ### Adicionado
