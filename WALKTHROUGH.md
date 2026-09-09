@@ -13,9 +13,9 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 | Minecraft **1.21.1** (Java Edition) | launcher oficial |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → versão 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-1.2.1.jar` | a aba *Releases* deste repositório |
+| `rptag-2.2.0.jar` | a aba *Releases* deste repositório |
 
-> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-1.2.1.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
+> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-2.2.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
 
 ---
 
@@ -23,13 +23,13 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 
 1. Instale o NeoForge no servidor (o instalador pergunta o caminho da pasta do servidor).
 2. Na pasta do servidor, entre em `mods/`.
-3. Copie o `rptag-1.2.1.jar` para dentro dela.
+3. Copie o `rptag-2.2.0.jar` para dentro dela.
 4. Inicie o servidor uma vez para gerar os arquivos (aceite o EULA no `eula.txt` com `eula=true`).
 
 **Como saber se funcionou:** no log de boot procure a linha
 
 ```
-RP Tag 1.2.1 (rptag)
+RP Tag 2.0.0 (rptag)
 ```
 
 Pronto — a partir daqui a tag já funciona no **chat** e na **TAB** para todos.
@@ -40,7 +40,7 @@ Pronto — a partir daqui a tag já funciona no **chat** e na **TAB** para todos
 
 1. No launcher, crie/edite o perfil do NeoForge 1.21.1.
 2. Abra a pasta do jogo (opção "abrindo a pasta do jogo" no launcher) e entre em `mods/`.
-3. Copie o mesmo `rptag-1.2.1.jar` para lá.
+3. Copie o mesmo `rptag-2.2.0.jar` para lá.
 4. Entre no servidor.
 
 Sem o mod no cliente você ainda vê a tag no chat/TAB; com o mod, também vê **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** flutuando sobre a cabeça dos jogadores.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-O jar sai em `build/libs/rptag-1.2.1.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
+O jar sai em `build/libs/rptag-2.2.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
 
 ---
 
@@ -151,3 +151,42 @@ SyncRPStatePayload.java ──────────> (pacote servidor → cli
 ```
 
 Bom RP! 🎭
+
+---
+
+## 🗨️ Balões de fala (novo na v2.2.0)
+
+O que você digita no chat (local, `/g`, `/s`, `/w` ou `/me`) aparece num **balão
+arredondado sobre a sua cabeça** — perfeito pra ovos, crianças e quem não usa microfone.
+
+| Comando | Efeito |
+|---|---|
+| `/cor ciano` | define a SUA cor: pinta sua mensagem no chat e o fundo do seu balão |
+| `/cor #55FFFF` | também aceita hex |
+| `/cor off` | volta ao branco |
+| `/bolha off` / `/bolha on` | desliga/liga os SEUS balões |
+| `/rp admin bolha off` | *(admin)* desliga balões do servidor inteiro |
+
+Cores disponíveis: branco, preto, cinza, cinzaescuro, vermelho, vermelhoescuro,
+laranja, dourado, amarelo, verde, verdeescuro, ciano, azul, azulescuro, roxo, rosa/lilas.
+O texto do balão escolhe preto ou branco sozinho, de acordo com a cor de fundo.
+
+---
+
+## 🥚 Modo balão e tela de personalização (novo na v2.2.0)
+
+**Para ovos, crianças e personagens sem voz:** a fala vira **só o balão** — nada no chat.
+
+| Comando | Efeito |
+|---|---|
+| `/balao` | abre a TELA de personalização (cor, emojis, fundos — preview ao vivo) |
+| `/balao modo on` / `off` | liga/desliga o modo balão em si mesmo |
+| `/balao cor ciano` | cor da mensagem e do fundo |
+| `/balao emoji antes ✦` | emoji decorativo antes (ou "depois") |
+| `/balao fundo noite` | fundo: translucido/escuro/claro/gradiente/papel/noite/madeira |
+| `/rp admin bolha <jogador> on` | *(admin)* ativa o modo balão para outro jogador |
+| `/rp admin bolhas off` | *(admin)* desliga balões do servidor inteiro |
+
+Na tela do `/balao` você vê o preview do balão em tempo real, ajusta o
+Vermelho/Verde/Azul, clica nas cores rápidas, adiciona emojis (✦ ★ ♥ ⚔ ☾ ✿ ♪ ⚡)
+e escolhe o fundo — tudo salvo no servidor.

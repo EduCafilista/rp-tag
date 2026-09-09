@@ -2,41 +2,54 @@
 
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62a552) ![NeoForge](https://img.shields.io/badge/NeoForge-21.1.x-orange) ![License](https://img.shields.io/badge/License-MIT-blue)
 
-**A NeoForge 1.21.1 mod** that shows **(ʀᴘ)** or **(ᴏꜰꜰ ʀᴘ)** next to players' names and adds the **`/rp`** command so players can switch modes themselves. Made for RPG servers.
+**A NeoForge 1.21.1 mod** — the essential RP kit for lore servers: **personas** (become someone else), **local chat** with channels, **dice rolls**, **lore zones**, **speech bubbles** above heads and the **(ʀᴘ)/(ᴏꜰꜰ ʀᴘ)** tag on players' names.
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
+>
+> 📥 **Download:** grab `rptag-2.2.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.2.0.jar).
 
 ## ✨ Features
 
-- **Name above head (nametag)** — the name gets a parenthesized tag in a different
-  font style (Unicode small capitals): **(ʀᴘ)** in **cyan** or
-  **(ᴏꜰꜰ ʀᴘ)** in **gray**. Only the tag gets colored — the name stays normal.
-- **Chat** — messages show up as `Alex (ʀᴘ): hi` / `Steve (ᴏꜰꜰ ʀᴘ): hi`.
-- **Player list (TAB)** — the name tag appears there too.
-- **`/rp` command** available to every player:
+### 🎭 Persona — be whoever you want
+- `/persona create "Lord Aldric"` — the **character name replaces the nick** on the nametag, chat and TAB (also turns RP on)
+- `/persona age 24` · `/persona desc "A knight seeking redemption"` — hover tooltip on the name
+- `/persona show [player]` — full card · `/persona off` — back to your nick
 
-  | Command | Who | Effect |
-  |---|---|---|
-  | `/rp` | everyone | toggles between RP and OFF RP |
-  | `/rp on` / `/rp off` | everyone | sets the state directly |
-  | `/rp status` | everyone | shows the current state |
-  | `/rp set <player> on\|off` | admins (permission level 2 / OP) | sets another player's state |
+### 💬 Local RP chat
+- Plain chat is **local** (40 blocks) — far players can't hear you
+- `/s <msg>` **shout** (100 blocks, CAPS) · `/w <msg>` **whisper** (5 blocks)
+- `/me <action>` → `✦ Lord Aldric walks through the forest` · `/do <scene>` → `✦ the door creaks open`
+- `/g <msg>` global chat · admins: `/rp admin chatlocal on|off`
 
-- **State saved to the world** — survives relog, death and server restarts.
-  Everyone starts in **OFF RP** by default.
-- **No dependencies** — only NeoForge is required.
+### 🗨️ Speech bubbles
+- What you type shows in a **rounded bubble above your head** — perfect for **eggs, kids and mic-less players** (QSMP style)
+- Automatic line wrap; display time scales with message length
+- **Bubble mode** — speech becomes **bubble-only** (no chat text!): `/balao modo on` for yourself · `/rp admin bolha <player> on` set by admins
+- **`/balao`** opens a **customization screen**: color (RGB sliders + presets), **decorative emojis** (✦ ★ ♥ ⚔...) and **7 backgrounds** (translucent, dark, light, gradient, **paper**, **night**, **wood**) — live preview
+- Text commands: `/balao cor ciano` · `/balao emoji antes ✦` · `/balao fundo noite`
+- **`/cor <color>`** — quick color shortcut (chat + bubble), automatic text contrast
+- **`/rp admin bolhas on|off`** — global toggle
+
+### 🎲 Dice rolls
+- `/roll` (d20) · `/roll d100` · `/roll 2d6+1 <reason>` — announced nearby, with dice breakdown
+
+### 📜 Lore zones
+- Admins: `/lorezone create <id> <radius> <title>` — regions that show an **epic title**, subtitle and sound when a player walks in (once per session)
+
+### 🏷️ RP/OFF RP tag
+- **(ʀᴘ)** cyan or **(ᴏꜰꜰ ʀᴘ)** gray next to the name — small caps font, only the tag is colored
+- Nametag, chat and TAB · `/rp` toggles, `/rp on|off|status`, `/rp set <player> on|off` (admin)
+
+- **Everything saved to the world** — survives relog, death and restarts. Everyone starts in **OFF RP**.
+- **No dependencies** — only NeoForge.
 
 ## 📥 Installation
 
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-1.2.1.jar` into the **server's** `mods/` folder.
-   → the tag now works in **chat** and **TAB** for everyone.
-3. *(Optional)* Players who want the tag **above heads** drop the same jar into
-   the **client's** `mods/` folder.
-
-**Download:** grab the jar from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the direct link in the Portuguese README.
+2. Drop `rptag-2.2.0.jar` into the **server's** `mods/` folder.
+3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
 
@@ -46,30 +59,38 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-1.2.1.jar`.
+The jar ends up at `build/libs/rptag-2.2.0.jar`.
 
 ## 🎨 Customizing
 
-- **Tag text and colors**: `src/main/java/dev/rptag/RPTags.java`
-  - `TAG_ON` / `TAG_OFF` — the text (parentheses and small caps are applied automatically)
-  - `ChatFormatting.AQUA` (cyan for RP) and `ChatFormatting.GRAY` — swap for any of Minecraft's 16 colors
-- **Nametag style**: `src/main/java/dev/rptag/client/NameplateRenderer.java`
-  - `BADGE_ENABLED = true` draws the tag as a rounded pill badge instead of text
-- **Command messages**: `RPCommands.java` and `ServerEvents.java`
-- **NeoForge version**: `build.gradle`
+- **Tag text/colors**: `RPTags.java` (`TAG_ON`, `TAG_OFF`, `ChatFormatting.AQUA`/`GRAY`)
+- **Bubble colors default**: `RPWorldData.DEFAULT_COLOR`; players customize with `/cor`
+- **Chat ranges**: `RPWorldData` (`LOCAL_RANGE`, `SHOUT_RANGE`, `WHISPER_RANGE`)
+- **Pill nametag style**: `NameplateRenderer.java` → `BADGE_ENABLED = true`
+- **Command messages**: `RPCommands.java`, `ChatCommands.java`, `BubbleCommands.java`
 
 ## 🗂 Structure
 
 ```
 src/main/java/dev/rptag/
   RPTagMod.java            # main class (@Mod)
-  RPTags.java              # builds the (ʀᴘ)/(ᴏꜰꜰ ʀᴘ) tag
+  RPTags.java              # (ʀᴘ)/(ᴏꜰꜰ ʀᴘ) tag builder
+  Persona.java             # character identity (record)
   RPWorldData.java         # world-saved state (SavedData)
-  SyncRPStatePayload.java  # server -> client sync packet
+  SyncRPStatePayload.java  # server -> client sync packets
+  PersonaSyncPayload.java
+  ChatBubblePayload.java   # speech bubble packet
   ModNetworking.java       # packet registration
-  ServerEvents.java        # chat, TAB, login, syncing
-  RPCommands.java          # /rp command
-  client/                  # client-side nametag + state cache
+  ServerEvents.java        # state, personas, names, local chat
+  RPChat.java              # channel formatting + bubble spawner
+  RPCommands.java          # /rp
+  PersonaCommands.java     # /persona
+  ChatCommands.java        # /g /s /w /me /do
+  BubbleCommands.java      # /cor /bolha
+  RollCommands.java        # /roll
+  LoreZones.java           # lore regions + tick trigger
+  LoreZoneCommands.java    # /lorezone
+  client/                  # bubbles renderer, nametag, caches
 ```
 
 ## 📄 License

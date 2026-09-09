@@ -4,11 +4,11 @@ license="MIT"
 
 [[mods]]
 modId="rptag"
-version="1.2.1"
+version="2.2.0"
 displayName="RP Tag"
 authors="RP Tag"
 description='''
-Mostra (RP) ou (OFF RP) no nome dos jogadores e adiciona o comando /rp.
+RP essencial: tag (RP)/(OFF RP), persona (nome do personagem), chat local (/s /w /me /do /g), dados (/roll) e lore zones (/lorezone).
 A tag aparece no nome acima da cabeca, no chat e na lista de jogadores (TAB).
 '''
 
