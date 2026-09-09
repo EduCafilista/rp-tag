@@ -151,3 +151,22 @@ SyncRPStatePayload.java ──────────> (pacote servidor → cli
 ```
 
 Bom RP! 🎭
+
+---
+
+## 🗨️ Balões de fala (novo na v2.1.0)
+
+O que você digita no chat (local, `/g`, `/s`, `/w` ou `/me`) aparece num **balão
+arredondado sobre a sua cabeça** — perfeito pra ovos, crianças e quem não usa microfone.
+
+| Comando | Efeito |
+|---|---|
+| `/cor ciano` | define a SUA cor: pinta sua mensagem no chat e o fundo do seu balão |
+| `/cor #55FFFF` | também aceita hex |
+| `/cor off` | volta ao branco |
+| `/bolha off` / `/bolha on` | desliga/liga os SEUS balões |
+| `/rp admin bolha off` | *(admin)* desliga balões do servidor inteiro |
+
+Cores disponíveis: branco, preto, cinza, cinzaescuro, vermelho, vermelhoescuro,
+laranja, dourado, amarelo, verde, verdeescuro, ciano, azul, azulescuro, roxo, rosa/lilas.
+O texto do balão escolhe preto ou branco sozinho, de acordo com a cor de fundo.

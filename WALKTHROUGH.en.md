@@ -151,3 +151,18 @@ SyncRPStatePayload.java ──────────> (server → client packe
 ```
 
 Happy RP! 🎭
+
+---
+
+## 🗨️ Speech bubbles (new in v2.1.0)
+
+What you type (local chat, `/g`, `/s`, `/w`, `/me`) shows up in a **rounded bubble
+above your head** — perfect for eggs, kids and mic-less players.
+
+| Command | Effect |
+|---|---|
+| `/cor ciano` | sets YOUR color: paints your chat message and bubble background |
+| `/cor #55FFFF` | hex works too |
+| `/cor off` | back to white |
+| `/bolha off` / `/bolha on` | toggle your own bubbles |
+| `/rp admin bolha off` | *(admin)* disables bubbles server-wide |
