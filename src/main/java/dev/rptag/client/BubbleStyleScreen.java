@@ -2,6 +2,7 @@ package dev.rptag.client;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -11,30 +12,32 @@ import dev.rptag.BubbleStyle;
 import dev.rptag.OpenBubbleStylePayload;
 import dev.rptag.RPTagMod;
 import dev.rptag.SetBubbleModePayload;
+import dev.rptag.Stickers;
 import dev.rptag.UpdateBubbleStylePayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * TELA DE PERSONALIZACAO DO BALAO — com SELETOR DE COR de arrastar.
+ * TELA DE PERSONALIZACAO DO BALAO — com SELETOR DE COR de arrastar,
+ * ADESIVOS coloridos (Antes/Meio/Depois) e barra de DURACAO.
  *
- * <p>NITIDEZA (fix 2.5.1): o fundo e um menu OPACO desenhado por nos. O
- * {@code renderBackground} padrao do 1.21 aplica o DESFOQUE do mundo por cima
- * do que ja foi desenhado (deixava o painel inteiro embaçado) — aqui isso
- * NUNCA acontece: nada de blur, nada de transparencia, tudo pixel-perfect.
- *
- * <ul>
- *   <li>Seletor: quadrado de brilho/saturacao + faixa de matiz (ARRASTA o mouse)</li>
- *   <li>Preview do balao ao vivo · Fundo (7) · Barra (auto/cores/sem)</li>
- *   <li>Emojis Antes / Meio / Depois · Modo balao · Salvar / Cancelar</li>
- * </ul>
+ * <p>NITIDEZA: fundo OPACO proprio — o desfoque do 1.21 nunca toca no painel.
+ * Tudo pixel-perfect.
  */
 public class BubbleStyleScreen extends Screen {
 
-    private static final String[] EMOJIS = {"", "✦", "★", "♥", "⚔", "☾", "✿", "♪", "⚡", "✧"};
     private static final String[] BG_NAMES = {"Translúcido", "Escuro", "Claro", "Gradiente", "Papel", "Noite", "Madeira"};
     private static final String[] BAR_NAMES = {"Automática", "Branco", "Ciano", "Verde-menta", "Dourado", "Rosa", "Lilás", "Sem barra"};
     private static final int[] BAR_VALUES = {
             BubbleStyle.AUTO_BORDER, 0xFFFFFF, 0x55FFFF, 0x55FF88, 0xFFD700, 0xFF7BAC, 0xC77DFF, BubbleStyle.NO_BORDER};
+
+    /** Paleta de adesivos: "" (nenhum) + os 12 coloridos. */
+    private static final String[] STICKERS;
+
+    static {
+        STICKERS = new String[Stickers.GLYPHS.length + 1];
+        STICKERS[0] = "";
+        System.arraycopy(Stickers.GLYPHS, 0, STICKERS, 1, Stickers.GLYPHS.length);
+    }
 
     // geometria do painel
     private static final int PANEL_W = 262;
@@ -60,7 +63,7 @@ public class BubbleStyleScreen extends Screen {
     public BubbleStyleScreen(OpenBubbleStylePayload style) {
         super(Component.literal("Balão de Fala"));
         this.style = new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(),
-                style.mid(), style.suffix(), style.background());
+                style.mid(), style.suffix(), style.background(), style.durationSec());
         float[] hsb = rgbToHsv(style.colorRGB());
         this.hue = hsb[0];
         this.sat = hsb[1];
@@ -89,23 +92,40 @@ public class BubbleStyleScreen extends Screen {
                     style = withBorder(BAR_VALUES[idx % BAR_VALUES.length]);
                     b.setMessage(barLabel());
                 }).bounds(bx, svY + 20, bw, 18).build());
-        addRenderableWidget(Button.builder(emojiGlyph(style.prefix()), b -> {
-                    style = withPrefix(nextEmoji(style.prefix()));
-                    b.setMessage(emojiGlyph(style.prefix()));
+        addRenderableWidget(Button.builder(Stickers.label(style.prefix()), b -> {
+                    style = withPrefix(nextSticker(style.prefix()));
+                    b.setMessage(Stickers.label(style.prefix()));
                 }).bounds(emX, emY, emW, 18).build());
-        addRenderableWidget(Button.builder(emojiGlyph(style.mid()), b -> {
-                    style = withMid(nextEmoji(style.mid()));
-                    b.setMessage(emojiGlyph(style.mid()));
+        addRenderableWidget(Button.builder(Stickers.label(style.mid()), b -> {
+                    style = withMid(nextSticker(style.mid()));
+                    b.setMessage(Stickers.label(style.mid()));
                 }).bounds(emX + emW + 4, emY, emW, 18).build());
-        addRenderableWidget(Button.builder(emojiGlyph(style.suffix()), b -> {
-                    style = withSuffix(nextEmoji(style.suffix()));
-                    b.setMessage(emojiGlyph(style.suffix()));
+        addRenderableWidget(Button.builder(Stickers.label(style.suffix()), b -> {
+                    style = withSuffix(nextSticker(style.suffix()));
+                    b.setMessage(Stickers.label(style.suffix()));
                 }).bounds(emX + 2 * (emW + 4), emY, emW, 18).build());
         addRenderableWidget(Button.builder(modeLabel(), b -> {
                     this.bubbleMode = !this.bubbleMode;
                     this.modeChanged = true;
                     b.setMessage(modeLabel());
                 }).bounds(bx, svY + 74, bw, 18).build());
+
+        // BARRA DE DURACAO: arrasta e escolhe 2-20 segundos
+        addRenderableWidget(new AbstractSliderButton(svX, hueY + HUE_H + 22, SV_W, 16,
+                durationLabel(), (style.durationSec() - BubbleStyle.MIN_DURATION)
+                        / (float) (BubbleStyle.MAX_DURATION - BubbleStyle.MIN_DURATION)) {
+            @Override
+            protected void updateMessage() {
+                setMessage(durationLabel());
+            }
+
+            @Override
+            protected void applyValue() {
+                int secs = BubbleStyle.MIN_DURATION
+                        + (int) Math.round(this.value * (BubbleStyle.MAX_DURATION - BubbleStyle.MIN_DURATION));
+                style = withDuration(secs);
+            }
+        });
 
         addRenderableWidget(Button.builder(Component.literal("✔ Salvar"), b -> saveAndClose())
                 .bounds(px + 12, py + PANEL_H - 24, 115, 18).build());
@@ -117,14 +137,10 @@ public class BubbleStyleScreen extends Screen {
     //  Desenho — TUDO opaco e pixel-perfect (zero blur)
     // =====================================================================
 
-    /**
-     * Fundo OPACO do menu. Sobrescreve o padrao do 1.21 (que aplica o desfoque
-     * do mundo por cima da tela — a causa do menu embaçado). Idempotente.
-     */
+    /** Fundo OPACO do menu — sobrescreve o desfoque do 1.21. Idempotente. */
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         g.fill(0, 0, this.width, this.height, 0xFF0F1218);
-        // grade sutil do menu (crua e nitida)
         for (int gx = 0; gx < this.width; gx += 16) {
             g.fill(gx, 0, gx + 1, this.height, 0xFF141824);
         }
@@ -140,7 +156,6 @@ public class BubbleStyleScreen extends Screen {
         renderPicker(g);
         renderPreview(g);
         super.render(g, mouseX, mouseY, partialTick);
-        // rotulos dos emojis (em cima dos 3 botoes-glyph)
         String[] heads = {"Antes", "Meio", "Depois"};
         for (int i = 0; i < 3; i++) {
             g.drawCenteredString(this.font, heads[i], emX + i * (emW + 4) + emW / 2, emY - 10, 0xFF9AA3B5);
@@ -149,14 +164,12 @@ public class BubbleStyleScreen extends Screen {
     }
 
     private void renderPanel(GuiGraphics g) {
-        // sombra + corpo + bisel estilo vanilla (claro em cima/esquerda)
         g.fill(px + 4, py + 4, px + PANEL_W + 4, py + PANEL_H + 4, 0xAA000000);
         g.fill(px, py, px + PANEL_W, py + PANEL_H, 0xFF232733);
         g.fill(px, py, px + PANEL_W, py + 2, 0xFF3E4454);
         g.fill(px, py, px + 2, py + PANEL_H, 0xFF3E4454);
         g.fill(px, py + PANEL_H - 2, px + PANEL_W, py + PANEL_H, 0xFF12141B);
         g.fill(px + PANEL_W - 2, py, px + PANEL_W, py + PANEL_H, 0xFF12141B);
-        // atras do seletor
         g.fill(svX - 1, svY - 1, svX + SV_W + 1, svY + SV_H + 1, 0xFF12141B);
         g.fill(svX - 1, hueY - 1, svX + SV_W + 1, hueY + HUE_H + 1, 0xFF12141B);
     }
@@ -173,13 +186,11 @@ public class BubbleStyleScreen extends Screen {
                         0xFF000000 | rgb);
             }
         }
-        // cursor do quadrado (contorno duplo: preto por fora, branco por dentro)
         int curX = svX + (int) (sat * SV_W) - 3;
         int curY = svY + (int) ((1 - val) * SV_H) - 3;
         outline(g, curX, curY, 7, 7, 0xFF000000);
         outline(g, curX + 1, curY + 1, 5, 5, 0xFFFFFFFF);
 
-        // faixa de matiz
         int hcols = 26;
         float hw = SV_W / (float) hcols;
         for (int i = 0; i < hcols; i++) {
@@ -190,7 +201,6 @@ public class BubbleStyleScreen extends Screen {
         outline(g, hx, hueY - 1, 5, HUE_H + 2, 0xFF000000);
         outline(g, hx + 1, hueY, 3, HUE_H, 0xFFFFFFFF);
 
-        // hex + amostra da cor
         int rgb = currentRgb();
         g.drawString(this.font, String.format("#%06X", rgb), svX, hueY + HUE_H + 9, 0xFFE8E8F2, true);
         g.fill(svX + 66, hueY + HUE_H + 7, svX + 84, hueY + HUE_H + 20, 0xFF000000 | rgb);
@@ -202,13 +212,13 @@ public class BubbleStyleScreen extends Screen {
     private void renderPreview(GuiGraphics g) {
         int background = style.background();
         int colorRGB = style.colorRGB() & 0xFFFFFF;
-        String text = (style.prefix().isEmpty() ? "" : style.prefix() + " ")
-                + "sua fala aparece assim"
-                + (style.suffix().isEmpty() ? "" : " " + style.suffix());
+        var text = Stickers.styled(
+                (style.prefix().isEmpty() ? "" : style.prefix() + " ")
+                        + "sua fala assim"
+                        + (style.suffix().isEmpty() ? "" : " " + style.suffix()));
         int cx = this.width / 2;
         int y = py + 28;
 
-        // faixa solida atras do preview (nada de transparencia)
         g.fill(px + 12, py + 24, px + PANEL_W - 12, py + 50, 0xFF171A22);
         outline(g, px + 12, py + 24, PANEL_W - 24, 26, 0xFF12141B);
 
@@ -220,7 +230,6 @@ public class BubbleStyleScreen extends Screen {
                 ? BubbleBackgrounds.gradientColorFor(colorRGB, 0.5F)
                 : BubbleBackgrounds.bgColorFor(background, colorRGB);
 
-        // sombra + cartao chanfrado + barra de destaque
         g.fill(bx + 2, y + 2, bx + 4 * (sFull - 2) + 4, y + 12, 0x5A000000);
         if ((rowFill >>> 24) != 0) {
             g.fill(bx + 4, y, bx + 4 * (sFull - 2) + 2, y + 10, rowFill);
@@ -231,7 +240,6 @@ public class BubbleStyleScreen extends Screen {
             g.fill(bx + 6, y, bx + 12, y + 10, accent);
         }
 
-        // texto + rabicho
         int textColor = BubbleBackgrounds.textColorFor(background, colorRGB);
         g.drawString(this.font, text, cx - this.font.width(text) / 2, y + 2, textColor, true);
         g.drawString(this.font, "▼", cx - 3, y + 10, 0xFF000000 | (rowFill & 0xFFFFFF), true);
@@ -302,7 +310,8 @@ public class BubbleStyleScreen extends Screen {
 
     private void saveAndClose() {
         PacketDistributor.sendToServer(new UpdateBubbleStylePayload(
-                currentRgb(), style.borderRGB(), style.prefix(), style.mid(), style.suffix(), style.background()));
+                currentRgb(), style.borderRGB(), style.prefix(), style.mid(), style.suffix(),
+                style.background(), style.durationSec()));
         if (modeChanged) {
             PacketDistributor.sendToServer(new SetBubbleModePayload(bubbleMode));
         }
@@ -315,6 +324,10 @@ public class BubbleStyleScreen extends Screen {
 
     private int currentRgb() {
         return Mth.hsvToRgb(hue, sat, val) & 0xFFFFFF;
+    }
+
+    private Component durationLabel() {
+        return Component.literal("⏱ Duração: " + style.durationSec() + "s");
     }
 
     private static float[] rgbToHsv(int rgb) {
@@ -359,43 +372,43 @@ public class BubbleStyleScreen extends Screen {
         return Component.literal("▣ Barra: " + BAR_NAMES[barIndex()]);
     }
 
-    private Component emojiGlyph(String current) {
-        return Component.literal(current.isEmpty() ? "—" : current);
-    }
-
     private Component modeLabel() {
         return this.bubbleMode
                 ? Component.literal("☾ Modo balão: LIGADO").withStyle(ChatFormatting.GREEN)
                 : Component.literal("☾ Modo balão: desligado");
     }
 
-    private static String nextEmoji(String current) {
-        for (int i = 0; i < EMOJIS.length; i++) {
-            if (EMOJIS[i].equals(current)) {
-                return EMOJIS[(i + 1) % EMOJIS.length];
+    private static String nextSticker(String current) {
+        for (int i = 0; i < STICKERS.length; i++) {
+            if (STICKERS[i].equals(current)) {
+                return STICKERS[(i + 1) % STICKERS.length];
             }
         }
-        return EMOJIS[1];
+        return STICKERS[1];
     }
 
     private BubbleStyle withBackground(int bg) {
-        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(), style.suffix(), bg);
+        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(), style.suffix(), bg, style.durationSec());
     }
 
     private BubbleStyle withBorder(int border) {
-        return new BubbleStyle(style.colorRGB(), border, style.prefix(), style.mid(), style.suffix(), style.background());
+        return new BubbleStyle(style.colorRGB(), border, style.prefix(), style.mid(), style.suffix(), style.background(), style.durationSec());
     }
 
     private BubbleStyle withPrefix(String prefix) {
-        return new BubbleStyle(style.colorRGB(), style.borderRGB(), prefix, style.mid(), style.suffix(), style.background());
+        return new BubbleStyle(style.colorRGB(), style.borderRGB(), prefix, style.mid(), style.suffix(), style.background(), style.durationSec());
     }
 
     private BubbleStyle withMid(String mid) {
-        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), mid, style.suffix(), style.background());
+        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), mid, style.suffix(), style.background(), style.durationSec());
     }
 
     private BubbleStyle withSuffix(String suffix) {
-        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(), suffix, style.background());
+        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(), suffix, style.background(), style.durationSec());
+    }
+
+    private BubbleStyle withDuration(int secs) {
+        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(), style.suffix(), style.background(), secs);
     }
 
     /** Abre a tela (chamado pelo handler do pacote S2C). */

@@ -1,13 +1,16 @@
 package dev.rptag.client;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import dev.rptag.RPTagMod;
+import dev.rptag.Stickers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
@@ -17,17 +20,17 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import org.joml.Matrix4f;
 
 /**
- * Balao de fala (design "cartao", 2.5.0): um cartao suave com cantos
- * chanfrados, SOMBRA, barra de destaque com a cor do jogador e texto com
- * contraste automatico.
+ * Balao de fala (design "cartao"): cartao com cantos chanfrados, sombra,
+ * barra de destaque com a cor do jogador, ADESIVOS COLORIDOS inline (fonte
+ * de bitmap) e texto com contraste automatico.
+ *
+ * <p>PIXEL-PERFECT (2.6.0): todas as posicoes sao numeros inteiros de pixel
+ * (largura par e texto centralizado arredondado) — nada de meio-pixel borrado.
  *
  * <p>COMO E DESENHADO (a prova de bug): cada faixa do cartao e uma linha de
- * ESPACOS desenhada com font.drawInBatch e cor de fundo — o MESMO mecanismo
- * do fundo das nametags do Minecraft. Nenhum poligono custom, nenhuma
- * textura propria: impossivel ficar invisivel e impossivel crashar.
- *
- * <p>A PROVA DE CRASH: qualquer erro desliga os baloes nesta sessao com
- * aviso no log — o jogo NUNCA fecha por causa do balao.
+ * ESPACOS com cor de fundo via font.drawInBatch — o MESMO mecanismo do fundo
+ * das nametags. Nenhum poligono custom. A PROVA DE CRASH: qualquer erro
+ * desliga os baloes nesta sessao com aviso no log; o jogo NUNCA fecha.
  */
 @EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class BubbleRenderer {
@@ -58,8 +61,64 @@ public final class BubbleRenderer {
         }
     }
 
+    /** Segmento de linha com o mesmo "tipo" (adesivo ou texto). */
+    private static class Seg {
+        final boolean sticker;
+        final StringBuilder text = new StringBuilder();
+
+        Seg(boolean sticker) {
+            this.sticker = sticker;
+        }
+    }
+
+    /** Quebra a linha em segmentos homogeneos (adesivo x texto comum). */
+    private static List<Seg> segment(FormattedCharSequence line) {
+        List<Seg> segs = new ArrayList<>();
+        line.accept((idx, style, codePoint) -> {
+            boolean st = Stickers.isStickerChar(codePoint);
+            if (segs.isEmpty() || segs.get(segs.size() - 1).sticker != st) {
+                segs.add(new Seg(st));
+            }
+            segs.get(segs.size() - 1).text.appendCodePoint(codePoint);
+            return true;
+        });
+        return segs;
+    }
+
+    /** FormattedCharSequence do segmento (adesivos com a fonte de imagem). */
+    private static FormattedCharSequence seq(Seg seg) {
+        Style style = seg.sticker ? Stickers.stickerStyle() : Style.EMPTY;
+        return sink -> {
+            seg.text.codePoints().forEach(cp -> sink.accept(0, style, cp));
+            return true;
+        };
+    }
+
+    /** Desenha uma linha por segmentos: adesivos em BRANCO (cor verdadeira) e texto na cor normal. */
+    private static float drawLine(Font font, Matrix4f matrix, net.minecraft.client.renderer.MultiBufferSource buffers,
+            int light, List<Seg> segs, float x, float y, int textColor, boolean shadow) {
+        float pen = x;
+        for (Seg seg : segs) {
+            int color = seg.sticker ? 0xFFFFFFFF : textColor;
+            pen = font.drawInBatch(seq(seg), pen, y, color, shadow, matrix, buffers,
+                    Font.DisplayMode.NORMAL, 0, light);
+        }
+        return pen;
+    }
+
+    /** Versao apagada (atraves de paredes) dos segmentos. */
+    private static void drawLineDimmed(Font font, Matrix4f matrix, net.minecraft.client.renderer.MultiBufferSource buffers,
+            int light, List<Seg> segs, float x, float y, int dimmedText) {
+        float pen = x;
+        for (Seg seg : segs) {
+            int color = seg.sticker ? 0x50FFFFFF : dimmedText;
+            pen = font.drawInBatch(seq(seg), pen, y, color, false, matrix, buffers,
+                    Font.DisplayMode.SEE_THROUGH, 0, light);
+        }
+    }
+
     /**
-     * Desenha uma faixa do cartao: uma linha de espacos com cor de fundo.
+     * Desenha uma faixa do cartao: linha de espacos com cor de fundo.
      * A faixa fica com 4*n+2 px de largura e 10px de altura.
      */
     private static void band(Font font, Matrix4f matrix, net.minecraft.client.renderer.MultiBufferSource buffers,
@@ -86,9 +145,14 @@ public final class BubbleRenderer {
         }
 
         Font font = minecraft.font;
-        List<FormattedCharSequence> lines = font.split(FormattedText.of(bubble.text()), MAX_TEXT_WIDTH);
+        // texto com ADESIVOS: cada caractere-adesivo vira imagem colorida
+        List<FormattedCharSequence> lines = font.split(Stickers.styled(bubble.text()), MAX_TEXT_WIDTH);
         if (lines.isEmpty()) {
             return;
+        }
+        List<List<Seg>> segLines = new ArrayList<>();
+        for (FormattedCharSequence line : lines) {
+            segLines.add(segment(line));
         }
 
         int background = bubble.background();
@@ -100,11 +164,16 @@ public final class BubbleRenderer {
         int textColor = BubbleBackgrounds.textColorFor(background, colorRGB);
         int dimmedText = (textColor & 0x00FFFFFF) | 0x50000000;
 
-        // medidas do cartao (faixas de 4*n+2 px de largura)
-        int pillW = Math.max(34, textWidth(font, lines) + 14);
-        int sFull = Math.max(2, (pillW - 2) / 4);
+        // medidas do cartao — SEMPRE em pixels inteiros e par (zero meio-pixel)
+        int textW = 0;
+        for (FormattedCharSequence line : lines) {
+            textW = Math.max(textW, font.width(line));
+        }
+        int sFull = Math.max(2, (textW + 13) / 4);
+        int bw = 4 * sFull + 2; // largura das faixas (par)
+        float x0 = -bw / 2.0F;  // inteiro
         int n = lines.size();
-        int top = 2 - 10 * n; // base do cartao fica ~2px acima da origem (nametag)
+        int top = 2 - 10 * n;   // base do cartao fica ~2px acima da origem (nametag)
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
@@ -115,10 +184,10 @@ public final class BubbleRenderer {
         var buffers = event.getMultiBufferSource();
         int light = event.getPackedLight();
 
-        // ---- cartao: sombra, faixas de fundo (com gradiente real) e barra de cor ----
+        // ---- cartao: sombra, faixas de fundo (gradiente real) e barra de cor ----
         for (int j = 0; j < n; j++) {
             boolean chamfer = (j == 0 || j == n - 1);
-            float bx = (chamfer ? 4 : 0) - pillW / 2.0F;
+            float bx = x0 + (chamfer ? 4 : 0);
             float by = top + 1 + 10 * j;
             int s = sFull - (chamfer ? 2 : 0);
 
@@ -140,25 +209,23 @@ public final class BubbleRenderer {
         font.drawInBatch(TAIL_GLYPH, -tailW / 2.0F, top + 10 * n + 3, fillBase,
                 false, matrix, buffers, Font.DisplayMode.NORMAL, 0, light);
 
-        // ---- texto (passada apagada atravessando paredes + passada com sombra) ----
+        // ---- texto + adesivos (passada apagada atravessando paredes + passada com sombra) ----
         int penY = top + 3;
-        for (FormattedCharSequence line : lines) {
-            float lineX = -font.width(line) / 2.0F;
-            font.drawInBatch(line, lineX, penY, dimmedText, false, matrix,
-                    buffers, Font.DisplayMode.SEE_THROUGH, 0, light);
-            font.drawInBatch(line, lineX, penY, textColor, true, matrix,
-                    buffers, Font.DisplayMode.NORMAL, 0, light);
+        for (List<Seg> segs : segLines) {
+            int lineW = 0;
+            for (Seg seg : segs) {
+                Style style = seg.sticker ? Stickers.stickerStyle() : Style.EMPTY;
+                lineW += font.width(new StringBuilder(seg.text).codePoints()
+                        .collect(() -> new StringBuilder(), StringBuilder::appendCodePoint, StringBuilder::append)
+                        .toString());
+            }
+            // centralizacao em pixel inteiro (Math.round evita meio-pixel borrado)
+            float lineX = -Math.round(lineW / 2.0F);
+            drawLineDimmed(font, matrix, buffers, light, segs, lineX, penY, dimmedText);
+            drawLine(font, matrix, buffers, light, segs, lineX, penY, textColor, true);
             penY += LINE_HEIGHT;
         }
 
         poseStack.popPose();
-    }
-
-    private static int textWidth(Font font, List<FormattedCharSequence> lines) {
-        int w = 0;
-        for (FormattedCharSequence line : lines) {
-            w = Math.max(w, font.width(line));
-        }
-        return w;
     }
 }

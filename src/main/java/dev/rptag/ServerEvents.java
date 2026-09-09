@@ -196,7 +196,7 @@ public final class ServerEvents {
                 return;
             }
             BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(), payload.prefix(),
-                    payload.mid(), payload.suffix(), payload.background());
+                    payload.mid(), payload.suffix(), payload.background(), payload.durationSec());
             RPWorldData.get(player.server).setStyle(player.getUUID(), style);
             player.sendSystemMessage(Component.literal("Balão atualizado! Fale no chat para ver ✨")
                     .withStyle(ChatFormatting.GREEN));

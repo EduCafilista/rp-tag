@@ -137,10 +137,10 @@ public final class RPWorldData extends SavedData {
         BubbleStyle style = styles.get(id);
         int color = colors.getOrDefault(id, DEFAULT_COLOR);
         if (style == null) {
-            return new BubbleStyle(color, BubbleStyle.DEFAULT_BORDER, "", "", "", 0);
+            return new BubbleStyle(color, BubbleStyle.DEFAULT_BORDER, "", "", "", 0, BubbleStyle.DEFAULT_DURATION);
         }
         if (style.colorRGB() != color) {
-            return new BubbleStyle(color, style.borderRGB(), style.prefix(), style.mid(), style.suffix(), style.background());
+            return new BubbleStyle(color, style.borderRGB(), style.prefix(), style.mid(), style.suffix(), style.background(), style.durationSec());
         }
         return style;
     }

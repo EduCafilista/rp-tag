@@ -22,9 +22,10 @@ public final class ClientBubbleCache {
     private ClientBubbleCache() {
     }
 
-    public static void set(UUID id, String text, int colorRGB, int borderRGB, boolean italic, int background) {
-        // duracao proporcional ao tamanho: 2s + 60ms/letra, entre 2.5s e 8s
-        long duration = Math.min(8000, Math.max(2500, 2000L + 60L * text.length()));
+    public static void set(UUID id, String text, int colorRGB, int borderRGB, boolean italic, int background,
+            int durationMs) {
+        // duracao escolhida pelo autor do balao (2 a 20 segundos)
+        long duration = Math.min(20000, Math.max(2000, durationMs));
         BUBBLES.put(id, new Bubble(text, colorRGB, borderRGB, italic, background, System.currentTimeMillis() + duration));
     }
 

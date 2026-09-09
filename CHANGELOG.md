@@ -2,6 +2,19 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.6.0] - 2026-09-09
+
+### Adicionado
+- **12 ADESIVOS coloridos em pixel-art** (fonte de bitmap própria): coração,
+  estrela, brilho, fogo, nota, raio, lua, flor, espada, ovo, diamante e coroa —
+  são IMAGENS coloridas de verdade dentro do balão, não emotes preto e branco.
+- **Barra de DURAÇÃO** na tela: o jogador escolhe de 2 a 20 segundos quanto
+  tempo o texto fica visível sobre a cabeça.
+
+### Corrigido
+- **Quadrado do balão perfeito**: todas as posições agora em pixels inteiros
+  (largura par e centralização arredondada) — sem meio-pixel borrado.
+
 ## [2.5.1] - 2026-09-09
 
 ### Corrigido

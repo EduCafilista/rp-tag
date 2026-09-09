@@ -11,17 +11,18 @@ import net.minecraft.resources.ResourceLocation;
  * Pacote S2C: balao de fala (chat bubble) para mostrar sobre a cabeca
  * de um jogador — ja vem com o estilo completo do autor.
  *
- * @param playerId   quem falou
- * @param text       texto do balao (ja truncado pelo servidor)
- * @param colorRGB   cor do centro do balao (24 bits, 0xRRGGBB)
- * @param borderRGB  cor da borda (0xRRGGBB) ou -1 = sem borda
- * @param italic     texto em italico (usado em /me e sussurros)
- * @param prefix     emoji/texto decorativo antes
- * @param suffix     emoji/texto decorativo depois
- * @param background estilo de fundo (0-6, veja {@link BubbleStyle})
+ * @param playerId    quem falou
+ * @param text        texto do balao (ja truncado e decorado pelo servidor)
+ * @param colorRGB    cor de destaque do balao (24 bits, 0xRRGGBB)
+ * @param borderRGB   cor da barra (0xRRGGBB), -1 sem, -2 auto
+ * @param italic      texto em italico (usado em /me e sussurros)
+ * @param prefix      adesivo antes (ja embutido no texto; fica "" aqui)
+ * @param suffix      adesivo depois (ja embutido no texto; fica "" aqui)
+ * @param background  estilo de fundo (0-6, veja {@link BubbleStyle})
+ * @param durationMs  tempo de exibicao em milissegundos
  */
 public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int borderRGB, boolean italic,
-        String prefix, String suffix, int background) implements CustomPacketPayload {
+        String prefix, String suffix, int background, int durationMs) implements CustomPacketPayload {
 
     public static final Type<ChatBubblePayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "chat_bubble"));
@@ -37,6 +38,7 @@ public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int bo
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.prefix());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.suffix());
                         ByteBufCodecs.VAR_INT.encode(buf, p.background());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.durationMs());
                     },
                     buf -> new ChatBubblePayload(
                             net.minecraft.core.UUIDUtil.STREAM_CODEC.decode(buf),
@@ -46,6 +48,7 @@ public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int bo
                             ByteBufCodecs.BOOL.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf)));
 
     @Override
