@@ -26,6 +26,9 @@ import dev.rptag.RPTagMod;
  */
 public final class BubbleBackgrounds {
 
+    /** Luz maxima (mesmo valor do vanilla: 240 | 240 << 16). */
+    public static final int LIGHT_FULLBRIGHT = 15728880;
+
     /** Estilos (mesmos codigos de {@link BubbleStyle}). */
     public static final int BG_TRANSLUCIDO = 0;
     public static final int BG_ESCURO = 1;
@@ -208,13 +211,14 @@ public final class BubbleBackgrounds {
     private static void texTriMap(VertexConsumer vc, Matrix4f m,
             float x0, float y0, float x1, float y1, float x2, float y2,
             float u0, float v0, float uw, float vh) {
+        // emissao identica a do BakedGlyph do vanilla (setColor + setUv + setLight)
         float uA = (x0 - u0) / uw, vA = (y0 - v0) / vh;
         float uB = (x1 - u0) / uw, vB = (y1 - v0) / vh;
         float uC = (x2 - u0) / uw, vC = (y2 - v0) / vh;
-        vc.addVertex(m, x0, y0, 0.0F).setColor(0xFFFFFFFF).setUv(uA, vA).setUv2(0, 0).setLight(240);
-        vc.addVertex(m, x1, y1, 0.0F).setColor(0xFFFFFFFF).setUv(uB, vB).setUv2(0, 0).setLight(240);
-        vc.addVertex(m, x2, y2, 0.0F).setColor(0xFFFFFFFF).setUv(uC, vC).setUv2(0, 0).setLight(240);
-        vc.addVertex(m, x2, y2, 0.0F).setColor(0xFFFFFFFF).setUv(uC, vC).setUv2(0, 0).setLight(240);
+        vc.addVertex(m, x0, y0, 0.0F).setColor(0xFFFFFFFF).setUv(uA, vA).setLight(LIGHT_FULLBRIGHT);
+        vc.addVertex(m, x1, y1, 0.0F).setColor(0xFFFFFFFF).setUv(uB, vB).setLight(LIGHT_FULLBRIGHT);
+        vc.addVertex(m, x2, y2, 0.0F).setColor(0xFFFFFFFF).setUv(uC, vC).setLight(LIGHT_FULLBRIGHT);
+        vc.addVertex(m, x2, y2, 0.0F).setColor(0xFFFFFFFF).setUv(uC, vC).setLight(LIGHT_FULLBRIGHT);
     }
 
     private static int lighten(int rgb, float factor) {

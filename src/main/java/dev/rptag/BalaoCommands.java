@@ -65,7 +65,7 @@ public final class BalaoCommands {
 
         // /balao cor <cor>
         root.then(Commands.literal("cor")
-                .then(Commands.argument("cor", com.mojang.brigadier.arguments.StringArgumentType.word())
+                .then(Commands.argument("cor", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             String input = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "cor");
@@ -104,7 +104,7 @@ public final class BalaoCommands {
 
         // /balao borda <cor|off>
         root.then(Commands.literal("borda")
-                .then(Commands.argument("cor", com.mojang.brigadier.arguments.StringArgumentType.word())
+                .then(Commands.argument("cor", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             String input = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "cor");

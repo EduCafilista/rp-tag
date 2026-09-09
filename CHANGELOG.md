@@ -2,6 +2,20 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.3.1] - 2026-09-09
+
+### Corrigido
+- **CRASH do cliente ao desenhar o balao** (reportado por teste real): o
+  renderizador do balao agora e TOTALMENTE protegido — se qualquer erro
+  acontecer ao desenhar, o balao e desligado ate reiniciar o jogo (com
+  aviso no log) e o jogo **nunca mais fecha**. A tag RP, o chat e os
+  comandos continuam funcionando normalmente.
+- **Vertices do balao identicos aos do vanilla**: emissao de vertices agora
+  e exatamente a mesma usada pelo texto do jogo (cor + UV + luz cheia),
+  eliminando a divergencia que causava o problema.
+- **`/balao cor` e `/balao borda` agora aceitam cores com `#`** (ex.:
+  `/balao cor #FFD700`) — antes o `#` era rejeitado pelo parser do comando.
+
 ## [2.3.0] - 2026-09-09
 
 ### Corrigido

@@ -36,8 +36,24 @@ public final class BubbleRenderer {
     private BubbleRenderer() {
     }
 
+    private static boolean disabled = false;
+
     @SubscribeEvent
     public static void onRenderLivingPost(RenderLivingEvent.Post<?, ?> event) {
+        if (disabled) {
+            return;
+        }
+        try {
+            renderBubble(event);
+        } catch (Throwable t) {
+            // A PROVA DE CRASH: qualquer erro desliga os baloes desta sessao
+            // (a tag RP, chat e comandos continuam funcionando) e registra o motivo.
+            disabled = true;
+            RPTagMod.LOGGER.error("RP Tag: erro ao desenhar balao de fala - baloes desligados ate reiniciar o jogo", t);
+        }
+    }
+
+    private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
