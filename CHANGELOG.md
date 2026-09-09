@@ -2,7 +2,7 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
-# [2.2.0] - 2026-09-09
+## [2.2.0] - 2026-09-09
 
 ### Adicionado
 - **Modo balao** — para criancas, ovos e personagens sem voz: as falas do

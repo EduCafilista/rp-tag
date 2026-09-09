@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
 >
-> 📥 **Download:** grab `rptag-2.1.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.1.0.jar).
+> 📥 **Download:** grab `rptag-2.2.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.2.0.jar).
 
 ## ✨ Features
 
@@ -24,8 +24,11 @@
 ### 🗨️ Speech bubbles
 - What you type shows in a **rounded bubble above your head** — perfect for **eggs, kids and mic-less players** (QSMP style)
 - Automatic line wrap; display time scales with message length
-- **`/cor <color>`** — your personal color: paints your chat message and bubble background (names, Minecraft names or hex) with automatic text contrast
-- **`/bolha on|off`** — toggle your own bubbles · **`/rp admin bolha on|off`** — global toggle
+- **Bubble mode** — speech becomes **bubble-only** (no chat text!): `/balao modo on` for yourself · `/rp admin bolha <player> on` set by admins
+- **`/balao`** opens a **customization screen**: color (RGB sliders + presets), **decorative emojis** (✦ ★ ♥ ⚔...) and **7 backgrounds** (translucent, dark, light, gradient, **paper**, **night**, **wood**) — live preview
+- Text commands: `/balao cor ciano` · `/balao emoji antes ✦` · `/balao fundo noite`
+- **`/cor <color>`** — quick color shortcut (chat + bubble), automatic text contrast
+- **`/rp admin bolhas on|off`** — global toggle
 
 ### 🎲 Dice rolls
 - `/roll` (d20) · `/roll d100` · `/roll 2d6+1 <reason>` — announced nearby, with dice breakdown
@@ -45,7 +48,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-2.1.0.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-2.2.0.jar` into the **server's** `mods/` folder.
 3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
@@ -56,7 +59,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-2.1.0.jar`.
+The jar ends up at `build/libs/rptag-2.2.0.jar`.
 
 ## 🎨 Customizing
 
