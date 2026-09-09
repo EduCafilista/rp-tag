@@ -77,6 +77,29 @@ public final class RPCommands {
                             return Command.SINGLE_SUCCESS;
                         })))
                 .then(Commands.literal("bolha")
+                        .then(Commands.argument("jogador", EntityArgument.player())
+                                .then(Commands.literal("on").executes(ctx -> {
+                                    ServerPlayer target = EntityArgument.getPlayer(ctx, "jogador");
+                                    RPWorldData.get(ctx.getSource().getServer()).setBubbleMode(target.getUUID(), true);
+                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                            "Modo balao LIGADO para " + target.getName().getString()
+                                                    + " (as falas aparecem so no balao, sem chat)."), true);
+                                    target.sendSystemMessage(Component.literal(
+                                            "Um admin ativou o MODO BALAO para voce: suas falas aparecem so no balao sobre a cabeca.")
+                                            .withStyle(ChatFormatting.GREEN));
+                                    return Command.SINGLE_SUCCESS;
+                                }))
+                                .then(Commands.literal("off").executes(ctx -> {
+                                    ServerPlayer target = EntityArgument.getPlayer(ctx, "jogador");
+                                    RPWorldData.get(ctx.getSource().getServer()).setBubbleMode(target.getUUID(), false);
+                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                            "Modo balao DESLIGADO para " + target.getName().getString() + "."), true);
+                                    target.sendSystemMessage(Component.literal(
+                                            "Um admin desativou o modo balao para voce: suas falas voltaram ao chat normal.")
+                                            .withStyle(ChatFormatting.GRAY));
+                                    return Command.SINGLE_SUCCESS;
+                                }))))
+                .then(Commands.literal("bolhas")
                         .then(Commands.literal("on").executes(ctx -> {
                             RPWorldData.get(ctx.getSource().getServer()).setBubblesOn(true);
                             ctx.getSource().sendSuccess(() -> Component.literal(

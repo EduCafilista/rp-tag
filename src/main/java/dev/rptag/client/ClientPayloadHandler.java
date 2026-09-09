@@ -1,6 +1,7 @@
 package dev.rptag.client;
 
 import dev.rptag.ChatBubblePayload;
+import dev.rptag.OpenBubbleStylePayload;
 import dev.rptag.PersonaSyncPayload;
 import dev.rptag.SyncRPStatePayload;
 import net.minecraft.client.Minecraft;
@@ -44,6 +45,13 @@ public final class ClientPayloadHandler {
 
     public static void handleBubble(final ChatBubblePayload payload, final IPayloadContext context) {
         context.enqueueWork(() ->
-                ClientBubbleCache.set(payload.playerId(), payload.text(), payload.colorRGB(), payload.italic()));
+                ClientBubbleCache.set(payload.playerId(), payload.text(), payload.colorRGB(),
+                        payload.italic(), payload.background()));
+    }
+
+    public static void handleOpenBubbleStyle(final OpenBubbleStylePayload payload, final IPayloadContext context) {
+        context.enqueueWork(() ->
+                dev.rptag.client.BubbleStyleScreen.open(payload.colorRGB(), payload.prefix(),
+                        payload.suffix(), payload.background()));
     }
 }

@@ -38,6 +38,8 @@ public final class RPWorldData extends SavedData {
     private final Map<UUID, Persona> personas = new HashMap<>();
     private final Map<UUID, Integer> colors = new HashMap<>();
     private final Map<UUID, Boolean> bubbleOptOut = new HashMap<>();
+    private final Map<UUID, Boolean> bubbleMode = new HashMap<>();
+    private final Map<UUID, BubbleStyle> styles = new HashMap<>();
     private boolean chatLocal = true;
     private boolean bubblesOn = true;
 
@@ -116,6 +118,39 @@ public final class RPWorldData extends SavedData {
         setDirty();
     }
 
+    /**
+     * MODO BALAO: as falas do jogador viram SOMENTE balao (nao aparecem no
+     * chat). Para criancas, ovos e personagens sem voz.
+     */
+    public boolean isBubbleMode(UUID id) {
+        return bubbleMode.getOrDefault(id, false);
+    }
+
+    public void setBubbleMode(UUID id, boolean on) {
+        bubbleMode.put(id, on);
+        setDirty();
+    }
+
+    // ==== estilo do balao ====
+
+    public BubbleStyle getStyle(UUID id) {
+        BubbleStyle style = styles.get(id);
+        int color = colors.getOrDefault(id, DEFAULT_COLOR);
+        if (style == null) {
+            return new BubbleStyle(color, "", "", 0);
+        }
+        if (style.colorRGB() != color) {
+            return new BubbleStyle(color, style.prefix(), style.suffix(), style.background());
+        }
+        return style;
+    }
+
+    public void setStyle(UUID id, BubbleStyle style) {
+        styles.put(id, style);
+        colors.put(id, style.colorRGB());
+        setDirty();
+    }
+
     // ==== chat local ====
 
     public boolean isChatLocal() {
@@ -167,6 +202,25 @@ public final class RPWorldData extends SavedData {
             }
         });
         tag.put("BubbleOptOut", optOuts);
+
+        ListTag modes = new ListTag();
+        this.bubbleMode.forEach((id, on) -> {
+            if (on) {
+                CompoundTag e = new CompoundTag();
+                e.putUUID("Id", id);
+                modes.add(e);
+            }
+        });
+        tag.put("BubbleMode", modes);
+
+        ListTag stylesList = new ListTag();
+        this.styles.forEach((id, style) -> {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", id);
+            e.put("Style", style.save());
+            stylesList.add(e);
+        });
+        tag.put("BubbleStyles", stylesList);
 
         tag.putBoolean("ChatLocal", chatLocal);
         tag.putBoolean("BubblesOn", bubblesOn);

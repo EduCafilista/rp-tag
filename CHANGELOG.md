@@ -2,6 +2,23 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+# [2.2.0] - 2026-09-09
+
+### Adicionado
+- **Modo balao** — para criancas, ovos e personagens sem voz: as falas do
+  jogador aparecem SOMENTE no balao sobre a cabeca (sem texto no chat),
+  para quem estiver perto.
+  - `/balao modo on|off` — o proprio jogador liga/desliga
+  - `/rp admin bolha <jogador> on|off` — admin ativa/desativa para outro jogador
+- **Tela de personalizacao** (`/balao`) — abre uma GUI com preview ao vivo:
+  - Sliders Vermelho/Verde/Azul + 12 cores rapidas
+  - Emojis decorativos antes/depois do texto (botoes rapidos: ** ✦ ★ ♥ ⚔ ☾ ✿ ♪ ⚡** —
+    ou digite os seus na caixa)
+  - 7 fundos: Translucido, Escuro, Claro, Gradiente, **Papel**, **Noite** e
+    **Madeira** (texturas exclusivas empacotadas no mod)
+  - Salvo no servidor (persiste no mundo); texto com contraste automatico
+- Comandos por texto (sem GUI): `/balao cor`, `/balao emoji`, `/balao fundo`, `/balao limpar`
+
 ## [2.1.0] - 2026-09-09
 
 ### Adicionado

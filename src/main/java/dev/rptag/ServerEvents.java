@@ -14,6 +14,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.ServerChatEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
@@ -169,10 +170,34 @@ public final class ServerEvents {
     @SubscribeEvent
     public static void onServerChat(ServerChatEvent event) {
         RPWorldData data = RPWorldData.get(event.getPlayer().server);
-        if (!data.isChatLocal()) {
-            return; // chat global vanilla
+        boolean bubbleMode = data.isBubbleMode(event.getPlayer().getUUID());
+        if (!data.isChatLocal() && !bubbleMode) {
+            return; // chat global vanilla, sem balao
         }
         event.setCanceled(true);
-        RPChat.broadcastLocalChat(event.getPlayer(), event.getRawText(), RPWorldData.LOCAL_RANGE, false);
+        if (bubbleMode) {
+            // MODO BALAO: so o balao na cabeca (quem estiver perto ve) — nada no chat
+            RPChat.spawnBubble(event.getPlayer(), event.getRawText(), false);
+        } else {
+            RPChat.broadcastLocalChat(event.getPlayer(), event.getRawText(), RPWorldData.LOCAL_RANGE, false);
+        }
+    }
+
+    // ================================================================
+    //  Salvamento do estilo do balao (tela de personalizacao)
+    // ================================================================
+
+    public static void handleUpdateBubbleStyle(final UpdateBubbleStylePayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return;
+            }
+            BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.prefix(), payload.suffix(),
+                    payload.background());
+            RPWorldData.get(player.server).setStyle(player.getUUID(), style);
+            player.sendSystemMessage(Component.literal("Estilo do balao salvo! ")
+                    .withStyle(ChatFormatting.GREEN)
+                    .append(Component.literal("( experimente falar! )").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
+        });
     }
 }

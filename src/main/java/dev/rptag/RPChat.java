@@ -48,8 +48,13 @@ public final class RPChat {
             return;
         }
         String text = rawText.length() > 96 ? rawText.substring(0, 93) + "..." : rawText;
-        int color = data.getColor(from.getUUID());
-        ChatBubblePayload payload = new ChatBubblePayload(from.getUUID(), text, color, italic);
+        BubbleStyle style = data.getStyle(from.getUUID());
+        // decora com os emojis/personalizacao do autor
+        String decorated = (style.prefix().isEmpty() ? "" : style.prefix() + " ")
+                + text
+                + (style.suffix().isEmpty() ? "" : " " + style.suffix());
+        ChatBubblePayload payload = new ChatBubblePayload(from.getUUID(), decorated, style.colorRGB(),
+                italic, "", "", style.background());
         for (ServerPlayer p : from.server.getPlayerList().getPlayers()) {
             if (p.level() == from.level()
                     && p.position().distanceToSqr(from.position()) <= 64.0 * 64.0) {

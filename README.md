@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-2.1.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.1.0.jar) (arquivo dentro do repositório).
+> 📥 **Download:** baixe o `rptag-2.2.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.2.0.jar) (arquivo dentro do repositório).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
@@ -27,10 +27,13 @@
 ### 🗨️ Balões de fala (chat bubbles)
 - O que você digita aparece num **balão arredondado com rabicho sobre a sua cabeça** —
   perfeito para **ovos, crianças e quem não usa microfone** (estilo QSMP)
-- Quebra linhas automaticamente e o tempo de exibição acompanha o tamanho da mensagem
-- **`/cor <cor>`** — escolha a SUA cor: pinta a mensagem no chat e o fundo do seu balão
-  (`ciano`, `vermelho`, `#55FFFF`...) com contraste automático do texto
-- **`/bolha on|off`** — desliga os seus balões · **`/rp admin bolha on|off`** — global
+- **Modo balão** — a fala vira **só o balão** (nada no chat!):
+  `/balao modo on` para si · `/rp admin bolha <jogador> on` para o admin setar
+- **`/balao`** abre a **tela de personalização**: cor (sliders RGB + presets),
+  **emojis decorativos** (✦ ★ ♥ ⚔...) e **fundos** (translúcido, escuro, claro,
+  gradiente, **papel**, **noite** e **madeira**) — com preview ao vivo
+- Por texto: `/balao cor ciano` · `/balao emoji antes ✦` · `/balao fundo noite`
+- **`/cor <cor>`** — atalho da cor (chat + balão) · **`/rp admin bolhas on|off`** — global
 
 ### 🎲 Dados para eventos
 - `/roll` (d20) · `/roll d100` · `/roll 2d6+1` — resultado anunciado por perto, com decomposição dos dados e motivo opcional
@@ -52,7 +55,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-2.1.0.jar` para a pasta `mods/` do **servidor**.
+2. Copie `rptag-2.2.0.jar` para a pasta `mods/` do **servidor**.
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -65,7 +68,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-2.1.0.jar`.
+O jar sai em `build/libs/rptag-2.2.0.jar`.
 
 ## 🎨 Personalizar
 
