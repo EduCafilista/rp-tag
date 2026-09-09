@@ -81,16 +81,22 @@ public final class RPTags {
         return sb.toString();
     }
 
-    /** @return o texto da tag com parenteses e fonte especial, ex.: (ʀᴘ). */
+    /** @return o texto da tag com a moldura e fonte especial, ex.: ʀᴘ. */
     public static String tagText(boolean inRp) {
-        return "(" + toSmallCaps(inRp ? TAG_ON : TAG_OFF) + ")";
+        return toSmallCaps(inRp ? TAG_ON : TAG_OFF);
     }
 
-    /** @return a tag completa, colorida (ciano p/ RP, cinza p/ OFF RP). */
+    /**
+     * @return a tag completa com o novo visual (2.5.0): um PONTO de estado +
+     *         small capitals. RP = ponto ciano brilhante; OFF RP = ponto cinza.
+     *         Apenas a tag e colorida; o nome do jogador nao.
+     */
     public static MutableComponent tag(boolean inRp) {
         return inRp
-                ? Component.literal(tagText(true)).withStyle(ChatFormatting.AQUA)
-                : Component.literal(tagText(false)).withStyle(ChatFormatting.GRAY);
+                ? Component.literal("\u25CF ").withStyle(ChatFormatting.AQUA)
+                        .append(Component.literal(tagText(true)).withStyle(ChatFormatting.AQUA))
+                : Component.literal("\u25CB ").withStyle(ChatFormatting.DARK_GRAY)
+                        .append(Component.literal(tagText(false)).withStyle(ChatFormatting.GRAY));
     }
 
     /** @return true se o texto do componente ja termina com alguma das tags. */

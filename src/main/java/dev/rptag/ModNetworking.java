@@ -22,5 +22,11 @@ public final class ModNetworking {
                 ClientPayloadHandler::handlePersona);
         registrar.playToClient(ChatBubblePayload.TYPE, ChatBubblePayload.STREAM_CODEC,
                 ClientPayloadHandler::handleBubble);
+        registrar.playToClient(OpenBubbleStylePayload.TYPE, OpenBubbleStylePayload.STREAM_CODEC,
+                ClientPayloadHandler::handleOpenBubbleStyle);
+        registrar.playToServer(UpdateBubbleStylePayload.TYPE, UpdateBubbleStylePayload.STREAM_CODEC,
+                ServerEvents::handleUpdateBubbleStyle);
+        registrar.playToServer(SetBubbleModePayload.TYPE, SetBubbleModePayload.STREAM_CODEC,
+                ServerEvents::handleSetBubbleMode);
     }
 }

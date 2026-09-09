@@ -2,6 +2,26 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.5.0] - 2026-09-09
+
+### Adicionado
+- **TELA de personalização com SELETOR DE COR de verdade** (`/balao`): arraste o
+  mouse no quadrado de cores + faixa de arco-íris e escolha QUALQUER cor, com
+  preview do balão ao vivo e código hex.
+
+### Mudado
+- **Visual do balão redesenhado**: cartão com cantos chanfrados, sombra, barra
+  de destaque com a sua cor e gradiente real — tudo desenhado pelo próprio jogo.
+- **Novo design da tag RP**: **● ʀᴘ** (ponto ciano) / **○ ᴏꜰꜰ ʀᴘ** (ponto cinza) —
+  e ela aparece **no TAB também**, para todo mundo saber quem está em RP.
+- **`/do` agora é SÓ PARA ADMIN** (descrição de ambiente vira ferramenta de narrador).
+- Emojis: além de antes/depois, agora existe emoji do **MEIO** da mensagem.
+
+### Removido
+- `/balaoedit` e `/bolha` (tudo concentrado em `/balao`) e as personalizações
+  por chat (`/cor`, `/balao cor`, `/balao borda`, `/balao fundo`, `/balao emoji`).
+- Menu-baú da 2.4.0 (substituído pela tela com seletor de cor).
+
 ## [2.4.1] - 2026-09-09
 
 ### Corrigido

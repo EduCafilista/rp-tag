@@ -2,11 +2,11 @@
 
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62a552) ![NeoForge](https://img.shields.io/badge/NeoForge-21.1.x-orange) ![License](https://img.shields.io/badge/License-MIT-blue)
 
-**A NeoForge 1.21.1 mod** — the essential RP kit for lore servers: **personas** (become someone else), **local chat** with channels, **dice rolls**, **lore zones**, **speech bubbles** above heads and the **(ʀᴘ)/(ᴏꜰꜰ ʀᴘ)** tag on players' names.
+**A NeoForge 1.21.1 mod** — the essential RP kit for lore servers: **personas** (become someone else), **local chat** with channels, **dice rolls**, **lore zones**, **speech bubbles** above heads and the **● ʀᴘ / ○ ᴏꜰꜰ ʀᴘ** tag on players' names and in the TAB list.
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
 >
-> 📥 **Download:** grab `rptag-2.4.1.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.4.1.jar).
+> 📥 **Download:** grab `rptag-2.5.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.5.0.jar).
 
 ## ✨ Features
 
@@ -18,18 +18,17 @@
 ### 💬 Local RP chat
 - Plain chat is **local** (40 blocks) — far players can't hear you
 - `/s <msg>` **shout** (100 blocks, CAPS) · `/w <msg>` **whisper** (5 blocks)
-- `/me <action>` → `✦ Lord Aldric walks through the forest` · `/do <scene>` → `✦ the door creaks open`
+- `/me <action>` → `✦ Lord Aldric walks through the forest` · `/do <scene>` *(admin only)* → `✦ the door creaks open`
 - `/g <msg>` global chat · admins: `/rp admin chatlocal on|off`
 
 ### 🗨️ Speech bubbles
 - What you type shows in a **rounded bubble above your head** — perfect for **eggs, kids and mic-less players** (QSMP style)
 - Automatic line wrap; display time scales with message length
 - **Bubble mode** — speech becomes **bubble-only** (no chat text!): `/balao modo on` for yourself · `/rp admin bolha <player> on` set by admins
-- **`/balaoedit`** opens a **chest-style inventory EDITOR** (click everything):
-  **center color** and **border color** (click to cycle), **7 backgrounds**
-  (translucent, dark, light, gradient, **paper**, **night**, **wood**) and
-  **emojis** — grab an emoji and drop it in the **Before / Middle / After** slot
-- Closing the chest **saves automatically** · **`/rp admin bolhas on|off`** — global toggle
+- **`/balao`** opens a **customization screen with a real COLOR PICKER**:
+  drag the mouse over the gradient square to pick **ANY color** — plus an **accent
+  bar** (auto or custom), **7 backgrounds**, emojis **Before/Middle/After** and a
+  live preview · **`/rp admin bolhas on|off`** — global toggle
 
 ### 🎲 Dice rolls
 - `/roll` (d20) · `/roll d100` · `/roll 2d6+1 <reason>` — announced nearby, with dice breakdown
@@ -38,7 +37,7 @@
 - Admins: `/lorezone create <id> <radius> <title>` — regions that show an **epic title**, subtitle and sound when a player walks in (once per session)
 
 ### 🏷️ RP/OFF RP tag
-- **(ʀᴘ)** cyan or **(ᴏꜰꜰ ʀᴘ)** gray next to the name — small caps font, only the tag is colored
+- **● ʀᴘ** (cyan dot) or **○ ᴏꜰꜰ ʀᴘ** (gray dot) on the name and **also in the TAB list** — small caps, only the tag is colored
 - Nametag, chat and TAB · `/rp` toggles, `/rp on|off|status`, `/rp set <player> on|off` (admin)
 
 - **Everything saved to the world** — survives relog, death and restarts. Everyone starts in **OFF RP**.
@@ -49,7 +48,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-2.4.1.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-2.5.0.jar` into the **server's** `mods/` folder.
 3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
@@ -60,7 +59,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-2.4.1.jar`.
+The jar ends up at `build/libs/rptag-2.5.0.jar`.
 
 ## 🎨 Customizing
 
@@ -68,14 +67,14 @@ The jar ends up at `build/libs/rptag-2.4.1.jar`.
 - **Bubble colors default**: `RPWorldData.DEFAULT_COLOR`; players customize with `/cor`
 - **Chat ranges**: `RPWorldData` (`LOCAL_RANGE`, `SHOUT_RANGE`, `WHISPER_RANGE`)
 - **Pill nametag style**: `NameplateRenderer.java` → `BADGE_ENABLED = true`
-- **Command messages**: `RPCommands.java`, `ChatCommands.java`, `BubbleCommands.java`
+- **Command messages**: `RPCommands.java`, `ChatCommands.java`
 
 ## 🗂 Structure
 
 ```
 src/main/java/dev/rptag/
   RPTagMod.java            # main class (@Mod)
-  RPTags.java              # (ʀᴘ)/(ᴏꜰꜰ ʀᴘ) tag builder
+  RPTags.java              # ● ʀᴘ / ○ ᴏꜰꜰ ʀᴘ tag builder
   Persona.java             # character identity (record)
   RPWorldData.java         # world-saved state (SavedData)
   SyncRPStatePayload.java  # server -> client sync packets
@@ -86,8 +85,7 @@ src/main/java/dev/rptag/
   RPChat.java              # channel formatting + bubble spawner
   RPCommands.java          # /rp
   PersonaCommands.java     # /persona
-  ChatCommands.java        # /g /s /w /me /do
-  BubbleCommands.java      # /cor /bolha
+  ChatCommands.java        # /g /s /w /me /do (admin)
   RollCommands.java        # /roll
   LoreZones.java           # lore regions + tick trigger
   LoreZoneCommands.java    # /lorezone

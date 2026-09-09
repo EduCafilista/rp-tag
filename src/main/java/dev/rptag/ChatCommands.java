@@ -109,7 +109,7 @@ public final class ChatCommands {
                         })));
 
         // /do <descricao de ambiente> (sem balao)
-        event.getDispatcher().register(Commands.literal("do")
+        event.getDispatcher().register(Commands.literal("do").requires(src -> src.hasPermission(2)) // APENAS ADMIN
                 .then(Commands.argument("descricao", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();

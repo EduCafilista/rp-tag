@@ -17,22 +17,23 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import org.joml.Matrix4f;
 
 /**
- * Balao de fala ("chat bubble") sobre a cabeca do jogador.
+ * Balao de fala (design "cartao", 2.5.0): um cartao suave com cantos
+ * chanfrados, SOMBRA, barra de destaque com a cor do jogador e texto com
+ * contraste automatico.
  *
- * <p>RENDERIZACAO 100% VANILLA (2.4.1): o fundo usa o MESMO mecanismo do fundo
- * das nametags do Minecraft (a cor de fundo do drawInBatch), o rabicho e o
- * caractere ▼ da fonte do jogo e o texto e o drawInBatch de sempre. Nenhum
- * poligono desenhado a mao — nada que possa ficar invisivel ou crashar.
+ * <p>COMO E DESENHADO (a prova de bug): cada faixa do cartao e uma linha de
+ * ESPACOS desenhada com font.drawInBatch e cor de fundo — o MESMO mecanismo
+ * do fundo das nametags do Minecraft. Nenhum poligono custom, nenhuma
+ * textura propria: impossivel ficar invisivel e impossivel crashar.
  *
- * <p>A PROVA DE CRASH: qualquer erro desliga os baloes desta sessao com aviso
- * no log — o jogo NUNCA fecha por causa do balao.
+ * <p>A PROVA DE CRASH: qualquer erro desliga os baloes nesta sessao com
+ * aviso no log — o jogo NUNCA fecha por causa do balao.
  */
 @EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class BubbleRenderer {
 
     private static final int MAX_TEXT_WIDTH = 110;
     private static final int LINE_HEIGHT = 10;
-    private static final double MAX_DISTANCE_SQ = 64.0 * 64.0;
 
     /** O rabicho do balao: um triangulo da propria fonte do jogo. */
     private static final String TAIL_GLYPH = "▼";
@@ -57,6 +58,19 @@ public final class BubbleRenderer {
         }
     }
 
+    /**
+     * Desenha uma faixa do cartao: uma linha de espacos com cor de fundo.
+     * A faixa fica com 4*n+2 px de largura e 10px de altura.
+     */
+    private static void band(Font font, Matrix4f matrix, net.minecraft.client.renderer.MultiBufferSource buffers,
+            int light, float x, float y, int spaces, int argb) {
+        if (spaces <= 0 || (argb >>> 24) == 0) {
+            return;
+        }
+        font.drawInBatch(" ".repeat(spaces), x, y, 0, false, matrix,
+                buffers, Font.DisplayMode.NORMAL, argb, light);
+    }
+
     private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
@@ -67,53 +81,84 @@ public final class BubbleRenderer {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.getEntityRenderDispatcher().distanceToSqr(player) > MAX_DISTANCE_SQ) {
+        if (minecraft.getEntityRenderDispatcher().distanceToSqr(player) > 64.0 * 64.0) {
             return;
         }
 
         Font font = minecraft.font;
-
         List<FormattedCharSequence> lines = font.split(FormattedText.of(bubble.text()), MAX_TEXT_WIDTH);
         if (lines.isEmpty()) {
             return;
         }
 
-        int pillH = lines.size() * LINE_HEIGHT + 2;
-        int top = -(pillH - 8);
-
         int background = bubble.background();
-        int textColor = BubbleBackgrounds.textColorFor(background, bubble.colorRGB());
-        int bgARGB = BubbleBackgrounds.bgColorFor(background, bubble.colorRGB());
+        int colorRGB = bubble.colorRGB() & 0xFFFFFF;
+        int fillBase = BubbleBackgrounds.bgColorFor(background, colorRGB);
+        int accent = BubbleBackgrounds.accentColorFor(background, colorRGB);
+        int barColor = BubbleBackgrounds.borderColorFor(background, colorRGB, bubble.borderRGB());
+        int accentOrBar = barColor != 0 ? barColor : accent;
+        int textColor = BubbleBackgrounds.textColorFor(background, colorRGB);
         int dimmedText = (textColor & 0x00FFFFFF) | 0x50000000;
+
+        // medidas do cartao (faixas de 4*n+2 px de largura)
+        int pillW = Math.max(34, textWidth(font, lines) + 14);
+        int sFull = Math.max(2, (pillW - 2) / 4);
+        int n = lines.size();
+        int top = 2 - 10 * n; // base do cartao fica ~2px acima da origem (nametag)
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
-        // sobe acima do nametag
         poseStack.translate(0.0, player.getBbHeight() + 0.95, 0.0);
         poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
         poseStack.scale(0.025F, -0.025F, 0.025F);
         Matrix4f matrix = poseStack.last().pose();
+        var buffers = event.getMultiBufferSource();
+        int light = event.getPackedLight();
 
-        int packedLight = event.getPackedLight();
+        // ---- cartao: sombra, faixas de fundo (com gradiente real) e barra de cor ----
+        for (int j = 0; j < n; j++) {
+            boolean chamfer = (j == 0 || j == n - 1);
+            float bx = (chamfer ? 4 : 0) - pillW / 2.0F;
+            float by = top + 1 + 10 * j;
+            int s = sFull - (chamfer ? 2 : 0);
 
-        // rabicho ▼ (fonte do jogo), colado abaixo do bloco de falas
+            // sombra deslocada (profundidade)
+            band(font, matrix, buffers, light, bx + 2, by + 2, s, 0x5A000000);
+
+            // fundo (gradiente pinta linha a linha com a cor do jogador)
+            int rowFill = background == BubbleBackgrounds.BG_GRADIENTE
+                    ? BubbleBackgrounds.gradientColorFor(colorRGB, n == 1 ? 0.5F : j / (float) (n - 1))
+                    : fillBase;
+            band(font, matrix, buffers, light, bx, by, s, rowFill);
+
+            // barra de destaque com a cor escolhida
+            band(font, matrix, buffers, light, bx + 2, by, 1, accentOrBar);
+        }
+
+        // rabicho ▼ logo abaixo do cartao
         int tailW = font.width(TAIL_GLYPH);
-        font.drawInBatch(TAIL_GLYPH, -tailW / 2.0F, top + pillH - 1, bgARGB, false, matrix,
-                event.getMultiBufferSource(), Font.DisplayMode.NORMAL, 0, packedLight);
+        font.drawInBatch(TAIL_GLYPH, -tailW / 2.0F, top + 10 * n + 3, fillBase,
+                false, matrix, buffers, Font.DisplayMode.NORMAL, 0, light);
 
-        // linhas: 1a passada apagada (atraves de paredes) + passada com SOMBRA e FUNDO
-        // (o fundo e o mecanismo nativo do jogo, o mesmo das nametags)
+        // ---- texto (passada apagada atravessando paredes + passada com sombra) ----
         int penY = top + 3;
         for (FormattedCharSequence line : lines) {
-            int lineW = font.width(line);
-            float lineX = -lineW / 2.0F;
+            float lineX = -font.width(line) / 2.0F;
             font.drawInBatch(line, lineX, penY, dimmedText, false, matrix,
-                    event.getMultiBufferSource(), Font.DisplayMode.SEE_THROUGH, 0, packedLight);
+                    buffers, Font.DisplayMode.SEE_THROUGH, 0, light);
             font.drawInBatch(line, lineX, penY, textColor, true, matrix,
-                    event.getMultiBufferSource(), Font.DisplayMode.NORMAL, bgARGB, packedLight);
+                    buffers, Font.DisplayMode.NORMAL, 0, light);
             penY += LINE_HEIGHT;
         }
 
         poseStack.popPose();
+    }
+
+    private static int textWidth(Font font, List<FormattedCharSequence> lines) {
+        int w = 0;
+        for (FormattedCharSequence line : lines) {
+            w = Math.max(w, font.width(line));
+        }
+        return w;
     }
 }

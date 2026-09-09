@@ -47,4 +47,8 @@ public final class ClientPayloadHandler {
                 ClientBubbleCache.set(payload.playerId(), payload.text(), payload.colorRGB(),
                         payload.borderRGB(), payload.italic(), payload.background()));
     }
+
+    public static void handleOpenBubbleStyle(final dev.rptag.OpenBubbleStylePayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> BubbleStyleScreen.open(payload));
+    }
 }

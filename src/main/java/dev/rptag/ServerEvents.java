@@ -48,6 +48,7 @@ public final class ServerEvents {
         data.setInRp(target.getUUID(), inRp);
 
         target.refreshDisplayName();
+        target.refreshTabListName();
         PacketDistributor.sendToAllPlayers(new SyncRPStatePayload(target.getUUID(), inRp));
 
         ClientboundPlayerInfoUpdatePacket tabPacket = new ClientboundPlayerInfoUpdatePacket(
@@ -78,6 +79,7 @@ public final class ServerEvents {
     public static void setPersona(ServerPlayer target, Persona persona) {
         RPWorldData.get(target.server).setPersona(target.getUUID(), persona);
         target.refreshDisplayName();
+        target.refreshTabListName();
         PacketDistributor.sendToAllPlayers(PersonaSyncPayload.of(target.getUUID(), persona));
 
         ClientboundPlayerInfoUpdatePacket tabPacket = new ClientboundPlayerInfoUpdatePacket(
@@ -183,4 +185,35 @@ public final class ServerEvents {
         }
     }
 
+
+    // ================================================================
+    //  Estilo do balao e modo balao (vindos da tela de personalizacao)
+    // ================================================================
+
+    public static void handleUpdateBubbleStyle(final UpdateBubbleStylePayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return;
+            }
+            BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(), payload.prefix(),
+                    payload.mid(), payload.suffix(), payload.background());
+            RPWorldData.get(player.server).setStyle(player.getUUID(), style);
+            player.sendSystemMessage(Component.literal("Balão atualizado! Fale no chat para ver ✨")
+                    .withStyle(ChatFormatting.GREEN));
+        });
+    }
+
+    public static void handleSetBubbleMode(final SetBubbleModePayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return;
+            }
+            RPWorldData.get(player.server).setBubbleMode(player.getUUID(), payload.on());
+            player.sendSystemMessage(payload.on()
+                    ? Component.literal("Modo balão LIGADO! Suas falas aparecem SÓ no balão.")
+                            .withStyle(ChatFormatting.GREEN)
+                    : Component.literal("Modo balão desligado. Suas falas voltaram ao chat.")
+                            .withStyle(ChatFormatting.GRAY));
+        });
+    }
 }

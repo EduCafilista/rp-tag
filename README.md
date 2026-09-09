@@ -2,11 +2,11 @@
 
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62a552) ![NeoForge](https://img.shields.io/badge/NeoForge-21.1.x-orange) ![License](https://img.shields.io/badge/Licen%C3%A7a-MIT-blue)
 
-**Mod para NeoForge 1.21.1** — o kit essencial de RP para servidores de lore: **persona** (vire outro personagem), **chat local** por proximidade com canais, **dados** para eventos, **lore zones** e a tag **(ʀᴘ)/(ᴏꜰꜰ ʀᴘ)** no nome dos jogadores.
+**Mod para NeoForge 1.21.1** — o kit essencial de RP para servidores de lore: **persona** (vire outro personagem), **chat local** por proximidade com canais, **dados** para eventos, **lore zones** e a tag **● ʀᴘ / ○ ᴏꜰꜰ ʀᴘ** no nome e no TAB dos jogadores.
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-2.4.1.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.4.1.jar) (arquivo dentro do repositório).
+> 📥 **Download:** baixe o `rptag-2.5.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.5.0.jar) (arquivo dentro do repositório).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
@@ -21,7 +21,7 @@
 ### 💬 Chat RP por proximidade
 - O chat comum é **local** (40 blocos) — quem está longe não ouve
 - `/s <msg>` **gritar** (100 blocos, CAIXA ALTA) · `/w <msg>` **sussurrar** (5 blocos)
-- `/me <ação>` → `✦ Lord Aldric caminha pela floresta` · `/do <ambiente>` → `✦ a porta range ao abrir`
+- `/me <ação>` → `✦ Lord Aldric caminha pela floresta` · `/do <ambiente>` *(só admin)* → `✦ a porta range ao abrir`
 - `/g <msg>` chat global · admins ligam/desligam o modo local com `/rp admin chatlocal on|off`
 
 ### 🗨️ Balões de fala (chat bubbles)
@@ -29,11 +29,10 @@
   perfeito para **ovos, crianças e quem não usa microfone** (estilo QSMP)
 - **Modo balão** — a fala vira **só o balão** (nada no chat!):
   `/balao modo on` para si · `/rp admin bolha <jogador> on` para o admin setar
-- **`/balaoedit`** abre o **EDITOR em inventário** (estilo baú, tudo clicável e fácil):
-  **cor do centro** e **cor da borda** (clique para trocar), **7 fundos** (translúcido,
-  escuro, claro, gradiente, **papel**, **noite**, **madeira**) e os **emojis** —
-  pega o emoji e solta na caixinha **Antes / Meio / Depois** do texto (ou arrasta!)
-- Fecha o baú = **salva automaticamente** · **`/rp admin bolhas on|off`** — global
+- **`/balao`** abre a **TELA de personalização** com **seletor de cor de verdade**:
+  arrasta o mouse no quadrado de cores e escolhe **QUALQUER cor** — mais **barra de
+  destaque** (auto ou cor à escolha), **7 fundos**, emojis **Antes/Meio/Depois** e
+  preview ao vivo · **`/rp admin bolhas on|off`** — global
 
 ### 🎲 Dados para eventos
 - `/roll` (d20) · `/roll d100` · `/roll 2d6+1` — resultado anunciado por perto, com decomposição dos dados e motivo opcional
@@ -43,7 +42,7 @@
 - A história do servidor contada no próprio mapa
 
 ### 🏷️ Tag RP/OFF RP
-- **(ʀᴘ)** ciano ou **(ᴏꜰꜰ ʀᴘ)** cinza no nome — fonte diferente (small capitals), colorindo só a tag
+- **● ʀᴘ** (ponto ciano) ou **○ ᴏꜰꜰ ʀᴘ** (ponto cinza) no nome e **também no TAB** — small capitals, colorindo só a tag
 - Aparece no nametag, no chat e na TAB · `/rp` alterna, `/rp on|off|status`, `/rp set <jogador> on|off` (admin)
 
 - **Tudo salvo no mundo** — sobrevive a relog, morte e reinício do servidor.
@@ -55,7 +54,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-2.4.1.jar` para a pasta `mods/` do **servidor**.
+2. Copie `rptag-2.5.0.jar` para a pasta `mods/` do **servidor**.
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -68,7 +67,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-2.4.1.jar`.
+O jar sai em `build/libs/rptag-2.5.0.jar`.
 
 ## 🎨 Personalizar
 
@@ -85,7 +84,7 @@ O jar sai em `build/libs/rptag-2.4.1.jar`.
 ```
 src/main/java/dev/rptag/
   RPTagMod.java            # classe principal (@Mod)
-  RPTags.java              # monta a tag (ʀᴘ)/(ᴏꜰꜰ ʀᴘ)
+  RPTags.java              # monta a tag ● ʀᴘ / ○ ᴏꜰꜰ ʀᴘ
   RPWorldData.java         # estado salvo no mundo (SavedData)
   SyncRPStatePayload.java  # pacote de sincronização servidor -> cliente
   ModNetworking.java       # registro do pacote

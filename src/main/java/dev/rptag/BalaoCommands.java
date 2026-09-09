@@ -9,14 +9,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Comandos do balao de fala — SIMPLES de proposito: toda a personalizacao
- * (cores, fundo, emojis) fica no editor em INVENTARIO, que e facil e divertido.
+ * (cores com seletor, barra, emojis, fundo) fica na TELA de personalizacao,
+ * que abre com {@code /balao}. Um comando so, nada de decorar texto.
  *
  * <ul>
- *   <li>{@code /balaoedit} — abre o EDITOR (bau de 6 fileiras)</li>
- *   <li>{@code /balao} — tambem abre o editor</li>
+ *   <li>{@code /balao} — abre a tela de personalizacao</li>
  *   <li>{@code /balao modo on|off} — MODO BALAO: suas falas viram so balao</li>
  * </ul>
  */
@@ -30,9 +31,12 @@ public final class BalaoCommands {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         var root = Commands.literal("balao");
 
-        // /balao — abre o editor em inventario
+        // /balao — abre a tela de personalizacao
         root.executes(ctx -> {
-            BalaoEditMenu.open(ctx.getSource().getPlayerOrException());
+            ServerPlayer player = ctx.getSource().getPlayerOrException();
+            RPWorldData data = RPWorldData.get(player.server);
+            PacketDistributor.sendToPlayer(player,
+                    OpenBubbleStylePayload.of(data.getStyle(player.getUUID())));
             return Command.SINGLE_SUCCESS;
         });
 
@@ -44,8 +48,6 @@ public final class BalaoCommands {
                     player.sendSystemMessage(Component.literal(
                             "Modo balão LIGADO! Suas falas aparecem SÓ no balão sobre a sua cabeça.")
                             .withStyle(ChatFormatting.GREEN));
-                    player.sendSystemMessage(Component.literal("Dica: personalize com /balaoedit")
-                            .withStyle(ChatFormatting.GRAY));
                     return Command.SINGLE_SUCCESS;
                 }))
                 .then(Commands.literal("off").executes(ctx -> {
@@ -57,11 +59,5 @@ public final class BalaoCommands {
                 })));
 
         event.getDispatcher().register(root);
-
-        // /balaoedit — atalho direto pro editor
-        event.getDispatcher().register(Commands.literal("balaoedit").executes(ctx -> {
-            BalaoEditMenu.open(ctx.getSource().getPlayerOrException());
-            return Command.SINGLE_SUCCESS;
-        }));
     }
 }

@@ -20,8 +20,13 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
 
     /** Sem borda. */
     public static final int NO_BORDER = -1;
-    /** Borda padrao: quase preta (destaca o balao em qualquer cenario). */
-    public static final int DEFAULT_BORDER = 0x111118;
+    /**
+     * Borda AUTOMATICA (padrao): deriva da cor escolhida pelo jogador
+     * (escurece clareia conforme precisar) — a moldura sempre combina.
+     */
+    public static final int AUTO_BORDER = -2;
+    /** Borda padrao do estilo default (quando nao ha cor definida). */
+    public static final int DEFAULT_BORDER = AUTO_BORDER;
 
     public static final BubbleStyle DEFAULT =
             new BubbleStyle(RPWorldData.DEFAULT_COLOR, DEFAULT_BORDER, "", "", "", 0);
