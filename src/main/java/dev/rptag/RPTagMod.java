@@ -26,7 +26,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "2.4.0";
+    public static final String VERSION = "2.4.1";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** Registro dos menus (o editor do balao em inventario). */

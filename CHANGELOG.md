@@ -2,6 +2,16 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.4.1] - 2026-09-09
+
+### Corrigido
+- **`/balaoedit` não abria nada**: faltava registrar a TELA do baú no cliente.
+  Agora abre igual um baú de verdade (textura nativa do jogo).
+- **Balão invisível no mundo**: o fundo agora é desenhado pelo PROPRIO JOGO —
+  o mesmo mecanismo do fundo das nametags do Minecraft — e o rabicho é o
+  caractere ▼ da fonte do jogo. Não existe mais NENHUM desenho customizado
+  no mundo: impossível ficar invisível, impossível derrubar o cliente.
+
 ## [2.4.0] - 2026-09-09
 
 ### Adicionado

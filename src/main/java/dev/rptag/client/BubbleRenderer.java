@@ -2,13 +2,11 @@ package dev.rptag.client;
 
 import java.util.List;
 
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import dev.rptag.RPTagMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Player;
@@ -21,28 +19,23 @@ import org.joml.Matrix4f;
 /**
  * Balao de fala ("chat bubble") sobre a cabeca do jogador.
  *
- * <p>Desenhado no RenderLivingEvent.Post (nao mexe no nametag): capsula
- * arredondada COM BORDA opcional, rabicho, texto quebrado em linhas COM
- * SOMBRA (legibilidade), emojis decorativos e fundo personalizavel.
+ * <p>RENDERIZACAO 100% VANILLA (2.4.1): o fundo usa o MESMO mecanismo do fundo
+ * das nametags do Minecraft (a cor de fundo do drawInBatch), o rabicho e o
+ * caractere ▼ da fonte do jogo e o texto e o drawInBatch de sempre. Nenhum
+ * poligono desenhado a mao — nada que possa ficar invisivel ou crashar.
  *
- * <p>A PROVA DE CRASH (2.4.0): o fundo e desenhado num BUFFER PROPRIO do mod,
- * e o "flush" (que e onde qualquer problema de renderizacao explode) acontece
- * DENTRO do nosso try/catch. Se qualquer erro ocorrer, os baloes sao desligados
- * nesta sessao com um aviso no log — o jogo NUNCA fecha por causa do balao.
+ * <p>A PROVA DE CRASH: qualquer erro desliga os baloes desta sessao com aviso
+ * no log — o jogo NUNCA fecha por causa do balao.
  */
 @EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class BubbleRenderer {
 
     private static final int MAX_TEXT_WIDTH = 110;
     private static final int LINE_HEIGHT = 10;
-    private static final int PAD_X = 4;
-    private static final int PAD_Y = 3;
-    private static final int TAIL = 6;
     private static final double MAX_DISTANCE_SQ = 64.0 * 64.0;
 
-    /** Buffer exclusivo do balao — nao toca no buffer compartilhado do jogo. */
-    private static final MultiBufferSource.BufferSource BUBBLE_BUFFERS =
-            MultiBufferSource.immediate(new ByteBufferBuilder(786432));
+    /** O rabicho do balao: um triangulo da propria fonte do jogo. */
+    private static final String TAIL_GLYPH = "▼";
 
     private BubbleRenderer() {
     }
@@ -60,17 +53,7 @@ public final class BubbleRenderer {
             // A PROVA DE CRASH: qualquer erro desliga os baloes desta sessao
             // (a tag RP, chat e comandos continuam funcionando) e registra o motivo.
             disabled = true;
-            safeFlushDiscard();
             RPTagMod.LOGGER.error("RP Tag: erro ao desenhar balao de fala - baloes desligados ate reiniciar o jogo", t);
-        }
-    }
-
-    /** Tenta descartar o buffer do balao sem lancar nova excecao. */
-    private static void safeFlushDiscard() {
-        try {
-            BUBBLE_BUFFERS.endBatch();
-        } catch (Throwable ignored) {
-            // nao importa: os baloes ja estao desligados
         }
     }
 
@@ -89,24 +72,18 @@ public final class BubbleRenderer {
         }
 
         Font font = minecraft.font;
-        String text = bubble.text();
 
-        List<FormattedCharSequence> lines = font.split(FormattedText.of(text), MAX_TEXT_WIDTH);
+        List<FormattedCharSequence> lines = font.split(FormattedText.of(bubble.text()), MAX_TEXT_WIDTH);
         if (lines.isEmpty()) {
             return;
         }
 
-        int textW = 0;
-        for (FormattedCharSequence line : lines) {
-            textW = Math.max(textW, font.width(line));
-        }
-
-        int pillW = textW + PAD_X * 2;
-        int pillH = lines.size() * LINE_HEIGHT + PAD_Y * 2 - 3;
-        int x0 = -pillW / 2;
+        int pillH = lines.size() * LINE_HEIGHT + 2;
+        int top = -(pillH - 8);
 
         int background = bubble.background();
         int textColor = BubbleBackgrounds.textColorFor(background, bubble.colorRGB());
+        int bgARGB = BubbleBackgrounds.bgColorFor(background, bubble.colorRGB());
         int dimmedText = (textColor & 0x00FFFFFF) | 0x50000000;
 
         PoseStack poseStack = event.getPoseStack();
@@ -118,26 +95,22 @@ public final class BubbleRenderer {
         Matrix4f matrix = poseStack.last().pose();
 
         int packedLight = event.getPackedLight();
-        int top = -(pillH - 8);
 
-        // fundo + borda + rabicho: BUFFER PROPRIO, emissao identica a do vanilla
-        var vcBg = BUBBLE_BUFFERS.getBuffer(BubbleBackgrounds.typeFor(background));
-        BubbleBackgrounds.pillWithBorder(vcBg, matrix, x0, top, pillW, pillH,
-                background, bubble.colorRGB(), bubble.borderRGB());
-        BubbleBackgrounds.tail(vcBg, matrix, -3, 7, 3, 7, 0, 7 + TAIL, background, bubble.colorRGB());
-        // flush DENTRO do try/catch: qualquer erro aqui e capturado (jogo nunca fecha)
-        BUBBLE_BUFFERS.endBatch();
+        // rabicho ▼ (fonte do jogo), colado abaixo do bloco de falas
+        int tailW = font.width(TAIL_GLYPH);
+        font.drawInBatch(TAIL_GLYPH, -tailW / 2.0F, top + pillH - 1, bgARGB, false, matrix,
+                event.getMultiBufferSource(), Font.DisplayMode.NORMAL, 0, packedLight);
 
-        // texto: 1a passada apagada (levemente visivel atraves de paredes) + cheia COM SOMBRA
-        // (texto vai pelo buffer padrao das entidades, exatamente como a nametag do vanilla)
-        int penY = top + PAD_Y;
+        // linhas: 1a passada apagada (atraves de paredes) + passada com SOMBRA e FUNDO
+        // (o fundo e o mecanismo nativo do jogo, o mesmo das nametags)
+        int penY = top + 3;
         for (FormattedCharSequence line : lines) {
             int lineW = font.width(line);
             float lineX = -lineW / 2.0F;
             font.drawInBatch(line, lineX, penY, dimmedText, false, matrix,
                     event.getMultiBufferSource(), Font.DisplayMode.SEE_THROUGH, 0, packedLight);
             font.drawInBatch(line, lineX, penY, textColor, true, matrix,
-                    event.getMultiBufferSource(), Font.DisplayMode.NORMAL, 0, packedLight);
+                    event.getMultiBufferSource(), Font.DisplayMode.NORMAL, bgARGB, packedLight);
             penY += LINE_HEIGHT;
         }
 
