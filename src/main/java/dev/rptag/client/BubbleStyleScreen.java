@@ -13,7 +13,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import dev.rptag.BubbleStyle;
 import dev.rptag.UpdateBubbleStylePayload;
+import org.joml.Matrix4f;
 
 /**
  * Tela de personalizacao do balao ({@code /balao}):
@@ -38,6 +40,7 @@ public final class BubbleStyleScreen extends Screen {
     };
 
     private int colorRGB;
+    private int borderRGB;
     private final String initialPrefix;
     private final String initialSuffix;
     private int background;
@@ -45,17 +48,18 @@ public final class BubbleStyleScreen extends Screen {
     private EditBox prefixBox;
     private EditBox suffixBox;
 
-    private BubbleStyleScreen(int colorRGB, String prefix, String suffix, int background) {
+    private BubbleStyleScreen(int colorRGB, int borderRGB, String prefix, String suffix, int background) {
         super(Component.literal("Personalizar balao de fala"));
         this.colorRGB = colorRGB & 0xFFFFFF;
+        this.borderRGB = borderRGB;
         this.initialPrefix = prefix == null ? "" : prefix;
         this.initialSuffix = suffix == null ? "" : suffix;
         this.background = background;
     }
 
-    public static void open(int colorRGB, String prefix, String suffix, int background) {
+    public static void open(int colorRGB, int borderRGB, String prefix, String suffix, int background) {
         net.minecraft.client.Minecraft.getInstance().setScreen(
-                new BubbleStyleScreen(colorRGB, prefix, suffix, background));
+                new BubbleStyleScreen(colorRGB, borderRGB, prefix, suffix, background));
     }
 
     @Override
@@ -83,13 +87,23 @@ public final class BubbleStyleScreen extends Screen {
             this.addRenderableWidget(new SwatchButton(sx0 + i * (swatchSize + 4), top + 84, swatchSize, swatchSize, rgb));
         }
 
+        // ===== cor da BORDA: cicla off + 8 cores =====
+        Button borderButton = Button.builder(borderLabel(), (b) -> {
+                    this.borderRGB = nextBorder();
+                    b.setMessage(borderLabel());
+                })
+                .bounds(cx - 100, top + 105, 200, 16)
+                .tooltip(Tooltip.create(Component.literal("clique para trocar a cor da borda")))
+                .build();
+        this.addRenderableWidget(borderButton);
+
         // ===== emojis / decoracao =====
         int boxW = 110;
-        this.prefixBox = new EditBox(this.font, cx - boxW - 6, top + 112, boxW, 16, Component.literal("Antes"));
+        this.prefixBox = new EditBox(this.font, cx - boxW - 6, top + 128, boxW, 16, Component.literal("Antes"));
         this.prefixBox.setMaxLength(12);
         this.prefixBox.setValue(this.initialPrefix);
         this.prefixBox.setHint(Component.literal("emoji antes..."));
-        this.suffixBox = new EditBox(this.font, cx + 6, top + 112, boxW, 16, Component.literal("Depois"));
+        this.suffixBox = new EditBox(this.font, cx + 6, top + 128, boxW, 16, Component.literal("Depois"));
         this.suffixBox.setMaxLength(12);
         this.suffixBox.setValue(this.initialSuffix);
         this.suffixBox.setHint(Component.literal("emoji depois..."));
@@ -105,7 +119,7 @@ public final class BubbleStyleScreen extends Screen {
                             target.setValue(target.getValue() + emoji);
                         }
                     })
-                    .bounds(qx0 + i * 22, top + 132, 20, 16)
+                    .bounds(qx0 + i * 22, top + 148, 20, 16)
                     .tooltip(Tooltip.create(Component.literal("adiciona na caixa em foco")))
                     .build());
         }
@@ -119,16 +133,38 @@ public final class BubbleStyleScreen extends Screen {
                             b.setMessage(Component.literal("Fundo: ").withStyle(ChatFormatting.GRAY)
                                     .append(Component.literal(BACKGROUND_NAMES[this.background])));
                         })
-                .bounds(cx - 100, top + 156, 200, 18)
+                .bounds(cx - 100, top + 170, 200, 18)
                 .tooltip(Tooltip.create(Component.literal("clique para trocar")))
                 .build();
         this.addRenderableWidget(bgButton);
 
         // ===== salvar / cancelar =====
         this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, (b) -> this.save())
-                .bounds(cx - 100, top + 180, 98, 18).build());
+                .bounds(cx - 100, top + 194, 98, 18).build());
         this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, (b) -> this.onClose())
-                .bounds(cx + 2, top + 180, 98, 18).build());
+                .bounds(cx + 2, top + 194, 98, 18).build());
+    }
+
+    private static final int[] BORDER_CYCLE = {
+            BubbleStyle.DEFAULT_BORDER, 0xFFFFFF, 0x55FFFF, 0x55FF88, 0xFFD700,
+            0xFF7BAC, 0xC77DFF, 0x5555FF, BubbleStyle.NO_BORDER
+    };
+
+    private Component borderLabel() {
+        return this.borderRGB == BubbleStyle.NO_BORDER
+                ? Component.literal("Borda: ").withStyle(ChatFormatting.GRAY)
+                        .append(Component.literal("sem borda").withStyle(ChatFormatting.DARK_GRAY))
+                : Component.literal("Borda: ").withStyle(ChatFormatting.GRAY)
+                        .append(Component.literal(String.format("#%06X", this.borderRGB)));
+    }
+
+    private int nextBorder() {
+        for (int i = 0; i < BORDER_CYCLE.length; i++) {
+            if (BORDER_CYCLE[i] == this.borderRGB) {
+                return BORDER_CYCLE[(i + 1) % BORDER_CYCLE.length];
+            }
+        }
+        return BORDER_CYCLE[0];
     }
 
     private void setChannel(int channel, int value) {
@@ -137,7 +173,7 @@ public final class BubbleStyleScreen extends Screen {
     }
 
     private void save() {
-        PacketDistributor.sendToServer(new UpdateBubbleStylePayload(this.colorRGB,
+        PacketDistributor.sendToServer(new UpdateBubbleStylePayload(this.colorRGB, this.borderRGB,
                 this.prefixBox.getValue(), this.suffixBox.getValue(), this.background));
         this.onClose();
     }
@@ -151,7 +187,7 @@ public final class BubbleStyleScreen extends Screen {
         String before = this.prefixBox == null ? this.initialPrefix : this.prefixBox.getValue();
         String after = this.suffixBox == null ? this.initialSuffix : this.suffixBox.getValue();
         String sample = (before + " Falo por balao! " + after).trim();
-        drawBubblePreview(g, sample, this.colorRGB, this.background, this.width / 2, Math.max(40, this.height / 6) + 30);
+        drawBubblePreview(g, sample, this.colorRGB, this.borderRGB, this.background, this.width / 2, Math.max(40, this.height / 6) + 28);
 
         if (this.prefixBox != null) {
             g.drawString(this.font, "Antes", this.prefixBox.getX(), this.prefixBox.getY() - 9, 0xAAAAAA, false);
@@ -160,13 +196,13 @@ public final class BubbleStyleScreen extends Screen {
     }
 
     /** Desenha um balao 2D em coordenadas de tela (mesma arte do mundo). */
-    static void drawBubblePreview(GuiGraphics g, String text, int colorRGB, int background, int cx, int cy) {
+    static void drawBubblePreview(GuiGraphics g, String text, int colorRGB, int borderRGB, int background, int cx, int cy) {
         var font = net.minecraft.client.Minecraft.getInstance().font;
         int textW = font.width(text);
         int pillW = textW + 8;
         int pillH = 14;
         int x = cx - pillW / 2;
-        int y = cy - pillH - 6;
+        int y = cy - pillH - 8;
 
         var pose = g.pose();
         pose.pushPose();
@@ -174,13 +210,13 @@ public final class BubbleStyleScreen extends Screen {
         var buffer = g.bufferSource();
         var vc = buffer.getBuffer(BubbleBackgrounds.typeFor(background));
 
-        BubbleBackgrounds.pill(vc, matrix, x, y, pillW, pillH, background, colorRGB);
+        BubbleBackgrounds.pillWithBorder(vc, matrix, x, y, pillW, pillH, background, colorRGB, borderRGB);
         BubbleBackgrounds.tail(vc, matrix, x + pillW / 2 - 3, y + pillH - 1,
                 x + pillW / 2 + 3, y + pillH - 1, x + pillW / 2, y + pillH + 5, background, colorRGB);
         buffer.endBatch();
 
         int textColor = BubbleBackgrounds.textColorFor(background, colorRGB);
-        g.drawString(font, text, x + 4, y + 3, textColor, false);
+        g.drawString(font, text, x + 4, y + 3, textColor, true);
         pose.popPose();
     }
 

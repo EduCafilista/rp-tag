@@ -83,7 +83,7 @@ public final class BalaoCommands {
                             }
                             RPWorldData data = RPWorldData.get(player.server);
                             BubbleStyle old = data.getStyle(player.getUUID());
-                            data.setStyle(player.getUUID(), new BubbleStyle(rgb, old.prefix(), old.suffix(), old.background()));
+                            data.setStyle(player.getUUID(), new BubbleStyle(rgb, old.borderRGB(), old.prefix(), old.suffix(), old.background()));
                             player.sendSystemMessage(Component.literal("Cor do balao definida: ")
                                     .withStyle(ChatFormatting.GRAY)
                                     .append(Component.literal(String.format("#%06X", rgb)).withStyle(s -> s
@@ -101,6 +101,36 @@ public final class BalaoCommands {
                         .then(Commands.argument("emojis", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                                 .executes(ctx -> changeEmoji(ctx.getSource().getPlayerOrException(), false,
                                         com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "emojis")))));
+
+        // /balao borda <cor|off>
+        root.then(Commands.literal("borda")
+                .then(Commands.argument("cor", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .executes(ctx -> {
+                            ServerPlayer player = ctx.getSource().getPlayerOrException();
+                            String input = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "cor");
+                            int border;
+                            if (input.equalsIgnoreCase("off") || input.equalsIgnoreCase("sem")) {
+                                border = BubbleStyle.NO_BORDER;
+                            } else {
+                                border = BubbleCommands.parseColor(input);
+                                if (border < 0) {
+                                    player.sendSystemMessage(Component.literal(
+                                            "Cor invalida! Use nome (ciano), nome do Minecraft (dark_aqua) ou #RRGGBB. Use 'off' para remover a borda.")
+                                            .withStyle(ChatFormatting.RED));
+                                    return 0;
+                                }
+                            }
+                            RPWorldData data = RPWorldData.get(player.server);
+                            BubbleStyle old = data.getStyle(player.getUUID());
+                            data.setStyle(player.getUUID(), new BubbleStyle(old.colorRGB(), border,
+                                    old.prefix(), old.suffix(), old.background()));
+                            player.sendSystemMessage(border == BubbleStyle.NO_BORDER
+                                    ? Component.literal("Borda removida.").withStyle(ChatFormatting.GRAY)
+                                    : Component.literal("Cor da borda definida: ").withStyle(ChatFormatting.GRAY)
+                                            .append(Component.literal(String.format("#%06X", border)).withStyle(s -> s
+                                                    .withColor(net.minecraft.network.chat.TextColor.fromRgb(border)))));
+                            return Command.SINGLE_SUCCESS;
+                        })));
 
         // /balao fundo <estilo>
         root.then(Commands.literal("fundo")
@@ -127,7 +157,7 @@ public final class BalaoCommands {
                             }
                             RPWorldData data = RPWorldData.get(player.server);
                             BubbleStyle old = data.getStyle(player.getUUID());
-                            data.setStyle(player.getUUID(), new BubbleStyle(old.colorRGB(), old.prefix(), old.suffix(), bg));
+                            data.setStyle(player.getUUID(), new BubbleStyle(old.colorRGB(), old.borderRGB(), old.prefix(), old.suffix(), bg));
                             player.sendSystemMessage(Component.literal("Fundo do balao: " + estilo)
                                     .withStyle(ChatFormatting.GREEN));
                             return Command.SINGLE_SUCCESS;
@@ -137,7 +167,7 @@ public final class BalaoCommands {
         root.then(Commands.literal("limpar").executes(ctx -> {
             ServerPlayer player = ctx.getSource().getPlayerOrException();
             RPWorldData data = RPWorldData.get(player.server);
-            data.setStyle(player.getUUID(), new BubbleStyle(RPWorldData.DEFAULT_COLOR, "", "", 0));
+            data.setStyle(player.getUUID(), BubbleStyle.DEFAULT);
             player.sendSystemMessage(Component.literal("Balao voltou ao padrao.").withStyle(ChatFormatting.GRAY));
             return Command.SINGLE_SUCCESS;
         }));
@@ -155,8 +185,8 @@ public final class BalaoCommands {
         RPWorldData data = RPWorldData.get(player.server);
         BubbleStyle old = data.getStyle(player.getUUID());
         data.setStyle(player.getUUID(), before
-                ? new BubbleStyle(old.colorRGB(), value, old.suffix(), old.background())
-                : new BubbleStyle(old.colorRGB(), old.prefix(), value, old.background()));
+                ? new BubbleStyle(old.colorRGB(), old.borderRGB(), value, old.suffix(), old.background())
+                : new BubbleStyle(old.colorRGB(), old.borderRGB(), old.prefix(), value, old.background()));
         player.sendSystemMessage(Component.literal("Decoracao " + (before ? "antes" : "depois") + ": " + value)
                 .withStyle(ChatFormatting.GREEN));
         return Command.SINGLE_SUCCESS;

@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ClientBubbleCache {
 
     /** Um balao visivel. */
-    public record Bubble(String text, int colorRGB, boolean italic, int background, long expireMillis) {
+    public record Bubble(String text, int colorRGB, int borderRGB, boolean italic, int background, long expireMillis) {
         public boolean expired() {
             return System.currentTimeMillis() >= expireMillis;
         }
@@ -22,10 +22,10 @@ public final class ClientBubbleCache {
     private ClientBubbleCache() {
     }
 
-    public static void set(UUID id, String text, int colorRGB, boolean italic, int background) {
+    public static void set(UUID id, String text, int colorRGB, int borderRGB, boolean italic, int background) {
         // duracao proporcional ao tamanho: 2s + 60ms/letra, entre 2.5s e 8s
         long duration = Math.min(8000, Math.max(2500, 2000L + 60L * text.length()));
-        BUBBLES.put(id, new Bubble(text, colorRGB, italic, background, System.currentTimeMillis() + duration));
+        BUBBLES.put(id, new Bubble(text, colorRGB, borderRGB, italic, background, System.currentTimeMillis() + duration));
     }
 
     /** @return o balao atual do jogador ou null se nao tem/esta expirado. */

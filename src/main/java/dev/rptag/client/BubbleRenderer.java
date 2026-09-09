@@ -7,10 +7,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.rptag.RPTagMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.FormattedText;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
@@ -23,8 +20,8 @@ import org.joml.Matrix4f;
  * Balao de fala ("chat bubble") sobre a cabeca do jogador.
  *
  * <p>Desenhado no RenderLivingEvent.Post (nao mexe no nametag): capsula
- * arredondada com rabicho, texto quebrado em linhas, emojis decorativos e
- * fundo personalizavel ({@code /balao}).
+ * arredondada COM BORDA opcional, rabicho, texto quebrado em linhas COM
+ * SOMBRA (legibilidade), emojis decorativos e fundo personalizavel.
  */
 @EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class BubbleRenderer {
@@ -73,7 +70,7 @@ public final class BubbleRenderer {
 
         int background = bubble.background();
         int textColor = BubbleBackgrounds.textColorFor(background, bubble.colorRGB());
-        int dimmedText = (textColor & 0x00FFFFFF) | 0x20000000;
+        int dimmedText = (textColor & 0x00FFFFFF) | 0x50000000;
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
@@ -86,19 +83,20 @@ public final class BubbleRenderer {
         int packedLight = event.getPackedLight();
         int top = -(pillH - 8);
 
-        // fundo: um unico buffer por estilo (evita trocas de render type)
+        // fundo + borda (um unico buffer; render type de TEXTO: funciona no mundo)
         var vcBg = event.getMultiBufferSource().getBuffer(BubbleBackgrounds.typeFor(background));
-        BubbleBackgrounds.pill(vcBg, matrix, x0, top, pillW, pillH, background, bubble.colorRGB());
+        BubbleBackgrounds.pillWithBorder(vcBg, matrix, x0, top, pillW, pillH,
+                background, bubble.colorRGB(), bubble.borderRGB());
         BubbleBackgrounds.tail(vcBg, matrix, -3, 7, 3, 7, 0, 7 + TAIL, background, bubble.colorRGB());
 
-        // texto: 1a passada apagada (ve-se levemente atraves de paredes) + cheia
+        // texto: 1a passada apagada (levemente visivel atraves de paredes) + cheia COM SOMBRA
         int penY = top + PAD_Y;
         for (FormattedCharSequence line : lines) {
             int lineW = font.width(line);
             float lineX = -lineW / 2.0F;
             font.drawInBatch(line, lineX, penY, dimmedText, false, matrix,
                     event.getMultiBufferSource(), Font.DisplayMode.SEE_THROUGH, 0, packedLight);
-            font.drawInBatch(line, lineX, penY, textColor, false, matrix,
+            font.drawInBatch(line, lineX, penY, textColor, true, matrix,
                     event.getMultiBufferSource(), Font.DisplayMode.NORMAL, 0, packedLight);
             penY += LINE_HEIGHT;
         }

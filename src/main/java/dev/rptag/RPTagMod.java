@@ -19,7 +19,7 @@ import net.neoforged.fml.common.Mod;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "2.2.0";
+    public static final String VERSION = "2.3.0";
 
     public RPTagMod(IEventBus modEventBus, ModContainer modContainer) {
         // Tudo e registrado via @EventBusSubscriber; nada a fazer aqui.

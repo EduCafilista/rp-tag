@@ -192,8 +192,8 @@ public final class ServerEvents {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return;
             }
-            BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.prefix(), payload.suffix(),
-                    payload.background());
+            BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(), payload.prefix(),
+                    payload.suffix(), payload.background());
             RPWorldData.get(player.server).setStyle(player.getUUID(), style);
             player.sendSystemMessage(Component.literal("Estilo do balao salvo! ")
                     .withStyle(ChatFormatting.GREEN)

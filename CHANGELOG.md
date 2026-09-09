@@ -2,6 +2,19 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.3.0] - 2026-09-09
+
+### Corrigido
+- **Fundo do balao invisivel no mundo** (bug critico da 2.2.0): os poligonos
+  usavam RenderType de GUI, que nao renderiza no contexto de entidades —
+  so o texto aparecia, quase ilegivel. Agora usa o render type de TEXTO
+  (o mesmo das nametags), que funciona no mundo 3D. Fundo mais opaco (90%)
+  e texto COM SOMBRA para leitura perfeita.
+
+### Adicionado
+- **Borda do balao** com cor personalizavel (`/balao borda <cor|off>`,
+  botao na tela `/balao`), padrao quase-preta para destacar em qualquer cenario.
+
 ## [2.2.0] - 2026-09-09
 
 ### Adicionado

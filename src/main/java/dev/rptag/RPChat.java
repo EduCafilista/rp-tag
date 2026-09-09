@@ -54,7 +54,7 @@ public final class RPChat {
                 + text
                 + (style.suffix().isEmpty() ? "" : " " + style.suffix());
         ChatBubblePayload payload = new ChatBubblePayload(from.getUUID(), decorated, style.colorRGB(),
-                italic, "", "", style.background());
+                style.borderRGB(), italic, "", "", style.background());
         for (ServerPlayer p : from.server.getPlayerList().getPlayers()) {
             if (p.level() == from.level()
                     && p.position().distanceToSqr(from.position()) <= 64.0 * 64.0) {

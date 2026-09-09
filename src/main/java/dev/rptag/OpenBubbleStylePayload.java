@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
  * S2C: abre a tela de personalizacao do balao ({@code /balao}), ja com o
  * estilo atual do jogador preenchido.
  */
-public record OpenBubbleStylePayload(int colorRGB, String prefix, String suffix, int background)
+public record OpenBubbleStylePayload(int colorRGB, int borderRGB, String prefix, String suffix, int background)
         implements CustomPacketPayload {
 
     public static final Type<OpenBubbleStylePayload> TYPE =
@@ -19,18 +19,20 @@ public record OpenBubbleStylePayload(int colorRGB, String prefix, String suffix,
             StreamCodec.of(
                     (buf, p) -> {
                         ByteBufCodecs.VAR_INT.encode(buf, p.colorRGB());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.borderRGB());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.prefix());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.suffix());
                         ByteBufCodecs.VAR_INT.encode(buf, p.background());
                     },
                     buf -> new OpenBubbleStylePayload(
                             ByteBufCodecs.VAR_INT.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf)));
 
     public static OpenBubbleStylePayload of(BubbleStyle style) {
-        return new OpenBubbleStylePayload(style.colorRGB(), style.prefix(), style.suffix(), style.background());
+        return new OpenBubbleStylePayload(style.colorRGB(), style.borderRGB(), style.prefix(), style.suffix(), style.background());
     }
 
     @Override

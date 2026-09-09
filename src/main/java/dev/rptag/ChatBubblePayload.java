@@ -13,13 +13,14 @@ import net.minecraft.resources.ResourceLocation;
  *
  * @param playerId   quem falou
  * @param text       texto do balao (ja truncado pelo servidor)
- * @param colorRGB   cor de fundo do balao (24 bits, 0xRRGGBB)
+ * @param colorRGB   cor do centro do balao (24 bits, 0xRRGGBB)
+ * @param borderRGB  cor da borda (0xRRGGBB) ou -1 = sem borda
  * @param italic     texto em italico (usado em /me e sussurros)
  * @param prefix     emoji/texto decorativo antes
  * @param suffix     emoji/texto decorativo depois
  * @param background estilo de fundo (0-6, veja {@link BubbleStyle})
  */
-public record ChatBubblePayload(UUID playerId, String text, int colorRGB, boolean italic,
+public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int borderRGB, boolean italic,
         String prefix, String suffix, int background) implements CustomPacketPayload {
 
     public static final Type<ChatBubblePayload> TYPE =
@@ -31,6 +32,7 @@ public record ChatBubblePayload(UUID playerId, String text, int colorRGB, boolea
                         net.minecraft.core.UUIDUtil.STREAM_CODEC.encode(buf, p.playerId());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.text());
                         ByteBufCodecs.VAR_INT.encode(buf, p.colorRGB());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.borderRGB());
                         ByteBufCodecs.BOOL.encode(buf, p.italic());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.prefix());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.suffix());
@@ -39,6 +41,7 @@ public record ChatBubblePayload(UUID playerId, String text, int colorRGB, boolea
                     buf -> new ChatBubblePayload(
                             net.minecraft.core.UUIDUtil.STREAM_CODEC.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.BOOL.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),

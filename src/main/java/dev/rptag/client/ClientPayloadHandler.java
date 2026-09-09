@@ -46,12 +46,12 @@ public final class ClientPayloadHandler {
     public static void handleBubble(final ChatBubblePayload payload, final IPayloadContext context) {
         context.enqueueWork(() ->
                 ClientBubbleCache.set(payload.playerId(), payload.text(), payload.colorRGB(),
-                        payload.italic(), payload.background()));
+                        payload.borderRGB(), payload.italic(), payload.background()));
     }
 
     public static void handleOpenBubbleStyle(final OpenBubbleStylePayload payload, final IPayloadContext context) {
         context.enqueueWork(() ->
-                dev.rptag.client.BubbleStyleScreen.open(payload.colorRGB(), payload.prefix(),
-                        payload.suffix(), payload.background()));
+                dev.rptag.client.BubbleStyleScreen.open(payload.colorRGB(), payload.borderRGB(),
+                        payload.prefix(), payload.suffix(), payload.background()));
     }
 }
