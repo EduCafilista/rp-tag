@@ -99,6 +99,51 @@ public final class RPCommands {
                                             .withStyle(ChatFormatting.GRAY));
                                     return Command.SINGLE_SUCCESS;
                                 }))))
+                .then(Commands.literal("balao")
+                        .then(Commands.argument("jogador", EntityArgument.player())
+                                .then(Commands.literal("on").executes(ctx -> {
+                                    ServerPlayer target = EntityArgument.getPlayer(ctx, "jogador");
+                                    RPWorldData.get(ctx.getSource().getServer())
+                                            .setBubbleAllowed(target.getUUID(), true);
+                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                            target.getName().getString() + " agora PODE usar balao de fala."), true);
+                                    target.sendSystemMessage(Component.literal(
+                                            "Um admin LIGOU o seu balao de fala! Use /balao pra personalizar.")
+                                            .withStyle(ChatFormatting.GREEN));
+                                    return Command.SINGLE_SUCCESS;
+                                }))
+                                .then(Commands.literal("off").executes(ctx -> {
+                                    ServerPlayer target = EntityArgument.getPlayer(ctx, "jogador");
+                                    RPWorldData.get(ctx.getSource().getServer())
+                                            .setBubbleAllowed(target.getUUID(), false);
+                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                            target.getName().getString() + " NAO pode mais usar balao de fala."), true);
+                                    target.sendSystemMessage(Component.literal(
+                                            "Um admin DESLIGOU o seu balao de fala (suas falas voltaram so ao chat).")
+                                            .withStyle(ChatFormatting.GRAY));
+                                    return Command.SINGLE_SUCCESS;
+                                }))))
+                .then(Commands.literal("balaolist")
+                        .executes(ctx -> {
+                            var ids = RPWorldData.get(ctx.getSource().getServer()).bubbleBannedIds();
+                            if (ids.isEmpty()) {
+                                ctx.getSource().sendSuccess(() -> Component.literal(
+                                        "Todos os jogadores PODEM usar balao de fala."), false);
+                            } else {
+                                StringBuilder sb = new StringBuilder("Sem balao (por admin): ");
+                                int i = 0;
+                                for (var id : ids) {
+                                    var p = ctx.getSource().getServer().getPlayerList().getPlayer(id);
+                                    sb.append(p != null ? p.getName().getString() : id.toString().substring(0, 8));
+                                    if (++i < ids.size()) {
+                                        sb.append(", ");
+                                    }
+                                }
+                                String msg = sb.toString();
+                                ctx.getSource().sendSuccess(() -> Component.literal(msg), false);
+                            }
+                            return Command.SINGLE_SUCCESS;
+                        }))
                 .then(Commands.literal("bolhas")
                         .then(Commands.literal("on").executes(ctx -> {
                             RPWorldData.get(ctx.getSource().getServer()).setBubblesOn(true);

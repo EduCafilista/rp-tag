@@ -2,6 +2,26 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.6.0] - 2026-09-10
+
+### Adicionado
+- **COMANDOS DE ADMIN para o balão**: `/rp admin balao <jogador> off` proíbe o
+  jogador de usar balão (a fala dele volta só ao chat), `on` permite de volta e
+  `balaolist` lista os proibidos. Fica salvo no mundo.
+- **Menu redesenhado (bonito e legível)**: cabeçalho com título dourado e faixa
+  de acento, SIMULAÇÃO DE CHAT com fonte GRANDE (escala 1.5x) e rodapé com
+  quadradinhos das cores atuais + hex.
+- **Paletas de 12 cores** por alvo (Dentro e Borda) — 1 clique pinta, sem
+  arrastar nada. Letra: Auto + 8 cores.
+
+### Corrigido
+- **Spritesheet dos adesivos agora é POTÊNCIA DE 2 (64x64)** — texturas não-
+  potência-de-2 podem falhar em certas GPUs/configurações gráficas, o que
+  apagava os desenhos do menu (teclado vazio, pílula invisível).
+- Layout compacto (224px) que cabe em GUI scale 3 e telas pequenas; painel
+  sempre com margem (clamp), nada mais corta.
+- Texto do balão no mundo ~12% maior (escala 0.028) — mais legível de longe.
+
 ## [3.5.0] - 2026-09-10
 
 ### Adicionado

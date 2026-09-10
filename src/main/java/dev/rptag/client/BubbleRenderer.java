@@ -205,7 +205,7 @@ public final class BubbleRenderer {
         poseStack.pushPose();
         poseStack.translate(0.0, player.getBbHeight() + 0.95, 0.0);
         poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
-        poseStack.scale(0.025F, -0.025F, 0.025F);
+        poseStack.scale(0.028F, -0.028F, 0.028F);
         Matrix4f matrix = poseStack.last().pose();
         MultiBufferSource buffers = event.getMultiBufferSource();
 

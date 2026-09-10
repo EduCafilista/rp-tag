@@ -44,8 +44,9 @@ public final class RPChat {
     /** Mostra o balao de fala sobre a cabeca (se o recurso estiver ligado). */
     public static void spawnBubble(ServerPlayer from, String rawText, boolean italic) {
         RPWorldData data = RPWorldData.get(from.server);
-        if (!data.isBubblesOn() || data.isBubbleOptOut(from.getUUID())) {
-            return;
+        if (!data.isBubblesOn() || data.isBubbleOptOut(from.getUUID())
+                || !data.isBubbleAllowed(from.getUUID())) {
+            return; // desligado global, opt-out do jogador OU proibido por admin
         }
         String text = rawText.length() > 96 ? rawText.substring(0, 93) + "..." : rawText;
         BubbleStyle style = data.getStyle(from.getUUID());

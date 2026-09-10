@@ -38,6 +38,8 @@ public final class RPWorldData extends SavedData {
     private final Map<UUID, Persona> personas = new HashMap<>();
     private final Map<UUID, Integer> colors = new HashMap<>();
     private final Map<UUID, Boolean> bubbleOptOut = new HashMap<>();
+    /** jogadores PROIBIDOS de usar balao por um admin (ausente = permitido). */
+    private final Map<UUID, Boolean> bubbleBanned = new HashMap<>();
     private final Map<UUID, Boolean> bubbleMode = new HashMap<>();
     private final Map<UUID, BubbleStyle> styles = new HashMap<>();
     private boolean chatLocal = true;
@@ -131,6 +133,26 @@ public final class RPWorldData extends SavedData {
         setDirty();
     }
 
+    // ==== permissao de balao (admin) ====
+
+    /** @return true se o jogador PODE usar balao (padrao). */
+    public boolean isBubbleAllowed(UUID id) {
+        return !bubbleBanned.getOrDefault(id, false);
+    }
+
+    public void setBubbleAllowed(UUID id, boolean allowed) {
+        if (allowed) {
+            bubbleBanned.remove(id);
+        } else {
+            bubbleBanned.put(id, true);
+        }
+        setDirty();
+    }
+
+    public java.util.Set<UUID> bubbleBannedIds() {
+        return bubbleBanned.keySet();
+    }
+
     // ==== estilo do balao ====
 
     public BubbleStyle getStyle(UUID id) {
@@ -202,6 +224,14 @@ public final class RPWorldData extends SavedData {
         });
         tag.put("BubbleOptOut", optOuts);
 
+        ListTag banned = new ListTag();
+        this.bubbleBanned.forEach((id, b) -> {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", id);
+            banned.add(e);
+        });
+        tag.put("BubbleBanned", banned);
+
         ListTag modes = new ListTag();
         this.bubbleMode.forEach((id, on) -> {
             if (on) {
@@ -250,6 +280,11 @@ public final class RPWorldData extends SavedData {
         ListTag optOuts = tag.getList("BubbleOptOut", Tag.TAG_COMPOUND);
         for (int i = 0; i < optOuts.size(); i++) {
             data.bubbleOptOut.put(optOuts.getCompound(i).getUUID("Id"), true);
+        }
+
+        ListTag banned = tag.getList("BubbleBanned", Tag.TAG_COMPOUND);
+        for (int i = 0; i < banned.size(); i++) {
+            data.bubbleBanned.put(banned.getCompound(i).getUUID("Id"), true);
         }
 
         // CORRECAO: estilos e modos de balao agora voltam ao reiniciar o servidor!

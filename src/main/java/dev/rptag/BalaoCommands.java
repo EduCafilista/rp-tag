@@ -35,6 +35,12 @@ public final class BalaoCommands {
         root.executes(ctx -> {
             ServerPlayer player = ctx.getSource().getPlayerOrException();
             RPWorldData data = RPWorldData.get(player.server);
+            if (!data.isBubbleAllowed(player.getUUID())) {
+                player.sendSystemMessage(Component.literal(
+                        "Um admin desligou o seu balao de fala. Peça a um admin: /rp admin balao <voce> on")
+                        .withStyle(net.minecraft.ChatFormatting.RED));
+                return Command.SINGLE_SUCCESS;
+            }
             PacketDistributor.sendToPlayer(player,
                     OpenBubbleStylePayload.of(data.getStyle(player.getUUID())));
             return Command.SINGLE_SUCCESS;
