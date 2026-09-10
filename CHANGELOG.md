@@ -2,6 +2,21 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.8.0] - 2026-09-10
+
+### Corrigido
+- **FONTE DO BALÃO LIMPA DE NOVO**: o contorno de tinta da 3.7 fundia as letras
+  num borrão (cada halo desenhava a própria sombra = tinta dupla). Voltou a
+  sombra vanilla clássica — legível e bonita — com o texto 20% maior que o
+  original.
+- **MENU 100% JOGÁVEL EM QUALQUER CLIENTE**: TODOS os elementos essenciais
+  (paletas, adesivos, simulação do balão) agora são desenhados apenas com
+  TEXTO do jogo (glifos ● e ▣, o mesmo motor da tag "● ʀᴘ" que sempre
+  funcionou) + botões vanilla. Se aparece no chat, aparece no menu.
+- **SIMULAÇÃO DO /balao refeita**: linha do chat real (`<Você> fala` com as
+  cores) + balão em moldura ▣ com o rabicho ▼ e o adesivo na posição exata —
+  o que você vê ali é o que aparece sobre a sua cabeça.
+
 ## [3.7.0] - 2026-09-10
 
 ### Corrigido
