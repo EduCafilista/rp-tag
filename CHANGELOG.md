@@ -2,6 +2,27 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.3.0] - 2026-09-10
+
+### Adicionado
+- **2 seletores INDEPENDENTES**: "✦ Dentro" pinta o recheio e "▣ Borda" pinta
+  a moldura — cada um com seu próprio quadrado e faixa de cores (fim de
+  alternar alvo). Mexeu no da borda? Já vira PERSONALIZADA.
+- **6 botões explícitos**: cor da borda (**▣ Auto / ▣ Minha cor / ▢ Sem
+  borda**) e molde (**▤ Clássica / ▤ Cartum / ▤ Dupla**) — o ativo ganha
+  moldura verde.
+- **Mira de posicionamento**: ao colar/mover o adesivo, uma cruz segue o mouse
+  e o canto do preview mostra a posição exata em **x,y %**.
+
+### Corrigido
+- **Emojis do editor finalmente visíveis SEMPRE**: os adesivos agora são
+  desenhados como IMAGEM CRUA (blit da spritesheet), sem depender da fonte de
+  bitmap no GUI — funciona em qualquer cliente.
+- **Preview legível**: fundo xadrez atrás do balão — qualquer cor de dentro
+  (até branca) contrasta; texto com sombra e hex ao vivo.
+- Adesivo nunca mais cola cortado: posição limitada a 5–95% (sempre inteiro
+  dentro do balão).
+
 ## [3.2.0] - 2026-09-10
 
 ### Adicionado

@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-3.2.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.2.0.jar) (arquivo dentro do repositório).
+> 📥 **Download:** baixe o `rptag-3.3.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.3.0.jar) (arquivo dentro do repositório).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
@@ -32,12 +32,13 @@
 - **Balão estilo QUADRINHOS com textura suave**: pílula arredondada de verdade
   (anti-aliased), contorno em toda a volta e rabicho — **tudo escolhido no
   seletor de arrastar** (`/balao`) · preview na tela = o que fica no jogo ·
-  **3 molduras**: Clássica, Cartum (grossa) e Dupla
-- **ADESIVO LIVRE com o mouse**: 48 adesivos coloridos em pixel-art — clique no
-  adesivo e **clique em QUALQUER ponto do balão** para colar ele onde quiser;
-  clique de novo para reposicionar, clique direito para tirar · **1 adesivo por
-  balão** (os antigos slots migraram sozinhos) · **ESC ou ✔ Salvar** (à direita)
-  gravam tudo · **barra de duração** (2–20s)
+  **3 molduras com botões próprios**: Clássica, Cartum (grossa) e Dupla ·
+  **2 seletores independentes** (Dentro e Borda, cada um com seu quadrado) ·
+  **cor da borda em 3 botões**: Auto / Minha cor / Sem
+- **ADESIVO LIVRE com o mouse**: 48 adesivos em pixel-art desenhados como
+  IMAGEM no editor — **clique em QUALQUER ponto do balão** pra colar; **mira +
+  % na tela** mostram exatamente onde ficou · clique direito tira ·
+  **ESC ou ✔ Salvar** gravam tudo · **barra de duração** (2–20s)
 - **`/rp admin bolhas on|off`** — global
 
 ### 🎲 Dados para eventos
@@ -60,7 +61,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-3.2.0.jar` para a pasta `mods/` do **servidor**.
+2. Copie `rptag-3.3.0.jar` para a pasta `mods/` do **servidor**.
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -73,7 +74,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-3.2.0.jar`.
+O jar sai em `build/libs/rptag-3.3.0.jar`.
 
 ## 🎨 Personalizar
 

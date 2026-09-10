@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
 >
-> 📥 **Download:** grab `rptag-3.2.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.2.0.jar).
+> 📥 **Download:** grab `rptag-3.3.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.3.0.jar).
 
 ## ✨ Features
 
@@ -27,13 +27,14 @@
 - **Bubble mode** — speech becomes **bubble-only** (no chat text!): `/balao modo on` for yourself · `/rp admin bolha <player> on` set by admins
 - **Comic-style bubble, real smooth texture**: true rounded pill (anti-aliased),
   full outline and tail — **everything picked on the drag color picker** (`/balao`)
-  · the screen preview is exactly what shows in game · **3 frames**: Classic,
-  Cartoon (thick) and Double
-- **FREE STICKER with the mouse**: 48 colorful pixel-art stickers — click a
-  sticker, then **click ANY point of the bubble** to stick it there;
-  click it again to reposition, right-click to remove · **one sticker per
-  bubble** (old slots migrated automatically) · **ESC or ✔ Save** (right
-  button) stores everything · **duration slider** (2–20s)
+  · the screen preview is exactly what shows in game · **3 frames with their
+  own buttons**: Classic, Cartoon (thick) and Double · **2 independent
+  pickers** (Inside and Border) · **border color in 3 buttons**: Auto /
+  My color / None
+- **FREE STICKER with the mouse**: 48 pixel-art stickers drawn as raw IMAGES
+  on the editor — **click ANY point of the bubble** to place it; **crosshair +
+  % on screen** show exactly where it is · right-click removes ·
+  **ESC or ✔ Save** stores everything · **duration slider** (2–20s)
   · **`/rp admin bolhas on|off`** — global toggle
 
 ### 🎲 Dice rolls
@@ -54,7 +55,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-3.2.0.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-3.3.0.jar` into the **server's** `mods/` folder.
 3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
@@ -65,7 +66,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-3.2.0.jar`.
+The jar ends up at `build/libs/rptag-3.3.0.jar`.
 
 ## 🎨 Customizing
 

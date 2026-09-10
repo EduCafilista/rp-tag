@@ -47,8 +47,8 @@ public record BubbleStyle(int colorRGB, int borderRGB, int borderStyle, String p
     public static final int BORDER_STYLE_COUNT = 3;
 
     /** Posicao padrao do adesivo livre: canto superior direito, estilo reacao. */
-    public static final int DEFAULT_STICKER_X = 95;
-    public static final int DEFAULT_STICKER_Y = 8;
+    public static final int DEFAULT_STICKER_X = 90;
+    public static final int DEFAULT_STICKER_Y = 10;
 
     public static final BubbleStyle DEFAULT = new BubbleStyle(RPWorldData.DEFAULT_COLOR, DEFAULT_BORDER,
             BORDER_CLASSIC, "", "", "", "", DEFAULT_STICKER_X, DEFAULT_STICKER_Y, 0, DEFAULT_DURATION);
@@ -104,7 +104,7 @@ public record BubbleStyle(int colorRGB, int borderRGB, int borderStyle, String p
     }
 
     private static int clampPct(int v) {
-        return v < 0 ? 0 : (v > 100 ? 100 : v);
+        return v < 5 ? 5 : (v > 95 ? 95 : v); // sempre visivel DENTRO do balao
     }
 
     private static int Mth_clamp(int v) {
