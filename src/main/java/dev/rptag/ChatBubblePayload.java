@@ -16,12 +16,15 @@ import net.minecraft.resources.ResourceLocation;
  * @param colorRGB    cor da parte de dentro (24 bits, 0xRRGGBB)
  * @param borderRGB   cor da borda (0xRRGGBB), -1 sem, -2 auto
  * @param italic      texto em italico (usado em /me e sussurros)
- * @param corner      adesivo de canto (estilo reacao)
+ * @param corner      adesivo LIVRE sobre o balao
+ * @param stickerX    posicao do adesivo em % na largura do balao
+ * @param stickerY    posicao do adesivo em % na altura do balao
  * @param background  (compatibilidade; o visual usa as cores)
  * @param durationMs  tempo de exibicao em milissegundos
  */
 public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int borderRGB, boolean italic,
-        String corner, int background, int durationMs) implements CustomPacketPayload {
+        String corner, int stickerX, int stickerY, int background, int durationMs)
+        implements CustomPacketPayload {
 
     public static final Type<ChatBubblePayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "chat_bubble"));
@@ -35,6 +38,8 @@ public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int bo
                         ByteBufCodecs.VAR_INT.encode(buf, p.borderRGB());
                         ByteBufCodecs.BOOL.encode(buf, p.italic());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.corner());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.stickerX());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.stickerY());
                         ByteBufCodecs.VAR_INT.encode(buf, p.background());
                         ByteBufCodecs.VAR_INT.encode(buf, p.durationMs());
                     },
@@ -45,6 +50,8 @@ public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int bo
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.BOOL.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf)));
 

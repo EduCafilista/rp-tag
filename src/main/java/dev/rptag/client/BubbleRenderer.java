@@ -4,13 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import dev.rptag.RPTagMod;
 import dev.rptag.Stickers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.network.chat.FormattedText;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
@@ -20,14 +24,13 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import org.joml.Matrix4f;
 
 /**
- * Balao de fala no ESTILO CLASSICO de quadrinhos: pílula ARREDONDADA com a
- * cor de DENTRO escolhida pelo jogador, CONTORNO da cor da borda, sombra,
- * rabicho e ADESIVOS coloridos (antes / meio / depois / CANTO estilo reacao).
+ * Balao de fala estilo QUADRINHOS — desenhado com TEXTURA SUAVE (pílula
+ * arredondada anti-aliased + rabicho curvado), tingida com as cores do
+ * jogador: recheio da cor de dentro, contorno da cor da borda e sombra.
  *
- * <p>PIXEL-PERFECT: todas as posicoes sao inteiros de pixel. Tudo desenhado
- * pelo proprio motor de texto do jogo (o mesmo mecanismo do fundo das
- * nametags) — a prova de invisivel e a prova de crash (qualquer erro desliga
- * os baloes com aviso no log; o jogo NUNCA fecha).
+ * <p>O adesivo fica em QUALQUER ponto do balao (posicao % salva pelo editor).
+ * Tudo em FULLBRIGHT (legivel no escuro), a prova de crash (qualquer erro
+ * desliga os baloes com aviso no log; o jogo NUNCA fecha).
  */
 @EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class BubbleRenderer {
@@ -35,8 +38,20 @@ public final class BubbleRenderer {
     private static final int MAX_TEXT_WIDTH = 110;
     private static final int LINE_HEIGHT = 10;
 
-    /** O rabicho do balao: um triangulo da propria fonte do jogo. */
-    private static final String TAIL_GLYPH = "▼";
+    /** Textura da pílula (64x32, branca com alfa suave — tingida na hora). */
+    private static final ResourceLocation BUBBLE_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble.png");
+    /** Textura do rabicho (16x16, triângulo curvado apontando pra baixo). */
+    private static final ResourceLocation TAIL_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_tail.png");
+
+    private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
+    private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
+
+    // regiao da pilula dentro do bubble.png (y 2..28 de 32; tampa = 16px de 64)
+    private static final float V1 = 2.0F / 32.0F;
+    private static final float V2 = 28.0F / 32.0F;
+    private static final float U_CAP = 16.0F / 64.0F;
 
     private BubbleRenderer() {
     }
@@ -92,39 +107,53 @@ public final class BubbleRenderer {
     }
 
     /** Desenha uma linha por segmentos: adesivos em BRANCO (cor verdadeira) e texto na cor normal. */
-    private static float drawLine(Font font, Matrix4f matrix, net.minecraft.client.renderer.MultiBufferSource buffers,
-            int light, List<Seg> segs, float x, float y, int textColor, boolean shadow) {
+    private static float drawLine(Font font, Matrix4f matrix, MultiBufferSource buffers,
+            List<Seg> segs, float x, float y, int textColor) {
         float pen = x;
         for (Seg seg : segs) {
             int color = seg.sticker ? 0xFFFFFFFF : textColor;
-            pen = font.drawInBatch(seq(seg), pen, y, color, shadow, matrix, buffers,
-                    Font.DisplayMode.NORMAL, 0, light);
+            pen = font.drawInBatch(seq(seg), pen, y, color, true, matrix, buffers,
+                    Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
         return pen;
     }
 
-    /** Versao apagada (atraves de paredes) dos segmentos. */
-    private static void drawLineDimmed(Font font, Matrix4f matrix, net.minecraft.client.renderer.MultiBufferSource buffers,
-            int light, List<Seg> segs, float x, float y, int dimmedText) {
-        float pen = x;
-        for (Seg seg : segs) {
-            int color = seg.sticker ? 0x50FFFFFF : dimmedText;
-            pen = font.drawInBatch(seq(seg), pen, y, color, false, matrix, buffers,
-                    Font.DisplayMode.SEE_THROUGH, 0, light);
-        }
-    }
-
     /**
-     * Faixa do balao: linha de espacos com cor de fundo (4*n+2 px por 10px de
-     * altura). Se a cor tiver alpha, o desenho do jogo mistura igual tinta.
+     * Um retangulo da pílula por 3 fatias da textura (tampa esquerda + meio
+     * esticado + tampa direita): as pontas arredondadas NUNCA deformam.
      */
-    private static void band(Font font, Matrix4f matrix, net.minecraft.client.renderer.MultiBufferSource buffers,
-            int light, float x, float y, int spaces, int argb) {
-        if (spaces <= 0 || (argb >>> 24) == 0) {
+    private static void pill(Matrix4f m, MultiBufferSource buffers, float z,
+            float x, float y, float w, float h, int argb) {
+        if ((argb >>> 24) == 0 || w < 2) {
             return;
         }
-        font.drawInBatch(" ".repeat(spaces), x, y, 0, false, matrix,
-                buffers, Font.DisplayMode.NORMAL, argb, light);
+        VertexConsumer buf = buffers.getBuffer(BUBBLE_TYPE);
+        float cap = Math.min(16.0F, w / 2.0F);
+        quad(m, buf, z, x, y, x + cap, y + h, 0.0F, V1, U_CAP, V2, argb);
+        quad(m, buf, z, x + cap, y, x + w - cap, y + h, U_CAP, V1, 1.0F - U_CAP, V2, argb);
+        quad(m, buf, z, x + w - cap, y, x + w, y + h, 1.0F - U_CAP, V1, 1.0F, V2, argb);
+    }
+
+    /** O rabicho (textura 16x16 desenhada em w x h, centralizado em cx). */
+    private static void tail(Matrix4f m, MultiBufferSource buffers, float z,
+            float cx, float yTop, float w, float h, int argb) {
+        if ((argb >>> 24) == 0) {
+            return;
+        }
+        quad(m, buffers.getBuffer(TAIL_TYPE), z, cx - w / 2.0F, yTop, cx + w / 2.0F, yTop + h,
+                0.0F, 0.0F, 1.0F, 1.0F, argb);
+    }
+
+    private static void quad(Matrix4f m, VertexConsumer buf, float z,
+            float x1, float y1, float x2, float y2, float u1, float v1, float u2, float v2, int argb) {
+        buf.addVertex(m, x1, y1, z).setColor(argb).setUv(u1, v1).setUv1(0, 10).setLight(LightTexture.FULL_BRIGHT)
+                .setNormal(0.0F, 1.0F, 0.0F);
+        buf.addVertex(m, x1, y2, z).setColor(argb).setUv(u1, v2).setUv1(0, 10).setLight(LightTexture.FULL_BRIGHT)
+                .setNormal(0.0F, 1.0F, 0.0F);
+        buf.addVertex(m, x2, y2, z).setColor(argb).setUv(u2, v2).setUv1(0, 10).setLight(LightTexture.FULL_BRIGHT)
+                .setNormal(0.0F, 1.0F, 0.0F);
+        buf.addVertex(m, x2, y1, z).setColor(argb).setUv(u2, v1).setUv1(0, 10).setLight(LightTexture.FULL_BRIGHT)
+                .setNormal(0.0F, 1.0F, 0.0F);
     }
 
     private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {
@@ -155,18 +184,19 @@ public final class BubbleRenderer {
         int fill = BubbleBackgrounds.fillColorFor(colorRGB);
         int border = BubbleBackgrounds.borderColorFor(colorRGB, bubble.borderRGB());
         int textColor = BubbleBackgrounds.textColorFor(colorRGB);
-        int dimmedText = (textColor & 0x00FFFFFF) | 0x50000000;
 
-        // ---- geometria da pílula (pixels inteiros, largura par) ----
+        // ---- geometria (pixels inteiros) ----
         int textW = 0;
         for (FormattedCharSequence line : lines) {
             textW = Math.max(textW, font.width(line));
         }
-        int sFull = Math.max(2, (textW + 13) / 4);
-        int bw = 4 * sFull + 2;          // largura das faixas cheias (par)
-        float x0 = -bw / 2.0F;           // inteiro
         int n = lines.size();
-        int yTop = 3 - 10 * n;           // y da 1a faixa de texto (base ~3px acima da origem)
+        int pillW = Math.max(32, textW + 14);
+        int pillH = n * LINE_HEIGHT + 6;
+        float x0 = -pillW / 2.0F;
+        float yText = 3 - LINE_HEIGHT * n;      // topo da 1a linha de texto
+        float yP0 = yText - 3;                  // topo da pilula
+        float yP1 = yText + LINE_HEIGHT * n + 3; // base da pilula
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
@@ -174,53 +204,23 @@ public final class BubbleRenderer {
         poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
         poseStack.scale(0.025F, -0.025F, 0.025F);
         Matrix4f matrix = poseStack.last().pose();
-        var buffers = event.getMultiBufferSource();
-        int light = event.getPackedLight();
+        MultiBufferSource buffers = event.getMultiBufferSource();
 
-        int sCap = sFull - 2;            // faixa "tampa" (arredonda as pontas)
-        float xCap = x0 + 4;             // deslocada 4px pra dentro
-        int yCapTop = yTop - 10;         // tampa de cima
-        int yCapBot = yTop + 10 * n;     // tampa de baixo
+        // ---- SOMBRA ----
+        pill(matrix, buffers, -0.20F, x0 + 2, yP0 + 2, pillW, pillH, 0x40000000);
+        tail(matrix, buffers, -0.20F, 0, yP1 - 1, 12, 12, 0x40000000);
 
-        // ---- SOMBRA (profundidade) ----
-        band(font, matrix, buffers, light, xCap + 1, yCapTop + 2, sCap, 0x56000000);
-        for (int j = 0; j < n; j++) {
-            band(font, matrix, buffers, light, x0 + 1, yTop + 10 * j + 2, sFull, 0x56000000);
-        }
-        band(font, matrix, buffers, light, xCap + 1, yCapBot + 2, sCap, 0x56000000);
-
-        // ---- CONTORNO (anel de quadrinhos: exposto 2px acima/abaixo e nas laterais) ----
+        // ---- CONTORNO (anel: a pilula +2px por lado, como tinta de quadrinhos) ----
         if (border != 0) {
-            band(font, matrix, buffers, light, xCap, yCapTop - 2, sCap, border);      // topo
-            band(font, matrix, buffers, light, xCap, yCapBot + 2, sCap, border);      // base
-            for (int j = 0; j < n; j++) {
-                band(font, matrix, buffers, light, x0 - 4, yTop + 10 * j, 1, border); // lateral esq
-                band(font, matrix, buffers, light, x0 + bw, yTop + 10 * j, 1, border);// lateral dir
-            }
-            band(font, matrix, buffers, light, xCap, yCapTop, sCap, border);          // tampa topo (atras do recheio)
-            band(font, matrix, buffers, light, xCap, yCapBot, sCap, border);          // tampa base
+            pill(matrix, buffers, -0.15F, x0 - 2, yP0 - 2, pillW + 4, pillH + 4, border);
+            tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
         }
 
         // ---- RECHEIO (a cor de dentro escolhida) ----
-        band(font, matrix, buffers, light, xCap, yCapTop, sCap, fill);
-        for (int j = 0; j < n; j++) {
-            band(font, matrix, buffers, light, x0, yTop + 10 * j, sFull, fill);
-        }
-        band(font, matrix, buffers, light, xCap, yCapBot, sCap, fill);
+        pill(matrix, buffers, -0.10F, x0, yP0, pillW, pillH, fill);
+        tail(matrix, buffers, -0.09F, 0, yP1 - 3, 12, 12, fill);
 
-        // ---- rabicho ▼ ----
-        int tailW = font.width(TAIL_GLYPH);
-        font.drawInBatch(TAIL_GLYPH, -tailW / 2.0F, yCapBot + 9, fill,
-                false, matrix, buffers, Font.DisplayMode.NORMAL, 0, light);
-
-        // ---- ADESIVO DE CANTO (estilo reacao, no canto superior direito) ----
-        if (!bubble.corner().isEmpty()) {
-            var cornerSticker = Stickers.styled(bubble.corner());
-            font.drawInBatch(cornerSticker, x0 + bw - 4, yCapTop - 9,
-                    0xFFFFFFFF, true, matrix, buffers, Font.DisplayMode.NORMAL, 0, light);
-        }
-
-        // ---- texto + adesivos (passada apagada + passada com sombra) ----
+        // ---- texto + adesivos dentro da fala ----
         for (int j = 0; j < n; j++) {
             List<Seg> segs = segLines.get(j);
             int lineW = 0;
@@ -228,9 +228,18 @@ public final class BubbleRenderer {
                 lineW += font.width(seq(seg));
             }
             float lineX = -Math.round(lineW / 2.0F);
-            float penY = yTop + 10 * j;
-            drawLineDimmed(font, matrix, buffers, light, segs, lineX, penY, dimmedText);
-            drawLine(font, matrix, buffers, light, segs, lineX, penY, textColor, true);
+            float penY = yText + LINE_HEIGHT * j;
+            drawLine(font, matrix, buffers, segs, lineX, penY, textColor);
+        }
+
+        // ---- ADESIVO LIVRE: em qualquer ponto do balao (posicao % salva) ----
+        if (!bubble.corner().isEmpty()) {
+            var sticker = Stickers.styled(bubble.corner());
+            float sw = font.width(sticker);
+            float sx = x0 + bubble.stickerX() / 100.0F * pillW;
+            float sy = yP0 + bubble.stickerY() / 100.0F * pillH;
+            font.drawInBatch(sticker, sx - sw / 2.0F, sy - 4.5F, 0xFFFFFFFF, true,
+                    matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
 
         poseStack.popPose();

@@ -137,7 +137,8 @@ public final class RPWorldData extends SavedData {
         BubbleStyle style = styles.get(id);
         if (style == null) {
             int color = colors.getOrDefault(id, DEFAULT_COLOR);
-            return new BubbleStyle(color, BubbleStyle.DEFAULT_BORDER, "", "", "", "", 0, BubbleStyle.DEFAULT_DURATION);
+            return new BubbleStyle(color, BubbleStyle.DEFAULT_BORDER, "", "", "", "",
+                    BubbleStyle.DEFAULT_STICKER_X, BubbleStyle.DEFAULT_STICKER_Y, 0, BubbleStyle.DEFAULT_DURATION);
         }
         return style; // a cor escolhida na tela manda SEMPRE
     }
@@ -248,6 +249,18 @@ public final class RPWorldData extends SavedData {
         ListTag optOuts = tag.getList("BubbleOptOut", Tag.TAG_COMPOUND);
         for (int i = 0; i < optOuts.size(); i++) {
             data.bubbleOptOut.put(optOuts.getCompound(i).getUUID("Id"), true);
+        }
+
+        // CORRECAO: estilos e modos de balao agora voltam ao reiniciar o servidor!
+        ListTag modes = tag.getList("BubbleMode", Tag.TAG_COMPOUND);
+        for (int i = 0; i < modes.size(); i++) {
+            data.bubbleMode.put(modes.getCompound(i).getUUID("Id"), true);
+        }
+
+        ListTag stylesList = tag.getList("BubbleStyles", Tag.TAG_COMPOUND);
+        for (int i = 0; i < stylesList.size(); i++) {
+            CompoundTag e = stylesList.getCompound(i);
+            data.styles.put(e.getUUID("Id"), BubbleStyle.load(e.getCompound("Style")));
         }
 
         data.chatLocal = tag.getBoolean("ChatLocal");

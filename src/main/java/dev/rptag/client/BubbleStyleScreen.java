@@ -17,16 +17,17 @@ import dev.rptag.UpdateBubbleStylePayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * TELA DE PERSONALIZACAO DO BALAO (2.9.0 — simples a ponto de nao ter como errar):
+ * TELA DE PERSONALIZACAO DO BALAO (3.0.0):
  *
  * <ul>
- *   <li>4 DESTINOS sempre visiveis (Antes / Meio / Depois / Canto): clique no
- *       destino e depois no adesivo — ou ARRASTE o adesivo ate o destino.
- *       CLIQUE DIREITO no destino TIRA o adesivo.</li>
- *   <li>Cores SEM armadilha: cartoes DENTRO e BORDA sempre visiveis — o
- *       seletor edita o que estiver selecionado (verde).</li>
+ *   <li>O balao de VERDADE aparece na tela como preview — o que voce ve e o que fica.</li>
+ *   <li>ADESIVO LIVRE: clique em "✦ Adesivos", escolha um emoji (ele gruda no
+ *       mouse) e clique EM CIMA DO BALAO pra soltar ONDE QUISER. Clique de novo
+ *       no adesivo no balao pra pegar de volta e reposicionar; clique direito
+ *       no balao TIRA o adesivo.</li>
+ *   <li>Cores: cartoes DENTRO e BORDA sempre visiveis — o seletor pinta o que
+ *       estiver com moldura branca.</li>
  *   <li>Borda em 3 estados claros: Automatica → Personalizada → Sem.</li>
- *   <li>Barra de duracao (2-20s) e Modo balao. Preview ao vivo.</li>
  * </ul>
  *
  * <p>NITIDEZA: fundo OPACO proprio — o desfoque do 1.21 nunca toca no painel.
@@ -34,16 +35,16 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public class BubbleStyleScreen extends Screen {
 
     private static final int PANEL_W = 262;
-    private static final int PANEL_H = 200;
+    private static final int PANEL_H = 214;
 
     private static final int SV_W = 106;
-    private static final int SV_H = 62;
+    private static final int SV_H = 40;
     private static final int HUE_H = 10;
 
-    // teclado de adesivos
+    // teclado de adesivos (8 colunas x 6 linhas)
     private static final int KB_COLS = 8;
     private static final int KB_ROWS = 6;
-    private static final int KB_CELL = 18;
+    private static final int KB_CELL = 28;
 
     /** Alvo do seletor: 0 = dentro, 1 = borda. */
     private int pickerTarget = 0;
@@ -55,23 +56,25 @@ public class BubbleStyleScreen extends Screen {
     private boolean draggingSv = false;
     private boolean draggingHue = false;
 
-    // adesivos
+    // adesivo solto na mao / teclado
+    private String holdingSticker = null;
     private boolean showKeyboard = false;
-    private int activeZone = 0; // 0=antes 1=meio 2=depois 3=canto
-    private String draggingSticker = null;
 
     // areas
     private int px, py;
     private int svX, svY, hueY;
     private int kbX, kbY;
-    private final int[] zoneX = new int[4];
-    private int zoneY, zoneW;
-    private int swatch1X, swatch2X, swatchY;
+    private int pvX0, pvY0, pvX1, pvY1;   // caixa do preview (fundo escuro)
+
+    // geometria da pilula do preview (atualizada a cada frame)
+    private int pX0, pY0, pW, pH;
+    private boolean hoverSticker = false;
 
     public BubbleStyleScreen(OpenBubbleStylePayload style) {
         super(Component.literal("Balão de Fala"));
         this.style = new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(),
-                style.mid(), style.suffix(), style.corner(), style.background(), style.durationSec());
+                style.mid(), style.suffix(), style.corner(), style.stickerX(), style.stickerY(),
+                style.background(), style.durationSec());
         loadPickerFrom(style.colorRGB());
     }
 
@@ -87,34 +90,20 @@ public class BubbleStyleScreen extends Screen {
         px = (this.width - PANEL_W) / 2;
         py = (this.height - PANEL_H) / 2;
         svX = px + 12;
-        svY = py + 84;
-        hueY = svY + SV_H + 4;
-        swatchY = hueY + HUE_H + 6;
-        swatch1X = svX;
-        swatch2X = svX + 54;
+        svY = py + 114;
+        hueY = svY + SV_H + 2;
         kbX = px + (PANEL_W - KB_COLS * KB_CELL) / 2;
-        kbY = py + 66;
-        zoneW = 58;
-        zoneY = py + 46;
-        for (int i = 0; i < 4; i++) {
-            zoneX[i] = px + (PANEL_W - 4 * zoneW - 3 * 6) / 2 + i * (zoneW + 6);
-        }
-
-        // ---- os 4 DESTINOS (sempre visiveis, nas duas paginas) ----
-        for (int i = 0; i < 4; i++) {
-            final int which = i;
-            addRenderableWidget(Button.builder(zoneLabel(which), b -> {
-                    }).bounds(zoneX[i], zoneY, zoneW, 16).build());
-        }
+        kbY = py + 18;
+        pvX0 = px + 10;
+        pvY0 = py + 16;
+        pvX1 = px + PANEL_W - 10;
+        pvY1 = py + 84;
 
         if (showKeyboard) {
-            addRenderableWidget(Button.builder(Component.literal("✖ Tirar do destino selecionado"), b -> {
-                        setSlot(activeZone, "");
-                    }).bounds(px + 12, py + PANEL_H - 24, 150, 18).build());
-            addRenderableWidget(Button.builder(Component.literal("✔ Voltar"), b -> {
+            addRenderableWidget(Button.builder(Component.literal("✔ Pronto — arraste no balão!"), b -> {
                         showKeyboard = false;
                         rebuildWidgets();
-                    }).bounds(px + PANEL_W - 100, py + PANEL_H - 24, 88, 18).build());
+                    }).bounds(px + (PANEL_W - 170) / 2, py + PANEL_H - 28, 170, 20).build());
         } else {
             int bx = px + 128;
             int bw = PANEL_W - 128 - 12;
@@ -153,55 +142,20 @@ public class BubbleStyleScreen extends Screen {
                     }).bounds(bx, svY + 54, bw, 16).build());
 
             addRenderableWidget(Button.builder(Component.literal("✔ Salvar"), b -> saveAndClose())
-                    .bounds(px + 12, py + PANEL_H - 24, 115, 18).build());
+                    .bounds(px + 12, py + PANEL_H - 26, 115, 20).build());
             addRenderableWidget(Button.builder(Component.literal("✖ Cancelar"), b -> onClose())
-                    .bounds(px + PANEL_W - 127, py + PANEL_H - 24, 115, 18).build());
+                    .bounds(px + PANEL_W - 127, py + PANEL_H - 26, 115, 20).build());
         }
     }
 
     // =====================================================================
-    //  Adesivos: destinos
+    //  Estilo: mutadores
     // =====================================================================
 
-    private String slotValue(int which) {
-        return switch (which) {
-            case 0 -> style.prefix();
-            case 1 -> style.mid();
-            case 2 -> style.suffix();
-            default -> style.corner();
-        };
+    private void setSticker(String glyph, int x, int y) {
+        style = new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(),
+                style.suffix(), glyph, x, y, style.background(), style.durationSec());
     }
-
-    private void setSlot(int which, String glyph) {
-        style = switch (which) {
-            case 0 -> withPrefix(glyph);
-            case 1 -> withMid(glyph);
-            case 2 -> withSuffix(glyph);
-            default -> withCorner(glyph);
-        };
-        rebuildWidgets(); // atualiza os rotulos dos destinos
-    }
-
-    private Component zoneLabel(int which) {
-        String name = switch (which) {
-            case 0 -> "Antes";
-            case 1 -> "Meio";
-            case 2 -> "Depois";
-            default -> "Canto";
-        };
-        String cur = slotValue(which);
-        Component c = Component.literal(name + " ")
-                .append(cur.isEmpty() ? Component.literal("—") : Stickers.label(cur));
-        if (which == activeZone) {
-            final Component plain = c;
-            c = Component.empty().append(plain).withStyle(ChatFormatting.GREEN);
-        }
-        return c;
-    }
-
-    // =====================================================================
-    //  Borda em 3 estados (sem caminho sem saida)
-    // =====================================================================
 
     private void cycleBorder() {
         if (style.borderRGB() == BubbleStyle.AUTO_BORDER) {
@@ -249,34 +203,26 @@ public class BubbleStyleScreen extends Screen {
         renderPanel(g);
         if (showKeyboard) {
             renderKeyboard(g, mouseX, mouseY);
+            g.drawCenteredString(this.font, "✦ Escolha o adesivo", this.width / 2, py + 5, 0xFFFFFFFF);
         } else {
             renderPicker(g);
-            renderPreview(g);
+            renderPreview(g, mouseX, mouseY);
         }
         super.render(g, mouseX, mouseY, partialTick);
-        if (showKeyboard) {
-            g.drawCenteredString(this.font, "Clique no adesivo = vai pro destino selecionado",
-                    this.width / 2, py + 8, 0xFFFFFFFF);
-            g.drawCenteredString(this.font, "(ou ARRASTE ate o destino · clique direito tira)",
-                    this.width / 2, py + 20, 0xFF9AA3B5);
-            String zn = switch (activeZone) {
-                case 0 -> "Antes";
-                case 1 -> "Meio";
-                case 2 -> "Depois";
-                default -> "Canto";
-            };
-            g.drawCenteredString(this.font, "Destino selecionado: " + zn,
-                    this.width / 2, py + 34, 0xFF9AE8B5);
-        } else {
-            g.drawCenteredString(this.font, "✦ Balão de Fala", this.width / 2, py + 8, 0xFFFFFFFF);
-            g.drawCenteredString(this.font, "Clique no destino e escolha o adesivo (direito tira)",
-                    this.width / 2, py + 22, 0xFF9AA3B5);
-            g.drawCenteredString(this.font, "✎ pinte DENTRO e BORDA arrastando aqui embaixo",
-                    svX + SV_W / 2, svY - 12, 0xFF9AA3B5);
-        }
-        // adesivo sendo arrastado: segue o mouse
-        if (draggingSticker != null) {
-            g.drawString(this.font, Stickers.label(draggingSticker), mouseX - 4, mouseY - 12, 0xFFFFFFFF, false);
+        if (!showKeyboard) {
+            String hint;
+            if (holdingSticker != null) {
+                hint = "Solte em cima do balão: clique onde quiser!";
+            } else if (!style.corner().isEmpty()) {
+                hint = "Clique no adesivo p/ reposicionar · clique direito TIRA";
+            } else {
+                hint = "✦ Adesivos → escolha → clique no balão!";
+            }
+            g.drawCenteredString(this.font, hint, this.width / 2, py + 87, holdingSticker != null
+                    ? 0xFF9AE8B5 : 0xFF9AA3B5);
+            if (holdingSticker != null) {
+                g.drawString(this.font, Stickers.label(holdingSticker), mouseX - 4, mouseY - 12, 0xFFFFFFFF, false);
+            }
         }
     }
 
@@ -293,9 +239,81 @@ public class BubbleStyleScreen extends Screen {
         }
     }
 
+    /**
+     * PREVIEW: o balao de verdade (pílula arredondada + contorno + rabicho +
+     * adesivo na posicao salva). A geometria da pilula fica gravada pra
+     * converter a posicao do clique em % (x, y).
+     */
+    private void renderPreview(GuiGraphics g, int mouseX, int mouseY) {
+        g.fill(pvX0, pvY0, pvX1, pvY1, 0xFF171A22);
+        outline(g, pvX0, pvY0, pvX1 - pvX0, pvY1 - pvY0, 0xFF12141B);
+
+        int colorRGB = style.colorRGB() & 0xFFFFFF;
+        int fill = BubbleBackgrounds.fillColorFor(colorRGB);
+        int border = BubbleBackgrounds.borderColorFor(colorRGB, style.borderRGB());
+        int textColor = BubbleBackgrounds.textColorFor(colorRGB);
+
+        var text = Stickers.styled(
+                (style.prefix().isEmpty() ? "" : style.prefix() + " ")
+                        + "sua fala assim"
+                        + (style.suffix().isEmpty() ? "" : " " + style.suffix()));
+        int textW = this.font.width(text);
+        pW = Math.max(32, textW + 14);
+        pH = 16; // 1 linha
+        pX0 = (pvX0 + pvX1) / 2 - pW / 2;
+        pY0 = (pvY0 + pvY1) / 2 - pH / 2 - 3; // deixa espaco pro rabicho
+
+        // contorno + recheio + rabicho (pontas arredondadas por linhas)
+        if (border != 0) {
+            fillPill(g, pX0 - 2, pY0 - 2, pW + 4, pH + 4, border);
+            g.drawString(this.font, "▼", pvX0 + (pvX1 - pvX0) / 2 - 4, pY0 + pH - 1, border, false);
+        }
+        fillPill(g, pX0, pY0, pW, pH, fill);
+        g.drawString(this.font, "▼", pvX0 + (pvX1 - pvX0) / 2 - 5, pY0 + pH, fill, false);
+        g.drawString(this.font, text, pX0 + 7, pY0 + 3, textColor, true);
+
+        // adesivo na posicao salva (brilho quando o mouse esta em cima)
+        hoverSticker = false;
+        if (!style.corner().isEmpty()) {
+            int sx = pX0 + Math.round(style.stickerX() / 100.0F * pW);
+            int sy = pY0 + Math.round(style.stickerY() / 100.0F * pH);
+            int gx = sx - this.font.width(Stickers.label(style.corner())) / 2;
+            g.drawString(this.font, Stickers.label(style.corner()), gx, sy - 4, 0xFFFFFFFF, true);
+            if (Math.abs(mouseX - sx) <= 8 && Math.abs(mouseY - sy) <= 7 && holdingSticker == null) {
+                hoverSticker = true;
+                outline(g, gx - 2, sy - 6,
+                        this.font.width(Stickers.label(style.corner())) + 4, 13, 0xFF9AE8B5);
+            }
+        }
+        // preview do adesivo na mao (onde vai cair)
+        if (holdingSticker != null && inBox(mouseX, mouseY, pX0 - 4, pY0 - 4, pW + 8, pH + 8)) {
+            int sx = Mth.clamp(mouseX, pX0, pX0 + pW);
+            int sy = Mth.clamp(mouseY, pY0, pY0 + pH);
+            g.drawString(this.font, Stickers.label(holdingSticker),
+                    sx - this.font.width(Stickers.label(holdingSticker)) / 2, sy - 4, 0xFFFFFFFF, true);
+        }
+        if (holdingSticker != null) {
+            outline(g, pvX0, pvY0, pvX1 - pvX0, pvY1 - pvY0, 0xFF9AE8B5);
+        }
+    }
+
+    /** Pílula arredondada por linhas (pontas de semicirculo, como no jogo). */
+    private void fillPill(GuiGraphics g, int x, int y, int w, int h, int argb) {
+        if ((argb >>> 24) == 0) {
+            return;
+        }
+        int r = h / 2;
+        for (int dy = 0; dy < h; dy++) {
+            double vert = dy - (h - 1) / 2.0;
+            double vv = Math.min(r * (double) r, vert * vert);
+            int inset = (int) Math.round(r - Math.sqrt(Math.max(0, r * (double) r - vv)));
+            g.fill(x + inset, y + dy, x + w - inset, y + dy + 1, argb);
+        }
+    }
+
     /** Quadrado de saturacao/brilho + faixa de matiz + cartoes DENTRO/BORDA. */
     private void renderPicker(GuiGraphics g) {
-        int cols = 26, rows = 15;
+        int cols = 26, rows = 10;
         float cw = SV_W / (float) cols, ch = SV_H / (float) rows;
         for (int cx = 0; cx < cols; cx++) {
             for (int cy = 0; cy < rows; cy++) {
@@ -321,12 +339,12 @@ public class BubbleStyleScreen extends Screen {
         outline(g, hx + 1, hueY, 3, HUE_H, 0xFFFFFFFF);
 
         // cartoes DENTRO / BORDA (o selecionado fica com moldura branca)
-        drawTargetCard(g, swatch1X, swatchY, "Dentro", BubbleBackgrounds.fillColorFor(style.colorRGB()), pickerTarget == 0);
+        drawTargetCard(g, svX, py + 96, "Dentro", BubbleBackgrounds.fillColorFor(style.colorRGB()), pickerTarget == 0);
         int bc = BubbleBackgrounds.borderColorFor(style.colorRGB(), style.borderRGB());
-        drawTargetCard(g, swatch2X, swatchY, "Borda", bc != 0 ? bc : 0xFF171A22, pickerTarget == 1);
+        drawTargetCard(g, svX + 54, py + 96, "Borda", bc != 0 ? bc : 0xFF171A22, pickerTarget == 1);
 
         // hex da cor atual
-        g.drawString(this.font, String.format("#%06X", currentRgb()), svX + 104, swatchY + 4, 0xFF8E96A8, false);
+        g.drawString(this.font, String.format("#%06X", currentRgb()), svX + 112, py + 100, 0xFF8E96A8, false);
     }
 
     private void drawTargetCard(GuiGraphics g, int x, int y, String label, int color, boolean selected) {
@@ -337,41 +355,7 @@ public class BubbleStyleScreen extends Screen {
         outline(g, x, y, 50, 14, selected ? 0xFFFFFFFF : 0xFF12141B);
     }
 
-    /** Preview do balao ao vivo (estilo quadrinhos, com canto). */
-    private void renderPreview(GuiGraphics g) {
-        int colorRGB = style.colorRGB() & 0xFFFFFF;
-        var text = Stickers.styled(
-                (style.prefix().isEmpty() ? "" : style.prefix() + " ")
-                        + "sua fala assim"
-                        + (style.suffix().isEmpty() ? "" : " " + style.suffix()));
-        int cx = this.width / 2;
-        int y = py + 18;
-
-        g.fill(px + 12, py + 14, px + PANEL_W - 12, py + 42, 0xFF171A22);
-        outline(g, px + 12, py + 14, PANEL_W - 24, 28, 0xFF12141B);
-
-        int fill = BubbleBackgrounds.fillColorFor(colorRGB);
-        int border = BubbleBackgrounds.borderColorFor(colorRGB, style.borderRGB());
-        int pillW = Math.max(34, this.font.width(text) + 14);
-        int sFull = Math.max(2, (pillW - 2) / 4);
-        int bw = 4 * sFull + 2;
-        int x0 = cx - bw / 2;
-
-        g.fill(x0 + 2, y + 2, x0 + bw + 2, y + 10, 0x56000000);
-        if (border != 0) {
-            g.fill(x0 - 2, y - 1, x0 + bw + 2, y + 9, border);
-        }
-        g.fill(x0, y - 1, x0 + bw, y + 9, fill);
-
-        int textColor = BubbleBackgrounds.textColorFor(colorRGB);
-        g.drawString(this.font, text, cx - this.font.width(text) / 2, y, textColor, true);
-        g.drawString(this.font, "▼", cx - 3, y + 8, fill, true);
-        if (!style.corner().isEmpty()) {
-            g.drawString(this.font, Stickers.label(style.corner()), x0 + bw - 4, y - 11, 0xFFFFFFFF, true);
-        }
-    }
-
-    /** Teclado: grade 8x6 de adesivos; clique aplica no destino selecionado. */
+    /** Teclado: grade 8x6 de adesivos; clique gruda o adesivo no mouse. */
     private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
         for (int i = 0; i < Stickers.COUNT; i++) {
             int cx = kbX + (i % KB_COLS) * KB_CELL;
@@ -380,7 +364,10 @@ public class BubbleStyleScreen extends Screen {
             g.fill(cx, cy, cx + 1, cy + KB_CELL, 0xFF12141B);
             g.fill(cx + KB_CELL - 1, cy, cx + KB_CELL, cy + KB_CELL, 0xFF12141B);
             g.fill(cx, cy + KB_CELL - 1, cx + KB_CELL, cy + KB_CELL, 0xFF12141B);
-            g.drawString(this.font, Stickers.label(Stickers.GLYPHS[i]), cx + 5, cy + 5, 0xFFFFFFFF, false);
+            String glyph = Stickers.GLYPHS[i];
+            g.drawString(this.font, Stickers.label(glyph),
+                    cx + (KB_CELL - this.font.width(Stickers.label(glyph))) / 2,
+                    cy + (KB_CELL - 8) / 2, 0xFFFFFFFF, false);
         }
         int over = stickerAt(mouseX, mouseY);
         if (over >= 0) {
@@ -389,9 +376,6 @@ public class BubbleStyleScreen extends Screen {
             outline(g, cx, cy, KB_CELL, KB_CELL, 0xFFFFFFFF);
             g.renderTooltip(this.font, Component.literal(Stickers.NAMES[over]), mouseX, mouseY);
         }
-        // destinos selecionado em destaque no teclado
-        int zx = zoneX[activeZone];
-        outline(g, zx - 1, zoneY - 1, zoneW + 2, 18, 0xFF9AE8B5);
     }
 
     private int stickerAt(double mx, double my) {
@@ -401,15 +385,6 @@ public class BubbleStyleScreen extends Screen {
             return -1;
         }
         return cy * KB_COLS + cx;
-    }
-
-    private int zoneAt(double mx, double my) {
-        for (int i = 0; i < 4; i++) {
-            if (inBox(mx, my, zoneX[i], zoneY, zoneW, 16)) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     private void outline(GuiGraphics g, int x, int y, int w, int h, int color) {
@@ -425,22 +400,46 @@ public class BubbleStyleScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
-        // clique direito num destino TIRA o adesivo
-        if (button == 1) {
-            int z = zoneAt(mx, my);
-            if (z >= 0) {
-                setSlot(z, "");
+        if (button == 0 && showKeyboard) {
+            int idx = stickerAt(mx, my);
+            if (idx >= 0) {
+                holdingSticker = Stickers.GLYPHS[idx]; // gruda no mouse!
+                showKeyboard = false;
+                rebuildWidgets();
                 return true;
             }
+            return super.mouseClicked(mx, my, button);
         }
-        if (button == 0) {
-            // cartoes Dentro/Borda (pagina principal)
-            if (!showKeyboard && inBox(mx, my, swatch1X, swatchY, 50, 14)) {
+        if (!showKeyboard && button == 0 && holdingSticker != null) {
+            // SOLTOU: a posicao do clique vira a posicao do adesivo (%)
+            int x = Mth.clamp((int) mx, pX0, pX0 + pW);
+            int y = Mth.clamp((int) my, pY0, pY0 + pH);
+            int percX = Math.round((x - pX0) * 100.0F / pW);
+            int percY = Math.round((y - pY0) * 100.0F / pH);
+            setSticker(holdingSticker, percX, percY);
+            holdingSticker = null;
+            return true;
+        }
+        if (!showKeyboard && button == 0 && hoverSticker) {
+            // PEGOU DE VOLTA pra reposicionar
+            holdingSticker = style.corner();
+            setSticker("", style.stickerX(), style.stickerY());
+            return true;
+        }
+        if (!showKeyboard && button == 1 && inBox(mx, my, pvX0, pvY0, pvX1 - pvX0, pvY1 - pvY0)) {
+            // clique direito no balao TIRA o adesivo
+            if (!style.corner().isEmpty()) {
+                setSticker("", style.stickerX(), style.stickerY());
+            }
+            return true;
+        }
+        if (!showKeyboard && button == 0) {
+            if (inBox(mx, my, svX, py + 96, 50, 14)) {
                 pickerTarget = 0;
                 loadPickerFrom(style.colorRGB());
                 return true;
             }
-            if (!showKeyboard && inBox(mx, my, swatch2X, swatchY, 50, 14)) {
+            if (inBox(mx, my, svX + 54, py + 96, 50, 14)) {
                 pickerTarget = 1;
                 if (style.borderRGB() < 0) { // sem borda ou auto -> vira personalizada
                     style = withBorder(style.colorRGB());
@@ -449,24 +448,15 @@ public class BubbleStyleScreen extends Screen {
                 rebuildWidgets();
                 return true;
             }
-            // seletor
-            if (!showKeyboard && inBox(mx, my, svX, svY, SV_W, SV_H)) {
+            if (inBox(mx, my, svX, svY, SV_W, SV_H)) {
                 draggingSv = true;
                 updateSv(mx, my);
                 return true;
             }
-            if (!showKeyboard && inBox(mx, my, svX, hueY, SV_W, HUE_H)) {
+            if (inBox(mx, my, svX, hueY, SV_W, HUE_H)) {
                 draggingHue = true;
                 updateHue(mx);
                 return true;
-            }
-            // grade de adesivos: clique aplica no destino selecionado
-            if (showKeyboard) {
-                int idx = stickerAt(mx, my);
-                if (idx >= 0) {
-                    draggingSticker = Stickers.GLYPHS[idx];
-                    return true;
-                }
             }
         }
         return super.mouseClicked(mx, my, button);
@@ -487,28 +477,9 @@ public class BubbleStyleScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mx, double my, int button) {
-        if (draggingSticker != null) {
-            // soltou sobre um destino? aplica nele; senao, aplica no destino selecionado
-            int z = zoneAt(mx, my);
-            setSlot(z >= 0 ? z : activeZone, draggingSticker);
-            activeZone = z >= 0 ? z : activeZone;
-            draggingSticker = null;
-            return true;
-        }
         draggingSv = false;
         draggingHue = false;
         return super.mouseReleased(mx, my, button);
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // setas trocam o destino selecionado (teclado tambem!)
-        if (keyCode == 262 || keyCode == 263) { // direita/esquerda
-            activeZone = (activeZone + (keyCode == 262 ? 1 : 3)) % 4;
-            rebuildWidgets();
-            return true;
-        }
-        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     private void updateSv(double mx, double my) {
@@ -543,7 +514,7 @@ public class BubbleStyleScreen extends Screen {
     private void saveAndClose() {
         PacketDistributor.sendToServer(new UpdateBubbleStylePayload(
                 style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(), style.suffix(),
-                style.corner(), style.background(), style.durationSec()));
+                style.corner(), style.stickerX(), style.stickerY(), style.background(), style.durationSec()));
         if (modeChanged) {
             PacketDistributor.sendToServer(new SetBubbleModePayload(bubbleMode));
         }
@@ -594,31 +565,18 @@ public class BubbleStyleScreen extends Screen {
     }
 
     private BubbleStyle withColor(int rgb) {
-        return new BubbleStyle(rgb, style.borderRGB(), style.prefix(), style.mid(), style.suffix(), style.corner(), style.background(), style.durationSec());
+        return new BubbleStyle(rgb, style.borderRGB(), style.prefix(), style.mid(), style.suffix(),
+                style.corner(), style.stickerX(), style.stickerY(), style.background(), style.durationSec());
     }
 
     private BubbleStyle withBorder(int border) {
-        return new BubbleStyle(style.colorRGB(), border, style.prefix(), style.mid(), style.suffix(), style.corner(), style.background(), style.durationSec());
-    }
-
-    private BubbleStyle withPrefix(String prefix) {
-        return new BubbleStyle(style.colorRGB(), style.borderRGB(), prefix, style.mid(), style.suffix(), style.corner(), style.background(), style.durationSec());
-    }
-
-    private BubbleStyle withMid(String mid) {
-        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), mid, style.suffix(), style.corner(), style.background(), style.durationSec());
-    }
-
-    private BubbleStyle withSuffix(String suffix) {
-        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(), suffix, style.corner(), style.background(), style.durationSec());
-    }
-
-    private BubbleStyle withCorner(String corner) {
-        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(), style.suffix(), corner, style.background(), style.durationSec());
+        return new BubbleStyle(style.colorRGB(), border, style.prefix(), style.mid(), style.suffix(),
+                style.corner(), style.stickerX(), style.stickerY(), style.background(), style.durationSec());
     }
 
     private BubbleStyle withDuration(int secs) {
-        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(), style.suffix(), style.corner(), style.background(), secs);
+        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.prefix(), style.mid(), style.suffix(),
+                style.corner(), style.stickerX(), style.stickerY(), style.background(), secs);
     }
 
     /** Abre a tela (chamado pelo handler do pacote S2C). */

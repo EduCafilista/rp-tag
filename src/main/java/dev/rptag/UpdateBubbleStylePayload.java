@@ -10,7 +10,8 @@ import net.minecraft.resources.ResourceLocation;
  * (cor de dentro, cor da borda, adesivos antes/meio/depois/canto e duracao).
  */
 public record UpdateBubbleStylePayload(int colorRGB, int borderRGB, String prefix, String mid,
-        String suffix, String corner, int background, int durationSec) implements CustomPacketPayload {
+        String suffix, String corner, int stickerX, int stickerY, int background, int durationSec)
+        implements CustomPacketPayload {
 
     public static final Type<UpdateBubbleStylePayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "update_bubble_style"));
@@ -24,6 +25,8 @@ public record UpdateBubbleStylePayload(int colorRGB, int borderRGB, String prefi
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.mid());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.suffix());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.corner());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.stickerX());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.stickerY());
                         ByteBufCodecs.VAR_INT.encode(buf, p.background());
                         ByteBufCodecs.VAR_INT.encode(buf, p.durationSec());
                     },
@@ -34,6 +37,8 @@ public record UpdateBubbleStylePayload(int colorRGB, int borderRGB, String prefi
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf)));
 

@@ -2,6 +2,25 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.0.0] - 2026-09-10
+
+### Adicionado
+- **ADESIVO LIVRE com o mouse**: o jogador pega o emoji e cola em QUALQUER
+  ponto do balão — clique no adesivo, clique no lugar (ou arraste). Clica de
+  novo pra reposicionar e clique direito pra tirar. A posição (% da largura e
+  da altura) é salva junto com o estilo.
+
+### Mudado
+- **Balão com TEXTURA SUAVE**: adeus faixas empilhadas — a pílula agora é
+  desenhada com textura arredondada anti-aliased (estilo app de mensagem),
+  contorno de quadrinhos em toda a volta e rabicho curvado.
+- **O preview da tela é o balão de verdade** — o que você vê é o que fica.
+- Balão FULLBRIGHT: continua legível no escuro.
+
+### Corrigido
+- Estilos do balão NÃO eram recarregados ao reiniciar o servidor (cores e
+  adesivos voltavam ao padrão) — agora persistem de verdade.
+
 ## [2.9.0] - 2026-09-10
 
 ### Mudado

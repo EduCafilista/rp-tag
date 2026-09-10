@@ -79,7 +79,7 @@ public final class RPChat {
                 + withMid
                 + (style.suffix().isEmpty() ? "" : " " + style.suffix());
         ChatBubblePayload payload = new ChatBubblePayload(from.getUUID(), decorated, style.colorRGB(),
-                style.borderRGB(), italic, style.corner(), 0,
+                style.borderRGB(), italic, style.corner(), style.stickerX(), style.stickerY(), 0,
                 style.durationSec() * 1000);
         for (ServerPlayer p : from.server.getPlayerList().getPlayers()) {
             if (p.level() == from.level()

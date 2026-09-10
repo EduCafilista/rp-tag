@@ -13,9 +13,9 @@ Step-by-step guide, from download to the tag showing in game.
 | Minecraft **1.21.1** (Java Edition) | official launcher |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → version 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-2.9.0.jar` | this repository's *Releases* tab |
+| `rptag-3.0.0.jar` | this repository's *Releases* tab |
 
-> ⚠️ The mod version matches the game version: `rptag-2.9.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
+> ⚠️ The mod version matches the game version: `rptag-3.0.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
 
 ---
 
@@ -23,7 +23,7 @@ Step-by-step guide, from download to the tag showing in game.
 
 1. Install NeoForge on the server (the installer asks for the server folder path).
 2. Inside the server folder, open `mods/`.
-3. Copy `rptag-2.9.0.jar` into it.
+3. Copy `rptag-3.0.0.jar` into it.
 4. Start the server once to generate files (accept the EULA in `eula.txt` with `eula=true`).
 
 **How to know it worked:** in the boot log look for
@@ -40,7 +40,7 @@ Done — from this point the tag already works in **chat** and **TAB** for every
 
 1. In the launcher, create/edit the NeoForge 1.21.1 profile.
 2. Open the game folder ("open game folder" option in the launcher) and enter `mods/`.
-3. Copy the same `rptag-2.9.0.jar` there.
+3. Copy the same `rptag-3.0.0.jar` there.
 4. Join the server.
 
 Without the client mod you still see the tag in chat/TAB; with it, you also see **(ʀᴘ)** or **(ᴏꜰꜰ ʀᴘ)** floating above players' heads.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-The jar ends up at `build/libs/rptag-2.9.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
+The jar ends up at `build/libs/rptag-3.0.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
 
 ---
 
@@ -178,9 +178,13 @@ above your head** — perfect for eggs, kids and mic-less players.
 | `/rp admin bolhas off` | *(admin)* disables bubbles server-wide |
 
 ### How to use the screen (`/balao`)
-- **Slots** — 4 always-visible buttons: **Before · Middle · After · Corner**.
-  Click the slot (turns green), then click a sticker — or DRAG the sticker
-  onto it. **Right-click a slot REMOVES the sticker** (arrow keys switch slots too!)
+- **THE REAL BUBBLE is the preview** — what you see on screen is exactly
+  what shows above your head
+- **Sticker with the MOUSE**: `✦ Adesivos` → click an emoji (it sticks to the
+  cursor) → **click anywhere on the bubble** to place it. Click the placed
+  sticker to **pick it back** and reposition; **right-click** the bubble
+  **removes** it. Text emojis (❤ etc.) still go **Before/Middle/After** the
+  sentence as usual
 - **Paint** — drag the picker: the **Dentro** (inside) and **Borda** (border)
   cards show the current colors; click a card to paint it
 - **Border** — 3 clear states: Automatic → Custom (your color) → None
