@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
  * do jogador (cores, adesivos e duracao).
  */
 public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyle, int textColorRGB,
-        String prefix, String mid, String suffix, String corner, int stickerX, int stickerY,
+        String prefix, String mid, String suffix, String corner, String extras, int stickerX, int stickerY,
         int background, int durationSec)
         implements CustomPacketPayload {
 
@@ -28,6 +28,7 @@ public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyl
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.mid());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.suffix());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.corner());
+                        ByteBufCodecs.STRING_UTF8.encode(buf, p.extras());
                         ByteBufCodecs.VAR_INT.encode(buf, p.stickerX());
                         ByteBufCodecs.VAR_INT.encode(buf, p.stickerY());
                         ByteBufCodecs.VAR_INT.encode(buf, p.background());
@@ -42,6 +43,7 @@ public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyl
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
+                            ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
@@ -50,7 +52,7 @@ public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyl
     public static OpenBubbleStylePayload of(BubbleStyle style) {
         return new OpenBubbleStylePayload(style.colorRGB(), style.borderRGB(), style.borderStyle(),
                 style.textColorRGB(), style.prefix(), style.mid(), style.suffix(), style.corner(),
-                style.stickerX(), style.stickerY(), style.background(), style.durationSec());
+                style.extras(), style.stickerX(), style.stickerY(), style.background(), style.durationSec());
     }
 
     @Override

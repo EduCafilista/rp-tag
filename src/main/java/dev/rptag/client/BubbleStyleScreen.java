@@ -25,22 +25,26 @@ import dev.rptag.UpdateBubbleStylePayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * TELA DE PERSONALIZACAO DO BALAO (3.8.0 — 100% TEXTO + BOTAO):
+ * TELA DE PERSONALIZACAO DO BALAO (3.10.0 — VARIOS EMOJIS + PAGINA FOFA):
  *
- * <p>TODO elemento essencial e desenhado com os 2 UNICOS metodos que
- * funcionaram em TODOS os clientes testados: drawString (como a tag "● ʀᴘ")
- * e Buttons vanilla. Nenhuma cor/paleta/adesivo depende de fills ou texturas.
+ * <p>TODO elemento essencial e desenhado com os metodos que funcionaram em
+ * TODOS os clientes testados: drawString (como a tag "● ʀᴘ"), Buttons vanilla
+ * e drawInBatch com a fonte de imagem (a ARTE de verdade dos adesivos).
  *
  * <ul>
+ *   <li>Teclado de adesivos em 2 PAGINAS: 48 classicos + 16 FOFOs (laco,
+ *       dinossauro, planeta, galaxia, unicornio...) — escolhe VENDO a arte.</li>
+ *   <li>VARIOS EMOJIS: com um adesivo na mao, clique FORA do balao para
+ *       acrescentar ele a fala (ate 6); eles aparecem dentro do balao.</li>
+ *   <li>Adesivo LIVRE continua: clique NO balao da simulacao para colar
+ *       em qualquer ponto (posicao % salva).</li>
  *   <li>Paletas = fileiras de "●" coloridos (1 clique pinta; "▼" marca o ato).</li>
- *   <li>SIMULACAO de chat + balao feita com glifos "▣" (borda) e texto real.</li>
- *   <li>Adesivos = "●" na cor de identidade + numero; NOME no tooltip.</li>
  * </ul>
  */
 public class BubbleStyleScreen extends Screen {
 
     private static final int PANEL_W = 268;
-    private static final int PANEL_H = 236;
+    private static final int PANEL_H = 252;
 
     // linhas verticais (a partir de py) — UMA fonte de verdade
     private static final int ROW_HINT = 22;
@@ -53,23 +57,31 @@ public class BubbleStyleScreen extends Screen {
     private static final int ROW_BTN1 = 162;
     private static final int ROW_BTN2 = 178;
     private static final int ROW_BTN3 = 194;
+    private static final int ROW_EXTRAS = 212;
+    // fileira final de botoes = ROW_BTN3 + 34 (dentro do painel de 252)
 
     // paletas desenhadas como texto "● "
     private static final int SW_X = 64;
 
-    // teclado
+    // teclado de adesivos (celula 24px = arte 16px + respiro)
     private static final int KB_COLS = 8;
-    private static final int KB_ROWS = 6;
-    private static final int KB_CELL = 28;
+    private static final int KB_CELL = 24;
 
-    /** Cores de identidade dos 48 adesivos. */
+    // slots de EMOJIS EXTRAS na fileira propria
+    private static final int MAX_SLOTS = 6; // BubbleStyle.MAX_EXTRAS / 2
+    private static final int EX_X = 100;    // inicio dos slots (a partir de px)
+    private static final int EX_PITCH = 22; // espacamento entre slots
+
+    /** Cores de identidade dos 64 adesivos (uso futuro/tooltips). */
     private static final int[] CHIP = {0xE04848, 0xA048C8, 0x4878E0, 0x48B048,
             0xE0C048, 0x784848, 0xF0D048, 0xF0F0B0, 0x48A858, 0xE07030, 0xF0E048, 0xC8C8E0,
             0xF0C030, 0xE05888, 0x68B868, 0x58A8E0, 0x8878B8, 0x8878B8, 0xB0B0B8, 0x886848,
             0xE080C8, 0xF0E8D0, 0xE8C838, 0x68D8E8, 0x88B8E8, 0xE8A868, 0xE04838, 0xE04858,
             0xE8C838, 0xB8B8C8, 0x58B858, 0x68C868, 0x8898E8, 0xD85848, 0x8898D8, 0xE8D878,
             0x484848, 0xE8A8B8, 0xE8A838, 0xC88848, 0xD8B088, 0xB08858, 0xF0D048, 0x68A8D8,
-            0xF0F0F0, 0xF0F0F0, 0xF0F0F0, 0x8898B8};
+            0xF0F0F0, 0xF0F0F0, 0xF0F0F0, 0x8898B8,
+            0xF26D9C, 0x6DBE5C, 0x9B7BD8, 0x4A3B8A, 0xE84D4D, 0x4D8FE8, 0x8A5A32, 0x9B6BE0,
+            0x7A4AC8, 0xF0629E, 0xE8883C, 0x2A3140, 0xE04848, 0xF2F2F6, 0x4CAF50, 0xFFE9A8};
 
     /** Paleta do DENTRO (12 cores). */
     private static final int[] SW_IN = {0xF8F8F8, 0xF078B0, 0xE04848, 0xF09030,
@@ -87,6 +99,7 @@ public class BubbleStyleScreen extends Screen {
 
     private String holdingSticker = null;
     private boolean showKeyboard = false;
+    private int kbPage = 0;
 
     private int px, py;
     private int kbX, kbY;
@@ -100,7 +113,8 @@ public class BubbleStyleScreen extends Screen {
         super(Component.literal("Balão de Fala"));
         this.style = new BubbleStyle(style.colorRGB(), style.borderRGB(), style.borderStyle(),
                 style.textColorRGB(), style.prefix(), style.mid(), style.suffix(), style.corner(),
-                style.stickerX(), style.stickerY(), style.background(), style.durationSec());
+                style.extras(), style.stickerX(), style.stickerY(), style.background(),
+                style.durationSec());
     }
 
     private int effectiveTextColor() {
@@ -112,8 +126,8 @@ public class BubbleStyleScreen extends Screen {
 
     /**
      * Desenha o adesivo com o MESMO metodo do balao no mundo
-     * (font.drawInBatch + RenderType.text da fonte de bitmap) — o unico
-     * caminho PROVADO de mostrar a arte do emoji neste projeto. Escala 2x.
+     * (font.drawInBatch + fonte de bitmap) — o unico caminho PROVADO de
+     * mostrar a arte do emoji neste projeto. Escala 2x.
      */
     private void drawGlyph2x(GuiGraphics g, String glyph, float x, float y) {
         Minecraft mc = Minecraft.getInstance();
@@ -160,19 +174,80 @@ public class BubbleStyleScreen extends Screen {
         return -1;
     }
 
+    // =====================================================================
+    //  Emojis EXTRAS: varios emojis acompanhando a fala (ate 6)
+    // =====================================================================
+
+    private int extrasCount() {
+        return style.extras().length() / 2;
+    }
+
+    /** @return os emojis extras separados (cada um com 2 chars UTF-16). */
+    private String[] extrasList() {
+        String e = style.extras();
+        int n = e.length() / 2;
+        String[] out = new String[n];
+        for (int i = 0; i < n; i++) {
+            out[i] = e.substring(i * 2, i * 2 + 2);
+        }
+        return out;
+    }
+
+    private BubbleStyle withExtras(String newExtras) {
+        return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.borderStyle(),
+                style.textColorRGB(), style.prefix(), style.mid(), style.suffix(), style.corner(),
+                newExtras, style.stickerX(), style.stickerY(), style.background(),
+                style.durationSec());
+    }
+
+    private void addExtra(String glyph) {
+        if (extrasCount() < MAX_SLOTS) {
+            style = withExtras(style.extras() + glyph);
+        }
+    }
+
+    private void removeExtra(int slot) {
+        String e = style.extras();
+        if (slot >= 0 && slot * 2 + 2 <= e.length()) {
+            style = withExtras(e.substring(0, slot * 2) + e.substring(slot * 2 + 2));
+        }
+    }
+
+    /** @return o slot da fileira de extras sob o mouse (-1 = nenhum). */
+    private int extrasSlotAt(double mx, double my) {
+        int y0 = py + ROW_EXTRAS - 5;
+        if (my < y0 || my >= y0 + 24) {
+            return -1;
+        }
+        int slot = (int) Math.floor((mx - (px + EX_X)) / (double) EX_PITCH);
+        double frac = (mx - (px + EX_X)) - slot * (double) EX_PITCH;
+        if (slot < 0 || slot >= MAX_SLOTS || frac >= EX_PITCH - 4) {
+            return -1;
+        }
+        return slot;
+    }
+
     @Override
     protected void init() {
         px = Math.max(2, (this.width - PANEL_W) / 2);
         py = Math.max(2, (this.height - PANEL_H) / 2);
         kbX = px + (PANEL_W - KB_COLS * KB_CELL) / 2;
-        kbY = py + 24;
+        kbY = py + 34;
         swSlotW = this.font.width("● ");
 
         if (showKeyboard) {
-            addRenderableWidget(Button.builder(Component.literal("✔ Pronto — clique no balão!"), b -> {
+            // troca de pagina (Classicos <-> Fofos) — arte de cada pagina
+            addRenderableWidget(Button.builder(
+                    Component.literal(kbPage == 0 ? "✨ Fofos ▶" : "◀ Clássicos"),
+                    b -> {
+                        kbPage = kbPage == 0 ? 1 : 0;
+                        rebuildWidgets();
+                    }).bounds(px + PANEL_W - 96, py + 14, 88, 16).build());
+            addRenderableWidget(Button.builder(Component.literal("✔ Pronto — clique no balão ou fora dele!"),
+                    b -> {
                         showKeyboard = false;
                         rebuildWidgets();
-                    }).bounds(px + (PANEL_W - 180) / 2, py + ROW_BTN3, 180, 20).build());
+                    }).bounds(px + (PANEL_W - 220) / 2, py + PANEL_H - 26, 220, 20).build());
             return;
         }
 
@@ -196,7 +271,7 @@ public class BubbleStyleScreen extends Screen {
                     style = withBorderStyle(BubbleStyle.BORDER_DOUBLE);
                 }).bounds(px + 178, py + ROW_BTN2, 81, 16).build());
 
-        addRenderableWidget(Button.builder(Component.literal("✦ Adesivos (48)"), b -> {
+        addRenderableWidget(Button.builder(Component.literal("✦ Adesivos (64)"), b -> {
                     showKeyboard = true;
                     rebuildWidgets();
                 }).bounds(px + 8, py + ROW_BTN3, 124, 18).build());
@@ -216,7 +291,7 @@ public class BubbleStyleScreen extends Screen {
             }
         });
 
-        int row4 = py + ROW_BTN3 + 18;
+        int row4 = py + ROW_BTN3 + 34;
         addRenderableWidget(Button.builder(modeLabel(), b -> {
                     this.bubbleMode = !this.bubbleMode;
                     this.modeChanged = true;
@@ -237,37 +312,38 @@ public class BubbleStyleScreen extends Screen {
     private void setSticker(String glyph, int x, int y) {
         style = new BubbleStyle(style.colorRGB(), style.borderRGB(), style.borderStyle(),
                 style.textColorRGB(), style.prefix(), style.mid(), style.suffix(), glyph,
-                Mth.clamp(x, 5, 95), Mth.clamp(y, 5, 95), style.background(), style.durationSec());
+                style.extras(), Mth.clamp(x, 5, 95), Mth.clamp(y, 5, 95), style.background(),
+                style.durationSec());
     }
 
     private BubbleStyle withColor(int rgb) {
         return new BubbleStyle(rgb, style.borderRGB(), style.borderStyle(), style.textColorRGB(),
-                style.prefix(), style.mid(), style.suffix(), style.corner(), style.stickerX(),
-                style.stickerY(), style.background(), style.durationSec());
+                style.prefix(), style.mid(), style.suffix(), style.corner(), style.extras(),
+                style.stickerX(), style.stickerY(), style.background(), style.durationSec());
     }
 
     private BubbleStyle withBorder(int border) {
         return new BubbleStyle(style.colorRGB(), border, style.borderStyle(), style.textColorRGB(),
-                style.prefix(), style.mid(), style.suffix(), style.corner(), style.stickerX(),
-                style.stickerY(), style.background(), style.durationSec());
+                style.prefix(), style.mid(), style.suffix(), style.corner(), style.extras(),
+                style.stickerX(), style.stickerY(), style.background(), style.durationSec());
     }
 
     private BubbleStyle withBorderStyle(int borderStyle) {
         return new BubbleStyle(style.colorRGB(), style.borderRGB(), borderStyle, style.textColorRGB(),
-                style.prefix(), style.mid(), style.suffix(), style.corner(), style.stickerX(),
-                style.stickerY(), style.background(), style.durationSec());
+                style.prefix(), style.mid(), style.suffix(), style.corner(), style.extras(),
+                style.stickerX(), style.stickerY(), style.background(), style.durationSec());
     }
 
     private BubbleStyle withText(int text) {
         return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.borderStyle(), text,
-                style.prefix(), style.mid(), style.suffix(), style.corner(), style.stickerX(),
-                style.stickerY(), style.background(), style.durationSec());
+                style.prefix(), style.mid(), style.suffix(), style.corner(), style.extras(),
+                style.stickerX(), style.stickerY(), style.background(), style.durationSec());
     }
 
     private BubbleStyle withDuration(int secs) {
         return new BubbleStyle(style.colorRGB(), style.borderRGB(), style.borderStyle(),
                 style.textColorRGB(), style.prefix(), style.mid(), style.suffix(), style.corner(),
-                style.stickerX(), style.stickerY(), style.background(), secs);
+                style.extras(), style.stickerX(), style.stickerY(), style.background(), secs);
     }
 
     private Component durationLabel() {
@@ -314,12 +390,11 @@ public class BubbleStyleScreen extends Screen {
         } else {
             renderSim(g, mouseX, mouseY);
             renderPalettes(g);
+            renderExtras(g, mouseX, mouseY);
         }
         super.render(g, mouseX, mouseY, partialTick);
 
         if (!showKeyboard) {
-            int mode = style.borderRGB() == BubbleStyle.AUTO_BORDER ? 0
-                    : (style.borderRGB() >= 0 ? 1 : 2);
             outline(g, px + 7, py + ROW_BTN1 - 1, 83, 18, 0xFF9AE8B5);
             outline(g, px + 7 + style.borderStyle() * 85, py + ROW_BTN2 - 1, 83, 18, 0xFF9AE8B5);
         }
@@ -345,9 +420,12 @@ public class BubbleStyleScreen extends Screen {
         g.drawString(this.font, "sua fala assim", px + 10 + this.font.width("<Você> "),
                 chatY, textColor, true);
 
-        // --- balao de glifos: topo ▣, texto, base ▣, rabicho ▼ ---
+        // --- balao de glifos: topo ▣, texto (+ EXTRAS), base ▣, rabicho ▼ ---
         simCharW = this.font.width("▣");
-        int innerW = Math.max(this.font.width("sua fala assim") + 6, 8 * simCharW);
+        String ex = style.extras();
+        int extrasW = ex.isEmpty() ? 0
+                : this.font.width(" ") + this.font.width(Stickers.styled(ex));
+        int innerW = Math.max(this.font.width("sua fala assim") + 6 + extrasW, 8 * simCharW);
         simChars = (innerW + simCharW - 1) / simCharW;
         int bx = px + (PANEL_W - simChars * simCharW) / 2;
         simX0 = bx;
@@ -362,11 +440,17 @@ public class BubbleStyleScreen extends Screen {
         g.drawString(this.font, barStr, bx, simY, ring, true);
         g.drawString(this.font, "▣", bx, simY + simLineH, ring, true);
         g.drawString(this.font, "sua fala assim", bx + simCharW + 3, simY + simLineH, textColor, true);
+        if (!ex.isEmpty()) {
+            // os EXTRA emojis aparecem DENTRO da fala, como vao ficar no mundo
+            g.drawString(this.font, Stickers.styled(ex),
+                    bx + simCharW + 3 + this.font.width("sua fala assim") + this.font.width(" "),
+                    simY + simLineH, textColor, true);
+        }
         g.drawString(this.font, "▣", bx + simChars * simCharW - simCharW, simY + simLineH, ring, true);
         g.drawString(this.font, barStr, bx, simY + simLineH * 2, ring, true);
         g.drawString(this.font, "▼", bx + simChars * simCharW / 2 - 3, simY + simLineH * 2 + 8, ring, true);
 
-        // adesivo: bolinha na cor de identidade, na posicao (%) — com hover
+        // adesivo livre: na posicao (%) — com hover
         hoverSticker = false;
         if (!style.corner().isEmpty()) {
             int idx = (style.corner().charAt(0) & 0xFFFF) - 0xE000;
@@ -443,41 +527,99 @@ public class BubbleStyleScreen extends Screen {
         }
     }
 
-    /** Teclado: a ARTE de cada adesivo (16x16) + numero; NOME no rodape/tooltip. */
+    /**
+     * Fileira dos EMOJIS EXTRAS (3.10.0): os varios emojis que acompanham a
+     * fala. Slot cheio = a arte (2x); slot vazio = "+" (clique abre o
+     * teclado). Hover marca e tira com clique; tooltip com o nome.
+     */
+    private void renderExtras(GuiGraphics g, int mouseX, int mouseY) {
+        int y0 = py + ROW_EXTRAS - 3;
+        g.drawString(this.font, "✨ Emojis (" + extrasCount() + "/" + MAX_SLOTS + "):",
+                px + 8, py + ROW_EXTRAS + 1, 0xFFFFD98A, true);
+        String[] list = extrasList();
+        int slot = extrasSlotAt(mouseX, mouseY);
+        for (int s = 0; s < MAX_SLOTS; s++) {
+            int sx = px + EX_X + s * EX_PITCH;
+            if (s < list.length) {
+                drawGlyph2x(g, list[s], sx, y0);
+                if (s == slot) {
+                    outline(g, sx - 2, y0 - 2, 20, 20, 0xFFE87A7A);
+                    g.renderTooltip(this.font, Component.literal("✖ tirar " + nameOf(list[s])),
+                            mouseX, mouseY);
+                }
+            } else {
+                g.drawString(this.font, "+", sx + 5, y0 + 4, 0xFF5A6478, false);
+                if (s == slot) {
+                    outline(g, sx - 2, y0 - 2, 20, 20, 0xFF9AE8B5);
+                    g.renderTooltip(this.font,
+                            Component.literal("adicionar emoji"), mouseX, mouseY);
+                }
+            }
+        }
+    }
+
+    /** @return nome do adesivo (pelo glifo) para tooltips. */
+    private static String nameOf(String glyph) {
+        int idx = (glyph.charAt(0) & 0xFFFF) - 0xE000;
+        if (idx < 0 || idx >= Stickers.NAMES.length) {
+            return "emoji";
+        }
+        return Stickers.NAMES[idx];
+    }
+
+    /**
+     * Teclado (3.10.0): 2 PAGINAS — Classicos (48) e Fofos (16) — com a ARTE
+     * de cada adesivo (16x16) + numero de fallback; NOME no rodape da grade e
+     * no tooltip. O titulo do painel fica sozinho no topo (sem sobreposicao).
+     */
     private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
-        g.drawString(this.font, "✦ Escolha o adesivo — o nome aparece ao passar o mouse",
-                px + 8, py + 8, 0xFFFFD98A, true);
-        for (int i = 0; i < Stickers.COUNT; i++) {
-            int cx = kbX + (i % KB_COLS) * KB_CELL;
-            int cy = kbY + (i / KB_COLS) * KB_CELL;
+        String titulo = kbPage == 0 ? "Página 1/2 — Clássicos" : "Página 2/2 — Fofos ✨";
+        g.drawString(this.font, titulo, px + 8, py + 18, 0xFFFFD98A, true);
+        int start = Stickers.pageStart(kbPage);
+        int count = Stickers.pageCount(kbPage);
+        for (int k = 0; k < count; k++) {
+            int i = start + k;
+            int cx = kbX + (k % KB_COLS) * KB_CELL;
+            int cy = kbY + (k / KB_COLS) * KB_CELL;
             g.fill(cx, cy, cx + KB_CELL, cy + KB_CELL, 0xFF242B3D);
             g.fill(cx, cy, cx + 1, cy + KB_CELL, 0xFF39415A);
             g.fill(cx, cy, cx + KB_CELL, cy + 1, 0xFF39415A);
             g.fill(cx, cy + KB_CELL - 1, cx + KB_CELL, cy + KB_CELL, 0xFF171B26);
             g.fill(cx + KB_CELL - 1, cy, cx + KB_CELL, cy + KB_CELL, 0xFF171B26);
-            drawGlyph2x(g, Stickers.GLYPHS[i], cx + 6, cy + 3);
+            drawGlyph2x(g, Stickers.GLYPHS[i], cx + 4, cy + 4);
             String num = String.valueOf(i + 1);
             g.drawString(this.font, num, cx + KB_CELL - 4 - this.font.width(num),
                     cy + KB_CELL - 9, 0xFF8E96A8, false);
         }
+        int rows = (count + KB_COLS - 1) / KB_COLS;
+        int nameY = kbY + rows * KB_CELL + 5;
         int over = stickerAt(mouseX, mouseY);
         if (over >= 0) {
-            int cx = kbX + (over % KB_COLS) * KB_CELL;
-            int cy = kbY + (over / KB_COLS) * KB_CELL;
+            int k = over - start;
+            int cx = kbX + (k % KB_COLS) * KB_CELL;
+            int cy = kbY + (k / KB_COLS) * KB_CELL;
             outline(g, cx, cy, KB_CELL, KB_CELL, 0xFFFFFFFF);
-            g.drawString(this.font, "▶ " + Stickers.NAMES[over],
-                    px + 8, py + PANEL_H - 24, 0xFFFFFFFF, true);
+            g.drawString(this.font, "▶ " + Stickers.NAMES[over] + "  (vai pra fala ou pro balão)",
+                    px + 8, nameY, 0xFFFFFFFF, true);
             g.renderTooltip(this.font, Component.literal(Stickers.NAMES[over]), mouseX, mouseY);
+        } else {
+            g.drawString(this.font, "passe o mouse para ver o nome · clique para pegar",
+                    px + 8, nameY, 0xFF9AA4BC, false);
         }
     }
 
     private int stickerAt(double mx, double my) {
+        int count = Stickers.pageCount(kbPage);
         int cx = (int) ((mx - kbX) / KB_CELL);
         int cy = (int) ((my - kbY) / KB_CELL);
-        if (cx < 0 || cx >= KB_COLS || cy < 0 || cy >= KB_ROWS || my < kbY) {
+        if (cx < 0 || cx >= KB_COLS || cy < 0 || my < kbY) {
             return -1;
         }
-        return cy * KB_COLS + cx;
+        int k = cy * KB_COLS + cx;
+        if (k >= count) {
+            return -1;
+        }
+        return Stickers.pageStart(kbPage) + k;
     }
 
     // =====================================================================
@@ -496,34 +638,68 @@ public class BubbleStyleScreen extends Screen {
             }
             return super.mouseClicked(mx, my, button);
         }
+        if (!showKeyboard && button == 0 && holdingSticker == null && hoverSticker) {
+            holdingSticker = String.valueOf((style.corner().charAt(0) & 0xFFFF) - 0xE000);
+            setSticker("", style.stickerX(), style.stickerY());
+            return true;
+        }
         if (!showKeyboard && button == 0 && holdingSticker != null) {
             String idx = holdingSticker;
-            holdingSticker = null;
             int bubbleW = simChars * simCharW;
             if (inBox(mx, my, simX0 - 4, simY - 4, bubbleW + 8, simLineH * 2 + 8)) {
+                // NO balao da simulacao = adesivo LIVRE (posicao % salva)
+                holdingSticker = null;
                 int x = Mth.clamp((int) mx, simX0, simX0 + bubbleW);
                 int y = Mth.clamp((int) my, simY, simY + simLineH * 2);
                 setSticker(Stickers.GLYPHS[Integer.parseInt(idx)],
                         Math.round((x - simX0) * 100.0F / bubbleW),
                         Math.round((y - simY) * 100.0F / (simLineH * 2)));
+                return true;
             }
-            return true;
-        }
-        if (!showKeyboard && button == 0 && hoverSticker) {
-            holdingSticker = String.valueOf((style.corner().charAt(0) & 0xFFFF) - 0xE000);
-            setSticker("", style.stickerX(), style.stickerY());
-            return true;
-        }
-        if (!showKeyboard && button == 1 && holdingSticker != null) {
-            holdingSticker = null;
-            return true;
-        }
-        if (!showKeyboard && button == 1 && inBox(mx, my, simX0 - 4, simY - 4,
-                simChars * simCharW + 8, simLineH * 2 + 8)) {
-            if (!style.corner().isEmpty()) {
-                setSticker("", style.stickerX(), style.stickerY());
+            int slot = extrasSlotAt(mx, my);
+            if (slot >= 0) {
+                if (slot < extrasCount()) {
+                    removeExtra(slot); // tira o emoji do slot e SEGUE segurando
+                }
+                return true;
             }
+            // FORA do balao = acrescentar a fala (VARIOS, um clique cada!)
+            if (extrasCount() < MAX_SLOTS) {
+                addExtra(Stickers.GLYPHS[Integer.parseInt(idx)]);
+                return true; // segue com o emoji na mao pra acrescentar mais
+            }
+            holdingSticker = null; // lotou
             return true;
+        }
+        if (!showKeyboard && button == 0) {
+            int slot = extrasSlotAt(mx, my);
+            if (slot >= 0) {
+                if (slot < extrasCount()) {
+                    removeExtra(slot);
+                } else {
+                    showKeyboard = true; // slot vazio abre o teclado
+                    rebuildWidgets();
+                }
+                return true;
+            }
+        }
+        if (!showKeyboard && button == 1) {
+            int slot = extrasSlotAt(mx, my);
+            if (slot >= 0 && slot < extrasCount()) {
+                removeExtra(slot);
+                return true;
+            }
+            if (holdingSticker != null) {
+                holdingSticker = null;
+                return true;
+            }
+            if (inBox(mx, my, simX0 - 4, simY - 4,
+                    simChars * simCharW + 8, simLineH * 2 + 8)) {
+                if (!style.corner().isEmpty()) {
+                    setSticker("", style.stickerX(), style.stickerY());
+                }
+                return true;
+            }
         }
         if (!showKeyboard && button == 0) {
             String hit = paletteHit(mx, my);
@@ -594,8 +770,8 @@ public class BubbleStyleScreen extends Screen {
     private void saveAndClose() {
         PacketDistributor.sendToServer(new UpdateBubbleStylePayload(
                 style.colorRGB(), style.borderRGB(), style.borderStyle(), style.textColorRGB(),
-                style.prefix(), style.mid(), style.suffix(), style.corner(), style.stickerX(),
-                style.stickerY(), style.background(), style.durationSec()));
+                style.prefix(), style.mid(), style.suffix(), style.corner(), style.extras(),
+                style.stickerX(), style.stickerY(), style.background(), style.durationSec()));
         if (modeChanged) {
             PacketDistributor.sendToServer(new SetBubbleModePayload(bubbleMode));
         }

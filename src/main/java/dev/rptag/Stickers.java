@@ -6,7 +6,7 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * ADESIVOS do balao de fala (2.7.0): 48 emojis COLORIDOS em pixel-art,
+ * ADESIVOS do balao de fala (3.10.0): 64 emojis COLORIDOS em pixel-art,
  * salvos como fonte de bitmap do jogo (imagens de verdade, nada de emote
  * preto e branco). Fluem JUNTO com o texto, como emoji de celular.
  *
@@ -20,8 +20,24 @@ public final class Stickers {
     public static final ResourceLocation FONT =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "stickers");
 
-    /** Quantidade de adesivos (8 x 6 na sprite sheet). */
-    public static final int COUNT = 48;
+    /** Quantidade de adesivos (8 x 8 na sprite sheet). */
+    public static final int COUNT = 64;
+
+    /** Primeiro adesivo da pagina FOFA (bichinhos, espaco e magia). */
+    public static final int CUTE_FROM = 48;
+
+    /** Paginas do teclado de adesivos: 0 = classicos, 1 = fofos. */
+    public static final int PAGES = 2;
+
+    /** @return quantos adesivos a pagina pedida tem. */
+    public static int pageCount(int page) {
+        return page == 1 ? COUNT - CUTE_FROM : CUTE_FROM;
+    }
+
+    /** @return indice GLOBAL do primeiro adesivo da pagina pedida. */
+    public static int pageStart(int page) {
+        return page == 1 ? CUTE_FROM : 0;
+    }
 
     /** Glifos dos 48 adesivos (grade 8 x 6 da sprite sheet). */
     public static final String[] GLYPHS = new String[COUNT];
@@ -39,7 +55,11 @@ public final class Stickers {
             "Chorando", "Bravo", "Dormindo", "Surpreso",
             "Óculos", "Língua", "Gato", "Cachorro",
             "Coelho", "Urso", "Pintinho", "Peixe",
-            "Exclamação", "Interrogação", "Balão de fala", "Zzz"
+            "Exclamação", "Interrogação", "Balão de fala", "Zzz",
+            "Laço", "Dinossauro", "Planeta", "Galáxia",
+            "Foguete", "Arco-íris", "Patinha", "Borboleta",
+            "Chapéu de mago", "Unicórnio", "Raposa", "Pinguim",
+            "Cogumelo", "Fantasma", "Rex", "Varinha mágica"
     };
 
     static {

@@ -54,7 +54,7 @@ public final class RPChat {
         // o texto do balao e a fala pura, e o adesivo fica onde o jogador colou.
         ChatBubblePayload payload = new ChatBubblePayload(from.getUUID(), text, style.colorRGB(),
                 style.borderRGB(), style.borderStyle(), style.textColorRGB(), italic, style.corner(),
-                style.stickerX(), style.stickerY(), 0, style.durationSec() * 1000);
+                style.extras(), style.stickerX(), style.stickerY(), 0, style.durationSec() * 1000);
         for (ServerPlayer p : from.server.getPlayerList().getPlayers()) {
             if (p.level() == from.level()
                     && p.position().distanceToSqr(from.position()) <= 64.0 * 64.0) {

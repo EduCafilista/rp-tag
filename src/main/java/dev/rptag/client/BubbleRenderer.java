@@ -172,7 +172,13 @@ public final class BubbleRenderer {
         }
 
         Font font = minecraft.font;
-        List<FormattedCharSequence> lines = font.split(Stickers.styled(bubble.text()), MAX_TEXT_WIDTH);
+        // (3.10.0) VARIOS EMOJIS: os extras acompanham a fala DENTRO do balao,
+        // depois do texto — cada um e arte colorida de verdade, como no celular.
+        String speech = bubble.text();
+        if (!bubble.extras().isEmpty()) {
+            speech = speech + " " + bubble.extras();
+        }
+        List<FormattedCharSequence> lines = font.split(Stickers.styled(speech), MAX_TEXT_WIDTH);
         if (lines.isEmpty()) {
             return;
         }

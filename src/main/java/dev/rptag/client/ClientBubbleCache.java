@@ -12,7 +12,8 @@ public final class ClientBubbleCache {
 
     /** Um balao visivel. */
     public record Bubble(String text, int colorRGB, int borderRGB, int borderStyle, int textRGB,
-            boolean italic, String corner, int stickerX, int stickerY, long expireMillis) {
+            boolean italic, String corner, String extras, int stickerX, int stickerY,
+            long expireMillis) {
         public boolean expired() {
             return System.currentTimeMillis() >= expireMillis;
         }
@@ -24,11 +25,11 @@ public final class ClientBubbleCache {
     }
 
     public static void set(UUID id, String text, int colorRGB, int borderRGB, int borderStyle, int textRGB,
-            boolean italic, String corner, int stickerX, int stickerY, int durationMs) {
+            boolean italic, String corner, String extras, int stickerX, int stickerY, int durationMs) {
         // duracao escolhida pelo autor do balao (2 a 20 segundos)
         long duration = Math.min(20000, Math.max(2000, durationMs));
         BUBBLES.put(id, new Bubble(text, colorRGB, borderRGB, borderStyle, textRGB, italic, corner,
-                stickerX, stickerY, System.currentTimeMillis() + duration));
+                extras, stickerX, stickerY, System.currentTimeMillis() + duration));
     }
 
     /** @return o balao atual do jogador ou null se nao tem/esta expirado. */

@@ -197,7 +197,8 @@ public final class ServerEvents {
             }
             BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(), payload.borderStyle(),
                     payload.textColorRGB(), payload.prefix(), payload.mid(), payload.suffix(), payload.corner(),
-                    payload.stickerX(), payload.stickerY(), payload.background(), payload.durationSec());
+                    payload.extras(), payload.stickerX(), payload.stickerY(), payload.background(),
+                    payload.durationSec());
             RPWorldData.get(player.server).setStyle(player.getUUID(), style);
             player.sendSystemMessage(Component.literal("💾 Salvo no servidor v" + RPTagMod.VERSION + "! Dentro ")
                     .withStyle(ChatFormatting.GREEN)

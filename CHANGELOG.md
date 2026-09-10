@@ -2,6 +2,35 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.10.0] - 2026-09-10
+
+### Adicionado
+- **VÁRIOS EMOJIS NA FALA**: com um adesivo na mão, clique FORA do balão da
+  simulação para acrescentar ele à fala — um clique por emoji, **até 6**. Os
+  emojis extra aparecem DENTRO do balão acompanhando o texto (arte colorida
+  de verdade), e a simulação do `/balao` mostra o resultado exato. Fileira
+  nova "✨ Emojis (n/6)" com slots: **✖/clique tira**, **+ abre o teclado**.
+- **PÁGINA FOFA no teclado de adesivos**: 16 emojis novos desenhados à mão no
+  mesmo estilo pixel-art — **Laço, Dinossauro, Planeta, Galáxia, Foguete,
+  Arco-íris, Patinha, Borboleta, Chapéu de mago, Unicórnio, Raposa, Pinguim,
+  Cogumelo, Fantasma, Rex e Varinha mágica** — pra fala carregar história e
+  personalidade (fofo pra criançada!). O teclado agora tem **2 páginas**
+  (Clássicos 48 + Fofos 16 = **64 adesivos**) com botão "✨ Fofos ▶ /
+  ◀ Clássicos".
+- Spritesheet ampliada para 64x80 e fonte de bitmap com 64 glifos
+  (U+E000–U+E03F).
+
+### Corrigido
+- O título do painel não é mais coberto pelo cabeçalho do teclado de adesivos
+  (arrastava desde a 3.8.0).
+
+### Técnico
+- `BubbleStyle` ganhou o campo `extras` (máx. 12 chars = 6 emojis), salvo no
+  NBT do mundo (`Extras`) e transmitido nos 3 pacotes (abrir estilo, salvar
+  estilo e balão de fala). Mundos antigos continuam funcionando (sem Extras =
+  vazio). Canal de rede v2 mantido: cliente e servidor precisam do MESMO jar
+  3.10.0 (jars diferentes são recusados com aviso na conexão).
+
 ## [3.9.0] - 2026-09-10
 
 ### Corrigido

@@ -46,7 +46,8 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() ->
                 ClientBubbleCache.set(payload.playerId(), payload.text(), payload.colorRGB(),
                         payload.borderRGB(), payload.borderStyle(), payload.textColorRGB(), payload.italic(),
-                        payload.corner(), payload.stickerX(), payload.stickerY(), payload.durationMs()));
+                        payload.corner(), payload.extras(), payload.stickerX(), payload.stickerY(),
+                        payload.durationMs()));
     }
 
     public static void handleOpenBubbleStyle(final dev.rptag.OpenBubbleStylePayload payload, final IPayloadContext context) {
