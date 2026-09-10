@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
 >
-> 📥 **Download:** grab `rptag-3.3.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.3.0.jar).
+> 📥 **Download:** grab `rptag-3.4.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.4.0.jar).
 
 ## ✨ Features
 
@@ -29,8 +29,8 @@
   full outline and tail — **everything picked on the drag color picker** (`/balao`)
   · the screen preview is exactly what shows in game · **3 frames with their
   own buttons**: Classic, Cartoon (thick) and Double · **2 independent
-  pickers** (Inside and Border) · **border color in 3 buttons**: Auto /
-  My color / None
+  pickers** + **one-click palettes** (8 ready colors each — no dragging!) ·
+  **border color in 3 buttons**: Auto / My color / None
 - **FREE STICKER with the mouse**: 48 pixel-art stickers drawn as raw IMAGES
   on the editor — **click ANY point of the bubble** to place it; **crosshair +
   % on screen** show exactly where it is · right-click removes ·
@@ -55,7 +55,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-3.3.0.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-3.4.0.jar` into the **server's** `mods/` folder.
 3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
@@ -66,7 +66,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-3.3.0.jar`.
+The jar ends up at `build/libs/rptag-3.4.0.jar`.
 
 ## 🎨 Customizing
 

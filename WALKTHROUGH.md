@@ -13,9 +13,9 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 | Minecraft **1.21.1** (Java Edition) | launcher oficial |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → versão 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-3.3.0.jar` | a aba *Releases* deste repositório |
+| `rptag-3.4.0.jar` | a aba *Releases* deste repositório |
 
-> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-3.3.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
+> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-3.4.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
 
 ---
 
@@ -23,7 +23,7 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 
 1. Instale o NeoForge no servidor (o instalador pergunta o caminho da pasta do servidor).
 2. Na pasta do servidor, entre em `mods/`.
-3. Copie o `rptag-3.3.0.jar` para dentro dela.
+3. Copie o `rptag-3.4.0.jar` para dentro dela.
 4. Inicie o servidor uma vez para gerar os arquivos (aceite o EULA no `eula.txt` com `eula=true`).
 
 **Como saber se funcionou:** no log de boot procure a linha
@@ -40,7 +40,7 @@ Pronto — a partir daqui a tag já funciona no **chat** e na **TAB** para todos
 
 1. No launcher, crie/edite o perfil do NeoForge 1.21.1.
 2. Abra a pasta do jogo (opção "abrindo a pasta do jogo" no launcher) e entre em `mods/`.
-3. Copie o mesmo `rptag-3.3.0.jar` para lá.
+3. Copie o mesmo `rptag-3.4.0.jar` para lá.
 4. Entre no servidor.
 
 Sem o mod no cliente você ainda vê a tag no chat/TAB; com o mod, também vê **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** flutuando sobre a cabeça dos jogadores.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-O jar sai em `build/libs/rptag-3.3.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
+O jar sai em `build/libs/rptag-3.4.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
 
 ---
 
@@ -190,8 +190,9 @@ O texto do balão escolhe preto ou branco sozinho, de acordo com a cor de fundo.
   onde vai colar e o canto do preview mostra a posição em **x,y %**. Clique no
   adesivo pra **pegar de volta**; **clique direito** no balão **tira**
 - **Pintar** — DOIS seletores independentes: **✦ Dentro** (esquerda) pinta o
-  recheio e **▣ Borda** (direita) pinta a moldura — cada um com seu quadrado e
-  faixa de cores, e o hex ao vivo no rótulo
+  recheio e **▣ Borda** (direita) pinta a moldura. Embaixo de cada um tem uma
+  **PALETA DE 1 CLIQUE** (8 cores prontas) — clicou, pintou, sem arrastar! Ou
+  arraste nos quadrados pra qualquer cor custom (hex ao vivo no rótulo)
 - **Borda** — 3 BOTÕES de cor: **▣ Auto** (combina sozinho) · **▣ Minha cor**
   (a que você pintar no seletor da direita) · **▢ Sem borda** — o ativo fica
   com moldura verde
@@ -203,6 +204,8 @@ O texto do balão escolhe preto ou branco sozinho, de acordo com a cor de fundo.
   nunca mais perder a customização · **↺ Padrão** restaura o original
 - **Fica salvo PRA SEMPRE**: saiu do servidor, voltou — cores, adesivo, molde
   e duração continuam lá (salvos no arquivo do mundo)
-- O cantinho da tela mostra **3.2.0**: se não aparecer, o jar do cliente é
-  antigo — troque os jars no cliente E no servidor
+- **DIAGNÓSTICO DE JAR**: o canto superior direito da tela mostra a versão
+  do CLIENTE (ex.: "v3.4.0") e a mensagem ao salvar mostra a versão do
+  SERVIDOR ("💾 Salvo no servidor v3.4.0!"). As duas têm que ser IGUAIS — se
+  diferirem, troque o jar do lado antigo (cliente E servidor sempre juntos)
 - Depois é só **falar no chat** para ver o balão ✨

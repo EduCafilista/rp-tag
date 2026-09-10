@@ -199,7 +199,7 @@ public final class ServerEvents {
                     payload.prefix(), payload.mid(), payload.suffix(), payload.corner(), payload.stickerX(),
                     payload.stickerY(), payload.background(), payload.durationSec());
             RPWorldData.get(player.server).setStyle(player.getUUID(), style);
-            player.sendSystemMessage(Component.literal("Balão salvo! Dentro ")
+            player.sendSystemMessage(Component.literal("💾 Salvo no servidor v" + RPTagMod.VERSION + "! Dentro ")
                     .withStyle(ChatFormatting.GREEN)
                     .append(Component.literal(String.format("#%06X", style.colorRGB()))
                             .withStyle(s -> s.withColor(net.minecraft.network.chat.TextColor.fromRgb(style.colorRGB()))))

@@ -13,9 +13,9 @@ Step-by-step guide, from download to the tag showing in game.
 | Minecraft **1.21.1** (Java Edition) | official launcher |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → version 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-3.3.0.jar` | this repository's *Releases* tab |
+| `rptag-3.4.0.jar` | this repository's *Releases* tab |
 
-> ⚠️ The mod version matches the game version: `rptag-3.3.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
+> ⚠️ The mod version matches the game version: `rptag-3.4.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
 
 ---
 
@@ -23,7 +23,7 @@ Step-by-step guide, from download to the tag showing in game.
 
 1. Install NeoForge on the server (the installer asks for the server folder path).
 2. Inside the server folder, open `mods/`.
-3. Copy `rptag-3.3.0.jar` into it.
+3. Copy `rptag-3.4.0.jar` into it.
 4. Start the server once to generate files (accept the EULA in `eula.txt` with `eula=true`).
 
 **How to know it worked:** in the boot log look for
@@ -40,7 +40,7 @@ Done — from this point the tag already works in **chat** and **TAB** for every
 
 1. In the launcher, create/edit the NeoForge 1.21.1 profile.
 2. Open the game folder ("open game folder" option in the launcher) and enter `mods/`.
-3. Copy the same `rptag-3.3.0.jar` there.
+3. Copy the same `rptag-3.4.0.jar` there.
 4. Join the server.
 
 Without the client mod you still see the tag in chat/TAB; with it, you also see **(ʀᴘ)** or **(ᴏꜰꜰ ʀᴘ)** floating above players' heads.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-The jar ends up at `build/libs/rptag-3.3.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
+The jar ends up at `build/libs/rptag-3.4.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
 
 ---
 
@@ -187,8 +187,9 @@ above your head** — perfect for eggs, kids and mic-less players.
   slots migrated into it automatically. Click outside the bubble or
   right-click to **cancel** without placing
 - **Paint** — TWO independent pickers: **✦ Dentro** (left) paints the fill
-  and **▣ Borda** (right) paints the frame — each with its own square+hue
-  strip, live hex on the label
+  and **▣ Borda** (right) paints the frame. Under each one there is a
+  **ONE-CLICK PALETTE** (8 ready colors) — click, painted, no dragging! Or
+  drag the squares for any custom color (live hex on the label)
 - **Border** — 3 COLOR buttons: **▣ Auto** (always matches) · **▣ Minha cor**
   (whatever you paint on the right picker) · **▢ Sem borda** — active one gets
   a green frame
@@ -200,6 +201,8 @@ above your head** — perfect for eggs, kids and mic-less players.
   everything — no more losing your setup · **↺ Padrão** restores defaults
 - **Saved FOREVER**: leave and rejoin the server — colors, sticker, frame and
   duration are stored in the world file
-- The screen corner shows **3.2.0**: if you don't see it, your client jar is
-  old — replace jars on BOTH client and server
+- **JAR DIAGNOSTIC**: the top-right of the screen shows the CLIENT version
+  (e.g. "v3.4.0") and the save message shows the SERVER version ("💾 Salvo no
+  servidor v3.4.0!"). Both must MATCH — otherwise replace the old side's jar
+  (always update client AND server together)
 - Then just **say something in chat** to see your bubble ✨

@@ -35,7 +35,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public class BubbleStyleScreen extends Screen {
 
     private static final int PANEL_W = 262;
-    private static final int PANEL_H = 244;
+    private static final int PANEL_H = 240;
 
     private static final int SV_W = 118;
     private static final int SV_H = 30;
@@ -45,6 +45,15 @@ public class BubbleStyleScreen extends Screen {
     private static final int KB_COLS = 8;
     private static final int KB_ROWS = 6;
     private static final int KB_CELL = 28;
+
+    /** Cor de identidade de cada adesivo (ponto no canto da celula). */
+    private static final int[] CHIP = {0xE04848, 0xA048C8, 0x4878E0, 0x48B048,
+            0xE0C048, 0x784848, 0xF0D048, 0xF0F0B0, 0x48A858, 0xE07030, 0xF0E048, 0xC8C8E0,
+            0xF0C030, 0xE05888, 0x68B868, 0x58A8E0, 0x8878B8, 0x8878B8, 0xB0B0B8, 0x886848,
+            0xE080C8, 0xF0E8D0, 0xE8C838, 0x68D8E8, 0x88B8E8, 0xE8A868, 0xE04838, 0xE04858,
+            0xE8C838, 0xB8B8C8, 0x58B858, 0x68C868, 0x8898E8, 0xD85848, 0x8898D8, 0xE8D878,
+            0x484848, 0xE8A8B8, 0xE8A838, 0xC88848, 0xD8B088, 0xB08858, 0xF0D048, 0x68A8D8,
+            0xF0F0F0, 0xF0F0F0, 0xF0F0F0, 0x8898B8};
 
     /** Spritesheet CRUA dos adesivos (8x8 por sprite) — desenhada com blit. */
     private static final ResourceLocation SHEET =
@@ -116,13 +125,13 @@ public class BubbleStyleScreen extends Screen {
         pvX0 = px + 10;
         pvY0 = py + 16;
         pvX1 = px + PANEL_W - 10;
-        pvY1 = py + 84;
+        pvY1 = py + 82;
         svInX = px + 12;
         svBdX = px + 132;
-        svY = py + 108;
+        svY = py + 105;
         hueY = svY + SV_H + 2;
         kbX = px + (PANEL_W - KB_COLS * KB_CELL) / 2;
-        kbY = py + 18;
+        kbY = py + 16;
 
         if (showKeyboard) {
             addRenderableWidget(Button.builder(Component.literal("✔ Pronto — clique no balão!"), b -> {
@@ -135,31 +144,31 @@ public class BubbleStyleScreen extends Screen {
         // --- linha A: COR da borda (3 botoes explicitos) ---
         addRenderableWidget(Button.builder(Component.literal("▣ Auto"), b -> {
                     style = withBorder(BubbleStyle.AUTO_BORDER);
-                }).bounds(px + 12, py + 154, 75, 16).build());
+                }).bounds(px + 12, py + 162, 75, 15).build());
         addRenderableWidget(Button.builder(Component.literal("▣ Minha cor"), b -> {
                     style = withBorder(hsvToRgb(hsvBd));
-                }).bounds(px + 93, py + 154, 75, 16).build());
+                }).bounds(px + 93, py + 162, 75, 15).build());
         addRenderableWidget(Button.builder(Component.literal("▢ Sem borda"), b -> {
                     style = withBorder(BubbleStyle.NO_BORDER);
-                }).bounds(px + 174, py + 154, 75, 16).build());
+                }).bounds(px + 174, py + 162, 75, 15).build());
 
         // --- linha B: ESTILO da moldura (3 botoes explicitos) ---
         addRenderableWidget(Button.builder(Component.literal("▤ Clássica"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CLASSIC);
-                }).bounds(px + 12, py + 174, 75, 16).build());
+                }).bounds(px + 12, py + 180, 75, 15).build());
         addRenderableWidget(Button.builder(Component.literal("▤ Cartum"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CARTOON);
-                }).bounds(px + 93, py + 174, 75, 16).build());
+                }).bounds(px + 93, py + 180, 75, 15).build());
         addRenderableWidget(Button.builder(Component.literal("▤ Dupla"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_DOUBLE);
-                }).bounds(px + 174, py + 174, 75, 16).build());
+                }).bounds(px + 174, py + 180, 75, 15).build());
 
         // --- linha C: adesivos + duracao ---
         addRenderableWidget(Button.builder(Component.literal("✦ Adesivos (48)"), b -> {
                     showKeyboard = true;
                     rebuildWidgets();
-                }).bounds(px + 12, py + 194, 112, 16).build());
-        addRenderableWidget(new AbstractSliderButton(px + 130, py + 194, 119, 16,
+                }).bounds(px + 12, py + 198, 112, 15).build());
+        addRenderableWidget(new AbstractSliderButton(px + 130, py + 198, 119, 15,
                 durationLabel(), (style.durationSec() - BubbleStyle.MIN_DURATION)
                         / (float) (BubbleStyle.MAX_DURATION - BubbleStyle.MIN_DURATION)) {
             @Override
@@ -180,15 +189,15 @@ public class BubbleStyleScreen extends Screen {
                     this.bubbleMode = !this.bubbleMode;
                     this.modeChanged = true;
                     b.setMessage(modeLabel());
-                }).bounds(px + 12, py + 214, 82, 18).build());
+                }).bounds(px + 12, py + 218, 82, 16).build());
         addRenderableWidget(Button.builder(Component.literal("↺ Padrão"), b -> {
                     style = BubbleStyle.DEFAULT;
                     hsvIn = rgbToHsv(style.colorRGB());
                     hsvBd = hsvIn.clone();
                     rebuildWidgets();
-                }).bounds(px + 98, py + 214, 70, 18).build());
+                }).bounds(px + 98, py + 218, 70, 16).build());
         addRenderableWidget(Button.builder(Component.literal("✔ Salvar"), b -> saveAndClose())
-                .bounds(px + 174, py + 214, 75, 18).build());
+                .bounds(px + 174, py + 218, 75, 16).build());
     }
 
     // =====================================================================
@@ -267,8 +276,8 @@ public class BubbleStyleScreen extends Screen {
             // moldura verde no botao ativo (cor da borda + molde)
             int mode = style.borderRGB() == BubbleStyle.AUTO_BORDER ? 0
                     : (style.borderRGB() >= 0 ? 1 : 2);
-            outline(g, px + 12 + mode * 81, py + 153, 77, 18, 0xFF9AE8B5);
-            outline(g, px + 12 + style.borderStyle() * 81, py + 173, 77, 18, 0xFF9AE8B5);
+            outline(g, px + 12 + mode * 81, py + 161, 77, 17, 0xFF9AE8B5);
+            outline(g, px + 12 + style.borderStyle() * 81, py + 179, 77, 17, 0xFF9AE8B5);
 
             String hint;
             if (holdingSticker != null) {
@@ -278,16 +287,16 @@ public class BubbleStyleScreen extends Screen {
             } else {
                 hint = "✦ Adesivos → escolha → clique no balão!";
             }
-            g.drawCenteredString(this.font, hint, this.width / 2, py + 88,
+            g.drawCenteredString(this.font, hint, this.width / 2, py + 85,
                     holdingSticker != null ? 0xFFB5F0C8 : 0xFFE8ECFF);
             if (holdingSticker != null) {
                 blitSticker(g, holdingSticker, mouseX - 8, mouseY - 16);
             }
         }
         // selo de versao
-        String ver = RPTagMod.VERSION;
+        String ver = "v" + RPTagMod.VERSION;
         g.drawString(this.font, ver, px + PANEL_W - 6 - this.font.width(ver),
-                py + PANEL_H - 9, 0xFF6A748E, false);
+                py + 6, 0xFF8E96A8, false);
     }
 
     private void renderPanel(GuiGraphics g) {
@@ -363,7 +372,7 @@ public class BubbleStyleScreen extends Screen {
         int sx = pX0 + Math.round(style.stickerX() / 100.0F * pW);
         int sy = pY0 + Math.round(style.stickerY() / 100.0F * pH);
         if (!style.corner().isEmpty()) {
-            blitSticker(g, style.corner(), sx - 8, sy - 8);
+            blitSticker(g, style.corner(), sx - 9, sy - 9);
             if (holdingSticker == null && Math.abs(mouseX - sx) <= 9 && Math.abs(mouseY - sy) <= 9) {
                 hoverSticker = true;
                 reticle(g, sx, sy, 0xFFFFFFFF);
@@ -417,8 +426,39 @@ public class BubbleStyleScreen extends Screen {
         pickerColumn(g, svBdX, bdLabel, bdColor);
     }
 
+    /** Paletas rapidas: 1 clique pinta (sem arrastar nada!). */
+    private static final int[] SW_IN = {0xF8F8F8, 0x1E1E24, 0xE04848, 0xF09030,
+            0xF0D048, 0x58C858, 0x5878F0, 0xF078B0};
+    private static final int[] SW_BD = {0x14161C, 0x5A5F6E, 0x5C3A1E, 0x7A2430,
+            0x24305C, 0x4A2A6A, 0x245032, 0xC8A028};
+
+    private void drawSwatches(GuiGraphics g, int x, int[] sw) {
+        for (int i = 0; i < sw.length; i++) {
+            int sx = x + i * 14;
+            g.fill(sx, py + 149, sx + 13, py + 157, 0xFF000000 | sw[i]);
+            g.fill(sx, py + 149, sx + 13, py + 150, 0xFF10131C);
+            g.fill(sx, py + 149, sx + 1, py + 157, 0xFF10131C);
+        }
+        outline(g, x - 1, py + 148, 8 * 14 + 1, 10, 0xFF10131C);
+    }
+
+    /** @return "D" ou "B" se o clique foi numa paleta. */
+    private String swatchAt(double mx, double my) {
+        if (my >= py + 149 && my < py + 157) {
+            for (int i = 0; i < 8; i++) {
+                if (mx >= svInX + i * 14 && mx < svInX + i * 14 + 13) {
+                    return "D";
+                }
+                if (mx >= svBdX + i * 14 && mx < svBdX + i * 14 + 13) {
+                    return "B";
+                }
+            }
+        }
+        return "";
+    }
+
     private void pickerColumn(GuiGraphics g, int x, String label, int rgb) {
-        g.drawString(this.font, label + String.format(" #%06X", rgb & 0xFFFFFF), x, py + 98,
+        g.drawString(this.font, label + String.format(" #%06X", rgb & 0xFFFFFF), x, py + 95,
                 0xFFE8ECFF, false);
         // quadrado saturacao/brilho
         float[] hsv = (x == svInX) ? hsvIn : hsvBd;
@@ -444,6 +484,7 @@ public class BubbleStyleScreen extends Screen {
         int hx = x + (int) (hsv[0] * SV_W) - 2;
         outline(g, hx, hueY - 1, 5, HUE_H + 2, 0xFF000000);
         outline(g, hx + 1, hueY, 3, HUE_H, 0xFFFFFFFF);
+        drawSwatches(g, x, (x == svInX) ? SW_IN : SW_BD);
     }
 
     /** Teclado: grade 8x6 com as IMAGENS dos adesivos (blit 16x16). */
@@ -456,7 +497,9 @@ public class BubbleStyleScreen extends Screen {
             g.fill(cx, cy, cx + KB_CELL, cy + 1, 0xFF39415A);
             g.fill(cx, cy + KB_CELL - 1, cx + KB_CELL, cy + KB_CELL, 0xFF171B26);
             g.fill(cx + KB_CELL - 1, cy, cx + KB_CELL, cy + KB_CELL, 0xFF171B26);
-            blitSticker(g, Stickers.GLYPHS[i], cx + 6, cy + 6);
+            blitSticker(g, Stickers.GLYPHS[i], cx + 4, cy + 4);
+            g.fill(cx + KB_CELL - 6, cy + KB_CELL - 6, cx + KB_CELL - 3, cy + KB_CELL - 3,
+                    0xFF000000 | CHIP[i]);
         }
         int over = stickerAt(mouseX, mouseY);
         if (over >= 0) {
@@ -525,6 +568,19 @@ public class BubbleStyleScreen extends Screen {
             return true;
         }
         if (!showKeyboard && button == 0) {
+            String sw = swatchAt(mx, my);
+            if (!sw.isEmpty()) {
+                if (sw.equals("D")) {
+                    int c = SW_IN[(int) ((mx - svInX) / 14)];
+                    hsvIn = rgbToHsv(c);
+                    style = withColor(c);
+                } else {
+                    int c = SW_BD[(int) ((mx - svBdX) / 14)];
+                    hsvBd = rgbToHsv(c);
+                    style = withBorder(c); // paleta da borda = PERSONALIZADA
+                }
+                return true;
+            }
             if (inBox(mx, my, svInX, svY, SV_W, SV_H)) {
                 dragging = 1;
                 updateSv(hsvIn, svInX, mx, my);
