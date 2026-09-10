@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -25,19 +26,35 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import org.joml.Matrix4f;
 
 /**
- * Balao de fala estilo QUADRINHOS — desenhado com TEXTURA SUAVE (pílula
+ * Balao de fala estilo QUADRINHOS — desenhado com TEXTURA SUAVE (pilula
  * arredondada anti-aliased + rabicho curvado), tingida com as cores do
  * jogador: recheio da cor de dentro, contorno da cor da borda e sombra.
  *
- * <p>O adesivo fica em QUALQUER ponto do balao (posicao % salva pelo editor).
- * Tudo em FULLBRIGHT (legivel no escuro), a prova de crash (qualquer erro
- * desliga os baloes com aviso no log; o jogo NUNCA fecha).
+ * <p>(3.11.0) ANIMACAO estilo mods famosos (Chat Bubbles/TalkBubbles):
+ * POP-IN com ressalto ao nascer, FLUTUACAO suave pra cima e FADE na saida.
+ * PILHA: ate 3 baloes por jogador — o mais novo perto da cabeca, os antigos
+ * sobem. Tudo em FULLBRIGHT (legivel no escuro), a prova de crash (qualquer
+ * erro desliga os baloes com aviso no log; o jogo NUNCA fecha).
  */
 @EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class BubbleRenderer {
 
     private static final int MAX_TEXT_WIDTH = 110;
     private static final int LINE_HEIGHT = 10;
+    /** Linha com adesivo fica mais alta: o glifo da 3.11 tem 16px de arte. */
+    private static final int STICKER_LINE_HEIGHT = 18;
+
+    // ---- ANIMACAO (o padrao dos mods famosos) ----
+    /** Duracao do POP-IN com ressalto. */
+    private static final long POP_MS = 130;
+    /** Tempo em que o balao sobe suavemente (depois para de flutuar). */
+    private static final long FLOAT_MS = 3000;
+    /** Quanto o balao sobe, em pixels de mundo (x 0.030 de escala). */
+    private static final float FLOAT_UP_PX = 2.5F;
+    /** Duracao do FADE no fim da vida do balao. */
+    private static final long FADE_MS = 400;
+    /** Espacamento vertical da pilha de baloes, em blocos. */
+    private static final float STACK_GAP_BLOCKS = 0.55F;
 
     /** Textura da pílula (64x32, branca com alfa suave — tingida na hora). */
     private static final ResourceLocation BUBBLE_TEX =
@@ -74,6 +91,24 @@ public final class BubbleRenderer {
         }
     }
 
+    /** Multiplica o canal alfa de uma cor ARGB (k 0..1). */
+    private static int withAlpha(int argb, float k) {
+        int a = (int) (((argb >>> 24) & 0xFF) * Mth.clamp(k, 0.0F, 1.0F));
+        return (a << 24) | (argb & 0xFFFFFF);
+    }
+
+    /** Escala do POP-IN (easeOutBack: cresce com ressalto e assenta em 1). */
+    private static float popScale(long ageMs) {
+        if (ageMs >= POP_MS) {
+            return 1.0F;
+        }
+        float t = Math.max(0.0F, (float) ageMs / POP_MS);
+        float c1 = 1.70158F;
+        float c3 = c1 + 1.0F;
+        float e = 1.0F + c3 * (t - 1) * (t - 1) * (t - 1) + c1 * (t - 1) * (t - 1);
+        return Math.max(0.05F, e);
+    }
+
     /** Segmento de linha com o mesmo "tipo" (adesivo ou texto). */
     private static class Seg {
         final boolean sticker;
@@ -107,12 +142,15 @@ public final class BubbleRenderer {
         };
     }
 
-    /** Desenha uma linha por segmentos: adesivos em BRANCO (cor verdadeira) e texto na cor normal. */
+    /**
+     * Desenha uma linha por segmentos: adesivos em BRANCO (cor verdadeira,
+     * herdando o alfa global) e texto na cor normal.
+     */
     private static float drawLine(Font font, Matrix4f matrix, MultiBufferSource buffers,
             List<Seg> segs, float x, float y, int textColor) {
         float pen = x;
         for (Seg seg : segs) {
-            int color = seg.sticker ? 0xFFFFFFFF : textColor;
+            int color = seg.sticker ? ((textColor & 0xFF000000) | 0x00FFFFFF) : textColor;
             pen = font.drawInBatch(seq(seg), pen, y, color, true, matrix, buffers,
                     Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
@@ -161,8 +199,8 @@ public final class BubbleRenderer {
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
-        ClientBubbleCache.Bubble bubble = ClientBubbleCache.get(player.getUUID());
-        if (bubble == null) {
+        List<ClientBubbleCache.Bubble> stack = ClientBubbleCache.get(player.getUUID());
+        if (stack.isEmpty()) {
             return;
         }
 
@@ -171,6 +209,16 @@ public final class BubbleRenderer {
             return;
         }
 
+        // ---- PILHA (3.11.0): o mais novo fica perto da cabeca, os antigos sobem ----
+        int count = stack.size();
+        for (int i = 0; i < count; i++) {
+            renderOne(event, minecraft, player, stack.get(i), (count - 1 - i) * STACK_GAP_BLOCKS);
+        }
+    }
+
+    /** Desenha UM balao da pilha, com pop-in + flutuacao + fade. */
+    private static void renderOne(RenderLivingEvent.Post<?, ?> event, Minecraft minecraft,
+            Player player, ClientBubbleCache.Bubble bubble, float upBlocks) {
         Font font = minecraft.font;
         // (3.10.0) VARIOS EMOJIS: os extras acompanham a fala DENTRO do balao,
         // depois do texto — cada um e arte colorida de verdade, como no celular.
@@ -187,12 +235,23 @@ public final class BubbleRenderer {
             segLines.add(segment(line));
         }
 
+        long now = System.currentTimeMillis();
+        long age = now - bubble.bornMillis();
+        long remaining = bubble.expireMillis() - now;
+        // alfa global: entra rapido, sai suave (fade do fim da vida)
+        float alpha = age < POP_MS ? Math.max(0.1F, age / (float) POP_MS)
+                : (remaining < FADE_MS ? Math.max(0.1F, remaining / (float) FADE_MS) : 1.0F);
+        // flutuacao suave pra cima nos primeiros FLOAT_MS
+        float floatUp = FLOAT_UP_PX * Mth.clamp(age / (float) FLOAT_MS, 0.0F, 1.0F);
+
         int colorRGB = bubble.colorRGB() & 0xFFFFFF;
-        int fill = BubbleBackgrounds.fillColorFor(colorRGB);
+        int fill = withAlpha(BubbleBackgrounds.fillColorFor(colorRGB) | 0xFF000000, alpha);
         int border = BubbleBackgrounds.borderColorFor(colorRGB, bubble.borderRGB());
+        border = border != 0 ? withAlpha(border | 0xFF000000, alpha) : 0;
         int textColor = bubble.textRGB() == BubbleStyle.TEXT_AUTO
                 ? BubbleBackgrounds.textColorFor(colorRGB)
                 : (0xFF000000 | bubble.textRGB());
+        textColor = withAlpha(textColor, alpha);
 
         // ---- geometria (pixels inteiros) ----
         int textW = 0;
@@ -200,24 +259,39 @@ public final class BubbleRenderer {
             textW = Math.max(textW, font.width(line));
         }
         int n = lines.size();
+        // linha com adesivo (glifo 16px) ocupa 18px; texto puro segue em 10px
+        int[] lineH = new int[n];
+        int extraH = 0;
+        for (int j = 0; j < n; j++) {
+            boolean hasSticker = false;
+            for (Seg seg : segLines.get(j)) {
+                if (seg.sticker) {
+                    hasSticker = true;
+                    break;
+                }
+            }
+            lineH[j] = hasSticker ? STICKER_LINE_HEIGHT : LINE_HEIGHT;
+            extraH += lineH[j] - LINE_HEIGHT;
+        }
+        int speechH = LINE_HEIGHT * n + extraH;
         int pillW = Math.max(32, textW + 14);
-        int pillH = n * LINE_HEIGHT + 6;
+        int pillH = speechH + 6;
         float x0 = -pillW / 2.0F;
-        float yText = 3 - LINE_HEIGHT * n;      // topo da 1a linha de texto
+        float yText = 3 - speechH;              // topo da 1a linha de texto
         float yP0 = yText - 3;                  // topo da pilula
-        float yP1 = yText + LINE_HEIGHT * n + 3; // base da pilula
+        float yP1 = yText + speechH + 3;        // base da pilula
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
-        poseStack.translate(0.0, player.getBbHeight() + 0.95, 0.0);
+        poseStack.translate(0.0, player.getBbHeight() + 0.95 + upBlocks + floatUp * 0.030F, 0.0);
         poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
-        poseStack.scale(0.030F, -0.030F, 0.030F);
+        poseStack.scale(0.030F * popScale(age), -0.030F * popScale(age), 0.030F);
         Matrix4f matrix = poseStack.last().pose();
         MultiBufferSource buffers = event.getMultiBufferSource();
 
         // ---- SOMBRA ----
-        pill(matrix, buffers, -0.20F, x0 + 2, yP0 + 2, pillW, pillH, 0x40000000);
-        tail(matrix, buffers, -0.20F, 0, yP1 - 1, 12, 12, 0x40000000);
+        pill(matrix, buffers, -0.20F, x0 + 2, yP0 + 2, pillW, pillH, withAlpha(0x40000000, alpha));
+        tail(matrix, buffers, -0.20F, 0, yP1 - 1, 12, 12, withAlpha(0x40000000, alpha));
 
         // ---- CONTORNO (3 ESTILOS: Classica / Cartum grossa / Dupla) ----
         int bs = Math.max(0, bubble.borderStyle());
@@ -240,6 +314,7 @@ public final class BubbleRenderer {
         tail(matrix, buffers, -0.09F, 0, yP1 - 3, 12, 12, fill);
 
         // ---- texto + adesivos dentro da fala (sombra vanilla = legivel e limpo) ----
+        int cum = 0;
         for (int j = 0; j < n; j++) {
             List<Seg> segs = segLines.get(j);
             int lineW = 0;
@@ -247,8 +322,9 @@ public final class BubbleRenderer {
                 lineW += font.width(seq(seg));
             }
             float lineX = -Math.round(lineW / 2.0F);
-            float penY = yText + LINE_HEIGHT * j;
+            float penY = yText + cum;
             drawLine(font, matrix, buffers, segs, lineX, penY, textColor);
+            cum += lineH[j];
         }
 
         // ---- ADESIVO LIVRE: em qualquer ponto do balao (posicao % salva) ----
@@ -257,7 +333,7 @@ public final class BubbleRenderer {
             float sw = font.width(sticker);
             float sx = x0 + bubble.stickerX() / 100.0F * pillW;
             float sy = yP0 + bubble.stickerY() / 100.0F * pillH;
-            font.drawInBatch(sticker, sx - sw / 2.0F, sy - 4.5F, 0xFFFFFFFF, true,
+            font.drawInBatch(sticker, sx - sw / 2.0F, sy - 8.0F, withAlpha(0xFFFFFFFF, alpha), true,
                     matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
 

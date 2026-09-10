@@ -2,6 +2,28 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.11.0] - 2026-09-10
+
+### Adicionado
+- **ARTE DOS EMOJIS EM ALTA RESOLUÇÃO (16px)**: todos os 64 adesivos foram
+  reprocessados com o acabamento dos mods famosos (padrão Discord/Emojiful):
+  **contorno escuro de sticker, brilho de caramelo no topo, sombra de volume
+  na base e ponto de luz**. Spritesheet ampliada para 128x128 e fonte de
+  bitmap com glifos de 16px — os emojis ficam maiores e muito mais bonitos
+  no mundo e no menu.
+- **ANIMAÇÃO do balão estilo mods famosos** (padrão Chat Bubbles/
+  TalkBubbles/ChatBubble): **pop-in com ressalto** (easeOutBack) ao nascer,
+  **flutuação suave pra cima** enquanto o balão vive e **fade-out** suave no
+  fim.
+- **PILHA DE BALÕES**: até **3 balões por jogador** empilham — o mais novo
+  fica perto da cabeça e os antigos sobem (nada de mensagens se apagando).
+
+### Técnico
+- `ClientBubbleCache` agora guarda uma pilha por jogador com o instante de
+  nascimento de cada balão; `BubbleRenderer` desenha cada balão da pilha com
+  a própria animação. Linhas com emoji ocupam 18px (glifo 16px). Texto puro
+  segue EXATAMENTE a mesma geometria de antes (zero regressão visual).
+
 ## [3.10.0] - 2026-09-10
 
 ### Adicionado

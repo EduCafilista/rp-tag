@@ -70,7 +70,7 @@ public class BubbleStyleScreen extends Screen {
     // slots de EMOJIS EXTRAS na fileira propria
     private static final int MAX_SLOTS = 6; // BubbleStyle.MAX_EXTRAS / 2
     private static final int EX_X = 100;    // inicio dos slots (a partir de px)
-    private static final int EX_PITCH = 22; // espacamento entre slots
+    private static final int EX_PITCH = 24; // espacamento entre slots
 
     /** Cores de identidade dos 64 adesivos (uso futuro/tooltips). */
     private static final int[] CHIP = {0xE04848, 0xA048C8, 0x4878E0, 0x48B048,
@@ -127,15 +127,15 @@ public class BubbleStyleScreen extends Screen {
     /**
      * Desenha o adesivo com o MESMO metodo do balao no mundo
      * (font.drawInBatch + fonte de bitmap) — o unico caminho PROVADO de
-     * mostrar a arte do emoji neste projeto. Escala 2x.
+     * mostrar a arte do emoji neste projeto (16px nativos; escala livre).
      */
-    private void drawGlyph2x(GuiGraphics g, String glyph, float x, float y) {
+    private void drawGlyph(GuiGraphics g, String glyph, float x, float y, float scale) {
         Minecraft mc = Minecraft.getInstance();
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
         PoseStack pose = g.pose();
         pose.pushPose();
         pose.translate(x, y, 0.0F);
-        pose.scale(2.0F, 2.0F, 1.0F);
+        pose.scale(scale, scale, 1.0F);
         Font font = mc.font;
         font.drawInBatch(Stickers.seq(glyph), 0.0F, 0.0F, 0xFFFFFFFF, false,
                 pose.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, 0xF000F0);
@@ -380,8 +380,8 @@ public class BubbleStyleScreen extends Screen {
 
         // adesivo na mao segue o mouse (a arte de verdade, 2x)
         if (holdingSticker != null) {
-            drawGlyph2x(g, Stickers.GLYPHS[Integer.parseInt(holdingSticker)],
-                    mouseX - 8, mouseY - 18);
+            drawGlyph(g, Stickers.GLYPHS[Integer.parseInt(holdingSticker)],
+                    mouseX - 8, mouseY - 18, 1.0F);
             outline(g, mouseX - 9, mouseY - 19, 18, 18, 0xFFFFFFFF);
         }
 
@@ -459,7 +459,7 @@ public class BubbleStyleScreen extends Screen {
             }
             int sx = bx + Math.round(style.stickerX() / 100.0F * simChars * simCharW);
             int sy = simY + Math.round(style.stickerY() / 100.0F * (simLineH * 2));
-            drawGlyph2x(g, Stickers.GLYPHS[idx], sx - 8, sy - 8);
+            drawGlyph(g, Stickers.GLYPHS[idx], sx - 8, sy - 8, 1.0F);
             if (holdingSticker == null && Math.abs(mouseX - sx) <= 8 && Math.abs(mouseY - sy) <= 6) {
                 hoverSticker = true;
                 g.drawString(this.font, "+", sx - 2, sy - 9, 0xFFFFFFFF, false);
@@ -470,7 +470,7 @@ public class BubbleStyleScreen extends Screen {
             int gx = Mth.clamp(mouseX, bx, bx + simChars * simCharW);
             int gy = Mth.clamp(mouseY, simY, simY + simLineH * 2);
             g.setColor(1.0F, 1.0F, 1.0F, 0.6F);
-            drawGlyph2x(g, Stickers.GLYPHS[hi], gx - 8, gy - 8);
+            drawGlyph(g, Stickers.GLYPHS[hi], gx - 8, gy - 8, 1.0F);
             g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
             outline(g, gx - 9, gy - 9, 18, 18, 0xFFB5F0C8);
         }
@@ -541,7 +541,7 @@ public class BubbleStyleScreen extends Screen {
         for (int s = 0; s < MAX_SLOTS; s++) {
             int sx = px + EX_X + s * EX_PITCH;
             if (s < list.length) {
-                drawGlyph2x(g, list[s], sx, y0);
+                drawGlyph(g, list[s], sx, y0, 1.0F);
                 if (s == slot) {
                     outline(g, sx - 2, y0 - 2, 20, 20, 0xFFE87A7A);
                     g.renderTooltip(this.font, Component.literal("✖ tirar " + nameOf(list[s])),
@@ -586,7 +586,7 @@ public class BubbleStyleScreen extends Screen {
             g.fill(cx, cy, cx + KB_CELL, cy + 1, 0xFF39415A);
             g.fill(cx, cy + KB_CELL - 1, cx + KB_CELL, cy + KB_CELL, 0xFF171B26);
             g.fill(cx + KB_CELL - 1, cy, cx + KB_CELL, cy + KB_CELL, 0xFF171B26);
-            drawGlyph2x(g, Stickers.GLYPHS[i], cx + 4, cy + 4);
+            drawGlyph(g, Stickers.GLYPHS[i], cx + 4, cy + 4, 1.0F);
             String num = String.valueOf(i + 1);
             g.drawString(this.font, num, cx + KB_CELL - 4 - this.font.width(num),
                     cy + KB_CELL - 9, 0xFF8E96A8, false);

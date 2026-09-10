@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
 >
-> 📥 **Download:** grab `rptag-3.10.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.10.0.jar).
+> 📥 **Download:** grab `rptag-3.11.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.11.0.jar).
 
 ## ✨ Features
 
@@ -35,7 +35,8 @@
   **border color in 3 buttons**: Auto / My color / None · **TEXT color**:
   Auto (auto-contrast) + 8 colors
 - **FREE STICKER with the mouse**: 64 stickers with their REAL ART on the
-  keyboard (2x), in **2 pages** — Classics (48) and **Cute** (16: bow,
+  keyboard, in **high resolution (16px with outline, shine and shading — the
+  polish of famous emoji mods)**, in **2 pages** — Classics (48) and **Cute** (16: bow,
   dinosaur, planet, galaxy, rocket, rainbow, paw, unicorn, fox, penguin,
   ghost, mushroom...) — pick by sight, then **click ANY point of the bubble**
   to place it; **crosshair + % on screen** show exactly where it is ·
@@ -46,6 +47,10 @@
   show INSIDE the bubble, exactly like they will in the world · every kid
   builds their own combo · ✨ slots on the screen ("✖" removes, "+" opens
   the keyboard)
+- **FAMOUS-MOD-STYLE ANIMATION**: bubbles are born with a **bouncy pop-in**,
+  gently float upward while you talk and leave with a smooth **fade-out** ·
+  **STACK of up to 3 bubbles** per player — newest near the head, older ones
+  rise (just like Chat Bubbles/TalkBubbles)
   · **`/rp admin balao <player> on|off`** — admins decide WHO gets bubbles
   · menu rebuilt: big font, 12-color one-click palettes, compact layout
   · **`/rp admin bolhas on|off`** — global toggle
@@ -68,7 +73,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-3.10.0.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-3.11.0.jar` into the **server's** `mods/` folder.
 3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
@@ -79,7 +84,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-3.10.0.jar`.
+The jar ends up at `build/libs/rptag-3.11.0.jar`.
 
 ## 🎨 Customizing
 
