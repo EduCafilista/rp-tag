@@ -195,9 +195,9 @@ public final class ServerEvents {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return;
             }
-            BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(), payload.prefix(),
-                    payload.mid(), payload.suffix(), payload.corner(), payload.stickerX(), payload.stickerY(),
-                    payload.background(), payload.durationSec());
+            BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(), payload.borderStyle(),
+                    payload.prefix(), payload.mid(), payload.suffix(), payload.corner(), payload.stickerX(),
+                    payload.stickerY(), payload.background(), payload.durationSec());
             RPWorldData.get(player.server).setStyle(player.getUUID(), style);
             player.sendSystemMessage(Component.literal("Balão salvo! Dentro ")
                     .withStyle(ChatFormatting.GREEN)
@@ -209,7 +209,7 @@ public final class ServerEvents {
                             : Component.literal(String.format("#%06X", style.borderRGB()))
                                     .withStyle(s -> s.withColor(net.minecraft.network.chat.TextColor.fromRgb(
                                             style.borderRGB() == BubbleStyle.AUTO_BORDER ? style.colorRGB() : style.borderRGB()))))
-                    .append(Component.literal(" — fale no chat! ✨").withStyle(ChatFormatting.GREEN)));
+                    .append(Component.literal(" — salvo pra sempre, fale no chat! ✨").withStyle(ChatFormatting.GREEN)));
         });
     }
 

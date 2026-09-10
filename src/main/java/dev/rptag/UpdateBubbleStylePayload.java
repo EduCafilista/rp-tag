@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
  * Pacote C2S: jogador salvou o estilo do balao na tela de personalizacao
  * (cor de dentro, cor da borda, adesivos antes/meio/depois/canto e duracao).
  */
-public record UpdateBubbleStylePayload(int colorRGB, int borderRGB, String prefix, String mid,
+public record UpdateBubbleStylePayload(int colorRGB, int borderRGB, int borderStyle, String prefix, String mid,
         String suffix, String corner, int stickerX, int stickerY, int background, int durationSec)
         implements CustomPacketPayload {
 
@@ -21,6 +21,7 @@ public record UpdateBubbleStylePayload(int colorRGB, int borderRGB, String prefi
                     (buf, p) -> {
                         ByteBufCodecs.VAR_INT.encode(buf, p.colorRGB());
                         ByteBufCodecs.VAR_INT.encode(buf, p.borderRGB());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.borderStyle());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.prefix());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.mid());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.suffix());
@@ -31,6 +32,7 @@ public record UpdateBubbleStylePayload(int colorRGB, int borderRGB, String prefi
                         ByteBufCodecs.VAR_INT.encode(buf, p.durationSec());
                     },
                     buf -> new UpdateBubbleStylePayload(
+                            ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),

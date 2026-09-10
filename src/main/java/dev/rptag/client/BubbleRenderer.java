@@ -210,10 +210,20 @@ public final class BubbleRenderer {
         pill(matrix, buffers, -0.20F, x0 + 2, yP0 + 2, pillW, pillH, 0x40000000);
         tail(matrix, buffers, -0.20F, 0, yP1 - 1, 12, 12, 0x40000000);
 
-        // ---- CONTORNO (anel: a pilula +2px por lado, como tinta de quadrinhos) ----
+        // ---- CONTORNO (3 ESTILOS: Classica / Cartum grossa / Dupla) ----
+        int bs = Math.max(0, bubble.borderStyle());
         if (border != 0) {
-            pill(matrix, buffers, -0.15F, x0 - 2, yP0 - 2, pillW + 4, pillH + 4, border);
-            tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+            if (bs == 1) { // CARTUM: tinta grossa, capa de quadrinho
+                pill(matrix, buffers, -0.15F, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, border);
+                tail(matrix, buffers, -0.15F, 0, yP1 - 4, 18, 17, border);
+            } else if (bs == 2) { // DUPLA: duas linhas finas com respiro
+                pill(matrix, buffers, -0.15F, x0 - 1, yP0 - 1, pillW + 2, pillH + 2, border);
+                pill(matrix, buffers, -0.14F, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, border);
+                tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+            } else { // CLASSICA: linha de tinta em toda a volta
+                pill(matrix, buffers, -0.15F, x0 - 2, yP0 - 2, pillW + 4, pillH + 4, border);
+                tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+            }
         }
 
         // ---- RECHEIO (a cor de dentro escolhida) ----

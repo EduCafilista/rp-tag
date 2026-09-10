@@ -2,6 +2,22 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.2.0] - 2026-09-10
+
+### Adicionado
+- **3 MOLDES de borda** para o jogador escolher: **Clássica** (linha de tinta
+  fina), **Cartum** (grossa, capa de quadrinho) e **Dupla** (duas linhas com
+  respiro). Salvo junto com o estilo.
+- **Selo de versão** no canto da tela (ex.: "3.2.0") — se não aparecer, o jar
+  do cliente é antigo (cliente e servidor precisam do MESMO jar novo).
+
+### Corrigido
+- **Emojis do teclado não apareciam na tela**: agora os adesivos do editor são
+  desenhados pelo MESMO caminho do balão no mundo (fonte de imagem), idênticos
+  de um lado pro outro.
+- Mensagem de salvamento agora deixa claro que o estilo **fica salvo pra
+  sempre** — sair e voltar mantém cores, adesivo, molde e duração.
+
 ## [3.1.0] - 2026-09-10
 
 ### Corrigido

@@ -55,6 +55,19 @@ public final class Stickers {
         return codePoint >= 0xE000 && codePoint < 0xE000 + COUNT;
     }
 
+    /**
+     * Sequencia renderizavel do adesivo (FormattedCharSequence com a fonte de
+     * imagem) — o MESMO caminho usado pelo balao no mundo, garantindo que o
+     * emoji aparece identico na tela e sobre a cabeca.
+     */
+    public static net.minecraft.util.FormattedCharSequence seq(String glyph) {
+        Style st = stickerStyle();
+        return sink -> {
+            glyph.codePoints().forEach(cp -> sink.accept(0, st, cp));
+            return true;
+        };
+    }
+
     /** Estilo que renderiza o caractere como adesivo colorido. */
     public static Style stickerStyle() {
         return Style.EMPTY.withFont(FONT);

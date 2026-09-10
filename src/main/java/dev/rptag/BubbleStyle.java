@@ -16,8 +16,8 @@ import net.minecraft.nbt.CompoundTag;
  * @param background   (mantido por compatibilidade; o visual agora usa as cores)
  * @param durationSec  tempo que o balao fica visivel, em segundos (2 a 20)
  */
-public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid, String suffix,
-        String corner, int stickerX, int stickerY, int background, int durationSec) {
+public record BubbleStyle(int colorRGB, int borderRGB, int borderStyle, String prefix, String mid,
+        String suffix, String corner, int stickerX, int stickerY, int background, int durationSec) {
 
     public static final int MAX_DECOR = 12;
     public static final int MAX_BACKGROUND = 6;
@@ -37,12 +37,21 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
     /** Borda padrao do estilo default. */
     public static final int DEFAULT_BORDER = AUTO_BORDER;
 
+    // ==== ESTILOS DE BORDA (o jogador escolhe o desenho da moldura!) ====
+    /** Classica: linha de tinta em toda a volta. */
+    public static final int BORDER_CLASSIC = 0;
+    /** Cartum: contorno GROSSO, capa de quadrinho. */
+    public static final int BORDER_CARTOON = 1;
+    /** Dupla: duas linhas finas com um respiro entre elas. */
+    public static final int BORDER_DOUBLE = 2;
+    public static final int BORDER_STYLE_COUNT = 3;
+
     /** Posicao padrao do adesivo livre: canto superior direito, estilo reacao. */
     public static final int DEFAULT_STICKER_X = 95;
     public static final int DEFAULT_STICKER_Y = 8;
 
     public static final BubbleStyle DEFAULT = new BubbleStyle(RPWorldData.DEFAULT_COLOR, DEFAULT_BORDER,
-            "", "", "", "", DEFAULT_STICKER_X, DEFAULT_STICKER_Y, 0, DEFAULT_DURATION);
+            BORDER_CLASSIC, "", "", "", "", DEFAULT_STICKER_X, DEFAULT_STICKER_Y, 0, DEFAULT_DURATION);
 
     public BubbleStyle {
         if (prefix == null) {
@@ -73,6 +82,9 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
             background = 0;
         }
         durationSec = Mth_clamp(durationSec);
+        if (borderStyle < 0 || borderStyle >= BORDER_STYLE_COUNT) {
+            borderStyle = BORDER_CLASSIC;
+        }
         stickerX = clampPct(stickerX);
         stickerY = clampPct(stickerY);
         colorRGB = colorRGB & 0xFFFFFF;
@@ -107,6 +119,7 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
         return new BubbleStyle(
                 tag.getInt("Color"),
                 tag.contains("Border") ? tag.getInt("Border") : DEFAULT_BORDER,
+                tag.contains("BorderStyle") ? tag.getInt("BorderStyle") : BORDER_CLASSIC,
                 tag.getString("Prefix"),
                 tag.contains("Mid") ? tag.getString("Mid") : "",
                 tag.getString("Suffix"),
@@ -121,6 +134,7 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
         CompoundTag tag = new CompoundTag();
         tag.putInt("Color", colorRGB);
         tag.putInt("Border", borderRGB);
+        tag.putInt("BorderStyle", borderStyle);
         tag.putString("Prefix", prefix);
         tag.putString("Mid", mid);
         tag.putString("Suffix", suffix);

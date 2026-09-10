@@ -22,8 +22,8 @@ import net.minecraft.resources.ResourceLocation;
  * @param background  (compatibilidade; o visual usa as cores)
  * @param durationMs  tempo de exibicao em milissegundos
  */
-public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int borderRGB, boolean italic,
-        String corner, int stickerX, int stickerY, int background, int durationMs)
+public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int borderRGB, int borderStyle,
+        boolean italic, String corner, int stickerX, int stickerY, int background, int durationMs)
         implements CustomPacketPayload {
 
     public static final Type<ChatBubblePayload> TYPE =
@@ -36,6 +36,7 @@ public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int bo
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.text());
                         ByteBufCodecs.VAR_INT.encode(buf, p.colorRGB());
                         ByteBufCodecs.VAR_INT.encode(buf, p.borderRGB());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.borderStyle());
                         ByteBufCodecs.BOOL.encode(buf, p.italic());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.corner());
                         ByteBufCodecs.VAR_INT.encode(buf, p.stickerX());
@@ -46,6 +47,7 @@ public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int bo
                     buf -> new ChatBubblePayload(
                             net.minecraft.core.UUIDUtil.STREAM_CODEC.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.BOOL.decode(buf),
