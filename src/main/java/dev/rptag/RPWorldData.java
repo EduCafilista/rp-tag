@@ -135,14 +135,11 @@ public final class RPWorldData extends SavedData {
 
     public BubbleStyle getStyle(UUID id) {
         BubbleStyle style = styles.get(id);
-        int color = colors.getOrDefault(id, DEFAULT_COLOR);
         if (style == null) {
+            int color = colors.getOrDefault(id, DEFAULT_COLOR);
             return new BubbleStyle(color, BubbleStyle.DEFAULT_BORDER, "", "", "", "", 0, BubbleStyle.DEFAULT_DURATION);
         }
-        if (style.colorRGB() != color) {
-            return new BubbleStyle(color, style.borderRGB(), style.prefix(), style.mid(), style.suffix(), style.corner(), style.background(), style.durationSec());
-        }
-        return style;
+        return style; // a cor escolhida na tela manda SEMPRE
     }
 
     public void setStyle(UUID id, BubbleStyle style) {

@@ -189,13 +189,16 @@ public final class BubbleRenderer {
         }
         band(font, matrix, buffers, light, xCap + 1, yCapBot + 2, sCap, 0x56000000);
 
-        // ---- CONTORNO (cor da borda, desenhado 1 faixa alem do recheio) ----
+        // ---- CONTORNO (anel de quadrinhos: exposto 2px acima/abaixo e nas laterais) ----
         if (border != 0) {
-            band(font, matrix, buffers, light, xCap - 2, yCapTop, sCap + 1, border);
+            band(font, matrix, buffers, light, xCap, yCapTop - 2, sCap, border);      // topo
+            band(font, matrix, buffers, light, xCap, yCapBot + 2, sCap, border);      // base
             for (int j = 0; j < n; j++) {
-                band(font, matrix, buffers, light, x0 - 2, yTop + 10 * j, sFull + 1, border);
+                band(font, matrix, buffers, light, x0 - 4, yTop + 10 * j, 1, border); // lateral esq
+                band(font, matrix, buffers, light, x0 + bw, yTop + 10 * j, 1, border);// lateral dir
             }
-            band(font, matrix, buffers, light, xCap - 2, yCapBot, sCap + 1, border);
+            band(font, matrix, buffers, light, xCap, yCapTop, sCap, border);          // tampa topo (atras do recheio)
+            band(font, matrix, buffers, light, xCap, yCapBot, sCap, border);          // tampa base
         }
 
         // ---- RECHEIO (a cor de dentro escolhida) ----

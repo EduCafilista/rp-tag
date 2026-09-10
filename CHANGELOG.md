@@ -2,6 +2,22 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.9.0] - 2026-09-10
+
+### Mudado
+- **Editor repensado (sem caminho sem saída)**: os 4 destinos de adesivo
+  (Antes/Meio/Depois/Canto) ficam SEMPRE visíveis — clica no destino (fica
+  verde) e depois no adesivo, ou arrasta. **Clique direito no destino TIRA**
+  o adesivo (setinhas do teclado também trocam o destino).
+- **Cores sem confusão**: cartões DENTRO e BORDA sempre visíveis mostrando as
+  cores atuais — o seletor pinta o que estiver selecionado (moldura branca).
+- **Borda em 3 estados claros**: Automática → Personalizada (sua cor) → Sem,
+  tudo num botão que sempre diz o estado.
+
+### Corrigido
+- A cor escolhida na tela NUNCA mais é sobrescrita por valor antigo do mundo.
+- Contorno do balão agora aparece em toda a volta (topo/fundo incluídos).
+
 ## [2.8.0] - 2026-09-10
 
 ### Mudado
