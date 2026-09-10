@@ -11,6 +11,11 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.Mth;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.MultiBufferSource;
+
 import dev.rptag.BubbleStyle;
 import dev.rptag.OpenBubbleStylePayload;
 import dev.rptag.RPTagMod;
@@ -103,6 +108,25 @@ public class BubbleStyleScreen extends Screen {
             return BubbleBackgrounds.textColorFor(style.colorRGB() & 0xFFFFFF);
         }
         return 0xFF000000 | style.textColorRGB();
+    }
+
+    /**
+     * Desenha o adesivo com o MESMO metodo do balao no mundo
+     * (font.drawInBatch + RenderType.text da fonte de bitmap) — o unico
+     * caminho PROVADO de mostrar a arte do emoji neste projeto. Escala 2x.
+     */
+    private void drawGlyph2x(GuiGraphics g, String glyph, float x, float y) {
+        Minecraft mc = Minecraft.getInstance();
+        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
+        PoseStack pose = g.pose();
+        pose.pushPose();
+        pose.translate(x, y, 0.0F);
+        pose.scale(2.0F, 2.0F, 1.0F);
+        Font font = mc.font;
+        font.drawInBatch(Stickers.seq(glyph), 0.0F, 0.0F, 0xFFFFFFFF, false,
+                pose.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, 0xF000F0);
+        pose.popPose();
+        buffers.endBatch();
     }
 
     /** Componente "● " na cor pedida (o caminho PROVADO de mostrar cor). */
@@ -278,6 +302,13 @@ public class BubbleStyleScreen extends Screen {
         String ver = "v" + RPTagMod.VERSION;
         g.drawString(this.font, ver, px + PANEL_W - 6 - this.font.width(ver), py + 4, 0xFF9AA4BC, false);
 
+        // adesivo na mao segue o mouse (a arte de verdade, 2x)
+        if (holdingSticker != null) {
+            drawGlyph2x(g, Stickers.GLYPHS[Integer.parseInt(holdingSticker)],
+                    mouseX - 8, mouseY - 18);
+            outline(g, mouseX - 9, mouseY - 19, 18, 18, 0xFFFFFFFF);
+        }
+
         if (showKeyboard) {
             renderKeyboard(g, mouseX, mouseY);
         } else {
@@ -344,7 +375,7 @@ public class BubbleStyleScreen extends Screen {
             }
             int sx = bx + Math.round(style.stickerX() / 100.0F * simChars * simCharW);
             int sy = simY + Math.round(style.stickerY() / 100.0F * (simLineH * 2));
-            g.drawString(this.font, dot(CHIP[idx]), sx - 4, sy - 5, 0xFFFFFFFF, true);
+            drawGlyph2x(g, Stickers.GLYPHS[idx], sx - 8, sy - 8);
             if (holdingSticker == null && Math.abs(mouseX - sx) <= 8 && Math.abs(mouseY - sy) <= 6) {
                 hoverSticker = true;
                 g.drawString(this.font, "+", sx - 2, sy - 9, 0xFFFFFFFF, false);
@@ -354,7 +385,10 @@ public class BubbleStyleScreen extends Screen {
             int hi = Integer.parseInt(holdingSticker);
             int gx = Mth.clamp(mouseX, bx, bx + simChars * simCharW);
             int gy = Mth.clamp(mouseY, simY, simY + simLineH * 2);
-            g.drawString(this.font, dot(CHIP[hi]), gx - 4, gy - 5, 0xFFFFFFFF, true);
+            g.setColor(1.0F, 1.0F, 1.0F, 0.6F);
+            drawGlyph2x(g, Stickers.GLYPHS[hi], gx - 8, gy - 8);
+            g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+            outline(g, gx - 9, gy - 9, 18, 18, 0xFFB5F0C8);
         }
 
         // rodape: resumo com bolinhas coloridas
@@ -409,22 +443,30 @@ public class BubbleStyleScreen extends Screen {
         }
     }
 
-    /** Teclado: bolinha de cor + numero por adesivo; NOME no tooltip. */
+    /** Teclado: a ARTE de cada adesivo (16x16) + numero; NOME no rodape/tooltip. */
     private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
-        g.drawString(this.font, "✦ Adesivo 1-48 — o nome aparece ao passar o mouse",
+        g.drawString(this.font, "✦ Escolha o adesivo — o nome aparece ao passar o mouse",
                 px + 8, py + 8, 0xFFFFD98A, true);
         for (int i = 0; i < Stickers.COUNT; i++) {
             int cx = kbX + (i % KB_COLS) * KB_CELL;
             int cy = kbY + (i / KB_COLS) * KB_CELL;
-            g.drawString(this.font, dot(CHIP[i]), cx + 3, cy, 0xFFFFFFFF, true);
+            g.fill(cx, cy, cx + KB_CELL, cy + KB_CELL, 0xFF242B3D);
+            g.fill(cx, cy, cx + 1, cy + KB_CELL, 0xFF39415A);
+            g.fill(cx, cy, cx + KB_CELL, cy + 1, 0xFF39415A);
+            g.fill(cx, cy + KB_CELL - 1, cx + KB_CELL, cy + KB_CELL, 0xFF171B26);
+            g.fill(cx + KB_CELL - 1, cy, cx + KB_CELL, cy + KB_CELL, 0xFF171B26);
+            drawGlyph2x(g, Stickers.GLYPHS[i], cx + 6, cy + 3);
             String num = String.valueOf(i + 1);
-            g.drawString(this.font, num, cx + KB_CELL / 2 - this.font.width(num) / 2,
-                    cy + 11, 0xFFE8ECFF, true);
+            g.drawString(this.font, num, cx + KB_CELL - 4 - this.font.width(num),
+                    cy + KB_CELL - 9, 0xFF8E96A8, false);
         }
         int over = stickerAt(mouseX, mouseY);
         if (over >= 0) {
-            g.drawString(this.font, "▶ " + Stickers.NAMES[over] + " (#" + (over + 1) + ")",
-                    px + 8, py + PANEL_H - 26, 0xFFFFFFFF, true);
+            int cx = kbX + (over % KB_COLS) * KB_CELL;
+            int cy = kbY + (over / KB_COLS) * KB_CELL;
+            outline(g, cx, cy, KB_CELL, KB_CELL, 0xFFFFFFFF);
+            g.drawString(this.font, "▶ " + Stickers.NAMES[over],
+                    px + 8, py + PANEL_H - 24, 0xFFFFFFFF, true);
             g.renderTooltip(this.font, Component.literal(Stickers.NAMES[over]), mouseX, mouseY);
         }
     }

@@ -2,6 +2,17 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.9.0] - 2026-09-10
+
+### Corrigido
+- **EMOJIS VISÍVEIS NO TECLADO DE VERDADE**: os adesivos do menu agora são
+  desenhados pelo MESMO método do balão no mundo (`drawInBatch` + fonte de
+  bitmap, escala 2x) — o único caminho que comprovadamente funciona em todos
+  os clientes testados. Escolha VENDO o emoji (bolinhas e números eram só
+  fallback); o nome segue no rodapé e no tooltip.
+- O adesivo colado aparece na simulação com a arte real, e o adesivo "na mão"
+  segue o mouse com a arte também.
+
 ## [3.8.0] - 2026-09-10
 
 ### Corrigido

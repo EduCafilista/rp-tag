@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-3.8.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.8.0.jar) (arquivo dentro do repositório).
+> 📥 **Download:** baixe o `rptag-3.9.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.9.0.jar) (arquivo dentro do repositório).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
@@ -41,8 +41,8 @@
   pra Dentro e 8 pra Borda — sem arrastar!) ·
   **cor da borda em 3 botões**: Auto / Minha cor / Sem · **cor da LETRA**:
   Auto (contraste sozinho) + 8 cores
-- **ADESIVO LIVRE com o mouse**: 48 adesivos com bolinha de cor + número
-  (nome completo no tooltip) — **clique em QUALQUER ponto do balão** pra colar;
+- **ADESIVO LIVRE com o mouse**: 48 adesivos com a ARTE DE VERDADE no teclado
+  (2x) — escolha vendo o emoji, **clique em QUALQUER ponto do balão** pra colar;
   **mira + % na tela** mostram exatamente onde ficou · clique direito tira ·
   **ESC ou ✔ Salvar** gravam tudo · **barra de duração** (2–20s)
 - **`/rp admin bolhas on|off`** — global · **`/rp admin balao <jogador> on|off`**
@@ -68,7 +68,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-3.8.0.jar` para a pasta `mods/` do **servidor**.
+2. Copie `rptag-3.9.0.jar` para a pasta `mods/` do **servidor**.
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -81,7 +81,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-3.8.0.jar`.
+O jar sai em `build/libs/rptag-3.9.0.jar`.
 
 ## 🎨 Personalizar
 
