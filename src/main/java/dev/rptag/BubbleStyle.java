@@ -49,7 +49,13 @@ public record BubbleStyle(int colorRGB, int borderRGB, int borderStyle, int text
     public static final int BORDER_CARTOON = 1;
     /** Dupla: duas linhas finas com um respiro entre elas. */
     public static final int BORDER_DOUBLE = 2;
-    public static final int BORDER_STYLE_COUNT = 3;
+    /** Tracejada: tracinhos fofos ao redor de todo o balao. */
+    public static final int BORDER_DASHED = 3;
+    /** Nuvem: bolas fofas em toda a volta — o balao vira uma nuvenzinha. */
+    public static final int BORDER_CLOUD = 4;
+    /** Gibi: balaozao de HQ (estilo Turma da Monica) — inflado, tinta grossa e brilho. */
+    public static final int BORDER_COMIC = 5;
+    public static final int BORDER_STYLE_COUNT = 6;
     /** Cor da LETRA automatica (branco/preto conforme o fundo). */
     public static final int TEXT_AUTO = -3;
 

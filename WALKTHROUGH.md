@@ -13,9 +13,9 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 | Minecraft **1.21.1** (Java Edition) | launcher oficial |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → versão 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-3.11.0.jar` | a aba *Releases* deste repositório |
+| `rptag-3.12.0.jar` | a aba *Releases* deste repositório |
 
-> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-3.11.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
+> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-3.12.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
 
 ---
 
@@ -23,7 +23,7 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 
 1. Instale o NeoForge no servidor (o instalador pergunta o caminho da pasta do servidor).
 2. Na pasta do servidor, entre em `mods/`.
-3. Copie o `rptag-3.11.0.jar` para dentro dela.
+3. Copie o `rptag-3.12.0.jar` para dentro dela.
 4. Inicie o servidor uma vez para gerar os arquivos (aceite o EULA no `eula.txt` com `eula=true`).
 
 **Como saber se funcionou:** no log de boot procure a linha
@@ -40,7 +40,7 @@ Pronto — a partir daqui a tag já funciona no **chat** e na **TAB** para todos
 
 1. No launcher, crie/edite o perfil do NeoForge 1.21.1.
 2. Abra a pasta do jogo (opção "abrindo a pasta do jogo" no launcher) e entre em `mods/`.
-3. Copie o mesmo `rptag-3.11.0.jar` para lá.
+3. Copie o mesmo `rptag-3.12.0.jar` para lá.
 4. Entre no servidor.
 
 Sem o mod no cliente você ainda vê a tag no chat/TAB; com o mod, também vê **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** flutuando sobre a cabeça dos jogadores.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-O jar sai em `build/libs/rptag-3.11.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
+O jar sai em `build/libs/rptag-3.12.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
 
 ---
 

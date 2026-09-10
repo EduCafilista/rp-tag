@@ -195,6 +195,48 @@ public final class BubbleRenderer {
                 .setNormal(0.0F, 1.0F, 0.0F);
     }
 
+    /** TRACEJADA: tracinhos arredondados ao redor de todo o balao (+ rabicho em descada). */
+    private static void dashedBorder(Matrix4f m, MultiBufferSource buffers, float z,
+            float x0, float yP0, float pillW, float yP1, int argb) {
+        float dash = 6.0F, gap = 6.0F, t = 4.0F;
+        float yTop = yP0 - 3, yBot = yP1 + 3;
+        float xL = x0 - 3, xR = x0 + pillW + 3;
+        for (float x = xL; x < xR - 1; x += dash + gap) {
+            float w = Math.min(dash, xR - x);
+            pill(m, buffers, z, x, yTop, w, t, argb);
+            pill(m, buffers, z, x, yBot - t, w, t, argb);
+        }
+        for (float y = yTop + 9; y < yBot - 9; y += dash + gap) {
+            float h = Math.min(dash, yBot - 9 - y);
+            if (h < 2) {
+                break;
+            }
+            pill(m, buffers, z, xL, y, t, h, argb);
+            pill(m, buffers, z, xR - t, y, t, h, argb);
+        }
+        // rabicho em descadinha (dois tracinhos caindo do centro)
+        pill(m, buffers, z, -2.0F, yBot - 1, t, 7, argb);
+        pill(m, buffers, z, 2.0F, yBot + 5, t, 7, argb);
+    }
+
+    /** NUVEM: bolas fofas sobrepostas em toda a volta — o balao vira uma nuvenzinha. */
+    private static void cloudBorder(Matrix4f m, MultiBufferSource buffers, float z,
+            float x0, float yP0, float pillW, float pillH, float yP1, int argb) {
+        // base inflada da cor da borda
+        pill(m, buffers, z, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, argb);
+        tail(m, buffers, z, 0, yP1 - 4, 16, 15, argb);
+        // gomos da nuvem: bolas sobrepostas (um palmo pra fora da base)
+        float d = 13.0F, step = 8.0F;
+        for (float x = x0 - 6; x < x0 + pillW + 2; x += step) {
+            pill(m, buffers, z + 0.01F, x, yP0 - 8, d, d, argb);
+            pill(m, buffers, z + 0.01F, x, yP1 + 8 - d, d, d, argb);
+        }
+        for (float y = yP0 - 2; y < yP1 - 2; y += step) {
+            pill(m, buffers, z + 0.01F, x0 - 8, y, d, d, argb);
+            pill(m, buffers, z + 0.01F, x0 + pillW + 8 - d, y, d, d, argb);
+        }
+    }
+
     private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
@@ -293,25 +335,41 @@ public final class BubbleRenderer {
         pill(matrix, buffers, -0.20F, x0 + 2, yP0 + 2, pillW, pillH, withAlpha(0x40000000, alpha));
         tail(matrix, buffers, -0.20F, 0, yP1 - 1, 12, 12, withAlpha(0x40000000, alpha));
 
-        // ---- CONTORNO (3 ESTILOS: Classica / Cartum grossa / Dupla) ----
+        // ---- CONTORNO (6 ESTILOS: Classica / Cartum / Dupla / Tracejada / Nuvem / Gibi) ----
         int bs = Math.max(0, bubble.borderStyle());
         if (border != 0) {
-            if (bs == 1) { // CARTUM: tinta grossa, capa de quadrinho
-                pill(matrix, buffers, -0.15F, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, border);
-                tail(matrix, buffers, -0.15F, 0, yP1 - 4, 18, 17, border);
-            } else if (bs == 2) { // DUPLA: duas linhas finas com respiro
-                pill(matrix, buffers, -0.15F, x0 - 1, yP0 - 1, pillW + 2, pillH + 2, border);
-                pill(matrix, buffers, -0.14F, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, border);
-                tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
-            } else { // CLASSICA: linha de tinta em toda a volta
-                pill(matrix, buffers, -0.15F, x0 - 2, yP0 - 2, pillW + 4, pillH + 4, border);
-                tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+            switch (bs) {
+                case 1 -> { // CARTUM: tinta grossa, capa de quadrinho
+                    pill(matrix, buffers, -0.15F, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, border);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 4, 18, 17, border);
+                }
+                case 2 -> { // DUPLA: duas linhas finas com respiro
+                    pill(matrix, buffers, -0.15F, x0 - 1, yP0 - 1, pillW + 2, pillH + 2, border);
+                    pill(matrix, buffers, -0.14F, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, border);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+                }
+                case 3 -> // TRACEJADA: tracinhos fofos em toda a volta
+                        dashedBorder(matrix, buffers, -0.15F, x0, yP0, pillW, yP1, border);
+                case 4 -> // NUVEM: bolas fofas, o balao vira uma nuvenzinha
+                        cloudBorder(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, yP1, border);
+                case 5 -> { // GIBI: balaozao de HQ, tinta bem grossa
+                    pill(matrix, buffers, -0.15F, x0 - 5, yP0 - 5, pillW + 10, pillH + 10, border);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 5, 18, 18, border);
+                }
+                default -> { // CLASSICA: linha de tinta em toda a volta
+                    pill(matrix, buffers, -0.15F, x0 - 2, yP0 - 2, pillW + 4, pillH + 4, border);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+                }
             }
         }
 
         // ---- RECHEIO (a cor de dentro escolhida) ----
         pill(matrix, buffers, -0.10F, x0, yP0, pillW, pillH, fill);
         tail(matrix, buffers, -0.09F, 0, yP1 - 3, 12, 12, fill);
+        if (bs == 5) { // GIBI: brilho gelatinoso classico das HQs (faixa branca no topo)
+            pill(matrix, buffers, -0.08F, x0 + 8, yP0 + 3, Math.max(12, pillW * 0.45F), 3,
+                    withAlpha(0x99FFFFFF, alpha));
+        }
 
         // ---- texto + adesivos dentro da fala (sombra vanilla = legivel e limpo) ----
         int cum = 0;

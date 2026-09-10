@@ -2,6 +2,19 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.12.0] - 2026-09-10
+
+### Adicionado
+- **3 NOVAS MOLDURAS de balão** (agora são 6!): **▤ Tracejada** (tracinhos
+  arredondados em toda a volta, com rabicho em descadinha), **▤ Nuvem**
+  (gomos de nuvem fofos ao redor do balão inteiro) e **▤ Gibi** — o balãozão
+  de HQ clássico do estilo Turma da Mônica: bem inflado, tinta grossa e
+  **brilho gelatinoso** no recheio.
+- A moldura escolhida é realçada com a caixa verde na fileira certa (as
+  molduras agora ocupam 2 fileiras de botões).
+- Bordas são só um número no estilo: **zero mudança de rede** — mundos e
+  combinações antigas continuam funcionando (Clássica/Cartum/Dupla intactas).
+
 ## [3.11.0] - 2026-09-10
 
 ### Adicionado

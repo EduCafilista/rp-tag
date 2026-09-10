@@ -44,7 +44,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public class BubbleStyleScreen extends Screen {
 
     private static final int PANEL_W = 268;
-    private static final int PANEL_H = 252;
+    private static final int PANEL_H = 264;
 
     // linhas verticais (a partir de py) — UMA fonte de verdade
     private static final int ROW_HINT = 22;
@@ -57,8 +57,10 @@ public class BubbleStyleScreen extends Screen {
     private static final int ROW_BTN1 = 162;
     private static final int ROW_BTN2 = 178;
     private static final int ROW_BTN3 = 194;
-    private static final int ROW_EXTRAS = 212;
-    // fileira final de botoes = ROW_BTN3 + 34 (dentro do painel de 252)
+    private static final int ROW_BTN4 = 210;
+    private static final int ROW_BTN5 = 244;
+    private static final int ROW_EXTRAS = 228;
+    // fileira final de botoes = ROW_BTN5 (244+16 = 260, dentro do painel de 264)
 
     // paletas desenhadas como texto "● "
     private static final int SW_X = 64;
@@ -271,11 +273,21 @@ public class BubbleStyleScreen extends Screen {
                     style = withBorderStyle(BubbleStyle.BORDER_DOUBLE);
                 }).bounds(px + 178, py + ROW_BTN2, 81, 16).build());
 
+        addRenderableWidget(Button.builder(Component.literal("▤ Tracejada"), b -> {
+                    style = withBorderStyle(BubbleStyle.BORDER_DASHED);
+                }).bounds(px + 8, py + ROW_BTN3, 81, 16).build());
+        addRenderableWidget(Button.builder(Component.literal("▤ Nuvem"), b -> {
+                    style = withBorderStyle(BubbleStyle.BORDER_CLOUD);
+                }).bounds(px + 93, py + ROW_BTN3, 81, 16).build());
+        addRenderableWidget(Button.builder(Component.literal("▤ Gibi"), b -> {
+                    style = withBorderStyle(BubbleStyle.BORDER_COMIC);
+                }).bounds(px + 178, py + ROW_BTN3, 81, 16).build());
+
         addRenderableWidget(Button.builder(Component.literal("✦ Adesivos (64)"), b -> {
                     showKeyboard = true;
                     rebuildWidgets();
-                }).bounds(px + 8, py + ROW_BTN3, 124, 18).build());
-        addRenderableWidget(new AbstractSliderButton(px + 136, py + ROW_BTN3, 123, 18,
+                }).bounds(px + 8, py + ROW_BTN4, 124, 18).build());
+        addRenderableWidget(new AbstractSliderButton(px + 136, py + ROW_BTN4, 123, 18,
                 durationLabel(), (style.durationSec() - BubbleStyle.MIN_DURATION)
                         / (float) (BubbleStyle.MAX_DURATION - BubbleStyle.MIN_DURATION)) {
             @Override
@@ -291,7 +303,7 @@ public class BubbleStyleScreen extends Screen {
             }
         });
 
-        int row4 = py + ROW_BTN3 + 34;
+        int row4 = py + ROW_BTN5;
         addRenderableWidget(Button.builder(modeLabel(), b -> {
                     this.bubbleMode = !this.bubbleMode;
                     this.modeChanged = true;
@@ -395,8 +407,13 @@ public class BubbleStyleScreen extends Screen {
         super.render(g, mouseX, mouseY, partialTick);
 
         if (!showKeyboard) {
+            int st = Mth.clamp(style.borderStyle(), 0, BubbleStyle.BORDER_STYLE_COUNT - 1);
             outline(g, px + 7, py + ROW_BTN1 - 1, 83, 18, 0xFF9AE8B5);
-            outline(g, px + 7 + style.borderStyle() * 85, py + ROW_BTN2 - 1, 83, 18, 0xFF9AE8B5);
+            if (st < 3) {
+                outline(g, px + 7 + st * 85, py + ROW_BTN2 - 1, 83, 18, 0xFF9AE8B5);
+            } else {
+                outline(g, px + 7 + (st - 3) * 85, py + ROW_BTN3 - 1, 83, 18, 0xFF9AE8B5);
+            }
         }
     }
 
