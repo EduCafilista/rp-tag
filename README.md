@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-3.4.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.4.0.jar) (arquivo dentro do repositório).
+> 📥 **Download:** baixe o `rptag-3.5.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.5.0.jar) (arquivo dentro do repositório).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
@@ -29,13 +29,16 @@
   perfeito para **ovos, crianças e quem não usa microfone** (estilo QSMP)
 - **Modo balão** — a fala vira **só o balão** (nada no chat!):
   `/balao modo on` para si · `/rp admin bolha <jogador> on` para o admin setar
+- **MENU com SIMULAÇÃO DE CHAT AO VIVO**: linha `<Você> fala` + balão completo
+  reagindo na hora a TUDO — fundo, borda, molde, cor da LETRA e adesivo
 - **Balão estilo QUADRINHOS com textura suave**: pílula arredondada de verdade
   (anti-aliased), contorno em toda a volta e rabicho — **tudo escolhido no
   seletor de arrastar** (`/balao`) · preview na tela = o que fica no jogo ·
   **3 molduras com botões próprios**: Clássica, Cartum (grossa) e Dupla ·
   **2 seletores independentes** + **paletas de 1 clique** (8 cores prontas
   pra Dentro e 8 pra Borda — sem arrastar!) ·
-  **cor da borda em 3 botões**: Auto / Minha cor / Sem
+  **cor da borda em 3 botões**: Auto / Minha cor / Sem · **cor da LETRA**:
+  Auto (contraste sozinho) + 8 cores
 - **ADESIVO LIVRE com o mouse**: 48 adesivos em pixel-art desenhados como
   IMAGEM no editor — **clique em QUALQUER ponto do balão** pra colar; **mira +
   % na tela** mostram exatamente onde ficou · clique direito tira ·
@@ -62,7 +65,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-3.4.0.jar` para a pasta `mods/` do **servidor**.
+2. Copie `rptag-3.5.0.jar` para a pasta `mods/` do **servidor**.
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -75,7 +78,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-3.4.0.jar`.
+O jar sai em `build/libs/rptag-3.5.0.jar`.
 
 ## 🎨 Personalizar
 

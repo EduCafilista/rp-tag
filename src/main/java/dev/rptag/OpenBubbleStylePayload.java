@@ -9,8 +9,9 @@ import net.minecraft.resources.ResourceLocation;
  * Pacote S2C: abre a tela de personalizacao do balao com o estilo atual
  * do jogador (cores, adesivos e duracao).
  */
-public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyle, String prefix, String mid,
-        String suffix, String corner, int stickerX, int stickerY, int background, int durationSec)
+public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyle, int textColorRGB,
+        String prefix, String mid, String suffix, String corner, int stickerX, int stickerY,
+        int background, int durationSec)
         implements CustomPacketPayload {
 
     public static final Type<OpenBubbleStylePayload> TYPE =
@@ -22,6 +23,7 @@ public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyl
                         ByteBufCodecs.VAR_INT.encode(buf, p.colorRGB());
                         ByteBufCodecs.VAR_INT.encode(buf, p.borderRGB());
                         ByteBufCodecs.VAR_INT.encode(buf, p.borderStyle());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.textColorRGB());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.prefix());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.mid());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.suffix());
@@ -32,6 +34,7 @@ public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyl
                         ByteBufCodecs.VAR_INT.encode(buf, p.durationSec());
                     },
                     buf -> new OpenBubbleStylePayload(
+                            ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
@@ -46,8 +49,8 @@ public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyl
 
     public static OpenBubbleStylePayload of(BubbleStyle style) {
         return new OpenBubbleStylePayload(style.colorRGB(), style.borderRGB(), style.borderStyle(),
-                style.prefix(), style.mid(), style.suffix(), style.corner(), style.stickerX(), style.stickerY(),
-                style.background(), style.durationSec());
+                style.textColorRGB(), style.prefix(), style.mid(), style.suffix(), style.corner(),
+                style.stickerX(), style.stickerY(), style.background(), style.durationSec());
     }
 
     @Override

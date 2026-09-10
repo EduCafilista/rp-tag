@@ -138,8 +138,8 @@ public final class RPWorldData extends SavedData {
         if (style == null) {
             int color = colors.getOrDefault(id, DEFAULT_COLOR);
             return new BubbleStyle(color, BubbleStyle.DEFAULT_BORDER, BubbleStyle.BORDER_CLASSIC,
-                    "", "", "", "", BubbleStyle.DEFAULT_STICKER_X, BubbleStyle.DEFAULT_STICKER_Y, 0,
-                    BubbleStyle.DEFAULT_DURATION);
+                    BubbleStyle.TEXT_AUTO, "", "", "", "", BubbleStyle.DEFAULT_STICKER_X,
+                    BubbleStyle.DEFAULT_STICKER_Y, 0, BubbleStyle.DEFAULT_DURATION);
         }
         return style; // a cor escolhida na tela manda SEMPRE
     }

@@ -13,9 +13,9 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 | Minecraft **1.21.1** (Java Edition) | launcher oficial |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → versão 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-3.4.0.jar` | a aba *Releases* deste repositório |
+| `rptag-3.5.0.jar` | a aba *Releases* deste repositório |
 
-> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-3.4.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
+> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-3.5.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
 
 ---
 
@@ -23,7 +23,7 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 
 1. Instale o NeoForge no servidor (o instalador pergunta o caminho da pasta do servidor).
 2. Na pasta do servidor, entre em `mods/`.
-3. Copie o `rptag-3.4.0.jar` para dentro dela.
+3. Copie o `rptag-3.5.0.jar` para dentro dela.
 4. Inicie o servidor uma vez para gerar os arquivos (aceite o EULA no `eula.txt` com `eula=true`).
 
 **Como saber se funcionou:** no log de boot procure a linha
@@ -40,7 +40,7 @@ Pronto — a partir daqui a tag já funciona no **chat** e na **TAB** para todos
 
 1. No launcher, crie/edite o perfil do NeoForge 1.21.1.
 2. Abra a pasta do jogo (opção "abrindo a pasta do jogo" no launcher) e entre em `mods/`.
-3. Copie o mesmo `rptag-3.4.0.jar` para lá.
+3. Copie o mesmo `rptag-3.5.0.jar` para lá.
 4. Entre no servidor.
 
 Sem o mod no cliente você ainda vê a tag no chat/TAB; com o mod, também vê **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** flutuando sobre a cabeça dos jogadores.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-O jar sai em `build/libs/rptag-3.4.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
+O jar sai em `build/libs/rptag-3.5.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
 
 ---
 
@@ -182,8 +182,10 @@ O texto do balão escolhe preto ou branco sozinho, de acordo com a cor de fundo.
 | `/rp admin bolhas off` | *(admin)* desliga balões do servidor inteiro |
 
 ### Como usar a tela (`/balao`)
-- **O BALÃO DE VERDADE é o preview** — o que você vê na tela é exatamente o
-  que os outros vão ver sobre a sua cabeça
+- **SIMULAÇÃO DE CHAT AO VIVO** — o painel de cima mostra a linha
+  `<Você> sua fala assim` (nome na cor do balão, fala na cor da letra) e o
+  balão completo. Mudou QUALQUER coisa (fundo, borda, molde, letra, adesivo)? A
+  simulação reage NA HORA. No rodapé: `#fundo · ▣ borda · ✎ letra`
 - **Adesivo com o MOUSE**: `✦ Adesivos` → clique num emoji (as imagens são
   desenhadas direto da spritesheet — sempre aparecem) → ele gruda no mouse →
   **clique em qualquer ponto do balão** para colar. A **mira em cruz** mostra
@@ -198,6 +200,8 @@ O texto do balão escolhe preto ou branco sozinho, de acordo com a cor de fundo.
   com moldura verde
 - **Molde** — 3 BOTÕES de estilo: **▤ Clássica** (linha fina) · **▤ Cartum**
   (grossa, capa de quadrinho) · **▤ Dupla** (duas linhas com respiro)
+- **✎ Letra** — **Auto** (branco ou preto conforme o fundo, contraste sempre
+  perfeito) ou 8 cores de chat à 1 clique — a fala no balão muda na hora
 - **⏱ Duração** — ARRASTA a barra e escolhe 2 a 20 segundos de exibição
 - **☾ Modo balão** — liga/desliga ali mesmo
 - **✔ Salvar** (botão da DIREITA, como no Minecraft) ou **ESC** salvam —

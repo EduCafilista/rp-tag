@@ -6,6 +6,7 @@ import java.util.List;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
+import dev.rptag.BubbleStyle;
 import dev.rptag.RPTagMod;
 import dev.rptag.Stickers;
 import net.minecraft.client.Minecraft;
@@ -183,7 +184,9 @@ public final class BubbleRenderer {
         int colorRGB = bubble.colorRGB() & 0xFFFFFF;
         int fill = BubbleBackgrounds.fillColorFor(colorRGB);
         int border = BubbleBackgrounds.borderColorFor(colorRGB, bubble.borderRGB());
-        int textColor = BubbleBackgrounds.textColorFor(colorRGB);
+        int textColor = bubble.textRGB() == BubbleStyle.TEXT_AUTO
+                ? BubbleBackgrounds.textColorFor(colorRGB)
+                : (0xFF000000 | bubble.textRGB());
 
         // ---- geometria (pixels inteiros) ----
         int textW = 0;

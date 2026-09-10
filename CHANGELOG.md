@@ -2,6 +2,35 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.5.0] - 2026-09-10
+
+### Adicionado
+- **SIMULAÇÃO DE CHAT AO VIVO no menu**: painel estilo chat com a linha
+  `<Você> sua fala assim` (nome na cor do balão, fala na cor da letra) e o
+  balão completo — reage NA HORA a fundo, borda, molde, letra e adesivo.
+- **COR DA LETRA**: modo **Auto** (branco/preto conforme o fundo, contraste
+  perfeito) ou 8 cores de chat à 1 clique. Salva no mundo, viaja pra todos e
+  aparece na mensagem de confirmação ("· Letra #RRGGBB / auto").
+- Rodapé da simulação com o resumo `#fundo · ▣ borda · ✎ letra`.
+
+## [3.4.0] - 2026-09-10
+
+### Adicionado
+- **PALETAS DE 1 CLIQUE**: 8 cores prontas pra DENTRO e 8 pra BORDA, logo
+  embaixo de cada seletor — clicou, pintou. Zero arrastar (pra quem o arrastar
+  não estava funcionando). Arrastar continua disponível pra cor custom.
+- **Diagnóstico de jar embutido**: a tela mostra a versão do CLIENTE (canto
+  superior direito) e a mensagem de salvar mostra a versão do SERVIDOR
+  ("💾 Salvo no servidor vX.Y.Z!"). Se diferirem, o jar do lado antigo precisa
+  ser trocado — essa era a causa real de "nada muda".
+- Teclado de adesivos com **imagens grandes (20px)** e ponto de cor de
+  identidade em cada célula.
+
+### Corrigido
+- Tela compactada (240px) pra caber em telas 480p com GUI scale 2 — os botões
+  de baixo (Salvar!) não são mais cortados.
+- Texturas legadas não usadas removidas do jar.
+
 ## [3.3.0] - 2026-09-10
 
 ### Adicionado

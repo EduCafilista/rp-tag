@@ -196,8 +196,8 @@ public final class ServerEvents {
                 return;
             }
             BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(), payload.borderStyle(),
-                    payload.prefix(), payload.mid(), payload.suffix(), payload.corner(), payload.stickerX(),
-                    payload.stickerY(), payload.background(), payload.durationSec());
+                    payload.textColorRGB(), payload.prefix(), payload.mid(), payload.suffix(), payload.corner(),
+                    payload.stickerX(), payload.stickerY(), payload.background(), payload.durationSec());
             RPWorldData.get(player.server).setStyle(player.getUUID(), style);
             player.sendSystemMessage(Component.literal("💾 Salvo no servidor v" + RPTagMod.VERSION + "! Dentro ")
                     .withStyle(ChatFormatting.GREEN)
@@ -209,6 +209,12 @@ public final class ServerEvents {
                             : Component.literal(String.format("#%06X", style.borderRGB()))
                                     .withStyle(s -> s.withColor(net.minecraft.network.chat.TextColor.fromRgb(
                                             style.borderRGB() == BubbleStyle.AUTO_BORDER ? style.colorRGB() : style.borderRGB()))))
+                    .append(Component.literal(" · Letra ").withStyle(ChatFormatting.GREEN))
+                    .append(style.textColorRGB() == BubbleStyle.TEXT_AUTO
+                            ? Component.literal("auto").withStyle(ChatFormatting.GRAY)
+                            : Component.literal(String.format("#%06X", style.textColorRGB()))
+                                    .withStyle(s -> s.withColor(net.minecraft.network.chat.TextColor.fromRgb(
+                                            style.textColorRGB()))))
                     .append(Component.literal(" — salvo pra sempre, fale no chat! ✨").withStyle(ChatFormatting.GREEN)));
         });
     }
