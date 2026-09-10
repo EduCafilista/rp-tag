@@ -41,29 +41,6 @@ public final class RPChat {
         return Style.EMPTY;
     }
 
-    /** Insere o emoji do MEIO no intervalo central da mensagem (se houver). */
-    private static String insertMid(String text, String mid) {
-        if (mid == null || mid.isEmpty()) {
-            return text;
-        }
-        String[] words = text.trim().split("\\s+");
-        if (words.length <= 1) {
-            return text + " " + mid;
-        }
-        int half = words.length / 2;
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < words.length; i++) {
-            if (i > 0) {
-                sb.append(' ');
-            }
-            if (i == half) {
-                sb.append(mid).append(' ');
-            }
-            sb.append(words[i]);
-        }
-        return sb.toString();
-    }
-
     /** Mostra o balao de fala sobre a cabeca (se o recurso estiver ligado). */
     public static void spawnBubble(ServerPlayer from, String rawText, boolean italic) {
         RPWorldData data = RPWorldData.get(from.server);
@@ -72,13 +49,9 @@ public final class RPChat {
         }
         String text = rawText.length() > 96 ? rawText.substring(0, 93) + "..." : rawText;
         BubbleStyle style = data.getStyle(from.getUUID());
-        // emoji do MEIO: entra no intervalo central da mensagem
-        String withMid = insertMid(text, style.mid());
-        // decora com os emojis/personalizacao do autor
-        String decorated = (style.prefix().isEmpty() ? "" : style.prefix() + " ")
-                + withMid
-                + (style.suffix().isEmpty() ? "" : " " + style.suffix());
-        ChatBubblePayload payload = new ChatBubblePayload(from.getUUID(), decorated, style.colorRGB(),
+        // (3.1.0) os slots Antes/Meio/Depois viraram o adesivo LIVRE unico;
+        // o texto do balao e a fala pura, e o adesivo fica onde o jogador colou.
+        ChatBubblePayload payload = new ChatBubblePayload(from.getUUID(), text, style.colorRGB(),
                 style.borderRGB(), italic, style.corner(), style.stickerX(), style.stickerY(), 0,
                 style.durationSec() * 1000);
         for (ServerPlayer p : from.server.getPlayerList().getPlayers()) {

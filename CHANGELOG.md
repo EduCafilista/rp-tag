@@ -2,6 +2,21 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.1.0] - 2026-09-10
+
+### Corrigido
+- **"Coloquei 1 coração e apareceram 2"**: os adesivos antigos dos slots
+  Antes/Meio/Depois continuavam sendo desenhados (fantasmas). Eles agora
+  **migram sozinhos** para o adesivo livre único — 1 adesivo por balão.
+- **Cor "não salvava"**: o botão Salvar ficava na ESQUERDA e o Cancelar na
+  DIREITA (ao contrário do hábito do Minecraft) — era fácil cancelar tudo sem
+  querer. Agora **✔ Salvar fica na direita** e o **ESC também salva**.
+
+### Adicionado
+- Botão **↺ Padrão** para restaurar o estilo original na hora.
+- Com o adesivo na mão: clicar **fora do balão** ou **botão direito/ESC
+  cancela** — sem colar sem querer e sem "comer" os cliques do seletor de cor.
+
 ## [3.0.0] - 2026-09-10
 
 ### Adicionado

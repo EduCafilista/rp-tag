@@ -77,6 +77,18 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
         stickerY = clampPct(stickerY);
         colorRGB = colorRGB & 0xFFFFFF;
         borderRGB = borderRGB >= 0 ? (borderRGB & 0xFFFFFF) : borderRGB; // -1 sem, -2 auto
+        // MIGRACAO (3.1.0): adesivo dos slots antigos (Antes/Meio/Depois) vira o
+        // adesivo LIVRE — assim nao existe mais "emoji fantasma" dobrado no balao.
+        if (corner.isEmpty() && (!prefix.isEmpty() || !mid.isEmpty() || !suffix.isEmpty())) {
+            corner = !prefix.isEmpty() ? prefix : (!mid.isEmpty() ? mid : suffix);
+            if (stickerX == DEFAULT_STICKER_X && stickerY == DEFAULT_STICKER_Y) {
+                stickerX = 10;
+                stickerY = 40;
+            }
+            prefix = "";
+            mid = "";
+            suffix = "";
+        }
     }
 
     private static int clampPct(int v) {

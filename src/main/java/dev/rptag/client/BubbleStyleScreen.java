@@ -141,10 +141,15 @@ public class BubbleStyleScreen extends Screen {
                         b.setMessage(modeLabel());
                     }).bounds(bx, svY + 54, bw, 16).build());
 
+            addRenderableWidget(Button.builder(Component.literal("↺ Padrão"), b -> {
+                        style = BubbleStyle.DEFAULT;
+                        pickerTarget = 0;
+                        loadPickerFrom(style.colorRGB());
+                        rebuildWidgets();
+                    }).bounds(px + 12, py + PANEL_H - 26, 80, 20).build());
+            // SALVAR na DIREITA (habito do Minecraft) — acabou o cancelar sem querer
             addRenderableWidget(Button.builder(Component.literal("✔ Salvar"), b -> saveAndClose())
-                    .bounds(px + 12, py + PANEL_H - 26, 115, 20).build());
-            addRenderableWidget(Button.builder(Component.literal("✖ Cancelar"), b -> onClose())
-                    .bounds(px + PANEL_W - 127, py + PANEL_H - 26, 115, 20).build());
+                    .bounds(px + PANEL_W - 92, py + PANEL_H - 26, 80, 20).build());
         }
     }
 
@@ -212,7 +217,7 @@ public class BubbleStyleScreen extends Screen {
         if (!showKeyboard) {
             String hint;
             if (holdingSticker != null) {
-                hint = "Solte em cima do balão: clique onde quiser!";
+                hint = "Clique no balão pra colar · fora dele/direito = cancela";
             } else if (!style.corner().isEmpty()) {
                 hint = "Clique no adesivo p/ reposicionar · clique direito TIRA";
             } else {
@@ -411,19 +416,25 @@ public class BubbleStyleScreen extends Screen {
             return super.mouseClicked(mx, my, button);
         }
         if (!showKeyboard && button == 0 && holdingSticker != null) {
-            // SOLTOU: a posicao do clique vira a posicao do adesivo (%)
-            int x = Mth.clamp((int) mx, pX0, pX0 + pW);
-            int y = Mth.clamp((int) my, pY0, pY0 + pH);
-            int percX = Math.round((x - pX0) * 100.0F / pW);
-            int percY = Math.round((y - pY0) * 100.0F / pH);
-            setSticker(holdingSticker, percX, percY);
+            String glyph = holdingSticker;
             holdingSticker = null;
+            if (inBox(mx, my, pvX0, pvY0, pvX1 - pvX0, pvY1 - pvY0)) {
+                // SOLTOU dentro do balao: a posicao do clique vira a posicao (%)
+                int x = Mth.clamp((int) mx, pX0, pX0 + pW);
+                int y = Mth.clamp((int) my, pY0, pY0 + pH);
+                setSticker(glyph, Math.round((x - pX0) * 100.0F / pW), Math.round((y - pY0) * 100.0F / pH));
+            }
+            // fora do balao = CANCELA (e nao come os cliques do seletor de cor!)
             return true;
         }
         if (!showKeyboard && button == 0 && hoverSticker) {
             // PEGOU DE VOLTA pra reposicionar
             holdingSticker = style.corner();
             setSticker("", style.stickerX(), style.stickerY());
+            return true;
+        }
+        if (!showKeyboard && button == 1 && holdingSticker != null) {
+            holdingSticker = null; // direito cancela o adesivo na mao
             return true;
         }
         if (!showKeyboard && button == 1 && inBox(mx, my, pvX0, pvY0, pvX1 - pvX0, pvY1 - pvY0)) {
@@ -480,6 +491,19 @@ public class BubbleStyleScreen extends Screen {
         draggingSv = false;
         draggingHue = false;
         return super.mouseReleased(mx, my, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256) { // ESC
+            if (holdingSticker != null) {
+                holdingSticker = null; // 1o ESC: solta o adesivo da mao
+                return true;
+            }
+            saveAndClose(); // ESC SALVA — nunca perde a customizacao!
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     private void updateSv(double mx, double my) {
