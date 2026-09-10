@@ -2,6 +2,23 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.7.0] - 2026-09-10
+
+### Corrigido
+- **CAUSA RAIZ de "a cor não salva" entre amigos**: os pacotes mudaram de
+  formato desde a 3.2 mas o canal de rede continuou na versão 1 — cliente novo
+  em servidor velho conectava e **corrompia os saves silenciosamente**. O canal
+  agora é **v2**: jars diferentes são RECUSADOS com aviso claro na conexão.
+  SEMPRE atualize cliente e servidor juntos!
+- **Menu 100% sem texturas e sem fontes especiais** (era isso que sumia em
+  certas GPUs): adesivos agora são **bolinha de cor + número + NOME no tooltip**
+  — desenhados só com primitivas que funcionam em qualquer cliente.
+- **Layout testado automaticamente**: 22 verificações (ordem das linhas, sem
+  sobreposição, hitbox == desenho, codecs simétricos) — a 3.6 tinha a dica
+  escrita POR CIMA da paleta Dentro.
+- **Letra do balão no mundo com CONTORNO DE TINTA** (halo escuro em volta de
+  cada letra) + escala 12% maior: legível em qualquer cenário.
+
 ## [3.6.0] - 2026-09-10
 
 ### Adicionado

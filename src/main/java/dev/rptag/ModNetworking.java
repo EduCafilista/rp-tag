@@ -15,7 +15,10 @@ public final class ModNetworking {
 
     @SubscribeEvent
     public static void onRegisterPayloads(final RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("1");
+        // v2: pacotes de estilo do balao mudaram de formato na 3.2/3.5/3.6.
+        // Versao diferente de jar agora e RECUSADA com aviso claro (antes corrompia
+        // os saves de cor silenciosamente — cliente novo em servidor velho).
+        PayloadRegistrar registrar = event.registrar("2");
         registrar.playToClient(SyncRPStatePayload.TYPE, SyncRPStatePayload.STREAM_CODEC,
                 ClientPayloadHandler::handleSync);
         registrar.playToClient(PersonaSyncPayload.TYPE, PersonaSyncPayload.STREAM_CODEC,

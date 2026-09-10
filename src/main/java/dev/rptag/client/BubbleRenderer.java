@@ -157,6 +157,14 @@ public final class BubbleRenderer {
                 .setNormal(0.0F, 1.0F, 0.0F);
     }
 
+    /** Escurece um rgb (0..1) pra fazer a tinta do contorno. */
+    private static int darken(int rgb, float f) {
+        int r = (int) (((rgb >> 16) & 0xFF) * f);
+        int g = (int) (((rgb >> 8) & 0xFF) * f);
+        int b = (int) ((rgb & 0xFF) * f);
+        return (r << 16) | (g << 8) | b;
+    }
+
     private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
@@ -205,7 +213,7 @@ public final class BubbleRenderer {
         poseStack.pushPose();
         poseStack.translate(0.0, player.getBbHeight() + 0.95, 0.0);
         poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
-        poseStack.scale(0.028F, -0.028F, 0.028F);
+        poseStack.scale(0.032F, -0.032F, 0.032F);
         Matrix4f matrix = poseStack.last().pose();
         MultiBufferSource buffers = event.getMultiBufferSource();
 
@@ -233,7 +241,9 @@ public final class BubbleRenderer {
         pill(matrix, buffers, -0.10F, x0, yP0, pillW, pillH, fill);
         tail(matrix, buffers, -0.09F, 0, yP1 - 3, 12, 12, fill);
 
-        // ---- texto + adesivos dentro da fala ----
+        // ---- texto + adesivos dentro da fala (com CONTORNO DE TINTA) ----
+        int ink = (border != 0) ? border : ((0xFF000000 | darken(fill & 0xFFFFFF, 0.32F)));
+        int[][] offs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
         for (int j = 0; j < n; j++) {
             List<Seg> segs = segLines.get(j);
             int lineW = 0;
@@ -242,6 +252,9 @@ public final class BubbleRenderer {
             }
             float lineX = -Math.round(lineW / 2.0F);
             float penY = yText + LINE_HEIGHT * j;
+            for (int[] d : offs) { // halo: a letra nunca se perde no fundo
+                drawLine(font, matrix, buffers, segs, lineX + d[0], penY + d[1], ink);
+            }
             drawLine(font, matrix, buffers, segs, lineX, penY, textColor);
         }
 
