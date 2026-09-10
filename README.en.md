@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
 >
-> 📥 **Download:** grab `rptag-2.6.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.6.0.jar).
+> 📥 **Download:** grab `rptag-2.7.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.7.0.jar).
 
 ## ✨ Features
 
@@ -26,9 +26,10 @@
 - Automatic line wrap; display time scales with message length
 - **Bubble mode** — speech becomes **bubble-only** (no chat text!): `/balao modo on` for yourself · `/rp admin bolha <player> on` set by admins
 - **`/balao`** opens a **customization screen with a real COLOR PICKER**:
-  drag the mouse to pick **ANY color** — **12 COLORFUL pixel-art STICKERS**
-  (Before/Middle/After the sentence), an **accent bar**, **7 backgrounds**, a
-  **duration slider** (2–20s) and a live preview · **`/rp admin bolhas on|off`** — global toggle
+  drag the mouse to set **the inside color AND the border color** — plus a
+  **STICKER KEYBOARD**: **48 colorful pixel-art stickers** you **CLICK AND DRAG**
+  to Before/Middle/After of the sentence, a **duration slider** (2–20s) and a
+  live preview · **`/rp admin bolhas on|off`** — global toggle
 
 ### 🎲 Dice rolls
 - `/roll` (d20) · `/roll d100` · `/roll 2d6+1 <reason>` — announced nearby, with dice breakdown
@@ -48,7 +49,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-2.6.0.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-2.7.0.jar` into the **server's** `mods/` folder.
 3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
@@ -59,7 +60,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-2.6.0.jar`.
+The jar ends up at `build/libs/rptag-2.7.0.jar`.
 
 ## 🎨 Customizing
 

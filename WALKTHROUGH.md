@@ -13,9 +13,9 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 | Minecraft **1.21.1** (Java Edition) | launcher oficial |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → versão 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-2.6.0.jar` | a aba *Releases* deste repositório |
+| `rptag-2.7.0.jar` | a aba *Releases* deste repositório |
 
-> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-2.6.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
+> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-2.7.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
 
 ---
 
@@ -23,7 +23,7 @@ Guia passo a passo, do download até a tag aparecendo no jogo.
 
 1. Instale o NeoForge no servidor (o instalador pergunta o caminho da pasta do servidor).
 2. Na pasta do servidor, entre em `mods/`.
-3. Copie o `rptag-2.6.0.jar` para dentro dela.
+3. Copie o `rptag-2.7.0.jar` para dentro dela.
 4. Inicie o servidor uma vez para gerar os arquivos (aceite o EULA no `eula.txt` com `eula=true`).
 
 **Como saber se funcionou:** no log de boot procure a linha
@@ -40,7 +40,7 @@ Pronto — a partir daqui a tag já funciona no **chat** e na **TAB** para todos
 
 1. No launcher, crie/edite o perfil do NeoForge 1.21.1.
 2. Abra a pasta do jogo (opção "abrindo a pasta do jogo" no launcher) e entre em `mods/`.
-3. Copie o mesmo `rptag-2.6.0.jar` para lá.
+3. Copie o mesmo `rptag-2.7.0.jar` para lá.
 4. Entre no servidor.
 
 Sem o mod no cliente você ainda vê a tag no chat/TAB; com o mod, também vê **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** flutuando sobre a cabeça dos jogadores.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-O jar sai em `build/libs/rptag-2.6.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
+O jar sai em `build/libs/rptag-2.7.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
 
 ---
 
@@ -183,12 +183,12 @@ O texto do balão escolhe preto ou branco sozinho, de acordo com a cor de fundo.
 
 ### Como usar a tela (`/balao`)
 - **Seletor de cor** — ARRASTA o mouse no quadrado e escolhe **qualquer cor**;
-  a faixa do arco-íris muda o tom. O código `#RRGGBB` aparece embaixo
-- **▤ Fundo** — Translúcido, Escuro, Claro, Gradiente, Papel, Noite, Madeira
-- **▣ Barra** — a faixa de cor na lateral do balão: Automática (combina com a
-  sua cor), cores prontas ou sem barra
-- **Antes / Meio / Depois** — **ADESIVOS coloridos** em pixel-art
-  (❤ ⭐ ✨ 🔥 ♪ ⚡ 🌙 🌸 ⚔ 🥚 💎 👑): clique para ciclar, o do MEIO entra no meio da frase!
+  o botão **Alvo** troca entre a cor de **DENTRO** e a da **BORDA** do balão
+  (botão "✖ Sem borda" remove a moldura). O código `#RRGGBB` aparece embaixo
+- **Adesivos (48)** — abre o **TECLADO DE ADESIVOS**: clique num adesivo e
+  **ARRASTE** até a caixinha **Antes / Meio / Depois** (ou clique no adesivo e
+  depois no destino). Corações, estrela, fogo, gato, cachorro, coroa, ovo e mais —
+  todos COLORIDOS, desenhados dentro do balão junto com a fala!
 - **⏱ Duração** — ARRASTA a barra e escolhe 2 a 20 segundos de exibição
 - **☾ Modo balão** — liga/desliga ali mesmo
 - **✔ Salvar** e fale no chat para ver o balão ✨

@@ -20,17 +20,17 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import org.joml.Matrix4f;
 
 /**
- * Balao de fala (design "cartao"): cartao com cantos chanfrados, sombra,
- * barra de destaque com a cor do jogador, ADESIVOS COLORIDOS inline (fonte
- * de bitmap) e texto com contraste automatico.
+ * Balao de fala (design "cartao", 2.7.0): cartao com a cor de DENTRO e a
+ * cor da BORDA escolhidas pelo jogador, sombra, rabicho, ADESIVOS COLORIDOS
+ * inline (fonte de bitmap) e texto com contraste automatico.
  *
- * <p>PIXEL-PERFECT (2.6.0): todas as posicoes sao numeros inteiros de pixel
- * (largura par e texto centralizado arredondado) — nada de meio-pixel borrado.
+ * <p>PIXEL-PERFECT: todas as posicoes sao inteiros de pixel (larguras pares,
+ * texto centralizado arredondado) — nada de meio-pixel borrado.
  *
- * <p>COMO E DESENHADO (a prova de bug): cada faixa do cartao e uma linha de
- * ESPACOS com cor de fundo via font.drawInBatch — o MESMO mecanismo do fundo
- * das nametags. Nenhum poligono custom. A PROVA DE CRASH: qualquer erro
- * desliga os baloes nesta sessao com aviso no log; o jogo NUNCA fecha.
+ * <p>COMO E DESENHADO (a prova de bug): cada faixa e uma linha de ESPACOS com
+ * cor de fundo via font.drawInBatch — o MESMO mecanismo do fundo das nametags.
+ * A PROVA DE CRASH: qualquer erro desliga os baloes nesta sessao com aviso no
+ * log; o jogo NUNCA fecha.
  */
 @EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class BubbleRenderer {
@@ -155,13 +155,10 @@ public final class BubbleRenderer {
             segLines.add(segment(line));
         }
 
-        int background = bubble.background();
         int colorRGB = bubble.colorRGB() & 0xFFFFFF;
-        int fillBase = BubbleBackgrounds.bgColorFor(background, colorRGB);
-        int accent = BubbleBackgrounds.accentColorFor(background, colorRGB);
-        int barColor = BubbleBackgrounds.borderColorFor(background, colorRGB, bubble.borderRGB());
-        int accentOrBar = barColor != 0 ? barColor : accent;
-        int textColor = BubbleBackgrounds.textColorFor(background, colorRGB);
+        int fill = BubbleBackgrounds.fillColorFor(colorRGB);
+        int border = BubbleBackgrounds.borderColorFor(colorRGB, bubble.borderRGB());
+        int textColor = BubbleBackgrounds.textColorFor(colorRGB);
         int dimmedText = (textColor & 0x00FFFFFF) | 0x50000000;
 
         // medidas do cartao — SEMPRE em pixels inteiros e par (zero meio-pixel)
@@ -184,29 +181,32 @@ public final class BubbleRenderer {
         var buffers = event.getMultiBufferSource();
         int light = event.getPackedLight();
 
-        // ---- cartao: sombra, faixas de fundo (gradiente real) e barra de cor ----
+        // ---- cartao: SOMBRA + BORDA (moldura 2px) + preenchimento com a cor do jogador ----
         for (int j = 0; j < n; j++) {
-            boolean chamfer = (j == 0 || j == n - 1);
-            float bx = x0 + (chamfer ? 4 : 0);
             float by = top + 1 + 10 * j;
-            int s = sFull - (chamfer ? 2 : 0);
 
             // sombra deslocada (profundidade)
-            band(font, matrix, buffers, light, bx + 2, by + 2, s, 0x5A000000);
+            band(font, matrix, buffers, light, x0 + 2, by + 2, sFull, 0x5A000000);
 
-            // fundo (gradiente pinta linha a linha com a cor do jogador)
-            int rowFill = background == BubbleBackgrounds.BG_GRADIENTE
-                    ? BubbleBackgrounds.gradientColorFor(colorRGB, n == 1 ? 0.5F : j / (float) (n - 1))
-                    : fillBase;
-            band(font, matrix, buffers, light, bx, by, s, rowFill);
+            if (border != 0) {
+                // moldura: faixas da cor da borda ao redor do preenchimento
+                band(font, matrix, buffers, light, x0 - 2, by, 1, border);       // esquerda
+                band(font, matrix, buffers, light, x0 + bw - 2, by, 1, border);  // direita
+                if (j == 0) {
+                    band(font, matrix, buffers, light, x0 - 2, by - 1, sFull + 1, border); // topo
+                }
+                if (j == n - 1) {
+                    band(font, matrix, buffers, light, x0 - 2, by + 1, sFull + 1, border); // base
+                }
+            }
 
-            // barra de destaque com a cor escolhida
-            band(font, matrix, buffers, light, bx + 2, by, 1, accentOrBar);
+            // preenchimento (a cor de dentro escolhida)
+            band(font, matrix, buffers, light, x0, by, sFull, fill);
         }
 
-        // rabicho ▼ logo abaixo do cartao
+        // rabicho ▼ logo abaixo do cartao (cor do interior)
         int tailW = font.width(TAIL_GLYPH);
-        font.drawInBatch(TAIL_GLYPH, -tailW / 2.0F, top + 10 * n + 3, fillBase,
+        font.drawInBatch(TAIL_GLYPH, -tailW / 2.0F, top + 10 * n + 3, fill,
                 false, matrix, buffers, Font.DisplayMode.NORMAL, 0, light);
 
         // ---- texto + adesivos (passada apagada atravessando paredes + passada com sombra) ----
@@ -214,10 +214,7 @@ public final class BubbleRenderer {
         for (List<Seg> segs : segLines) {
             int lineW = 0;
             for (Seg seg : segs) {
-                Style style = seg.sticker ? Stickers.stickerStyle() : Style.EMPTY;
-                lineW += font.width(new StringBuilder(seg.text).codePoints()
-                        .collect(() -> new StringBuilder(), StringBuilder::appendCodePoint, StringBuilder::append)
-                        .toString());
+                lineW += font.width(seq(seg));
             }
             // centralizacao em pixel inteiro (Math.round evita meio-pixel borrado)
             float lineX = -Math.round(lineW / 2.0F);

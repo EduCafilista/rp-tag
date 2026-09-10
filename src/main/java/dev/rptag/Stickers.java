@@ -6,11 +6,11 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * ADESIVOS do balao de fala (2.6.0): emojis COLORIDOS em pixel-art, salvos
- * como fonte de bitmap do jogo (imagens de verdade, nada de emote preto e
- * branco). Fluem JUNTO com o texto, como emoji de celular.
+ * ADESIVOS do balao de fala (2.7.0): 48 emojis COLORIDOS em pixel-art,
+ * salvos como fonte de bitmap do jogo (imagens de verdade, nada de emote
+ * preto e branco). Fluem JUNTO com o texto, como emoji de celular.
  *
- * <p>Cada adesivo e um caractere reservado (U+E000 a U+E00B) com o estilo
+ * <p>Cada adesivo e um caractere reservado (U+E000 a U+E02F) com o estilo
  * apontando para a fonte {@code rptag:stickers} — quem desenha a imagem e o
  * proprio motor de texto do Minecraft.
  */
@@ -20,27 +20,39 @@ public final class Stickers {
     public static final ResourceLocation FONT =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "stickers");
 
-    /** Glifos dos 12 adesivos, na ordem da sprite sheet. */
-    public static final String[] GLYPHS = {
-            "\uE000", // coracao
-            "\uE001", // estrela
-            "\uE002", // brilho
-            "\uE003", // fogo
-            "\uE004", // nota musical
-            "\uE005", // raio
-            "\uE006", // lua
-            "\uE007", // flor
-            "\uE008", // espada
-            "\uE009", // ovo
-            "\uE00A", // diamante
-            "\uE00B"  // coroa
+    /** Quantidade de adesivos (8 x 6 na sprite sheet). */
+    public static final int COUNT = 48;
+
+    /** Glifos dos 48 adesivos (grade 8 x 6 da sprite sheet). */
+    public static final String[] GLYPHS = new String[COUNT];
+
+    /** Nomes (para o tooltip do teclado de adesivos). */
+    public static final String[] NAMES = {
+            "Coração", "Coração roxo", "Coração azul", "Coração verde",
+            "Coração amarelo", "Coração partido", "Estrela", "Brilho",
+            "Trevo", "Fogo", "Raio", "Lua",
+            "Sol", "Flor", "Broto", "Gota",
+            "Nota musical", "Notas", "Espada", "Escudo",
+            "Poção", "Ovo", "Coroa", "Diamante",
+            "Balão", "Bolo", "Maçã", "Morango",
+            "Moeda", "Dado", "Feliz", "Sorriso",
+            "Chorando", "Bravo", "Dormindo", "Surpreso",
+            "Óculos", "Língua", "Gato", "Cachorro",
+            "Coelho", "Urso", "Pintinho", "Peixe",
+            "Exclamação", "Interrogação", "Balão de fala", "Zzz"
     };
+
+    static {
+        for (int i = 0; i < COUNT; i++) {
+            GLYPHS[i] = new String(Character.toChars(0xE000 + i));
+        }
+    }
 
     private Stickers() {
     }
 
     public static boolean isStickerChar(int codePoint) {
-        return codePoint >= 0xE000 && codePoint <= 0xE00B;
+        return codePoint >= 0xE000 && codePoint < 0xE000 + COUNT;
     }
 
     /** Estilo que renderiza o caractere como adesivo colorido. */

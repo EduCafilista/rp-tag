@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-2.6.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.6.0.jar) (arquivo dentro do repositório).
+> 📥 **Download:** baixe o `rptag-2.7.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-2.7.0.jar) (arquivo dentro do repositório).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
@@ -30,9 +30,10 @@
 - **Modo balão** — a fala vira **só o balão** (nada no chat!):
   `/balao modo on` para si · `/rp admin bolha <jogador> on` para o admin setar
 - **`/balao`** abre a **TELA de personalização** com **seletor de cor de verdade**:
-  arrasta o mouse e escolhe **QUALQUER cor** — **12 ADESIVOS coloridos** em pixel-art
-  (❤⭐✨🔥♪⚡🌙🌸🗡🥚💎👑 — Antes/Meio/Depois da frase), **barra de destaque**,
-  **7 fundos**, **barra de duração** (2–20s) e preview ao vivo · **`/rp admin bolhas on|off`** — global
+  arrasta o mouse e escolhe a cor **de dentro E a cor da borda** (tudo à sua maneira!)
+  — mais **TECLADO DE ADESIVOS**: **48 adesivos coloridos** em pixel-art que você
+  **CLICA E ARRASTA** para Antes/Meio/Depois da frase, **barra de duração** (2–20s)
+  e preview ao vivo · **`/rp admin bolhas on|off`** — global
 
 ### 🎲 Dados para eventos
 - `/roll` (d20) · `/roll d100` · `/roll 2d6+1` — resultado anunciado por perto, com decomposição dos dados e motivo opcional
@@ -54,7 +55,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-2.6.0.jar` para a pasta `mods/` do **servidor**.
+2. Copie `rptag-2.7.0.jar` para a pasta `mods/` do **servidor**.
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -67,7 +68,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-2.6.0.jar`.
+O jar sai em `build/libs/rptag-2.7.0.jar`.
 
 ## 🎨 Personalizar
 

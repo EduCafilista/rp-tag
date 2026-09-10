@@ -2,6 +2,20 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.7.0] - 2026-09-10
+
+### Adicionado
+- **TECLADO DE ADESIVOS**: 48 adesivos coloridos em pixel-art (corações,
+  estrela, fogo, gato, cachorro, coroa, ovo, dado e mais) — clique e ARRASTE
+  o adesivo até Antes/Meio/Depois da frase, como um sticker de verdade.
+- **CUSTOMIZAÇÃO TOTAL das cores**: o seletor agora escolhe a cor da parte
+  de DENTRO **e** a cor da BORDA do balão (botão Alvo: Interior/Borda), com
+  botão para remover a borda. A cor do texto se ajusta sozinha.
+
+### Removido
+- Fundos prontos (papel/noite/madeira etc.) — a cor de dentro agora é a que
+  VOCÊ escolher no seletor.
+
 ## [2.6.0] - 2026-09-09
 
 ### Adicionado
