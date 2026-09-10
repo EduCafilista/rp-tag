@@ -1,23 +1,18 @@
 package dev.rptag.client;
 
 import dev.rptag.BubbleStyle;
-import net.minecraft.util.Mth;
 
 /**
- * Sistema de cores do balao de fala (2.7.0 — CUSTOMIZACAO TOTAL).
+ * Sistema de cores do balao de fala (2.8.0 — estilo classico de quadrinhos).
  *
- * <p>O jogador escolhe TUDO: a cor da parte de DENTRO (preenchimento) e a
- * cor da BORDA (moldura), cada uma com o seletor de arrastar. A cor do texto
- * e escolhida sozinha (contraste com o interior).
- *
- * <p>O desenho e todo feito pelo PROPRIO JOGO (linhas de texto com cor de
- * fundo — o mesmo mecanismo do fundo das nametags). Esta classe apenas
- * DECIDE as cores.
+ * <p>O jogador escolhe TUDO com o seletor de arrastar: a cor da parte de
+ * DENTRO (preenchimento) e a cor da BORDA (contorno). A cor do texto e
+ * escolhida sozinha (contraste com o interior).
  */
 public final class BubbleBackgrounds {
 
-    /** Transparencia do interior (quase opaco, legivel). */
-    private static final int FILL_ALPHA = 0xF2;
+    /** Transparencia do interior (praticamente opaco, mas suave). */
+    private static final int FILL_ALPHA = 0xEE;
     /** Transparencia da borda. */
     private static final int BORDER_ALPHA = 0xFF;
 
@@ -57,9 +52,13 @@ public final class BubbleBackgrounds {
 
     /** Multiplica o RGB por um fator. */
     public static int darken(int rgb, float factor) {
-        int r = Mth.clamp((int) (((rgb >> 16) & 0xFF) * factor), 0, 255);
-        int g = Mth.clamp((int) (((rgb >> 8) & 0xFF) * factor), 0, 255);
-        int b = Mth.clamp((int) ((rgb & 0xFF) * factor), 0, 255);
+        int r = clamp((int) (((rgb >> 16) & 0xFF) * factor));
+        int g = clamp((int) (((rgb >> 8) & 0xFF) * factor));
+        int b = clamp((int) ((rgb & 0xFF) * factor));
         return (r << 16) | (g << 8) | b;
+    }
+
+    private static int clamp(int v) {
+        return v < 0 ? 0 : (v > 255 ? 255 : v);
     }
 }

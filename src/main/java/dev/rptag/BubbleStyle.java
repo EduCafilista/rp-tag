@@ -5,17 +5,17 @@ import net.minecraft.nbt.CompoundTag;
 /**
  * Estilo visual do balao de fala de um jogador.
  *
- * @param colorRGB     cor de destaque do balao (0xRRGGBB) e da mensagem no chat
- * @param borderRGB    cor da barra lateral (0xRRGGBB), -1 = sem barra, -2 = automatica
+ * @param colorRGB     cor da parte de DENTRO do balao (0xRRGGBB)
+ * @param borderRGB    cor da BORDA (0xRRGGBB), -1 = sem borda, -2 = automatica
  * @param prefix       adesivo ANTES da mensagem (max 12)
  * @param mid          adesivo no MEIO da mensagem (max 12)
  * @param suffix       adesivo DEPOIS da mensagem (max 12)
- * @param background   estilo de fundo: 0=translucido, 1=escuro solido,
- *                     2=claro, 3=gradiente, 4=papel, 5=noite, 6=madeira
+ * @param corner       adesivo no CANTO do balao, estilo reacao (max 12)
+ * @param background   (mantido por compatibilidade; o visual agora usa as cores)
  * @param durationSec  tempo que o balao fica visivel, em segundos (2 a 20)
  */
 public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid, String suffix,
-        int background, int durationSec) {
+        String corner, int background, int durationSec) {
 
     public static final int MAX_DECOR = 12;
     public static final int MAX_BACKGROUND = 6;
@@ -25,18 +25,18 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
     public static final int MIN_DURATION = 2;
     public static final int MAX_DURATION = 20;
 
-    /** Sem barra. */
+    /** Sem borda. */
     public static final int NO_BORDER = -1;
     /**
-     * Barra AUTOMATICA (padrao): deriva da cor escolhida pelo jogador
-     * (escurece conforme precisar) — a moldura sempre combina.
+     * Borda AUTOMATICA (padrao): um tom profundo derivado da cor de dentro —
+     * a moldura sempre combina.
      */
     public static final int AUTO_BORDER = -2;
-    /** Barra padrao do estilo default (quando nao ha cor definida). */
+    /** Borda padrao do estilo default. */
     public static final int DEFAULT_BORDER = AUTO_BORDER;
 
     public static final BubbleStyle DEFAULT =
-            new BubbleStyle(RPWorldData.DEFAULT_COLOR, DEFAULT_BORDER, "", "", "", 0, DEFAULT_DURATION);
+            new BubbleStyle(RPWorldData.DEFAULT_COLOR, DEFAULT_BORDER, "", "", "", "", 0, DEFAULT_DURATION);
 
     public BubbleStyle {
         if (prefix == null) {
@@ -48,6 +48,9 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
         if (suffix == null) {
             suffix = "";
         }
+        if (corner == null) {
+            corner = "";
+        }
         if (prefix.length() > MAX_DECOR) {
             prefix = prefix.substring(0, MAX_DECOR);
         }
@@ -56,6 +59,9 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
         }
         if (suffix.length() > MAX_DECOR) {
             suffix = suffix.substring(0, MAX_DECOR);
+        }
+        if (corner.length() > MAX_DECOR) {
+            corner = corner.substring(0, MAX_DECOR);
         }
         if (background < 0 || background > MAX_BACKGROUND) {
             background = 0;
@@ -80,6 +86,7 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
                 tag.getString("Prefix"),
                 tag.contains("Mid") ? tag.getString("Mid") : "",
                 tag.getString("Suffix"),
+                tag.contains("Corner") ? tag.getString("Corner") : "",
                 tag.getInt("Background"),
                 tag.contains("Duration") ? tag.getInt("Duration") : DEFAULT_DURATION);
     }
@@ -91,6 +98,7 @@ public record BubbleStyle(int colorRGB, int borderRGB, String prefix, String mid
         tag.putString("Prefix", prefix);
         tag.putString("Mid", mid);
         tag.putString("Suffix", suffix);
+        tag.putString("Corner", corner);
         tag.putInt("Background", background);
         tag.putInt("Duration", durationSec);
         return tag;

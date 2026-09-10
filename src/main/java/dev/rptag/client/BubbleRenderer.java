@@ -20,17 +20,14 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import org.joml.Matrix4f;
 
 /**
- * Balao de fala (design "cartao", 2.7.0): cartao com a cor de DENTRO e a
- * cor da BORDA escolhidas pelo jogador, sombra, rabicho, ADESIVOS COLORIDOS
- * inline (fonte de bitmap) e texto com contraste automatico.
+ * Balao de fala no ESTILO CLASSICO de quadrinhos: pílula ARREDONDADA com a
+ * cor de DENTRO escolhida pelo jogador, CONTORNO da cor da borda, sombra,
+ * rabicho e ADESIVOS coloridos (antes / meio / depois / CANTO estilo reacao).
  *
- * <p>PIXEL-PERFECT: todas as posicoes sao inteiros de pixel (larguras pares,
- * texto centralizado arredondado) — nada de meio-pixel borrado.
- *
- * <p>COMO E DESENHADO (a prova de bug): cada faixa e uma linha de ESPACOS com
- * cor de fundo via font.drawInBatch — o MESMO mecanismo do fundo das nametags.
- * A PROVA DE CRASH: qualquer erro desliga os baloes nesta sessao com aviso no
- * log; o jogo NUNCA fecha.
+ * <p>PIXEL-PERFECT: todas as posicoes sao inteiros de pixel. Tudo desenhado
+ * pelo proprio motor de texto do jogo (o mesmo mecanismo do fundo das
+ * nametags) — a prova de invisivel e a prova de crash (qualquer erro desliga
+ * os baloes com aviso no log; o jogo NUNCA fecha).
  */
 @EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class BubbleRenderer {
@@ -118,8 +115,8 @@ public final class BubbleRenderer {
     }
 
     /**
-     * Desenha uma faixa do cartao: linha de espacos com cor de fundo.
-     * A faixa fica com 4*n+2 px de largura e 10px de altura.
+     * Faixa do balao: linha de espacos com cor de fundo (4*n+2 px por 10px de
+     * altura). Se a cor tiver alpha, o desenho do jogo mistura igual tinta.
      */
     private static void band(Font font, Matrix4f matrix, net.minecraft.client.renderer.MultiBufferSource buffers,
             int light, float x, float y, int spaces, int argb) {
@@ -145,7 +142,6 @@ public final class BubbleRenderer {
         }
 
         Font font = minecraft.font;
-        // texto com ADESIVOS: cada caractere-adesivo vira imagem colorida
         List<FormattedCharSequence> lines = font.split(Stickers.styled(bubble.text()), MAX_TEXT_WIDTH);
         if (lines.isEmpty()) {
             return;
@@ -161,16 +157,16 @@ public final class BubbleRenderer {
         int textColor = BubbleBackgrounds.textColorFor(colorRGB);
         int dimmedText = (textColor & 0x00FFFFFF) | 0x50000000;
 
-        // medidas do cartao — SEMPRE em pixels inteiros e par (zero meio-pixel)
+        // ---- geometria da pílula (pixels inteiros, largura par) ----
         int textW = 0;
         for (FormattedCharSequence line : lines) {
             textW = Math.max(textW, font.width(line));
         }
         int sFull = Math.max(2, (textW + 13) / 4);
-        int bw = 4 * sFull + 2; // largura das faixas (par)
-        float x0 = -bw / 2.0F;  // inteiro
+        int bw = 4 * sFull + 2;          // largura das faixas cheias (par)
+        float x0 = -bw / 2.0F;           // inteiro
         int n = lines.size();
-        int top = 2 - 10 * n;   // base do cartao fica ~2px acima da origem (nametag)
+        int yTop = 3 - 10 * n;           // y da 1a faixa de texto (base ~3px acima da origem)
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
@@ -181,46 +177,57 @@ public final class BubbleRenderer {
         var buffers = event.getMultiBufferSource();
         int light = event.getPackedLight();
 
-        // ---- cartao: SOMBRA + BORDA (moldura 2px) + preenchimento com a cor do jogador ----
+        int sCap = sFull - 2;            // faixa "tampa" (arredonda as pontas)
+        float xCap = x0 + 4;             // deslocada 4px pra dentro
+        int yCapTop = yTop - 10;         // tampa de cima
+        int yCapBot = yTop + 10 * n;     // tampa de baixo
+
+        // ---- SOMBRA (profundidade) ----
+        band(font, matrix, buffers, light, xCap + 1, yCapTop + 2, sCap, 0x56000000);
         for (int j = 0; j < n; j++) {
-            float by = top + 1 + 10 * j;
+            band(font, matrix, buffers, light, x0 + 1, yTop + 10 * j + 2, sFull, 0x56000000);
+        }
+        band(font, matrix, buffers, light, xCap + 1, yCapBot + 2, sCap, 0x56000000);
 
-            // sombra deslocada (profundidade)
-            band(font, matrix, buffers, light, x0 + 2, by + 2, sFull, 0x5A000000);
-
-            if (border != 0) {
-                // moldura: faixas da cor da borda ao redor do preenchimento
-                band(font, matrix, buffers, light, x0 - 2, by, 1, border);       // esquerda
-                band(font, matrix, buffers, light, x0 + bw - 2, by, 1, border);  // direita
-                if (j == 0) {
-                    band(font, matrix, buffers, light, x0 - 2, by - 1, sFull + 1, border); // topo
-                }
-                if (j == n - 1) {
-                    band(font, matrix, buffers, light, x0 - 2, by + 1, sFull + 1, border); // base
-                }
+        // ---- CONTORNO (cor da borda, desenhado 1 faixa alem do recheio) ----
+        if (border != 0) {
+            band(font, matrix, buffers, light, xCap - 2, yCapTop, sCap + 1, border);
+            for (int j = 0; j < n; j++) {
+                band(font, matrix, buffers, light, x0 - 2, yTop + 10 * j, sFull + 1, border);
             }
-
-            // preenchimento (a cor de dentro escolhida)
-            band(font, matrix, buffers, light, x0, by, sFull, fill);
+            band(font, matrix, buffers, light, xCap - 2, yCapBot, sCap + 1, border);
         }
 
-        // rabicho ▼ logo abaixo do cartao (cor do interior)
+        // ---- RECHEIO (a cor de dentro escolhida) ----
+        band(font, matrix, buffers, light, xCap, yCapTop, sCap, fill);
+        for (int j = 0; j < n; j++) {
+            band(font, matrix, buffers, light, x0, yTop + 10 * j, sFull, fill);
+        }
+        band(font, matrix, buffers, light, xCap, yCapBot, sCap, fill);
+
+        // ---- rabicho ▼ ----
         int tailW = font.width(TAIL_GLYPH);
-        font.drawInBatch(TAIL_GLYPH, -tailW / 2.0F, top + 10 * n + 3, fill,
+        font.drawInBatch(TAIL_GLYPH, -tailW / 2.0F, yCapBot + 9, fill,
                 false, matrix, buffers, Font.DisplayMode.NORMAL, 0, light);
 
-        // ---- texto + adesivos (passada apagada atravessando paredes + passada com sombra) ----
-        int penY = top + 3;
-        for (List<Seg> segs : segLines) {
+        // ---- ADESIVO DE CANTO (estilo reacao, no canto superior direito) ----
+        if (!bubble.corner().isEmpty()) {
+            var cornerSticker = Stickers.styled(bubble.corner());
+            font.drawInBatch(cornerSticker, x0 + bw - 4, yCapTop - 9,
+                    0xFFFFFFFF, true, matrix, buffers, Font.DisplayMode.NORMAL, 0, light);
+        }
+
+        // ---- texto + adesivos (passada apagada + passada com sombra) ----
+        for (int j = 0; j < n; j++) {
+            List<Seg> segs = segLines.get(j);
             int lineW = 0;
             for (Seg seg : segs) {
                 lineW += font.width(seq(seg));
             }
-            // centralizacao em pixel inteiro (Math.round evita meio-pixel borrado)
             float lineX = -Math.round(lineW / 2.0F);
+            float penY = yTop + 10 * j;
             drawLineDimmed(font, matrix, buffers, light, segs, lineX, penY, dimmedText);
             drawLine(font, matrix, buffers, light, segs, lineX, penY, textColor, true);
-            penY += LINE_HEIGHT;
         }
 
         poseStack.popPose();

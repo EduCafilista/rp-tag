@@ -2,6 +2,18 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [2.8.0] - 2026-09-10
+
+### Mudado
+- **Visual estilo QUADRINHOS**: pílula arredondada com recheio da cor de dentro,
+  CONTORNO da cor da borda, sombra e rabicho — como o balão clássico dos quadrinhos.
+- **Adesivo de CANTO**: além de Antes/Meio/Depois, o jogador pode arrastar um
+  adesivo para o CANTO do balão (estilo reação de apps de mensagem).
+
+### Corrigido
+- Confirmação de salvamento agora mostra as cores escolhidas (dentro e borda),
+  para o jogador ver exatamente o que ficou.
+
 ## [2.7.0] - 2026-09-10
 
 ### Adicionado

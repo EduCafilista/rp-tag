@@ -7,10 +7,10 @@ import net.minecraft.resources.ResourceLocation;
 
 /**
  * Pacote S2C: abre a tela de personalizacao do balao com o estilo atual
- * do jogador (cores, adesivos, fundo e duracao).
+ * do jogador (cores, adesivos e duracao).
  */
 public record OpenBubbleStylePayload(int colorRGB, int borderRGB, String prefix, String mid,
-        String suffix, int background, int durationSec) implements CustomPacketPayload {
+        String suffix, String corner, int background, int durationSec) implements CustomPacketPayload {
 
     public static final Type<OpenBubbleStylePayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "open_bubble_style"));
@@ -23,6 +23,7 @@ public record OpenBubbleStylePayload(int colorRGB, int borderRGB, String prefix,
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.prefix());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.mid());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.suffix());
+                        ByteBufCodecs.STRING_UTF8.encode(buf, p.corner());
                         ByteBufCodecs.VAR_INT.encode(buf, p.background());
                         ByteBufCodecs.VAR_INT.encode(buf, p.durationSec());
                     },
@@ -32,12 +33,13 @@ public record OpenBubbleStylePayload(int colorRGB, int borderRGB, String prefix,
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
+                            ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf)));
 
     public static OpenBubbleStylePayload of(BubbleStyle style) {
         return new OpenBubbleStylePayload(style.colorRGB(), style.borderRGB(), style.prefix(),
-                style.mid(), style.suffix(), style.background(), style.durationSec());
+                style.mid(), style.suffix(), style.corner(), style.background(), style.durationSec());
     }
 
     @Override

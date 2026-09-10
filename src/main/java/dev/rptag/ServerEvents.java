@@ -196,10 +196,19 @@ public final class ServerEvents {
                 return;
             }
             BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(), payload.prefix(),
-                    payload.mid(), payload.suffix(), payload.background(), payload.durationSec());
+                    payload.mid(), payload.suffix(), payload.corner(), payload.background(), payload.durationSec());
             RPWorldData.get(player.server).setStyle(player.getUUID(), style);
-            player.sendSystemMessage(Component.literal("Balão atualizado! Fale no chat para ver ✨")
-                    .withStyle(ChatFormatting.GREEN));
+            player.sendSystemMessage(Component.literal("Balão salvo! Dentro ")
+                    .withStyle(ChatFormatting.GREEN)
+                    .append(Component.literal(String.format("#%06X", style.colorRGB()))
+                            .withStyle(s -> s.withColor(net.minecraft.network.chat.TextColor.fromRgb(style.colorRGB()))))
+                    .append(Component.literal(" · Borda ").withStyle(ChatFormatting.GREEN))
+                    .append(style.borderRGB() == BubbleStyle.NO_BORDER
+                            ? Component.literal("sem").withStyle(ChatFormatting.GRAY)
+                            : Component.literal(String.format("#%06X", style.borderRGB()))
+                                    .withStyle(s -> s.withColor(net.minecraft.network.chat.TextColor.fromRgb(
+                                            style.borderRGB() == BubbleStyle.AUTO_BORDER ? style.colorRGB() : style.borderRGB()))))
+                    .append(Component.literal(" — fale no chat! ✨").withStyle(ChatFormatting.GREEN)));
         });
     }
 
