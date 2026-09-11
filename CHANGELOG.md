@@ -2,6 +2,19 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.19.0] - 2026-09-11
+
+### Corrigido
+- **BALÕES EMPILHADOS NÃO SE SOBREPÕEM MAIS**: o espaçamento da pilha era
+  fixo (0.55 bloco) — mensagens longas (2-3 linhas) têm mais de 1 bloco de
+  altura e um balão invadia o outro. Agora a pilha soma a **ALTURA REAL de
+  cada balão** (linhas, linhas com emoji, e margem pros gomos/tinta das
+  molduras) — três balões enormes continuam empilhados, um acima do outro,
+  sem cruzar.
+- **Respiro horizontal** para as molduras que estouram pra fora
+  (Tracejada/Nuvem/Gibi) e para falas com emoji — o texto não encosta mais
+  nos gomos da nuvem.
+
 ## [3.18.0] - 2026-09-11
 
 ### Corrigido

@@ -53,8 +53,8 @@ public final class BubbleRenderer {
     private static final float FLOAT_UP_PX = 2.5F;
     /** Duracao do FADE no fim da vida do balao. */
     private static final long FADE_MS = 400;
-    /** Espacamento vertical da pilha de baloes, em blocos. */
-    private static final float STACK_GAP_BLOCKS = 0.55F;
+    /** Respiro ENTRE baloes da pilha (a altura real de cada um ja e somada). */
+    private static final float STACK_GAP_BLOCKS = 0.12F;
 
     /** Textura da pílula (64x32, branca com alfa suave — tingida na hora). */
     private static final ResourceLocation BUBBLE_TEX =
@@ -277,11 +277,52 @@ public final class BubbleRenderer {
             return;
         }
 
-        // ---- PILHA (3.11.0): o mais novo fica perto da cabeca, os antigos sobem ----
+        // ---- PILHA (3.19.0): pela ALTURA REAL de cada balao — nada se sobrepoe ----
+        // (antes o gap era fixo e baloes de 2-3 linhas se cruzavam)
+        Font fontH = minecraft.font;
         int count = stack.size();
+        int[] hPx = new int[count];
         for (int i = 0; i < count; i++) {
-            renderOne(event, minecraft, player, stack.get(i), (count - 1 - i) * STACK_GAP_BLOCKS);
+            hPx[i] = bubbleHeightPx(fontH, stack.get(i));
         }
+        for (int i = 0; i < count; i++) {
+            float belowBlocks = 0.0F;
+            for (int j = i + 1; j < count; j++) {
+                belowBlocks += hPx[j] * 0.030F; // alturas dos baloes de baixo
+            }
+            float up = belowBlocks + (count - 1 - i) * STACK_GAP_BLOCKS;
+            renderOne(event, minecraft, player, stack.get(i), up);
+        }
+    }
+
+    /**
+     * Altura TOTAL do balao em pixels de GUI (pilula + bordas/gomos + margem),
+     * usada pra empilhar sem sobrepor.
+     */
+    private static int bubbleHeightPx(Font font, ClientBubbleCache.Bubble bubble) {
+        String speech = bubble.text();
+        if (!bubble.extras().isEmpty()) {
+            speech = speech + " " + spacedExtras(bubble.extras());
+        }
+        List<FormattedCharSequence> lines = font.split(Stickers.styled(speech), MAX_TEXT_WIDTH);
+        if (lines.isEmpty()) {
+            return 0;
+        }
+        int extraH = 0;
+        for (FormattedCharSequence line : lines) {
+            boolean[] has = {false};
+            line.accept((idx, style, cp) -> {
+                if (Stickers.isStickerChar(cp)) {
+                    has[0] = true;
+                }
+                return true;
+            });
+            if (has[0]) {
+                extraH += STICKER_LINE_HEIGHT - LINE_HEIGHT; // linha com emoji e mais alta
+            }
+        }
+        int pillH = lines.size() * LINE_HEIGHT + extraH + 6;
+        return pillH + 14; // margem pra bordas/gomos (nuvem, cartum, gibi)
     }
 
     /** Desenha UM balao da pilha, com pop-in + flutuacao + fade. */
@@ -342,7 +383,13 @@ public final class BubbleRenderer {
             extraH += lineH[j] - LINE_HEIGHT;
         }
         int speechH = LINE_HEIGHT * n + extraH;
-        int pillW = Math.max(32, textW + 14);
+        int bsPre = Math.max(0, bubble.borderStyle());
+        // molduras que estouram pra fora (tracinhos/gomos/tinta grossa) ganham respiro
+        int pad = (bsPre == 3 || bsPre == 4 || bsPre == 5) ? 20 : 14;
+        if (extraH > 0) {
+            pad += 2; // emoji na linha pede um pelinho mais de ar
+        }
+        int pillW = Math.max(32, textW + pad);
         int pillH = speechH + 6;
         float x0 = -pillW / 2.0F;
         float yText = 3 - speechH;              // topo da 1a linha de texto
@@ -362,7 +409,7 @@ public final class BubbleRenderer {
         tail(matrix, buffers, -0.20F, 0, yP1 - 1, 12, 12, withAlpha(0x40000000, alpha));
 
         // ---- CONTORNO (6 ESTILOS: Classica / Cartum / Dupla / Tracejada / Nuvem / Gibi) ----
-        int bs = Math.max(0, bubble.borderStyle());
+        int bs = bsPre;
         if (border != 0) {
             switch (bs) {
                 case 1 -> { // CARTUM: tinta grossa, capa de quadrinho
