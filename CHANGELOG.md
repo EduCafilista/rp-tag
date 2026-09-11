@@ -2,6 +2,25 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.22.0] - 2026-09-11
+
+### Corrigido
+- **ADESIVO NUNCA MAIS EM CIMA DAS LETRAS!**: o adesivo agora fica PRENDO nas
+  faixas de borda do balão (cima ou baixo) — em qualquer posição X, mas o Y
+  é travado fora da linha de texto. No mundo E na prévia do menu.
+- **MENU 100% VISÍVEL**: a prévia inteira foi reescrita usando apenas `fill`
+  (o desenho que SEMPRE funciona no menu) — zero dependência de texturas para
+  informação crítica. Quem tinha "menu invisível" agora vê TUDO: pílula,
+  nuvem com gomos contornados, rabicho, tracejado e adesivo.
+- Clicar no balão para colar o adesivo agora define o lado pela metade
+  clicada (metade de cima = faixa de cima).
+
+### Melhorado
+- **DESIGN DO MENU**: placas com acento dourado lateral, prévia mais alta
+  (44px) com faixas de borda visíveis para o adesivo, texto da prévia
+  centralizado, nuvem do menu com contorno escuro em todos os gomos
+  (igualzinho ao balão de pensamento do mundo).
+
 ## [3.21.0] - 2026-09-11
 
 ### Melhorado

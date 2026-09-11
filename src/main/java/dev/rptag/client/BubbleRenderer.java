@@ -411,6 +411,11 @@ public final class BubbleRenderer {
             extraH += lineH[j] - LINE_HEIGHT;
         }
         int speechH = LINE_HEIGHT * n + extraH;
+        // (3.22.0) ADESIVO SO NAS BORDAS: se tem adesivo, a pilula EXPANDE 18px
+        // pro lado escolhido (topo se stickerY<50, base senao) — o adesivo vive
+        // nessa faixa e NUNCA fica em cima das letras.
+        boolean topBand = bubble.stickerY() < 50;
+        int expand = bubble.corner().isEmpty() ? 0 : 18;
         int bsPre = Math.max(0, bubble.borderStyle());
         // molduras que estouram pra fora (tracinhos/gomos/tinta grossa) ganham respiro
         int pad = (bsPre == 3 || bsPre == 4 || bsPre == 5) ? 20 : 14;
@@ -423,6 +428,13 @@ public final class BubbleRenderer {
         float yText = 3 - speechH;              // topo da 1a linha de texto
         float yP0 = yText - 3;                  // topo da pilula
         float yP1 = yText + speechH + 3;        // base da pilula
+        if (expand > 0) { // cresce pra FAIXA do adesivo (letras intocadas)
+            if (topBand) {
+                yP0 -= expand;
+            } else {
+                yP1 += expand;
+            }
+        }
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
@@ -490,12 +502,13 @@ public final class BubbleRenderer {
             cum += lineH[j];
         }
 
-        // ---- ADESIVO LIVRE: em qualquer ponto do balao (posicao % salva) ----
+        // ---- ADESIVO LIVRE: SEMPRE na faixa de borda, NUNCA sobre as letras ----
         if (!bubble.corner().isEmpty()) {
             var sticker = Stickers.styled(bubble.corner());
             float sw = font.width(sticker);
-            float sx = x0 + bubble.stickerX() / 100.0F * pillW;
-            float sy = yP0 + bubble.stickerY() / 100.0F * pillH;
+            float sx = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
+                    x0 + 9.0F, x0 + pillW - 9.0F);
+            float sy = topBand ? yP0 + 9.0F : yP1 - 9.0F; // centro da faixa
             font.drawInBatch(sticker, sx - sw / 2.0F, sy - 8.0F, withAlpha(0xFFFFFFFF, alpha), true,
                     matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }

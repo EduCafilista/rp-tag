@@ -10,10 +10,6 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.Mth;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.client.renderer.RenderType;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -61,21 +57,6 @@ public class BubbleStyleScreen extends Screen {
     private static final int VERMELHO_TIRA = 0xFFE87A7A; // remover
     private static final int ZONA_VERDE = 0xFFB5F0C8;  // zona "colar no balao"
     private static final int ZONA_OURO = 0xFFFFE08A;   // zona "por na fala"
-
-    // ---- A PILULA REAL DO MUNDO (o preview mostra o balao DE VERDADE) ----
-    private static final ResourceLocation BUBBLE_TEX =
-            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble.png");
-    private static final ResourceLocation TAIL_TEX =
-            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_tail.png");
-    private static final ResourceLocation CLOUD_TEX =
-            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/cloud.png");
-    private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
-    private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
-    private static final RenderType CLOUD_TYPE = RenderType.text(CLOUD_TEX);
-    // regiao da pilula dentro do bubble.png (64x32; tampa = 16px)
-    private static final float UV_V1 = 2.0F / 32.0F;
-    private static final float UV_V2 = 28.0F / 32.0F;
-    private static final float UV_CAP = 16.0F / 64.0F;
 
     private static final int PANEL_W = 268;
     private static final int PANEL_H = 272;
@@ -196,14 +177,16 @@ public class BubbleStyleScreen extends Screen {
         if ((argb >>> 24) == 0 || w < 2) {
             return;
         }
-        MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        Matrix4f m = g.pose().last().pose();
-        VertexConsumer buf = buffers.getBuffer(BUBBLE_TYPE);
-        float cap = Math.min(16.0F, w / 2.0F);
-        quadGui(m, buf, x, y, x + cap, y + h, 0.0F, UV_V1, UV_CAP, UV_V2, argb);
-        quadGui(m, buf, x + cap, y, x + w - cap, y + h, UV_CAP, UV_V1, 1.0F - UV_CAP, UV_V2, argb);
-        quadGui(m, buf, x + w - cap, y, x + w, y + h, 1.0F - UV_CAP, UV_V1, 1.0F, UV_V2, argb);
-        buffers.endBatch();
+        int ix = Math.round(x);
+        int iy = Math.round(y);
+        int iw = Math.round(w);
+        int ih = Math.round(h);
+        // cantos arredondados por camadas (octogono suave)
+        g.fill(ix + 5, iy, ix + iw - 5, iy + ih, argb);
+        g.fill(ix, iy + 6, ix + iw, iy + ih - 6, argb);
+        g.fill(ix + 2, iy + 2, ix + iw - 2, iy + ih - 2, argb);
+        g.fill(ix + 1, iy + 4, ix + iw - 1, iy + ih - 4, argb);
+        g.fill(ix + 4, iy + 1, ix + iw - 4, iy + ih - 1, argb);
     }
 
     /** O RABICHO real (textura curvada) no menu. */
@@ -211,80 +194,86 @@ public class BubbleStyleScreen extends Screen {
         if ((argb >>> 24) == 0) {
             return;
         }
-        MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        Matrix4f m = g.pose().last().pose();
-        quadGui(m, buffers.getBuffer(TAIL_TYPE), cx - w / 2.0F, yTop, cx + w / 2.0F, yTop + h,
-                0.0F, 0.0F, 1.0F, 1.0F, argb);
-        buffers.endBatch();
+        tailFill(g, Math.round(cx), Math.round(yTop), Math.round(w), Math.round(h), argb);
     }
 
-    private static void quadGui(Matrix4f m, VertexConsumer buf,
-            float x1, float y1, float x2, float y2, float u1, float v1, float u2, float v2, int argb) {
-        buf.addVertex(m, x1, y1, 0.0F).setColor(argb).setUv(u1, v1).setUv1(0, 10)
-                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
-        buf.addVertex(m, x1, y2, 0.0F).setColor(argb).setUv(u1, v2).setUv1(0, 10)
-                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
-        buf.addVertex(m, x2, y2, 0.0F).setColor(argb).setUv(u2, v2).setUv1(0, 10)
-                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
-        buf.addVertex(m, x2, y1, 0.0F).setColor(argb).setUv(u2, v1).setUv1(0, 10)
-                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
+
+    /** ESCURECE a cor (contorno dos gomos) sem perder a transparencia. */
+    private static int shaded(int argb, float fator) {
+        int a = (argb >>> 24) & 0xFF;
+        int r = (int) (((argb >>> 16) & 0xFF) * fator);
+        int gg = (int) (((argb >>> 8) & 0xFF) * fator);
+        int b = (int) ((argb & 0xFF) * fator);
+        return (a << 24) | (r << 16) | (gg << 8) | b;
     }
 
-    /** FATIA da NUVEM no menu (textura propria, igual ao mundo). */
-    private void drawCloudStrip(GuiGraphics g, float x, float y, float w, float h, int argb) {
-        if ((argb >>> 24) == 0 || w < 8) {
-            return;
+    /** CIRCULO preenchido via scanlines (fills — o metodo que SEMPRE funciona no menu). */
+    private void circleFill(GuiGraphics g, int cx, int cy, int r, int argb) {
+        for (int dy = -r; dy <= r; dy++) {
+            int dx = (int) Math.floor(Math.sqrt(r * (double) r - dy * (double) dy));
+            g.fill(cx - dx, cy + dy, cx + dx + 1, cy + dy + 1, argb);
         }
-        MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        Matrix4f m = g.pose().last().pose();
-        VertexConsumer buf = buffers.getBuffer(CLOUD_TYPE);
-        float cap = Math.min(32.0F, w / 3.0F);
-        quadGui(m, buf, x, y, x + cap, y + h, 0.0F, 0.0F, 32.0F / 192.0F, 1.0F, argb);
-        quadGui(m, buf, x + cap, y, x + w - cap, y + h, 32.0F / 192.0F, 0.0F,
-                160.0F / 192.0F, 1.0F, argb);
-        quadGui(m, buf, x + w - cap, y, x + w, y + h, 160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
-        buffers.endBatch();
     }
 
-    /** QUAD RETO no menu (meio plano da pilula — tracinhos retos). */
-    private void flatQuadGui(GuiGraphics g, float x1, float y1, float x2, float y2, int argb) {
-        if ((argb >>> 24) == 0) {
-            return;
+    /** TRIANGULO (rabicho) via scanlines. */
+    private void tailFill(GuiGraphics g, int cx, int yTop, int w, int h, int argb) {
+        for (int i = 0; i < h; i++) {
+            int half = Math.max(1, w / 2 - i * (w / 2) / h);
+            g.fill(cx - half, yTop + i, cx + half, yTop + i + 1, argb);
         }
-        MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        Matrix4f m = g.pose().last().pose();
-        VertexConsumer buf = buffers.getBuffer(BUBBLE_TYPE);
-        quadGui(m, buf, x1, y1, x2, y2, 120.0F / 256.0F, 48.0F / 128.0F,
-                136.0F / 256.0F, 80.0F / 128.0F, argb);
-        buffers.endBatch();
     }
 
     /** TRACEJADA no menu: tracinhos em volta + descadinha (igual ao mundo). */
     private void dashedGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
-        float dash = 7.0F, gap = 5.0F, t = 3.0F;
-        float yTop = y - 4, yBot = y + h + 4, xL = x - 4, xR = x + w + 4;
-        for (float dx = xL; dx < xR; dx += dash + gap) {
-            float ww = Math.min(dash, xR - dx);
-            flatQuadGui(g, dx, yTop, dx + ww, yTop + t, argb);
-            flatQuadGui(g, dx, yBot - t, dx + ww, yBot, argb);
+        if ((argb >>> 24) == 0) {
+            return;
         }
-        for (float dy = yTop + dash + gap; dy < yBot - t - gap; dy += dash + gap) {
-            float hh = Math.min(dash, yBot - t - gap - dy);
+        int dash = 7, gap = 5, t = 3;
+        int yTop = Math.round(y) - 4, yBot = Math.round(y + h) + 4;
+        int xL = Math.round(x) - 4, xR = Math.round(x + w) + 4;
+        for (int dx = xL; dx < xR; dx += dash + gap) {
+            int ww = Math.min(dash, xR - dx);
+            g.fill(dx, yTop, dx + ww, yTop + t, argb);
+            g.fill(dx, yBot - t, dx + ww, yBot, argb);
+        }
+        for (int dy = yTop + dash + gap; dy < yBot - t - gap; dy += dash + gap) {
+            int hh = Math.min(dash, yBot - t - gap - dy);
             if (hh < 2) {
                 break;
             }
-            flatQuadGui(g, xL, dy, xL + t, dy + hh, argb);
-            flatQuadGui(g, xR - t, dy, xR, dy + hh, argb);
+            g.fill(xL, dy, xL + t, dy + hh, argb);
+            g.fill(xR - t, dy, xR, dy + hh, argb);
         }
     }
 
     /** NUVEM no menu: base inflada + gomos fofos em toda a volta (igual ao mundo). */
     private void cloudGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
-        drawCloudStrip(g, x - 7, y - 7, w + 14, h + 14, argb);
-        // rabinho de pensamento: bolinhas que diminuem (Turma da Monica)
-        drawPill(g, x + w / 2.0F - 6.5F, y + h + 7, 7, 7, argb);
-        drawPill(g, x + w / 2.0F - 1.5F, y + h + 15, 5, 5, argb);
-        drawPill(g, x + w / 2.0F + 2.5F, y + h + 21, 4, 4, argb);
+        if ((argb >>> 24) == 0) {
+            return;
+        }
+        int escuro = shaded(argb, 0.45F);
+        int cx = Math.round(x + w / 2.0F);
+        // rabinho de pensamento: bolinhas com contorno, diminuindo (Turma da Monica)
+        int bx = cx - 4;
+        circleFill(g, bx, Math.round(y) + Math.round(h) + 12, 6, escuro);
+        circleFill(g, bx, Math.round(y) + Math.round(h) + 12, 4, argb);
+        circleFill(g, cx + 2, Math.round(y) + Math.round(h) + 22, 5, escuro);
+        circleFill(g, cx + 2, Math.round(y) + Math.round(h) + 22, 3, argb);
+        circleFill(g, cx + 7, Math.round(y) + Math.round(h) + 30, 3, escuro);
+        circleFill(g, cx + 7, Math.round(y) + Math.round(h) + 30, 2, argb);
+        // gomos contornados ao redor (circulo escuro atras, claro na frente)
+        int iy = Math.round(y);
+        int ih = Math.round(h);
+        int n = Math.max(4, Math.round(w) / 16);
+        for (int i = 0; i <= n; i++) {
+            int gx = Math.round(x) - 4 + i * (Math.round(w) + 8) / n;
+            circleFill(g, gx, iy + 3, 8, escuro);
+            circleFill(g, gx, iy + ih - 3, 8, escuro);
+            circleFill(g, gx, iy + 3, 6, argb);
+            circleFill(g, gx, iy + ih - 3, 6, argb);
+        }
+        // corpo por cima (mantem o centro limpo pro texto)
+        drawPill(g, x + 2, y - 2, w - 4, h + 4, argb);
     }
 
     /** Componente "● " na cor pedida (o caminho PROVADO de mostrar cor). */
@@ -343,6 +332,7 @@ public class BubbleStyleScreen extends Screen {
         g.fill(x, y, x + w, y + h, TINTA);                      // tinta grossa
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, PLACA_BG);   // recheio
         g.fill(x + 2, y + 2, x + w - 1, y + 3, 0x58FFFFFF);     // brilho no topo
+        g.fill(x + 1, y + 1, x + 3, y + h - 1, OURO_VIVO);      // acento lateral dourado
         if (titulo != null && !titulo.isEmpty()) {
             int tw = this.font.width(titulo);
             g.fill(x + 6, y - 3, x + 6 + tw + 8, y + 7, TINTA);     // etiqueta de tinta
@@ -409,14 +399,34 @@ public class BubbleStyleScreen extends Screen {
         return inBox(mx, my, px + 6, py + ROW_CHAT - 3, PANEL_W - 12, 14);
     }
 
+    /**
+     * ADESIVO SO NAS BORDAS (igual ao mundo): centro preso as faixas de
+     * cima/baixo do texto (o lado segue o stickerY salvo; X e livre).
+     */
+    private float[] stickerCenter() {
+        float sx = simX0 + style.stickerX() / 100.0F * simW;
+        boolean topBand = style.stickerY() < 50;
+        float lo = topBand ? simY + 9.0F : simY + 26.0F + 9.0F;
+        float hi = topBand ? simY + 18.0F - 9.0F : simY + simH - 9.0F;
+        float sy;
+        if (hi < lo) {
+            sy = topBand ? simY + 9.0F : simY + simH - 9.0F;
+        } else {
+            sy = Mth.clamp(simY + style.stickerY() / 100.0F * simH, lo, hi);
+        }
+        sx = Mth.clamp(sx, simX0 + 9.0F, simX0 + simW - 9.0F);
+        return new float[]{sx, sy};
+    }
+
     /** Caixinha vermelha [x] no canto do adesivo livre da PREVIA (clique = tira). */
     private int[] removeBoxPos() {
         if (style.corner().isEmpty()) {
             return null;
         }
-        int sx = simX0 + Math.round(style.stickerX() / 100.0F * simW);
-        int sy = simY + Math.round(style.stickerY() / 100.0F * simH);
-        return new int[]{sx + 7, sy - 16};
+        float[] c = stickerCenter();
+        int bx = Math.round(c[0]) + 7;
+        int by = Math.max(simY + 1, Math.round(c[1]) - 17);
+        return new int[]{bx, by};
     }
 
     private boolean removeBoxAt(double mx, double my) {
@@ -697,7 +707,7 @@ public class BubbleStyleScreen extends Screen {
         int speechW = this.font.width("sua fala assim")
                 + (ex.isEmpty() ? 0 : this.font.width(" ") + this.font.width(Stickers.styled(spaced(ex))));
         simW = Math.max(120, speechW + 24);
-        simH = 34;
+        simH = 44; // mais alto: faixas de borda cima/baixo pra o adesivo
         simX0 = px + (PANEL_W - simW) / 2;
         simY = py + ROW_BUBBLE;
         int ring = border != 0 ? border : fill;
@@ -741,11 +751,11 @@ public class BubbleStyleScreen extends Screen {
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
         int tx = simX0 + (simW - speechW) / 2;
-        g.drawString(this.font, "sua fala assim", tx, simY + 13, textColor, true);
+        g.drawString(this.font, "sua fala assim", tx, simY + 18, textColor, true);
         if (!ex.isEmpty()) {
             g.drawString(this.font, Stickers.styled(spaced(ex)),
                     tx + this.font.width("sua fala assim") + this.font.width(" "),
-                    simY + 13, textColor, true);
+                    simY + 18, textColor, true);
         }
 
         // --- zonas guiadas quando tem adesivo na mao ---
@@ -761,8 +771,9 @@ public class BubbleStyleScreen extends Screen {
             if (idx < 0 || idx >= Stickers.COUNT) {
                 idx = 0;
             }
-            int sx = simX0 + Math.round(style.stickerX() / 100.0F * simW);
-            int sy = simY + Math.round(style.stickerY() / 100.0F * simH);
+            float[] sc = stickerCenter();
+            int sx = Math.round(sc[0]);
+            int sy = Math.round(sc[1]);
             drawGlyphMenu(g, idx, sx - 8, sy - 8, 1.0F);
             int[] rb = removeBoxPos();
             if (rb != null) { // [x] SEMPRE visivel: impossivel nao achar como tirar
@@ -956,10 +967,10 @@ private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
             if (inBox(mx, my, simX0 - 4, simY - 4, simW + 8, simH + 14)) {
                 holdingSticker = null;
                 int x = Mth.clamp((int) mx, simX0, simX0 + simW);
-                int y = Mth.clamp((int) my, simY, simY + simH);
+                boolean topo = my < simY + simH / 2.0F; // metade de cima = faixa do topo
                 setSticker(Stickers.GLYPHS[Integer.parseInt(held)],
                         Math.round((x - simX0) * 100.0F / simW),
-                        Math.round((y - simY) * 100.0F / simH));
+                        topo ? 10 : 90);
                 return true;
             }
             // 2) slots de emojis: vazio = adiciona; cheio = tira (e solta)
