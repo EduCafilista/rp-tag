@@ -161,12 +161,17 @@ public class BubbleStyleScreen extends Screen {
      * qualquer cliente; drawInBatch na Screen nao pinta em todos).
      */
     private void drawSticker(GuiGraphics g, int idx, int x, int y) {
+        drawStickerScaled(g, idx, x, y, 16);
+    }
+
+    /** Adesivo em qualquer tamanho (regiao 16x16 da sheet esticada — blit de inventario). */
+    private void drawStickerScaled(GuiGraphics g, int idx, int x, int y, int size) {
         if (idx < 0 || idx >= Stickers.COUNT) {
             idx = 0;
         }
         int u = (idx % 8) * 16;
         int v = (idx / 8) * 16;
-        g.blit(BUBBLE_STICKERS, x, y, 16, 16, u, v, 16, 16, 128, 128);
+        g.blit(BUBBLE_STICKERS, x, y, size, size, u, v, 16, 16, 128, 128);
     }
 
     /** FATIA da pilula real (3 fatias: tampa + meio + tampa — pontas NUNCA deformam). */
@@ -752,7 +757,7 @@ public class BubbleStyleScreen extends Screen {
                             mouseX, mouseY);
                 }
             } else {
-                g.drawString(this.font, "+", sx + 7, y0 + 5, 0xFF5A6478, false);
+                g.drawString(this.font, "+", sx + 7, y0 + 6, 0xFF7A8498, false);
                 if (s == slot) {
                     outline(g, sx - 1, y0 - 1, 22, 22, VERDE_OK);
                     g.renderTooltip(this.font,
@@ -804,7 +809,9 @@ public class BubbleStyleScreen extends Screen {
             int cy = kbY + (k / KB_COLS) * KB_CELL;
             outline(g, cx, cy, KB_CELL, KB_CELL, 0xFFFFFFFF);
             g.drawString(this.font, "▶ " + Stickers.NAMES[over] + "  (vai pra fala ou pro balão)",
-                    px + 8, nameY, 0xFFFFFFFF, true);
+                    px + 8, nameY + 4, 0xFFFFFFFF, true);
+            g.fill(px + PANEL_W - 46, nameY - 2, px + PANEL_W - 10, nameY + 34, TINTA);
+            drawStickerScaled(g, over, px + PANEL_W - 42, nameY + 2, 32);
             g.renderTooltip(this.font, Component.literal(Stickers.NAMES[over]), mouseX, mouseY);
         } else {
             g.drawString(this.font, "passe o mouse para ver o nome · clique para pegar",

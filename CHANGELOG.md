@@ -2,6 +2,22 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.16.0] - 2026-09-11
+
+### Corrigido
+- **A CAUSA-MÃE dos emojis com fundo**: a spritesheet estava com FUNDO PRETO
+  OPACO desde a 3.11 (bug do gerador de arte) — por isso os emojis tinham
+  fundo, viravam blocos pretos no balão e "não apareciam" no menu (o blit
+  desenhava o quadrado preto inteiro). A arte foi REGENERADA do zero a partir
+  da versão transparente (3.10) com o mesmo acabamento premium (contorno,
+  brilho, sombra e ponto de luz): **fundo 100% transparente**, provado por
+  verificação pixel a pixel (zero pixels visíveis fora da forma).
+
+### Melhorado
+- Teclado: passando o mouse num emoji agora mostra um **preview GRANDE (32px)
+  ao lado do nome** — dá pra ver certinho qual é antes de escolher.
+- Slots vazios com "+" mais visível.
+
 ## [3.15.0] - 2026-09-11
 
 ### Corrigido
