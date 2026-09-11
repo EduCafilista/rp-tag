@@ -40,6 +40,11 @@ public final class ClientBubbleCache {
         long now = System.currentTimeMillis();
         List<Bubble> stack = BUBBLES.computeIfAbsent(id, k -> new ArrayList<>());
         synchronized (stack) {
+            // (3.13.0) balao cheio de emojis SUBSTITUI a pilha: nada de muro
+            // de adesivos repetidos (a pilha continua pra falas normais)
+            if (!extras.isEmpty()) {
+                stack.clear();
+            }
             stack.add(new Bubble(text, colorRGB, borderRGB, borderStyle, textRGB, italic, corner,
                     extras, stickerX, stickerY, now, now + duration));
             while (stack.size() > MAX_STACK) {

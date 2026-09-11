@@ -91,6 +91,21 @@ public final class BubbleRenderer {
         }
     }
 
+    /** Insere um espaco entre cada emoji (cada um legivel, nada de muro). */
+    private static String spacedExtras(String s) {
+        if (s.length() <= 2) {
+            return s;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i += 2) {
+            if (i > 0) {
+                sb.append(' ');
+            }
+            sb.append(s, i, Math.min(i + 2, s.length()));
+        }
+        return sb.toString();
+    }
+
     /** Multiplica o canal alfa de uma cor ARGB (k 0..1). */
     private static int withAlpha(int argb, float k) {
         int a = (int) (((argb >>> 24) & 0xFF) * Mth.clamp(k, 0.0F, 1.0F));
@@ -262,11 +277,11 @@ public final class BubbleRenderer {
     private static void renderOne(RenderLivingEvent.Post<?, ?> event, Minecraft minecraft,
             Player player, ClientBubbleCache.Bubble bubble, float upBlocks) {
         Font font = minecraft.font;
-        // (3.10.0) VARIOS EMOJIS: os extras acompanham a fala DENTRO do balao,
-        // depois do texto — cada um e arte colorida de verdade, como no celular.
+        // (3.13.0) VARIOS EMOJIS: os extras acompanham a fala DENTRO do balao,
+        // DE ESPACADOS entre si — cada emoji fica distinto e legivel de longe.
         String speech = bubble.text();
         if (!bubble.extras().isEmpty()) {
-            speech = speech + " " + bubble.extras();
+            speech = speech + " " + spacedExtras(bubble.extras());
         }
         List<FormattedCharSequence> lines = font.split(Stickers.styled(speech), MAX_TEXT_WIDTH);
         if (lines.isEmpty()) {

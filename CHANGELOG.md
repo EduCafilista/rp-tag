@@ -2,6 +2,32 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.13.0] - 2026-09-11
+
+### Corrigido
+- **FIM DO BUG DOS ADESIVOS REPETIDOS** (o muro de emojis do print!): com um
+  adesivo na mão, QUALQUER clique fora do balão era engolido e virava "mais
+  um emoji na fala" — inclusive os cliques NOS BOTÕES DE MOLDURA (por isso
+  a borda parecia travada e o local do adesivo não escolhia).
+- **FLUXO GUIADO**: agora, segurando um adesivo, a tela ACENDE duas zonas —
+  o **balão** (verde: clique = colar o adesivo livre) e a **linha da fala**
+  (dourada: clique = empilhar na mensagem, um clique por emoji). Qualquer
+  clique FORA das zonas **solta** o adesivo e deixa os botões funcionarem.
+  Dica no topo muda junto ("Clique NO BALÃO pra colar · na FALE pra
+  empilhar · ESC solta").
+- **FIM DO MURO DE EMOJIS no mundo**: os emojis da fala agora saem
+  **ESPAÇADOS** entre si (cada um legível, nada de grade de adesivos) e um
+  balão cheio de emojis **substitui a pilha** (não empilha mais muro).
+
+### Mudado
+- **MENU REDESENHADO EM PLACAS DE QUADRINHOS**: painel com moldura de tinta
+  grossa, sombra dura e brilho (cartoon de verdade), **placas "🎨 Cores" e
+  "🖼 Moldura"** com etiquetas douradas, faixa de título com sublinhado e
+  slots de emoji com caixinha própria. O tema TODO do menu fica em 10
+  constantes (TINTA/FUNDO/OURO/...) — fácil de alterar.
+- Fileira do resumo hex removida (as paletas já mostram a seleção) — menu
+  mais compacto e sem NENHUMA área de clique invadindo outra.
+
 ## [3.12.0] - 2026-09-10
 
 ### Adicionado
