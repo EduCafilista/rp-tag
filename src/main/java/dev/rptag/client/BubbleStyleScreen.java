@@ -15,9 +15,7 @@ import net.minecraft.client.renderer.RenderType;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import org.joml.Matrix4f;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 
 import dev.rptag.BubbleStyle;
@@ -67,6 +65,8 @@ public class BubbleStyleScreen extends Screen {
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble.png");
     private static final ResourceLocation TAIL_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_tail.png");
+    private static final ResourceLocation BUBBLE_STICKERS =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/font/stickers.png");
     private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
     private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
     // regiao da pilula dentro do bubble.png (64x32; tampa = 16px)
@@ -156,22 +156,17 @@ public class BubbleStyleScreen extends Screen {
     }
 
     /**
-     * Desenha o adesivo com o MESMO metodo do balao no mundo
-     * (font.drawInBatch + fonte de bitmap) — o unico caminho PROVADO de
-     * mostrar a arte do emoji neste projeto (16px nativos; escala livre).
+     * Desenha a ARTE do adesivo no menu via BLIT da spritesheet
+     * (16x16, o MESMO caminho dos icones do inventario — funciona em
+     * qualquer cliente; drawInBatch na Screen nao pinta em todos).
      */
-    private void drawGlyph(GuiGraphics g, String glyph, float x, float y, float scale) {
-        Minecraft mc = Minecraft.getInstance();
-        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
-        PoseStack pose = g.pose();
-        pose.pushPose();
-        pose.translate(x, y, 0.0F);
-        pose.scale(scale, scale, 1.0F);
-        Font font = mc.font;
-        font.drawInBatch(Stickers.seq(glyph), 0.0F, 0.0F, 0xFFFFFFFF, false,
-                pose.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, 0xF000F0);
-        pose.popPose();
-        buffers.endBatch();
+    private void drawSticker(GuiGraphics g, int idx, int x, int y) {
+        if (idx < 0 || idx >= Stickers.COUNT) {
+            idx = 0;
+        }
+        int u = (idx % 8) * 16;
+        int v = (idx / 8) * 16;
+        g.blit(BUBBLE_STICKERS, x, y, 16, 16, u, v, 16, 16, 128, 128);
     }
 
     /** FATIA da pilula real (3 fatias: tampa + meio + tampa — pontas NUNCA deformam). */
@@ -527,8 +522,7 @@ public class BubbleStyleScreen extends Screen {
 
         // adesivo na mao segue o mouse (a arte de verdade)
         if (holdingSticker != null) {
-            drawGlyph(g, Stickers.GLYPHS[Integer.parseInt(holdingSticker)],
-                    mouseX - 8, mouseY - 18, 1.0F);
+            drawSticker(g, Integer.parseInt(holdingSticker), mouseX - 8, mouseY - 18);
             outline(g, mouseX - 9, mouseY - 19, 18, 18, 0xFFFFFFFF);
         }
 
@@ -683,7 +677,7 @@ public class BubbleStyleScreen extends Screen {
             }
             int sx = simX0 + Math.round(style.stickerX() / 100.0F * simW);
             int sy = simY + Math.round(style.stickerY() / 100.0F * simH);
-            drawGlyph(g, Stickers.GLYPHS[idx], sx - 8, sy - 8, 1.0F);
+            drawSticker(g, idx, sx - 8, sy - 8);
             if (holdingSticker == null && Math.abs(mouseX - sx) <= 8 && Math.abs(mouseY - sy) <= 8) {
                 hoverSticker = true;
                 g.drawString(this.font, "+", sx - 2, sy - 9, 0xFFFFFFFF, false);
@@ -694,7 +688,7 @@ public class BubbleStyleScreen extends Screen {
             int gx = Mth.clamp(mouseX, simX0, simX0 + simW);
             int gy = Mth.clamp(mouseY, simY, simY + simH);
             g.setColor(1.0F, 1.0F, 1.0F, 0.6F);
-            drawGlyph(g, Stickers.GLYPHS[hi], gx - 8, gy - 8, 1.0F);
+            drawSticker(g, hi, gx - 8, gy - 8);
             g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
             outline(g, gx - 9, gy - 9, 18, 18, ZONA_VERDE);
         }
@@ -751,7 +745,7 @@ public class BubbleStyleScreen extends Screen {
             g.fill(sx, y0, sx + 20, y0 + 20, TINTA);
             g.fill(sx + 1, y0 + 1, sx + 19, y0 + 19, 0xFF1E2432);
             if (s < list.length) {
-                drawGlyph(g, list[s], sx + 2, y0 + 2, 1.0F);
+                drawSticker(g, (list[s].charAt(0) & 0xFFFF) - 0xE000, sx + 2, y0 + 2);
                 if (s == slot) {
                     outline(g, sx - 1, y0 - 1, 22, 22, VERMELHO_TIRA);
                     g.renderTooltip(this.font, Component.literal("✖ tirar " + nameOf(list[s])),
@@ -796,7 +790,7 @@ public class BubbleStyleScreen extends Screen {
             g.fill(cx, cy, cx + KB_CELL, cy + 1, FUNDO_CLARO);
             g.fill(cx, cy + KB_CELL - 1, cx + KB_CELL, cy + KB_CELL, TINTA);
             g.fill(cx + KB_CELL - 1, cy, cx + KB_CELL, cy + KB_CELL, TINTA);
-            drawGlyph(g, Stickers.GLYPHS[i], cx + 4, cy + 4, 1.0F);
+            drawSticker(g, i, cx + 4, cy + 4);
             String num = String.valueOf(i + 1);
             g.drawString(this.font, num, cx + KB_CELL - 4 - this.font.width(num),
                     cy + KB_CELL - 9, 0xFF8E96A8, false);

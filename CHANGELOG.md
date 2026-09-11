@@ -2,6 +2,26 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.15.0] - 2026-09-11
+
+### Corrigido
+- **FIM DO MURO PRETO DE EMOJIS no balão**: desde a 3.11 o adesivo herda a
+  cor da LETRA escolhida — com a letra preta, cada emoji virava um BLOCO
+  PRETO sólido e fundia tudo num rabisco ilegível (e o adesivo do canto
+  virava um quadradão preto). Agora o adesivo é **SEMPRE a arte colorida**
+  (nunca é tingida) — o emoji aparece exatamente como você escolheu, e a
+  posição dele volta a ser visível.
+- **TECLADO DE EMOJIS QUE NÃO APARECIA**: os emojis do menu eram desenhados
+  com drawInBatch (texto), que **não pinta em todos os clientes** — a grade
+  ficava VAZIA (comprovado no print). Agora os emojis do menu são desenhados
+  por **BLIT da spritesheet** — o MESMO caminho dos ícones do inventário,
+  o mais robusto do jogo. Grade, slots de emoji, adesivo na mão e adesivo
+  da prévia: todos com a arte de verdade, colorida, sempre.
+
+### Técnico
+- Novamente mudança SÓ no cliente (BubbleStyleScreen + 1 linha no renderer):
+  zero diff de servidor/comandos (provado por git diff).
+
 ## [3.14.0] - 2026-09-11
 
 ### Mudado

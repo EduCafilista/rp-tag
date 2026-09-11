@@ -165,7 +165,10 @@ public final class BubbleRenderer {
             List<Seg> segs, float x, float y, int textColor) {
         float pen = x;
         for (Seg seg : segs) {
-            int color = seg.sticker ? ((textColor & 0xFF000000) | 0x00FFFFFF) : textColor;
+            // (3.15.0) CORRIGE O MURO PRETO: adesivo e ARTE COLORIDA e nunca
+            // herda a cor da letra (letra preta transformava o emoji em bloco
+            // preto solido). Alfa global apenas (fade).
+            int color = seg.sticker ? withAlpha(0xFFFFFFFF, 1.0F) : textColor;
             pen = font.drawInBatch(seq(seg), pen, y, color, true, matrix, buffers,
                     Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
