@@ -2,6 +2,26 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.21.0] - 2026-09-11
+
+### Melhorado
+- **BALÃO DE PENSAMENTO (estilo Turma da Mônica!)**: a moldura Nuvem virou o
+  balão de pensamento clássico — nuvem fofa com gomos contornados e o
+  **rabinho de bolinhas que diminuem descendo em direção à cabeça** (no lugar
+  do rabicho comum). No mundo E na prévia do menu.
+- **CARTÃO DE PRÉVIA no menu**: a prévia agora fica dentro de um quadro
+  próprio com etiqueta "👀 Prévia:" — o jogador sabe EXATAMENTE onde olhar
+  para ver como o balão vai ficar. Prévia maior (120px de largura mínima).
+- **PILHA CONTA AS BOLINHAS**: balões de pensamento reservam o espaço do
+  rabinho na pilha — nada de um balão invadir as bolinhas do outro.
+- Textura da nuvem regenerada com gomos MAIS PROFUNDOS e alternados
+  (silhueta orgânica de nuvem de pensamento).
+
+### Mantido (a pedido)
+- **ADMIN LIBERA QUEM USA**: `/rp admin balao <jogador> on|off` +
+  `/rp admin balaolist` — padrão do servidor continua sendo NINGUÉM usa até
+  o admin liberar.
+
 ## [3.20.0] - 2026-09-11
 
 ### Melhorado

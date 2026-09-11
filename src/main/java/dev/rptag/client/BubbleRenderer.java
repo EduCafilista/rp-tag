@@ -275,11 +275,18 @@ public final class BubbleRenderer {
         }
     }
 
-    /** NUVEM (3.20.0): textura propria com gomos contornados — fofo de verdade. */
+    /**
+     * BALAO DE PENSAMENTO (3.21.0, estilo Turma da Monica): nuvem fofa com
+     * gomos contornados + RABINHO DE BOLINHAS descendo em direcao a cabeca.
+     */
     private static void cloudBorder(Matrix4f m, MultiBufferSource buffers, float z,
             float x0, float yP0, float pillW, float pillH, float yP1, int argb) {
         cloudStrip(m, buffers, z, x0 - 7, yP0 - 7, pillW + 14, pillH + 14, argb);
-        tail(m, buffers, z, 0, yP1 + 5, 15, 14, argb);
+        // rabinho de pensamento: bolinhas que diminuem e se afastam do centro
+        float dot = 7.0F, dot2 = 5.0F, dot3 = 3.5F;
+        pill(m, buffers, z, -3.0F - dot / 2, yP1 + 5, dot, dot, argb);
+        pill(m, buffers, z, 1.0F - dot2 / 2, yP1 + 13, dot2, dot2, argb);
+        pill(m, buffers, z, 4.0F - dot3 / 2, yP1 + 19, dot3, dot3, argb);
     }
 
     private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {
@@ -341,7 +348,9 @@ public final class BubbleRenderer {
             }
         }
         int pillH = lines.size() * LINE_HEIGHT + extraH + 6;
-        return pillH + 14; // margem pra bordas/gomos (nuvem, cartum, gibi)
+        int bsH = Math.max(0, bubble.borderStyle());
+        int margin = bsH == 4 ? 34 : (bsH == 3 || bsH == 5 ? 20 : 14);
+        return pillH + margin; // bolinhas/gomos/tinta contam na pilha!
     }
 
     /** Desenha UM balao da pilha, com pop-in + flutuacao + fade. */
@@ -444,7 +453,7 @@ public final class BubbleRenderer {
                 }
                 case 3 -> // TRACEJADA: tracinhos fofos em toda a volta
                         dashedBorder(matrix, buffers, -0.15F, x0, yP0, pillW, yP1, border);
-                case 4 -> // NUVEM: bolas fofas, o balao vira uma nuvenzinha
+                case 4 -> // PENSAMENTO: nuvem + rabinho de bolinhas descendo (Turma da Monica)
                         cloudBorder(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, yP1, border);
                 case 5 -> { // GIBI: balaozao de HQ, tinta bem grossa
                     pill(matrix, buffers, -0.15F, x0 - 5, yP0 - 5, pillW + 10, pillH + 10, border);
@@ -459,7 +468,9 @@ public final class BubbleRenderer {
 
         // ---- RECHEIO (a cor de dentro escolhida) ----
         pill(matrix, buffers, -0.10F, x0, yP0, pillW, pillH, fill);
-        tail(matrix, buffers, -0.09F, 0, yP1 - 3, 12, 12, fill);
+        if (bs != 4) { // no PENSAMENTO o rabicho comum fica sob a nuvem
+            tail(matrix, buffers, -0.09F, 0, yP1 - 3, 12, 12, fill);
+        }
         if (bs == 5) { // GIBI: brilho gelatinoso classico das HQs (faixa branca no topo)
             pill(matrix, buffers, -0.08F, x0 + 8, yP0 + 3, Math.max(12, pillW * 0.45F), 3,
                     withAlpha(0x99FFFFFF, alpha));

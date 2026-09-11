@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-3.20.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.20.0.jar) (arquivo dentro do repositório).
+> 📥 **Download:** baixe o `rptag-3.21.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.21.0.jar) (arquivo dentro do repositório).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
@@ -41,9 +41,9 @@
   rabicho e as 6 molduras desenhadas de verdade — você VÊ a nuvem, os
   tracinhos e o gibi antes de salvar) ·
   **6 molduras com botões próprios**: Clássica, Cartum (grossa), Dupla,
-  **Tracejada (tracinhos fofos), Nuvem (gomos de nuvem!) e Gibi** — o
-  balãozão de HQ clássico do estilo Turma da Mônica, inflado com tinta
-  grossa e brilho gelatinoso ·
+  **Tracejada (tracinhos retos), Pensamento** — nuvem fofa com **rabinho de
+  bolinhas descendo, estilo Turma da Mônica!** — **e Gibi** — o balãozão de
+  HQ clássico, inflado com tinta grossa e brilho gelatinoso ·
   **2 seletores independentes** + **paletas de 1 clique** (8 cores prontas
   pra Dentro e 8 pra Borda — sem arrastar!) ·
   **cor da borda em 3 botões**: Auto / Minha cor / Sem · **cor da LETRA**:
@@ -92,7 +92,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-3.20.0.jar` para a pasta `mods/` do **servidor**.
+2. Copie `rptag-3.21.0.jar` para a pasta `mods/` do **servidor**.
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -105,7 +105,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-3.20.0.jar`.
+O jar sai em `build/libs/rptag-3.21.0.jar`.
 
 ## 🎨 Personalizar
 

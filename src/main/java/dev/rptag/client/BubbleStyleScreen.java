@@ -78,21 +78,21 @@ public class BubbleStyleScreen extends Screen {
     private static final float UV_CAP = 16.0F / 64.0F;
 
     private static final int PANEL_W = 268;
-    private static final int PANEL_H = 260;
+    private static final int PANEL_H = 272;
 
     // linhas verticais (a partir de py) — UMA fonte de verdade
     private static final int ROW_HINT = 22;
     private static final int ROW_CHAT = 32;
-    private static final int ROW_BUBBLE = 44;  // pilula real: 44..78 + rabicho
-    private static final int ROW_DENTRO = 84;
-    private static final int ROW_BORDA = 99;
-    private static final int ROW_LETRA = 114;
-    private static final int ROW_BTN1 = 143;   // molduras: Auto / Minha cor / Sem
-    private static final int ROW_BTN2 = 161;   // Classica / Cartum / Dupla
-    private static final int ROW_BTN3 = 179;   // Tracejada / Nuvem / Gibi
-    private static final int ROW_BTN4 = 198;   // Adesivos + duracao (h18)
-    private static final int ROW_EXTRAS = 221; // slots de emojis (hit 216..240)
-    private static final int ROW_BTN5 = 244;   // modo / padrao / salvar
+    private static final int ROW_BUBBLE = 50;  // pilula real: 50..84 + rabinho ate ~92
+    private static final int ROW_DENTRO = 102;
+    private static final int ROW_BORDA = 117;
+    private static final int ROW_LETRA = 132;
+    private static final int ROW_BTN1 = 146;   // molduras: Auto / Minha cor / Sem
+    private static final int ROW_BTN2 = 164;   // Classica / Cartum / Dupla
+    private static final int ROW_BTN3 = 182;   // Tracejada / Nuvem / Gibi
+    private static final int ROW_BTN4 = 204;   // Adesivos + duracao (h18)
+    private static final int ROW_EXTRAS = 228; // slots de emojis (hit 223..247)
+    private static final int ROW_BTN5 = 252;   // modo / padrao / salvar
 
     // paletas desenhadas como texto "● "
     private static final int SW_X = 64;
@@ -281,7 +281,10 @@ public class BubbleStyleScreen extends Screen {
     /** NUVEM no menu: base inflada + gomos fofos em toda a volta (igual ao mundo). */
     private void cloudGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
         drawCloudStrip(g, x - 7, y - 7, w + 14, h + 14, argb);
-        drawTail(g, x + w / 2.0F, y + h + 5, 15, 14, argb);
+        // rabinho de pensamento: bolinhas que diminuem (Turma da Monica)
+        drawPill(g, x + w / 2.0F - 6.5F, y + h + 7, 7, 7, argb);
+        drawPill(g, x + w / 2.0F - 1.5F, y + h + 15, 5, 5, argb);
+        drawPill(g, x + w / 2.0F + 2.5F, y + h + 21, 4, 4, argb);
     }
 
     /** Componente "● " na cor pedida (o caminho PROVADO de mostrar cor). */
@@ -684,10 +687,16 @@ public class BubbleStyleScreen extends Screen {
                     px + 12 + this.font.width("<Você> sua fala assim "), chatY, textColor, true);
         }
 
+        // --- CARD DE PREVIA: enquadra o balao (o player sabe ONDE olhar) ---
+        g.fill(px + 8, py + 40, px + PANEL_W - 8, py + 96, 0xFF1A2030);
+        g.fill(px + 8, py + 40, px + PANEL_W - 8, py + 41, 0x3DFFFFFF);
+        g.fill(px + 8, py + 95, px + PANEL_W - 8, py + 96, 0x26000000);
+        g.drawString(this.font, "👀 Prévia:", px + 12, py + 43, OURO, true);
+
         // --- medidas da pilula (O BALAO DE VERDADE, tingido) ---
         int speechW = this.font.width("sua fala assim")
                 + (ex.isEmpty() ? 0 : this.font.width(" ") + this.font.width(Stickers.styled(spaced(ex))));
-        simW = Math.max(110, speechW + 24);
+        simW = Math.max(120, speechW + 24);
         simH = 34;
         simX0 = px + (PANEL_W - simW) / 2;
         simY = py + ROW_BUBBLE;
@@ -778,7 +787,7 @@ public class BubbleStyleScreen extends Screen {
     }
 
     private void renderPalettes(GuiGraphics g) {
-        plate(g, px + 4, py + 78, PANEL_W - 8, 49, "🎨 Cores");
+        plate(g, px + 4, py + 96, PANEL_W - 8, 49, "🎨 Cores");
         drawSwatchRow(g, py + ROW_DENTRO, "Dentro:", SW_IN, style.colorRGB());
         drawSwatchRow(g, py + ROW_BORDA, "Borda:", SW_BD,
                 style.borderRGB() >= 0 ? style.borderRGB() : -1);
@@ -809,7 +818,7 @@ public class BubbleStyleScreen extends Screen {
                         ly - 9, 0xFFFFFFFF, false);
             }
         }
-        plate(g, px + 4, py + 134, PANEL_W - 8, 64, "🖼 Moldura");
+        plate(g, px + 4, py + 140, PANEL_W - 8, 64, "🖼 Moldura");
     }
 
     /**
