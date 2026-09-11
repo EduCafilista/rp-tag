@@ -2,6 +2,25 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.18.0] - 2026-09-11
+
+### Corrigido
+- **TECLADO DE EMOJIS REPROJETADO EM ALTO CONTRASTE**: células bem mais claras
+  que o fundo (era quase invisível na escuridão do painel), cada emoji agora
+  senta num **CHIP da própria cor** (fundo colorido — mesmo que a arte não
+  apareça num cliente estranho, o seletor continua utilizável e bonito).
+- **[✖] DE REMOVER SEMPRE VISÍVEL**: o adesivo livre da prévia agora tem uma
+  caixinha vermelha [✖] grudada nele — clicou, tirou (não precisa mais caçar
+  o hover).
+- Contador honesto: "✨ Emojis (2/6 na fala · 1 no balão)".
+
+### Diagnóstico
+- A página de adesivos ganhou um **cartão de teste com 3 quadradinhos
+  coloridos** (vermelho/verde/azul) no canto superior: se eles aparecerem,
+  o menu renderiza fills normal — e os emojis (mesmo motor) também têm que
+  aparecer. Se NEM eles aparecerem, o cliente está com jar antigo (conferir
+  o número da versão no canto superior direito do menu).
+
 ## [3.17.0] - 2026-09-11
 
 ### Corrigido
