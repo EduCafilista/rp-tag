@@ -2,6 +2,30 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.23.0] - 2026-09-11
+
+### Corrigido
+- **FIM DO RECORTE NA BORDA DO BALÃO!** A textura da pílula foi refeita:
+  a arte agora preenche o canvas INTEIRO (256x128, sem margem morta) e os
+  UVs foram corrigidos — as linhas de cima/baixo que apareciam "mordidas"
+  (o talo do morango comendo a borda) nunca mais acontecem.
+- **ADESIVO NUNCA MAIS NO CANTO**: o adesivo agora fica 18px pra dentro das
+  bordas — encostado no canto arredondado ele SAIA do balão (visto no print).
+  Agora mora sempre dentro da pílula, na faixa de cima ou de baixo.
+- A pilha de balões reserva a altura da faixa do adesão (nada se sobrepõe).
+
+### Melhorado
+- **PÍLULA = CÁPSULA MATEMÁTICA**: textura gerada por equação (retângulo +
+  2 semicírculos perfeitos), gradiente limpo sem manchas — e o MENU usa a
+  mesma equação via scanlines: o que você vê na prévia é EXATAMENTE o shape
+  do mundo.
+- **MENU BLINDADO**: o balão da prévia agora é desenhado com RECORTE dentro
+  do card — impossível vazar pra fora e invadir as outras linhas, por mais
+  gordo que seja o balão (nuvem + faixa + rabicho).
+- Etiqueta "👀 Prévia" em chavinha própria com filete dourado, card com
+  moldura dupla, vinheta suave no fundo da tela, bolinhas do pensamento
+  mais juntas.
+
 ## [3.22.0] - 2026-09-11
 
 ### Corrigido

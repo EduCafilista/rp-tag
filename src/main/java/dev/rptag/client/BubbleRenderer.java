@@ -71,8 +71,8 @@ public final class BubbleRenderer {
     private static final RenderType CLOUD_TYPE = RenderType.text(CLOUD_TEX);
 
     // regiao da pilula dentro do bubble.png (y 2..28 de 32; tampa = 16px de 64)
-    private static final float V1 = 2.0F / 32.0F;
-    private static final float V2 = 28.0F / 32.0F;
+    private static final float V1 = 0.0F;
+    private static final float V2 = 1.0F;
     private static final float U_CAP = 16.0F / 64.0F;
 
     private BubbleRenderer() {
@@ -348,6 +348,9 @@ public final class BubbleRenderer {
             }
         }
         int pillH = lines.size() * LINE_HEIGHT + extraH + 6;
+        if (!bubble.corner().isEmpty()) {
+            pillH += 18; // faixa do adesivo (3.23.0) conta na altura real
+        }
         int bsH = Math.max(0, bubble.borderStyle());
         int margin = bsH == 4 ? 34 : (bsH == 3 || bsH == 5 ? 20 : 14);
         return pillH + margin; // bolinhas/gomos/tinta contam na pilha!
@@ -507,8 +510,8 @@ public final class BubbleRenderer {
             var sticker = Stickers.styled(bubble.corner());
             float sw = font.width(sticker);
             float sx = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
-                    x0 + 9.0F, x0 + pillW - 9.0F);
-            float sy = topBand ? yP0 + 9.0F : yP1 - 9.0F; // centro da faixa
+                    x0 + 18.0F, x0 + pillW - 18.0F);
+            float sy = topBand ? yP0 + 18.0F : yP1 - 18.0F; // centro da faixa
             font.drawInBatch(sticker, sx - sw / 2.0F, sy - 8.0F, withAlpha(0xFFFFFFFF, alpha), true,
                     matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }

@@ -173,6 +173,7 @@ public class BubbleStyleScreen extends Screen {
     }
 
     /** FATIA da pilula real (3 fatias: tampa + meio + tampa — pontas NUNCA deformam). */
+    /** CAPSULA perfeita (retangulo + 2 semicirculos) — igual a textura nova do mundo. */
     private void drawPill(GuiGraphics g, float x, float y, float w, float h, int argb) {
         if ((argb >>> 24) == 0 || w < 2) {
             return;
@@ -181,12 +182,18 @@ public class BubbleStyleScreen extends Screen {
         int iy = Math.round(y);
         int iw = Math.round(w);
         int ih = Math.round(h);
-        // cantos arredondados por camadas (octogono suave)
-        g.fill(ix + 5, iy, ix + iw - 5, iy + ih, argb);
-        g.fill(ix, iy + 6, ix + iw, iy + ih - 6, argb);
-        g.fill(ix + 2, iy + 2, ix + iw - 2, iy + ih - 2, argb);
-        g.fill(ix + 1, iy + 4, ix + iw - 1, iy + ih - 4, argb);
-        g.fill(ix + 4, iy + 1, ix + iw - 4, iy + ih - 1, argb);
+        int r = Math.min(ih / 2, iw / 2);
+        if (r < 2) {
+            g.fill(ix, iy, ix + iw, iy + ih, argb);
+            return;
+        }
+        g.fill(ix + r, iy, ix + iw - r, iy + ih, argb); // miolo
+        for (int dy = 0; dy < r * 2; dy++) {
+            double dyc = dy - (r - 0.5);
+            int dx = (int) Math.floor(Math.sqrt((double) r * r - dyc * dyc));
+            g.fill(ix + r - dx, iy + dy, ix + r + 1, iy + dy + 1, argb);
+            g.fill(ix + iw - r - 1, iy + dy, ix + iw - r + dx + 1, iy + dy + 1, argb);
+        }
     }
 
     /** O RABICHO real (textura curvada) no menu. */
@@ -254,13 +261,13 @@ public class BubbleStyleScreen extends Screen {
         int escuro = shaded(argb, 0.45F);
         int cx = Math.round(x + w / 2.0F);
         // rabinho de pensamento: bolinhas com contorno, diminuindo (Turma da Monica)
-        int bx = cx - 4;
-        circleFill(g, bx, Math.round(y) + Math.round(h) + 12, 6, escuro);
-        circleFill(g, bx, Math.round(y) + Math.round(h) + 12, 4, argb);
-        circleFill(g, cx + 2, Math.round(y) + Math.round(h) + 22, 5, escuro);
-        circleFill(g, cx + 2, Math.round(y) + Math.round(h) + 22, 3, argb);
-        circleFill(g, cx + 7, Math.round(y) + Math.round(h) + 30, 3, escuro);
-        circleFill(g, cx + 7, Math.round(y) + Math.round(h) + 30, 2, argb);
+        int by0 = Math.round(y) + Math.round(h);
+        circleFill(g, cx - 4, by0 + 6, 6, escuro);
+        circleFill(g, cx - 4, by0 + 6, 4, argb);
+        circleFill(g, cx + 2, by0 + 12, 5, escuro);
+        circleFill(g, cx + 2, by0 + 12, 3, argb);
+        circleFill(g, cx + 7, by0 + 17, 3, escuro);
+        circleFill(g, cx + 7, by0 + 17, 2, argb);
         // gomos contornados ao redor (circulo escuro atras, claro na frente)
         int iy = Math.round(y);
         int ih = Math.round(h);
@@ -404,17 +411,10 @@ public class BubbleStyleScreen extends Screen {
      * cima/baixo do texto (o lado segue o stickerY salvo; X e livre).
      */
     private float[] stickerCenter() {
-        float sx = simX0 + style.stickerX() / 100.0F * simW;
         boolean topBand = style.stickerY() < 50;
-        float lo = topBand ? simY + 9.0F : simY + 26.0F + 9.0F;
-        float hi = topBand ? simY + 18.0F - 9.0F : simY + simH - 9.0F;
-        float sy;
-        if (hi < lo) {
-            sy = topBand ? simY + 9.0F : simY + simH - 9.0F;
-        } else {
-            sy = Mth.clamp(simY + style.stickerY() / 100.0F * simH, lo, hi);
-        }
-        sx = Mth.clamp(sx, simX0 + 9.0F, simX0 + simW - 9.0F);
+        float sy = topBand ? simY + 9.0F : simY + simH - 9.0F; // centro da FAIXA (18px)
+        float sx = Mth.clamp(simX0 + style.stickerX() / 100.0F * simW,
+                simX0 + 18.0F, simX0 + simW - 18.0F); // 18px pra dentro (igual ao mundo)
         return new float[]{sx, sy};
     }
 
@@ -424,8 +424,8 @@ public class BubbleStyleScreen extends Screen {
             return null;
         }
         float[] c = stickerCenter();
-        int bx = Math.round(c[0]) + 7;
-        int by = Math.max(simY + 1, Math.round(c[1]) - 17);
+        int bx = Math.min(simX0 + simW - 13, Math.round(c[0]) + 16);
+        int by = Math.round(c[1]) - 6;
         return new int[]{bx, by};
     }
 
@@ -595,6 +595,12 @@ public class BubbleStyleScreen extends Screen {
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         g.fill(0, 0, this.width, this.height, 0xFF0B0E15);
+        // vinheta suave (degrade por faixas) — profundidade sem textura
+        for (int i = 0; i < 5; i++) {
+            int a = 0x28 - i * 8;
+            g.fill(0, i * 4, this.width, i * 4 + 4, a << 24);
+            g.fill(0, this.height - i * 4 - 4, this.width, this.height - i * 4, a << 24);
+        }
     }
 
     @Override
@@ -666,7 +672,7 @@ public class BubbleStyleScreen extends Screen {
             hint = "✨ " + extrasCount() + " emoji(s) na fala · clique em ✖ pra tirar";
             cor = OURO;
         } else {
-            hint = "✦ Prévia REAL: é assim que seu balão aparece no jogo";
+            hint = "✦ Prévia REAL: no mundo é assim · adesivo mora nas faixas, nunca nas letras";
         }
         g.drawString(this.font, hint, px + 10, py + ROW_HINT, cor, true);
     }
@@ -698,52 +704,60 @@ public class BubbleStyleScreen extends Screen {
         }
 
         // --- CARD DE PREVIA: enquadra o balao (o player sabe ONDE olhar) ---
-        g.fill(px + 8, py + 40, px + PANEL_W - 8, py + 96, 0xFF1A2030);
-        g.fill(px + 8, py + 40, px + PANEL_W - 8, py + 41, 0x3DFFFFFF);
-        g.fill(px + 8, py + 95, px + PANEL_W - 8, py + 96, 0x26000000);
-        g.drawString(this.font, "👀 Prévia:", px + 12, py + 43, OURO, true);
+        g.fill(px + 8, py + 40, px + PANEL_W - 8, py + 96, 0xFF141A28);
+        outline(g, px + 8, py + 40, PANEL_W - 16, 56, 0xFF2A3248);
+        g.fill(px + 8, py + 40, px + PANEL_W - 8, py + 41, OURO_VIVO);
+        g.fill(px + 8, py + 95, px + PANEL_W - 8, py + 96, 0x40000000);
+        int tagW = this.font.width("👀 Prévia") + 10;
+        g.fill(px + 12, py + 44, px + 12 + tagW, py + 54, 0xFF0D1220);
+        g.fill(px + 12, py + 44, px + 14, py + 54, OURO_VIVO);
+        g.drawString(this.font, "👀 Prévia", px + 16, py + 46, OURO, true);
+        // RECORTE: o balao vive DENTRO do card — nada invade as outras linhas
+        g.enableScissor(px + 9, py + 41, px + PANEL_W - 9, py + 95);
 
         // --- medidas da pilula (O BALAO DE VERDADE, tingido) ---
         int speechW = this.font.width("sua fala assim")
                 + (ex.isEmpty() ? 0 : this.font.width(" ") + this.font.width(Stickers.styled(spaced(ex))));
         simW = Math.max(120, speechW + 24);
-        simH = 44; // mais alto: faixas de borda cima/baixo pra o adesivo
+        // (3.23.0) IGUAL AO MUNDO: com adesivo a capsula ganha a FAIXA de 18px
+        boolean temAdesivo = !style.corner().isEmpty();
+        boolean faixaTopo = temAdesivo && style.stickerY() < 50;
+        simH = temAdesivo ? 38 : 22;
         simX0 = px + (PANEL_W - simW) / 2;
-        simY = py + ROW_BUBBLE;
+        simY = py + (temAdesivo ? 47 : 52); // cabe no card: rabicho nunca cortado
         int ring = border != 0 ? border : fill;
         float cx = simX0 + simW / 2.0F;
 
         // --- SOMBRA (como no mundo) ---
-        drawPill(g, simX0 + 2, simY + 2, simW, simH, 0x40000000);
-        drawTail(g, cx, simY + simH - 1, 12, 12, 0x40000000);
+        drawPill(g, simX0 + 1, simY + 1, simW, simH, 0x40000000);
 
         // --- MOLDURA REAL (as 6, iguais as do mundo) ---
         if (border != 0) {
             switch (bsC) {
                 case 1 -> { // CARTUM
                     drawPill(g, simX0 - 4, simY - 4, simW + 8, simH + 8, border);
-                    drawTail(g, cx, simY + simH - 5, 18, 17, border);
+                    drawTail(g, cx, simY + simH - 5, 17, 15, border);
                 }
                 case 2 -> { // DUPLA
                     drawPill(g, simX0 - 1, simY - 1, simW + 2, simH + 2, border);
                     drawPill(g, simX0 - 3, simY - 3, simW + 6, simH + 6, border);
-                    drawTail(g, cx, simY + simH - 4, 16, 15, border);
+                    drawTail(g, cx, simY + simH - 4, 15, 13, border);
                 }
                 case 3 -> dashedGui(g, simX0, simY, simW, simH, border);
                 case 4 -> cloudGui(g, simX0, simY, simW, simH, border);
                 case 5 -> { // GIBI
                     drawPill(g, simX0 - 4, simY - 4, simW + 8, simH + 8, border);
-                    drawTail(g, cx, simY + simH - 4, 17, 16, border);
+                    drawTail(g, cx, simY + simH - 4, 16, 14, border);
                 }
                 default -> { // CLASSICA
                     drawPill(g, simX0 - 2, simY - 2, simW + 4, simH + 4, border);
-                    drawTail(g, cx, simY + simH - 3, 15, 14, border);
+                    drawTail(g, cx, simY + simH - 3, 14, 12, border);
                 }
             }
         }
 
         // --- RECHEIO + rabicho ---
-        drawTail(g, cx, simY + simH - 2, 13, 12, fill);
+        drawTail(g, cx, simY + simH - 2, 12, 10, fill);
         drawPill(g, simX0, simY, simW, simH, fill);
         if (bsC == 5) { // gibi: brilho gelatinoso de HQ
             drawPill(g, simX0 + 8, simY + 3, Math.max(12, simW * 0.45F), 3, 0x99FFFFFF);
@@ -751,12 +765,15 @@ public class BubbleStyleScreen extends Screen {
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
         int tx = simX0 + (simW - speechW) / 2;
-        g.drawString(this.font, "sua fala assim", tx, simY + 18, textColor, true);
+        int tyText = simY + (faixaTopo ? 23 : 6); // texto no BOLSO livre da faixa
+        g.drawString(this.font, "sua fala assim", tx, tyText, textColor, true);
         if (!ex.isEmpty()) {
             g.drawString(this.font, Stickers.styled(spaced(ex)),
                     tx + this.font.width("sua fala assim") + this.font.width(" "),
-                    simY + 18, textColor, true);
+                    tyText, textColor, true);
         }
+
+        g.disableScissor();
 
         // --- zonas guiadas quando tem adesivo na mao ---
         if (holdingSticker != null) {
