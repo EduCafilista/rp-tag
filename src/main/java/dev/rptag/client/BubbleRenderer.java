@@ -62,9 +62,13 @@ public final class BubbleRenderer {
     /** Textura do rabicho (16x16, triângulo curvado apontando pra baixo). */
     private static final ResourceLocation TAIL_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_tail.png");
+    /** Textura da NUVEM (192x64, gomos contornados; cap = 32px de 192). */
+    private static final ResourceLocation CLOUD_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/cloud.png");
 
     private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
     private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
+    private static final RenderType CLOUD_TYPE = RenderType.text(CLOUD_TEX);
 
     // regiao da pilula dentro do bubble.png (y 2..28 de 32; tampa = 16px de 64)
     private static final float V1 = 2.0F / 32.0F;
@@ -199,6 +203,35 @@ public final class BubbleRenderer {
         quad(m, buf, z, x + w - cap, y, x + w, y + h, 1.0F - U_CAP, V1, 1.0F, V2, argb);
     }
 
+    /**
+     * A NUVEM inteira em 3 fatias de textura (cap esquerdo + meio + cap
+     * direito): gomos contornados de verdade, anti-aliased, fofo.
+     */
+    private static void cloudStrip(Matrix4f m, MultiBufferSource buffers, float z,
+            float x, float y, float w, float h, int argb) {
+        if ((argb >>> 24) == 0 || w < 8) {
+            return;
+        }
+        VertexConsumer buf = buffers.getBuffer(CLOUD_TYPE);
+        float cap = Math.min(32.0F, w / 3.0F);
+        quad(m, buf, z, x, y, x + cap, y + h, 0.0F, 0.0F, 32.0F / 192.0F, 1.0F, argb);
+        quad(m, buf, z, x + cap, y, x + w - cap, y + h, 32.0F / 192.0F, 0.0F,
+                160.0F / 192.0F, 1.0F, argb);
+        quad(m, buf, z, x + w - cap, y, x + w, y + h, 160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
+    }
+
+    /** QUAD RETO: amostra o meio PLANO da pilula — retangulo perfeito (tracinhos). */
+    private static void flatQuad(Matrix4f m, MultiBufferSource buffers, float z,
+            float x1, float y1, float x2, float y2, int argb) {
+        if ((argb >>> 24) == 0) {
+            return;
+        }
+        VertexConsumer buf = buffers.getBuffer(BUBBLE_TYPE);
+        float u1 = 120.0F / 256.0F, u2 = 136.0F / 256.0F;
+        float v1 = 48.0F / 128.0F, v2 = 80.0F / 128.0F;
+        quad(m, buf, z, x1, y1, x2, y2, u1, v1, u2, v2, argb);
+    }
+
     /** O rabicho (textura 16x16 desenhada em w x h, centralizado em cx). */
     private static void tail(Matrix4f m, MultiBufferSource buffers, float z,
             float cx, float yTop, float w, float h, int argb) {
@@ -221,46 +254,32 @@ public final class BubbleRenderer {
                 .setNormal(0.0F, 1.0F, 0.0F);
     }
 
-    /** TRACEJADA: tracinhos arredondados ao redor de todo o balao (+ rabicho em descada). */
+    /** TRACEJADA (3.20.0): tracinhos RETOS e alinhados em volta do balao inteiro. */
     private static void dashedBorder(Matrix4f m, MultiBufferSource buffers, float z,
             float x0, float yP0, float pillW, float yP1, int argb) {
-        float dash = 6.0F, gap = 6.0F, t = 4.0F;
-        float yTop = yP0 - 3, yBot = yP1 + 3;
-        float xL = x0 - 3, xR = x0 + pillW + 3;
-        for (float x = xL; x < xR - 1; x += dash + gap) {
+        float dash = 7.0F, gap = 5.0F, t = 3.0F;
+        float yTop = yP0 - 4, yBot = yP1 + 4;
+        float xL = x0 - 4, xR = x0 + pillW + 4;
+        for (float x = xL; x < xR; x += dash + gap) {
             float w = Math.min(dash, xR - x);
-            pill(m, buffers, z, x, yTop, w, t, argb);
-            pill(m, buffers, z, x, yBot - t, w, t, argb);
+            flatQuad(m, buffers, z, x, yTop, x + w, yTop + t, argb);
+            flatQuad(m, buffers, z, x, yBot - t, x + w, yBot, argb);
         }
-        for (float y = yTop + 9; y < yBot - 9; y += dash + gap) {
-            float h = Math.min(dash, yBot - 9 - y);
+        for (float y = yTop + dash + gap; y < yBot - t - gap; y += dash + gap) {
+            float h = Math.min(dash, yBot - t - gap - y);
             if (h < 2) {
                 break;
             }
-            pill(m, buffers, z, xL, y, t, h, argb);
-            pill(m, buffers, z, xR - t, y, t, h, argb);
+            flatQuad(m, buffers, z, xL, y, xL + t, y + h, argb);
+            flatQuad(m, buffers, z, xR - t, y, xR, y + h, argb);
         }
-        // rabicho em descadinha (dois tracinhos caindo do centro)
-        pill(m, buffers, z, -2.0F, yBot - 1, t, 7, argb);
-        pill(m, buffers, z, 2.0F, yBot + 5, t, 7, argb);
     }
 
-    /** NUVEM: bolas fofas PERTO do balao (3.17.0: menor, mais delicada). */
+    /** NUVEM (3.20.0): textura propria com gomos contornados — fofo de verdade. */
     private static void cloudBorder(Matrix4f m, MultiBufferSource buffers, float z,
             float x0, float yP0, float pillW, float pillH, float yP1, int argb) {
-        // base inflada discreta
-        pill(m, buffers, z, x0 - 3, yP0 - 3, pillW + 6, pillH + 6, argb);
-        tail(m, buffers, z, 0, yP1 - 3, 15, 14, argb);
-        // gomos pequenos e colados (nuvem fofa, nao gigante)
-        float d = 10.0F, step = 7.0F;
-        for (float x = x0 - 4; x < x0 + pillW + 1; x += step) {
-            pill(m, buffers, z + 0.01F, x, yP0 - 5, d, d, argb);
-            pill(m, buffers, z + 0.01F, x, yP1 + 5 - d, d, d, argb);
-        }
-        for (float y = yP0 - 1; y < yP1 - 1; y += step) {
-            pill(m, buffers, z + 0.01F, x0 - 5, y, d, d, argb);
-            pill(m, buffers, z + 0.01F, x0 + pillW + 5 - d, y, d, d, argb);
-        }
+        cloudStrip(m, buffers, z, x0 - 7, yP0 - 7, pillW + 14, pillH + 14, argb);
+        tail(m, buffers, z, 0, yP1 + 5, 15, 14, argb);
     }
 
     private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {

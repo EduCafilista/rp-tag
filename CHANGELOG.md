@@ -2,6 +2,31 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.20.0] - 2026-09-11
+
+### Melhorado
+- **BALÕES 4x MAIS DETALHADOS**: textura da pílula ampliada para 256x128 com
+  gradiente suave e brilho — visual caprichado no mundo.
+- **NUVEM REFEITA (textura própria!)**: gomos fofos CONTORNADOS, com brilho —
+  nada mais de bolinhas chapadas. A nuvem agora é fofo de verdade.
+- **TRACEJADA RETA**: tracinhos retangulares retos e alinhados em volta do
+  balão (sem mais "círculos" e sem descadinha torta).
+
+### Corrigido
+- **TECLADO DE EMOJIS 100% JOGÁVEL EM QUALQUER CLIENTE**: a grade agora é
+  feita de **BOTÕES VANILLA** (o componente que sempre funcionou), cada emoji
+  senta num **chip "██" da própria cor** (texto colorido — o mesmo motor das
+  paletas ● que sempre renderizou) e a arte vem pela **fonte de bitmap**
+  (a MESMA que desenha os emojis nos balões no mundo — comprovado nos prints
+  com a coroa e o "?"). Tudo desenhado POR CIMA dos widgets, na ordem certa.
+- Cartão de teste no topo da página: 3 cores (█) + 1 emoji — se eles
+  aparecerem, os 64 também aparecem (mesmo motor).
+- Preview do hover em **3x** com moldura de tinta.
+
+### Técnico
+- `StickerArt` (runs) removido; menu volta a usar a fonte rptag:stickers via
+  drawInBatch — uma ÚNICA fonte de arte para mundo e menu.
+
 ## [3.19.0] - 2026-09-11
 
 ### Corrigido

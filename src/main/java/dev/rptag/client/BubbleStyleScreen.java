@@ -15,7 +15,9 @@ import net.minecraft.client.renderer.RenderType;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 
 import dev.rptag.BubbleStyle;
@@ -65,8 +67,11 @@ public class BubbleStyleScreen extends Screen {
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble.png");
     private static final ResourceLocation TAIL_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_tail.png");
+    private static final ResourceLocation CLOUD_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/cloud.png");
     private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
     private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
+    private static final RenderType CLOUD_TYPE = RenderType.text(CLOUD_TEX);
     // regiao da pilula dentro do bubble.png (64x32; tampa = 16px)
     private static final float UV_V1 = 2.0F / 32.0F;
     private static final float UV_V2 = 28.0F / 32.0F;
@@ -160,8 +165,30 @@ public class BubbleStyleScreen extends Screen {
      * (16x16, o MESMO caminho dos icones do inventario — funciona em
      * qualquer cliente; drawInBatch na Screen nao pinta em todos).
      */
-    private void drawSticker(GuiGraphics g, int idx, int x, int y) {
-        StickerArt.draw(g, idx, x, y, 1.0F);
+    /**
+     * Desenha um glifo pela FONTE DE BITMAP (drawInBatch) — a mesma familia do
+     * TEXTO, que sempre renderizou neste projeto, e a mesma fonte que pinta os
+     * emojis nos baloes no MUNDO (comprovado nos prints).
+     */
+    private void drawGlyph(GuiGraphics g, String glyph, float x, float y, float scale) {
+        Minecraft mc = Minecraft.getInstance();
+        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
+        PoseStack pose = g.pose();
+        pose.pushPose();
+        pose.translate(x, y, 0.0F);
+        pose.scale(scale, scale, 1.0F);
+        Font font = mc.font;
+        font.drawInBatch(Stickers.seq(glyph), 0.0F, 0.0F, 0xFFFFFFFF, false,
+                pose.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, 0xF000F0);
+        pose.popPose();
+        buffers.endBatch();
+    }
+
+    private void drawGlyphMenu(GuiGraphics g, int idx, float x, float y, float scale) {
+        if (idx < 0 || idx >= Stickers.COUNT) {
+            idx = 0;
+        }
+        drawGlyph(g, Stickers.GLYPHS[idx], x, y, scale);
     }
 
     /** FATIA da pilula real (3 fatias: tampa + meio + tampa — pontas NUNCA deformam). */
@@ -203,41 +230,58 @@ public class BubbleStyleScreen extends Screen {
                 .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
     }
 
+    /** FATIA da NUVEM no menu (textura propria, igual ao mundo). */
+    private void drawCloudStrip(GuiGraphics g, float x, float y, float w, float h, int argb) {
+        if ((argb >>> 24) == 0 || w < 8) {
+            return;
+        }
+        MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
+        Matrix4f m = g.pose().last().pose();
+        VertexConsumer buf = buffers.getBuffer(CLOUD_TYPE);
+        float cap = Math.min(32.0F, w / 3.0F);
+        quadGui(m, buf, x, y, x + cap, y + h, 0.0F, 0.0F, 32.0F / 192.0F, 1.0F, argb);
+        quadGui(m, buf, x + cap, y, x + w - cap, y + h, 32.0F / 192.0F, 0.0F,
+                160.0F / 192.0F, 1.0F, argb);
+        quadGui(m, buf, x + w - cap, y, x + w, y + h, 160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
+        buffers.endBatch();
+    }
+
+    /** QUAD RETO no menu (meio plano da pilula — tracinhos retos). */
+    private void flatQuadGui(GuiGraphics g, float x1, float y1, float x2, float y2, int argb) {
+        if ((argb >>> 24) == 0) {
+            return;
+        }
+        MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
+        Matrix4f m = g.pose().last().pose();
+        VertexConsumer buf = buffers.getBuffer(BUBBLE_TYPE);
+        quadGui(m, buf, x1, y1, x2, y2, 120.0F / 256.0F, 48.0F / 128.0F,
+                136.0F / 256.0F, 80.0F / 128.0F, argb);
+        buffers.endBatch();
+    }
+
     /** TRACEJADA no menu: tracinhos em volta + descadinha (igual ao mundo). */
     private void dashedGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
-        float dash = 5.0F, gap = 5.0F, t = 3.0F;
-        float yTop = y - 3, yBot = y + h + 3, xL = x - 3, xR = x + w + 3;
-        for (float dx = xL; dx < xR - 1; dx += dash + gap) {
+        float dash = 7.0F, gap = 5.0F, t = 3.0F;
+        float yTop = y - 4, yBot = y + h + 4, xL = x - 4, xR = x + w + 4;
+        for (float dx = xL; dx < xR; dx += dash + gap) {
             float ww = Math.min(dash, xR - dx);
-            drawPill(g, dx, yTop, ww, t, argb);
-            drawPill(g, dx, yBot - t, ww, t, argb);
+            flatQuadGui(g, dx, yTop, dx + ww, yTop + t, argb);
+            flatQuadGui(g, dx, yBot - t, dx + ww, yBot, argb);
         }
-        for (float dy = yTop + 8; dy < yBot - 8; dy += dash + gap) {
-            float hh = Math.min(dash, yBot - 8 - dy);
+        for (float dy = yTop + dash + gap; dy < yBot - t - gap; dy += dash + gap) {
+            float hh = Math.min(dash, yBot - t - gap - dy);
             if (hh < 2) {
                 break;
             }
-            drawPill(g, xL, dy, t, hh, argb);
-            drawPill(g, xR - t, dy, t, hh, argb);
+            flatQuadGui(g, xL, dy, xL + t, dy + hh, argb);
+            flatQuadGui(g, xR - t, dy, xR, dy + hh, argb);
         }
-        float cx = x + w / 2.0F;
-        drawPill(g, cx - 2.0F, yBot - 1, t, 7, argb);
-        drawPill(g, cx + 2.0F, yBot + 5, t, 7, argb);
     }
 
     /** NUVEM no menu: base inflada + gomos fofos em toda a volta (igual ao mundo). */
     private void cloudGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
-        drawPill(g, x - 3, y - 3, w + 6, h + 6, argb);
-        drawTail(g, x + w / 2.0F, y + h - 3, 15, 14, argb);
-        float d = 11.0F, step = 7.0F;
-        for (float bx = x - 5; bx < x + w + 1; bx += step) {
-            drawPill(g, bx, y - 6, d, d, argb);
-            drawPill(g, bx, y + h + 6 - d, d, d, argb);
-        }
-        for (float by = y - 1; by < y + h - 1; by += step) {
-            drawPill(g, x - 6, by, d, d, argb);
-            drawPill(g, x + w + 6 - d, by, d, d, argb);
-        }
+        drawCloudStrip(g, x - 7, y - 7, w + 14, h + 14, argb);
+        drawTail(g, x + w / 2.0F, y + h + 5, 15, 14, argb);
     }
 
     /** Componente "● " na cor pedida (o caminho PROVADO de mostrar cor). */
@@ -395,6 +439,19 @@ public class BubbleStyleScreen extends Screen {
                         kbPage = kbPage == 0 ? 1 : 0;
                         rebuildWidgets();
                     }).bounds(px + PANEL_W - 96, py + 14, 88, 16).build());
+            // GRADE = BOTÕES VANILLA (o caminho mais à prova de cliente que existe)
+            int start = Stickers.pageStart(kbPage);
+            int count = Stickers.pageCount(kbPage);
+            for (int k = 0; k < count; k++) {
+                final int idx = start + k;
+                int cx = kbX + (k % KB_COLS) * KB_CELL;
+                int cy = kbY + (k / KB_COLS) * KB_CELL;
+                addRenderableWidget(Button.builder(Component.literal(""), b -> {
+                    holdingSticker = String.valueOf(idx);
+                    showKeyboard = false;
+                    rebuildWidgets();
+                }).bounds(cx, cy, KB_CELL, KB_CELL).build());
+            }
             addRenderableWidget(Button.builder(Component.literal("✔ Pronto — clique no balão ou na fala!"),
                     b -> {
                         showKeyboard = false;
@@ -533,15 +590,7 @@ public class BubbleStyleScreen extends Screen {
         drawPanel(g);
         drawTitle(g);
 
-        // adesivo na mao segue o mouse (a arte de verdade)
-        if (holdingSticker != null) {
-            drawSticker(g, Integer.parseInt(holdingSticker), mouseX - 8, mouseY - 18);
-            outline(g, mouseX - 9, mouseY - 19, 18, 18, 0xFFFFFFFF);
-        }
-
-        if (showKeyboard) {
-            renderKeyboard(g, mouseX, mouseY);
-        } else {
+        if (!showKeyboard) {
             renderSim(g, mouseX, mouseY);
             renderPalettes(g);
             renderExtras(g, mouseX, mouseY);
@@ -549,6 +598,15 @@ public class BubbleStyleScreen extends Screen {
         }
         super.render(g, mouseX, mouseY, partialTick);
 
+        // EMOJIS/CORES por cima dos widgets (drawInBatch = familia do TEXTO que
+        // sempre funcionou; "█" colorido = unifont colorido das paletas ●)
+        if (holdingSticker != null) {
+            drawGlyphMenu(g, Integer.parseInt(holdingSticker), mouseX - 8, mouseY - 18, 1.0F);
+            outline(g, mouseX - 9, mouseY - 19, 18, 18, 0xFFFFFFFF);
+        }
+        if (showKeyboard) {
+            renderKeyboard(g, mouseX, mouseY);
+        }
         if (!showKeyboard) {
             int st = Mth.clamp(style.borderStyle(), 0, BubbleStyle.BORDER_STYLE_COUNT - 1);
             if (style.borderRGB() == BubbleStyle.NO_BORDER) {
@@ -696,7 +754,7 @@ public class BubbleStyleScreen extends Screen {
             }
             int sx = simX0 + Math.round(style.stickerX() / 100.0F * simW);
             int sy = simY + Math.round(style.stickerY() / 100.0F * simH);
-            drawSticker(g, idx, sx - 8, sy - 8);
+            drawGlyphMenu(g, idx, sx - 8, sy - 8, 1.0F);
             int[] rb = removeBoxPos();
             if (rb != null) { // [x] SEMPRE visivel: impossivel nao achar como tirar
                 g.fill(rb[0], rb[1], rb[0] + 12, rb[1] + 12, 0xFFB03030);
@@ -713,7 +771,7 @@ public class BubbleStyleScreen extends Screen {
             int gx = Mth.clamp(mouseX, simX0, simX0 + simW);
             int gy = Mth.clamp(mouseY, simY, simY + simH);
             g.setColor(1.0F, 1.0F, 1.0F, 0.6F);
-            drawSticker(g, hi, gx - 8, gy - 8);
+            drawGlyphMenu(g, hi, gx - 8, gy - 8, 1.0F);
             g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
             outline(g, gx - 9, gy - 9, 18, 18, ZONA_VERDE);
         }
@@ -772,7 +830,7 @@ public class BubbleStyleScreen extends Screen {
             g.fill(sx, y0, sx + 20, y0 + 20, TINTA);
             g.fill(sx + 1, y0 + 1, sx + 19, y0 + 19, 0xFF1E2432);
             if (s < list.length) {
-                drawSticker(g, (list[s].charAt(0) & 0xFFFF) - 0xE000, sx + 2, y0 + 2);
+                drawGlyphMenu(g, (list[s].charAt(0) & 0xFFFF) - 0xE000, sx + 2, y0 + 2, 1.0F);
                 if (s == slot) {
                     outline(g, sx - 1, y0 - 1, 22, 22, VERMELHO_TIRA);
                     g.renderTooltip(this.font, Component.literal("✖ tirar " + nameOf(list[s])),
@@ -806,11 +864,16 @@ public class BubbleStyleScreen extends Screen {
 private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
         String titulo = kbPage == 0 ? "Página 1/2 — Clássicos" : "Página 2/2 — Fofos ✨";
         g.drawString(this.font, titulo, px + 8, py + 18, OURO, true);
-        // CARTAO DE TESTE (3 quadradinhos): se eles aparecerem no seu jogo, o menu
-        // renderiza fills normal — e os emojis ABAIXO tambem tem que aparecer.
-        g.fill(px + PANEL_W - 92, py + 20, px + PANEL_W - 86, py + 26, 0xFFE04848);
-        g.fill(px + PANEL_W - 85, py + 20, px + PANEL_W - 79, py + 26, 0xFF58C858);
-        g.fill(px + PANEL_W - 78, py + 20, px + PANEL_W - 72, py + 26, 0xFF5878F0);
+        // CARTAO DE TESTE: "█" colorido (unifont, o mesmo das paletas ●) + coracao
+        // desenhado pela fonte de emoji. Tudo que aparecer aqui, os emojis abaixo
+        // usam o MESMO motor.
+        int ty = py + 30;
+        g.drawString(this.font, dot(0xFF6060), px + 8, ty, 0xFFFFFFFF, true);
+        g.drawString(this.font, dot(0x60FF60), px + 8 + swSlotW, ty, 0xFFFFFFFF, true);
+        g.drawString(this.font, dot(0x6060FF), px + 8 + swSlotW * 2, ty, 0xFFFFFFFF, true);
+        drawGlyphMenu(g, 0, px + 8 + swSlotW * 3, ty - 2, 0.75F);
+        g.drawString(this.font, "← teste de render (cor + emoji)", px + 8 + swSlotW * 4, ty + 1,
+                CINZA, false);
 
         int start = Stickers.pageStart(kbPage);
         int count = Stickers.pageCount(kbPage);
@@ -818,39 +881,29 @@ private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
             int i = start + k;
             int cx = kbX + (k % KB_COLS) * KB_CELL;
             int cy = kbY + (k / KB_COLS) * KB_CELL;
-            // celula ALTO CONTRASTE (bem mais clara que o fundo do painel)
-            g.fill(cx, cy, cx + KB_CELL, cy + KB_CELL, 0xFF3A4358);
-            g.fill(cx, cy, cx + 1, cy + KB_CELL, 0xFF5A6780);
-            g.fill(cx, cy, cx + KB_CELL, cy + 1, 0xFF5A6780);
-            g.fill(cx, cy + KB_CELL - 1, cx + KB_CELL, cy + KB_CELL, 0xFF151926);
-            g.fill(cx + KB_CELL - 1, cy, cx + KB_CELL, cy + KB_CELL, 0xFF151926);
-            // CHIP da cor do emoji (fundo colorido — fill puro, SEMPRE visivel)
+            // CHIP da cor do emoji: "██" colorido (TEXTO — sempre renderizou aqui:
+            // as paletas ● sempre apareceram). Torna o seletor usavel DE QUALQUER jeito.
             int chip = CHIP[i % CHIP.length];
-            g.fill(cx + 5, cy + 5, cx + 19, cy + 19, 0xFF000000 | chip);
-            g.fill(cx + 4, cy + 6, cx + 5, cy + 18, 0xFF000000 | chip);
-            g.fill(cx + 19, cy + 6, cx + 20, cy + 18, 0xFF000000 | chip);
-            g.fill(cx + 6, cy + 4, cx + 18, cy + 5, 0xFF000000 | chip);
-            g.fill(cx + 6, cy + 19, cx + 18, cy + 20, 0xFF000000 | chip);
-            // ARTE por cima (contorno + brilho, fundo transparente)
-            drawSticker(g, i, cx + 4, cy + 4);
+            g.drawString(this.font, dot(chip), cx + 3, cy + KB_CELL - 11, 0xFFFFFFFF, true);
+            // ARTE do emoji pela fonte de bitmap (a MESMA que desenha no mundo!)
+            drawGlyphMenu(g, i, cx + 4, cy + 2, 1.0F);
             String num = String.valueOf(i + 1);
             g.drawString(this.font, num, cx + KB_CELL - 4 - this.font.width(num),
-                    cy + KB_CELL - 9, 0xFFFFFFFF, true);
+                    cy + 1, 0xFFFFFFFF, true);
         }
         int rows = (count + KB_COLS - 1) / KB_COLS;
-        int nameY = kbY + rows * KB_CELL + 5;
+        int nameY = kbY + rows * KB_CELL + 6;
         int over = stickerAt(mouseX, mouseY);
         if (over >= 0) {
             int k = over - start;
             int cx = kbX + (k % KB_COLS) * KB_CELL;
             int cy = kbY + (k / KB_COLS) * KB_CELL;
-            outline(g, cx, cy, KB_CELL, KB_CELL, 0xFFFFFFFF);
+            outline(g, cx - 1, cy - 1, KB_CELL + 2, KB_CELL + 2, 0xFFFFFFFF);
             g.drawString(this.font, "▶ " + Stickers.NAMES[over] + "  (clique pra pegar!)",
-                    px + 8, nameY + 4, 0xFFFFFFFF, true);
-            // PREVIEW GRANDE com moldura de tinta
-            g.fill(px + PANEL_W - 48, nameY, px + PANEL_W - 8, nameY + 36, TINTA);
-            g.fill(px + PANEL_W - 46, nameY + 2, px + PANEL_W - 10, nameY + 34, PLACA_BG);
-            StickerArt.draw(g, over, px + PANEL_W - 42, nameY + 2, 2.0F);
+                    px + 8, nameY + 8, 0xFFFFFFFF, true);
+            // PREVIEW GRANDE (3x)
+            g.fill(px + PANEL_W - 56, nameY, px + PANEL_W - 8, nameY + 40, 0xFF171B26);
+            drawGlyphMenu(g, over, px + PANEL_W - 52, nameY + 2, 3.0F);
             g.renderTooltip(this.font, Component.literal(Stickers.NAMES[over]), mouseX, mouseY);
         } else {
             g.drawString(this.font, "passe o mouse pra ver o nome · clique pra pegar · ESC solta",
