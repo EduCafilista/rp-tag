@@ -65,8 +65,6 @@ public class BubbleStyleScreen extends Screen {
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble.png");
     private static final ResourceLocation TAIL_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_tail.png");
-    private static final ResourceLocation BUBBLE_STICKERS =
-            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/font/stickers.png");
     private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
     private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
     // regiao da pilula dentro do bubble.png (64x32; tampa = 16px)
@@ -80,7 +78,7 @@ public class BubbleStyleScreen extends Screen {
     // linhas verticais (a partir de py) — UMA fonte de verdade
     private static final int ROW_HINT = 22;
     private static final int ROW_CHAT = 32;
-    private static final int ROW_BUBBLE = 46;  // pilula real: 46..72 + rabicho
+    private static final int ROW_BUBBLE = 44;  // pilula real: 44..78 + rabicho
     private static final int ROW_DENTRO = 84;
     private static final int ROW_BORDA = 99;
     private static final int ROW_LETRA = 114;
@@ -131,6 +129,7 @@ public class BubbleStyleScreen extends Screen {
     private String holdingSticker = null;
     private boolean showKeyboard = false;
     private int kbPage = 0;
+    private int lastBorda = 0x14161C; // ultima cor de borda clicada
 
     private int px, py;
     private int kbX, kbY;
@@ -146,6 +145,7 @@ public class BubbleStyleScreen extends Screen {
                 style.textColorRGB(), style.prefix(), style.mid(), style.suffix(), style.corner(),
                 style.extras(), style.stickerX(), style.stickerY(), style.background(),
                 style.durationSec());
+        this.bubbleMode = style.bubbleMode(); // o botao ☾ reflete o estado REAL
     }
 
     private int effectiveTextColor() {
@@ -161,17 +161,7 @@ public class BubbleStyleScreen extends Screen {
      * qualquer cliente; drawInBatch na Screen nao pinta em todos).
      */
     private void drawSticker(GuiGraphics g, int idx, int x, int y) {
-        drawStickerScaled(g, idx, x, y, 16);
-    }
-
-    /** Adesivo em qualquer tamanho (regiao 16x16 da sheet esticada — blit de inventario). */
-    private void drawStickerScaled(GuiGraphics g, int idx, int x, int y, int size) {
-        if (idx < 0 || idx >= Stickers.COUNT) {
-            idx = 0;
-        }
-        int u = (idx % 8) * 16;
-        int v = (idx / 8) * 16;
-        g.blit(BUBBLE_STICKERS, x, y, size, size, u, v, 16, 16, 128, 128);
+        StickerArt.draw(g, idx, x, y, 1.0F);
     }
 
     /** FATIA da pilula real (3 fatias: tampa + meio + tampa — pontas NUNCA deformam). */
@@ -379,6 +369,9 @@ public class BubbleStyleScreen extends Screen {
         kbX = px + (PANEL_W - KB_COLS * KB_CELL) / 2;
         kbY = py + 34;
         swSlotW = this.font.width("● ");
+        if (style.borderRGB() >= 0) {
+            lastBorda = style.borderRGB();
+        }
 
         if (showKeyboard) {
             addRenderableWidget(Button.builder(
@@ -399,7 +392,7 @@ public class BubbleStyleScreen extends Screen {
                     style = withBorder(BubbleStyle.AUTO_BORDER);
                 }).bounds(px + 8, py + ROW_BTN1, 81, 16).build());
         addRenderableWidget(Button.builder(Component.literal("▣ Minha cor"), b -> {
-                    style = withBorder(SW_BD[0]);
+                    style = withBorder(lastBorda);
                 }).bounds(px + 93, py + ROW_BTN1, 81, 16).build());
         addRenderableWidget(Button.builder(Component.literal("▢ Sem borda"), b -> {
                     style = withBorder(BubbleStyle.NO_BORDER);
@@ -543,7 +536,13 @@ public class BubbleStyleScreen extends Screen {
 
         if (!showKeyboard) {
             int st = Mth.clamp(style.borderStyle(), 0, BubbleStyle.BORDER_STYLE_COUNT - 1);
-            outline(g, px + 7, py + ROW_BTN1 - 1, 83, 18, VERDE_OK);
+            if (style.borderRGB() == BubbleStyle.NO_BORDER) {
+                outline(g, px + 7 + 170, py + ROW_BTN1 - 1, 83, 18, VERDE_OK);
+            } else if (style.borderRGB() >= 0) {
+                outline(g, px + 7 + 85, py + ROW_BTN1 - 1, 83, 18, VERDE_OK);
+            } else {
+                outline(g, px + 7, py + ROW_BTN1 - 1, 83, 18, VERDE_OK);
+            }
             if (st < 3) {
                 outline(g, px + 7 + st * 85, py + ROW_BTN2 - 1, 83, 18, VERDE_OK);
             } else {
@@ -615,8 +614,8 @@ public class BubbleStyleScreen extends Screen {
         // --- medidas da pilula (O BALAO DE VERDADE, tingido) ---
         int speechW = this.font.width("sua fala assim")
                 + (ex.isEmpty() ? 0 : this.font.width(" ") + this.font.width(Stickers.styled(spaced(ex))));
-        simW = Math.max(32, speechW + 16);
-        simH = 26;
+        simW = Math.max(110, speechW + 24);
+        simH = 34;
         simX0 = px + (PANEL_W - simW) / 2;
         simY = py + ROW_BUBBLE;
         int ring = border != 0 ? border : fill;
@@ -660,11 +659,11 @@ public class BubbleStyleScreen extends Screen {
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
         int tx = simX0 + (simW - speechW) / 2;
-        g.drawString(this.font, "sua fala assim", tx, simY + 9, textColor, true);
+        g.drawString(this.font, "sua fala assim", tx, simY + 13, textColor, true);
         if (!ex.isEmpty()) {
             g.drawString(this.font, Stickers.styled(spaced(ex)),
                     tx + this.font.width("sua fala assim") + this.font.width(" "),
-                    simY + 9, textColor, true);
+                    simY + 13, textColor, true);
         }
 
         // --- zonas guiadas quando tem adesivo na mao ---
@@ -811,7 +810,7 @@ public class BubbleStyleScreen extends Screen {
             g.drawString(this.font, "▶ " + Stickers.NAMES[over] + "  (vai pra fala ou pro balão)",
                     px + 8, nameY + 4, 0xFFFFFFFF, true);
             g.fill(px + PANEL_W - 46, nameY - 2, px + PANEL_W - 10, nameY + 34, TINTA);
-            drawStickerScaled(g, over, px + PANEL_W - 42, nameY + 2, 32);
+            StickerArt.draw(g, over, px + PANEL_W - 42, nameY + 2, 2.0F);
             g.renderTooltip(this.font, Component.literal(Stickers.NAMES[over]), mouseX, mouseY);
         } else {
             g.drawString(this.font, "passe o mouse para ver o nome · clique para pegar",
@@ -872,16 +871,21 @@ public class BubbleStyleScreen extends Screen {
                 holdingSticker = null;
                 return true;
             }
-            // 3) na ZONA DA FALA (dourada) = empilha na mensagem (mantem na mao)
-            if (chatZone(mx, my)) {
-                if (extrasCount() < MAX_SLOTS) {
-                    addExtra(Stickers.GLYPHS[Integer.parseInt(held)]);
+            // 3) clicou num BOTAO? solta e deixa o clique funcionar nele
+            for (var w : this.children()) {
+                if (w.isMouseOver(mx, my)) {
+                    holdingSticker = null;
+                    break;
                 }
-                return true;
             }
-            // 4) qualquer outro lugar = SOLTA e deixa o clique seguir (botoes ok!)
-            holdingSticker = null;
-            return super.mouseClicked(mx, my, button);
+            if (holdingSticker == null) {
+                return super.mouseClicked(mx, my, button);
+            }
+            // 4) qualquer outro lugar = EMPILHA na fala (e mantem na mao!)
+            if (extrasCount() < MAX_SLOTS) {
+                addExtra(Stickers.GLYPHS[Integer.parseInt(held)]);
+            }
+            return true;
         }
         if (!showKeyboard && button == 0 && holdingSticker == null && hoverSticker) {
             holdingSticker = String.valueOf((style.corner().charAt(0) & 0xFFFF) - 0xE000);
@@ -926,7 +930,10 @@ public class BubbleStyleScreen extends Screen {
                     int idx = Integer.parseInt(hit.substring(1));
                     switch (hit.charAt(0)) {
                         case 'D' -> style = withColor(SW_IN[idx]);
-                        case 'B' -> style = withBorder(SW_BD[idx]);
+                        case 'B' -> {
+                            lastBorda = SW_BD[idx];
+                            style = withBorder(SW_BD[idx]);
+                        }
                         default -> style = withText(TEXT_SW[idx]);
                     }
                 }

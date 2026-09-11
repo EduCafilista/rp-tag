@@ -39,7 +39,7 @@ public final class RPWorldData extends SavedData {
     private final Map<UUID, Integer> colors = new HashMap<>();
     private final Map<UUID, Boolean> bubbleOptOut = new HashMap<>();
     /** jogadores PROIBIDOS de usar balao por um admin (ausente = permitido). */
-    private final Map<UUID, Boolean> bubbleBanned = new HashMap<>();
+    private final Map<UUID, Boolean> bubbleAllowed = new HashMap<>();
     private final Map<UUID, Boolean> bubbleMode = new HashMap<>();
     private final Map<UUID, BubbleStyle> styles = new HashMap<>();
     private boolean chatLocal = true;
@@ -133,24 +133,24 @@ public final class RPWorldData extends SavedData {
         setDirty();
     }
 
-    // ==== permissao de balao (admin) ====
+    // ==== permissao de balao (ADMIN LIBERA — 3.17.0: so quem o admin liberar usa) ====
 
-    /** @return true se o jogador PODE usar balao (padrao). */
+    /** @return true se o admin LIBEROU o balao deste jogador (padrao: NINGUEM). */
     public boolean isBubbleAllowed(UUID id) {
-        return !bubbleBanned.getOrDefault(id, false);
+        return bubbleAllowed.getOrDefault(id, false);
     }
 
     public void setBubbleAllowed(UUID id, boolean allowed) {
         if (allowed) {
-            bubbleBanned.remove(id);
+            bubbleAllowed.put(id, true);
         } else {
-            bubbleBanned.put(id, true);
+            bubbleAllowed.remove(id);
         }
         setDirty();
     }
 
-    public java.util.Set<UUID> bubbleBannedIds() {
-        return bubbleBanned.keySet();
+    public java.util.Set<UUID> bubbleAllowedIds() {
+        return bubbleAllowed.keySet();
     }
 
     // ==== estilo do balao ====
@@ -225,12 +225,12 @@ public final class RPWorldData extends SavedData {
         tag.put("BubbleOptOut", optOuts);
 
         ListTag banned = new ListTag();
-        this.bubbleBanned.forEach((id, b) -> {
+        this.bubbleAllowed.forEach((id, b) -> {
             CompoundTag e = new CompoundTag();
             e.putUUID("Id", id);
             banned.add(e);
         });
-        tag.put("BubbleBanned", banned);
+        tag.put("BubbleAllowed", banned);
 
         ListTag modes = new ListTag();
         this.bubbleMode.forEach((id, on) -> {
@@ -282,9 +282,9 @@ public final class RPWorldData extends SavedData {
             data.bubbleOptOut.put(optOuts.getCompound(i).getUUID("Id"), true);
         }
 
-        ListTag banned = tag.getList("BubbleBanned", Tag.TAG_COMPOUND);
+        ListTag banned = tag.getList("BubbleAllowed", Tag.TAG_COMPOUND);
         for (int i = 0; i < banned.size(); i++) {
-            data.bubbleBanned.put(banned.getCompound(i).getUUID("Id"), true);
+            data.bubbleAllowed.put(banned.getCompound(i).getUUID("Id"), true);
         }
 
         // CORRECAO: estilos e modos de balao agora voltam ao reiniciar o servidor!

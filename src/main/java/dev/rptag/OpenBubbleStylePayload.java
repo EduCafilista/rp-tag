@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyle, int textColorRGB,
         String prefix, String mid, String suffix, String corner, String extras, int stickerX, int stickerY,
-        int background, int durationSec)
+        int background, int durationSec, boolean bubbleMode)
         implements CustomPacketPayload {
 
     public static final Type<OpenBubbleStylePayload> TYPE =
@@ -33,6 +33,7 @@ public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyl
                         ByteBufCodecs.VAR_INT.encode(buf, p.stickerY());
                         ByteBufCodecs.VAR_INT.encode(buf, p.background());
                         ByteBufCodecs.VAR_INT.encode(buf, p.durationSec());
+                        ByteBufCodecs.BOOL.encode(buf, p.bubbleMode());
                     },
                     buf -> new OpenBubbleStylePayload(
                             ByteBufCodecs.VAR_INT.decode(buf),
@@ -47,12 +48,18 @@ public record OpenBubbleStylePayload(int colorRGB, int borderRGB, int borderStyl
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
-                            ByteBufCodecs.VAR_INT.decode(buf)));
+                            ByteBufCodecs.VAR_INT.decode(buf),
+                            ByteBufCodecs.BOOL.decode(buf)));
 
     public static OpenBubbleStylePayload of(BubbleStyle style) {
+        return of(style, false);
+    }
+
+    public static OpenBubbleStylePayload of(BubbleStyle style, boolean bubbleMode) {
         return new OpenBubbleStylePayload(style.colorRGB(), style.borderRGB(), style.borderStyle(),
                 style.textColorRGB(), style.prefix(), style.mid(), style.suffix(), style.corner(),
-                style.extras(), style.stickerX(), style.stickerY(), style.background(), style.durationSec());
+                style.extras(), style.stickerX(), style.stickerY(), style.background(),
+                style.durationSec(), bubbleMode);
     }
 
     @Override

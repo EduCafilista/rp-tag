@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
 >
-> 📥 **Download:** grab `rptag-3.16.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.16.0.jar).
+> 📥 **Download:** grab `rptag-3.17.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.17.0.jar).
 
 ## ✨ Features
 
@@ -56,7 +56,9 @@
   gently float upward while you talk and leave with a smooth **fade-out** ·
   **STACK of up to 3 bubbles** per player — newest near the head, older ones
   rise (just like Chat Bubbles/TalkBubbles)
-  · **`/rp admin balao <player> on|off`** — admins decide WHO gets bubbles
+  · **ADMIN-GRANTED bubbles** (default: nobody): `/rp admin balao <player> on`
+  grants + turns their bubble mode on · `off` revokes · `/rp admin balaolist`
+  lists granted players · **mode OFF hides the bubble instantly**
   · menu rebuilt: big font, 12-color one-click palettes, compact layout
   · **`/rp admin bolhas on|off`** — global toggle
 
@@ -78,7 +80,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-3.16.0.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-3.17.0.jar` into the **server's** `mods/` folder.
 3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
@@ -89,7 +91,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-3.16.0.jar`.
+The jar ends up at `build/libs/rptag-3.17.0.jar`.
 
 ## 🎨 Customizing
 

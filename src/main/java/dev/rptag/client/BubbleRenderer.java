@@ -106,6 +106,14 @@ public final class BubbleRenderer {
         return sb.toString();
     }
 
+    /** Escurece o RGB de uma cor ARGB (f 0..1) — pra aro externo da Dupla. */
+    private static int shaded(int argb, float f) {
+        int r = (int) (((argb >> 16) & 0xFF) * f);
+        int g = (int) (((argb >> 8) & 0xFF) * f);
+        int b = (int) ((argb & 0xFF) * f);
+        return (argb & 0xFF000000) | (r << 16) | (g << 8) | b;
+    }
+
     /** Multiplica o canal alfa de uma cor ARGB (k 0..1). */
     private static int withAlpha(int argb, float k) {
         int a = (int) (((argb >>> 24) & 0xFF) * Mth.clamp(k, 0.0F, 1.0F));
@@ -237,21 +245,21 @@ public final class BubbleRenderer {
         pill(m, buffers, z, 2.0F, yBot + 5, t, 7, argb);
     }
 
-    /** NUVEM: bolas fofas sobrepostas em toda a volta — o balao vira uma nuvenzinha. */
+    /** NUVEM: bolas fofas PERTO do balao (3.17.0: menor, mais delicada). */
     private static void cloudBorder(Matrix4f m, MultiBufferSource buffers, float z,
             float x0, float yP0, float pillW, float pillH, float yP1, int argb) {
-        // base inflada da cor da borda
-        pill(m, buffers, z, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, argb);
-        tail(m, buffers, z, 0, yP1 - 4, 16, 15, argb);
-        // gomos da nuvem: bolas sobrepostas (um palmo pra fora da base)
-        float d = 13.0F, step = 8.0F;
-        for (float x = x0 - 6; x < x0 + pillW + 2; x += step) {
-            pill(m, buffers, z + 0.01F, x, yP0 - 8, d, d, argb);
-            pill(m, buffers, z + 0.01F, x, yP1 + 8 - d, d, d, argb);
+        // base inflada discreta
+        pill(m, buffers, z, x0 - 3, yP0 - 3, pillW + 6, pillH + 6, argb);
+        tail(m, buffers, z, 0, yP1 - 3, 15, 14, argb);
+        // gomos pequenos e colados (nuvem fofa, nao gigante)
+        float d = 10.0F, step = 7.0F;
+        for (float x = x0 - 4; x < x0 + pillW + 1; x += step) {
+            pill(m, buffers, z + 0.01F, x, yP0 - 5, d, d, argb);
+            pill(m, buffers, z + 0.01F, x, yP1 + 5 - d, d, d, argb);
         }
-        for (float y = yP0 - 2; y < yP1 - 2; y += step) {
-            pill(m, buffers, z + 0.01F, x0 - 8, y, d, d, argb);
-            pill(m, buffers, z + 0.01F, x0 + pillW + 8 - d, y, d, d, argb);
+        for (float y = yP0 - 1; y < yP1 - 1; y += step) {
+            pill(m, buffers, z + 0.01F, x0 - 5, y, d, d, argb);
+            pill(m, buffers, z + 0.01F, x0 + pillW + 5 - d, y, d, d, argb);
         }
     }
 
@@ -361,10 +369,12 @@ public final class BubbleRenderer {
                     pill(matrix, buffers, -0.15F, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, border);
                     tail(matrix, buffers, -0.15F, 0, yP1 - 4, 18, 17, border);
                 }
-                case 2 -> { // DUPLA: duas linhas finas com respiro
+                case 2 -> { // DUPLA: linha fina + aro EXTERNO ESCURO (bem distinta)
                     pill(matrix, buffers, -0.15F, x0 - 1, yP0 - 1, pillW + 2, pillH + 2, border);
-                    pill(matrix, buffers, -0.14F, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, border);
+                    pill(matrix, buffers, -0.16F, x0 - 5, yP0 - 5, pillW + 10, pillH + 10,
+                            shaded(border, 0.55F));
                     tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+                    tail(matrix, buffers, -0.16F, 0, yP1 - 5, 17, 16, shaded(border, 0.55F));
                 }
                 case 3 -> // TRACEJADA: tracinhos fofos em toda a volta
                         dashedBorder(matrix, buffers, -0.15F, x0, yP0, pillW, yP1, border);

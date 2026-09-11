@@ -42,7 +42,8 @@ public final class BalaoCommands {
                 return Command.SINGLE_SUCCESS;
             }
             PacketDistributor.sendToPlayer(player,
-                    OpenBubbleStylePayload.of(data.getStyle(player.getUUID())));
+                    OpenBubbleStylePayload.of(data.getStyle(player.getUUID()),
+                            data.isBubbleMode(player.getUUID())));
             return Command.SINGLE_SUCCESS;
         });
 

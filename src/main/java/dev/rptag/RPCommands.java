@@ -105,6 +105,8 @@ public final class RPCommands {
                                     ServerPlayer target = EntityArgument.getPlayer(ctx, "jogador");
                                     RPWorldData.get(ctx.getSource().getServer())
                                             .setBubbleAllowed(target.getUUID(), true);
+                                    RPWorldData.get(ctx.getSource().getServer())
+                                            .setBubbleMode(target.getUUID(), true);
                                     ctx.getSource().sendSuccess(() -> Component.literal(
                                             target.getName().getString() + " agora PODE usar balao de fala."), true);
                                     target.sendSystemMessage(Component.literal(
@@ -116,6 +118,8 @@ public final class RPCommands {
                                     ServerPlayer target = EntityArgument.getPlayer(ctx, "jogador");
                                     RPWorldData.get(ctx.getSource().getServer())
                                             .setBubbleAllowed(target.getUUID(), false);
+                                    RPWorldData.get(ctx.getSource().getServer())
+                                            .setBubbleMode(target.getUUID(), false);
                                     ctx.getSource().sendSuccess(() -> Component.literal(
                                             target.getName().getString() + " NAO pode mais usar balao de fala."), true);
                                     target.sendSystemMessage(Component.literal(
@@ -125,12 +129,12 @@ public final class RPCommands {
                                 }))))
                 .then(Commands.literal("balaolist")
                         .executes(ctx -> {
-                            var ids = RPWorldData.get(ctx.getSource().getServer()).bubbleBannedIds();
+                            var ids = RPWorldData.get(ctx.getSource().getServer()).bubbleAllowedIds();
                             if (ids.isEmpty()) {
                                 ctx.getSource().sendSuccess(() -> Component.literal(
-                                        "Todos os jogadores PODEM usar balao de fala."), false);
+                                        "Ninguem com balao liberado ainda. Libere com /rp admin balao <jogador> on"), false);
                             } else {
-                                StringBuilder sb = new StringBuilder("Sem balao (por admin): ");
+                                StringBuilder sb = new StringBuilder("Com balao liberado: ");
                                 int i = 0;
                                 for (var id : ids) {
                                     var p = ctx.getSource().getServer().getPlayerList().getPlayer(id);

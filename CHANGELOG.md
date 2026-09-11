@@ -2,6 +2,43 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.17.0] - 2026-09-11
+
+### Corrigido
+- **MODO BALÃO AGORA DESLIGA DE VERDADE**: desligou (`/balao modo off` ou o
+  botão ☾)? Suas falas vão SÓ pro chat e o balão que estava na cabeça SOME
+  na hora (antes ele continuava aparecendo).
+- **SÓ QUEM O ADMIN LIBERAR USA BALÃO**: o padrão do servidor agora é
+  NINGUÉM — o admin libera com `/rp admin balao <jogador> on` (que também já
+  liga o modo balão da pessoa) e revoga com `off`. `/rp admin balaolist`
+  lista os liberados. Acabou o amigo usando balão sem permissão.
+- **"MINHA COR" E "AUTO" COM ANEL DE SELEÇÃO HONESTO**: o contorno verde
+  agora fica no botão que está ATIVO (antes marcava "Auto" sempre, parecendo
+  que os outros não funcionavam). "Minha cor" re-aplica a última cor clicada
+  na paleta da Borda.
+- **MOLDURAS BEM DISTINTAS**: Cartum ficou mais grossa e a **Dupla** agora é
+  linha fina + aro EXTERNO ESCURECIDO (duas voltas visíveis de verdade).
+- **NUVEM MENOR E MAIS DELICADA**: gomos pequenos e colados (antes virava um
+  balão gigante).
+
+### Melhorado
+- **EMOJIS DO MENU À PROVA DE QUALQUER CLIENTE**: os emojis agora são
+  desenhados com o MESMO método dos painéis (GuiGraphics.fill, run a run da
+  arte premium) — o caminho que comprovadamente funciona no seu cliente
+  (fonte de bitmap e blit de textura falharam nos testes reais).
+- **EMOJIS SEM FIM**: com um adesivo na mão, QUALQUER clique num lugar vazio
+  da tela empilha mais um emoji na fala (botões continuam clicáveis; ESC ou
+  botão direito soltam o adesivo).
+- **PRÉVIA MAIOR (34px de altura)** com fala e emojis na posição real, e o
+  adesivo livre VISÍVEL e PEGÁVEL de volta no menu.
+- **BALÃO MAIS FOFO**: textura nova com gradiente suave (topo mais claro) e
+  contorno anti-aliased — visual caprichado estilo QSMP.
+
+### Técnico
+- `OpenBubbleStylePayload` agora carrega o modo balão (o botão ☾ abre
+  refletindo o estado real do servidor). Adesivos do menu gerados em código
+  (`StickerArt`, runs da spritesheet — 64 emojis embutidos).
+
 ## [3.16.0] - 2026-09-11
 
 ### Corrigido

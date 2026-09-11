@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-3.16.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.16.0.jar) (arquivo dentro do repositório).
+> 📥 **Download:** baixe o `rptag-3.17.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.17.0.jar) (arquivo dentro do repositório).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
@@ -66,8 +66,11 @@
   ressalto**, flutua suavemente pra cima enquanto você fala e some com
   **fade-out** suave · **PILHA de até 3 balões** por jogador — o mais novo
   perto da cabeça, os antigos sobem (igual Chat Bubbles/TalkBubbles)
-- **`/rp admin bolhas on|off`** — global · **`/rp admin balao <jogador> on|off`**
-  — o admin decide QUEM usa balão (e `/rp admin balaolist` lista os sem-balão)
+- **ADMIN LIBERA QUEM USA** (padrão do servidor: ninguém): `/rp admin balao
+  <jogador> on` libera + já liga o modo balão da pessoa · `off` revoga ·
+  `/rp admin balaolist` lista os liberados · `/rp admin bolhas on|off` global
+- **MODO BALÃO com controle real**: desligou (`/balao modo off` ou o botão ☾)?
+  As falas voltam SÓ ao chat e o balão some NA HORA
 
 ### 🎲 Dados para eventos
 - `/roll` (d20) · `/roll d100` · `/roll 2d6+1` — resultado anunciado por perto, com decomposição dos dados e motivo opcional
@@ -89,7 +92,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-3.16.0.jar` para a pasta `mods/` do **servidor**.
+2. Copie `rptag-3.17.0.jar` para a pasta `mods/` do **servidor**.
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -102,7 +105,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-3.16.0.jar`.
+O jar sai em `build/libs/rptag-3.17.0.jar`.
 
 ## 🎨 Personalizar
 
