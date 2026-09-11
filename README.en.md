@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
 >
-> 📥 **Download:** grab `rptag-3.13.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.13.0.jar).
+> 📥 **Download:** grab `rptag-3.14.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.14.0.jar).
 
 ## ✨ Features
 
@@ -30,7 +30,9 @@
 - **Comic-style bubble, real smooth texture**: true rounded pill (anti-aliased),
   full outline and tail — **everything picked on the COMIC-BOOK PLATES menu** (ink frames, gold
   labels, guide zones that light up when you grab a sticker) (`/balao`)
-  · the screen preview is exactly what shows in game · **6 frames with their
+  · the menu preview uses the REAL in-world pill (same rounded texture, tail
+  and all 6 frames drawn for real — see the cloud, dashes and comic style
+  before saving) · **6 frames with their
   own buttons**: Classic, Cartoon (thick), Double, **Dashed (cute little
   strokes), Cloud (fluffy puffs!) and Comic** — the big classic comic
   balloon, puffy with thick ink and a gelatinous shine · **2 independent
@@ -76,7 +78,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-3.13.0.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-3.14.0.jar` into the **server's** `mods/` folder.
 3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
@@ -87,7 +89,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-3.13.0.jar`.
+The jar ends up at `build/libs/rptag-3.14.0.jar`.
 
 ## 🎨 Customizing
 

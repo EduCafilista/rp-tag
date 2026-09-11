@@ -10,6 +10,10 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.Mth;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.RenderType;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import org.joml.Matrix4f;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -30,6 +34,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * <p>O menu inteiro e desenhado por PLACAS de quadrinhos (moldura de tinta
  * grossa + recheio + brilho no topo + etiqueta dourada). O TEMA TODO fica
  * nas constantes TINTA/FUNDO/OURO... — altere elas e o menu acompanha.
+ *
+ * <p>A SIMULACAO agora desenha a PILULA REAL do mundo (mesma textura e as 6
+ * molduras de verdade) — o jogador VE como o balao vai ficar, sem ler nada.
  *
  * <p>FLUXO GUIADO do adesivo (acabou o bug da 3.12 que engolia cliques e
  * enchia a fala de emojis): com um adesivo na mao, a tela ACENDE duas zonas
@@ -55,22 +62,34 @@ public class BubbleStyleScreen extends Screen {
     private static final int ZONA_VERDE = 0xFFB5F0C8;  // zona "colar no balao"
     private static final int ZONA_OURO = 0xFFFFE08A;   // zona "por na fala"
 
+    // ---- A PILULA REAL DO MUNDO (o preview mostra o balao DE VERDADE) ----
+    private static final ResourceLocation BUBBLE_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble.png");
+    private static final ResourceLocation TAIL_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_tail.png");
+    private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
+    private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
+    // regiao da pilula dentro do bubble.png (64x32; tampa = 16px)
+    private static final float UV_V1 = 2.0F / 32.0F;
+    private static final float UV_V2 = 28.0F / 32.0F;
+    private static final float UV_CAP = 16.0F / 64.0F;
+
     private static final int PANEL_W = 268;
     private static final int PANEL_H = 260;
 
     // linhas verticais (a partir de py) — UMA fonte de verdade
     private static final int ROW_HINT = 22;
     private static final int ROW_CHAT = 32;
-    private static final int ROW_BUBBLE = 42;  // caixa: topo 42, meio 52, base 62, rabicho ~72
+    private static final int ROW_BUBBLE = 46;  // pilula real: 46..72 + rabicho
     private static final int ROW_DENTRO = 84;
     private static final int ROW_BORDA = 99;
     private static final int ROW_LETRA = 114;
-    private static final int ROW_BTN1 = 135;   // molduras: Auto / Minha cor / Sem
-    private static final int ROW_BTN2 = 153;   // Classica / Cartum / Dupla
-    private static final int ROW_BTN3 = 171;   // Tracejada / Nuvem / Gibi
-    private static final int ROW_BTN4 = 192;   // Adesivos + duracao (h18)
-    private static final int ROW_EXTRAS = 217; // slots de emojis (hit 212..236)
-    private static final int ROW_BTN5 = 240;   // modo / padrao / salvar
+    private static final int ROW_BTN1 = 143;   // molduras: Auto / Minha cor / Sem
+    private static final int ROW_BTN2 = 161;   // Classica / Cartum / Dupla
+    private static final int ROW_BTN3 = 179;   // Tracejada / Nuvem / Gibi
+    private static final int ROW_BTN4 = 198;   // Adesivos + duracao (h18)
+    private static final int ROW_EXTRAS = 221; // slots de emojis (hit 216..240)
+    private static final int ROW_BTN5 = 244;   // modo / padrao / salvar
 
     // paletas desenhadas como texto "● "
     private static final int SW_X = 64;
@@ -117,8 +136,8 @@ public class BubbleStyleScreen extends Screen {
     private int kbX, kbY;
     private int swSlotW; // largura de um "● " na paleta (calculado no init)
 
-    // geometria do balao-texto da simulacao (pra posicionar o adesivo)
-    private int simX0, simY, simCharW, simChars, simLineH = 10;
+    // geometria da pilula da simulacao (pra posicionar o adesivo e as zonas)
+    private int simX0, simY, simW, simH;
     private boolean hoverSticker = false;
 
     public BubbleStyleScreen(OpenBubbleStylePayload style) {
@@ -153,6 +172,82 @@ public class BubbleStyleScreen extends Screen {
                 pose.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, 0xF000F0);
         pose.popPose();
         buffers.endBatch();
+    }
+
+    /** FATIA da pilula real (3 fatias: tampa + meio + tampa — pontas NUNCA deformam). */
+    private void drawPill(GuiGraphics g, float x, float y, float w, float h, int argb) {
+        if ((argb >>> 24) == 0 || w < 2) {
+            return;
+        }
+        MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
+        Matrix4f m = g.pose().last().pose();
+        VertexConsumer buf = buffers.getBuffer(BUBBLE_TYPE);
+        float cap = Math.min(16.0F, w / 2.0F);
+        quadGui(m, buf, x, y, x + cap, y + h, 0.0F, UV_V1, UV_CAP, UV_V2, argb);
+        quadGui(m, buf, x + cap, y, x + w - cap, y + h, UV_CAP, UV_V1, 1.0F - UV_CAP, UV_V2, argb);
+        quadGui(m, buf, x + w - cap, y, x + w, y + h, 1.0F - UV_CAP, UV_V1, 1.0F, UV_V2, argb);
+        buffers.endBatch();
+    }
+
+    /** O RABICHO real (textura curvada) no menu. */
+    private void drawTail(GuiGraphics g, float cx, float yTop, float w, float h, int argb) {
+        if ((argb >>> 24) == 0) {
+            return;
+        }
+        MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
+        Matrix4f m = g.pose().last().pose();
+        quadGui(m, buffers.getBuffer(TAIL_TYPE), cx - w / 2.0F, yTop, cx + w / 2.0F, yTop + h,
+                0.0F, 0.0F, 1.0F, 1.0F, argb);
+        buffers.endBatch();
+    }
+
+    private static void quadGui(Matrix4f m, VertexConsumer buf,
+            float x1, float y1, float x2, float y2, float u1, float v1, float u2, float v2, int argb) {
+        buf.addVertex(m, x1, y1, 0.0F).setColor(argb).setUv(u1, v1).setUv1(0, 10)
+                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
+        buf.addVertex(m, x1, y2, 0.0F).setColor(argb).setUv(u1, v2).setUv1(0, 10)
+                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
+        buf.addVertex(m, x2, y2, 0.0F).setColor(argb).setUv(u2, v2).setUv1(0, 10)
+                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
+        buf.addVertex(m, x2, y1, 0.0F).setColor(argb).setUv(u2, v1).setUv1(0, 10)
+                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
+    }
+
+    /** TRACEJADA no menu: tracinhos em volta + descadinha (igual ao mundo). */
+    private void dashedGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
+        float dash = 5.0F, gap = 5.0F, t = 3.0F;
+        float yTop = y - 3, yBot = y + h + 3, xL = x - 3, xR = x + w + 3;
+        for (float dx = xL; dx < xR - 1; dx += dash + gap) {
+            float ww = Math.min(dash, xR - dx);
+            drawPill(g, dx, yTop, ww, t, argb);
+            drawPill(g, dx, yBot - t, ww, t, argb);
+        }
+        for (float dy = yTop + 8; dy < yBot - 8; dy += dash + gap) {
+            float hh = Math.min(dash, yBot - 8 - dy);
+            if (hh < 2) {
+                break;
+            }
+            drawPill(g, xL, dy, t, hh, argb);
+            drawPill(g, xR - t, dy, t, hh, argb);
+        }
+        float cx = x + w / 2.0F;
+        drawPill(g, cx - 2.0F, yBot - 1, t, 7, argb);
+        drawPill(g, cx + 2.0F, yBot + 5, t, 7, argb);
+    }
+
+    /** NUVEM no menu: base inflada + gomos fofos em toda a volta (igual ao mundo). */
+    private void cloudGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
+        drawPill(g, x - 3, y - 3, w + 6, h + 6, argb);
+        drawTail(g, x + w / 2.0F, y + h - 3, 15, 14, argb);
+        float d = 11.0F, step = 7.0F;
+        for (float bx = x - 5; bx < x + w + 1; bx += step) {
+            drawPill(g, bx, y - 6, d, d, argb);
+            drawPill(g, bx, y + h + 6 - d, d, d, argb);
+        }
+        for (float by = y - 1; by < y + h - 1; by += step) {
+            drawPill(g, x - 6, by, d, d, argb);
+            drawPill(g, x + w + 6 - d, by, d, d, argb);
+        }
     }
 
     /** Componente "● " na cor pedida (o caminho PROVADO de mostrar cor). */
@@ -487,7 +582,7 @@ public class BubbleStyleScreen extends Screen {
             hint = "✨ " + extrasCount() + " emoji(s) na fala · clique em ✖ pra tirar";
             cor = OURO;
         } else {
-            hint = "✦ Dica: pegue um adesivo e clique na linha da fala pra empilhar";
+            hint = "✦ Prévia REAL: é assim que seu balão aparece no jogo";
         }
         g.drawString(this.font, hint, px + 10, py + ROW_HINT, cor, true);
     }
@@ -499,12 +594,13 @@ public class BubbleStyleScreen extends Screen {
         g.fill(x + w - 1, y, x + w, y + h, color);
     }
 
-    /** SIMULACAO: linha do chat + balao de glifos "▣" (a prova de cliente). */
+    /** SIMULACAO com a PILULA REAL do mundo: mesma textura, rabicho e MOLDURAS de verdade. */
     private void renderSim(GuiGraphics g, int mouseX, int mouseY) {
         int colorRGB = style.colorRGB() & 0xFFFFFF;
         int fill = BubbleBackgrounds.fillColorFor(colorRGB);
         int border = BubbleBackgrounds.borderColorFor(colorRGB, style.borderRGB());
         int textColor = effectiveTextColor();
+        int bsC = Mth.clamp(Math.max(0, style.borderStyle()), 0, BubbleStyle.BORDER_STYLE_COUNT - 1);
 
         // --- linha do chat (igual ao chat real: nome na cor do balao) ---
         int chatY = py + ROW_CHAT;
@@ -517,60 +613,86 @@ public class BubbleStyleScreen extends Screen {
                     px + 12 + this.font.width("<Você> sua fala assim "), chatY, textColor, true);
         }
 
-        // --- balao de glifos: topo ▣, texto (+ EXTRAS), base ▣, rabicho ▼ ---
-        simCharW = this.font.width("▣");
-        int extrasW = ex.isEmpty() ? 0
-                : this.font.width(" ") + this.font.width(Stickers.styled(spaced(ex)));
-        int innerW = Math.max(this.font.width("sua fala assim") + 6 + extrasW, 8 * simCharW);
-        simChars = (innerW + simCharW - 1) / simCharW;
-        int bx = px + (PANEL_W - simChars * simCharW) / 2;
-        simX0 = bx;
+        // --- medidas da pilula (O BALAO DE VERDADE, tingido) ---
+        int speechW = this.font.width("sua fala assim")
+                + (ex.isEmpty() ? 0 : this.font.width(" ") + this.font.width(Stickers.styled(spaced(ex))));
+        simW = Math.max(32, speechW + 16);
+        simH = 26;
+        simX0 = px + (PANEL_W - simW) / 2;
         simY = py + ROW_BUBBLE;
-
         int ring = border != 0 ? border : fill;
-        StringBuilder bar = new StringBuilder();
-        for (int i = 0; i < simChars; i++) {
-            bar.append('▣');
-        }
-        String barStr = bar.toString();
-        g.drawString(this.font, barStr, bx, simY, ring, true);
-        g.drawString(this.font, "▣", bx, simY + simLineH, ring, true);
-        g.drawString(this.font, "sua fala assim", bx + simCharW + 3, simY + simLineH, textColor, true);
-        if (!ex.isEmpty()) {
-            // os EXTRA emojis aparecem DENTRO da fala, espacados, como vao ficar no mundo
-            g.drawString(this.font, Stickers.styled(spaced(ex)),
-                    bx + simCharW + 3 + this.font.width("sua fala assim") + this.font.width(" "),
-                    simY + simLineH, textColor, true);
-        }
-        g.drawString(this.font, "▣", bx + simChars * simCharW - simCharW, simY + simLineH, ring, true);
-        g.drawString(this.font, barStr, bx, simY + simLineH * 2, ring, true);
-        g.drawString(this.font, "▼", bx + simChars * simCharW / 2 - 3, simY + simLineH * 2 + 8, ring, true);
+        float cx = simX0 + simW / 2.0F;
 
-        // ZONAS guiadas quando tem adesivo na mao (acabou o clique perdido)
+        // --- SOMBRA (como no mundo) ---
+        drawPill(g, simX0 + 2, simY + 2, simW, simH, 0x40000000);
+        drawTail(g, cx, simY + simH - 1, 12, 12, 0x40000000);
+
+        // --- MOLDURA REAL (as 6, iguais as do mundo) ---
+        if (border != 0) {
+            switch (bsC) {
+                case 1 -> { // CARTUM
+                    drawPill(g, simX0 - 4, simY - 4, simW + 8, simH + 8, border);
+                    drawTail(g, cx, simY + simH - 5, 18, 17, border);
+                }
+                case 2 -> { // DUPLA
+                    drawPill(g, simX0 - 1, simY - 1, simW + 2, simH + 2, border);
+                    drawPill(g, simX0 - 3, simY - 3, simW + 6, simH + 6, border);
+                    drawTail(g, cx, simY + simH - 4, 16, 15, border);
+                }
+                case 3 -> dashedGui(g, simX0, simY, simW, simH, border);
+                case 4 -> cloudGui(g, simX0, simY, simW, simH, border);
+                case 5 -> { // GIBI
+                    drawPill(g, simX0 - 4, simY - 4, simW + 8, simH + 8, border);
+                    drawTail(g, cx, simY + simH - 4, 17, 16, border);
+                }
+                default -> { // CLASSICA
+                    drawPill(g, simX0 - 2, simY - 2, simW + 4, simH + 4, border);
+                    drawTail(g, cx, simY + simH - 3, 15, 14, border);
+                }
+            }
+        }
+
+        // --- RECHEIO + rabicho ---
+        drawTail(g, cx, simY + simH - 2, 13, 12, fill);
+        drawPill(g, simX0, simY, simW, simH, fill);
+        if (bsC == 5) { // gibi: brilho gelatinoso de HQ
+            drawPill(g, simX0 + 8, simY + 3, Math.max(12, simW * 0.45F), 3, 0x99FFFFFF);
+        }
+
+        // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
+        int tx = simX0 + (simW - speechW) / 2;
+        g.drawString(this.font, "sua fala assim", tx, simY + 9, textColor, true);
+        if (!ex.isEmpty()) {
+            g.drawString(this.font, Stickers.styled(spaced(ex)),
+                    tx + this.font.width("sua fala assim") + this.font.width(" "),
+                    simY + 9, textColor, true);
+        }
+
+        // --- zonas guiadas quando tem adesivo na mao ---
         if (holdingSticker != null) {
             outline(g, px + 6, py + ROW_CHAT - 3, PANEL_W - 12, 14, ZONA_OURO);
-            outline(g, simX0 - 5, simY - 5, simChars * simCharW + 10, simLineH * 2 + 10, ZONA_VERDE);
+            outline(g, simX0 - 6, simY - 6, simW + 12, simH + 18, ZONA_VERDE);
         }
 
-        // adesivo livre: na posicao (%) — com hover
+        // --- adesivo livre: na posicao (%) — com hover ---
         hoverSticker = false;
         if (!style.corner().isEmpty()) {
             int idx = (style.corner().charAt(0) & 0xFFFF) - 0xE000;
             if (idx < 0 || idx >= Stickers.COUNT) {
                 idx = 0;
             }
-            int sx = bx + Math.round(style.stickerX() / 100.0F * simChars * simCharW);
-            int sy = simY + Math.round(style.stickerY() / 100.0F * (simLineH * 2));
+            int sx = simX0 + Math.round(style.stickerX() / 100.0F * simW);
+            int sy = simY + Math.round(style.stickerY() / 100.0F * simH);
             drawGlyph(g, Stickers.GLYPHS[idx], sx - 8, sy - 8, 1.0F);
-            if (holdingSticker == null && Math.abs(mouseX - sx) <= 8 && Math.abs(mouseY - sy) <= 6) {
+            if (holdingSticker == null && Math.abs(mouseX - sx) <= 8 && Math.abs(mouseY - sy) <= 8) {
                 hoverSticker = true;
                 g.drawString(this.font, "+", sx - 2, sy - 9, 0xFFFFFFFF, false);
             }
         }
         if (holdingSticker != null) {
             int hi = Integer.parseInt(holdingSticker);
-            int gx = Mth.clamp(mouseX, bx, bx + simChars * simCharW);
-            int gy = Mth.clamp(mouseY, simY, simY + simLineH * 2);
+            int gx = Mth.clamp(mouseX, simX0, simX0 + simW);
+            int gy = Mth.clamp(mouseY, simY, simY + simH);
             g.setColor(1.0F, 1.0F, 1.0F, 0.6F);
             drawGlyph(g, Stickers.GLYPHS[hi], gx - 8, gy - 8, 1.0F);
             g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -610,7 +732,7 @@ public class BubbleStyleScreen extends Screen {
                         ly - 9, 0xFFFFFFFF, false);
             }
         }
-        plate(g, px + 4, py + 129, PANEL_W - 8, 61, "🖼 Moldura");
+        plate(g, px + 4, py + 134, PANEL_W - 8, 64, "🖼 Moldura");
     }
 
     /**
@@ -729,14 +851,13 @@ public class BubbleStyleScreen extends Screen {
         if (!showKeyboard && button == 0 && holdingSticker != null) {
             String held = holdingSticker; // lido ANTES de soltar
             // 1) NO balao da simulacao = adesivo LIVRE (posicao % salva)
-            int bubbleW = simChars * simCharW;
-            if (inBox(mx, my, simX0 - 4, simY - 4, bubbleW + 8, simLineH * 2 + 12)) {
+            if (inBox(mx, my, simX0 - 4, simY - 4, simW + 8, simH + 14)) {
                 holdingSticker = null;
-                int x = Mth.clamp((int) mx, simX0, simX0 + bubbleW);
-                int y = Mth.clamp((int) my, simY, simY + simLineH * 2);
+                int x = Mth.clamp((int) mx, simX0, simX0 + simW);
+                int y = Mth.clamp((int) my, simY, simY + simH);
                 setSticker(Stickers.GLYPHS[Integer.parseInt(held)],
-                        Math.round((x - simX0) * 100.0F / bubbleW),
-                        Math.round((y - simY) * 100.0F / (simLineH * 2)));
+                        Math.round((x - simX0) * 100.0F / simW),
+                        Math.round((y - simY) * 100.0F / simH));
                 return true;
             }
             // 2) slots de emojis: vazio = adiciona; cheio = tira (e solta)
@@ -788,8 +909,7 @@ public class BubbleStyleScreen extends Screen {
                 holdingSticker = null;
                 return true;
             }
-            if (inBox(mx, my, simX0 - 4, simY - 4,
-                    simChars * simCharW + 8, simLineH * 2 + 12)) {
+            if (inBox(mx, my, simX0 - 4, simY - 4, simW + 8, simH + 14)) {
                 if (!style.corner().isEmpty()) {
                     setSticker("", style.stickerX(), style.stickerY());
                 }

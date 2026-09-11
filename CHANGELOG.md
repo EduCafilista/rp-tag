@@ -2,6 +2,26 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.14.0] - 2026-09-11
+
+### Mudado
+- **PRÉVIA DO MENU AGORA É O BALÃO REAL**: acabou a "cerquinha de glifos" que
+  ninguém entendia. A simulação do `/balao` desenha a MESMA pílula
+  arredondada do mundo (mesma textura, mesmo rabicho), tingida com as cores
+  do jogador, e mostra **as 6 molduras desenhadas de verdade** — clicou em
+  Nuvem, vê a nuvem; clicou em Gibi, vê o balãozão de HQ com brilho; clicou
+  em Tracejada, vê os tracinhos. A fala e os emojis ficam DENTRO da pílula,
+  na posição real.
+- Dica do topo agora explica: "Prévia REAL: é assim que seu balão aparece no
+  jogo".
+- Etiqueta da placa "🖼 Moldura" não é mais cortada pelos botões; fileiras
+  respiram (botoes de moldura 143/161/179, adesivos 198, emojis 221, salvar
+  244).
+
+### Técnico
+- Mudança SÓ no cliente (BubbleStyleScreen): zero diff de servidor/comandos
+  (provado por git diff — a única linha fora do client é a versão).
+
 ## [3.13.0] - 2026-09-11
 
 ### Corrigido
