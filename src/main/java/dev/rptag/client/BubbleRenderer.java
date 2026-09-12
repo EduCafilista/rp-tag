@@ -68,6 +68,10 @@ public final class BubbleRenderer {
 
     private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
     private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
+    /** CONTORNO COM RELEVO da Classica (tinta com luz em cima/sombra embaixo). */
+    private static final ResourceLocation RING_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/ring.png");
+    private static final RenderType RING_TYPE = RenderType.text(RING_TEX);
     private static final RenderType CLOUD_TYPE = RenderType.text(CLOUD_TEX);
 
     // regiao da pilula dentro do bubble.png (y 2..28 de 32; tampa = 16px de 64)
@@ -218,6 +222,25 @@ public final class BubbleRenderer {
         quad(m, buf, z, x + cap, y, x + w - cap, y + h, 32.0F / 192.0F, 0.0F,
                 160.0F / 192.0F, 1.0F, argb);
         quad(m, buf, z, x + w - cap, y, x + w, y + h, 160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
+    }
+
+    /**
+     * CONTORNO COM RELEVO da Classica: a textura so tem tinta nas bordas de
+     * cima/baixo (meio transparente) — um unico draw da o anel completo,
+     * com tinta 2px pra fora (igual antes) e acabamento brilhante.
+     */
+    private static void ring(Matrix4f m, MultiBufferSource buffers, float z,
+            float x, float y, float w, float h, int argb) {
+        if ((argb >>> 24) == 0 || w < 4) {
+            return;
+        }
+        VertexConsumer buf = buffers.getBuffer(RING_TYPE);
+        float cap = Math.min(16.0F, w / 2.0F);
+        quad(m, buf, z, x - 2, y - 2, x + cap, y + h + 2, 0.0F, 0.0F, U_CAP, 1.0F, argb);
+        quad(m, buf, z, x + cap, y - 2, x + w - cap, y + h + 2, U_CAP, 0.0F,
+                1.0F - U_CAP, 1.0F, argb);
+        quad(m, buf, z, x + w - cap, y - 2, x + w + 2, y + h + 2, 1.0F - U_CAP, 0.0F,
+                1.0F, 1.0F, argb);
     }
 
     /** QUAD RETO: amostra o meio PLANO da pilula — retangulo perfeito (tracinhos). */
@@ -474,8 +497,8 @@ public final class BubbleRenderer {
                     pill(matrix, buffers, -0.15F, x0 - 5, yP0 - 5, pillW + 10, pillH + 10, border);
                     tail(matrix, buffers, -0.15F, 0, yP1 - 5, 18, 18, border);
                 }
-                default -> { // CLASSICA: linha de tinta em toda a volta
-                    pill(matrix, buffers, -0.15F, x0 - 2, yP0 - 2, pillW + 4, pillH + 4, border);
+                default -> { // CLASSICA: contorno com RELEVO (textura propria)
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border);
                     tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
                 }
             }

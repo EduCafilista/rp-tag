@@ -222,6 +222,50 @@ public class BubbleStyleScreen extends Screen {
         }
     }
 
+    /** ANEL de tinta 2px (contorno CLASSICA) via scanlines — igual ao ring.png do mundo. */
+    private void ringGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
+        if ((argb >>> 24) == 0) {
+            return;
+        }
+        int ix = Math.round(x) - 2;
+        int iy = Math.round(y) - 2;
+        int iw = Math.round(w) + 4;
+        int ih = Math.round(h) + 4;
+        int ro = ih / 2;
+        int ri = Math.min(Math.round(h) / 2, Math.round(w) / 2);
+        for (int dy = 0; dy < ih; dy++) {
+            double dyc = dy - (ro - 0.5);
+            int dxo = (int) Math.floor(Math.sqrt((double) ro * ro - dyc * dyc));
+            int xl = ix + ro - dxo;
+            int xr = ix + iw - ro + dxo + 1;
+            boolean faixa = dy >= 2 && dy < ih - 2 && ri >= 2;
+            if (!faixa) {
+                g.fill(xl, iy + dy, xr, iy + dy + 1, argb);
+            } else {
+                double dyi = (dy - 2) - (ri - 0.5);
+                int dxi = (int) Math.floor(Math.sqrt((double) ri * ri - dyi * dyi));
+                int il = ix + 2 + ri - dxi;
+                int ir = ix + iw - 2 - ri - dxi;
+                g.fill(xl, iy + dy, il, iy + dy + 1, argb);
+                g.fill(ir, iy + dy, xr, iy + dy + 1, argb);
+            }
+        }
+    }
+
+    /** Pílula com BRILHO (faixa clara no topo + sombra embaixo) — eco do mundo. */
+    private void drawPillGloss(GuiGraphics g, float x, float y, float w, float h, int argb) {
+        drawPill(g, x, y, w, h, argb);
+        int ix = Math.round(x);
+        int iy = Math.round(y);
+        int iw = Math.round(w);
+        int ih = Math.round(h);
+        int r = Math.min(ih / 2, iw / 2);
+        if (ih >= 14) {
+            g.fill(ix + r, iy + 2, ix + iw - r, iy + 4, 0x2EFFFFFF);
+            g.fill(ix + r, iy + ih - 3, ix + iw - r, iy + ih - 1, 0x24000000);
+        }
+    }
+
     /** TRIANGULO (rabicho) via scanlines. */
     private void tailFill(GuiGraphics g, int cx, int yTop, int w, int h, int argb) {
         for (int i = 0; i < h; i++) {
@@ -757,8 +801,8 @@ public class BubbleStyleScreen extends Screen {
                     drawPill(g, simX0 - 4, simY - 4, simW + 8, simH + 8, border);
                     drawTail(g, cx, simY + simH - 4, 16, 14, border);
                 }
-                default -> { // CLASSICA
-                    drawPill(g, simX0 - 2, simY - 2, simW + 4, simH + 4, border);
+                default -> { // CLASSICA: contorno com relevo (igual ao mundo)
+                    ringGui(g, simX0, simY, simW, simH, border);
                     drawTail(g, cx, simY + simH - 3, 14, 12, border);
                 }
             }
@@ -766,7 +810,7 @@ public class BubbleStyleScreen extends Screen {
 
         // --- RECHEIO + rabicho ---
         drawTail(g, cx, simY + simH - 2, 12, 10, fill);
-        drawPill(g, simX0, simY, simW, simH, fill);
+        drawPillGloss(g, simX0, simY, simW, simH, fill);
         if (bsC == 5) { // gibi: brilho gelatinoso de HQ
             drawPill(g, simX0 + 8, simY + 3, Math.max(12, simW * 0.45F), 3, 0x99FFFFFF);
         }

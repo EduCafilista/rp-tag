@@ -2,6 +2,21 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.25.0] - 2026-09-12
+
+### Melhorado
+- **QUALIDADE DOS BALÕES NOVA (pediram, ta entregue!)**: a pílula agora tem
+  **brilho de gelatina** (luz no topo com elipse de reflexo), **degradê
+  profundo** de cima pra baixo e **oclusão suave nas bordas** — visual 3D
+  no padrão dos mods famosos, nada de cor chapada.
+- **CONTORNO COM RELEVO**: o estilo Clássica ganhou textura própria de tinta
+  (luz em cima, sombra embaixo) desenhada por um único quad — contorno de
+  verdade, não uma linha reta sem graça.
+- **RABICHO novo**: maior (32x32), afunilado com ponta arredondada e o
+  mesmo degradê da pílula — acabei com a "casquinha" quadrada.
+- O MENU acompanha: recheio com brilho (faixa clara + sombra) e a Clássica
+  da prévia usa o mesmo anel em relevo via scanlines.
+
 ## [3.24.0] - 2026-09-11
 
 ### Melhorado
