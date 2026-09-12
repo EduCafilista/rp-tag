@@ -2,6 +2,18 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.24.0] - 2026-09-11
+
+### Melhorado
+- **ZOOM NO CONTEUDO DA PREVIA!** A fala do balão no menu agora aparece com
+  **2x de tamanho** (e os emojis em ARTE ampliada, não mais fonte miadinha) —
+  dá pra LER exatamente o que vai pro mundo antes de testar.
+- O balão da prévia cresceu pra dar bolso pro texto grande (e segue com a
+  faixa de 18px quando tem adesivo — texto nunca encosta na faixa).
+- Etiqueta "👀 Prévia" movida pro pé do card (não briga mais com o balão).
+- Se você encher 6 emojis e não couber, o zoom cai pra 1.5x sozinho —
+  nada estoura o card.
+
 ## [3.23.0] - 2026-09-11
 
 ### Corrigido

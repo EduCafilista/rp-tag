@@ -709,22 +709,30 @@ public class BubbleStyleScreen extends Screen {
         g.fill(px + 8, py + 40, px + PANEL_W - 8, py + 41, OURO_VIVO);
         g.fill(px + 8, py + 95, px + PANEL_W - 8, py + 96, 0x40000000);
         int tagW = this.font.width("👀 Prévia") + 10;
-        g.fill(px + 12, py + 44, px + 12 + tagW, py + 54, 0xFF0D1220);
-        g.fill(px + 12, py + 44, px + 14, py + 54, OURO_VIVO);
-        g.drawString(this.font, "👀 Prévia", px + 16, py + 46, OURO, true);
+        g.fill(px + 12, py + 85, px + 12 + tagW, py + 95, 0xFF0D1220);
+        g.fill(px + 12, py + 85, px + 14, py + 95, OURO_VIVO);
+        g.drawString(this.font, "👀 Prévia", px + 16, py + 87, OURO, true);
         // RECORTE: o balao vive DENTRO do card — nada invade as outras linhas
         g.enableScissor(px + 9, py + 41, px + PANEL_W - 9, py + 95);
 
         // --- medidas da pilula (O BALAO DE VERDADE, tingido) ---
         int speechW = this.font.width("sua fala assim")
                 + (ex.isEmpty() ? 0 : this.font.width(" ") + this.font.width(Stickers.styled(spaced(ex))));
-        simW = Math.max(120, speechW + 24);
-        // (3.23.0) IGUAL AO MUNDO: com adesivo a capsula ganha a FAIXA de 18px
+        // (3.24.0) ZOOM NO CONTEUDO: a fala aparece 2x (emoji em ARTE 1.5x) pra
+        // dar pra LER bem o que vai pro mundo antes de testar. Se 6 emojis nao
+        // couberem, cai pra 1.5x automatico (nada estoura o card).
         boolean temAdesivo = !style.corner().isEmpty();
         boolean faixaTopo = temAdesivo && style.stickerY() < 50;
-        simH = temAdesivo ? 38 : 22;
+        int falaW1x = this.font.width("sua fala assim");
+        int nEx = ex.isEmpty() ? 0 : ex.length();
+        float K = (falaW1x * 2 + nEx * 30 + 34 > 246) ? 1.5F : 2.0F; // zoom do texto
+        float artEx = K == 2.0F ? 1.5F : 1.0F; // zoom da arte dos emojis da fala
+        int conteudoW = Math.round(falaW1x * K) + (nEx > 0 ? nEx * 30 - 6 : 0);
+        simW = Math.max(170, Math.min(246, conteudoW + 28));
+        // com adesivo a capsula ganha a FAIXA de 18px (igual ao mundo)
+        simH = temAdesivo ? 42 : 30;
         simX0 = px + (PANEL_W - simW) / 2;
-        simY = py + (temAdesivo ? 47 : 52); // cabe no card: rabicho nunca cortado
+        simY = py + (temAdesivo ? 41 : 46); // dentro do card, rabicho nunca cortado
         int ring = border != 0 ? border : fill;
         float cx = simX0 + simW / 2.0F;
 
@@ -764,13 +772,24 @@ public class BubbleStyleScreen extends Screen {
         }
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
-        int tx = simX0 + (simW - speechW) / 2;
-        int tyText = simY + (faixaTopo ? 23 : 6); // texto no BOLSO livre da faixa
-        g.drawString(this.font, "sua fala assim", tx, tyText, textColor, true);
-        if (!ex.isEmpty()) {
-            g.drawString(this.font, Stickers.styled(spaced(ex)),
-                    tx + this.font.width("sua fala assim") + this.font.width(" "),
-                    tyText, textColor, true);
+        int tx = simX0 + (simW - conteudoW) / 2;
+        int tyText = faixaTopo ? simY + 20 : (temAdesivo ? simY + 2 : simY + 6);
+        g.pose().pushPose();
+        g.pose().translate(tx, tyText, 0.0F);
+        g.pose().scale(K, K, 1.0F); // ZOOM: a fala do preview legivel de longe
+        g.drawString(this.font, "sua fala assim", 0, 0, textColor, true);
+        g.pose().popPose();
+        if (!ex.isEmpty()) { // emojis da fala em ARTE ampliada (nao fonte miadinha)
+            float exX = tx + Math.round(falaW1x * K) + 8;
+            for (int i = 0; i < nEx; i++) {
+                int eIdx = (ex.charAt(i) & 0xFFFF) - 0xE000;
+                if (eIdx < 0 || eIdx >= Stickers.COUNT) {
+                    eIdx = i % Stickers.COUNT;
+                }
+                int exY = Math.max(simY + 2, tyText - 3); // nunca ponta fora da pilula
+                drawGlyphMenu(g, eIdx, Math.round(exX), exY, artEx);
+                exX += 30;
+            }
         }
 
         g.disableScissor();
