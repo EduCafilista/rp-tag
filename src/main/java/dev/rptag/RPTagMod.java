@@ -21,7 +21,7 @@ import net.neoforged.fml.common.Mod;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "3.25.0";
+    public static final String VERSION = "3.26.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     public RPTagMod(IEventBus modEventBus, ModContainer modContainer) {

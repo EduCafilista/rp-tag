@@ -286,6 +286,10 @@ public class BubbleStyleScreen extends Screen {
             int ww = Math.min(dash, xR - dx);
             g.fill(dx, yTop, dx + ww, yTop + t, argb);
             g.fill(dx, yBot - t, dx + ww, yBot, argb);
+            if (dx + dash + 2 < xR) { // PONTINHO no meio do gap (padrao bilhete)
+                g.fill(dx + dash + gap / 2 - 1, yTop + 1, dx + dash + gap / 2 + 1, yTop + t - 1, argb);
+                g.fill(dx + dash + gap / 2 - 1, yBot - t + 1, dx + dash + gap / 2 + 1, yBot - 1, argb);
+            }
         }
         for (int dy = yTop + dash + gap; dy < yBot - t - gap; dy += dash + gap) {
             int hh = Math.min(dash, yBot - t - gap - dy);
@@ -323,8 +327,8 @@ public class BubbleStyleScreen extends Screen {
             circleFill(g, gx, iy + 3, 6, argb);
             circleFill(g, gx, iy + ih - 3, 6, argb);
         }
-        // corpo por cima (mantem o centro limpo pro texto)
-        drawPill(g, x + 2, y - 2, w - 4, h + 4, argb);
+        // corpo por cima com BRILHO (paridade com a textura nova do mundo)
+        drawPillGloss(g, x + 2, y - 2, w - 4, h + 4, argb);
     }
 
     /** Componente "● " na cor pedida (o caminho PROVADO de mostrar cor). */
@@ -786,13 +790,18 @@ public class BubbleStyleScreen extends Screen {
         // --- MOLDURA REAL (as 6, iguais as do mundo) ---
         if (border != 0) {
             switch (bsC) {
-                case 1 -> { // CARTUM
+                case 1 -> { // CARTUM: capa com profundidade + brilho (igual ao mundo)
+                    drawPill(g, simX0 - 5, simY - 3, simW + 10, simH + 9, shaded(border, 0.55F));
                     drawPill(g, simX0 - 4, simY - 4, simW + 8, simH + 8, border);
-                    drawTail(g, cx, simY + simH - 5, 17, 15, border);
+                    g.fill(simX0 + 6, simY - 4, simX0 + Math.min(34, simW * 3 / 10), simY - 2,
+                            0x66FFFFFF);
+                    drawTail(g, cx, simY + simH - 4, 19, 17, border);
                 }
-                case 2 -> { // DUPLA
+                case 2 -> { // DUPLA: aro escuro + luz no aro (igual ao mundo)
+                    drawPill(g, simX0 - 3, simY - 3, simW + 6, simH + 6, shaded(border, 0.55F));
                     drawPill(g, simX0 - 1, simY - 1, simW + 2, simH + 2, border);
-                    drawPill(g, simX0 - 3, simY - 3, simW + 6, simH + 6, border);
+                    g.fill(simX0 + 10, simY - 3, simX0 + Math.min(40, simW * 35 / 100), simY - 1,
+                            0x4DFFFFFF);
                     drawTail(g, cx, simY + simH - 4, 15, 13, border);
                 }
                 case 3 -> dashedGui(g, simX0, simY, simW, simH, border);
@@ -811,8 +820,11 @@ public class BubbleStyleScreen extends Screen {
         // --- RECHEIO + rabicho ---
         drawTail(g, cx, simY + simH - 2, 12, 10, fill);
         drawPillGloss(g, simX0, simY, simW, simH, fill);
-        if (bsC == 5) { // gibi: brilho gelatinoso de HQ
-            drawPill(g, simX0 + 8, simY + 3, Math.max(12, simW * 0.45F), 3, 0x99FFFFFF);
+        if (bsC == 5) { // gibi: brilho gelatinoso de HQ (elipse dupla)
+            drawPill(g, simX0 + Math.round(simW * 0.18F), simY + 2,
+                    Math.round(simW * 0.44F), 5, 0x8CFFFFFF);
+            drawPill(g, simX0 + Math.round(simW * 0.30F), simY + 1,
+                    Math.round(simW * 0.20F), 3, 0xE0FFFFFF);
         }
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---

@@ -287,6 +287,13 @@ public final class BubbleRenderer {
             float w = Math.min(dash, xR - x);
             flatQuad(m, buffers, z, x, yTop, x + w, yTop + t, argb);
             flatQuad(m, buffers, z, x, yBot - t, x + w, yBot, argb);
+            // PONTINHO fofinho no meio do gap (padrao bilhete)
+            if (x + dash + 2.0F < xR) {
+                flatQuad(m, buffers, z, x + dash + gap / 2.0F - 1.0F, yTop + 1.0F,
+                        x + dash + gap / 2.0F + 1.0F, yTop + t - 1.0F, argb);
+                flatQuad(m, buffers, z, x + dash + gap / 2.0F - 1.0F, yBot - t + 1.0F,
+                        x + dash + gap / 2.0F + 1.0F, yBot - 1.0F, argb);
+            }
         }
         for (float y = yTop + dash + gap; y < yBot - t - gap; y += dash + gap) {
             float h = Math.min(dash, yBot - t - gap - y);
@@ -295,6 +302,12 @@ public final class BubbleRenderer {
             }
             flatQuad(m, buffers, z, xL, y, xL + t, y + h, argb);
             flatQuad(m, buffers, z, xR - t, y, xR, y + h, argb);
+            if (y + dash + 2.0F < yBot - t - gap) {
+                flatQuad(m, buffers, z, xL + 1.0F, y + dash + gap / 2.0F - 1.0F,
+                        xL + t - 1.0F, y + dash + gap / 2.0F + 1.0F, argb);
+                flatQuad(m, buffers, z, xR - t + 1.0F, y + dash + gap / 2.0F - 1.0F,
+                        xR - 1.0F, y + dash + gap / 2.0F + 1.0F, argb);
+            }
         }
     }
 
@@ -478,14 +491,22 @@ public final class BubbleRenderer {
         int bs = bsPre;
         if (border != 0) {
             switch (bs) {
-                case 1 -> { // CARTUM: tinta grossa, capa de quadrinho
-                    pill(matrix, buffers, -0.15F, x0 - 4, yP0 - 4, pillW + 8, pillH + 8, border);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 4, 18, 17, border);
+                case 1 -> { // CARTUM: capa de quadrinho com PROFUNDIDADE
+                    pill(matrix, buffers, -0.15F, x0 - 5, yP0 - 3, pillW + 10, pillH + 9,
+                            shaded(border, 0.55F)); // sombra da tinta embaixo
+                    pill(matrix, buffers, -0.14F, x0 - 5, yP0 - 5, pillW + 10, pillH + 10, border);
+                    flatQuad(matrix, buffers, -0.13F, x0 + 6, yP0 - 4,
+                            x0 + Math.min(34, pillW * 0.3F), yP0 - 2,
+                            withAlpha(0x66FFFFFF, alpha)); // brilho da capa
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 4, 20, 18, border);
                 }
-                case 2 -> { // DUPLA: linha fina + aro EXTERNO ESCURO (bem distinta)
-                    pill(matrix, buffers, -0.15F, x0 - 1, yP0 - 1, pillW + 2, pillH + 2, border);
+                case 2 -> { // DUPLA: linha fina + aro EXTERNO com brilho
                     pill(matrix, buffers, -0.16F, x0 - 5, yP0 - 5, pillW + 10, pillH + 10,
                             shaded(border, 0.55F));
+                    pill(matrix, buffers, -0.15F, x0 - 1, yP0 - 1, pillW + 2, pillH + 2, border);
+                    flatQuad(matrix, buffers, -0.14F, x0 + 10, yP0 - 5,
+                            x0 + Math.min(40, pillW * 0.35F), yP0 - 3,
+                            withAlpha(0x4DFFFFFF, alpha)); // luz no aro
                     tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
                     tail(matrix, buffers, -0.16F, 0, yP1 - 5, 17, 16, shaded(border, 0.55F));
                 }
@@ -509,9 +530,11 @@ public final class BubbleRenderer {
         if (bs != 4) { // no PENSAMENTO o rabicho comum fica sob a nuvem
             tail(matrix, buffers, -0.09F, 0, yP1 - 3, 12, 12, fill);
         }
-        if (bs == 5) { // GIBI: brilho gelatinoso classico das HQs (faixa branca no topo)
-            pill(matrix, buffers, -0.08F, x0 + 8, yP0 + 3, Math.max(12, pillW * 0.45F), 3,
-                    withAlpha(0x99FFFFFF, alpha));
+        if (bs == 5) { // GIBI: brilho gelatinoso de HQ (elipse dupla, luz de verdade)
+            flatQuad(matrix, buffers, -0.08F, x0 + pillW * 0.18F, yP0 + 2.5F,
+                    x0 + pillW * 0.62F, yP0 + 6.5F, withAlpha(0x8CFFFFFF, alpha));
+            flatQuad(matrix, buffers, -0.08F, x0 + pillW * 0.30F, yP0 + 2.0F,
+                    x0 + pillW * 0.50F, yP0 + 3.5F, withAlpha(0xE0FFFFFF, alpha));
         }
 
         // ---- texto + adesivos dentro da fala (sombra vanilla = legivel e limpo) ----

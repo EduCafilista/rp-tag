@@ -2,6 +2,24 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.26.0] - 2026-09-12
+
+### Melhorado
+- **CADA BALÃO OLHADO E REFEITO (os 6 estilos!)**:
+  - **PENSAMENTO**: textura da nuvem REFEITA do zero — gomos orgânicos de
+    verdade na silhueta, interior liso com brilho, orla com degradê
+    (Turma da Mônica premium, nada de "taturana").
+  - **CLASSICA**: já com o anel em relevo da 3.25 (luz em cima da tinta).
+  - **CARTUM**: capa de quadrinho com PROFUNDIDADE — sombra da tinta
+    deslocada embaixo + brilho branco na parte de cima da capa.
+  - **DUPLA**: aro escuro ganhou LUZ (brilho no aro externo).
+  - **TRACEJADA**: cada tracinho agora tem um PONTINHO fofinho no meio do
+    gap (padrão bilhete de cupom) — em cima, embaixo e nas laterais.
+  - **GIBI**: brilho de gelatina em ELIPSE DUPLA (luz principal + núcleo
+    super brilhante), igual balãozão de HQ.
+- O MENU acompanha TUDO (paridade 1:1): capa com profundidade, luz no aro,
+  pontinhos no tracejado, brilho duplo do gibi e nuvem com gloss.
+
 ## [3.25.0] - 2026-09-12
 
 ### Melhorado
