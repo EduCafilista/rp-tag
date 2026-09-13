@@ -2,6 +2,24 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.27.0] - 2026-09-12
+
+### Melhorado
+- **REDESIGN COMPLETO — padrao STREAMER (a borda grossa foi embora!)**:
+  - **VOLUME GERADO COM IA**: o brilho de gelatina da pilula agora vem de
+    uma arte gerada por IA, remontada DENTRO da capsula matematica exata
+    (geometria perfeita + volume de estrela — tinge perfeitamente).
+  - **BORDAS FINAS E ELEGANTES**: todos os contornos foram afinados
+    (Classica ~2px, Cartum 4px, Dupla 2 linhas finas, Gibi 6px) — nada de
+    "borda grossa feia".
+  - **BALAO 13% MAIOR** no mundo (presenca de quem fala pra plateia).
+  - **TRACEJADO MORREU, NASCEU A COSTURA**: pontilhado delicado seguindo a
+    silhueta da capsula (textura propria, 1 draw) — o bug do "quadrado no
+    meio" ficou impossivel (nao existe mais quad nenhum).
+  - Botao renomeado p/ "∴ Costura", ICONE verde da moldura ativa na placa,
+    e dicas que EXPLICAM cada moldura quando o mouse passa em cima.
+- Menu em paridade 1:1 (aneis com margem, costura, sombra do Cartum).
+
 ## [3.26.0] - 2026-09-12
 
 ### Melhorado

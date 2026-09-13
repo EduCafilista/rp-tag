@@ -222,15 +222,24 @@ public class BubbleStyleScreen extends Screen {
         }
     }
 
+    /** Multiplica o RGB por um fator (0..255) mantendo alpha — igual ao tint do jogo. */
+    private static int shadeMask(int argb, int fator) {
+        int a = argb & 0xFF000000;
+        int r = ((argb >>> 16) & 0xFF) * fator >> 8;
+        int g = ((argb >>> 8) & 0xFF) * fator >> 8;
+        int b = (argb & 0xFF) * fator >> 8;
+        return a | (r << 16) | (g << 8) | b;
+    }
+
     /** ANEL de tinta 2px (contorno CLASSICA) via scanlines — igual ao ring.png do mundo. */
-    private void ringGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
+    private void ringGui(GuiGraphics g, float x, float y, float w, float h, int argb, int margem) {
         if ((argb >>> 24) == 0) {
             return;
         }
-        int ix = Math.round(x) - 2;
-        int iy = Math.round(y) - 2;
-        int iw = Math.round(w) + 4;
-        int ih = Math.round(h) + 4;
+        int ix = Math.round(x) - margem;
+        int iy = Math.round(y) - margem;
+        int iw = Math.round(w) + 2 * margem;
+        int ih = Math.round(h) + 2 * margem;
         int ro = ih / 2;
         int ri = Math.min(Math.round(h) / 2, Math.round(w) / 2);
         for (int dy = 0; dy < ih; dy++) {
@@ -249,6 +258,43 @@ public class BubbleStyleScreen extends Screen {
                 g.fill(xl, iy + dy, il, iy + dy + 1, argb);
                 g.fill(ir, iy + dy, xr, iy + dy + 1, argb);
             }
+        }
+    }
+
+    /**
+     * COSTURA no menu (3.27.0): pontinhos na SILHUETA da capsula (igual ao
+     * dashed.png do mundo) — fim do "quadrado bugado" do tracejado.
+     */
+    private void dottedGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
+        if ((argb >>> 24) == 0) {
+            return;
+        }
+        float raio = Math.min(h, w) / 2.0F + 1.0F;
+        float a = Math.round(x) + w / 2.0F;
+        float b = Math.round(y) + h / 2.0F;
+        float retaW = Math.max(0.0F, w - h);
+        float per = (float) (2.0 * Math.PI * raio + 2.0 * retaW);
+        int n = Math.max(10, Math.round(per / 8.0F));
+        for (int i = 0; i < n; i++) {
+            float s = i * per / n;
+            float px2, py2;
+            if (s < Math.PI * raio) {
+                double ang = -Math.PI / 2.0 + s / raio;
+                px2 = (float) (a - retaW / 2.0 + raio * Math.cos(ang));
+                py2 = (float) (b + raio * Math.sin(ang));
+            } else if (s < Math.PI * raio + retaW) {
+                px2 = (float) (a - retaW / 2.0 + (s - Math.PI * raio));
+                py2 = b - raio;
+            } else if (s < 2.0 * Math.PI * raio + retaW) {
+                double ang = -Math.PI / 2.0 + (s - Math.PI * raio - retaW) / raio;
+                px2 = (float) (a + retaW / 2.0 + raio * Math.cos(ang));
+                py2 = (float) (b + raio * Math.sin(ang));
+            } else {
+                px2 = (float) (a + retaW / 2.0 - (s - 2.0 * Math.PI * raio - retaW));
+                py2 = b + raio;
+            }
+            g.fill(Math.round(px2) - 1, Math.round(py2) - 1,
+                    Math.round(px2) + 2, Math.round(py2) + 2, argb);
         }
     }
 
@@ -275,31 +321,6 @@ public class BubbleStyleScreen extends Screen {
     }
 
     /** TRACEJADA no menu: tracinhos em volta + descadinha (igual ao mundo). */
-    private void dashedGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
-        if ((argb >>> 24) == 0) {
-            return;
-        }
-        int dash = 7, gap = 5, t = 3;
-        int yTop = Math.round(y) - 4, yBot = Math.round(y + h) + 4;
-        int xL = Math.round(x) - 4, xR = Math.round(x + w) + 4;
-        for (int dx = xL; dx < xR; dx += dash + gap) {
-            int ww = Math.min(dash, xR - dx);
-            g.fill(dx, yTop, dx + ww, yTop + t, argb);
-            g.fill(dx, yBot - t, dx + ww, yBot, argb);
-            if (dx + dash + 2 < xR) { // PONTINHO no meio do gap (padrao bilhete)
-                g.fill(dx + dash + gap / 2 - 1, yTop + 1, dx + dash + gap / 2 + 1, yTop + t - 1, argb);
-                g.fill(dx + dash + gap / 2 - 1, yBot - t + 1, dx + dash + gap / 2 + 1, yBot - 1, argb);
-            }
-        }
-        for (int dy = yTop + dash + gap; dy < yBot - t - gap; dy += dash + gap) {
-            int hh = Math.min(dash, yBot - t - gap - dy);
-            if (hh < 2) {
-                break;
-            }
-            g.fill(xL, dy, xL + t, dy + hh, argb);
-            g.fill(xR - t, dy, xR, dy + hh, argb);
-        }
-    }
 
     /** NUVEM no menu: base inflada + gomos fofos em toda a volta (igual ao mundo). */
     private void cloudGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
@@ -541,7 +562,7 @@ public class BubbleStyleScreen extends Screen {
                     style = withBorderStyle(BubbleStyle.BORDER_DOUBLE);
                 }).bounds(px + 178, py + ROW_BTN2, 81, 16).build());
 
-        addRenderableWidget(Button.builder(Component.literal("▤ Tracejada"), b -> {
+        addRenderableWidget(Button.builder(Component.literal("∴ Costura"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_DASHED);
                 }).bounds(px + 8, py + ROW_BTN3, 81, 16).build());
         addRenderableWidget(Button.builder(Component.literal("▤ Nuvem"), b -> {
@@ -661,7 +682,7 @@ public class BubbleStyleScreen extends Screen {
             renderSim(g, mouseX, mouseY);
             renderPalettes(g);
             renderExtras(g, mouseX, mouseY);
-            renderHint(g);
+            renderHint(g, mouseX, mouseY);
         }
         super.render(g, mouseX, mouseY, partialTick);
 
@@ -710,9 +731,15 @@ public class BubbleStyleScreen extends Screen {
     }
 
     /** Dica contextual (muda quando tem adesivo na mao). */
-    private void renderHint(GuiGraphics g) {
+    private void renderHint(GuiGraphics g, int mouseX, int mouseY) {
         String hint;
         int cor = CINZA;
+        // PASSOU O MOUSE NUM BOTAO DE MOLDURA? explica na hora (sem enigma)
+        String mh = molduraHover(mouseX, mouseY);
+        if (mh != null) {
+            g.drawString(this.font, mh, px + 10, py + ROW_HINT, VERDE_OK, true);
+            return;
+        }
         if (holdingSticker != null) {
             hint = "▶ Clique NO BALÃO pra colar · na FALE (dourado) pra empilhar · ESC solta";
             cor = ZONA_OURO;
@@ -720,9 +747,38 @@ public class BubbleStyleScreen extends Screen {
             hint = "✨ " + extrasCount() + " emoji(s) na fala · clique em ✖ pra tirar";
             cor = OURO;
         } else {
-            hint = "✦ Prévia REAL: no mundo é assim · adesivo mora nas faixas, nunca nas letras";
+            hint = "✦ Prévia REAL: é EXATAMENTE assim que aparece no mundo";
         }
         g.drawString(this.font, hint, px + 10, py + ROW_HINT, cor, true);
+    }
+
+    /** @return dica da moldura sob o mouse (ou null). */
+    private String molduraHover(int mouseX, int mouseY) {
+        boolean l1 = mouseY >= py + ROW_BTN1 - 2 && mouseY <= py + ROW_BTN1 + 18;
+        boolean l2 = mouseY >= py + ROW_BTN2 - 2 && mouseY <= py + ROW_BTN2 + 18;
+        if (l1) {
+            if (mouseX >= px + 8 && mouseX <= px + 89) {
+                return "§fClassica§7: contorno com relevo e brilho";
+            }
+            if (mouseX >= px + 93 && mouseX <= px + 174) {
+                return "§fCartum§7: tinta grossa de quadrinho";
+            }
+            if (mouseX >= px + 178 && mouseX <= px + 259) {
+                return "§fDupla§7: linha dupla elegante";
+            }
+        }
+        if (l2) {
+            if (mouseX >= px + 8 && mouseX <= px + 89) {
+                return "§fCostura§7: pontilhado fino seguindo o balao";
+            }
+            if (mouseX >= px + 93 && mouseX <= px + 174) {
+                return "§fPensamento§7: nuvem Turma da Monica";
+            }
+            if (mouseX >= px + 178 && mouseX <= px + 259) {
+                return "§fGibi§7: balaozao gordo de HQ";
+            }
+        }
+        return null;
     }
 
     private void outline(GuiGraphics g, int x, int y, int w, int h, int color) {
@@ -790,28 +846,23 @@ public class BubbleStyleScreen extends Screen {
         // --- MOLDURA REAL (as 6, iguais as do mundo) ---
         if (border != 0) {
             switch (bsC) {
-                case 1 -> { // CARTUM: capa com profundidade + brilho (igual ao mundo)
-                    drawPill(g, simX0 - 5, simY - 3, simW + 10, simH + 9, shaded(border, 0.55F));
-                    drawPill(g, simX0 - 4, simY - 4, simW + 8, simH + 8, border);
-                    g.fill(simX0 + 6, simY - 4, simX0 + Math.min(34, simW * 3 / 10), simY - 2,
-                            0x66FFFFFF);
+                case 1 -> { // CARTUM: anel de tinta + sombra embaixo (igual ao mundo)
+                    drawTail(g, cx + 2, simY + simH - 1, 20, 16, shadeMask(border, 0x73));
+                    ringGui(g, simX0, simY, simW, simH, border, 5);
                     drawTail(g, cx, simY + simH - 4, 19, 17, border);
                 }
-                case 2 -> { // DUPLA: aro escuro + luz no aro (igual ao mundo)
-                    drawPill(g, simX0 - 3, simY - 3, simW + 6, simH + 6, shaded(border, 0.55F));
-                    drawPill(g, simX0 - 1, simY - 1, simW + 2, simH + 2, border);
-                    g.fill(simX0 + 10, simY - 3, simX0 + Math.min(40, simW * 35 / 100), simY - 1,
-                            0x4DFFFFFF);
+                case 2 -> { // DUPLA: anel de linha dupla (igual ao mundo)
+                    ringGui(g, simX0, simY, simW, simH, border, 5);
                     drawTail(g, cx, simY + simH - 4, 15, 13, border);
                 }
-                case 3 -> dashedGui(g, simX0, simY, simW, simH, border);
+                case 3 -> dottedGui(g, simX0, simY, simW, simH, border); // COSTURA
                 case 4 -> cloudGui(g, simX0, simY, simW, simH, border);
-                case 5 -> { // GIBI
-                    drawPill(g, simX0 - 4, simY - 4, simW + 8, simH + 8, border);
-                    drawTail(g, cx, simY + simH - 4, 16, 14, border);
+                case 5 -> { // GIBI: anel gordo de HQ (igual ao mundo)
+                    ringGui(g, simX0, simY, simW, simH, border, 7);
+                    drawTail(g, cx, simY + simH - 5, 18, 16, border);
                 }
                 default -> { // CLASSICA: contorno com relevo (igual ao mundo)
-                    ringGui(g, simX0, simY, simW, simH, border);
+                    ringGui(g, simX0, simY, simW, simH, border, 2);
                     drawTail(g, cx, simY + simH - 3, 14, 12, border);
                 }
             }
@@ -922,6 +973,17 @@ public class BubbleStyleScreen extends Screen {
             }
         }
         plate(g, px + 4, py + 140, PANEL_W - 8, 64, "🖼 Moldura");
+        // ICONE da moldura ativa (vede de relance qual esta escolhida)
+        String ic = switch (Mth.clamp(Math.max(0, style.borderStyle()), 0, 5)) {
+            case 1 -> "✒";
+            case 2 -> "◎";
+            case 3 -> "∴";
+            case 4 -> "☁";
+            case 5 -> "✦";
+            default -> "◉";
+        };
+        g.fill(px + PANEL_W - 28, py + 143, px + PANEL_W - 10, py + 159, 0xFF0D1220);
+        g.drawString(this.font, ic, px + PANEL_W - 23, py + 146, VERDE_OK, false);
     }
 
     /**

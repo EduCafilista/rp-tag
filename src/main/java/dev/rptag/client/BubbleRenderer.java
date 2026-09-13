@@ -72,6 +72,21 @@ public final class BubbleRenderer {
     private static final ResourceLocation RING_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/ring.png");
     private static final RenderType RING_TYPE = RenderType.text(RING_TEX);
+    // ANEL PROPRIOS (3.27.0): cada moldura e UMA textura de contorno (1 draw)
+    private static final ResourceLocation CARTUM_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/cartum.png");
+    private static final ResourceLocation DUPLA_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/dupla.png");
+    private static final ResourceLocation DASHED_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/dashed.png");
+    private static final ResourceLocation GIBI_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/gibi.png");
+    private static final RenderType CARTUM_TYPE = RenderType.text(CARTUM_TEX);
+    private static final RenderType DUPLA_TYPE = RenderType.text(DUPLA_TEX);
+    private static final RenderType DASHED_TYPE = RenderType.text(DASHED_TEX);
+    private static final RenderType GIBI_TYPE = RenderType.text(GIBI_TEX);
+    /** margem do anel em volta da pilula, por estilo (cresce pra fora). */
+    private static final float[] RING_MARGIN = {2.0F, 5.0F, 5.0F, 4.0F, 7.0F};
     private static final RenderType CLOUD_TYPE = RenderType.text(CLOUD_TEX);
 
     // regiao da pilula dentro do bubble.png (y 2..28 de 32; tampa = 16px de 64)
@@ -230,11 +245,11 @@ public final class BubbleRenderer {
      * com tinta 2px pra fora (igual antes) e acabamento brilhante.
      */
     private static void ring(Matrix4f m, MultiBufferSource buffers, float z,
-            float x, float y, float w, float h, int argb) {
+            float x, float y, float w, float h, int argb, RenderType tipo) {
         if ((argb >>> 24) == 0 || w < 4) {
             return;
         }
-        VertexConsumer buf = buffers.getBuffer(RING_TYPE);
+        VertexConsumer buf = buffers.getBuffer(tipo);
         float cap = Math.min(16.0F, w / 2.0F);
         quad(m, buf, z, x - 2, y - 2, x + cap, y + h + 2, 0.0F, 0.0F, U_CAP, 1.0F, argb);
         quad(m, buf, z, x + cap, y - 2, x + w - cap, y + h + 2, U_CAP, 0.0F,
@@ -277,39 +292,6 @@ public final class BubbleRenderer {
                 .setNormal(0.0F, 1.0F, 0.0F);
     }
 
-    /** TRACEJADA (3.20.0): tracinhos RETOS e alinhados em volta do balao inteiro. */
-    private static void dashedBorder(Matrix4f m, MultiBufferSource buffers, float z,
-            float x0, float yP0, float pillW, float yP1, int argb) {
-        float dash = 7.0F, gap = 5.0F, t = 3.0F;
-        float yTop = yP0 - 4, yBot = yP1 + 4;
-        float xL = x0 - 4, xR = x0 + pillW + 4;
-        for (float x = xL; x < xR; x += dash + gap) {
-            float w = Math.min(dash, xR - x);
-            flatQuad(m, buffers, z, x, yTop, x + w, yTop + t, argb);
-            flatQuad(m, buffers, z, x, yBot - t, x + w, yBot, argb);
-            // PONTINHO fofinho no meio do gap (padrao bilhete)
-            if (x + dash + 2.0F < xR) {
-                flatQuad(m, buffers, z, x + dash + gap / 2.0F - 1.0F, yTop + 1.0F,
-                        x + dash + gap / 2.0F + 1.0F, yTop + t - 1.0F, argb);
-                flatQuad(m, buffers, z, x + dash + gap / 2.0F - 1.0F, yBot - t + 1.0F,
-                        x + dash + gap / 2.0F + 1.0F, yBot - 1.0F, argb);
-            }
-        }
-        for (float y = yTop + dash + gap; y < yBot - t - gap; y += dash + gap) {
-            float h = Math.min(dash, yBot - t - gap - y);
-            if (h < 2) {
-                break;
-            }
-            flatQuad(m, buffers, z, xL, y, xL + t, y + h, argb);
-            flatQuad(m, buffers, z, xR - t, y, xR, y + h, argb);
-            if (y + dash + 2.0F < yBot - t - gap) {
-                flatQuad(m, buffers, z, xL + 1.0F, y + dash + gap / 2.0F - 1.0F,
-                        xL + t - 1.0F, y + dash + gap / 2.0F + 1.0F, argb);
-                flatQuad(m, buffers, z, xR - t + 1.0F, y + dash + gap / 2.0F - 1.0F,
-                        xR - 1.0F, y + dash + gap / 2.0F + 1.0F, argb);
-            }
-        }
-    }
 
     /**
      * BALAO DE PENSAMENTO (3.21.0, estilo Turma da Monica): nuvem fofa com
@@ -388,7 +370,8 @@ public final class BubbleRenderer {
             pillH += 18; // faixa do adesivo (3.23.0) conta na altura real
         }
         int bsH = Math.max(0, bubble.borderStyle());
-        int margin = bsH == 4 ? 34 : (bsH == 3 || bsH == 5 ? 20 : 14);
+        int bsIdx = Math.min(Math.max(bsH, 0), RING_MARGIN.length - 1);
+        int margin = bsH == 4 ? 34 : (bsH == 3 || bsH == 5 ? 20 : 14) + (int) RING_MARGIN[bsIdx];
         return pillH + margin; // bolinhas/gomos/tinta contam na pilha!
     }
 
@@ -479,7 +462,7 @@ public final class BubbleRenderer {
         poseStack.pushPose();
         poseStack.translate(0.0, player.getBbHeight() + 0.95 + upBlocks + floatUp * 0.030F, 0.0);
         poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
-        poseStack.scale(0.030F * popScale(age), -0.030F * popScale(age), 0.030F);
+        poseStack.scale(0.034F * popScale(age), -0.034F * popScale(age), 0.034F);
         Matrix4f matrix = poseStack.last().pose();
         MultiBufferSource buffers = event.getMultiBufferSource();
 
@@ -491,35 +474,26 @@ public final class BubbleRenderer {
         int bs = bsPre;
         if (border != 0) {
             switch (bs) {
-                case 1 -> { // CARTUM: capa de quadrinho com PROFUNDIDADE
-                    pill(matrix, buffers, -0.15F, x0 - 5, yP0 - 3, pillW + 10, pillH + 9,
-                            shaded(border, 0.55F)); // sombra da tinta embaixo
-                    pill(matrix, buffers, -0.14F, x0 - 5, yP0 - 5, pillW + 10, pillH + 10, border);
-                    flatQuad(matrix, buffers, -0.13F, x0 + 6, yP0 - 4,
-                            x0 + Math.min(34, pillW * 0.3F), yP0 - 2,
-                            withAlpha(0x66FFFFFF, alpha)); // brilho da capa
+                case 1 -> { // CARTUM: anel de tinta grossa + SOMBRA da capa embaixo
+                    tail(matrix, buffers, -0.17F, 2, yP1 - 1, 20, 16,
+                            shaded(border, 0.45F));
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, CARTUM_TYPE);
                     tail(matrix, buffers, -0.15F, 0, yP1 - 4, 20, 18, border);
                 }
-                case 2 -> { // DUPLA: linha fina + aro EXTERNO com brilho
-                    pill(matrix, buffers, -0.16F, x0 - 5, yP0 - 5, pillW + 10, pillH + 10,
-                            shaded(border, 0.55F));
-                    pill(matrix, buffers, -0.15F, x0 - 1, yP0 - 1, pillW + 2, pillH + 2, border);
-                    flatQuad(matrix, buffers, -0.14F, x0 + 10, yP0 - 5,
-                            x0 + Math.min(40, pillW * 0.35F), yP0 - 3,
-                            withAlpha(0x4DFFFFFF, alpha)); // luz no aro
+                case 2 -> { // DUPLA: anel de linha dupla (textura propria)
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, DUPLA_TYPE);
                     tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
-                    tail(matrix, buffers, -0.16F, 0, yP1 - 5, 17, 16, shaded(border, 0.55F));
                 }
-                case 3 -> // TRACEJADA: tracinhos fofos em toda a volta
-                        dashedBorder(matrix, buffers, -0.15F, x0, yP0, pillW, yP1, border);
+                case 3 -> // COSTURA (3.27.0): pontilhado seguindo a CAPSULA (fim do bug)
+                        ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, DASHED_TYPE);
                 case 4 -> // PENSAMENTO: nuvem + rabinho de bolinhas descendo (Turma da Monica)
                         cloudBorder(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, yP1, border);
-                case 5 -> { // GIBI: balaozao de HQ, tinta bem grossa
-                    pill(matrix, buffers, -0.15F, x0 - 5, yP0 - 5, pillW + 10, pillH + 10, border);
+                case 5 -> { // GIBI: anel gordo de HQ + brilho gelatinoso duplo
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, GIBI_TYPE);
                     tail(matrix, buffers, -0.15F, 0, yP1 - 5, 18, 18, border);
                 }
                 default -> { // CLASSICA: contorno com RELEVO (textura propria)
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border);
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, RING_TYPE);
                     tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
                 }
             }
