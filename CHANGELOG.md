@@ -2,6 +2,25 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.29.0] - 2026-09-14
+
+### Removido
+- **NUVEM APOSENTADA** (a pedido!): o estilo PENSAMENTO virou **BRILHO** —
+  halo suave ao redor do balao + anel elegante (2 desenhos, zero engasgo).
+
+### Corrigido
+- **EMOJI NUNCA MAIS QUEBRA O CAMPO DE TEXTO** (o bug do print!): a linha do
+  emoji agora tem 20px com o glifo CENTRADO — as letras ficam sempre dentro
+  do balao, mesmo com emoji colado na fala.
+- Correcao critica do atlas HD (fileiras 9 e 10 dos novos emojis mostravam
+  arte errada no menu).
+
+### Adicionado
+- **16 EMOJIS NOVOS (80 no total!)**: Sudoro, Apaixonado, Olhos de coracao,
+  Festa, 100, Alvo, Presente, Chocolate, Bala, Pirulito, Cenoura, Panda,
+  Dizzy, Papai Noel, Fada e Coelhinho — todos NOTO (Android) em HD.
+- **LACO PRETO** (a pedido!): o laco rosa virou laco preto (tint proprio).
+
 ## [3.28.0] - 2026-09-14
 
 ### Adicionado

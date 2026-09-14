@@ -21,7 +21,7 @@ public final class Stickers {
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "stickers");
 
     /** Quantidade de adesivos (8 x 8 na sprite sheet). */
-    public static final int COUNT = 64;
+    public static final int COUNT = 80;
 
     /** Primeiro adesivo da pagina FOFA (bichinhos, espaco e magia). */
     public static final int CUTE_FROM = 48;
@@ -56,10 +56,14 @@ public final class Stickers {
             "Óculos", "Língua", "Gato", "Cachorro",
             "Coelho", "Urso", "Pintinho", "Peixe",
             "Exclamação", "Interrogação", "Balão de fala", "Zzz",
-            "Laço", "Dinossauro", "Planeta", "Galáxia",
+            "Laço preto", "Dinossauro", "Planeta", "Galáxia",
             "Foguete", "Arco-íris", "Patinha", "Borboleta",
             "Chapéu de mago", "Unicórnio", "Raposa", "Pinguim",
-            "Cogumelo", "Fantasma", "Rex", "Varinha mágica"
+            "Cogumelo", "Fantasma", "Rex", "Varinha mágica",
+            "Sudoro", "Apaixonado", "Olhos de coração", "Festa",
+            "100", "Alvo", "Presente", "Chocolate",
+            "Bala", "Pirulito", "Cenoura", "Panda",
+            "Dizzy", "Papai Noel", "Fada", "Coelhinho"
     };
 
     static {

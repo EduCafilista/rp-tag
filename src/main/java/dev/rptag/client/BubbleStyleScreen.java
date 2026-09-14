@@ -180,16 +180,16 @@ public class BubbleStyleScreen extends Screen {
         }
         // (3.28.0) ARTE HD: quad direto do atlas NOTO 128px (Android de verdade)
         float u0 = (idx % 8) / 8.0F;
-        float v0 = (idx / 8) / 8.0F;
+        float v0 = (idx / 8) / 10.0F; // atlas 1024x1280 (10 fileiras)
         Matrix4f m = g.pose().last().pose();
         VertexConsumer buf = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(HI_TYPE);
         float x2 = x + 16.0F * scale;
         float y2 = y + 16.0F * scale;
         buf.addVertex(m, x, y, 0.15F).setColor(0xFFFFFFFF).setUv(u0, v0).setUv1(0, 10)
                 .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
-        buf.addVertex(m, x, y2, 0.15F).setColor(0xFFFFFFFF).setUv(u0, v0 + 0.125F).setUv1(0, 10)
+        buf.addVertex(m, x, y2, 0.15F).setColor(0xFFFFFFFF).setUv(u0, v0 + 0.1F).setUv1(0, 10)
                 .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
-        buf.addVertex(m, x2, y2, 0.15F).setColor(0xFFFFFFFF).setUv(u0 + 0.125F, v0 + 0.125F).setUv1(0, 10)
+        buf.addVertex(m, x2, y2, 0.15F).setColor(0xFFFFFFFF).setUv(u0 + 0.125F, v0 + 0.1F).setUv1(0, 10)
                 .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
         buf.addVertex(m, x2, y, 0.15F).setColor(0xFFFFFFFF).setUv(u0 + 0.125F, v0).setUv1(0, 10)
                 .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
@@ -589,14 +589,14 @@ public class BubbleStyleScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("∴ Costura"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_DASHED);
                 }).bounds(px + 8, py + ROW_BTN3, 81, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("▤ Nuvem"), b -> {
+        addRenderableWidget(Button.builder(Component.literal("◕ Brilho"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CLOUD);
                 }).bounds(px + 93, py + ROW_BTN3, 81, 16).build());
         addRenderableWidget(Button.builder(Component.literal("▤ Gibi"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_COMIC);
                 }).bounds(px + 178, py + ROW_BTN3, 81, 16).build());
 
-        addRenderableWidget(Button.builder(Component.literal("✦ Adesivos (64)"), b -> {
+        addRenderableWidget(Button.builder(Component.literal("✦ Adesivos (80)"), b -> {
                     showKeyboard = true;
                     rebuildWidgets();
                 }).bounds(px + 8, py + ROW_BTN4, 124, 18).build());
@@ -796,7 +796,7 @@ public class BubbleStyleScreen extends Screen {
                 return "§fCostura§7: pontilhado fino seguindo o balao";
             }
             if (mouseX >= px + 93 && mouseX <= px + 174) {
-                return "§fPensamento§7: nuvem Turma da Monica";
+                return "§fBrilho§7: halo suave ao redor do balao";
             }
             if (mouseX >= px + 178 && mouseX <= px + 259) {
                 return "§fGibi§7: balaozao gordo de HQ";
@@ -880,7 +880,11 @@ public class BubbleStyleScreen extends Screen {
                     drawTail(g, cx, simY + simH - 4, 15, 13, border);
                 }
                 case 3 -> dottedGui(g, simX0, simY, simW, simH, border); // COSTURA
-                case 4 -> cloudGui(g, simX0, simY, simW, simH, border);
+                case 4 -> { // BRILHO: halo suave + anel (igual ao mundo)
+                    ringGui(g, simX0, simY, simW, simH, shadeMask(border, 0x66), 6);
+                    ringGui(g, simX0, simY, simW, simH, border, 2);
+                    drawTail(g, cx, simY + simH - 3, 14, 12, border);
+                }
                 case 5 -> { // GIBI: anel gordo de HQ (igual ao mundo)
                     ringGui(g, simX0, simY, simW, simH, border, 7);
                     drawTail(g, cx, simY + simH - 5, 18, 16, border);
@@ -917,8 +921,8 @@ public class BubbleStyleScreen extends Screen {
                 if (eIdx < 0 || eIdx >= Stickers.COUNT) {
                     eIdx = i % Stickers.COUNT;
                 }
-                int exY = Math.max(simY + 2, tyText - 3); // nunca ponta fora da pilula
-                drawGlyphMenu(g, eIdx, Math.round(exX), exY, artEx);
+                int exY = tyText + 8; // ALINHADO: base do emoji = base do texto (nunca vaza)
+                drawGlyphMenu(g, eIdx, Math.round(exX), exY, 1.0F);
                 exX += 30;
             }
         }
@@ -1002,7 +1006,7 @@ public class BubbleStyleScreen extends Screen {
             case 1 -> "✒";
             case 2 -> "◎";
             case 3 -> "∴";
-            case 4 -> "☁";
+            case 4 -> "◕";
             case 5 -> "✦";
             default -> "◉";
         };

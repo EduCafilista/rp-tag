@@ -42,7 +42,7 @@ public final class BubbleRenderer {
     private static final int MAX_TEXT_WIDTH = 110;
     private static final int LINE_HEIGHT = 10;
     /** Linha com adesivo fica mais alta: o glifo da 3.11 tem 16px de arte. */
-    private static final int STICKER_LINE_HEIGHT = 18;
+    private static final int STICKER_LINE_HEIGHT = 20; // (3.29.0) 20px: glifo 16 centrado, NUNCA vaza
 
     // ---- ANIMACAO (o padrao dos mods famosos) ----
     /** Duracao do POP-IN com ressalto. */
@@ -410,7 +410,7 @@ public final class BubbleRenderer {
         }
         int bsH = Math.max(0, bubble.borderStyle());
         int bsIdx = Math.min(Math.max(bsH, 0), RING_MARGIN.length - 1);
-        int margin = bsH == 4 ? 34 : (bsH == 3 || bsH == 5 ? 20 : 14) + (int) RING_MARGIN[bsIdx];
+        int margin = (bsH == 3 || bsH == 5 ? 20 : 14) + (int) RING_MARGIN[bsIdx];
         return pillH + margin; // bolinhas/gomos/tinta contam na pilha!
     }
 
@@ -525,8 +525,13 @@ public final class BubbleRenderer {
                 }
                 case 3 -> // COSTURA (3.28.0): pontilhado 1:1 na capsula (nunca estica)
                         costura(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border);
-                case 4 -> // PENSAMENTO: nuvem + rabinho de bolinhas descendo (Turma da Monica)
-                        cloudBorder(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, yP1, border);
+                case 4 -> { // BRILHO (3.29.0, no lugar da nuvem): halo suave + anel
+                    ring(matrix, buffers, -0.16F, x0, yP0, pillW, pillH,
+                            withAlpha(shaded(border, 0.60F), Math.round(((border >>> 24) & 0xFF) * 0.55F)),
+                            RING_TYPE);
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, RING_TYPE);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+                }
                 case 5 -> { // GIBI: anel gordo de HQ + brilho gelatinoso duplo
                     ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, GIBI_TYPE);
                     tail(matrix, buffers, -0.15F, 0, yP1 - 5, 18, 18, border);
@@ -540,9 +545,7 @@ public final class BubbleRenderer {
 
         // ---- RECHEIO (a cor de dentro escolhida) ----
         pill(matrix, buffers, -0.10F, x0, yP0, pillW, pillH, fill);
-        if (bs != 4) { // no PENSAMENTO o rabicho comum fica sob a nuvem
-            tail(matrix, buffers, -0.09F, 0, yP1 - 3, 12, 12, fill);
-        }
+        tail(matrix, buffers, -0.09F, 0, yP1 - 3, 12, 12, fill);
         if (bs == 5) { // GIBI: brilho gelatinoso de HQ (elipse dupla, luz de verdade)
             flatQuad(matrix, buffers, -0.08F, x0 + pillW * 0.18F, yP0 + 2.5F,
                     x0 + pillW * 0.62F, yP0 + 6.5F, withAlpha(0x8CFFFFFF, alpha));
