@@ -2,6 +2,16 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.27.1] - 2026-09-13
+
+### Melhorado
+- **CONTORNOS NITIDOS EM TELA**: os aneis agora sao SOLIDOS (o alpha semi-
+  transparente das versoes anteriores sumia quando a textura era comprimida
+  no mundo — dava aspecto "esquisito"/falhado). Anti-aliasing so na parede
+  externa de 1px: borda limpa de PERTO E DE LONGE.
+- Costura com pontinhos mais fortes (2.6x5 solidos) e espacamento calibrado.
+- Balao com contraste do volume um tico maior (legivel de longe).
+
 ## [3.27.0] - 2026-09-12
 
 ### Melhorado
