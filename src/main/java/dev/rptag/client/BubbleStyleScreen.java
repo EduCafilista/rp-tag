@@ -10,6 +10,10 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.Mth;
+import org.joml.Matrix4f;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.resources.ResourceLocation;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -54,6 +58,11 @@ public class BubbleStyleScreen extends Screen {
     private static final int TEXTO_CLARO = 0xFFE8ECFF; // valores
     private static final int CINZA = 0xFF9AA4BC;       // texto apagado
     private static final int VERDE_OK = 0xFF9AE8B5;    // selecao / ok
+    // ATLAS HD dos adesivos (3.28.0): arte NOTO (Android) 128px por emoji —
+    // o menu desenha QUADS direto desse atlas (qualidade Android, zero pixels)
+    private static final ResourceLocation HI_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/stickers_hi.png");
+    private static final RenderType HI_TYPE = RenderType.text(HI_TEX);
     private static final int VERMELHO_TIRA = 0xFFE87A7A; // remover
     private static final int ZONA_VERDE = 0xFFB5F0C8;  // zona "colar no balao"
     private static final int ZONA_OURO = 0xFFFFE08A;   // zona "por na fala"
@@ -169,7 +178,22 @@ public class BubbleStyleScreen extends Screen {
         if (idx < 0 || idx >= Stickers.COUNT) {
             idx = 0;
         }
-        drawGlyph(g, Stickers.GLYPHS[idx], x, y, scale);
+        // (3.28.0) ARTE HD: quad direto do atlas NOTO 128px (Android de verdade)
+        float u0 = (idx % 8) / 8.0F;
+        float v0 = (idx / 8) / 8.0F;
+        Matrix4f m = g.pose().last().pose();
+        VertexConsumer buf = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(HI_TYPE);
+        float x2 = x + 16.0F * scale;
+        float y2 = y + 16.0F * scale;
+        buf.addVertex(m, x, y, 0.15F).setColor(0xFFFFFFFF).setUv(u0, v0).setUv1(0, 10)
+                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
+        buf.addVertex(m, x, y2, 0.15F).setColor(0xFFFFFFFF).setUv(u0, v0 + 0.125F).setUv1(0, 10)
+                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
+        buf.addVertex(m, x2, y2, 0.15F).setColor(0xFFFFFFFF).setUv(u0 + 0.125F, v0 + 0.125F).setUv1(0, 10)
+                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
+        buf.addVertex(m, x2, y, 0.15F).setColor(0xFFFFFFFF).setUv(u0 + 0.125F, v0).setUv1(0, 10)
+                .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
+        Minecraft.getInstance().renderBuffers().bufferSource().endBatch();
     }
 
     /** FATIA da pilula real (3 fatias: tampa + meio + tampa — pontas NUNCA deformam). */

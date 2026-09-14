@@ -234,8 +234,20 @@ public final class BubbleRenderer {
         VertexConsumer buf = buffers.getBuffer(CLOUD_TYPE);
         float cap = Math.min(32.0F, w / 3.0F);
         quad(m, buf, z, x, y, x + cap, y + h, 0.0F, 0.0F, 32.0F / 192.0F, 1.0F, argb);
-        quad(m, buf, z, x + cap, y, x + w - cap, y + h, 32.0F / 192.0F, 0.0F,
-                160.0F / 192.0F, 1.0F, argb);
+        // (3.28.0) MEIO TILE-PERFEITO: periodos de 32px em escala 1:1 — os gomos
+        // ficam SEMPRE do mesmo tamanho (fim da falha/esticamento da nuvem)
+        float avail = w - 2.0F * cap;
+        int n = (int) (avail / 32.0F);
+        for (int i = 0; i < n; i++) {
+            float u0 = (32.0F + (i % 4) * 32.0F) / 192.0F;
+            quad(m, buf, z, x + cap + i * 32.0F, y, x + cap + (i + 1) * 32.0F, y + h,
+                    u0, 0.0F, u0 + 32.0F / 192.0F, 1.0F, argb);
+        }
+        float resto = avail - n * 32.0F;
+        if (resto > 0.5F) {
+            quad(m, buf, z, x + cap + n * 32.0F, y, x + cap + n * 32.0F + resto, y + h,
+                    32.0F / 192.0F, 0.0F, 32.0F / 192.0F + resto / 192.0F, 1.0F, argb);
+        }
         quad(m, buf, z, x + w - cap, y, x + w, y + h, 160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
     }
 
@@ -292,6 +304,33 @@ public final class BubbleRenderer {
                 .setNormal(0.0F, 1.0F, 0.0F);
     }
 
+
+    /**
+     * COSTURA (3.28.0): pontilhado em PERIODOS de 8px 1:1 — os pontos ficam
+     * sempre do mesmo tamanho (fim do tracinho esticado/esquisito).
+     */
+    private static void costura(Matrix4f m, MultiBufferSource buffers, float z,
+            float x, float y, float w, float h, int argb) {
+        if ((argb >>> 24) == 0 || w < 8) {
+            return;
+        }
+        VertexConsumer buf = buffers.getBuffer(DASHED_TYPE);
+        float cap = Math.min(32.0F, w / 3.0F);
+        quad(m, buf, z, x, y, x + cap, y + h, 0.0F, 0.0F, 32.0F / 192.0F, 1.0F, argb);
+        float avail = w - 2.0F * cap;
+        int n = (int) (avail / 8.0F);
+        for (int i = 0; i < n; i++) {
+            float u0 = (32.0F + (i % 4) * 8.0F) / 192.0F;
+            quad(m, buf, z, x + cap + i * 8.0F, y, x + cap + (i + 1) * 8.0F, y + h,
+                    u0, 0.0F, u0 + 8.0F / 192.0F, 1.0F, argb);
+        }
+        float resto = avail - n * 8.0F;
+        if (resto > 0.3F) {
+            quad(m, buf, z, x + cap + n * 8.0F, y, x + cap + n * 8.0F + resto, y + h,
+                    32.0F / 192.0F, 0.0F, 32.0F / 192.0F + resto / 192.0F, 1.0F, argb);
+        }
+        quad(m, buf, z, x + w - cap, y, x + w, y + h, 160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
+    }
 
     /**
      * BALAO DE PENSAMENTO (3.21.0, estilo Turma da Monica): nuvem fofa com
@@ -484,8 +523,8 @@ public final class BubbleRenderer {
                     ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, DUPLA_TYPE);
                     tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
                 }
-                case 3 -> // COSTURA (3.27.0): pontilhado seguindo a CAPSULA (fim do bug)
-                        ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, DASHED_TYPE);
+                case 3 -> // COSTURA (3.28.0): pontilhado 1:1 na capsula (nunca estica)
+                        costura(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border);
                 case 4 -> // PENSAMENTO: nuvem + rabinho de bolinhas descendo (Turma da Monica)
                         cloudBorder(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, yP1, border);
                 case 5 -> { // GIBI: anel gordo de HQ + brilho gelatinoso duplo

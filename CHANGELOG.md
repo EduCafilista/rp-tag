@@ -2,6 +2,24 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.28.0] - 2026-09-14
+
+### Adicionado
+- **EMOJIS ANDROID DE VERDADE (NOTO)!** Os 64 adesivos agora usam a arte
+  OFICIAL do Noto Emoji (a mesma fonte de emojis do Android) — licenca
+  Apache 2.0, embutida no mod. No menu eles aparecem em ALTA DEFINICAO
+  (atlas 1024x1024, 128px por emoji desenhado por quad direto).
+
+### Corrigido
+- **NUVEM: FIM DA FALHA** — a textura agora tem gomos PERIODICOS (32px) e o
+  desenho no mundo usa periodos 1:1 (tile-perfeito): os gomos ficam SEMPRE
+  do mesmo tamanho, nunca mais esticados/smeared.
+- **COSTURA: FIM DO TRACINHO ESQUISITO** — mesma tecnica (periodos de 8px
+  1:1): pontinhos constantes em qualquer largura de balao.
+- **PIXEIS QUEBRADOS com muitas mensagens**: a pilula agora e 512x256 (2x
+  mais resolucao) e o rabicho 64x64 — muito mais liso, mesmo com a pilha
+  cheia de baloes na tela.
+
 ## [3.27.1] - 2026-09-13
 
 ### Melhorado
