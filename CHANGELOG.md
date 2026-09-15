@@ -2,6 +2,27 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.30.0] - 2026-09-15
+
+### Corrigido
+- **FIM DAS SOBREPOSICOES (o bug do laco no texto!)** — tres correcoes de
+  geometria:
+  1. **FAIXA DO ADESIVO DOBROU (18 -> 28px)**: o adesivo de 16px ficava
+     apertado na faixa de 18 e a base dele INVADIA a primeira linha de
+     texto. Agora tem 12px de respiro puro entre adesivo e letras.
+  2. **PILHA NA ESCALA CERTA**: desde que o balao cresceu 13%, a pilha
+     ainda calculava com a escala ANTIGA — os baloes empilhados
+     se sobrepunham. Agora a conta usa a MESMA escala do render.
+  3. **FOLGA DO GLIFO DO EMOJI**: o emoji desenhado pela fonte sobe ~7px
+     acima da linha — a pilula agora reserva esse espaco ANTES da primeira
+     linha (nada de emoji vazando por cima do balao).
+- A altura da pilha (bubbleHeightPx) espelha TODAS as novas medidas — a
+  pilha continua perfeita com adesivo + emoji + texto grande juntos.
+
+### Melhorado
+- Menu em paridade: faixa de 28px na previa (balao 52px), texto a 31px do
+  topo quando a faixa e em cima, emoji da fala top-alinhado com o texto.
+
 ## [3.29.0] - 2026-09-14
 
 ### Removido

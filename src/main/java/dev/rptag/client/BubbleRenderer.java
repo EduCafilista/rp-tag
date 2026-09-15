@@ -371,7 +371,7 @@ public final class BubbleRenderer {
         for (int i = 0; i < count; i++) {
             float belowBlocks = 0.0F;
             for (int j = i + 1; j < count; j++) {
-                belowBlocks += hPx[j] * 0.030F; // alturas dos baloes de baixo
+                belowBlocks += hPx[j] * 0.034F; // (3.30.0) MESMA escala do render — fim da sobreposicao!
             }
             float up = belowBlocks + (count - 1 - i) * STACK_GAP_BLOCKS;
             renderOne(event, minecraft, player, stack.get(i), up);
@@ -392,6 +392,8 @@ public final class BubbleRenderer {
             return 0;
         }
         int extraH = 0;
+        int li = 0;
+        boolean firstEmoji = false;
         for (FormattedCharSequence line : lines) {
             boolean[] has = {false};
             line.accept((idx, style, cp) -> {
@@ -402,11 +404,15 @@ public final class BubbleRenderer {
             });
             if (has[0]) {
                 extraH += STICKER_LINE_HEIGHT - LINE_HEIGHT; // linha com emoji e mais alta
+                if (li == 0) {
+                    firstEmoji = true; // glifo sobe ~7px acima da 1a linha
+                }
             }
+            li++;
         }
-        int pillH = lines.size() * LINE_HEIGHT + extraH + 6;
+        int pillH = (firstEmoji ? 7 : 0) + lines.size() * LINE_HEIGHT + extraH + 6;
         if (!bubble.corner().isEmpty()) {
-            pillH += 18; // faixa do adesivo (3.23.0) conta na altura real
+            pillH += 28; // faixa do adesivo (3.30.0) conta na altura real
         }
         int bsH = Math.max(0, bubble.borderStyle());
         int bsIdx = Math.min(Math.max(bsH, 0), RING_MARGIN.length - 1);
@@ -471,12 +477,13 @@ public final class BubbleRenderer {
             lineH[j] = hasSticker ? STICKER_LINE_HEIGHT : LINE_HEIGHT;
             extraH += lineH[j] - LINE_HEIGHT;
         }
-        int speechH = LINE_HEIGHT * n + extraH;
+        int headroom = (n > 0 && lineH[0] != LINE_HEIGHT) ? 7 : 0; // glifo do emoji sobe ~7px
+        int speechH = headroom + LINE_HEIGHT * n + extraH;
         // (3.22.0) ADESIVO SO NAS BORDAS: se tem adesivo, a pilula EXPANDE 18px
         // pro lado escolhido (topo se stickerY<50, base senao) — o adesivo vive
         // nessa faixa e NUNCA fica em cima das letras.
         boolean topBand = bubble.stickerY() < 50;
-        int expand = bubble.corner().isEmpty() ? 0 : 18;
+        int expand = bubble.corner().isEmpty() ? 0 : 28; // (3.30.0) 28px: adesivo + respiro REAL
         int bsPre = Math.max(0, bubble.borderStyle());
         // molduras que estouram pra fora (tracinhos/gomos/tinta grossa) ganham respiro
         int pad = (bsPre == 3 || bsPre == 4 || bsPre == 5) ? 20 : 14;
@@ -486,9 +493,9 @@ public final class BubbleRenderer {
         int pillW = Math.max(32, textW + pad);
         int pillH = speechH + 6;
         float x0 = -pillW / 2.0F;
-        float yText = 3 - speechH;              // topo da 1a linha de texto
-        float yP0 = yText - 3;                  // topo da pilula
-        float yP1 = yText + speechH + 3;        // base da pilula
+        float yText = 3 - speechH + headroom;       // topo da 1a linha (ja com folga)
+        float yP0 = yText - 3 - headroom;           // topo da pilula (reserva do glifo)
+        float yP1 = yText - headroom + speechH + 3; // base da pilula
         if (expand > 0) { // cresce pra FAIXA do adesivo (letras intocadas)
             if (topBand) {
                 yP0 -= expand;
@@ -573,7 +580,7 @@ public final class BubbleRenderer {
             float sw = font.width(sticker);
             float sx = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
                     x0 + 18.0F, x0 + pillW - 18.0F);
-            float sy = topBand ? yP0 + 18.0F : yP1 - 18.0F; // centro da faixa
+            float sy = topBand ? yP0 + 17.0F : yP1 - 17.0F; // centro da faixa de 28px
             font.drawInBatch(sticker, sx - sw / 2.0F, sy - 8.0F, withAlpha(0xFFFFFFFF, alpha), true,
                     matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }

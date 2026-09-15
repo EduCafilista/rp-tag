@@ -505,7 +505,7 @@ public class BubbleStyleScreen extends Screen {
      */
     private float[] stickerCenter() {
         boolean topBand = style.stickerY() < 50;
-        float sy = topBand ? simY + 9.0F : simY + simH - 9.0F; // centro da FAIXA (18px)
+        float sy = topBand ? simY + 17.0F : simY + simH - 17.0F; // centro da FAIXA (28px)
         float sx = Mth.clamp(simX0 + style.stickerX() / 100.0F * simW,
                 simX0 + 18.0F, simX0 + simW - 18.0F); // 18px pra dentro (igual ao mundo)
         return new float[]{sx, sy};
@@ -858,7 +858,7 @@ public class BubbleStyleScreen extends Screen {
         int conteudoW = Math.round(falaW1x * K) + (nEx > 0 ? nEx * 30 - 6 : 0);
         simW = Math.max(170, Math.min(246, conteudoW + 28));
         // com adesivo a capsula ganha a FAIXA de 18px (igual ao mundo)
-        simH = temAdesivo ? 42 : 30;
+        simH = temAdesivo ? 52 : (ex.isEmpty() ? 30 : 37); // faixa 28px (igual ao mundo)
         simX0 = px + (PANEL_W - simW) / 2;
         simY = py + (temAdesivo ? 41 : 46); // dentro do card, rabicho nunca cortado
         int ring = border != 0 ? border : fill;
@@ -908,7 +908,7 @@ public class BubbleStyleScreen extends Screen {
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
         int tx = simX0 + (simW - conteudoW) / 2;
-        int tyText = faixaTopo ? simY + 20 : (temAdesivo ? simY + 2 : simY + 6);
+        int tyText = faixaTopo ? simY + 31 : (temAdesivo ? simY + 2 : simY + 6 + (ex.isEmpty() ? 0 : 7));
         g.pose().pushPose();
         g.pose().translate(tx, tyText, 0.0F);
         g.pose().scale(K, K, 1.0F); // ZOOM: a fala do preview legivel de longe
@@ -921,7 +921,7 @@ public class BubbleStyleScreen extends Screen {
                 if (eIdx < 0 || eIdx >= Stickers.COUNT) {
                     eIdx = i % Stickers.COUNT;
                 }
-                int exY = tyText + 8; // ALINHADO: base do emoji = base do texto (nunca vaza)
+                int exY = tyText; // TOP-ALINHADO com o texto (nunca invade nada)
                 drawGlyphMenu(g, eIdx, Math.round(exX), exY, 1.0F);
                 exX += 30;
             }
