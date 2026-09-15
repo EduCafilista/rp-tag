@@ -2,6 +2,18 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.33.0] - 2026-09-15
+
+### Corrigido
+- **FIM DO "AR" NO BALÃO (o espaço enorme do print!)**: a faixa dos
+  emotes/adesivo foi REPROJETADA pra ser JUSTA — 20px no total (16 do
+  emoji + 2px de ar de cada lado), no lugar dos 28px cheios de vazio.
+  O balão agora fica colado no conteúdo: texto em cima, faixinha embaixo
+  (ou em cima), rabicho — SEM espaço morto.
+- Largura da faixa enxuta também (margens menores).
+- A pilha de balões acompanha a faixa nova (altura exata).
+- Menu em paridade 1:1 (prévia 42px com faixa justa).
+
 ## [3.32.0] - 2026-09-15
 
 ### Corrigido

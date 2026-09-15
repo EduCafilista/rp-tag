@@ -414,7 +414,7 @@ public final class BubbleRenderer {
         }
         int pillH = lines.size() * LINE_HEIGHT + 6;
         if (!bubble.corner().isEmpty() || !bubble.extras().isEmpty()) {
-            pillH += 28; // faixa do adesivo/emojis conta na altura real
+            pillH += 20; // faixa justa do adesivo/emojis conta na altura real
         }
         int bsH = Math.max(0, bubble.borderStyle());
         int bsIdx = Math.min(Math.max(bsH, 0), RING_MARGIN.length - 1);
@@ -472,12 +472,12 @@ public final class BubbleRenderer {
         // nessa faixa e NUNCA fica em cima das letras.
         boolean topBand = bubble.stickerY() < 50;
         boolean temBanda = !bubble.corner().isEmpty() || !bubble.extras().isEmpty();
-        int expand = temBanda ? 28 : 0; // adesivo OU emotes = faixa de 28px
+        int expand = temBanda ? 20 : 0; // (3.33.0) faixa JUSTA: 16 do emoji + 2+2 de ar
         int bsPre = Math.max(0, bubble.borderStyle());
         // molduras que estouram pra fora (tracinhos/gomos/tinta grossa) ganham respiro
         int pad = (bsPre == 3 || bsPre == 4 || bsPre == 5) ? 20 : 14;
         int extrasN = bubble.extras().length();
-        int bandaW = 18 + (bubble.corner().isEmpty() ? 0 : 20) + extrasN * 18 + 12;
+        int bandaW = 14 + (bubble.corner().isEmpty() ? 0 : 20) + extrasN * 18 + 8;
         int pillW = Math.max(32, Math.max(textW + pad, temBanda ? bandaW : 0));
         // (3.31.1) FIX CRITICO: a pilula tem que COBRIR a faixa do adesivo!
         // (era speechH+6 — com a faixa em cima, a pilula terminava 28px antes
@@ -571,13 +571,13 @@ public final class BubbleRenderer {
             float sw = font.width(sticker);
             float sx = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
                     x0 + 18.0F, x0 + pillW - 18.0F);
-            float sy = topBand ? yP0 + 17.0F : yP1 - 17.0F; // centro da faixa de 28px
+            float sy = topBand ? yP0 + 10.0F : yP1 - 10.0F; // centro da faixa de 20px
             font.drawInBatch(sticker, sx - sw / 2.0F, sy - 8.0F, withAlpha(0xFFFFFFFF, alpha), true,
                     matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
         // (3.32.0) EMOTES na MESMA faixa do adesivo (nunca no texto!)
         if (extrasN > 0) {
-            float sy2 = topBand ? yP0 + 17.0F : yP1 - 17.0F;
+            float sy2 = topBand ? yP0 + 10.0F : yP1 - 10.0F; // centro da faixa de 20px
             float ex0 = x0 + 18.0F;
             if (!bubble.corner().isEmpty()) {
                 float sx2 = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,

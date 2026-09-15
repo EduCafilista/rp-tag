@@ -505,7 +505,7 @@ public class BubbleStyleScreen extends Screen {
      */
     private float[] stickerCenter() {
         boolean topBand = style.stickerY() < 50;
-        float sy = topBand ? simY + 17.0F : simY + simH - 17.0F; // centro da FAIXA (28px)
+        float sy = topBand ? simY + 10.0F : simY + simH - 10.0F; // centro da FAIXA (20px)
         float sx = Mth.clamp(simX0 + style.stickerX() / 100.0F * simW,
                 simX0 + 18.0F, simX0 + simW - 18.0F); // 18px pra dentro (igual ao mundo)
         return new float[]{sx, sy};
@@ -856,7 +856,7 @@ public class BubbleStyleScreen extends Screen {
         int conteudoW = Math.round(falaW1x * K);
         simW = Math.max(170, Math.min(246, conteudoW + 28));
         // com adesivo/emotes a capsula ganha a FAIXA de 28px (igual ao mundo)
-        simH = temAdesivo ? 52 : 30; // faixa 28px (igual ao mundo)
+        simH = temAdesivo ? 42 : 30; // faixa JUSTA de 20px (igual ao mundo) // faixa 28px (igual ao mundo)
         simX0 = px + (PANEL_W - simW) / 2;
         simY = py + (temAdesivo ? 41 : 46); // dentro do card, rabicho nunca cortado
         int ring = border != 0 ? border : fill;
@@ -906,7 +906,7 @@ public class BubbleStyleScreen extends Screen {
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
         int tx = simX0 + (simW - conteudoW) / 2;
-        int tyText = faixaTopo ? simY + 31 : (temAdesivo ? simY + 2 : simY + 6);
+        int tyText = faixaTopo ? simY + 21 : (temAdesivo ? simY + 2 : simY + 6);
         g.pose().pushPose();
         g.pose().translate(tx, tyText, 0.0F);
         g.pose().scale(K, K, 1.0F); // ZOOM: a fala do preview legivel de longe
@@ -923,7 +923,7 @@ public class BubbleStyleScreen extends Screen {
 
         // --- (3.32.0) EMOTES na FAIXA (igual ao mundo) ---
         if (!ex.isEmpty()) {
-            float syB = faixaTopo ? simY + 17 : simY + simH - 17;
+            float syB = faixaTopo ? simY + 10 : simY + simH - 10;
             float exX = simX0 + 18;
             if (!style.corner().isEmpty()) {
                 float[] c0 = stickerCenter();
