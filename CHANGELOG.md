@@ -2,6 +2,17 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.31.1] - 2026-09-15
+
+### Corrigido
+- **O BUG DO PRINT (texto pendurado fora do balao): CAUSA RAIZ
+  ENCONTRADA E MORTA!** A pílula era desenhada com a altura SEM a faixa do
+  adesivo — quando a faixa expandia o balao pra cima (28px), a pílula
+  terminava 28px ANTES do fim do texto e as letras PENDURAVAM fora,
+  formando aquela "faixa preta" solta embaixo do balao. Agora a pílula
+  cobre TUDO (faixa + texto) nos dois lados — geometria verificada
+  matematicamente pra faixa em cima E embaixo.
+
 ## [3.31.0] - 2026-09-15
 
 ### Corrigido

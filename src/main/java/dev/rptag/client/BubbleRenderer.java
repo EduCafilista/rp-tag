@@ -514,7 +514,10 @@ public final class BubbleRenderer {
             pad += 2; // emoji na linha pede um pelinho mais de ar
         }
         int pillW = Math.max(32, textW + pad);
-        int pillH = speechH + 6;
+        // (3.31.1) FIX CRITICO: a pilula tem que COBRIR a faixa do adesivo!
+        // (era speechH+6 — com a faixa em cima, a pilula terminava 28px antes
+        // do fim do texto e as letras PENDURAVAM FORA do balao — o bug do print!)
+        int pillH = speechH + 6 + expand;
         float x0 = -pillW / 2.0F;
         float yText = 3 - speechH + headroom;       // topo da 1a linha (ja com folga)
         float yP0 = yText - 3 - headroom;           // topo da pilula (reserva do glifo)
