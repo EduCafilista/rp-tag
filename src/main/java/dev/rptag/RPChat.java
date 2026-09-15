@@ -76,6 +76,29 @@ public final class RPChat {
         spawnBubble(from, message, false);
     }
 
+    /**
+     * (3.34.0) CANAL DE AÇAO RP (/me, /do): vai SO no chat — NUNCA vira
+     * balao — e so para jogadores EM RP dentro do alcance local (a regiao
+     * RP). Quem esta OFF RP nao ve as acoes de RP (diferenca clara entre
+     * balao = fala, chat RP = acoes, chat normal = OFF RP).
+     */
+    public static void sendRpAction(ServerPlayer from, Component message) {
+        RPWorldData data = RPWorldData.get(from.server);
+        double r2 = (double) RPWorldData.LOCAL_RANGE * RPWorldData.LOCAL_RANGE;
+        for (ServerPlayer p : from.server.getPlayerList().getPlayers()) {
+            if (p.level() != from.level()) {
+                continue;
+            }
+            if (p.position().distanceToSqr(from.position()) > r2) {
+                continue;
+            }
+            if (!data.isInRp(p.getUUID())) {
+                continue; // OFF RP nao ve acao de RP
+            }
+            p.sendSystemMessage(message);
+        }
+    }
+
     /** Envia a mensagem a todos os jogadores dentro do raio (mesmo mundo). */
     public static void sendLocal(ServerPlayer from, double range, Component message) {
         for (ServerPlayer p : from.server.getPlayerList().getPlayers()) {

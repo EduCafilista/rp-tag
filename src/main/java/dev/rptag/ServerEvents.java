@@ -159,9 +159,11 @@ public final class ServerEvents {
             return;
         }
         Component base = event.getDisplayName();
-        if (base == null || RPTags.hasTag(base)) {
-            return; // nulo = padrao do vanilla; com tag = ja veio de getDisplayName()
+        if (base != null && RPTags.hasTag(base)) {
+            return; // ja tem a tag (veio do NameFormat)
         }
+        // (3.34.0) FIX: null = padrao do vanilla — AGORA colocamos a tag!
+        // (antes dava return e o TAB NUNCA mostrava o estado RP)
         event.setDisplayName(baseName(player, getPersona(player)).append(RPTags.tag(isInRp(player))));
     }
 

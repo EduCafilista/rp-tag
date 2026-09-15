@@ -2,6 +2,22 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.34.0] - 2026-09-15
+
+### Corrigido
+- **/ME NAO VIRA MAIS BALAO!** Acao e AÇAO, fala e FALA: o /me agora vai
+  SO para o chat RP — nunca aparece mais como balao de fala.
+- **/ME E /DO RESPEITAM A REGIAO DO RP**: as acoes agora so chegam a
+  jogadores EM RP dentro do alcance local (a regiao). Quem esta OFF RP
+  nao ve as acoes — separacao clara entre:
+  - **BALAO** = fala (chat normal no modo balao, /g, /s, /w)
+  - **CHAT RP** = acoes (/me, /do) — so pra quem esta em RP, na regiao
+  - **CHAT NORMAL** = conversa OFF RP (todo mundo ve)
+- **TAG RP NO TAB (FINALMENTE!)**: achado o bug que impedia o TAB de
+  mostrar o estado RP desde sempre — o handler via "nome padrao do
+  vanilla" e saia sem colocar a tag. Agora o TAB mostra
+  Nome + (RP)/(OFF RP) certinho, com atualizacao ao ligar/desligar.
+
 ## [3.33.0] - 2026-09-15
 
 ### Corrigido
