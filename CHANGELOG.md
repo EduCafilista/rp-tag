@@ -2,6 +2,22 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.31.0] - 2026-09-15
+
+### Corrigido
+- **TEXTO + EMOJI FUNCIONANDO JUNTOS (de verdade!)**: o emoji na fala NAO
+  passa mais pela fonte de texto — agora e um QUAD da arte NOTO (Android)
+  desenhado EXATAMENTE onde a geometria manda. Impossivel virar bloco
+  preto, invadir a linha de cima ou empurrar as letras: o texto e
+  renderizado 100% separado do emoji.
+- **TEXTURAS POT** (128x256 / 1024x2048): a fonte e o atlas agora tem
+  tamanho potencia-de-2 — nunca mais quebram em driver/GPU nenhum.
+
+### Melhorado
+- **EMOJIS NO MUNDO EM HD**: os emojis da fala agora sao desenhados do
+  MESMO atlas Android 128px do menu — menos pixel, mais imagem (como
+  pedido!). A largura continua 16px, entao a quebra de linha nao muda.
+
 ## [3.30.0] - 2026-09-15
 
 ### Corrigido

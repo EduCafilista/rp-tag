@@ -85,6 +85,10 @@ public final class BubbleRenderer {
     private static final RenderType DUPLA_TYPE = RenderType.text(DUPLA_TEX);
     private static final RenderType DASHED_TYPE = RenderType.text(DASHED_TEX);
     private static final RenderType GIBI_TYPE = RenderType.text(GIBI_TEX);
+    /** ATLAS HD dos emojis (NOTO/Android 128px) — o mundo desenha QUADS direto. */
+    private static final ResourceLocation HI_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/stickers_hi.png");
+    private static final RenderType HI_TYPE = RenderType.text(HI_TEX);
     /** margem do anel em volta da pilula, por estilo (cresce pra fora). */
     private static final float[] RING_MARGIN = {2.0F, 5.0F, 5.0F, 4.0F, 7.0F};
     private static final RenderType CLOUD_TYPE = RenderType.text(CLOUD_TEX);
@@ -196,14 +200,33 @@ public final class BubbleRenderer {
             List<Seg> segs, float x, float y, int textColor) {
         float pen = x;
         for (Seg seg : segs) {
-            // (3.15.0) CORRIGE O MURO PRETO: adesivo e ARTE COLORIDA e nunca
-            // herda a cor da letra (letra preta transformava o emoji em bloco
-            // preto solido). Alfa global apenas (fade).
-            int color = seg.sticker ? withAlpha(0xFFFFFFFF, 1.0F) : textColor;
-            pen = font.drawInBatch(seq(seg), pen, y, color, true, matrix, buffers,
+            if (seg.sticker) {
+                // (3.31.0) EMOJI = QUAD HD do atlas NOTO (Android de verdade):
+                // desenhado EXATAMENTE onde a geometria manda — nunca vira bloco
+                // preto, nunca invade o texto. A largura continua a da fonte
+                // (16px) pra nao mexer na quebra de linha.
+                for (int cp : seg.text.codePoints().toArray()) {
+                    emojiQuad(matrix, buffers, pen + 1.0F, y - 3.0F, cp - 0xE000);
+                }
+                pen += font.width(seq(seg));
+                continue;
+            }
+            pen = font.drawInBatch(seq(seg), pen, y, textColor, true, matrix, buffers,
                     Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
         return pen;
+    }
+
+    /** QUAD do emoji no atlas HD (celula 16px de 128x256; arte 1024x2048). */
+    private static void emojiQuad(Matrix4f m, MultiBufferSource buffers, float x, float y, int idx) {
+        if (idx < 0 || idx >= Stickers.COUNT) {
+            idx = 0;
+        }
+        float u0 = (idx % 8) / 8.0F;
+        float v0 = (idx / 8) / 16.0F;
+        VertexConsumer buf = buffers.getBuffer(HI_TYPE);
+        quad(m, buf, -0.07F, x, y, x + 16.0F, y + 16.0F, u0, v0, u0 + 0.125F, v0 + 0.0625F,
+                0xFFFFFFFF);
     }
 
     /**

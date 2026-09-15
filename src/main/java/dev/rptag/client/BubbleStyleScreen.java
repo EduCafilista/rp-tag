@@ -180,16 +180,16 @@ public class BubbleStyleScreen extends Screen {
         }
         // (3.28.0) ARTE HD: quad direto do atlas NOTO 128px (Android de verdade)
         float u0 = (idx % 8) / 8.0F;
-        float v0 = (idx / 8) / 10.0F; // atlas 1024x1280 (10 fileiras)
+        float v0 = (idx / 8) / 16.0F; // atlas 1024x2048 POT (10 fileiras usadas)
         Matrix4f m = g.pose().last().pose();
         VertexConsumer buf = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(HI_TYPE);
         float x2 = x + 16.0F * scale;
         float y2 = y + 16.0F * scale;
         buf.addVertex(m, x, y, 0.15F).setColor(0xFFFFFFFF).setUv(u0, v0).setUv1(0, 10)
                 .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
-        buf.addVertex(m, x, y2, 0.15F).setColor(0xFFFFFFFF).setUv(u0, v0 + 0.1F).setUv1(0, 10)
+        buf.addVertex(m, x, y2, 0.15F).setColor(0xFFFFFFFF).setUv(u0, v0 + 0.0625F).setUv1(0, 10)
                 .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
-        buf.addVertex(m, x2, y2, 0.15F).setColor(0xFFFFFFFF).setUv(u0 + 0.125F, v0 + 0.1F).setUv1(0, 10)
+        buf.addVertex(m, x2, y2, 0.15F).setColor(0xFFFFFFFF).setUv(u0 + 0.125F, v0 + 0.0625F).setUv1(0, 10)
                 .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
         buf.addVertex(m, x2, y, 0.15F).setColor(0xFFFFFFFF).setUv(u0 + 0.125F, v0).setUv1(0, 10)
                 .setLight(0xF000F0).setNormal(0.0F, 1.0F, 0.0F);
