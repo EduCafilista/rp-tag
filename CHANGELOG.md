@@ -2,6 +2,20 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.35.0] - 2026-09-15
+
+### Corrigido
+- **O AR NO BALÃO — BUG RAIZ ENCONTRADO E MORTO!** A geometria da pílula
+  usava o eixo Y INVERTIDO: a base do balão ficava ABAIXO da âncora e o
+  box DESCIA POR CIMA do nome — o nome ficava DENTRO do balão e sobrava
+  um retângulo enorme meio vazio (era isso em TODOS os prints!).
+  Agora a base da pílula encosta EXATAMENTE na âncora (logo acima do
+  nome) e o balão cresce SÓ PRA CIMA, 100% colado no conteúdo:
+  [faixa?] + texto + [faixa?] — ZERO espaço morto, nome NUNCA mais
+  dentro do box.
+- **Prévia do menu IGUAL ao mundo**: pílula da simulação também colada
+  (36px com faixa / 16px sem), sem ar interno.
+
 ## [3.34.0] - 2026-09-15
 
 ### Corrigido

@@ -484,16 +484,15 @@ public final class BubbleRenderer {
         // do fim do texto e as letras PENDURAVAM FORA do balao — o bug do print!)
         int pillH = speechH + 6 + expand;
         float x0 = -pillW / 2.0F;
-        float yText = 3 - speechH;              // topo da 1a linha
-        float yP0 = yText - 3;                  // topo da pilula
-        float yP1 = yText + speechH + 3;        // base da pilula
-        if (expand > 0) { // cresce pra FAIXA do adesivo (letras intocadas)
-            if (topBand) {
-                yP0 -= expand;
-            } else {
-                yP1 += expand;
-            }
-        }
+        // (3.35.0) FIX RAIZ DO "AR" (o bug de TODOS os prints!): a escala usa
+        // -Y, entao y=0 e a ancora (logo acima do nome) e y POSITIVO DESCE por
+        // cima do nametag. A base da pilula (yP1) ficava em +6/+26 — o balao
+        // INVADIA o nome e sobrava um box enorme meio vazio. Agora a base
+        // encosta EXATAMENTE na ancora (yP1 = 0) e o balao cresce SO PRA CIMA,
+        // 100% colado: [faixa topo?] 3 [texto] 3 [faixa base?] — zero ar.
+        float yP1 = 0.0F;                                         // base da pilula
+        float yText = yP1 - 3 - (topBand ? 0 : expand) - speechH; // topo da 1a linha
+        float yP0 = yText - 3 - (topBand ? expand : 0);           // topo da pilula
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();

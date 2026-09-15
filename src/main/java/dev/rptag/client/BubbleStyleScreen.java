@@ -856,9 +856,9 @@ public class BubbleStyleScreen extends Screen {
         int conteudoW = Math.round(falaW1x * K);
         simW = Math.max(170, Math.min(246, conteudoW + 28));
         // com adesivo/emotes a capsula ganha a FAIXA de 28px (igual ao mundo)
-        simH = temAdesivo ? 42 : 30; // faixa JUSTA de 20px (igual ao mundo) // faixa 28px (igual ao mundo)
+        simH = temAdesivo ? 36 : 16; // (3.35.0) IGUAL AO MUNDO: texto 10 + 3+3 + faixa 20 — sem ar
         simX0 = px + (PANEL_W - simW) / 2;
-        simY = py + (temAdesivo ? 41 : 46); // dentro do card, rabicho nunca cortado
+        simY = py + (temAdesivo ? 48 : 56); // centralizado no card, rabicho nunca cortado
         int ring = border != 0 ? border : fill;
         float cx = simX0 + simW / 2.0F;
 
@@ -906,7 +906,7 @@ public class BubbleStyleScreen extends Screen {
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
         int tx = simX0 + (simW - conteudoW) / 2;
-        int tyText = faixaTopo ? simY + 21 : (temAdesivo ? simY + 2 : simY + 6);
+        int tyText = faixaTopo ? simY + 23 : simY + 3; // (3.35.0) colado: faixa 20 + 3 | 3 + texto
         g.pose().pushPose();
         g.pose().translate(tx, tyText, 0.0F);
         g.pose().scale(K, K, 1.0F); // ZOOM: a fala do preview legivel de longe
