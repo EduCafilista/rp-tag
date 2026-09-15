@@ -2,6 +2,21 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.32.0] - 2026-09-15
+
+### Corrigido
+- **EMOTE = SO A BORDA, LINHA NENHUMA (o pedido exato!)**: os emotes da
+  fala NAO entram mais no texto — agora moram na FAIXA do balao (a mesma
+  do adesivo), ao lado dele. A fala e 100% texto puro:
+  - NADA de linha de emoji (o espaco vazio que aparecia no print morreu)
+  - NADA de texto empurrado/escorrido
+  - O balao fica do tamanho EXATO do texto (+ a faixa, se tiver emote)
+
+### Melhorado
+- Emotes desenhados por QUADS HD (Android) na faixa, em fileira organizada
+  ao lado do adesivo — no mundo E na previa do menu (paridade 1:1).
+- A pilha de baloes calcula a altura pelo texto puro + faixa (perfeita).
+
 ## [3.31.1] - 2026-09-15
 
 ### Corrigido

@@ -765,7 +765,7 @@ public class BubbleStyleScreen extends Screen {
             return;
         }
         if (holdingSticker != null) {
-            hint = "▶ Clique NO BALÃO pra colar · na FALE (dourado) pra empilhar · ESC solta";
+            hint = "▶ Clique NO BALÃO pra colar na faixa (com os emotes) · ESC solta";
             cor = ZONA_OURO;
         } else if (extrasCount() > 0) {
             hint = "✨ " + extrasCount() + " emoji(s) na fala · clique em ✖ pra tirar";
@@ -849,16 +849,14 @@ public class BubbleStyleScreen extends Screen {
         // (3.24.0) ZOOM NO CONTEUDO: a fala aparece 2x (emoji em ARTE 1.5x) pra
         // dar pra LER bem o que vai pro mundo antes de testar. Se 6 emojis nao
         // couberem, cai pra 1.5x automatico (nada estoura o card).
-        boolean temAdesivo = !style.corner().isEmpty();
+        boolean temAdesivo = !style.corner().isEmpty() || !ex.isEmpty(); // (3.32.0) emotes = faixa
         boolean faixaTopo = temAdesivo && style.stickerY() < 50;
         int falaW1x = this.font.width("sua fala assim");
-        int nEx = ex.isEmpty() ? 0 : ex.length();
-        float K = (falaW1x * 2 + nEx * 30 + 34 > 246) ? 1.5F : 2.0F; // zoom do texto
-        float artEx = K == 2.0F ? 1.5F : 1.0F; // zoom da arte dos emojis da fala
-        int conteudoW = Math.round(falaW1x * K) + (nEx > 0 ? nEx * 30 - 6 : 0);
+        float K = (falaW1x * 2 + 34 > 246) ? 1.5F : 2.0F; // zoom do texto
+        int conteudoW = Math.round(falaW1x * K);
         simW = Math.max(170, Math.min(246, conteudoW + 28));
-        // com adesivo a capsula ganha a FAIXA de 18px (igual ao mundo)
-        simH = temAdesivo ? 52 : (ex.isEmpty() ? 30 : 37); // faixa 28px (igual ao mundo)
+        // com adesivo/emotes a capsula ganha a FAIXA de 28px (igual ao mundo)
+        simH = temAdesivo ? 52 : 30; // faixa 28px (igual ao mundo)
         simX0 = px + (PANEL_W - simW) / 2;
         simY = py + (temAdesivo ? 41 : 46); // dentro do card, rabicho nunca cortado
         int ring = border != 0 ? border : fill;
@@ -908,24 +906,12 @@ public class BubbleStyleScreen extends Screen {
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
         int tx = simX0 + (simW - conteudoW) / 2;
-        int tyText = faixaTopo ? simY + 31 : (temAdesivo ? simY + 2 : simY + 6 + (ex.isEmpty() ? 0 : 7));
+        int tyText = faixaTopo ? simY + 31 : (temAdesivo ? simY + 2 : simY + 6);
         g.pose().pushPose();
         g.pose().translate(tx, tyText, 0.0F);
         g.pose().scale(K, K, 1.0F); // ZOOM: a fala do preview legivel de longe
         g.drawString(this.font, "sua fala assim", 0, 0, textColor, true);
         g.pose().popPose();
-        if (!ex.isEmpty()) { // emojis da fala em ARTE ampliada (nao fonte miadinha)
-            float exX = tx + Math.round(falaW1x * K) + 8;
-            for (int i = 0; i < nEx; i++) {
-                int eIdx = (ex.charAt(i) & 0xFFFF) - 0xE000;
-                if (eIdx < 0 || eIdx >= Stickers.COUNT) {
-                    eIdx = i % Stickers.COUNT;
-                }
-                int exY = tyText; // TOP-ALINHADO com o texto (nunca invade nada)
-                drawGlyphMenu(g, eIdx, Math.round(exX), exY, 1.0F);
-                exX += 30;
-            }
-        }
 
         g.disableScissor();
 
@@ -933,6 +919,23 @@ public class BubbleStyleScreen extends Screen {
         if (holdingSticker != null) {
             outline(g, px + 6, py + ROW_CHAT - 3, PANEL_W - 12, 14, ZONA_OURO);
             outline(g, simX0 - 6, simY - 6, simW + 12, simH + 18, ZONA_VERDE);
+        }
+
+        // --- (3.32.0) EMOTES na FAIXA (igual ao mundo) ---
+        if (!ex.isEmpty()) {
+            float syB = faixaTopo ? simY + 17 : simY + simH - 17;
+            float exX = simX0 + 18;
+            if (!style.corner().isEmpty()) {
+                float[] c0 = stickerCenter();
+                exX = Math.max(exX, c0[0] + 10);
+            }
+            for (int i = 0; i < ex.length(); i++) {
+                int eIdx = (ex.charAt(i) & 0xFFFF) - 0xE000;
+                if (eIdx < 0 || eIdx >= Stickers.COUNT) {
+                    eIdx = 0;
+                }
+                drawGlyphMenu(g, eIdx, Math.round(exX + i * 18), Math.round(syB) - 8, 1.0F);
+            }
         }
 
         // --- adesivo livre: na posicao (%) — com hover ---

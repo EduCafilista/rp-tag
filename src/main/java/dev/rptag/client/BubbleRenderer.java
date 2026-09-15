@@ -406,36 +406,15 @@ public final class BubbleRenderer {
      * usada pra empilhar sem sobrepor.
      */
     private static int bubbleHeightPx(Font font, ClientBubbleCache.Bubble bubble) {
+        // (3.32.0) fala = TEXTO PURO; os emotes moram na faixa (so a faixa conta)
         String speech = bubble.text();
-        if (!bubble.extras().isEmpty()) {
-            speech = speech + " " + spacedExtras(bubble.extras());
-        }
         List<FormattedCharSequence> lines = font.split(Stickers.styled(speech), MAX_TEXT_WIDTH);
         if (lines.isEmpty()) {
             return 0;
         }
-        int extraH = 0;
-        int li = 0;
-        boolean firstEmoji = false;
-        for (FormattedCharSequence line : lines) {
-            boolean[] has = {false};
-            line.accept((idx, style, cp) -> {
-                if (Stickers.isStickerChar(cp)) {
-                    has[0] = true;
-                }
-                return true;
-            });
-            if (has[0]) {
-                extraH += STICKER_LINE_HEIGHT - LINE_HEIGHT; // linha com emoji e mais alta
-                if (li == 0) {
-                    firstEmoji = true; // glifo sobe ~7px acima da 1a linha
-                }
-            }
-            li++;
-        }
-        int pillH = (firstEmoji ? 7 : 0) + lines.size() * LINE_HEIGHT + extraH + 6;
-        if (!bubble.corner().isEmpty()) {
-            pillH += 28; // faixa do adesivo (3.30.0) conta na altura real
+        int pillH = lines.size() * LINE_HEIGHT + 6;
+        if (!bubble.corner().isEmpty() || !bubble.extras().isEmpty()) {
+            pillH += 28; // faixa do adesivo/emojis conta na altura real
         }
         int bsH = Math.max(0, bubble.borderStyle());
         int bsIdx = Math.min(Math.max(bsH, 0), RING_MARGIN.length - 1);
@@ -449,10 +428,10 @@ public final class BubbleRenderer {
         Font font = minecraft.font;
         // (3.13.0) VARIOS EMOJIS: os extras acompanham a fala DENTRO do balao,
         // DE ESPACADOS entre si — cada emoji fica distinto e legivel de longe.
+        // (3.32.0) EMOJIS SO NAS BORDAS: os extras NAO entram mais no texto!
+        // A fala e 100% texto; os emojis moram na FAIXA (igual ao adesivo) —
+        // linha de emoji NUNCA mais (fim do espaco vazio do print).
         String speech = bubble.text();
-        if (!bubble.extras().isEmpty()) {
-            speech = speech + " " + spacedExtras(bubble.extras());
-        }
         List<FormattedCharSequence> lines = font.split(Stickers.styled(speech), MAX_TEXT_WIDTH);
         if (lines.isEmpty()) {
             return;
@@ -487,41 +466,27 @@ public final class BubbleRenderer {
         }
         int n = lines.size();
         // linha com adesivo (glifo 16px) ocupa 18px; texto puro segue em 10px
-        int[] lineH = new int[n];
-        int extraH = 0;
-        for (int j = 0; j < n; j++) {
-            boolean hasSticker = false;
-            for (Seg seg : segLines.get(j)) {
-                if (seg.sticker) {
-                    hasSticker = true;
-                    break;
-                }
-            }
-            lineH[j] = hasSticker ? STICKER_LINE_HEIGHT : LINE_HEIGHT;
-            extraH += lineH[j] - LINE_HEIGHT;
-        }
-        int headroom = (n > 0 && lineH[0] != LINE_HEIGHT) ? 7 : 0; // glifo do emoji sobe ~7px
-        int speechH = headroom + LINE_HEIGHT * n + extraH;
+        int speechH = LINE_HEIGHT * n; // texto puro — emoji NAO cria linha NENHUMA
         // (3.22.0) ADESIVO SO NAS BORDAS: se tem adesivo, a pilula EXPANDE 18px
         // pro lado escolhido (topo se stickerY<50, base senao) — o adesivo vive
         // nessa faixa e NUNCA fica em cima das letras.
         boolean topBand = bubble.stickerY() < 50;
-        int expand = bubble.corner().isEmpty() ? 0 : 28; // (3.30.0) 28px: adesivo + respiro REAL
+        boolean temBanda = !bubble.corner().isEmpty() || !bubble.extras().isEmpty();
+        int expand = temBanda ? 28 : 0; // adesivo OU emotes = faixa de 28px
         int bsPre = Math.max(0, bubble.borderStyle());
         // molduras que estouram pra fora (tracinhos/gomos/tinta grossa) ganham respiro
         int pad = (bsPre == 3 || bsPre == 4 || bsPre == 5) ? 20 : 14;
-        if (extraH > 0) {
-            pad += 2; // emoji na linha pede um pelinho mais de ar
-        }
-        int pillW = Math.max(32, textW + pad);
+        int extrasN = bubble.extras().length();
+        int bandaW = 18 + (bubble.corner().isEmpty() ? 0 : 20) + extrasN * 18 + 12;
+        int pillW = Math.max(32, Math.max(textW + pad, temBanda ? bandaW : 0));
         // (3.31.1) FIX CRITICO: a pilula tem que COBRIR a faixa do adesivo!
         // (era speechH+6 — com a faixa em cima, a pilula terminava 28px antes
         // do fim do texto e as letras PENDURAVAM FORA do balao — o bug do print!)
         int pillH = speechH + 6 + expand;
         float x0 = -pillW / 2.0F;
-        float yText = 3 - speechH + headroom;       // topo da 1a linha (ja com folga)
-        float yP0 = yText - 3 - headroom;           // topo da pilula (reserva do glifo)
-        float yP1 = yText - headroom + speechH + 3; // base da pilula
+        float yText = 3 - speechH;              // topo da 1a linha
+        float yP0 = yText - 3;                  // topo da pilula
+        float yP1 = yText + speechH + 3;        // base da pilula
         if (expand > 0) { // cresce pra FAIXA do adesivo (letras intocadas)
             if (topBand) {
                 yP0 -= expand;
@@ -597,7 +562,7 @@ public final class BubbleRenderer {
             float lineX = -Math.round(lineW / 2.0F);
             float penY = yText + cum;
             drawLine(font, matrix, buffers, segs, lineX, penY, textColor);
-            cum += lineH[j];
+            cum += LINE_HEIGHT;
         }
 
         // ---- ADESIVO LIVRE: SEMPRE na faixa de borda, NUNCA sobre as letras ----
@@ -609,6 +574,20 @@ public final class BubbleRenderer {
             float sy = topBand ? yP0 + 17.0F : yP1 - 17.0F; // centro da faixa de 28px
             font.drawInBatch(sticker, sx - sw / 2.0F, sy - 8.0F, withAlpha(0xFFFFFFFF, alpha), true,
                     matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+        }
+        // (3.32.0) EMOTES na MESMA faixa do adesivo (nunca no texto!)
+        if (extrasN > 0) {
+            float sy2 = topBand ? yP0 + 17.0F : yP1 - 17.0F;
+            float ex0 = x0 + 18.0F;
+            if (!bubble.corner().isEmpty()) {
+                float sx2 = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
+                        x0 + 18.0F, x0 + pillW - 18.0F);
+                ex0 = Math.max(ex0, sx2 + 10.0F);
+            }
+            for (int i = 0; i < extrasN; i++) {
+                int idx = (bubble.extras().charAt(i) & 0xFFFF) - 0xE000;
+                emojiQuad(matrix, buffers, ex0 + i * 18.0F, sy2 - 8.0F, idx);
+            }
         }
 
         poseStack.popPose();
