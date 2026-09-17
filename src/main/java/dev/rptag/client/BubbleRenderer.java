@@ -39,7 +39,8 @@ import org.joml.Matrix4f;
 @EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class BubbleRenderer {
 
-    private static final int MAX_TEXT_WIDTH = 110;
+    /** (3.35.0) faixa de texto mais larga: menos quebras, balao mais legivel. */
+    private static final int MAX_TEXT_WIDTH = 140;
     private static final int LINE_HEIGHT = 10;
     /** Linha com adesivo fica mais alta: o glifo da 3.11 tem 16px de arte. */
     private static final int STICKER_LINE_HEIGHT = 20; // (3.29.0) 20px: glifo 16 centrado, NUNCA vaza
@@ -55,6 +56,12 @@ public final class BubbleRenderer {
     private static final long FADE_MS = 400;
     /** Respiro ENTRE baloes da pilha (a altura real de cada um ja e somada). */
     private static final float STACK_GAP_BLOCKS = 0.12F;
+    /**
+     * Escala do balao no mundo. UM unico lugar: a pilha usava 0.034F escrito na
+     * mao e o render tambem — mudar um e esquecer o outro fazia os baloes
+     * empilhados se sobreporem.
+     */
+    private static final float SCALE = 0.040F;
 
     /** Textura da pílula (64x32, branca com alfa suave — tingida na hora). */
     private static final ResourceLocation BUBBLE_TEX =
@@ -62,9 +69,6 @@ public final class BubbleRenderer {
     /** Textura do rabicho (16x16, triângulo curvado apontando pra baixo). */
     private static final ResourceLocation TAIL_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble_tail.png");
-    /** Textura da NUVEM (192x64, gomos contornados; cap = 32px de 192). */
-    private static final ResourceLocation CLOUD_TEX =
-            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/cloud.png");
 
     private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
     private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
@@ -89,9 +93,24 @@ public final class BubbleRenderer {
     private static final ResourceLocation HI_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/stickers_hi.png");
     private static final RenderType HI_TYPE = RenderType.text(HI_TEX);
-    /** margem do anel em volta da pilula, por estilo (cresce pra fora). */
-    private static final float[] RING_MARGIN = {2.0F, 5.0F, 5.0F, 4.0F, 7.0F};
-    private static final RenderType CLOUD_TYPE = RenderType.text(CLOUD_TEX);
+    /** Textura propria do BRILHO (halo suave) — antes ele reusava o anel Classico. */
+    private static final ResourceLocation BRILHO_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/brilho.png");
+    private static final RenderType BRILHO_TYPE = RenderType.text(BRILHO_TEX);
+    /**
+     * (3.35.0) MARGEM DO CONTORNO POR ESTILO — a correcao central do visual.
+     *
+     * <p>Antes o anel era SEMPRE desenhado 2px pra fora da pilula, e o recheio
+     * era desenhado depois por cima. Resultado: qualquer tinta alem desses 2px
+     * ficava ESCONDIDA atras do recheio, entao Classica, Cartum, Dupla, Brilho
+     * e Gibi saiam todas com a MESMA casquinha de 2px — as 6 molduras eram
+     * visualmente identicas. Agora cada estilo cresce pra fora o quanto precisa.
+     *
+     * <p>Indices: 0 Classica, 1 Cartum, 2 Dupla, 3 Tracejada, 4 Brilho, 5 Gibi.
+     * (o array antigo tinha 5 posicoes pra 6 estilos — o Gibi lia a margem do
+     * Brilho por causa do clamp.)
+     */
+    private static final float[] RING_MARGIN = {2.0F, 4.0F, 5.0F, 3.0F, 4.0F, 5.0F};
 
     // regiao da pilula dentro do bubble.png (y 2..28 de 32; tampa = 16px de 64)
     private static final float V1 = 0.0F;
@@ -139,6 +158,17 @@ public final class BubbleRenderer {
         int g = (int) (((argb >> 8) & 0xFF) * f);
         int b = (int) ((argb & 0xFF) * f);
         return (argb & 0xFF000000) | (r << 16) | (g << 8) | b;
+    }
+
+    /** Clareia um RGB em direcao ao branco (k 0..1) — usado pelo halo do Brilho. */
+    private static int lighten(int rgb, float k) {
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        r = (int) (r + (255 - r) * k);
+        g = (int) (g + (255 - g) * k);
+        b = (int) (b + (255 - b) * k);
+        return (r << 16) | (g << 8) | b;
     }
 
     /** Multiplica o canal alfa de uma cor ARGB (k 0..1). */
@@ -211,7 +241,10 @@ public final class BubbleRenderer {
                 pen += font.width(seq(seg));
                 continue;
             }
-            pen = font.drawInBatch(seq(seg), pen, y, textColor, true, matrix, buffers,
+            // (3.35.0) SEM sombra: dentro de um balao claro a sombra preta do
+            // vanilla borrava cada letra e dava aquele aspecto sujo/embacado.
+            // O recheio ja e opaco, entao o contraste sozinho basta.
+            pen = font.drawInBatch(seq(seg), pen, y, textColor, false, matrix, buffers,
                     Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
         return pen;
@@ -246,63 +279,23 @@ public final class BubbleRenderer {
     }
 
     /**
-     * A NUVEM inteira em 3 fatias de textura (cap esquerdo + meio + cap
-     * direito): gomos contornados de verdade, anti-aliased, fofo.
-     */
-    private static void cloudStrip(Matrix4f m, MultiBufferSource buffers, float z,
-            float x, float y, float w, float h, int argb) {
-        if ((argb >>> 24) == 0 || w < 8) {
-            return;
-        }
-        VertexConsumer buf = buffers.getBuffer(CLOUD_TYPE);
-        float cap = Math.min(32.0F, w / 3.0F);
-        quad(m, buf, z, x, y, x + cap, y + h, 0.0F, 0.0F, 32.0F / 192.0F, 1.0F, argb);
-        // (3.28.0) MEIO TILE-PERFEITO: periodos de 32px em escala 1:1 — os gomos
-        // ficam SEMPRE do mesmo tamanho (fim da falha/esticamento da nuvem)
-        float avail = w - 2.0F * cap;
-        int n = (int) (avail / 32.0F);
-        for (int i = 0; i < n; i++) {
-            float u0 = (32.0F + (i % 4) * 32.0F) / 192.0F;
-            quad(m, buf, z, x + cap + i * 32.0F, y, x + cap + (i + 1) * 32.0F, y + h,
-                    u0, 0.0F, u0 + 32.0F / 192.0F, 1.0F, argb);
-        }
-        float resto = avail - n * 32.0F;
-        if (resto > 0.5F) {
-            quad(m, buf, z, x + cap + n * 32.0F, y, x + cap + n * 32.0F + resto, y + h,
-                    32.0F / 192.0F, 0.0F, 32.0F / 192.0F + resto / 192.0F, 1.0F, argb);
-        }
-        quad(m, buf, z, x + w - cap, y, x + w, y + h, 160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
-    }
-
-    /**
      * CONTORNO COM RELEVO da Classica: a textura so tem tinta nas bordas de
      * cima/baixo (meio transparente) — um unico draw da o anel completo,
      * com tinta 2px pra fora (igual antes) e acabamento brilhante.
      */
     private static void ring(Matrix4f m, MultiBufferSource buffers, float z,
-            float x, float y, float w, float h, int argb, RenderType tipo) {
+            float x, float y, float w, float h, int argb, RenderType tipo, float margin) {
         if ((argb >>> 24) == 0 || w < 4) {
             return;
         }
         VertexConsumer buf = buffers.getBuffer(tipo);
         float cap = Math.min(16.0F, w / 2.0F);
-        quad(m, buf, z, x - 2, y - 2, x + cap, y + h + 2, 0.0F, 0.0F, U_CAP, 1.0F, argb);
-        quad(m, buf, z, x + cap, y - 2, x + w - cap, y + h + 2, U_CAP, 0.0F,
+        quad(m, buf, z, x - margin, y - margin, x + cap, y + h + margin,
+                0.0F, 0.0F, U_CAP, 1.0F, argb);
+        quad(m, buf, z, x + cap, y - margin, x + w - cap, y + h + margin, U_CAP, 0.0F,
                 1.0F - U_CAP, 1.0F, argb);
-        quad(m, buf, z, x + w - cap, y - 2, x + w + 2, y + h + 2, 1.0F - U_CAP, 0.0F,
-                1.0F, 1.0F, argb);
-    }
-
-    /** QUAD RETO: amostra o meio PLANO da pilula — retangulo perfeito (tracinhos). */
-    private static void flatQuad(Matrix4f m, MultiBufferSource buffers, float z,
-            float x1, float y1, float x2, float y2, int argb) {
-        if ((argb >>> 24) == 0) {
-            return;
-        }
-        VertexConsumer buf = buffers.getBuffer(BUBBLE_TYPE);
-        float u1 = 120.0F / 256.0F, u2 = 136.0F / 256.0F;
-        float v1 = 48.0F / 128.0F, v2 = 80.0F / 128.0F;
-        quad(m, buf, z, x1, y1, x2, y2, u1, v1, u2, v2, argb);
+        quad(m, buf, z, x + w - cap, y - margin, x + w + margin, y + h + margin,
+                1.0F - U_CAP, 0.0F, 1.0F, 1.0F, argb);
     }
 
     /** O rabicho (textura 16x16 desenhada em w x h, centralizado em cx). */
@@ -333,40 +326,37 @@ public final class BubbleRenderer {
      * sempre do mesmo tamanho (fim do tracinho esticado/esquisito).
      */
     private static void costura(Matrix4f m, MultiBufferSource buffers, float z,
-            float x, float y, float w, float h, int argb) {
-        if ((argb >>> 24) == 0 || w < 8) {
+            float x, float y, float w, float h, int argb, float margin) {
+        if ((argb >>> 24) == 0 || w < 40) {
             return;
         }
         VertexConsumer buf = buffers.getBuffer(DASHED_TYPE);
-        float cap = Math.min(32.0F, w / 3.0F);
-        quad(m, buf, z, x, y, x + cap, y + h, 0.0F, 0.0F, 32.0F / 192.0F, 1.0F, argb);
+        // (3.35.0) DOIS bugs corrigidos aqui:
+        // 1. a tracejada era desenhada EXATAMENTE no tamanho da pilula, e o
+        //    recheio (desenhado depois, na frente) cobria os tracinhos
+        //    inteiros — a moldura Tracejada simplesmente NAO aparecia;
+        // 2. a "tampa" usava 32px de mundo, mas a textura foi feita com a
+        //    tampa valendo 16+margem — por isso o contorno nao acompanhava a
+        //    curva da pilula. Agora a tampa e 16 (igual ao anel) e tudo
+        //    cresce pra fora pela margem.
+        final float cap = 16.0F;
+        quad(m, buf, z, x - margin, y - margin, x + cap, y + h + margin,
+                0.0F, 0.0F, 32.0F / 192.0F, 1.0F, argb);
         float avail = w - 2.0F * cap;
         int n = (int) (avail / 8.0F);
         for (int i = 0; i < n; i++) {
             float u0 = (32.0F + (i % 4) * 8.0F) / 192.0F;
-            quad(m, buf, z, x + cap + i * 8.0F, y, x + cap + (i + 1) * 8.0F, y + h,
+            quad(m, buf, z, x + cap + i * 8.0F, y - margin, x + cap + (i + 1) * 8.0F, y + h + margin,
                     u0, 0.0F, u0 + 8.0F / 192.0F, 1.0F, argb);
         }
         float resto = avail - n * 8.0F;
         if (resto > 0.3F) {
-            quad(m, buf, z, x + cap + n * 8.0F, y, x + cap + n * 8.0F + resto, y + h,
-                    32.0F / 192.0F, 0.0F, 32.0F / 192.0F + resto / 192.0F, 1.0F, argb);
+            float u0 = (32.0F + (n % 4) * 8.0F) / 192.0F;
+            quad(m, buf, z, x + cap + n * 8.0F, y - margin, x + cap + n * 8.0F + resto, y + h + margin,
+                    u0, 0.0F, u0 + resto / 192.0F, 1.0F, argb);
         }
-        quad(m, buf, z, x + w - cap, y, x + w, y + h, 160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
-    }
-
-    /**
-     * BALAO DE PENSAMENTO (3.21.0, estilo Turma da Monica): nuvem fofa com
-     * gomos contornados + RABINHO DE BOLINHAS descendo em direcao a cabeca.
-     */
-    private static void cloudBorder(Matrix4f m, MultiBufferSource buffers, float z,
-            float x0, float yP0, float pillW, float pillH, float yP1, int argb) {
-        cloudStrip(m, buffers, z, x0 - 7, yP0 - 7, pillW + 14, pillH + 14, argb);
-        // rabinho de pensamento: bolinhas que diminuem e se afastam do centro
-        float dot = 7.0F, dot2 = 5.0F, dot3 = 3.5F;
-        pill(m, buffers, z, -3.0F - dot / 2, yP1 + 5, dot, dot, argb);
-        pill(m, buffers, z, 1.0F - dot2 / 2, yP1 + 13, dot2, dot2, argb);
-        pill(m, buffers, z, 4.0F - dot3 / 2, yP1 + 19, dot3, dot3, argb);
+        quad(m, buf, z, x + w - cap, y - margin, x + w + margin, y + h + margin,
+                160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
     }
 
     private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {
@@ -394,7 +384,7 @@ public final class BubbleRenderer {
         for (int i = 0; i < count; i++) {
             float belowBlocks = 0.0F;
             for (int j = i + 1; j < count; j++) {
-                belowBlocks += hPx[j] * 0.034F; // (3.30.0) MESMA escala do render — fim da sobreposicao!
+                belowBlocks += hPx[j] * SCALE; // MESMA escala do render — fim da sobreposicao!
             }
             float up = belowBlocks + (count - 1 - i) * STACK_GAP_BLOCKS;
             renderOne(event, minecraft, player, stack.get(i), up);
@@ -412,14 +402,14 @@ public final class BubbleRenderer {
         if (lines.isEmpty()) {
             return 0;
         }
-        int pillH = lines.size() * LINE_HEIGHT + 6;
+        int pillH = lines.size() * LINE_HEIGHT + 8;
         if (!bubble.corner().isEmpty() || !bubble.extras().isEmpty()) {
             pillH += 20; // faixa justa do adesivo/emojis conta na altura real
         }
         int bsH = Math.max(0, bubble.borderStyle());
-        int bsIdx = Math.min(Math.max(bsH, 0), RING_MARGIN.length - 1);
-        int margin = (bsH == 3 || bsH == 5 ? 20 : 14) + (int) RING_MARGIN[bsIdx];
-        return pillH + margin; // bolinhas/gomos/tinta contam na pilha!
+        int bsIdx = Math.min(bsH, RING_MARGIN.length - 1);
+        // a moldura cresce pra fora nos DOIS lados + o rabicho pendura embaixo
+        return pillH + Math.round(2.0F * RING_MARGIN[bsIdx]) + 14;
     }
 
     /** Desenha UM balao da pilha, com pop-in + flutuacao + fade. */
@@ -474,81 +464,90 @@ public final class BubbleRenderer {
         boolean temBanda = !bubble.corner().isEmpty() || !bubble.extras().isEmpty();
         int expand = temBanda ? 20 : 0; // (3.33.0) faixa JUSTA: 16 do emoji + 2+2 de ar
         int bsPre = Math.max(0, bubble.borderStyle());
-        // molduras que estouram pra fora (tracinhos/gomos/tinta grossa) ganham respiro
-        int pad = (bsPre == 3 || bsPre == 4 || bsPre == 5) ? 20 : 14;
+        // (3.35.0) o respiro interno agora e IGUAL pra todos: a moldura cresce
+        // pra FORA (RING_MARGIN), entao nao precisa mais roubar espaco de dentro.
+        int pad = 16;
         int extrasN = bubble.extras().length();
         int bandaW = 14 + (bubble.corner().isEmpty() ? 0 : 20) + extrasN * 18 + 8;
-        int pillW = Math.max(32, Math.max(textW + pad, temBanda ? bandaW : 0));
+        int pillW = Math.max(34, Math.max(textW + pad, temBanda ? bandaW : 0));
         // (3.31.1) FIX CRITICO: a pilula tem que COBRIR a faixa do adesivo!
         // (era speechH+6 — com a faixa em cima, a pilula terminava 28px antes
         // do fim do texto e as letras PENDURAVAM FORA do balao — o bug do print!)
-        int pillH = speechH + 6 + expand;
+        int pillH = speechH + 8 + expand;
         float x0 = -pillW / 2.0F;
-        // (3.35.0) FIX RAIZ DO "AR" (o bug de TODOS os prints!): a escala usa
-        // -Y, entao y=0 e a ancora (logo acima do nome) e y POSITIVO DESCE por
-        // cima do nametag. A base da pilula (yP1) ficava em +6/+26 — o balao
-        // INVADIA o nome e sobrava um box enorme meio vazio. Agora a base
-        // encosta EXATAMENTE na ancora (yP1 = 0) e o balao cresce SO PRA CIMA,
-        // 100% colado: [faixa topo?] 3 [texto] 3 [faixa base?] — zero ar.
+        // (3.36.0) FIX RAIZ DO "AR" (portado da 3.35.0 — a reforma tinha
+        // voltado a geometria antiga!): a escala usa -Y, entao y=0 e a ANCORa
+        // (logo acima do nome) e y POSITIVO DESCE por cima do nametag. A base
+        // ficava em +4/+24 — o balao INVADIA o nome e sobrava um box enorme
+        // meio vazio. Agora a base encosta EXATAMENTE na ancora (yP1 = 0) e o
+        // balao cresce SO PRA CIMA, 100% colado — zero ar, nome livre.
         float yP1 = 0.0F;                                         // base da pilula
-        float yText = yP1 - 3 - (topBand ? 0 : expand) - speechH; // topo da 1a linha
-        float yP0 = yText - 3 - (topBand ? expand : 0);           // topo da pilula
+        float yText = yP1 - 4 - (topBand ? 0 : expand) - speechH; // topo da 1a linha
+        float yP0 = yText - 4 - (topBand ? expand : 0);           // topo da pilula
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
         poseStack.translate(0.0, player.getBbHeight() + 0.95 + upBlocks + floatUp * 0.030F, 0.0);
         poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
-        poseStack.scale(0.034F * popScale(age), -0.034F * popScale(age), 0.034F);
+        // (3.35.0) 0.034 -> 0.040: balao ~18% maior, legivel de mais longe
+        poseStack.scale(SCALE * popScale(age), -SCALE * popScale(age), SCALE);
         Matrix4f matrix = poseStack.last().pose();
         MultiBufferSource buffers = event.getMultiBufferSource();
 
-        // ---- SOMBRA ----
-        pill(matrix, buffers, -0.20F, x0 + 2, yP0 + 2, pillW, pillH, withAlpha(0x40000000, alpha));
-        tail(matrix, buffers, -0.20F, 0, yP1 - 1, 12, 12, withAlpha(0x40000000, alpha));
-
-        // ---- CONTORNO (6 ESTILOS: Classica / Cartum / Dupla / Tracejada / Nuvem / Gibi) ----
         int bs = bsPre;
+        float margin = RING_MARGIN[Math.min(bs, RING_MARGIN.length - 1)];
+        // rabicho: base larga o bastante pra parecer parte do balao
+        final float tw = 13.0F;
+        final float th = 13.0F;
+
+        // ---- SOMBRA (suave, quase sem deslocamento — a antiga era um eco duro
+        // deslocado 2px que dava cara de clipart) ----
+        pill(matrix, buffers, -0.20F, x0 + 1, yP0 + 2, pillW, pillH, withAlpha(0x33000000, alpha));
+        tail(matrix, buffers, -0.20F, 1, yP1 - 2, tw, th, withAlpha(0x33000000, alpha));
+
+        // ---- CONTORNO (6 ESTILOS: Classica / Cartum / Dupla / Tracejada / Brilho / Gibi) ----
         if (border != 0) {
+            float tailBorderW = tw + margin * 1.6F;
+            float tailBorderH = th + margin;
             switch (bs) {
-                case 1 -> { // CARTUM: anel de tinta grossa + SOMBRA da capa embaixo
-                    tail(matrix, buffers, -0.17F, 2, yP1 - 1, 20, 16,
-                            shaded(border, 0.45F));
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, CARTUM_TYPE);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 4, 20, 18, border);
+                case 1 -> { // CARTUM: tinta grossa
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, CARTUM_TYPE, margin);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
+                            tailBorderW, tailBorderH, border);
                 }
-                case 2 -> { // DUPLA: anel de linha dupla (textura propria)
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, DUPLA_TYPE);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+                case 2 -> { // DUPLA: duas linhas finas
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, DUPLA_TYPE, margin);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
+                            tailBorderW, tailBorderH, border);
                 }
-                case 3 -> // COSTURA (3.28.0): pontilhado 1:1 na capsula (nunca estica)
-                        costura(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border);
-                case 4 -> { // BRILHO (3.29.0, no lugar da nuvem): halo suave + anel
-                    ring(matrix, buffers, -0.16F, x0, yP0, pillW, pillH,
-                            withAlpha(shaded(border, 0.60F), Math.round(((border >>> 24) & 0xFF) * 0.55F)),
-                            RING_TYPE);
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, RING_TYPE);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+                case 3 -> { // TRACEJADA: tracinhos acompanhando a curva
+                    costura(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, margin);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
+                            tailBorderW, tailBorderH, border);
                 }
-                case 5 -> { // GIBI: anel gordo de HQ + brilho gelatinoso duplo
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, GIBI_TYPE);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 5, 18, 18, border);
+                case 4 -> { // BRILHO: halo CLARO (o antigo usava a cor ESCURA da
+                            // borda, entao o "brilho" era invisivel) + anel fino
+                    int halo = withAlpha(0xCC000000 | lighten(colorRGB, 0.55F), alpha);
+                    ring(matrix, buffers, -0.16F, x0, yP0, pillW, pillH, halo, BRILHO_TYPE, margin);
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, RING_TYPE, 2.0F);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 3, tw + 3.0F, th + 2.0F, border);
                 }
-                default -> { // CLASSICA: contorno com RELEVO (textura propria)
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, RING_TYPE);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 4, 16, 15, border);
+                case 5 -> { // GIBI: anel gordo de HQ
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, GIBI_TYPE, margin);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
+                            tailBorderW, tailBorderH, border);
+                }
+                default -> { // CLASSICA: contorno limpo
+                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, RING_TYPE, margin);
+                    tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
+                            tailBorderW, tailBorderH, border);
                 }
             }
         }
 
         // ---- RECHEIO (a cor de dentro escolhida) ----
         pill(matrix, buffers, -0.10F, x0, yP0, pillW, pillH, fill);
-        tail(matrix, buffers, -0.09F, 0, yP1 - 3, 12, 12, fill);
-        if (bs == 5) { // GIBI: brilho gelatinoso de HQ (elipse dupla, luz de verdade)
-            flatQuad(matrix, buffers, -0.08F, x0 + pillW * 0.18F, yP0 + 2.5F,
-                    x0 + pillW * 0.62F, yP0 + 6.5F, withAlpha(0x8CFFFFFF, alpha));
-            flatQuad(matrix, buffers, -0.08F, x0 + pillW * 0.30F, yP0 + 2.0F,
-                    x0 + pillW * 0.50F, yP0 + 3.5F, withAlpha(0xE0FFFFFF, alpha));
-        }
+        tail(matrix, buffers, -0.09F, 0, yP1 - 2, tw, th, fill);
 
         // ---- texto + adesivos dentro da fala (sombra vanilla = legivel e limpo) ----
         int cum = 0;
@@ -571,7 +570,7 @@ public final class BubbleRenderer {
             float sx = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
                     x0 + 18.0F, x0 + pillW - 18.0F);
             float sy = topBand ? yP0 + 10.0F : yP1 - 10.0F; // centro da faixa de 20px
-            font.drawInBatch(sticker, sx - sw / 2.0F, sy - 8.0F, withAlpha(0xFFFFFFFF, alpha), true,
+            font.drawInBatch(sticker, sx - sw / 2.0F, sy - 8.0F, withAlpha(0xFFFFFFFF, alpha), false,
                     matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
         // (3.32.0) EMOTES na MESMA faixa do adesivo (nunca no texto!)

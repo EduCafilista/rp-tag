@@ -85,6 +85,7 @@ public final class RPChat {
     public static void sendRpAction(ServerPlayer from, Component message) {
         RPWorldData data = RPWorldData.get(from.server);
         double r2 = (double) RPWorldData.LOCAL_RANGE * RPWorldData.LOCAL_RANGE;
+        boolean echoedToSender = false;
         for (ServerPlayer p : from.server.getPlayerList().getPlayers()) {
             if (p.level() != from.level()) {
                 continue;
@@ -96,6 +97,15 @@ public final class RPChat {
                 continue; // OFF RP nao ve acao de RP
             }
             p.sendSystemMessage(message);
+            if (p.getUUID().equals(from.getUUID())) {
+                echoedToSender = true;
+            }
+        }
+        // (correcao) quem manda a acao (ex.: admin no /do) precisa ver que o
+        // comando funcionou mesmo se estiver OFF RP — sem isso o comando
+        // parecia nao fazer nada pra quem digitou.
+        if (!echoedToSender) {
+            from.sendSystemMessage(message);
         }
     }
 

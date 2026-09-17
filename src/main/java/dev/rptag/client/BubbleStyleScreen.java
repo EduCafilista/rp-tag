@@ -376,6 +376,17 @@ public class BubbleStyleScreen extends Screen {
         drawPillGloss(g, x + 2, y - 2, w - 4, h + 4, argb);
     }
 
+    /** Clareia um RGB em direcao ao branco (k 0..1) — halo do Brilho. */
+    private static int lightenGui(int rgb, float k) {
+        int r = (rgb >> 16) & 0xFF;
+        int g2 = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        r = (int) (r + (255 - r) * k);
+        g2 = (int) (g2 + (255 - g2) * k);
+        b = (int) (b + (255 - b) * k);
+        return (r << 16) | (g2 << 8) | b;
+    }
+
     /** Componente "● " na cor pedida (o caminho PROVADO de mostrar cor). */
     private static MutableComponent dot(int rgb) {
         return Component.literal("● ").withStyle(s -> s.withColor(TextColor.fromRgb(rgb & 0xFFFFFF)));
@@ -856,9 +867,9 @@ public class BubbleStyleScreen extends Screen {
         int conteudoW = Math.round(falaW1x * K);
         simW = Math.max(170, Math.min(246, conteudoW + 28));
         // com adesivo/emotes a capsula ganha a FAIXA de 28px (igual ao mundo)
-        simH = temAdesivo ? 36 : 16; // (3.35.0) IGUAL AO MUNDO: texto 10 + 3+3 + faixa 20 — sem ar
+        simH = temAdesivo ? 38 : 18; // (3.36.0) IGUAL AO MUNDO: texto 10 + 4+4 + faixa 20 — sem ar
         simX0 = px + (PANEL_W - simW) / 2;
-        simY = py + (temAdesivo ? 48 : 56); // centralizado no card, rabicho nunca cortado
+        simY = py + (temAdesivo ? 45 : 52); // centralizado no card, rabicho nunca cortado
         int ring = border != 0 ? border : fill;
         float cx = simX0 + simW / 2.0F;
 
@@ -868,9 +879,8 @@ public class BubbleStyleScreen extends Screen {
         // --- MOLDURA REAL (as 6, iguais as do mundo) ---
         if (border != 0) {
             switch (bsC) {
-                case 1 -> { // CARTUM: anel de tinta + sombra embaixo (igual ao mundo)
-                    drawTail(g, cx + 2, simY + simH - 1, 20, 16, shadeMask(border, 0x73));
-                    ringGui(g, simX0, simY, simW, simH, border, 5);
+                case 1 -> { // CARTUM: tinta grossa (margem 4, igual ao mundo)
+                    ringGui(g, simX0, simY, simW, simH, border, 4);
                     drawTail(g, cx, simY + simH - 4, 19, 17, border);
                 }
                 case 2 -> { // DUPLA: anel de linha dupla (igual ao mundo)
@@ -878,13 +888,14 @@ public class BubbleStyleScreen extends Screen {
                     drawTail(g, cx, simY + simH - 4, 15, 13, border);
                 }
                 case 3 -> dottedGui(g, simX0, simY, simW, simH, border); // COSTURA
-                case 4 -> { // BRILHO: halo suave + anel (igual ao mundo)
-                    ringGui(g, simX0, simY, simW, simH, shadeMask(border, 0x66), 6);
+                case 4 -> { // BRILHO: halo CLARO + anel fino (igual ao mundo)
+                    ringGui(g, simX0, simY, simW, simH,
+                            0xCC000000 | lightenGui(colorRGB, 0.55F), 4);
                     ringGui(g, simX0, simY, simW, simH, border, 2);
                     drawTail(g, cx, simY + simH - 3, 14, 12, border);
                 }
                 case 5 -> { // GIBI: anel gordo de HQ (igual ao mundo)
-                    ringGui(g, simX0, simY, simW, simH, border, 7);
+                    ringGui(g, simX0, simY, simW, simH, border, 5);
                     drawTail(g, cx, simY + simH - 5, 18, 16, border);
                 }
                 default -> { // CLASSICA: contorno com relevo (igual ao mundo)
@@ -897,16 +908,10 @@ public class BubbleStyleScreen extends Screen {
         // --- RECHEIO + rabicho ---
         drawTail(g, cx, simY + simH - 2, 12, 10, fill);
         drawPillGloss(g, simX0, simY, simW, simH, fill);
-        if (bsC == 5) { // gibi: brilho gelatinoso de HQ (elipse dupla)
-            drawPill(g, simX0 + Math.round(simW * 0.18F), simY + 2,
-                    Math.round(simW * 0.44F), 5, 0x8CFFFFFF);
-            drawPill(g, simX0 + Math.round(simW * 0.30F), simY + 1,
-                    Math.round(simW * 0.20F), 3, 0xE0FFFFFF);
-        }
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
         int tx = simX0 + (simW - conteudoW) / 2;
-        int tyText = faixaTopo ? simY + 23 : simY + 3; // (3.35.0) colado: faixa 20 + 3 | 3 + texto
+        int tyText = faixaTopo ? simY + 24 : simY + 4; // (3.36.0) colado: faixa 20 + 4 | 4 + texto
         g.pose().pushPose();
         g.pose().translate(tx, tyText, 0.0F);
         g.pose().scale(K, K, 1.0F); // ZOOM: a fala do preview legivel de longe

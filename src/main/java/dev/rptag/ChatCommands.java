@@ -100,6 +100,14 @@ public final class ChatCommands {
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             String acao = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "acao");
+                            // (correcao) sendRpAction so entrega a quem esta EM RP —
+                            // um jogador OFF RP que der /me nao via nem a propria
+                            // acao e o comando "funcionava" sem avisar nada.
+                            if (!RPWorldData.get(player.server).isInRp(player.getUUID())) {
+                                ctx.getSource().sendFailure(Component.literal(
+                                        "Voce precisa estar em RP para usar /me. Use /rp on."));
+                                return Command.SINGLE_SUCCESS;
+                            }
                             // (3.34.0) /me = AÇAO: SO no CHAT RP (regiao, so quem
                             // esta em RP) — NUNCA vira balao (balao e FALA)!
                             RPChat.sendRpAction(player, Component.empty()

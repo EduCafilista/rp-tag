@@ -299,7 +299,10 @@ public final class RPWorldData extends SavedData {
             data.styles.put(e.getUUID("Id"), BubbleStyle.load(e.getCompound("Style")));
         }
 
-        data.chatLocal = tag.getBoolean("ChatLocal");
+        // (correcao) mesmo cuidado que ja existia pro "BubblesOn": se a tag
+        // nunca foi salva (mundo/save antigo), tem que manter o padrao real
+        // (ligado) em vez de virar "false" so por ausencia da chave.
+        data.chatLocal = !tag.contains("ChatLocal") || tag.getBoolean("ChatLocal");
         data.bubblesOn = !tag.contains("BubblesOn") || tag.getBoolean("BubblesOn");
         return data;
     }

@@ -51,7 +51,12 @@ public record BubbleStyle(int colorRGB, int borderRGB, int borderStyle, int text
     public static final int BORDER_DOUBLE = 2;
     /** Tracejada: tracinhos fofos ao redor de todo o balao. */
     public static final int BORDER_DASHED = 3;
-    /** Nuvem: bolas fofas em toda a volta — o balao vira uma nuvenzinha. */
+    /**
+     * Brilho (nome interno "CLOUD" por historico — desde a 3.29.0 este estilo
+     * NAO desenha mais a nuvem/pensamento, e sim um halo suave + anel; o
+     * menu ja mostra o botao correto "Brilho"). Mantido com este nome so
+     * pra nao quebrar mundos salvos com o indice 4 gravado.
+     */
     public static final int BORDER_CLOUD = 4;
     /** Gibi: balaozao de HQ (estilo Turma da Monica) — inflado, tinta grossa e brilho. */
     public static final int BORDER_COMIC = 5;

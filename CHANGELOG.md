@@ -2,6 +2,59 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.36.0] - 2026-09-16
+
+### Corrigido (por cima da reforma)
+- **FIX RAIZ DO "AR" RE-APLICADO** (a reforma tinha saido de uma base anterior
+  a 3.35.0 e a geometria antiga voltou): a base da pilula encosta EXATAMENTE
+  na ancora (yP1 = 0, logo acima do nome) e o balao cresce SO PRA CIMA, 100%
+  colado — o nome NUNCA mais fica dentro do box, zero espaco morto.
+- Previa do menu sem ar interno de novo (38px com faixa / 18px sem = mundo).
+
+### Reforma visual dos baloes (source do usuario + Claude)
+
+### Reforma visual dos balões
+
+- **As 6 molduras eram idênticas na prática — agora cada uma é distinta.**
+  Esta era a causa raiz do balão "feio". O contorno sempre era desenhado
+  apenas 2px para fora da pílula, e o recheio era desenhado *depois, por
+  cima*. Toda a tinta além desses 2px ficava escondida atrás do recheio,
+  então Clássica, Cartum, Dupla, Brilho e Gibi saíam com a mesma casquinha
+  fina. Agora cada estilo tem sua própria margem para fora
+  (`RING_MARGIN = {2, 4, 5, 3, 4, 5}`).
+- **A moldura Tracejada não aparecia.** Era desenhada exatamente no tamanho
+  da pílula, então o recheio cobria os tracinhos por inteiro. Além disso a
+  "tampa" usava 32px enquanto a textura foi feita com 16 — o contorno não
+  acompanhava a curva. Os dois erros foram corrigidos.
+- **Balão branco saía cinza sujo.** A textura antiga escurecia o recheio até
+  181/255 e o interior tinha alfa 0xEE (deixava o cenário atravessar). Agora
+  o interior é opaco e a textura mantém a cor escolhida de verdade.
+- **O estilo "Brilho" era invisível** — o halo era pintado com a cor *escura*
+  da borda. Agora o halo usa uma versão clara da cor do balão.
+- **Texto borrado.** A sombra preta do vanilla sujava cada letra dentro de um
+  balão claro. Removida (o interior opaco já dá contraste sozinho).
+- **Rabicho** parecia uma lasca torta colada no balão: a textura não convergia
+  numa ponta. Refeito como um triângulo de quadrinho de verdade.
+- **Sombra** deixou de ser um eco preto deslocado 2px (cara de clipart) e
+  virou um apoio suave logo abaixo.
+- **Balão ~18% maior** (escala 0.034 → 0.040) para ler de mais longe, e faixa
+  de texto mais larga (110 → 140) para quebrar menos linhas.
+- **Texturas refeitas**: `bubble`, `ring`, `cartum`, `dupla`, `gibi`,
+  `dashed`, `bubble_tail`, e a nova `brilho.png`. A `cloud.png` foi removida
+  (sem uso desde a 3.29.0).
+
+### Corrigido
+- `RING_MARGIN` tinha 5 posições para 6 estilos: o Gibi lia a margem do
+  estilo errado por causa do clamp.
+- A escala do balão (`0.034`) estava escrita à mão no render **e** na conta
+  de empilhamento. Virou a constante `SCALE` — mudar uma e esquecer a outra
+  fazia os balões empilhados se sobreporem.
+- Removido código morto com UVs erradas: `flatQuad` calculava as coordenadas
+  para uma textura 256x128 enquanto a `bubble.png` é 512x256 (o "brilho
+  gelatinoso" do Gibi amostrava a região errada), além da nuvem de
+  pensamento sem uso desde a 3.29.0.
+- A prévia do menu foi realinhada com as espessuras e o halo do mundo.
+
 ## [3.35.0] - 2026-09-15
 
 ### Corrigido
@@ -15,6 +68,29 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   dentro do box.
 - **Prévia do menu IGUAL ao mundo**: pílula da simulação também colada
   (36px com faixa / 16px sem), sem ar interno.
+
+## [3.34.1] - 2026-09-15
+
+### Corrigido
+- **Borda automática instável**: a cor da borda "Auto" usava um OU bit a bit
+  pra dar um tom frio à cor escurecida — isso podia CLAREAR canais de forma
+  imprevisível dependendo da cor escolhida. Agora é uma soma com limite por
+  canal, sempre estável.
+- **Balão "Brilho" podia se aproximar demais do balão empilhado acima**: a
+  conta de altura da pilha esquecia o estilo Brilho no grupo que precisa de
+  mais respiro (só contava Tracejada e Gibi).
+- **`/me` e `/do` "funcionavam" sem avisar nada** quando quem mandou estava
+  OFF RP: a ação só é entregue a quem está EM RP, então o próprio jogador
+  às vezes não via a própria mensagem em lugar nenhum. Agora: `/me` avisa
+  com uma mensagem de erro se você estiver OFF RP (`/rp on` primeiro); e
+  quem manda a ação (inclusive `/do` do admin) sempre recebe o eco da
+  própria mensagem, esteja em RP ou não.
+- **"Chat local" podia voltar desligado sozinho** em saves onde a chave
+  nunca foi gravada (mesma classe de bug que já tinha sido corrigida só
+  pro "balões ligados globalmente").
+- Documentação: o README ainda descrevia a moldura 4 como "Pensamento"
+  (nuvem com rabinho de bolinhas), mas ela virou "Brilho" na 3.29.0 — o
+  texto foi corrigido pra bater com o que o jogo realmente desenha.
 
 ## [3.34.0] - 2026-09-15
 

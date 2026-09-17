@@ -1,18 +1,5 @@
-# Gradle
-.gradle/
 build/
-
-# IDEs
-.idea/
-*.iml
-*.ipr
-*.iws
-.vscode/
-.classpath
-.project
-.settings/
-bin/
-
-# Runs do Minecraft
 run/
-runs/
+.gradle/
+*.iml
+.idea/
