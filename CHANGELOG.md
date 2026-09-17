@@ -2,6 +2,18 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.38.0] - 2026-09-17
+
+### Corrigido
+- **QUEBRA DE LINHA INTELIGENTE**: o wrap guloso do vanilla jogava a ultima
+  palavra orfa numa linha curta embaixo ("tentou pegar o / calice"). Agora
+  as linhas ficam EQUILIBRADAS (mesmo numero de linhas, reparticao por
+  programacao dinamica: "tentou pegar / o calice" vira 2 linhas emparelhadas
+  — sem palavra sobrando feia). Palavra maior que a linha inteira e fatiada
+  no limite (nunca mais clipa na borda do balao).
+- **Linha de texto mais larga (140 → 160)**: quebra menos, baloes mais
+  compactos pra frases de tamano normal.
+- A altura da pilha usa exatamente as mesmas linhas do render (paridade total).
 ## [3.37.0] - 2026-09-17
 
 ### Redesenhado

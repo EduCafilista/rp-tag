@@ -40,7 +40,7 @@ import org.joml.Matrix4f;
 public final class BubbleRenderer {
 
     /** (3.35.0) faixa de texto mais larga: menos quebras, balao mais legivel. */
-    private static final int MAX_TEXT_WIDTH = 140;
+    private static final int MAX_TEXT_WIDTH = 160; // (3.38.0) 140 -> 160: quebra menos
     private static final int LINE_HEIGHT = 10;
     /** Linha com adesivo fica mais alta: o glifo da 3.11 tem 16px de arte. */
     private static final int STICKER_LINE_HEIGHT = 20; // (3.29.0) 20px: glifo 16 centrado, NUNCA vaza
@@ -403,14 +403,112 @@ public final class BubbleRenderer {
      * Altura TOTAL do balao em pixels de GUI (pilula + bordas/gomos + margem),
      * usada pra empilhar sem sobrepor.
      */
+    /**
+     * (3.38.0) QUEBRA DE LINHA INTELIGENTE: o wrap guloso do vanilla jogava a
+     * ultima palavra orfa numa linha de baixo curta demais ("tentou pegar o /
+     * calice"). Aqui: mesmo numero minimo de linhas, mas repartido EQUILIBRADO
+     * (programacao dinamica, custo = soma das folgas ao quadrado). Palavra
+     * mais larga que a linha inteira e fatiada no limite (nunca clipa).
+     */
+    private static List<String> wrapBalanced(Font font, String speech) {
+        final float spaceW = font.width(" ");
+        List<String> words = new ArrayList<>();
+        for (String raw : speech.split(" ")) {
+            String w = raw;
+            while (!w.isEmpty() && font.width(Stickers.styled(w).getVisualOrderText()) > MAX_TEXT_WIDTH) {
+                int cut = w.length() - 1;
+                while (cut > 1 && font.width(
+                        Stickers.styled(w.substring(0, cut)).getVisualOrderText()) > MAX_TEXT_WIDTH) {
+                    cut--;
+                }
+                words.add(w.substring(0, cut));
+                w = w.substring(cut);
+            }
+            if (!w.isEmpty()) {
+                words.add(w);
+            }
+        }
+        int n = words.size();
+        if (n == 0) {
+            return new ArrayList<>();
+        }
+        float[] wArr = new float[n];
+        for (int i = 0; i < n; i++) {
+            wArr[i] = font.width(Stickers.styled(words.get(i)).getVisualOrderText());
+        }
+        // numero minimo de linhas (guloso = limite inferior)
+        int minLines = 1;
+        float cur = wArr[0];
+        for (int i = 1; i < n; i++) {
+            if (cur + spaceW + wArr[i] > MAX_TEXT_WIDTH) {
+                minLines++;
+                cur = wArr[i];
+            } else {
+                cur += spaceW + wArr[i];
+            }
+        }
+        if (minLines == 1) {
+            List<String> one = new ArrayList<>();
+            one.add(String.join(" ", words));
+            return one;
+        }
+        // DP: exatamente minLines linhas, minimizando soma das folgas^2
+        final float INF = 1.0e9F;
+        float[][] cost = new float[minLines + 1][n + 1];
+        int[][] back = new int[minLines + 1][n + 1];
+        for (float[] row : cost) {
+            java.util.Arrays.fill(row, INF);
+        }
+        cost[0][0] = 0.0F;
+        for (int k = 1; k <= minLines; k++) {
+            for (int i = k; i <= n; i++) {
+                for (int j = k - 1; j < i; j++) {
+                    if (cost[k - 1][j] >= INF) {
+                        continue;
+                    }
+                    float lw = wArr[j];
+                    for (int t = j + 1; t < i; t++) {
+                        lw += spaceW + wArr[t];
+                    }
+                    if (lw > MAX_TEXT_WIDTH) {
+                        continue; // linha estoura
+                    }
+                    float slack = MAX_TEXT_WIDTH - lw;
+                    float c = cost[k - 1][j] + slack * slack;
+                    if (c < cost[k][i]) {
+                        cost[k][i] = c;
+                        back[k][i] = j;
+                    }
+                }
+            }
+        }
+        List<String> out = new ArrayList<>();
+        int[] brk = new int[minLines + 1];
+        brk[minLines] = n;
+        for (int k = minLines; k >= 1; k--) {
+            brk[k - 1] = back[k][brk[k]];
+        }
+        for (int k = 0; k < minLines; k++) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = brk[k]; i < brk[k + 1]; i++) {
+                if (i > brk[k]) {
+                    sb.append(' ');
+                }
+                sb.append(words.get(i));
+            }
+            out.add(sb.toString());
+        }
+        return out;
+    }
+
     private static int bubbleHeightPx(Font font, ClientBubbleCache.Bubble bubble) {
         // (3.32.0) fala = TEXTO PURO; os emotes moram na faixa (so a faixa conta)
         String speech = bubble.text();
-        List<FormattedCharSequence> lines = font.split(Stickers.styled(speech), MAX_TEXT_WIDTH);
-        if (lines.isEmpty()) {
+        int nLines = wrapBalanced(font, speech).size();
+        if (nLines == 0) {
             return 0;
         }
-        int pillH = lines.size() * LINE_HEIGHT + 8;
+        int pillH = nLines * LINE_HEIGHT + 8;
         if (!bubble.corner().isEmpty() || !bubble.extras().isEmpty()) {
             pillH += 14; // (3.37.0) o emblema na borda pendura ~12px pra fora
         }
@@ -430,13 +528,14 @@ public final class BubbleRenderer {
         // A fala e 100% texto; os emojis moram na FAIXA (igual ao adesivo) —
         // linha de emoji NUNCA mais (fim do espaco vazio do print).
         String speech = bubble.text();
-        List<FormattedCharSequence> lines = font.split(Stickers.styled(speech), MAX_TEXT_WIDTH);
-        if (lines.isEmpty()) {
+        // (3.38.0) linhas EQUILIBRADAS (fim da palavra orfa na quebra de linha)
+        List<String> linesTxt = wrapBalanced(font, speech);
+        if (linesTxt.isEmpty()) {
             return;
         }
         List<List<Seg>> segLines = new ArrayList<>();
-        for (FormattedCharSequence line : lines) {
-            segLines.add(segment(line));
+        for (String lineTxt : linesTxt) {
+            segLines.add(segment(Stickers.styled(lineTxt).getVisualOrderText()));
         }
 
         long now = System.currentTimeMillis();
@@ -459,10 +558,14 @@ public final class BubbleRenderer {
 
         // ---- geometria (pixels inteiros) ----
         int textW = 0;
-        for (FormattedCharSequence line : lines) {
-            textW = Math.max(textW, font.width(line));
+        for (List<Seg> segs : segLines) {
+            int lw = 0;
+            for (Seg seg : segs) {
+                lw += font.width(seq(seg));
+            }
+            textW = Math.max(textW, lw);
         }
-        int n = lines.size();
+        int n = linesTxt.size();
         // linha com adesivo (glifo 16px) ocupa 18px; texto puro segue em 10px
         int speechH = LINE_HEIGHT * n; // texto puro — emoji NAO cria linha NENHUMA
         // (3.22.0) ADESIVO SO NAS BORDAS: se tem adesivo, a pilula EXPANDE 18px
