@@ -373,6 +373,14 @@ public final class BubbleRenderer {
             return;
         }
 
+        // (3.36.1) LEGIVEL DE LONGE: o balao ja vira pra CADA jogador que olha
+        // (cada cliente renderiza o billboard virado pra propria camera — visual,
+        // so pra quem esta perto). Agora tambem CRESCE SUAVEMENTE com a distancia
+        // pra continuar legivel de longe sem virar um puntinho.
+        float distToCam = Mth.sqrt((float) minecraft.getEntityRenderDispatcher().distanceToSqr(player));
+        float distComp = 1.0F + 1.4F * Mth.clamp(distToCam / 64.0F, 0.0F, 1.0F)
+                * Mth.clamp(distToCam / 64.0F, 0.0F, 1.0F); // 1.0x perto → ~2.4x a 64 blocos
+
         // ---- PILHA (3.19.0): pela ALTURA REAL de cada balao — nada se sobrepoe ----
         // (antes o gap era fixo e baloes de 2-3 linhas se cruzavam)
         Font fontH = minecraft.font;
@@ -384,10 +392,10 @@ public final class BubbleRenderer {
         for (int i = 0; i < count; i++) {
             float belowBlocks = 0.0F;
             for (int j = i + 1; j < count; j++) {
-                belowBlocks += hPx[j] * SCALE; // MESMA escala do render — fim da sobreposicao!
+                belowBlocks += hPx[j] * SCALE * distComp; // MESMA escala do render (c/ distancia) — fim da sobreposicao!
             }
             float up = belowBlocks + (count - 1 - i) * STACK_GAP_BLOCKS;
-            renderOne(event, minecraft, player, stack.get(i), up);
+            renderOne(event, minecraft, player, stack.get(i), up, distComp);
         }
     }
 
@@ -414,7 +422,7 @@ public final class BubbleRenderer {
 
     /** Desenha UM balao da pilha, com pop-in + flutuacao + fade. */
     private static void renderOne(RenderLivingEvent.Post<?, ?> event, Minecraft minecraft,
-            Player player, ClientBubbleCache.Bubble bubble, float upBlocks) {
+            Player player, ClientBubbleCache.Bubble bubble, float upBlocks, float distComp) {
         Font font = minecraft.font;
         // (3.13.0) VARIOS EMOJIS: os extras acompanham a fala DENTRO do balao,
         // DE ESPACADOS entre si — cada emoji fica distinto e legivel de longe.
@@ -490,7 +498,7 @@ public final class BubbleRenderer {
         poseStack.translate(0.0, player.getBbHeight() + 0.95 + upBlocks + floatUp * 0.030F, 0.0);
         poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
         // (3.35.0) 0.034 -> 0.040: balao ~18% maior, legivel de mais longe
-        poseStack.scale(SCALE * popScale(age), -SCALE * popScale(age), SCALE);
+        poseStack.scale(SCALE * distComp * popScale(age), -SCALE * distComp * popScale(age), SCALE); // (3.36.1) cresce c/ a distancia = legivel de longe
         Matrix4f matrix = poseStack.last().pose();
         MultiBufferSource buffers = event.getMultiBufferSource();
 

@@ -2,6 +2,18 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.36.1] - 2026-09-16
+
+### Melhorado
+- **BALAO ACOMPANHA QUEM ESTA VENDO — e agora fica LEGIVEL DE LONGE!**
+  O balao JA gira pra cada jogador que olha (cada cliente renderiza o
+  billboard virado pra propria camera: de tras voce le, pela direita ele
+  vira pra voce — visual, so pra quem esta por perto, exatamente como
+  pedido). A novidade: ele tambem CRESCE SUAVEMENTE com a distancia
+  (1.0x perto → ~2.4x a 64 blocos), entao quem ve de longe continua
+  lendo em vez de ver um puntinho.
+- A pilha de baloes usa o MESMO fator de distancia (nada de sobrepor de longe).
+
 ## [3.36.0] - 2026-09-16
 
 ### Corrigido (por cima da reforma)
