@@ -412,7 +412,7 @@ public final class BubbleRenderer {
         }
         int pillH = lines.size() * LINE_HEIGHT + 8;
         if (!bubble.corner().isEmpty() || !bubble.extras().isEmpty()) {
-            pillH += 20; // faixa justa do adesivo/emojis conta na altura real
+            pillH += 14; // (3.37.0) o emblema na borda pendura ~12px pra fora
         }
         int bsH = Math.max(0, bubble.borderStyle());
         int bsIdx = Math.min(bsH, RING_MARGIN.length - 1);
@@ -470,18 +470,20 @@ public final class BubbleRenderer {
         // nessa faixa e NUNCA fica em cima das letras.
         boolean topBand = bubble.stickerY() < 50;
         boolean temBanda = !bubble.corner().isEmpty() || !bubble.extras().isEmpty();
-        int expand = temBanda ? 20 : 0; // (3.33.0) faixa JUSTA: 16 do emoji + 2+2 de ar
         int bsPre = Math.max(0, bubble.borderStyle());
         // (3.35.0) o respiro interno agora e IGUAL pra todos: a moldura cresce
         // pra FORA (RING_MARGIN), entao nao precisa mais roubar espaco de dentro.
         int pad = 16;
         int extrasN = bubble.extras().length();
-        int bandaW = 14 + (bubble.corner().isEmpty() ? 0 : 20) + extrasN * 18 + 8;
-        int pillW = Math.max(34, Math.max(textW + pad, temBanda ? bandaW : 0));
+        // (3.37.0) FIM DA FAIXA (o "ar" que o usuario vivia reclamando!): a
+        // pilula fica do tamanho EXATO do texto — o adesivo/emotes agora sao
+        // um EMBLEMA pregado NA BORDA (sobre poe apenas o contorno, metade
+        // pra fora), no lado escolhido. Nenhuma linha nova, nenhum vazio.
+        int pillW = Math.max(34, textW + pad);
         // (3.31.1) FIX CRITICO: a pilula tem que COBRIR a faixa do adesivo!
         // (era speechH+6 — com a faixa em cima, a pilula terminava 28px antes
         // do fim do texto e as letras PENDURAVAM FORA do balao — o bug do print!)
-        int pillH = speechH + 8 + expand;
+        int pillH = speechH + 8; // (3.37.0) SEM faixa: colada no texto
         float x0 = -pillW / 2.0F;
         // (3.36.0) FIX RAIZ DO "AR" (portado da 3.35.0 — a reforma tinha
         // voltado a geometria antiga!): a escala usa -Y, entao y=0 e a ANCORa
@@ -489,9 +491,9 @@ public final class BubbleRenderer {
         // ficava em +4/+24 — o balao INVADIA o nome e sobrava um box enorme
         // meio vazio. Agora a base encosta EXATAMENTE na ancora (yP1 = 0) e o
         // balao cresce SO PRA CIMA, 100% colado — zero ar, nome livre.
-        float yP1 = 0.0F;                                         // base da pilula
-        float yText = yP1 - 4 - (topBand ? 0 : expand) - speechH; // topo da 1a linha
-        float yP0 = yText - 4 - (topBand ? expand : 0);           // topo da pilula
+        float yP1 = 0.0F;                    // base da pilula
+        float yText = yP1 - 4 - speechH;     // topo da 1a linha
+        float yP0 = yText - 4;               // topo da pilula
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
@@ -571,28 +573,24 @@ public final class BubbleRenderer {
             cum += LINE_HEIGHT;
         }
 
-        // ---- ADESIVO LIVRE: SEMPRE na faixa de borda, NUNCA sobre as letras ----
-        if (!bubble.corner().isEmpty()) {
-            var sticker = Stickers.styled(bubble.corner());
-            float sw = font.width(sticker);
-            float sx = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
-                    x0 + 18.0F, x0 + pillW - 18.0F);
-            float sy = topBand ? yP0 + 10.0F : yP1 - 10.0F; // centro da faixa de 20px
-            font.drawInBatch(sticker, sx - sw / 2.0F, sy - 8.0F, withAlpha(0xFFFFFFFF, alpha), false,
-                    matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-        }
-        // (3.32.0) EMOTES na MESMA faixa do adesivo (nunca no texto!)
-        if (extrasN > 0) {
-            float sy2 = topBand ? yP0 + 10.0F : yP1 - 10.0F; // centro da faixa de 20px
-            float ex0 = x0 + 18.0F;
+        // ---- (3.37.0) ADESIVO/EMOTES = EMBLEMA NA BORDA ----
+        // Sobre poe APENAS o contorno (metade pra fora), no lado escolhido —
+        // nunca sobre as letras, nunca criando faixa/vazio no balao.
+        if (temBanda) {
+            float by = topBand ? yP0 - 4.0F : yP1 + 4.0F; // centro do emblema NA borda
+            float bx = x0 + 18.0F;
             if (!bubble.corner().isEmpty()) {
-                float sx2 = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
-                        x0 + 18.0F, x0 + pillW - 18.0F);
-                ex0 = Math.max(ex0, sx2 + 10.0F);
+                var sticker = Stickers.styled(bubble.corner());
+                float sw = font.width(sticker);
+                float bxMax = x0 + pillW - 18.0F - extrasN * 18.0F;
+                bx = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
+                        x0 + 18.0F, Math.max(x0 + 18.0F, bxMax));
+                font.drawInBatch(sticker, bx - sw / 2.0F, by - 8.0F, withAlpha(0xFFFFFFFF, alpha), false,
+                        matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
             for (int i = 0; i < extrasN; i++) {
                 int idx = (bubble.extras().charAt(i) & 0xFFFF) - 0xE000;
-                emojiQuad(matrix, buffers, ex0 + i * 18.0F, sy2 - 8.0F, idx);
+                emojiQuad(matrix, buffers, bx + 10.0F + i * 18.0F, by - 8.0F, idx);
             }
         }
 

@@ -516,7 +516,7 @@ public class BubbleStyleScreen extends Screen {
      */
     private float[] stickerCenter() {
         boolean topBand = style.stickerY() < 50;
-        float sy = topBand ? simY + 10.0F : simY + simH - 10.0F; // centro da FAIXA (20px)
+        float sy = topBand ? simY - 4.0F : simY + simH + 4.0F; // centro do EMBLEMA na borda
         float sx = Mth.clamp(simX0 + style.stickerX() / 100.0F * simW,
                 simX0 + 18.0F, simX0 + simW - 18.0F); // 18px pra dentro (igual ao mundo)
         return new float[]{sx, sy};
@@ -776,7 +776,7 @@ public class BubbleStyleScreen extends Screen {
             return;
         }
         if (holdingSticker != null) {
-            hint = "▶ Clique NO BALÃO pra colar na faixa (com os emotes) · ESC solta";
+            hint = "▶ Clique NA BORDA do balão pra colar (com os emotes) · ESC solta";
             cor = ZONA_OURO;
         } else if (extrasCount() > 0) {
             hint = "✨ " + extrasCount() + " emoji(s) na fala · clique em ✖ pra tirar";
@@ -867,9 +867,9 @@ public class BubbleStyleScreen extends Screen {
         int conteudoW = Math.round(falaW1x * K);
         simW = Math.max(170, Math.min(246, conteudoW + 28));
         // com adesivo/emotes a capsula ganha a FAIXA de 28px (igual ao mundo)
-        simH = temAdesivo ? 38 : 18; // (3.36.0) IGUAL AO MUNDO: texto 10 + 4+4 + faixa 20 — sem ar
+        simH = 18; // (3.37.0) colada no texto SEMPRE (o emblema fica NA BORDA, fora)
         simX0 = px + (PANEL_W - simW) / 2;
-        simY = py + (temAdesivo ? 45 : 52); // centralizado no card, rabicho nunca cortado
+        simY = py + 56; // centralizado no card; emblema acima nunca cortado pelo scissor
         int ring = border != 0 ? border : fill;
         float cx = simX0 + simW / 2.0F;
 
@@ -911,7 +911,7 @@ public class BubbleStyleScreen extends Screen {
 
         // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
         int tx = simX0 + (simW - conteudoW) / 2;
-        int tyText = faixaTopo ? simY + 24 : simY + 4; // (3.36.0) colado: faixa 20 + 4 | 4 + texto
+        int tyText = simY + 4; // (3.37.0) colada no texto, sempre
         g.pose().pushPose();
         g.pose().translate(tx, tyText, 0.0F);
         g.pose().scale(K, K, 1.0F); // ZOOM: a fala do preview legivel de longe
@@ -928,7 +928,7 @@ public class BubbleStyleScreen extends Screen {
 
         // --- (3.32.0) EMOTES na FAIXA (igual ao mundo) ---
         if (!ex.isEmpty()) {
-            float syB = faixaTopo ? simY + 10 : simY + simH - 10;
+            float syB = faixaTopo ? simY - 4 : simY + simH + 4; // emblema na borda
             float exX = simX0 + 18;
             if (!style.corner().isEmpty()) {
                 float[] c0 = stickerCenter();

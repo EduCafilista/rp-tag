@@ -2,6 +2,20 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.37.0] - 2026-09-17
+
+### Redesenhado
+- **EMOJI = EMBLEMA NA BORDA — FIM DA FAIXA, FIM DO "AR"!** O balao agora
+  fica do tamanho EXATO do texto (colado, como nos baloes de referência),
+  e o adesivo/emotes vira um EMBLEMA pregado NO CONTORNO: sobre poe
+  apenas a borda (metade pra fora), no lado escolhido — nunca sobre as
+  letras, nunca criando faixa, linha ou espaco vazio. Era o pedido desde
+  a 3.32, agora no desenho definitivo:
+  - pílula = texto + 8px (pronto, acabou o vazio)
+  - emblema: 16px, centro 4px fora da borda, na frente de tudo
+  - posicao horizontal continua a sua (stickerX), lado = stickerY
+  - pilha de baloes conta o emblema pendurado
+  - previa do menu identica (capsula colada + emblema na borda)
 ## [3.36.1] - 2026-09-16
 
 ### Melhorado
