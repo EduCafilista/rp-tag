@@ -41,12 +41,28 @@ public final class RPChat {
         return Style.EMPTY;
     }
 
+    /** (3.39.0) Anti-flood: ultimo balao de cada jogador (minimo 250ms entre eles). */
+    private static final java.util.Map<java.util.UUID, Long> LAST_BUBBLE =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
     /** Mostra o balao de fala sobre a cabeca (se o recurso estiver ligado). */
     public static void spawnBubble(ServerPlayer from, String rawText, boolean italic) {
         RPWorldData data = RPWorldData.get(from.server);
         if (!data.isBubblesOn() || data.isBubbleOptOut(from.getUUID())
                 || !data.isBubbleAllowed(from.getUUID()) || !data.isBubbleMode(from.getUUID())) {
             return; // global off, opt-out, sem liberacao do admin OU modo balao off
+        }
+        // (3.39.0) FLOOD-GATE: baloes sao pacotes pra TODO mundo perto; um
+        // jogador nao pode despejar dezenas por segundo. 4/s e mais que
+        // suficiente pra conversa RP (silencioso, sem mensagem de erro).
+        long nowMs = System.currentTimeMillis();
+        Long last = LAST_BUBBLE.get(from.getUUID());
+        if (last != null && nowMs - last < 250) {
+            return;
+        }
+        LAST_BUBBLE.put(from.getUUID(), nowMs);
+        if (LAST_BUBBLE.size() > 256) {
+            LAST_BUBBLE.values().removeIf(t -> nowMs - t > 10000);
         }
         String text = rawText.length() > 96 ? rawText.substring(0, 93) + "..." : rawText;
         BubbleStyle style = data.getStyle(from.getUUID());

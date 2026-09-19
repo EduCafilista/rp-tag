@@ -40,6 +40,13 @@ public final class ClientBubbleCache {
         long now = System.currentTimeMillis();
         List<Bubble> stack = BUBBLES.computeIfAbsent(id, k -> new ArrayList<>());
         synchronized (stack) {
+            // (3.39.0) /balao off: o pacote de limpeza (texto vazio) agora apaga
+            // a PILHA inteira na hora — antes virava um balao fantasma ocupando
+            // vaga e os antigos continuavam pendurados.
+            if (text.isEmpty()) {
+                stack.clear();
+                return;
+            }
             // (3.13.0) balao cheio de emojis SUBSTITUI a pilha: nada de muro
             // de adesivos repetidos (a pilha continua pra falas normais)
             if (!extras.isEmpty()) {

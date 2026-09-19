@@ -2,6 +2,21 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.39.0] - 2026-09-18
+
+### Seguranca / Robustez (auditoria de brechas)
+- **PAYLOAD BLINDADO NO SERVIDOR**: o estilo enviado pelo cliente agora e
+  sanitizado antes de gravar — borderStyle 0..5, posicao do adesivo 0..100%,
+  duracao 2..20s, adesivo <= 4 e emotes <= 8 (so codepoints validos).
+- **CRASH DE SESSAO MORTO**: borderStyle NEGATIVO (de cliente alterado)
+  estourava o RING_MARGIN e DESLIGAVA OS BALOES DE TODOS ate reiniciar o
+  jogo — agora o servidor rejeita na entrada E o render clampa defensivo.
+- **ANTI-FLOOD DE BALOES**: minimo de 250ms entre baloes do mesmo jogador
+  (4/s e mais que suficiente pra conversa RP) — sem spam de pacotes pra
+  quem esta perto.
+- **/balao off limpa a pilha TODA na hora**: o pacote de limpeza (texto
+  vazio) apagava so um slot (virava balao fantasma na pilha); agora some
+  TUDO do jogador na hora, como sempre foi prometido.
 ## [3.38.0] - 2026-09-17
 
 ### Corrigido

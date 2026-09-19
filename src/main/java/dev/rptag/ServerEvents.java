@@ -192,15 +192,40 @@ public final class ServerEvents {
     //  Estilo do balao e modo balao (vindos da tela de personalizacao)
     // ================================================================
 
+    /**
+     * (3.39.0) BLINDAGEM: so aceita codepoints de adesivo/emote validos, com
+     * limite de quantidade — payload de cliente alterado nao consegue gravar
+     * lixo no estilo (nem estourar o render de quem esta perto).
+     */
+    private static String sanitizeStickers(String in, int max) {
+        if (in == null || in.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < in.length() && sb.length() < max; i++) {
+            char c = in.charAt(i);
+            if (Stickers.isStickerChar(c)) {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
     public static void handleUpdateBubbleStyle(final UpdateBubbleStylePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return;
             }
-            BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(), payload.borderStyle(),
-                    payload.textColorRGB(), payload.prefix(), payload.mid(), payload.suffix(), payload.corner(),
-                    payload.extras(), payload.stickerX(), payload.stickerY(), payload.background(),
-                    payload.durationSec());
+            // (3.39.0) TODOS os campos livres sao limitados no SERVIDOR:
+            // borderStyle 0..5 (negativo quebrava o RING_MARGIN!), posicao do
+            // adesivo 0..100%, duracao 2..20s, adesivo <= 4 e emotes <= 8.
+            BubbleStyle style = new BubbleStyle(payload.colorRGB(), payload.borderRGB(),
+                    Math.max(0, Math.min(5, payload.borderStyle())),
+                    payload.textColorRGB(), payload.prefix(), payload.mid(), payload.suffix(),
+                    sanitizeStickers(payload.corner(), 4), sanitizeStickers(payload.extras(), 8),
+                    Math.max(0, Math.min(100, payload.stickerX())),
+                    Math.max(0, Math.min(100, payload.stickerY())), payload.background(),
+                    Math.max(2, Math.min(20, payload.durationSec())));
             RPWorldData.get(player.server).setStyle(player.getUUID(), style);
             player.sendSystemMessage(Component.literal("💾 Salvo no servidor v" + RPTagMod.VERSION + "! Dentro ")
                     .withStyle(ChatFormatting.GREEN)

@@ -512,7 +512,7 @@ public final class BubbleRenderer {
         if (!bubble.corner().isEmpty() || !bubble.extras().isEmpty()) {
             pillH += 14; // (3.37.0) o emblema na borda pendura ~12px pra fora
         }
-        int bsH = Math.max(0, bubble.borderStyle());
+        int bsH = Math.max(0, bubble.borderStyle()); // (3.39.0) >= 0 SEMPRE (negativo = AIOOBE)
         int bsIdx = Math.min(bsH, RING_MARGIN.length - 1);
         // a moldura cresce pra fora nos DOIS lados + o rabicho pendura embaixo
         return pillH + Math.round(2.0F * RING_MARGIN[bsIdx]) + 14;
@@ -608,7 +608,7 @@ public final class BubbleRenderer {
         MultiBufferSource buffers = event.getMultiBufferSource();
 
         int bs = bsPre;
-        float margin = RING_MARGIN[Math.min(bs, RING_MARGIN.length - 1)];
+        float margin = RING_MARGIN[Math.max(0, Math.min(bs, RING_MARGIN.length - 1))]; // (3.39.0) nunca negativo
         // rabicho: base larga o bastante pra parecer parte do balao
         final float tw = 13.0F;
         final float th = 13.0F;
