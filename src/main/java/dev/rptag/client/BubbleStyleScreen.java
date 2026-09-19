@@ -867,7 +867,18 @@ public class BubbleStyleScreen extends Screen {
         int falaW1x = this.font.width("sua fala assim");
         float K = (falaW1x * 2 + 34 > 246) ? 1.5F : 2.0F; // zoom do texto
         int conteudoW = Math.round(falaW1x * K);
-        simW = Math.max(170, Math.min(246, conteudoW + 28));
+        // (3.42.0) mesmo bug do mundo: a capsula da previa tambem ignorava
+        // o espaco que o emblema (adesivo/emotes) precisa — com poucas
+        // letras e varios emojis, o emblema desenhava fora da capsula aqui
+        // tambem. Reserva a mesma largura minima que o mundo usa.
+        int emblemW = 0;
+        if (temAdesivo) {
+            emblemW = 36 + Math.max(0, ex.length() - 1) * 18;
+            if (!style.corner().isEmpty()) {
+                emblemW += 20;
+            }
+        }
+        simW = Math.max(170, Math.min(246, Math.max(conteudoW + 28, emblemW + 28)));
         // com adesivo/emotes a capsula ganha a FAIXA de 28px (igual ao mundo)
         // (3.41.0) simH era um 18 fixo, mas o texto e desenhado com ZOOM K —
         // a 2x, uma linha de 8px de fonte vira 16px de altura + a folga de

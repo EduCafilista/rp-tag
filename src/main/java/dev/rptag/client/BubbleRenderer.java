@@ -227,7 +227,7 @@ public final class BubbleRenderer {
      * herdando o alfa global) e texto na cor normal.
      */
     private static float drawLine(Font font, Matrix4f matrix, MultiBufferSource buffers,
-            List<Seg> segs, float x, float y, int textColor) {
+            List<Seg> segs, float x, float y, int textColor, float alpha) {
         float pen = x;
         for (Seg seg : segs) {
             if (seg.sticker) {
@@ -235,8 +235,11 @@ public final class BubbleRenderer {
                 // desenhado EXATAMENTE onde a geometria manda — nunca vira bloco
                 // preto, nunca invade o texto. A largura continua a da fonte
                 // (16px) pra nao mexer na quebra de linha.
+                // (3.42.0) o comentario acima ja prometia herdar o alfa global,
+                // mas o parametro nunca existia — o emoji inline nao acompanhava
+                // o fade de entrada/saida do balao (aparecia/sumia de golpe).
                 for (int cp : seg.text.codePoints().toArray()) {
-                    emojiQuad(matrix, buffers, pen + 1.0F, y - 3.0F, cp - 0xE000);
+                    emojiQuad(matrix, buffers, pen + 1.0F, y - 3.0F, cp - 0xE000, alpha);
                 }
                 pen += font.width(seq(seg));
                 continue;
@@ -251,7 +254,7 @@ public final class BubbleRenderer {
     }
 
     /** QUAD do emoji no atlas HD (celula 16px de 128x256; arte 1024x2048). */
-    private static void emojiQuad(Matrix4f m, MultiBufferSource buffers, float x, float y, int idx) {
+    private static void emojiQuad(Matrix4f m, MultiBufferSource buffers, float x, float y, int idx, float alpha) {
         if (idx < 0 || idx >= Stickers.COUNT) {
             idx = 0;
         }
@@ -259,7 +262,7 @@ public final class BubbleRenderer {
         float v0 = (idx / 8) / 16.0F;
         VertexConsumer buf = buffers.getBuffer(HI_TYPE);
         quad(m, buf, -0.07F, x, y, x + 16.0F, y + 16.0F, u0, v0, u0 + 0.125F, v0 + 0.0625F,
-                0xFFFFFFFF);
+                withAlpha(0xFFFFFFFF, alpha));
     }
 
     /**
@@ -584,7 +587,22 @@ public final class BubbleRenderer {
         // pilula fica do tamanho EXATO do texto — o adesivo/emotes agora sao
         // um EMBLEMA pregado NA BORDA (sobre poe apenas o contorno, metade
         // pra fora), no lado escolhido. Nenhuma linha nova, nenhum vazio.
-        int pillW = Math.max(34, textW + pad);
+        //
+        // (3.42.0) BUG "FORA DO LUGAR": essa largura NUNCA levava em conta o
+        // espaco que o proprio emblema precisa. Numa mensagem curta (pilula
+        // minima de 34px) com 2-3 emojis, cada emoji e desenhado 18px a
+        // direita do anterior a partir de um ponto fixo — e isso ULTRAPASSA
+        // a pilula de verdade rapido, sobrando emoji flutuando no vazio bem
+        // longe do balao. Agora a pilula garante espaco pro emblema inteiro
+        // (adesivo + emotes) por LARGURA, sem reintroduzir faixa/altura extra.
+        int emblemW = 0;
+        if (temBanda) {
+            emblemW = 36 + Math.max(0, extrasN - 1) * 18;
+            if (!bubble.corner().isEmpty()) {
+                emblemW += 20;
+            }
+        }
+        int pillW = Math.max(34, Math.max(textW + pad, emblemW));
         // (3.31.1) FIX CRITICO: a pilula tem que COBRIR a faixa do adesivo!
         // (era speechH+6 — com a faixa em cima, a pilula terminava 28px antes
         // do fim do texto e as letras PENDURAVAM FORA do balao — o bug do print!)
@@ -674,7 +692,7 @@ public final class BubbleRenderer {
             }
             float lineX = -Math.round(lineW / 2.0F);
             float penY = yText + cum;
-            drawLine(font, matrix, buffers, segs, lineX, penY, textColor);
+            drawLine(font, matrix, buffers, segs, lineX, penY, textColor, alpha);
             cum += LINE_HEIGHT;
         }
 
@@ -693,17 +711,21 @@ public final class BubbleRenderer {
             float by = topBand ? yP0 - EMBLEM_HALF - EMBLEM_GAP : yP1 + EMBLEM_HALF + EMBLEM_GAP;
             float bx = x0 + 18.0F;
             if (!bubble.corner().isEmpty()) {
-                var sticker = Stickers.styled(bubble.corner());
-                float sw = font.width(sticker);
+                // (3.42.0) QUALIDADE INCONSISTENTE: o adesivo unico desenhava
+                // pela FONTE de baixo-res (stickers.png, 16x16 por glifo),
+                // enquanto os emotes extras JA usavam o atlas HD (emojiQuad,
+                // 128x128 por glifo). No mesmo balao, um emoji saia nitido e
+                // o outro saia borrado/blocado — agora os dois usam o MESMO
+                // atlas HD, iguais em qualidade.
+                int cornerIdx = (bubble.corner().charAt(0) & 0xFFFF) - 0xE000;
                 float bxMax = x0 + pillW - 18.0F - extrasN * 18.0F;
                 bx = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
                         x0 + 18.0F, Math.max(x0 + 18.0F, bxMax));
-                font.drawInBatch(sticker, bx - sw / 2.0F, by - 8.0F, withAlpha(0xFFFFFFFF, alpha), false,
-                        matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                emojiQuad(matrix, buffers, bx - 8.0F, by - 8.0F, cornerIdx, alpha);
             }
             for (int i = 0; i < extrasN; i++) {
                 int idx = (bubble.extras().charAt(i) & 0xFFFF) - 0xE000;
-                emojiQuad(matrix, buffers, bx + 10.0F + i * 18.0F, by - 8.0F, idx);
+                emojiQuad(matrix, buffers, bx + 10.0F + i * 18.0F, by - 8.0F, idx, alpha);
             }
         }
 

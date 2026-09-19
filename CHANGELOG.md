@@ -2,6 +2,34 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.42.0] - 2026-09-19
+
+### Corrigido — emblemas (adesivo/emoji na borda)
+- **Emoji "fora do lugar" (flutuando longe do balão)**: a largura da pílula
+  era calculada só a partir do TEXTO, sem nunca considerar o espaço que o
+  próprio emblema (adesivo + emotes) precisa. Numa mensagem curta ("Oi!")
+  com vários emojis, cada um é desenhado 18px à direita do anterior a
+  partir de um ponto fixo — isso ultrapassava a pílula minúscula rapidinho,
+  deixando emoji pendurado no vazio bem longe do balão. Agora a pílula
+  garante espaço para o emblema inteiro por LARGURA (sem reintroduzir
+  faixa/altura extra — a correção é só horizontal).
+- **Qualidade inconsistente entre os emojis do mesmo balão**: o adesivo
+  único (o que fica preso a um canto) desenhava pela fonte de baixa
+  resolução (`stickers.png`, 16×16 por glifo — a mesma usada para emoji
+  digitado dentro do texto do chat normal), enquanto os emotes extras já
+  usavam o atlas em alta resolução (`stickers_hi.png`, 128×128 por glifo).
+  Resultado: dentro do MESMO balão, um emoji saía nítido e o outro saía
+  borrado/blocado — a inconsistência que parecia "emoji quebrado". Agora
+  os dois caminhos (adesivo único e extras) usam o mesmo atlas HD no
+  mundo, com a mesma nitidez tipo Android em ambos.
+- **Emoji não acompanhava o fade do balão**: o quad HD sempre desenhava
+  com opacidade 100% fixa, ignorando o alfa de entrada (pop-in) e saída
+  (fade) do balão — o emoji aparecia/sumia de golpe enquanto o resto do
+  balão entrava/saía suavemente. Corrigido nos três lugares que desenham
+  emoji (inline no texto, adesivo do canto, emotes extras).
+- A mesma correção de largura foi aplicada na prévia do menu de estilo,
+  pra não voltar a divergir do que acontece no mundo.
+
 ## [3.41.0] - 2026-09-19
 
 ### Corrigido
