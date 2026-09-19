@@ -19,6 +19,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * <ul>
  *   <li>{@code /balao} — abre a tela de personalizacao</li>
  *   <li>{@code /balao modo on|off} — MODO BALAO: suas falas viram so balao</li>
+ *   <li>{@code /balao teste <frase>} — mostra a frase como balao na hora (teste)</li>
  * </ul>
  */
 @EventBusSubscriber(modid = RPTagMod.MODID)
@@ -46,6 +47,30 @@ public final class BalaoCommands {
                             data.isBubbleMode(player.getUUID())));
             return Command.SINGLE_SUCCESS;
         });
+
+        // (3.40.0) /balao teste <frase> — mostra a frase como balao NA HORA
+        // (testa o estilo sem depender do chat; se o modo estiver off, liga)
+        root.then(Commands.literal("teste")
+                .then(Commands.argument("frase", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                        .executes(ctx -> {
+                            ServerPlayer player = ctx.getSource().getPlayerOrException();
+                            String frase = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "frase");
+                            RPWorldData data = RPWorldData.get(player.server);
+                            if (!data.isBubbleAllowed(player.getUUID())) {
+                                player.sendSystemMessage(Component.literal(
+                                        "Um admin desligou o seu balao de fala. Peça a um admin: /rp admin balao <voce> on")
+                                        .withStyle(ChatFormatting.RED));
+                                return Command.SINGLE_SUCCESS;
+                            }
+                            if (!data.isBubbleMode(player.getUUID())) {
+                                data.setBubbleMode(player.getUUID(), true);
+                                player.sendSystemMessage(Component.literal(
+                                        "Seu modo balao estava OFF — liguei pra você! A frase sai como balao agora.")
+                                        .withStyle(ChatFormatting.YELLOW));
+                            }
+                            RPChat.spawnBubble(player, frase, false);
+                            return Command.SINGLE_SUCCESS;
+                        })));
 
         // /balao modo on|off
         root.then(Commands.literal("modo")

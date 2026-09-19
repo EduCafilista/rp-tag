@@ -2,6 +2,19 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.40.0] - 2026-09-19
+
+### Adicionado
+- **/balao teste <frase>** — mostra a frase como balao NA HORA, sem depender
+  do chat (perfeito pra testar o estilo). Respeita a liberacao do admin e,
+  se o modo balao estiver OFF, liga sozinho e avisa.
+- **/rp status COMPLETO** — agora mostra tudo de uma vez: estado RP, persona,
+  chat local (ligado/global), balao (liberado/bloqueado), modo balao e o
+  estilo salvo (cor + moldura). Otimo pra diagnosticar "por que nao funciona".
+
+### Documentacao
+- **ENTREGA.md**: guia de handover pra quem for continuar o desenvolvimento
+  (arquitetura, como buildar, regras de ouro do projeto e roadmap).
 ## [3.39.0] - 2026-09-18
 
 ### Seguranca / Robustez (auditoria de brechas)

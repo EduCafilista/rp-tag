@@ -53,10 +53,31 @@ public final class RPCommands {
         // /rp status
         root.then(Commands.literal("status").executes(ctx -> {
             ServerPlayer player = ctx.getSource().getPlayerOrException();
+            RPWorldData data = RPWorldData.get(player.server);
             boolean inRp = ServerEvents.isInRp(player);
+            Persona persona = ServerEvents.getPersona(player);
+            BubbleStyle st = data.getStyle(player.getUUID());
             player.sendSystemMessage(Component.empty()
-                    .append(Component.literal("Modo RP atual: ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal("Modo RP: ").withStyle(ChatFormatting.GRAY))
                     .append(RPTags.tag(inRp)));
+            player.sendSystemMessage(Component.empty()
+                    .append(Component.literal("Persona: ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(persona.isEmpty() ? "(nenhuma)" : persona.name())
+                            .withStyle(ChatFormatting.AQUA)));
+            player.sendSystemMessage(Component.empty()
+                    .append(Component.literal("Chat local: ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(data.isChatLocal() ? "LIGADO (proximidade)" : "desligado (global)")
+                            .withStyle(data.isChatLocal() ? ChatFormatting.GREEN : ChatFormatting.YELLOW)));
+            boolean lib = data.isBubbleAllowed(player.getUUID());
+            player.sendSystemMessage(Component.empty()
+                    .append(Component.literal("Balao: ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(lib ? "liberado" : "bloqueado pelo admin")
+                            .withStyle(lib ? ChatFormatting.GREEN : ChatFormatting.RED))
+                    .append(Component.literal(" · modo ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(data.isBubbleMode(player.getUUID()) ? "LIGADO" : "off")
+                            .withStyle(data.isBubbleMode(player.getUUID()) ? ChatFormatting.GREEN : ChatFormatting.GRAY))
+                    .append(Component.literal(String.format(" · cor #%06X · moldura %d",
+                            st.colorRGB() & 0xFFFFFF, st.borderStyle())).withStyle(ChatFormatting.GRAY)));
             return Command.SINGLE_SUCCESS;
         }));
 
