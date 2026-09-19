@@ -510,7 +510,9 @@ public final class BubbleRenderer {
         }
         int pillH = nLines * LINE_HEIGHT + 8;
         if (!bubble.corner().isEmpty() || !bubble.extras().isEmpty()) {
-            pillH += 14; // (3.37.0) o emblema na borda pendura ~12px pra fora
+            // (3.41.0) emblema agora fica EMBLEM_HALF(8) + EMBLEM_GAP(4) pra
+            // fora da pilula, + a metade que pendura do lado de fora = 12+8=20
+            pillH += 20;
         }
         int bsH = Math.max(0, bubble.borderStyle()); // (3.39.0) >= 0 SEMPRE (negativo = AIOOBE)
         int bsIdx = Math.min(bsH, RING_MARGIN.length - 1);
@@ -680,7 +682,15 @@ public final class BubbleRenderer {
         // Sobre poe APENAS o contorno (metade pra fora), no lado escolhido —
         // nunca sobre as letras, nunca criando faixa/vazio no balao.
         if (temBanda) {
-            float by = topBand ? yP0 - 4.0F : yP1 + 4.0F; // centro do emblema NA borda
+            // (3.41.0) BUG DA SOBREPOSICAO: 'by' e o CENTRO do emblema, e o
+            // glifo mede 16px de altura (8px pra cada lado do centro). Com
+            // so 4px de offset, a METADE do glifo (8px) sempre invadia a
+            // pilula por baixo — sobravam -4px, ou seja, 4px do emblema
+            // ficavam LITERALMENTE EM CIMA DAS LETRAS. Agora o offset conta
+            // a meia-altura do glifo (8) + uma folga de verdade (4).
+            final float EMBLEM_HALF = 8.0F;
+            final float EMBLEM_GAP = 4.0F;
+            float by = topBand ? yP0 - EMBLEM_HALF - EMBLEM_GAP : yP1 + EMBLEM_HALF + EMBLEM_GAP;
             float bx = x0 + 18.0F;
             if (!bubble.corner().isEmpty()) {
                 var sticker = Stickers.styled(bubble.corner());

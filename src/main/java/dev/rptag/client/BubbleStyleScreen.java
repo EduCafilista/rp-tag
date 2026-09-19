@@ -516,7 +516,9 @@ public class BubbleStyleScreen extends Screen {
      */
     private float[] stickerCenter() {
         boolean topBand = style.stickerY() < 50;
-        float sy = topBand ? simY - 4.0F : simY + simH + 4.0F; // centro do EMBLEMA na borda
+        // (3.41.0) mesmo bug do syB/by: offset tem que contar a meia-altura
+        // do glifo (8px), senao metade do adesivo fica dentro da capsula.
+        float sy = topBand ? simY - 8.0F - 4.0F : simY + simH + 8.0F + 4.0F;
         float sx = Mth.clamp(simX0 + style.stickerX() / 100.0F * simW,
                 simX0 + 18.0F, simX0 + simW - 18.0F); // 18px pra dentro (igual ao mundo)
         return new float[]{sx, sy};
@@ -867,7 +869,11 @@ public class BubbleStyleScreen extends Screen {
         int conteudoW = Math.round(falaW1x * K);
         simW = Math.max(170, Math.min(246, conteudoW + 28));
         // com adesivo/emotes a capsula ganha a FAIXA de 28px (igual ao mundo)
-        simH = 18; // (3.37.0) colada no texto SEMPRE (o emblema fica NA BORDA, fora)
+        // (3.41.0) simH era um 18 fixo, mas o texto e desenhado com ZOOM K —
+        // a 2x, uma linha de 8px de fonte vira 16px de altura + a folga de
+        // 4+4, ou seja 24px reais. Com simH=18 o texto ja estourava a
+        // capsula por baixo ANTES de qualquer emblema entrar em cena.
+        simH = Math.round(this.font.lineHeight * K) + 8;
         simX0 = px + (PANEL_W - simW) / 2;
         simY = py + 56; // centralizado no card; emblema acima nunca cortado pelo scissor
         int ring = border != 0 ? border : fill;
@@ -928,7 +934,14 @@ public class BubbleStyleScreen extends Screen {
 
         // --- (3.32.0) EMOTES na FAIXA (igual ao mundo) ---
         if (!ex.isEmpty()) {
-            float syB = faixaTopo ? simY - 4 : simY + simH + 4; // emblema na borda
+            // (3.41.0) MESMO bug do mundo: 'syB' e o CENTRO do emblema (16px
+            // de glifo = 8px de meia-altura). Com so 4px de offset, metade
+            // do emblema invadia a capsula — era exatamente o que aparecia
+            // nos prints, o emoji "em cima das letras". Offset agora conta
+            // a meia-altura de verdade.
+            final float EMBLEM_HALF = 8.0F;
+            final float EMBLEM_GAP = 4.0F;
+            float syB = faixaTopo ? simY - EMBLEM_HALF - EMBLEM_GAP : simY + simH + EMBLEM_HALF + EMBLEM_GAP;
             float exX = simX0 + 18;
             if (!style.corner().isEmpty()) {
                 float[] c0 = stickerCenter();

@@ -2,6 +2,28 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.41.0] - 2026-09-19
+
+### Corrigido
+- **EMBLEMA (adesivo/emoji na borda) CAINDO EM CIMA DAS LETRAS.** O bug:
+  `by`/`syB` marcavam o CENTRO do emblema, mas o glifo mede 16px de altura
+  (8px pra cada lado desse centro). O offset usado era só 4px — ou seja,
+  8px de glifo menos 4px de offset deixava exatos **4px do emblema
+  dentro da pílula**, encostando (ou entrando) na primeira linha de
+  texto. Ficava pior quanto mais curta a mensagem: com a frase pequena a
+  posição horizontal também colapsava pro centro do balão (mesmo lugar
+  onde o texto está), então o emblema acabava bem em cima das letras —
+  exatamente o que apareceu nos prints. Corrigido em TRÊS lugares que
+  tinham a mesma conta errada: o balão no mundo (`BubbleRenderer`), o
+  emblema da prévia do menu e o adesivo livre arrastável da prévia
+  (`BubbleStyleScreen`). Agora o offset conta a meia-altura real do
+  glifo (8) mais uma folga (4) — o emblema nunca mais encosta no texto.
+- **Prévia do menu com o texto ampliado (zoom 2x) maior que a própria
+  cápsula.** A altura da cápsula da prévia era um valor fixo de 18px,
+  mas o texto ampliado sozinho já ocupa ~16px + respiro — o texto
+  estourava por baixo antes mesmo de qualquer emblema entrar em cena.
+  Agora a altura da cápsula é calculada a partir do zoom de verdade.
+
 ## [3.40.0] - 2026-09-19
 
 ### Adicionado
