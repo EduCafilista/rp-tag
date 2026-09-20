@@ -1,7 +1,9 @@
 package dev.rptag.client;
 
 import dev.rptag.ChatBubblePayload;
+import dev.rptag.FearPayload;
 import dev.rptag.PersonaSyncPayload;
+import dev.rptag.ScreenTextPayload;
 import dev.rptag.SyncRPStatePayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
@@ -52,5 +54,15 @@ public final class ClientPayloadHandler {
 
     public static void handleOpenBubbleStyle(final dev.rptag.OpenBubbleStylePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> BubbleStyleScreen.open(payload));
+    }
+
+    /** (3.44.0) MEDO: liga a tremedeira + vinheta neste cliente. */
+    public static void handleFear(final FearPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> ClientEffects.startFear(payload.seconds()));
+    }
+
+    /** (3.44.0) AVISO: texto GRANDE no centro da tela. */
+    public static void handleScreenText(final ScreenTextPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> ClientEffects.startScreenText(payload.text(), payload.seconds()));
     }
 }

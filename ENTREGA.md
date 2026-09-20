@@ -67,8 +67,10 @@ historico). Minecraft **1.21.1** + **NeoForge** (moddev 2.0.146).
 
 ## Roadmap / ideias do dono
 
-- **Comando do MEDO** (ideia do dono, ainda NAO construido — perguntar
-  detalhes antes).
+- ~~**Comando do MEDO**~~ **FEITO na 3.44.0**: `/rp admin medo <jogador>
+  [segundos]` (camera treme + vinheta vermelha nas bordas) e
+  `/rp admin avisar <jogador> <texto>` (texto GRANDE central, cores via
+  &). Canais fear/screen_text, protocolo de rede v3.
 - Diferenciar ainda mais os estilos / "menos pixel e mais imagem".
 - Regioes RP avancadas (o chat de acoes ja respeita quem esta EM RP).
 

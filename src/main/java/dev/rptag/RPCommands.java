@@ -28,6 +28,56 @@ public final class RPCommands {
     private RPCommands() {
     }
 
+    /** (3.44.0) Traduz codigos & (0-9, a-f, k-o, r; && = &) p/ section codes. */
+    private static String translateAmp(String in) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < in.length(); i++) {
+            char c = in.charAt(i);
+            if (c == '&' && i + 1 < in.length()) {
+                char n = Character.toLowerCase(in.charAt(i + 1));
+                if ("0123456789abcdefklmnor".indexOf(n) >= 0) {
+                    sb.append('\u00a7').append(n);
+                    i++;
+                    continue;
+                }
+                if (n == '&') {
+                    sb.append('&');
+                    i++;
+                    continue;
+                }
+            }
+            sb.append(c);
+        }
+        String out = sb.toString();
+        if (out.length() > 160) {
+            out = out.substring(0, 157) + "...";
+        }
+        return out;
+    }
+
+    /** (3.44.0) Aplica o MEDO no alvo (tela treme + vinheta). */
+    private static void medar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            ServerPlayer alvo, int seg) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, new FearPayload(seg));
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u5291 " + alvo.getName().getString() + " esta com MEDO por " + seg + "s!")
+                .withStyle(ChatFormatting.DARK_PURPLE), true);
+    }
+
+    /** (3.44.0) Mostra o texto GRANDE na tela do alvo (padrao: vermelho). */
+    private static void avisar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            ServerPlayer alvo, String texto) {
+        String traduzido = translateAmp(texto);
+        if (traduzido.indexOf('\u00a7') < 0) {
+            traduzido = "\u00a7c" + traduzido; // sem cor? VERMELHO (o classic "voce esta sendo observado")
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo,
+                new ScreenTextPayload(traduzido, 6));
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "Aviso na tela de " + alvo.getName().getString() + "!")
+                .withStyle(ChatFormatting.YELLOW), true);
+    }
+
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         LiteralArgumentBuilder<net.minecraft.commands.CommandSourceStack> root = Commands.literal("rp");
@@ -84,6 +134,31 @@ public final class RPCommands {
         // /rp admin chatlocal on|off — apenas admins (liga/desliga o chat local)
         root.then(Commands.literal("admin")
                 .requires(src -> src.hasPermission(2))
+                // (3.44.0) /rp admin medo <jogador> [segundos] — tela treme + bordas vermelhas
+                .then(Commands.literal("medo")
+                        .then(Commands.argument("jogador", net.minecraft.commands.arguments.EntityArgument.player())
+                                .executes(ctx -> {
+                                    ServerPlayer alvo = net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador");
+                                    medar(ctx, alvo, 5);
+                                    return Command.SINGLE_SUCCESS;
+                                })
+                                .then(Commands.argument("segundos", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 30))
+                                        .executes(ctx -> {
+                                            ServerPlayer alvo = net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador");
+                                            int seg = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "segundos");
+                                            medar(ctx, alvo, seg);
+                                            return Command.SINGLE_SUCCESS;
+                                        }))))
+                // (3.44.0) /rp admin avisar <jogador> <texto> — texto GRANDE na tela (cores com &)
+                .then(Commands.literal("avisar")
+                        .then(Commands.argument("jogador", net.minecraft.commands.arguments.EntityArgument.player())
+                                .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                        .executes(ctx -> {
+                                            ServerPlayer alvo = net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador");
+                                            String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                            avisar(ctx, alvo, texto);
+                                            return Command.SINGLE_SUCCESS;
+                                        }))))
                 .then(Commands.literal("chatlocal")
                         .then(Commands.literal("on").executes(ctx -> {
                             RPWorldData.get(ctx.getSource().getServer()).setChatLocal(true);
