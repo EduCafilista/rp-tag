@@ -1,7 +1,7 @@
 # ENTREGA — Guia pra continuar o RP Tag
 
 Ola! Este documento e o mapa completo do projeto pra quem vai dar
-continuidade. Versao atual: **3.42.0** (veja o `CHANGELOG.md` pra todo o
+continuidade. Versao atual: **3.43.0** (veja o `CHANGELOG.md` pra todo o
 historico). Minecraft **1.21.1** + **NeoForge** (moddev 2.0.146).
 
 ## O que o mod faz hoje
@@ -78,4 +78,4 @@ historico). Minecraft **1.21.1** + **NeoForge** (moddev 2.0.146).
 - Repo: `github.com/EduCafilista/rp-tag` (publishing: apagar jar antigo +
   upload + Release; NUNCA apagar o repo).
 
-Bom trabalho! — RP Tag 3.42.0
+Bom trabalho! — RP Tag 3.43.0

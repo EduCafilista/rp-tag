@@ -132,6 +132,13 @@ public class BubbleStyleScreen extends Screen {
 
     // geometria da pilula da simulacao (pra posicionar o adesivo e as zonas)
     private int simX0, simY, simW, simH;
+    /** (3.43.0) geometria da COLUNA do emblema — calculada 1x no render, reusada nos cliques/hover. */
+    private float emblemColX, emblemBadgeY;
+    private boolean emblemOnRight;
+    /** (3.43.0) tamanho/espacamento do emblema na previa — mesmos valores do mundo. */
+    private static final float BADGE_PX = 14.0F;
+    private static final float BADGE_GAP_PX = 3.0F;
+    private static final float TEXT_GAP_PX = 6.0F;
     private boolean hoverSticker = false;
 
     public BubbleStyleScreen(OpenBubbleStylePayload style) {
@@ -511,17 +518,12 @@ public class BubbleStyleScreen extends Screen {
     }
 
     /**
-     * ADESIVO SO NAS BORDAS (igual ao mundo): centro preso as faixas de
-     * cima/baixo do texto (o lado segue o stickerY salvo; X e livre).
+     * (3.43.0) o adesivo do canto agora e sempre o PRIMEIRO item da coluna do
+     * emblema (mesma coluna fixa dos emotes, dentro da pilula) — usa os
+     * campos calculados no ultimo renderSim, sem posicao livre.
      */
     private float[] stickerCenter() {
-        boolean topBand = style.stickerY() < 50;
-        // (3.41.0) mesmo bug do syB/by: offset tem que contar a meia-altura
-        // do glifo (8px), senao metade do adesivo fica dentro da capsula.
-        float sy = topBand ? simY - 8.0F - 4.0F : simY + simH + 8.0F + 4.0F;
-        float sx = Mth.clamp(simX0 + style.stickerX() / 100.0F * simW,
-                simX0 + 18.0F, simX0 + simW - 18.0F); // 18px pra dentro (igual ao mundo)
-        return new float[]{sx, sy};
+        return new float[]{emblemColX + BADGE_PX / 2.0F, emblemBadgeY + BADGE_PX / 2.0F};
     }
 
     /** Caixinha vermelha [x] no canto do adesivo livre da PREVIA (clique = tira). */
@@ -857,33 +859,25 @@ public class BubbleStyleScreen extends Screen {
         g.enableScissor(px + 9, py + 41, px + PANEL_W - 9, py + 95);
 
         // --- medidas da pilula (O BALAO DE VERDADE, tingido) ---
-        int speechW = this.font.width("sua fala assim")
-                + (ex.isEmpty() ? 0 : this.font.width(" ") + this.font.width(Stickers.styled(spaced(ex))));
-        // (3.24.0) ZOOM NO CONTEUDO: a fala aparece 2x (emoji em ARTE 1.5x) pra
-        // dar pra LER bem o que vai pro mundo antes de testar. Se 6 emojis nao
-        // couberem, cai pra 1.5x automatico (nada estoura o card).
-        boolean temAdesivo = !style.corner().isEmpty() || !ex.isEmpty(); // (3.32.0) emotes = faixa
-        boolean faixaTopo = temAdesivo && style.stickerY() < 50;
+        // (3.24.0) ZOOM NO CONTEUDO: a fala aparece 2x pra dar pra LER bem o
+        // que vai pro mundo antes de testar. Se nao couber, cai pra 1.5x.
+        boolean hasCorner = !style.corner().isEmpty();
+        boolean temAdesivo = hasCorner || !ex.isEmpty(); // (3.32.0) emotes = coluna
         int falaW1x = this.font.width("sua fala assim");
         float K = (falaW1x * 2 + 34 > 246) ? 1.5F : 2.0F; // zoom do texto
         int conteudoW = Math.round(falaW1x * K);
-        // (3.42.0) mesmo bug do mundo: a capsula da previa tambem ignorava
-        // o espaco que o emblema (adesivo/emotes) precisa — com poucas
-        // letras e varios emojis, o emblema desenhava fora da capsula aqui
-        // tambem. Reserva a mesma largura minima que o mundo usa.
-        int emblemW = 0;
-        if (temAdesivo) {
-            emblemW = 36 + Math.max(0, ex.length() - 1) * 18;
-            if (!style.corner().isEmpty()) {
-                emblemW += 20;
-            }
-        }
-        simW = Math.max(170, Math.min(246, Math.max(conteudoW + 28, emblemW + 28)));
-        // com adesivo/emotes a capsula ganha a FAIXA de 28px (igual ao mundo)
-        // (3.41.0) simH era um 18 fixo, mas o texto e desenhado com ZOOM K —
-        // a 2x, uma linha de 8px de fonte vira 16px de altura + a folga de
-        // 4+4, ou seja 24px reais. Com simH=18 o texto ja estourava a
-        // capsula por baixo ANTES de qualquer emblema entrar em cena.
+        // (3.43.0) MESMO REDESENHO do mundo: nada de "emblema pregado na
+        // borda" (metade pra fora) — o emoji/adesivo vive numa COLUNA
+        // DENTRO da pilula, do lado escolhido, ao lado do texto. A previa
+        // agora e EXATAMENTE o que acontece no jogo (antes divergia: aqui
+        // era um drag-and-drop livre em 2D, no mundo virou uma margem fixa
+        // de um lado so — pareciam balões diferentes).
+        int emblemItems = (hasCorner ? 1 : 0) + ex.length();
+        float emblemColW = emblemItems > 0
+                ? emblemItems * BADGE_PX + (emblemItems - 1) * BADGE_GAP_PX : 0;
+        emblemOnRight = style.stickerX() >= 50;
+        int emblemSpace = temAdesivo ? Math.round(TEXT_GAP_PX + emblemColW) : 0;
+        simW = Math.max(170, Math.min(246, conteudoW + 28 + emblemSpace));
         simH = Math.round(this.font.lineHeight * K) + 8;
         simX0 = px + (PANEL_W - simW) / 2;
         simY = py + 56; // centralizado no card; emblema acima nunca cortado pelo scissor
@@ -926,9 +920,12 @@ public class BubbleStyleScreen extends Screen {
         drawTail(g, cx, simY + simH - 2, 12, 10, fill);
         drawPillGloss(g, simX0, simY, simW, simH, fill);
 
-        // --- fala + extras DENTRO da pilula (o ring por tras garante o recorte) ---
-        int tx = simX0 + (simW - conteudoW) / 2;
-        int tyText = simY + 4; // (3.37.0) colada no texto, sempre
+        // --- fala DENTRO da pilula (o ring por tras garante o recorte) ---
+        // (3.43.0) a coluna de texto fica do lado OPOSTO ao emblema — sobra
+        // sempre TEXT_GAP de respiro entre letra e emoji, os dois sempre
+        // cabendo dentro da capsula (a largura dela ja reserva isso).
+        int tx = emblemOnRight ? simX0 + 14 : simX0 + simW - 14 - conteudoW;
+        int tyText = simY + (simH - Math.round(this.font.lineHeight * K)) / 2; // centralizado de verdade
         g.pose().pushPose();
         g.pose().translate(tx, tyText, 0.0F);
         g.pose().scale(K, K, 1.0F); // ZOOM: a fala do preview legivel de longe
@@ -943,51 +940,45 @@ public class BubbleStyleScreen extends Screen {
             outline(g, simX0 - 6, simY - 6, simW + 12, simH + 18, ZONA_VERDE);
         }
 
-        // --- (3.32.0) EMOTES na FAIXA (igual ao mundo) ---
-        if (!ex.isEmpty()) {
-            // (3.41.0) MESMO bug do mundo: 'syB' e o CENTRO do emblema (16px
-            // de glifo = 8px de meia-altura). Com so 4px de offset, metade
-            // do emblema invadia a capsula — era exatamente o que aparecia
-            // nos prints, o emoji "em cima das letras". Offset agora conta
-            // a meia-altura de verdade.
-            final float EMBLEM_HALF = 8.0F;
-            final float EMBLEM_GAP = 4.0F;
-            float syB = faixaTopo ? simY - EMBLEM_HALF - EMBLEM_GAP : simY + simH + EMBLEM_HALF + EMBLEM_GAP;
-            float exX = simX0 + 18;
-            if (!style.corner().isEmpty()) {
-                float[] c0 = stickerCenter();
-                exX = Math.max(exX, c0[0] + 10);
+        // --- (3.43.0) EMBLEMA = COLUNA DENTRO DA PILULA (igual ao mundo) ---
+        // Adesivo (se tiver) + emotes, um do lado do outro, sempre DENTRO da
+        // capsula — nunca mais "em cima das letras" nem "flutuando fora".
+        emblemColX = emblemOnRight ? simX0 + simW - 8 - emblemColW : simX0 + 8;
+        emblemBadgeY = simY + (simH - BADGE_PX) / 2.0F;
+        if (temAdesivo) {
+            int i = 0;
+            if (hasCorner) {
+                int idx = (style.corner().charAt(0) & 0xFFFF) - 0xE000;
+                if (idx < 0 || idx >= Stickers.COUNT) {
+                    idx = 0;
+                }
+                drawGlyphMenu(g, idx, Math.round(emblemColX), Math.round(emblemBadgeY),
+                        BADGE_PX / 16.0F);
+                int[] rb = removeBoxPos();
+                if (rb != null) { // [x] SEMPRE visivel: impossivel nao achar como tirar
+                    g.fill(rb[0], rb[1], rb[0] + 12, rb[1] + 12, 0xFFB03030);
+                    g.fill(rb[0] + 1, rb[1] + 1, rb[0] + 11, rb[1] + 11, 0xFFD85858);
+                    g.drawString(this.font, "✖", rb[0] + 2, rb[1] + 2, 0xFFFFFFFF, false);
+                }
+                float bx = emblemColX + BADGE_PX / 2.0F;
+                float by = emblemBadgeY + BADGE_PX / 2.0F;
+                if (holdingSticker == null && Math.abs(mouseX - bx) <= 8 && Math.abs(mouseY - by) <= 8) {
+                    hoverSticker = true;
+                    g.drawString(this.font, "+", Math.round(bx) - 2, Math.round(by) - 9, 0xFFFFFFFF, false);
+                }
+                i++;
             }
-            for (int i = 0; i < ex.length(); i++) {
-                int eIdx = (ex.charAt(i) & 0xFFFF) - 0xE000;
+            for (int k = 0; k < ex.length(); k++) {
+                int eIdx = (ex.charAt(k) & 0xFFFF) - 0xE000;
                 if (eIdx < 0 || eIdx >= Stickers.COUNT) {
                     eIdx = 0;
                 }
-                drawGlyphMenu(g, eIdx, Math.round(exX + i * 18), Math.round(syB) - 8, 1.0F);
+                drawGlyphMenu(g, eIdx, Math.round(emblemColX + i * (BADGE_PX + BADGE_GAP_PX)),
+                        Math.round(emblemBadgeY), BADGE_PX / 16.0F);
+                i++;
             }
-        }
-
-        // --- adesivo livre: na posicao (%) — com hover ---
-        hoverSticker = false;
-        if (!style.corner().isEmpty()) {
-            int idx = (style.corner().charAt(0) & 0xFFFF) - 0xE000;
-            if (idx < 0 || idx >= Stickers.COUNT) {
-                idx = 0;
-            }
-            float[] sc = stickerCenter();
-            int sx = Math.round(sc[0]);
-            int sy = Math.round(sc[1]);
-            drawGlyphMenu(g, idx, sx - 8, sy - 8, 1.0F);
-            int[] rb = removeBoxPos();
-            if (rb != null) { // [x] SEMPRE visivel: impossivel nao achar como tirar
-                g.fill(rb[0], rb[1], rb[0] + 12, rb[1] + 12, 0xFFB03030);
-                g.fill(rb[0] + 1, rb[1] + 1, rb[0] + 11, rb[1] + 11, 0xFFD85858);
-                g.drawString(this.font, "✖", rb[0] + 2, rb[1] + 2, 0xFFFFFFFF, false);
-            }
-            if (holdingSticker == null && Math.abs(mouseX - sx) <= 8 && Math.abs(mouseY - sy) <= 8) {
-                hoverSticker = true;
-                g.drawString(this.font, "+", sx - 2, sy - 9, 0xFFFFFFFF, false);
-            }
+        } else {
+            hoverSticker = false;
         }
         if (holdingSticker != null) {
             int hi = Integer.parseInt(holdingSticker);
@@ -1181,10 +1172,11 @@ private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
             if (inBox(mx, my, simX0 - 4, simY - 4, simW + 8, simH + 14)) {
                 holdingSticker = null;
                 int x = Mth.clamp((int) mx, simX0, simX0 + simW);
-                boolean topo = my < simY + simH / 2.0F; // metade de cima = faixa do topo
+                // (3.43.0) so o lado (esquerda/direita) importa agora — soltar
+                // na metade esquerda ou direita da pilula escolhe a margem.
+                // stickerY fica salvo sem uso (compatibilidade), nao afeta mais nada.
                 setSticker(Stickers.GLYPHS[Integer.parseInt(held)],
-                        Math.round((x - simX0) * 100.0F / simW),
-                        topo ? 10 : 90);
+                        Math.round((x - simX0) * 100.0F / simW), style.stickerY());
                 return true;
             }
             // 2) slots de emojis: vazio = adiciona; cheio = tira (e solta)

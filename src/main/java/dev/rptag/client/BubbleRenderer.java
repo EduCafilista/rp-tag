@@ -254,15 +254,21 @@ public final class BubbleRenderer {
     }
 
     /** QUAD do emoji no atlas HD (celula 16px de 128x256; arte 1024x2048). */
-    private static void emojiQuad(Matrix4f m, MultiBufferSource buffers, float x, float y, int idx, float alpha) {
+    private static void emojiQuad(Matrix4f m, MultiBufferSource buffers, float x, float y, int idx,
+            float alpha, float size) {
         if (idx < 0 || idx >= Stickers.COUNT) {
             idx = 0;
         }
         float u0 = (idx % 8) / 8.0F;
         float v0 = (idx / 8) / 16.0F;
         VertexConsumer buf = buffers.getBuffer(HI_TYPE);
-        quad(m, buf, -0.07F, x, y, x + 16.0F, y + 16.0F, u0, v0, u0 + 0.125F, v0 + 0.0625F,
+        quad(m, buf, -0.07F, x, y, x + size, y + size, u0, v0, u0 + 0.125F, v0 + 0.0625F,
                 withAlpha(0xFFFFFFFF, alpha));
+    }
+
+    private static void emojiQuad(Matrix4f m, MultiBufferSource buffers, float x, float y, int idx,
+            float alpha) {
+        emojiQuad(m, buffers, x, y, idx, alpha, 16.0F);
     }
 
     /**
@@ -512,11 +518,9 @@ public final class BubbleRenderer {
             return 0;
         }
         int pillH = nLines * LINE_HEIGHT + 8;
-        if (!bubble.corner().isEmpty() || !bubble.extras().isEmpty()) {
-            // (3.41.0) emblema agora fica EMBLEM_HALF(8) + EMBLEM_GAP(4) pra
-            // fora da pilula, + a metade que pendura do lado de fora = 12+8=20
-            pillH += 20;
-        }
+        // (3.43.0) o emblema agora mora DENTRO da pilula (coluna ao lado do
+        // texto) — nao protrude mais pra cima/baixo, entao nao precisa somar
+        // altura extra aqui. So a largura muda (e largura nao afeta a pilha).
         int bsH = Math.max(0, bubble.borderStyle()); // (3.39.0) >= 0 SEMPRE (negativo = AIOOBE)
         int bsIdx = Math.min(bsH, RING_MARGIN.length - 1);
         // a moldura cresce pra fora nos DOIS lados + o rabicho pendura embaixo
@@ -573,40 +577,36 @@ public final class BubbleRenderer {
         int n = linesTxt.size();
         // linha com adesivo (glifo 16px) ocupa 18px; texto puro segue em 10px
         int speechH = LINE_HEIGHT * n; // texto puro — emoji NAO cria linha NENHUMA
-        // (3.22.0) ADESIVO SO NAS BORDAS: se tem adesivo, a pilula EXPANDE 18px
-        // pro lado escolhido (topo se stickerY<50, base senao) — o adesivo vive
-        // nessa faixa e NUNCA fica em cima das letras.
-        boolean topBand = bubble.stickerY() < 50;
         boolean temBanda = !bubble.corner().isEmpty() || !bubble.extras().isEmpty();
         int bsPre = Math.max(0, bubble.borderStyle());
         // (3.35.0) o respiro interno agora e IGUAL pra todos: a moldura cresce
         // pra FORA (RING_MARGIN), entao nao precisa mais roubar espaco de dentro.
         int pad = 16;
         int extrasN = bubble.extras().length();
-        // (3.37.0) FIM DA FAIXA (o "ar" que o usuario vivia reclamando!): a
-        // pilula fica do tamanho EXATO do texto — o adesivo/emotes agora sao
-        // um EMBLEMA pregado NA BORDA (sobre poe apenas o contorno, metade
-        // pra fora), no lado escolhido. Nenhuma linha nova, nenhum vazio.
+        boolean hasCorner = !bubble.corner().isEmpty();
+        int emblemItems = (hasCorner ? 1 : 0) + extrasN;
+        // (3.43.0) REDESENHO COMPLETO DO EMBLEMA: as versoes anteriores
+        // "pregavam" o adesivo/emoji NA BORDA (metade pra fora da pilula de
+        // proposito). Isso deu bug atras de bug (emblema em cima do texto,
+        // emblema flutuando longe da pilula) porque "half outside" depende
+        // de contas de folga que qualquer mudanca de tamanho de fonte,
+        // margem de moldura ou numero de emoji podia desalinhar.
         //
-        // (3.42.0) BUG "FORA DO LUGAR": essa largura NUNCA levava em conta o
-        // espaco que o proprio emblema precisa. Numa mensagem curta (pilula
-        // minima de 34px) com 2-3 emojis, cada emoji e desenhado 18px a
-        // direita do anterior a partir de um ponto fixo — e isso ULTRAPASSA
-        // a pilula de verdade rapido, sobrando emoji flutuando no vazio bem
-        // longe do balao. Agora a pilula garante espaco pro emblema inteiro
-        // (adesivo + emotes) por LARGURA, sem reintroduzir faixa/altura extra.
-        int emblemW = 0;
-        if (temBanda) {
-            emblemW = 36 + Math.max(0, extrasN - 1) * 18;
-            if (!bubble.corner().isEmpty()) {
-                emblemW += 20;
-            }
-        }
-        int pillW = Math.max(34, Math.max(textW + pad, emblemW));
-        // (3.31.1) FIX CRITICO: a pilula tem que COBRIR a faixa do adesivo!
-        // (era speechH+6 — com a faixa em cima, a pilula terminava 28px antes
-        // do fim do texto e as letras PENDURAVAM FORA do balao — o bug do print!)
-        int pillH = speechH + 8; // (3.37.0) SEM faixa: colada no texto
+        // Design novo: o emblema vive DENTRO da pilula, numa margem lateral
+        // reservada do lado do texto — nunca encosta nas letras (fica numa
+        // coluna separada) e NUNCA fica fora do balao (a largura da pilula
+        // e calculada pra sempre conter a coluna inteira). O lado (esquerda
+        // ou direita) e escolhido pelo slider X do adesivo no menu.
+        final float BADGE = 14.0F;
+        final float BADGE_GAP = 3.0F;
+        final float TEXT_GAP = 6.0F;
+        float emblemColW = emblemItems > 0 ? emblemItems * BADGE + (emblemItems - 1) * BADGE_GAP : 0;
+        boolean emblemOnRight = bubble.stickerX() >= 50;
+        int pillW = Math.max(34, textW + pad + (temBanda ? Math.round(TEXT_GAP + emblemColW) : 0));
+        // (3.31.1/3.37.0/3.43.0) a pilula so precisa cobrir o texto + a
+        // coluna do emblema, lado a lado — SEM crescer em altura por causa
+        // dele (ele mora dentro, do tamanho normal do balao).
+        int pillH = speechH + 8;
         float x0 = -pillW / 2.0F;
         // (3.36.0) FIX RAIZ DO "AR" (portado da 3.35.0 — a reforma tinha
         // voltado a geometria antiga!): a escala usa -Y, entao y=0 e a ANCORa
@@ -683,6 +683,13 @@ public final class BubbleRenderer {
         tail(matrix, buffers, -0.09F, 0, yP1 - 2, tw, th, fill);
 
         // ---- texto + adesivos dentro da fala (sombra vanilla = legivel e limpo) ----
+        // (3.43.0) quando ha emblema, o texto abre espaco pra coluna dele de
+        // UM lado so (esquerda ou direita) — cada linha continua centrada
+        // dentro da SUA PROPRIA coluna (textW), so a coluna inteira que
+        // desliza pro lado oposto ao emblema.
+        float textColX = emblemOnRight
+                ? x0 + pad / 2.0F
+                : x0 + pillW - pad / 2.0F - textW;
         int cum = 0;
         for (int j = 0; j < n; j++) {
             List<Seg> segs = segLines.get(j);
@@ -690,42 +697,32 @@ public final class BubbleRenderer {
             for (Seg seg : segs) {
                 lineW += font.width(seq(seg));
             }
-            float lineX = -Math.round(lineW / 2.0F);
+            float lineX = textColX + (textW - lineW) / 2.0F;
             float penY = yText + cum;
             drawLine(font, matrix, buffers, segs, lineX, penY, textColor, alpha);
             cum += LINE_HEIGHT;
         }
 
-        // ---- (3.37.0) ADESIVO/EMOTES = EMBLEMA NA BORDA ----
-        // Sobre poe APENAS o contorno (metade pra fora), no lado escolhido —
-        // nunca sobre as letras, nunca criando faixa/vazio no balao.
+        // ---- (3.43.0) ADESIVO/EMOTES = COLUNA DENTRO DA PILULA ----
+        // Fica numa margem reservada do lado escolhido, vertical mente
+        // centrada no bloco de texto — nunca sai da pilula (a largura dela
+        // ja foi calculada pra conter a coluna inteira, la em cima) e nunca
+        // encosta no texto (colunas separadas, com respiro TEXT_GAP entre elas).
         if (temBanda) {
-            // (3.41.0) BUG DA SOBREPOSICAO: 'by' e o CENTRO do emblema, e o
-            // glifo mede 16px de altura (8px pra cada lado do centro). Com
-            // so 4px de offset, a METADE do glifo (8px) sempre invadia a
-            // pilula por baixo — sobravam -4px, ou seja, 4px do emblema
-            // ficavam LITERALMENTE EM CIMA DAS LETRAS. Agora o offset conta
-            // a meia-altura do glifo (8) + uma folga de verdade (4).
-            final float EMBLEM_HALF = 8.0F;
-            final float EMBLEM_GAP = 4.0F;
-            float by = topBand ? yP0 - EMBLEM_HALF - EMBLEM_GAP : yP1 + EMBLEM_HALF + EMBLEM_GAP;
-            float bx = x0 + 18.0F;
-            if (!bubble.corner().isEmpty()) {
-                // (3.42.0) QUALIDADE INCONSISTENTE: o adesivo unico desenhava
-                // pela FONTE de baixo-res (stickers.png, 16x16 por glifo),
-                // enquanto os emotes extras JA usavam o atlas HD (emojiQuad,
-                // 128x128 por glifo). No mesmo balao, um emoji saia nitido e
-                // o outro saia borrado/blocado — agora os dois usam o MESMO
-                // atlas HD, iguais em qualidade.
+            float badgeY = (yP0 + yP1) / 2.0F - BADGE / 2.0F;
+            float colX = emblemOnRight
+                    ? x0 + pillW - pad / 2.0F - emblemColW
+                    : x0 + pad / 2.0F;
+            int i = 0;
+            if (hasCorner) {
                 int cornerIdx = (bubble.corner().charAt(0) & 0xFFFF) - 0xE000;
-                float bxMax = x0 + pillW - 18.0F - extrasN * 18.0F;
-                bx = Mth.clamp(x0 + bubble.stickerX() / 100.0F * pillW,
-                        x0 + 18.0F, Math.max(x0 + 18.0F, bxMax));
-                emojiQuad(matrix, buffers, bx - 8.0F, by - 8.0F, cornerIdx, alpha);
+                emojiQuad(matrix, buffers, colX, badgeY, cornerIdx, alpha, BADGE);
+                i++;
             }
-            for (int i = 0; i < extrasN; i++) {
-                int idx = (bubble.extras().charAt(i) & 0xFFFF) - 0xE000;
-                emojiQuad(matrix, buffers, bx + 10.0F + i * 18.0F, by - 8.0F, idx, alpha);
+            for (int k = 0; k < extrasN; k++) {
+                int idx = (bubble.extras().charAt(k) & 0xFFFF) - 0xE000;
+                emojiQuad(matrix, buffers, colX + i * (BADGE + BADGE_GAP), badgeY, idx, alpha, BADGE);
+                i++;
             }
         }
 
