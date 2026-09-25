@@ -40,6 +40,8 @@ historico). Minecraft **1.21.1** + **NeoForge** (moddev 2.0.146).
 | `client/ClientBubbleCache.java` | Pilha de baloes por jogador (max 3, expira, off limpa tudo) |
 | `client/BubbleBackgrounds.java` | Cores derivadas (recheio/borda/texto legivel) |
 | `client/Stickers.java` (raiz) | Os 80 emojis Noto (atlas POT `font/stickers.png` 128x256 + `gui/stickers_hi.png` 1024x2048, codepoints 0xE000+) |
+| `RPEffects.java` | Efeitos de status (MEDO = `rptag:medo`, icone no HUD via `textures/mob_effect/medo.png`) |
+| `client/ClientEffects.java` | Tremedeira de camera + vinheta do MEDO + texto GRANDE central (avisos) |
 | `ServerEvents.java` | Estado RP/persona, nomes (chat/TAB), payload do estilo BLINDADO (clamp 0..5, 0..100%, 2..20s, stickers <= 4/8) |
 | `RPChat.java` | Canais + `spawnBubble` (gates: global on, opt-out, ADMIN, modo; ANTI-FLOOD 250ms) + `sendRpAction` (chat RP: so EM RP na regiao) |
 | `ChatCommands.java` | /g /s /w /me /do (o /me vanilla e removido) |

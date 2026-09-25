@@ -59,6 +59,10 @@ public final class RPCommands {
     private static void medar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
             ServerPlayer alvo, int seg) {
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, new FearPayload(seg));
+        // (3.45.0) agora o MEDO tambem e um EFEITO DE VERDADE: o icone
+        // aparece no canto do HUD (com o tempo restante), igual Veneno.
+        alvo.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                RPEffects.MEDO, seg * 20, 0, false, false)); // DeferredHolder E um Holder<MobEffect>
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "\u5291 " + alvo.getName().getString() + " esta com MEDO por " + seg + "s!")
                 .withStyle(ChatFormatting.DARK_PURPLE), true);
