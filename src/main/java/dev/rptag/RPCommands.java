@@ -65,7 +65,7 @@ public final class RPCommands {
                 RPEffects.MEDO, seg * 20, 0, false, false)); // DeferredHolder E um Holder<MobEffect>
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "\u5291 " + alvo.getName().getString() + " esta com MEDO por " + seg + "s!")
-                .withStyle(ChatFormatting.DARK_PURPLE), true);
+                .withStyle(ChatFormatting.DARK_PURPLE), false); // (3.47.0) SO O ADMIN ve (era broadcast!)
     }
 
     /** (3.44.0) Mostra o texto GRANDE na tela do alvo (padrao: vermelho). */
@@ -79,7 +79,7 @@ public final class RPCommands {
                 new ScreenTextPayload(traduzido, 6));
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "Aviso na tela de " + alvo.getName().getString() + "!")
-                .withStyle(ChatFormatting.YELLOW), true);
+                .withStyle(ChatFormatting.YELLOW), false); // (3.47.0) SO O ADMIN ve
     }
 
     @SubscribeEvent

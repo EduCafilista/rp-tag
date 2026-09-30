@@ -79,7 +79,7 @@ public class BubbleStyleScreen extends Screen {
     private static final int ROW_LETRA = 132;
     private static final int ROW_BTN1 = 146;   // molduras: Auto / Minha cor / Sem
     private static final int ROW_BTN2 = 164;   // Classica / Cartum / Dupla
-    private static final int ROW_BTN3 = 182;   // Tracejada / Nuvem / Gibi
+    private static final int ROW_BTN3 = 182;   // Costura / Brilho (a Nuvem ficou na fileira de cima)
     private static final int ROW_BTN4 = 204;   // Adesivos + duracao (h18)
     private static final int ROW_EXTRAS = 228; // slots de emojis (hit 223..247)
     private static final int ROW_BTN5 = 252;   // modo / padrao / salvar
@@ -205,6 +205,27 @@ public class BubbleStyleScreen extends Screen {
 
     /** FATIA da pilula real (3 fatias: tampa + meio + tampa — pontas NUNCA deformam). */
     /** CAPSULA perfeita (retangulo + 2 semicirculos) — igual a textura nova do mundo. */
+    /**
+     * (3.47.0) NUVEM na previa (igual ao mundo): bolas sobrepostas em volta
+     * da capsula (o recheio cobre as metades de dentro).
+     */
+    private void nuvemGui(GuiGraphics g, float simX0, float simY, float simW, float simH, int border) {
+        final int d = 13;
+        final int r = d / 2;
+        int cols = Math.max(3, Math.round(simW / (d * 0.72F)));
+        for (int i = 0; i <= cols; i++) {
+            float x = simX0 - r + (simW + d) * i / cols;
+            drawPill(g, x - r, simY - r, d, d, border);
+            drawPill(g, x - r, simY + simH - r, d, d, border);
+        }
+        int rows = Math.max(2, Math.round(simH / (d * 0.72F)));
+        for (int i = 0; i <= rows; i++) {
+            float y = simY - r + (simH + d) * i / rows;
+            drawPill(g, simX0 - r, y, d, d, border);
+            drawPill(g, simX0 + simW - r, y, d, d, border);
+        }
+    }
+
     private void drawPill(GuiGraphics g, float x, float y, float w, float h, int argb) {
         if ((argb >>> 24) == 0 || w < 2) {
             return;
@@ -597,8 +618,8 @@ public class BubbleStyleScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("▤ Cartum"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CARTOON);
                 }).bounds(px + 93, py + ROW_BTN2, 81, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("▤ Dupla"), b -> {
-                    style = withBorderStyle(BubbleStyle.BORDER_DOUBLE);
+        addRenderableWidget(Button.builder(Component.literal("☁ Nuvem"), b -> {
+                    style = withBorderStyle(BubbleStyle.BORDER_DOUBLE); // id 2 = NUVEM (3.47.0)
                 }).bounds(px + 178, py + ROW_BTN2, 81, 16).build());
 
         addRenderableWidget(Button.builder(Component.literal("∴ Costura"), b -> {
@@ -607,10 +628,6 @@ public class BubbleStyleScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("◕ Brilho"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CLOUD);
                 }).bounds(px + 93, py + ROW_BTN3, 81, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("▤ Gibi"), b -> {
-                    style = withBorderStyle(BubbleStyle.BORDER_COMIC);
-                }).bounds(px + 178, py + ROW_BTN3, 81, 16).build());
-
         addRenderableWidget(Button.builder(Component.literal("✦ Adesivos (80)"), b -> {
                     showKeyboard = true;
                     rebuildWidgets();
@@ -803,7 +820,7 @@ public class BubbleStyleScreen extends Screen {
                 return "§fCartum§7: tinta grossa de quadrinho";
             }
             if (mouseX >= px + 178 && mouseX <= px + 259) {
-                return "§fDupla§7: linha dupla elegante";
+                return "§fNuvem§7: balao de pensamento fofo (bolinhas)";
             }
         }
         if (l2) {
@@ -813,9 +830,7 @@ public class BubbleStyleScreen extends Screen {
             if (mouseX >= px + 93 && mouseX <= px + 174) {
                 return "§fBrilho§7: halo suave ao redor do balao";
             }
-            if (mouseX >= px + 178 && mouseX <= px + 259) {
-                return "§fGibi§7: balaozao gordo de HQ";
-            }
+
         }
         return null;
     }
@@ -894,9 +909,8 @@ public class BubbleStyleScreen extends Screen {
                     ringGui(g, simX0, simY, simW, simH, border, 4);
                     drawTail(g, cx, simY + simH - 4, 19, 17, border);
                 }
-                case 2 -> { // DUPLA: anel de linha dupla (igual ao mundo)
-                    ringGui(g, simX0, simY, simW, simH, border, 5);
-                    drawTail(g, cx, simY + simH - 4, 15, 13, border);
+                case 2, 5 -> { // NUVEM (3.47.0): bolas + bolinhas (igual ao mundo)
+                    nuvemGui(g, simX0, simY, simW, simH, border);
                 }
                 case 3 -> dottedGui(g, simX0, simY, simW, simH, border); // COSTURA
                 case 4 -> { // BRILHO: halo CLARO + anel fino (igual ao mundo)
@@ -905,10 +919,6 @@ public class BubbleStyleScreen extends Screen {
                     ringGui(g, simX0, simY, simW, simH, border, 2);
                     drawTail(g, cx, simY + simH - 3, 14, 12, border);
                 }
-                case 5 -> { // GIBI: anel gordo de HQ (igual ao mundo)
-                    ringGui(g, simX0, simY, simW, simH, border, 5);
-                    drawTail(g, cx, simY + simH - 5, 18, 16, border);
-                }
                 default -> { // CLASSICA: contorno com relevo (igual ao mundo)
                     ringGui(g, simX0, simY, simW, simH, border, 2);
                     drawTail(g, cx, simY + simH - 3, 14, 12, border);
@@ -916,8 +926,15 @@ public class BubbleStyleScreen extends Screen {
             }
         }
 
-        // --- RECHEIO + rabicho ---
-        drawTail(g, cx, simY + simH - 2, 12, 10, fill);
+        // --- RECHEIO + rabicho (nuvem = bolinhas em vez de triangulo) ---
+        boolean nuvemGui = (bsC == 2 || bsC == 5);
+        if (!nuvemGui) {
+            drawTail(g, cx, simY + simH - 2, 12, 10, fill);
+        } else {
+            drawPill(g, cx - 4.5F, simY + simH + 5, 9, 9, fill);
+            drawPill(g, cx + 0.5F, simY + simH + 11, 7, 7, fill);
+            drawPill(g, cx + 5.0F, simY + simH + 16, 5, 5, fill);
+        }
         drawPillGloss(g, simX0, simY, simW, simH, fill);
 
         // --- fala DENTRO da pilula (o ring por tras garante o recorte) ---

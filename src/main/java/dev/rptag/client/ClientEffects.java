@@ -120,7 +120,9 @@ public final class ClientEffects {
                 com.mojang.blaze3d.systems.RenderSystem.enableBlend();
                 com.mojang.blaze3d.systems.RenderSystem.setShaderColor(
                         1.0F, 1.0F, 1.0F, Math.min(1.0F, amp * pulse));
-                g.blit(VINHETA_TEX, 0, 0, 0, 0, w, h, 256, 256);
+                // (3.47.0) estica a textura INTEIRA na tela (antes usava 256x256 como
+                // denominador e a vinheta REPETIA em circulos pela tela!)
+                g.blit(VINHETA_TEX, 0, 0, 0, 0, w, h, w, h);
                 int isz = Math.max(20, Math.round(Math.min(w, h) * 0.055F));
                 float blink = 0.62F + 0.38F * (float) Math.sin(now * 0.012);
                 com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,

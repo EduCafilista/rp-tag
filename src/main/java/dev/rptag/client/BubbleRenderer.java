@@ -368,6 +368,35 @@ public final class BubbleRenderer {
                 160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
     }
 
+    /**
+     * (3.47.0) NUVEM DE PENSAMENTO (estilo Turma da Monica): contorno feito
+     * de BOLAS sobrepostas em volta da pilula + rabinho de bolinhas
+     * descendo em direcao a cabeca. As bolas ficam na MESMA camada do
+     * contorno e o recheio cobre as metades de dentro — sobra so a borda
+     * fofa de nuvem. Substituiu a Dupla (removida) e o Gibi (quebrado).
+     */
+    private static void cloudBorder(Matrix4f m, MultiBufferSource buffers, float z,
+            float x0, float yP0, float pillW, float pillH, float yP1, int argb) {
+        final float d = 13.0F;
+        final float r = d / 2.0F;
+        int cols = Math.max(3, Math.round(pillW / (d * 0.72F)));
+        for (int i = 0; i <= cols; i++) {
+            float x = x0 - r + (pillW + d) * i / cols;
+            pill(m, buffers, z, x - r, yP0 - r, d, d, argb);   // bolas do topo
+            pill(m, buffers, z, x - r, yP1 - r, d, d, argb);   // bolas da base
+        }
+        int rows = Math.max(2, Math.round(pillH / (d * 0.72F)));
+        for (int i = 0; i <= rows; i++) {
+            float y = yP0 - r + (pillH + d) * i / rows;
+            pill(m, buffers, z, x0 - r, y, d, d, argb);        // bolas da esquerda
+            pill(m, buffers, z, x0 + pillW - r, y, d, d, argb);// bolas da direita
+        }
+        // rabinho de pensamento: bolinhas que diminuem descendo
+        pill(m, buffers, z, -5.0F, yP1 + 5.0F, 9.0F, 9.0F, argb);
+        pill(m, buffers, z, 0.5F, yP1 + 11.0F, 7.0F, 7.0F, argb);
+        pill(m, buffers, z, 5.0F, yP1 + 16.0F, 5.0F, 5.0F, argb);
+    }
+
     private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
@@ -632,55 +661,56 @@ public final class BubbleRenderer {
         // rabicho: base larga o bastante pra parecer parte do balao
         final float tw = 13.0F;
         final float th = 13.0F;
+        // (3.47.0) a NUVEM (id 2, e o antigo Gibi id 5) nao usa rabicho-triangulo
+        boolean nuvem = (bs == 2 || bs == 5);
 
         // ---- SOMBRA (suave, quase sem deslocamento — a antiga era um eco duro
         // deslocado 2px que dava cara de clipart) ----
         pill(matrix, buffers, -0.20F, x0 + 1, yP0 + 2, pillW, pillH, withAlpha(0x33000000, alpha));
-        tail(matrix, buffers, -0.20F, 1, yP1 - 2, tw, th, withAlpha(0x33000000, alpha));
+        if (!nuvem) { // a nuvem usa bolinhas de pensamento, sem triangulo
+            tail(matrix, buffers, -0.20F, 1, yP1 - 2, tw, th, withAlpha(0x33000000, alpha));
+        }
 
-        // ---- CONTORNO (6 ESTILOS: Classica / Cartum / Dupla / Tracejada / Brilho / Gibi) ----
+        // ---- CONTORNO (5 ESTILOS: Classica / Cartum / Nuvem / Costura / Brilho) ----
+        // (3.47.0) DUPLA removida (vira Nuvem) e GIBI removido (quebrado —
+        // tambem vira Nuvem). Quem tinha esses estilos salvos migra sozinho.
         if (border != 0) {
             float tailBorderW = tw + margin * 1.6F;
             float tailBorderH = th + margin;
-            switch (bs) {
-                case 1 -> { // CARTUM: tinta grossa
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, CARTUM_TYPE, margin);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
-                            tailBorderW, tailBorderH, border);
-                }
-                case 2 -> { // DUPLA: duas linhas finas
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, DUPLA_TYPE, margin);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
-                            tailBorderW, tailBorderH, border);
-                }
-                case 3 -> { // TRACEJADA: tracinhos acompanhando a curva
-                    costura(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, margin);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
-                            tailBorderW, tailBorderH, border);
-                }
-                case 4 -> { // BRILHO: halo CLARO (o antigo usava a cor ESCURA da
-                            // borda, entao o "brilho" era invisivel) + anel fino
-                    int halo = withAlpha(0xCC000000 | lighten(colorRGB, 0.55F), alpha);
-                    ring(matrix, buffers, -0.16F, x0, yP0, pillW, pillH, halo, BRILHO_TYPE, margin);
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, RING_TYPE, 2.0F);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 3, tw + 3.0F, th + 2.0F, border);
-                }
-                case 5 -> { // GIBI: anel gordo de HQ
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, GIBI_TYPE, margin);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
-                            tailBorderW, tailBorderH, border);
-                }
-                default -> { // CLASSICA: contorno limpo
-                    ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, RING_TYPE, margin);
-                    tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
-                            tailBorderW, tailBorderH, border);
+            if (nuvem) { // NUVEM DE PENSAMENTO (Turma da Monica)
+                cloudBorder(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, yP1, border);
+            } else {
+                switch (bs) {
+                    case 1 -> { // CARTUM: tinta grossa
+                        ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, CARTUM_TYPE, margin);
+                        tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
+                                tailBorderW, tailBorderH, border);
+                    }
+                    case 3 -> { // COSTURA: tracinhos acompanhando a curva
+                        costura(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, margin);
+                        tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
+                                tailBorderW, tailBorderH, border);
+                    }
+                    case 4 -> { // BRILHO: halo CLARO + anel fino
+                        int halo = withAlpha(0xCC000000 | lighten(colorRGB, 0.55F), alpha);
+                        ring(matrix, buffers, -0.16F, x0, yP0, pillW, pillH, halo, BRILHO_TYPE, margin);
+                        ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, RING_TYPE, 2.0F);
+                        tail(matrix, buffers, -0.15F, 0, yP1 - 3, tw + 3.0F, th + 2.0F, border);
+                    }
+                    default -> { // CLASSICA: contorno limpo
+                        ring(matrix, buffers, -0.15F, x0, yP0, pillW, pillH, border, RING_TYPE, margin);
+                        tail(matrix, buffers, -0.15F, 0, yP1 - 2 - margin * 0.7F,
+                                tailBorderW, tailBorderH, border);
+                    }
                 }
             }
         }
 
         // ---- RECHEIO (a cor de dentro escolhida) ----
         pill(matrix, buffers, -0.10F, x0, yP0, pillW, pillH, fill);
-        tail(matrix, buffers, -0.09F, 0, yP1 - 2, tw, th, fill);
+        if (!nuvem) { // idem: so o rabinho-triangulo que some na nuvem
+            tail(matrix, buffers, -0.09F, 0, yP1 - 2, tw, th, fill);
+        }
 
         // ---- texto + adesivos dentro da fala (sombra vanilla = legivel e limpo) ----
         // (3.43.0) quando ha emblema, o texto abre espaco pra coluna dele de
