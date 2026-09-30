@@ -33,6 +33,16 @@ public final class ClientEffects {
 
     private static boolean disabled = false;
 
+    // (3.46.0) TEXTURAS HD: gradientes REAIS com anti-aliasing (supersample
+    // 4x + LANCZOS) — fim do aspecto "pixel quebrado". Desenhadas pela API
+    // moderna de quads com blend + shaderColor (alpha por draw).
+    private static final net.minecraft.resources.ResourceLocation VINHETA_TEX =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/vinheta.png");
+    private static final net.minecraft.resources.ResourceLocation MEDO_HD_TEX =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/medo_hd.png");
+    private static final net.minecraft.resources.ResourceLocation GRAD_BAR_TEX =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/grad_bar.png");
+
     private static volatile long fearStart = 0;
     private static volatile long fearUntil = 0;
     private static volatile String screenText = null;
@@ -101,17 +111,23 @@ public final class ClientEffects {
             int h = g.guiHeight();
             long now = System.currentTimeMillis();
 
-            // VINHETA do MEDO: bordas vermelho-escuras pulsando
+            // VINHETA do MEDO (3.46.0): gradiente radial HD texturizado
+            // (suave de verdade, sem faixas duras) + ICONE do efeito
+            // piscando no canto superior direito, igual o HUD vanilla.
             float amp = fearAmp(now);
             if (amp > 0.0F) {
                 float pulse = 0.6F + 0.4F * (float) Math.sin(now * 0.011);
-                int a = (int) (0xB0 * amp * pulse);
-                int edge = Math.max(6, Math.round(Math.min(w, h) * 0.06F));
-                int c = (a << 24) | 0x600000;
-                g.fill(0, 0, w, edge, c);
-                g.fill(0, h - edge, w, h, c);
-                g.fill(0, 0, edge, h, c);
-                g.fill(w - edge, 0, w, h, c);
+                com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(
+                        1.0F, 1.0F, 1.0F, Math.min(1.0F, amp * pulse));
+                g.blit(VINHETA_TEX, 0, 0, 0, 0, w, h, 256, 256);
+                int isz = Math.max(20, Math.round(Math.min(w, h) * 0.055F));
+                float blink = 0.62F + 0.38F * (float) Math.sin(now * 0.012);
+                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,
+                        Math.min(1.0F, amp * 1.2F) * blink);
+                g.blit(MEDO_HD_TEX, w - isz - 10, 10, 0, 0, isz, isz, 128, 128);
+                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+                com.mojang.blaze3d.systems.RenderSystem.disableBlend();
             }
 
             // AVISO: texto GRANDE no centro
@@ -134,8 +150,13 @@ public final class ClientEffects {
             float fadeOut = Math.min(1.0F, (textDuration - elapsed) / 500.0F);
             float vis = Math.min(fadeIn, fadeOut);
             int bh = Math.round(18.0F * scale);
-            int scrim = (int) (0x66 * vis) << 24;
-            g.fill(0, h / 2 - bh, w, h / 2 + bh, scrim);
+            // (3.46.0) faixa com gradiente GAUSSIANO HD (some suavemente pra
+            // cima e pra baixo — nada de retangulo duro atras do texto)
+            com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, vis);
+            g.blit(GRAD_BAR_TEX, 0, h / 2 - bh, w, 2 * bh, 0, 0, 64, 64);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            com.mojang.blaze3d.systems.RenderSystem.disableBlend();
             g.pose().pushPose();
             float pulse = 1.0F + 0.02F * (float) Math.sin(now * 0.006);
             g.pose().translate(w / 2.0F, h / 2.0F, 0.0F);
