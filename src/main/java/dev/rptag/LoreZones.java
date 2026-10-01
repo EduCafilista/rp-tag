@@ -34,7 +34,8 @@ public final class LoreZones {
 
     /** Uma regiao esferica com historia. */
     public record Zone(String id, ResourceKey<Level> dimension, Vec3 center,
-            double radius, String title, String text, String sound) {
+            double radius, String title, String text, String sound,
+            String music, int musicInterval) {
 
         public CompoundTag save() {
             CompoundTag tag = new CompoundTag();
@@ -47,6 +48,8 @@ public final class LoreZones {
             tag.putString("Title", title);
             tag.putString("Text", text);
             tag.putString("Sound", sound == null ? "" : sound);
+            tag.putString("Music", music == null ? "" : music);
+            tag.putInt("MusicInterval", musicInterval <= 0 ? 45 : musicInterval);
             return tag;
         }
 
@@ -59,7 +62,9 @@ public final class LoreZones {
                     tag.getDouble("Radius"),
                     tag.getString("Title"),
                     tag.getString("Text"),
-                    tag.getString("Sound"));
+                    tag.getString("Sound"),
+                    tag.contains("Music") ? tag.getString("Music") : "",
+                    tag.contains("MusicInterval") ? tag.getInt("MusicInterval") : 45);
         }
     }
 
@@ -129,8 +134,15 @@ public final class LoreZones {
     /** Zonas ja vistas por cada jogador nesta sessao (id da zona). */
     private static final Map<UUID, Set<String>> SEEN = new HashMap<>();
 
+    /** (3.48.0) estado da MUSICA de fundo por jogador (zona + ultimo play). */
+    private record MusicState(String zoneId, long lastPlayedMs) {
+    }
+
+    private static final Map<UUID, MusicState> MUSIC = new HashMap<>();
+
     public static void clearSeen(UUID playerId) {
         SEEN.remove(playerId);
+        MUSIC.remove(playerId);
     }
 
     @EventBusSubscriber(modid = RPTagMod.MODID)
@@ -153,22 +165,65 @@ public final class LoreZones {
             }
             Set<String> seen = SEEN.computeIfAbsent(player.getUUID(), k -> new HashSet<>());
 
+            Zone insideMusic = null;
             for (Zone zone : data.all()) {
-                if (seen.contains(zone.id())) {
-                    continue;
-                }
                 if (zone.dimension() != player.level().dimension()) {
                     continue;
                 }
-                if (player.position().distanceTo(zone.center()) > zone.radius()) {
+                boolean inside = player.position().distanceTo(zone.center()) <= zone.radius();
+                if (!inside) {
                     continue;
                 }
-                seen.add(zone.id());
-                show(player, zone);
-                break; // uma zona por check
+                if (!seen.contains(zone.id())) {
+                    seen.add(zone.id());
+                    show(player, zone);
+                }
+                if (insideMusic == null && !zone.music().isEmpty()) {
+                    insideMusic = zone; // primeira zona com musica contando
+                }
+            }
+            tickMusic(player, insideMusic);
+        }
+
+        /**
+         * (3.48.0) MUSICA DE FUNDO em loop enquanto o jogador esta na zona
+         * (re-dispara a cada intervalo) e PARA ao sair (StopSound).
+         */
+        private static void tickMusic(ServerPlayer player, Zone inside) {
+            UUID uuid = player.getUUID();
+            MusicState st = MUSIC.get(uuid);
+            if (inside == null) {
+                if (st != null) {
+                    // saiu da zona: para a musica com elegancia
+                    try {
+                        player.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(
+                                ResourceLocation.parse(st.zoneId().isEmpty() ? "" : MUSIC_SOUND.get(uuid)),
+                                net.minecraft.sounds.SoundSource.MUSIC));
+                    } catch (Exception ignored) {
+                    }
+                    MUSIC.remove(uuid);
+                }
+                return;
+            }
+            long now = System.currentTimeMillis();
+            int intervalMs = Math.max(10, inside.musicInterval()) * 1000;
+            if (st == null || !st.zoneId().equals(inside.id()) || now - st.lastPlayedMs() >= intervalMs) {
+                try {
+                    ResourceLocation rl = ResourceLocation.parse(inside.music());
+                    net.minecraft.sounds.SoundEvent sound = net.minecraft.sounds.SoundEvent.createVariableRangeEvent(rl);
+                    player.level().playSound(null, player.blockPosition(), sound,
+                            net.minecraft.sounds.SoundSource.MUSIC, 0.7F, 1.0F);
+                } catch (Exception ignored) {
+                    return; // som invalido: tenta de novo no proximo ciclo
+                }
+                MUSIC.put(uuid, new MusicState(inside.id(), now));
+                MUSIC_SOUND.put(uuid, inside.music());
             }
         }
     }
+
+    /** (3.48.0) o som atual de cada jogador (pro StopSound ao sair). */
+    private static final Map<UUID, String> MUSIC_SOUND = new HashMap<>();
 
     /** Mostra a lore: titulo na tela + texto no chat + som. */
     private static void show(ServerPlayer player, Zone zone) {
