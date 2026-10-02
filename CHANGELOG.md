@@ -2,6 +2,47 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.49.0] - 2026-10-01
+
+### Corrigido — nuvem do balão (estilo Turma da Mônica)
+- **Bolas de verdade, não mais quadrados com costura**: as bolinhas da nuvem
+  eram desenhadas com a textura da PÍLULA (que tem quinas e costura nas
+  bordas) — no mundo isso virava "quadradões" emendados, nada parecido com
+  uma nuvem. Agora existe uma textura própria `bola.png` (círculo esférico
+  HD, gerada em 128px e suavizada) e as bolas são quads texturizados nela.
+- **Silhueta scalloped (gibi)**: a borda da nuvem foi reescrita em DUAS
+  fileiras de bolas intercaladas (grandes 18px + pequenas 13px) no topo,
+  na base e nas laterais, com o rabinho de pensamento em bolinhas
+  decrescentes (10/8/6) — a sobreposição das bolas forma o contorno
+  recortado de gibi, sem quinas visíveis em nenhuma borda.
+
+### Corrigido — MEDO agora ESCONDE a tela
+- **Véu de pânico**: além da vinheta, do ícone piscando e do tremor de
+  câmera, o MEDO agora cobre a tela inteira com um véu azul-noite
+  translúcido que pulsa com a intensidade do efeito — quem está com medo
+  NÃO vê o mundo com clareza (os "espinhos" verticais da 3.48 saíram).
+
+### Corrigido — prévia do menu de estilo
+- **O menu agora mostra como fica NO MUNDO**: o card de prévia tinha fundo
+  escuro, que escondia a pílula clara e "bugava" a aparência. O card agora
+  tem fundo de CÉU (gradiente azul do horizonte ao zênite) com faixa de
+  GRAMA embaixo — igual ao ambiente do jogo, a pílula aparece como
+  realmente fica.
+
+## [3.48.0] - 2026-10-01
+
+### Adicionado — Lore Zones com música
+- **`/lorezone musica <id> <som> [intervalo]`**: além do som 1x ao entrar,
+  o admin escolhe uma TRILHA em LOOP para tocar enquanto o jogador está na
+  zona (source MUSIC, volume 0.7), reiniciada a cada `intervalo` segundos
+  (10–600, padrão 45). Ao sair, a música para na hora (StopSound).
+- Sugestões tensas: `minecraft:ambient.cave`, `minecraft:entity.warden.heartbeat`,
+  `minecraft:music.overworld.deep_dark`, `minecraft:music_disc.13`.
+
+### Alterado — MEDO estilo anime
+- Vinheta em preto/azul escuro (nada de vermelho), cortinas verticais de
+  aura balançando, tinta azul pesada e carinha azulada piscando no HUD.
+
 ## [3.42.0] - 2026-09-19
 
 ### Corrigido — emblemas (adesivo/emoji na borda)

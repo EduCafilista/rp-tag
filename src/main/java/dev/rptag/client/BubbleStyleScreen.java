@@ -861,8 +861,19 @@ public class BubbleStyleScreen extends Screen {
                     px + 12 + this.font.width("<Você> sua fala assim "), chatY, textColor, true);
         }
 
-        // --- CARD DE PREVIA: enquadra o balao (o player sabe ONDE olhar) ---
-        g.fill(px + 8, py + 40, px + PANEL_W - 8, py + 96, 0xFF141A28);
+        // --- CARD DE PREVIA (3.49.0): fundo de CEU + grama = o mundo de
+        // verdade (balao branco contra fundo escuro sumia e a previa
+        // "nao aparecia como fica no jogo")
+        for (int sy = 0; sy < 42; sy++) {
+            float f = sy / 41.0F;
+            int rr = (int) (108 + 70 * f);
+            int gg = (int) (160 + 60 * f);
+            int bb = (int) (235 + 15 * f);
+            g.fill(px + 8, py + 40 + sy, px + PANEL_W - 8, py + 41 + sy,
+                    0xFF000000 | (rr << 16) | (gg << 8) | bb);
+        }
+        g.fill(px + 8, py + 82, px + PANEL_W - 8, py + 96, 0xFF59A52E); // grama
+        g.fill(px + 8, py + 82, px + PANEL_W - 8, py + 84, 0xFF6FBD3A); // luz da grama
         outline(g, px + 8, py + 40, PANEL_W - 16, 56, 0xFF2A3248);
         g.fill(px + 8, py + 40, px + PANEL_W - 8, py + 41, OURO_VIVO);
         g.fill(px + 8, py + 95, px + PANEL_W - 8, py + 96, 0x40000000);

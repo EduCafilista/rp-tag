@@ -93,6 +93,12 @@ public final class BubbleRenderer {
     private static final ResourceLocation HI_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/stickers_hi.png");
     private static final RenderType HI_TYPE = RenderType.text(HI_TEX);
+    /** (3.49.0) BOLA da nuvem: circulo HD com borda suave (textura propria)
+     * — as bolas desenhadas com a textura de pílula ficavam "quadradonas"
+     * e com costura (a nuvem quebrada dos prints!). */
+    private static final ResourceLocation CLOUD_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bola.png");
+    private static final RenderType CLOUD_TYPE = RenderType.text(CLOUD_TEX);
     /** Textura propria do BRILHO (halo suave) — antes ele reusava o anel Classico. */
     private static final ResourceLocation BRILHO_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/brilho.png");
@@ -317,6 +323,13 @@ public final class BubbleRenderer {
                 0.0F, 0.0F, 1.0F, 1.0F, argb);
     }
 
+    /** (3.49.0) Uma BOLA HD texturizada (a nuvem inteira e feita delas). */
+    private static void bola(Matrix4f m, MultiBufferSource buffers, float x, float y,
+            float size, int argb) {
+        VertexConsumer buf = buffers.getBuffer(CLOUD_TYPE);
+        quad(m, buf, 0.0F, x, y, x + size, y + size, 0.0F, 0.0F, 1.0F, 1.0F, argb);
+    }
+
     private static void quad(Matrix4f m, VertexConsumer buf, float z,
             float x1, float y1, float x2, float y2, float u1, float v1, float u2, float v2, int argb) {
         buf.addVertex(m, x1, y1, z).setColor(argb).setUv(u1, v1).setUv1(0, 10).setLight(LightTexture.FULL_BRIGHT)
@@ -377,25 +390,41 @@ public final class BubbleRenderer {
      */
     private static void cloudBorder(Matrix4f m, MultiBufferSource buffers, float z,
             float x0, float yP0, float pillW, float pillH, float yP1, int argb) {
-        final float d = 13.0F;
-        final float r = d / 2.0F;
-        int cols = Math.max(3, Math.round(pillW / (d * 0.72F)));
+        // Duas fileiras de bolas HD: as GRANDES (18px) centradas na quina da
+        // pilula e as PEQUENAS (13px) preenchendo o vaivem — silhueta
+        // "scalloped" classica de nuvem, com circulos LISOs (textura HD).
+        final float big = 18.0F, small = 13.0F;
+        final float rb = big / 2.0F, rs = small / 2.0F;
+        float pitch = big * 0.78F;
+        int cols = Math.max(3, Math.round((pillW + big) / pitch));
         for (int i = 0; i <= cols; i++) {
-            float x = x0 - r + (pillW + d) * i / cols;
-            pill(m, buffers, z, x - r, yP0 - r, d, d, argb);   // bolas do topo
-            pill(m, buffers, z, x - r, yP1 - r, d, d, argb);   // bolas da base
+            float x = x0 - rb + (pillW + big) * i / cols;
+            float off = (i % 2 == 0) ? 0.0F : big * 0.14F; // onda sutil
+            bola(m, buffers, x - rb, yP0 - rb - off, big, argb);
+            bola(m, buffers, x - rb, yP1 - rb + off, big, argb);
+            if (i < cols) { // pequenas entre duas grandes (meio passo)
+                float xm = x + pitch / 2.0F;
+                bola(m, buffers, xm - rs, yP0 - rs - big * 0.22F, small, argb);
+                bola(m, buffers, xm - rs, yP1 - rs + big * 0.22F, small, argb);
+            }
         }
-        int rows = Math.max(2, Math.round(pillH / (d * 0.72F)));
+        int rows = Math.max(2, Math.round(pillH / pitch));
         for (int i = 0; i <= rows; i++) {
-            float y = yP0 - r + (pillH + d) * i / rows;
-            pill(m, buffers, z, x0 - r, y, d, d, argb);        // bolas da esquerda
-            pill(m, buffers, z, x0 + pillW - r, y, d, d, argb);// bolas da direita
+            float y = yP0 - rb + (pillH + big) * i / rows;
+            bola(m, buffers, x0 - rb, y - rb, big, argb);
+            bola(m, buffers, x0 + pillW - rb, y - rb, big, argb);
+            if (i < rows) {
+                float ym = y + pitch / 2.0F;
+                bola(m, buffers, x0 - rs - big * 0.22F, ym - rs, small, argb);
+                bola(m, buffers, x0 + pillW + big * 0.22F - rs, ym - rs, small, argb);
+            }
         }
-        // rabinho de pensamento: bolinhas que diminuem descendo
-        pill(m, buffers, z, -5.0F, yP1 + 5.0F, 9.0F, 9.0F, argb);
-        pill(m, buffers, z, 0.5F, yP1 + 11.0F, 7.0F, 7.0F, argb);
-        pill(m, buffers, z, 5.0F, yP1 + 16.0F, 5.0F, 5.0F, argb);
+        // rabinho de pensamento: bolinhas diminuindo em direcao a cabeca
+        bola(m, buffers, -6.0F, yP1 + 5.0F, 10.0F, argb);
+        bola(m, buffers, -0.5F, yP1 + 12.0F, 8.0F, argb);
+        bola(m, buffers, 4.0F, yP1 + 17.5F, 6.0F, argb);
     }
+
 
     private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {
         if (!(event.getEntity() instanceof Player player)) {

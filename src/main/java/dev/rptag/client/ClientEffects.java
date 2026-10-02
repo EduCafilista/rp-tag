@@ -40,10 +40,6 @@ public final class ClientEffects {
             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/vinheta.png");
     private static final net.minecraft.resources.ResourceLocation MEDO_HD_TEX =
             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/medo_hd.png");
-    // (3.48.0) LINHAS ANIME: cortinas escuras verticais (topo+base) que
-    // balancam durante o MEDO — o clima de terror dos animes.
-    private static final net.minecraft.resources.ResourceLocation LINHAS_TEX =
-            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/linhas.png");
     private static final net.minecraft.resources.ResourceLocation GRAD_BAR_TEX =
             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/grad_bar.png");
 
@@ -127,15 +123,11 @@ public final class ClientEffects {
                 // (3.47.0) estica a textura INTEIRA na tela (antes usava 256x256 como
                 // denominador e a vinheta REPETIA em circulos pela tela!)
                 g.blit(VINHETA_TEX, 0, 0, 0, 0, w, h, w, h);
-                // (3.48.0) LINHAS ANIME: cortinas verticais escurecendo o
-                // topo e a base (o "ar de terror" dos animes)
-                float sway = 1.0F + 0.06F * (float) Math.sin(now * 0.004);
-                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(
-                        1.0F, 1.0F, 1.0F, Math.min(1.0F, amp * 1.15F));
-                int lw = Math.round(w * sway);
-                g.blit(LINHAS_TEX, (w - lw) / 2, 0, 0, 0, lw, h, 256, 256);
-                // tinta azul-escura geral (o ar fica pesado)
-                g.fill(0, 0, w, h, ((int) (52 * amp)) << 24 | 0x0A1020);
+                // (3.49.0) O MEDO ESCONDE: um veu azul-noite bem escuro
+                // cobre a tela inteira (o mundo afunda na escuridao — o
+                // "apagar" do terror), pulsando junto com a tremedeira.
+                int veil = (int) (168 * amp);
+                g.fill(0, 0, w, h, (veil << 24) | 0x05070F);
                 com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,
                         Math.min(1.0F, amp * 1.2F));
                 int isz = Math.max(20, Math.round(Math.min(w, h) * 0.055F));

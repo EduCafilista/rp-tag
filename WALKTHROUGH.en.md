@@ -214,3 +214,37 @@ above your head** — perfect for eggs, kids and mic-less players.
   servidor v3.4.0!"). Both must MATCH — otherwise replace the old side's jar
   (always update client AND server together)
 - Then just **say something in chat** to see your bubble ✨
+
+---
+
+## 📜 Lore Zones (story regions)
+
+Admins mark map regions that react when a player walks in: epic on-screen
+title, subtitle, sound — and now even **looping music**.
+
+| Command | Effect |
+|---|---|
+| `/lorezone criar <id> <raio> <titulo>` | creates the zone at your position (subtitle comes from the text) |
+| `/lorezone texto <id> <texto>` | sets the zone subtitle |
+| `/lorezone som <id> <som>` | one-shot sound on enter (e.g. `minecraft:ambient.cave`) |
+| `/lorezone musica <id> <som> [intervalo]` | **LOOPING track** while inside — restarts every `intervalo` seconds (10–600, default 45) and **stops on exit** |
+| `/lorezone listar` | list zones |
+| `/lorezone remover <id>` | delete a zone |
+
+Spooky sounds that work well: `minecraft:ambient.cave`,
+`minecraft:entity.warden.heartbeat`, `minecraft:music.overworld.deep_dark`,
+`minecraft:music_disc.13`, `minecraft:music_disc.11`.
+
+---
+
+## 😱 RP effects: FEAR and warnings
+
+| Command | Effect |
+|---|---|
+| `/rp admin medo <player> [seconds]` | the player's screen gets **HIDDEN** under a pulsing night-blue veil, with a dark vignette, a blinking face on the HUD and **camera shake** — real panic |
+| `/rp admin avisar <player> <text>` | BIG on-screen text, `&` colors (`&c` red, `&6` orange, `&l` bold…) |
+| `/effect give <player> rptag:medo <s>` | same fear via the vanilla command |
+
+The "is afraid" toast shows **to admins only** — the player feels the
+effect without knowing who sent it. In 3.49 the cloud bubble (Turma da
+Mônica-style thought balloon) got **real HD circular balls**, no more seams.

@@ -215,3 +215,37 @@ O texto do balão escolhe preto ou branco sozinho, de acordo com a cor de fundo.
   SERVIDOR ("💾 Salvo no servidor v3.4.0!"). As duas têm que ser IGUAIS — se
   diferirem, troque o jar do lado antigo (cliente E servidor sempre juntos)
 - Depois é só **falar no chat** para ver o balão ✨
+
+---
+
+## 📜 Lore Zones (regiões com história)
+
+O admin marca regiões do mapa que reagem quando um jogador entra: título
+épico na tela, subtítulo, som — e agora até **música em loop**.
+
+| Comando | Efeito |
+|---|---|
+| `/lorezone criar <id> <raio> <título>` | cria a zona onde você está (subtítulo vem do texto) |
+| `/lorezone texto <id> <texto>` | define o subtítulo da zona |
+| `/lorezone som <id> <som>` | som 1x ao entrar (ex.: `minecraft:ambient.cave`) |
+| `/lorezone musica <id> <som> [intervalo]` | **trilha em LOOP** enquanto estiver na zona — reinicia a cada `intervalo` segundos (10–600, padrão 45) e **para ao sair** |
+| `/lorezone listar` | lista as zonas |
+| `/lorezone remover <id>` | apaga a zona |
+
+Sons tensos que funcionam bem: `minecraft:ambient.cave`,
+`minecraft:entity.warden.heartbeat`, `minecraft:music.overworld.deep_dark`,
+`minecraft:music_disc.13`, `minecraft:music_disc.11`.
+
+---
+
+## 😱 Efeitos de RP: MEDO e avisos
+
+| Comando | Efeito |
+|---|---|
+| `/rp admin medo <jogador> [segundos]` | a tela do jogador **ESCONDE** sob um véu azul-noite que pulsa, com vinheta escura, carinha piscando no HUD e **tremor de câmera** — pânico de verdade |
+| `/rp admin avisar <jogador> <texto>` | texto GRANDE na tela, cores com `&` (`&c` vermelho, `&6` laranja, `&l` negrito…) |
+| `/effect give <jogador> rptag:medo <s>` | o mesmo medo via comando vanilla |
+
+A mensagem de "está com medo" aparece **só para o admin** — o jogador sente
+o efeito sem saber quem mandou. E na 3.49 o balão-nuvem (estilo pensamento
+do Turma da Mônica) ganhou **bolas circulares HD de verdade**, sem quinas.
