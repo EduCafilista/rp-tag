@@ -13,7 +13,9 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * fisico no jogador (a tremedeira da camera vem do pacote de rede), o
  * status existe para o ICONE aparecer no canto do HUD (igual Veneno/
  * Wither) e pra poder dar via {@code /effect give <jogador> rptag:medo}.
- * O icone fica em {@code assets/rptag/textures/mob_effect/medo.png}.
+ * O icone fica em {@code assets/rptag/textures/mob_effect/medo.png}
+ * (3.53.0: carinha amarela assustada — e o cliente traduz o efeito em
+ * tremedeira, entao {@code /effect give} dispara o medo completo).
  */
 public final class RPEffects {
 

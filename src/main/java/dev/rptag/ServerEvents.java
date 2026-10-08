@@ -247,6 +247,19 @@ public final class ServerEvents {
         });
     }
 
+    /**
+     * (3.55.0) resposta do cliente ao sync de musica: tem=false = o jogador
+     * NAO tem o arquivo — o servidor envia os pedaços pra ele.
+     */
+    public static void handleMusicAnswer(final dev.rptag.MusicFileAnswerPayload payload,
+            final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
+                dev.rptag.MusicSync.responder(player, payload.nome(), payload.tem());
+            }
+        });
+    }
+
     public static void handleSetBubbleMode(final SetBubbleModePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {

@@ -227,7 +227,7 @@ title, subtitle, sound — and now even **looping music**.
 | `/lorezone criar <id> <raio> <titulo>` | creates the zone at your position (subtitle comes from the text) |
 | `/lorezone texto <id> <texto>` | sets the zone subtitle |
 | `/lorezone som <id> <som>` | one-shot sound on enter (e.g. `minecraft:ambient.cave`) |
-| `/lorezone musica <id> <som> [intervalo]` | **LOOPING track** while inside — restarts every `intervalo` seconds (10–600, default 45) and **stops on exit** |
+| `/lorezone musica <id> <som>` (ou `<id> intervalo <segundos> <som>`) | **LOOPING track** while inside — restarts every `intervalo` seconds (10–600, default 45) and **stops on exit** |
 | `/lorezone listar` | list zones |
 | `/lorezone remover <id>` | delete a zone |
 
@@ -248,3 +248,30 @@ Spooky sounds that work well: `minecraft:ambient.cave`,
 The "is afraid" toast shows **to admins only** — the player feels the
 effect without knowing who sent it. In 3.49 the cloud bubble (Turma da
 Mônica-style thought balloon) got **real HD circular balls**, no more seams.
+
+
+---
+
+## 🎵 CUSTOM music in Lore Zones (3.50.0)
+
+Any music you own can play inside a zone — even audio from a YouTube video.
+
+1. Convert it to OGG Vorbis: `yt-dlp -x --audio-format vorbis "<url>"`
+2. Drop the `.ogg` into the CLIENT's `config/rptag/musicas/` folder with a
+   simple name (e.g. `tense.ogg`)
+3. Apply it: `/lorezone musica <id> @tense` — it loops while the player is
+   inside the zone and stops the moment they leave. Each player needs the file.
+
+Ready-made presets (27): `caverna`, `coracao`, `warden`, `deepdark`,
+`disc13`, `disc11`, `disc5`, `mood`, `almas`, `pigstep`, plus `portal`,
+`portalviagem`, `nether`, `vento`, `dragao`, `ghast`, `creeper`, `trovao`,
+`chuva`, `fogo`, `agua`, `sino`, `outros`, `relic`, `creator`, `maldicao`
+and `nenhum` (clears the zone sound). `/lorezone musicas` lists them in game.
+Zones re-trigger when you **leave and come back** (1x per visit), a new sound
+**replaces** the previous one (never stacks), and music accepts a **direct
+file link** (`https://.../tema.ogg` — players download it automatically;
+YouTube must be converted first, the command gives you the ready `yt-dlp`
+line). Players adjust volume via Options → Music & Sounds → **Ambient**
+(zone sounds) and **Music** (soundtracks).
+**`/rp ajuda`** lists every command with what it does (admins also get the
+admin section).

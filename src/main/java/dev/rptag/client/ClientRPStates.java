@@ -17,6 +17,12 @@ public final class ClientRPStates {
     private static final Map<UUID, Boolean> STATES = new ConcurrentHashMap<>();
     private static final AtomicBoolean HAS_DATA = new AtomicBoolean(false);
 
+    /**
+     * (3.55.0) a ultima fala NORMAL do proprio jogador (sem comando) — a
+     * previa da tela /balao usa ela ("escreve no chat pra testar").
+     */
+    public static volatile String ultimaFala = "";
+
     private ClientRPStates() {
     }
 

@@ -2,6 +2,249 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.56.1] - 2026-10-08
+
+### Corrigido
+- **Rabicho agora é da MESMA cor exata do balão**: os texels da pílula são
+  248 (não 255) e o rabicho usava texel branco — ficava ~5% mais claro que
+  o balão. Agora o rabicho amostra a mesma janela de textura da pílula
+  (a Quadrada, de texel 255, segue como estava). Medido na print do jogador:
+  antes `rgb(166,87,221)` vs balão `rgb(158,82,210)` — agora idênticos.
+- `/rp ajuda`: removida a linha amarela "Tudo fica salvo no mundo · guia
+  completa: WALKTHROUGH.md".
+
+## [3.56.0] - 2026-10-05
+
+### Reescrito — o desenho dos balões de fala
+- **Mais palavras = mais balão (pra cima!)**: o texto quebra em linhas
+  equilibradas mais cedo (130px) e a pílula cresce em ALTURA — o balão fica
+  sempre proporcionado, nunca vira uma tirinha gigante deitada.
+- **Rabicho PIXEL em degraus**: dois degraus de pixel art com contorno por
+  toda a volta — **nem quadrado** ligando no personagem, **nem triângulo
+  colorido**. O mesmo rabicho vale para TODAS as molduras (Clássica, Cartum,
+  Quadrada, Costura e Brilho). A encaixe na pílula é coberto por ela mesma
+  (costura invisível, sem linha atravessada).
+- A textura antiga do rabicho (triângulo curvo) foi REMOVIDA do mod.
+
+### Prévia do menu agora é fiel com textos longos
+- A prévia do `/balao` quebra a sua fala em linhas (mesmas regras do mundo),
+  cresce em altura com o texto e ajusta o zoom — **sua última fala do chat
+  nunca mais vaza da pílula** na prévia.
+
+## [3.55.0] - 2026-10-05
+
+### Corrigido — X vermelho e a tooltip "tirar Morango" travada
+- O X dos emojis ficou **GRANDE (10px) e sempre visível**, e a tooltip
+  "✖ tirar Morango" **não flutua mais na frente de tudo** — o nome agora
+  aparece na própria linha do título, à direita (some quando tira o mouse).
+
+### Novo — DOWNLOAD de música pra pasta do SERVIDOR (todo mundo ouve!)
+- `/lorezone baixar <link direto .ogg/.wav>` — "⤵ Download iniciado..." /
+  "✔ Download concluído (N KB)!" e o arquivo vai pra
+  `config/rptag/musicas/` do SERVIDOR.
+- **SYNC AUTOMÁTICO**: quando um jogador entra na zona, o servidor pergunta
+  se o cliente já tem o arquivo; quem não tem **recebe os bytes do
+  servidor** (em pedaços, gravado em `config/rptag/musicas/` do cliente) e
+  **toca na hora** — ninguém precisa baixar nada!
+- (YouTube continua precisando virar .ogg primeiro — o comando ensina.)
+
+### Novo — som que toca 1x SÓ QUANDO ENTRA na zona
+- `/lorezone musica <id> 1x <som>` — toca uma única vez na entrada (sem
+  loop). O loop normal continua: `/lorezone musica <id> <som>` (ou
+  `intervalo <s>`).
+
+### Novo — /roll +3 (especialidade)
+- `/roll +3` = "sou especialista nisso" → rola **1d20+3**. Também vale
+  `/roll +3 atacar` e combinado: `/roll 2d6+3`.
+
+### Alterado — /balao sem "teste": escreva no chat!
+- O `/balao teste <frase>` saiu. Agora a **prévia usa a sua última fala
+  real do chat**: escreva qualquer coisa no chat, abra o `/balao` e veja a
+  SUA frase no balão de verdade.
+
+### Corrigido — o "blur" quadrado na tela
+- O ícone do medo tinha um **fundo pálido quadrado** que aparecia como um
+  borrão na tela (o "blur"). A borda do quadrado agora **dissolve em
+  transparência** — só a carinha e a palavra "medo" flutuam.
+
+### Documentado — como a Lore Zone funciona
+- O raio é uma **ESFERA**: `/lorezone criar x 10` pega 10 blocos para CADA
+  lado (diâmetro 20), em altura também. A mensagem de criação agora explica.
+
+## [3.54.1] - 2026-10-05
+
+### Alterado — o ícone do medo é a FOTO INTEIRA
+- Sem recorte: a imagem completa (fundo e a palavra **"medo"** embaixo) é
+  o ícone do efeito no HUD e o símbolo que pisca no cantinho durante o medo.
+
+## [3.54.0] - 2026-10-05
+
+### Corrigido — o MEDO aparece COM SHADERS (e ficou MAIS FORTE)
+- A causa de sumir com shaders: o desenho do medo (vinheta + véu) vivia num
+  gancho que fica por baixo/fora da saída do shader (Iris). Agora ele é uma
+  **CAMADA OFICIAL de HUD** (`RegisterGuiLayersEvent.registerAboveAll`) — a
+  mesma pipeline do blur de abóbora/vinheta vanilla, que roda **depois do
+  pós-processamento** e **acima de tudo** na tela. Com shaders e sem shaders,
+  o medo aparece do mesmo jeito.
+- Véu REFORÇADO: alpha 168 → **208** (a tela afunda na escuridão de verdade).
+
+### Novo — o ícone do medo é o PNG enviado
+- O ícone do efeito agora é **a foto real da carinha** (recorte com fundo
+  transparente, 64x64 com autocontraste) em vez da carinha redesenhada.
+
+## [3.53.0] - 2026-10-05
+
+### Novo — a carinha do MEDO virou o ícone do efeito
+- A carinha amarela assustada (sorridente de medo, com dentes) agora é o
+  **ícone oficial do efeito `rptag:medo`** — aparece no canto do HUD (com o
+  tempo restante) igual Veneno/Wither, em vez do quadrado branco vazio.
+
+### Corrigido — `/effect give rptag:medo` agora dispara o MEDO completo
+- Antes quem recebia o efeito só pelo `/effect give` **ficava normal** (sem
+  tremedeira): os visuais só ligavam via pacote do `/rp admin medo`.
+- Agora o **cliente lê o efeito local**: quem tem `rptag:medo` ativo — de
+  `/effect give`, command block ou `/rp admin medo` — tem a tela escondida
+  pelo véu azul-noite, tremendo, **até o efeito acabar**, sempre em sync com
+  o tempo real do efeito.
+
+## [3.52.0] - 2026-10-05
+
+### Corrigido — os SONS das lore zones que ficavam MUDOS
+- A causa raiz: o som era criado "solto" (evento não registrado) e o pacote
+  de som saía sem o holder certo — caverna, alma, coração e a maioria dos
+  presets **não tocava**. Agora o som vem do REGISTRO do jogo
+  (`BuiltInRegistries.SOUND_EVENT`, o mesmo caminho do `/playsound`) e toca
+  de verdade. Volume do som pontual também subiu (0.8 → 1.0).
+
+### Corrigido — sons EMPILHANDO (agora um substitui o outro)
+- Ao entrar de novo na zona, trocar de zona ou re-disparar no intervalo, o
+  som/música ANTERIOR é parado antes do novo começar (`StopSound` por
+  jogador, por categoria). Nunca mais dois discos sobrepostos.
+- Saindo da zona, o som pontual também para (não fica "ecoando" atrás).
+- Admin trocou o som/música? Quem JÁ ESTÁ dentro ouve o novo NA HORA.
+
+### Novo — 17 presets de som + "nenhum" (27 no total)
+- `portal`, `portalviagem`, `nether`, `vento`, `dragao`, `ghast`, `creeper`,
+  `trovao`, `chuva`, `fogo`, `agua`, `sino`, `outros` (Otherside),
+  `relic`, `creator`, `maldicao` (disco Ward) e `nenhum` (limpa o som da
+  zona) — todos conferidos no `sounds.json` da 1.21.1.
+- `/lorezone som <id> <som inválido>` agora **não salva**: o admin recebe o
+  erro NA HORA (era assim que som errado passava batido e ficava mudo).
+- TAB completa presets + as músicas `@arquivo` do servidor.
+
+### Novo — música por LINK direto (.ogg/.wav)
+- `/lorezone musica <id> https://site.com/tema.ogg` — os players **baixam o
+  áudio automaticamente** (cache em `config/rptag/musicas/cache/`) e tocam
+  em LOOP. Suporta `.ogg` Vorbis e `.wav` (limite 32 MB).
+- **YouTube não toca direto** (o vídeo precisa virar áudio primeiro): o
+  comando responde com o `yt-dlp -x --audio-format vorbis "URL"` pronto pra
+  copiar e o `@nome` pra usar em seguida.
+
+### Novo — resposta diz em qual VOLUME o pessoal ajusta
+- Som pontual = slider **Ambiente** · música/loop = slider **Música**
+  (Opções → Música e Sons). A dica aparece na confirmação do comando.
+
+### Corrigido — X vermelho e "morango fantasma" na tela do balão
+- O X vermelho de remover ficou **maior (14px)** e cada emoji da fala agora
+  tem um **mini X sempre visível** no canto do slot (clique no slot = tirou).
+- Com um adesivo/emoji "na mão", clicar fora do balão agora **solta** o
+  adesivo — antes ele empilhava na fala E ficava grudado no mouse (o
+  "morango bugado no meio").
+
+## [3.51.1] - 2026-10-04
+
+### Corrigido — ordem dos botões da placa Moldura
+- As 5 molduras agora ficam em 2 fileiras de 3 — `[Clássica] [Cartum]
+  [Quadrada]` / `[Costura] [Brilho] [Sem borda]` — sem buraco na grade e
+  sem o botão de borda solto numa fileira própria. A placa ficou compacta.
+
+### Corrigido — rabicho discreto (fica pouco à mostra)
+- O rabinho encolheu de novo e o contorno fica COLADO no recheio (~1px),
+  sem as "asas" escuras que apareciam em volta; também não tem mais sombra
+  no rabicho (a sombra fica só no corpo). Na Quadrada o retangulinho
+  acompanhou. A pilha de balões recalculou a altura (rabicho menor).
+
+## [3.51.0] - 2026-10-02
+
+### Segurança — tela do balão à prova de crash
+- O menu `/balao` agora é blindado como o mundo: **qualquer erro** no desenho
+  (cards, prévia, teclado) cai para um "modo simples" — os botões seguem
+  funcionando e o motivo fica no log. Desenho, overlay, montagem da tela e
+  cliques protegidos: a tela NUNCA mais derruba o jogo (inclusive com
+  FancyMenu/menus customizados por cima).
+
+### Embelezado — rabicho do balão (fim do "triângulo colorido")
+- O rabinho era um triângulo GRANDE e chapado (print!). Agora é uma curva
+  menor e elegante, levemente à direita do centro, com contorno da moldura
+  e recheio por cima — cauda de quadrinho de verdade.
+
+### Quadrada 100% quadrada
+- O recheio da Quadrada usava a textura da CÁPSULA redonda por cima do
+  contorno quadrado (quinas duplas). Agora corpo e recheio usam a mesma
+  textura de cantinhos, e o rabicho vira um RETANGULINHO com contorno —
+  o balão fica quadrado ao todo.
+
+### Emojis dos DOIS LADOS
+- Adesivo mora na coluna da ESQUERDA e os emojis da fala na coluna da
+  DIREITA, independentes: dá pra deixar um emoji de cada lado com figuras
+  diferentes (ex.: espada e escudo). Na prévia, soltar o adesivo na metade
+  ESQUERDA do balão = adesivo; na metade DIREITA = emoji. Colocar 2 não
+  empilha mais tudo de um lado (o bug da 3.50).
+
+### Removidos — botões "Auto" e "Minha cor"
+- Obsoletos (a cor da borda já se escolhe na paleta "Borda:"). Ficou um
+  botão único **Sem borda / Com borda** que tira e repõe a borda.
+
+## [3.50.0] - 2026-10-02
+
+### Corrigido — Lore Zone agora dispara ao SAIR E VOLTAR
+- Sair e reentrar na zona mostra o título/som de novo: o registro de zonas
+  vistas agora limpa a zona quando o jogador SAI dela ("1x por visita",
+  não mais "1x para sempre").
+
+### Adicionado — `/rp ajuda` (lista de comandos com a função de cada um)
+- Jogadores veem todos os comandos gerais (`/rp`, `/g`, `/s`, `/w`, `/me`,
+  `/roll`, `/persona`, `/balao`...). Admins veem também a seção SO ADMINS
+  (medo, avisar, lorezone, chatlocal, bolha/balão/bolhas, set, /do).
+
+### Adicionado — API de MÚSICA CUSTOM para Lore Zones
+- `/lorezone musica <id> @<nome>` toca o arquivo
+  `config/rptag/musicas/<nome>.ogg` (pasta do CLIENTE) em LOOP enquanto o
+  jogador está na zona, com STOP na saída (payload novo
+  `lorezone_music`, canal v4).
+- Decodificação OGG Vorbis pelo próprio jogo (OggAudioStream) + source
+  OpenAL em loop, volume seguindo a categoria MUSICA do jogador. Pega
+  música de vídeo (ex.: YouTube) com `yt-dlp -x --audio-format vorbis`.
+- **Presets prontos** com nome fácil: `caverna`, `coracao`, `warden`,
+  `deepdark`, `disc13`, `disc11`, `disc5`, `mood`, `almas`, `pigstep` —
+  valem em `/lorezone som` e `/lorezone musica`. `/lorezone musicas` lista
+  tudo e ensina a API.
+- **Fix de parse da 3.48**: `minecraft:xyz` solto não era aceito (o argumento
+  `string()` do Brigadier rejeita `:` em palavra única). Agora o som é o
+  último argumento (greedy) e aceita namespace solto; o intervalo virou
+  `/lorezone musica <id> intervalo <segundos> <som>`.
+
+### Alterado — ADEUS balão-nuvem, OLÁ balão QUADRADO
+- O estilo Nuvem (e o antigo Gibi) saíram: quem tinha salvo vê agora o
+  balão **Quadrado** — retângulo de cantinhos arredondados ("meio
+  quadrado"), desenhado com a técnica de 3 fatias (textura nova
+  `quadrada.png`), sem peças que quebram.
+
+### Corrigido — prévia do menu = O MUNDO, letra com respiro
+- A pílula, as molduras e o rabicho da prévia agora são os MESMOS quads
+  texturizados do mundo (`RenderType.text`); o fundo de céu/grama virou
+  textura via BLIT (não some mais em cliente com shader).
+- Linhas do menu reespaçadas: título das placas ocupa linha DENTRO da
+  placa (não come mais a primeira fileira), gap entre todas as linhas
+  (fim do "Letra" colado no "Moldura").
+- Contadores "Emojis (0/6 na fala · 0 no balão)" REMOVIDOS (era ruído).
+
+### Corrigido — emojis duplicados/quebrados
+- Os adesivos/emojis são contados e desenhados por CODEPOINT: cada emoji
+  vale exatamente 1 glifo (a contagem antiga dividia por 2 e fatiava a
+  lista em pares — slot pulado, emoji dobrado e prévia diferente do
+  mundo).
+
 ## [3.49.0] - 2026-10-01
 
 ### Corrigido — nuvem do balão (estilo Turma da Mônica)

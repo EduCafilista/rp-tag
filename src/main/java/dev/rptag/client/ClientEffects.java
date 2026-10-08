@@ -1,5 +1,6 @@
 package dev.rptag.client;
 
+import dev.rptag.RPEffects;
 import dev.rptag.RPTagMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -73,6 +74,49 @@ public final class ClientEffects {
         return Math.min(1.0F, elapsed / 0.25F) * Math.min(1.0F, remaining);
     }
 
+    /**
+     * (3.54.0) DESENHO do medo na CAMADA OFICIAL de HUD — roda DEPOIS do
+     * shader (aparece com Iris) e acima de tudo na tela. Veu REFORCADO
+     * (168 -> 208): com shader ou sem, a tela afunda na escuridao.
+     * A prova de crash: qualquer erro desliga o efeito nesta sessao.
+     */
+    public static void desenharMedoCamada(net.minecraft.client.gui.GuiGraphics g) {
+        if (disabled) {
+            return;
+        }
+        try {
+            long now = System.currentTimeMillis();
+            float amp = fearAmp(now);
+            if (amp <= 0.0F) {
+                return;
+            }
+            int w = g.guiWidth();
+            int h = g.guiHeight();
+            float pulse = 0.6F + 0.4F * (float) Math.sin(now * 0.011);
+            com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(
+                    1.0F, 1.0F, 1.0F, Math.min(1.0F, amp * pulse));
+            // vinheta HD esticada na tela inteira (gradiente radial suave)
+            g.blit(VINHETA_TEX, 0, 0, 0, 0, w, h, w, h);
+            // O MEDO ESCONDE: veu azul-noite REFORCADO pulsando com a tremedeira
+            int veil = (int) (208 * amp);
+            g.fill(0, 0, w, h, (veil << 24) | 0x05070F);
+            // icone do efeito piscando no canto (igual HUD vanilla)
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,
+                    Math.min(1.0F, amp * 1.2F));
+            int isz = Math.max(20, Math.round(Math.min(w, h) * 0.055F));
+            float blink = 0.62F + 0.38F * (float) Math.sin(now * 0.012);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,
+                    Math.min(1.0F, amp * 1.2F) * blink);
+            g.blit(MEDO_HD_TEX, w - isz - 10, 10, 0, 0, isz, isz, 128, 128);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            com.mojang.blaze3d.systems.RenderSystem.disableBlend();
+        } catch (Throwable t) {
+            disabled = true;
+            RPTagMod.LOGGER.error("RP Tag: camada do medo desligada (erro)", t);
+        }
+    }
+
     // ---- MEDO: a camera treme ----
     @SubscribeEvent
     public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
@@ -111,33 +155,30 @@ public final class ClientEffects {
             int h = g.guiHeight();
             long now = System.currentTimeMillis();
 
-            // VINHETA do MEDO (3.46.0): gradiente radial HD texturizado
-            // (suave de verdade, sem faixas duras) + ICONE do efeito
-            // piscando no canto superior direito, igual o HUD vanilla.
-            float amp = fearAmp(now);
-            if (amp > 0.0F) {
-                float pulse = 0.6F + 0.4F * (float) Math.sin(now * 0.011);
-                com.mojang.blaze3d.systems.RenderSystem.enableBlend();
-                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(
-                        1.0F, 1.0F, 1.0F, Math.min(1.0F, amp * pulse));
-                // (3.47.0) estica a textura INTEIRA na tela (antes usava 256x256 como
-                // denominador e a vinheta REPETIA em circulos pela tela!)
-                g.blit(VINHETA_TEX, 0, 0, 0, 0, w, h, w, h);
-                // (3.49.0) O MEDO ESCONDE: um veu azul-noite bem escuro
-                // cobre a tela inteira (o mundo afunda na escuridao — o
-                // "apagar" do terror), pulsando junto com a tremedeira.
-                int veil = (int) (168 * amp);
-                g.fill(0, 0, w, h, (veil << 24) | 0x05070F);
-                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,
-                        Math.min(1.0F, amp * 1.2F));
-                int isz = Math.max(20, Math.round(Math.min(w, h) * 0.055F));
-                float blink = 0.62F + 0.38F * (float) Math.sin(now * 0.012);
-                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,
-                        Math.min(1.0F, amp * 1.2F) * blink);
-                g.blit(MEDO_HD_TEX, w - isz - 10, 10, 0, 0, isz, isz, 128, 128);
-                com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-                com.mojang.blaze3d.systems.RenderSystem.disableBlend();
+            // (3.53.0) O EFEITO MANDA NO MEDO: quem tem rptag:medo ativo
+            // (de /effect give, command block ou do /rp admin medo) treme ATE
+            // O EFEITO ACABAR — o cliente le o efeito local e segura o medo
+            // vivo enquanto ele existir, sem pacote e sempre em sync. Antes
+            // quem recebia so o efeito (/effect give) ficava NORMAL (o
+            // visual so vinha do pacote do /rp admin medo).
+            var local = Minecraft.getInstance().player;
+            if (local != null) {
+                var inst = local.getEffect(RPEffects.MEDO);
+                if (inst != null) {
+                    long restoMs = Math.max(300L, Math.min(inst.getDuration() * 50L, 600_000L));
+                    if (fearUntil < now) {
+                        fearStart = now; // (re)comecou agora
+                    }
+                    fearUntil = Math.max(fearUntil, now + restoMs);
+                }
             }
+
+            // (3.54.0) o DESENHO do medo (vinheta + veu + icone) foi pra
+            // CAMADA OFICIAL de HUD (ClientGuiLayers, registerAboveAll) —
+            // ela roda DEPOS do pos-processamento do shader, entao o medo
+            // aparece COM SHADERS tambem (o RenderGuiEvent.Post ficava por
+            // baixo/fora da saida do Iris e o medo sumia com shader). Aqui
+            // fica so o watcher do efeito + o AVISO.
 
             // AVISO: texto GRANDE no centro
             String text = screenText;

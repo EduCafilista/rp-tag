@@ -1,251 +1,208 @@
-# 🎮 Walkthrough — RP Tag do zero ao RP ativo
+# 🧭 WALKTHROUGH — Memória de trabalho do RP Tag
 
-Guia passo a passo, do download até a tag aparecendo no jogo.
-
-> 🌎 **Idioma / Language:** **Português (BR)** | [English](WALKTHROUGH.en.md)
+> **Este documento é o diário de bordo do projeto.** Ele existe para que qualquer
+> pessoa (ou assistente) que continuar este trabalho saiba **o que já foi feito,
+> como as coisas funcionam, o que NÃO fazer e como construir/testar/entregar** —
+> sem se perder e sem refazer o que já passou por testes.
+>
+> 📌 **Regra: atualizar este documento NO FIM DE CADA CICLO** (junto com o
+> CHANGELOG). O guia de *jogador* fica no `README.md` e no `COMO-USAR.md`;
+> o registro detalhado por versão fica no `CHANGELOG.md`.
 
 ---
 
-## Passo 0 — O que você precisa
+## 1. Estado atual
 
-| Item | Onde conseguir |
+| Item | Valor |
 |---|---|
-| Minecraft **1.21.1** (Java Edition) | launcher oficial |
-| **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → versão 21.1.x |
-| **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-3.42.0.jar` | a aba *Releases* deste repositório |
-
-> ⚠️ A versão do mod acompanha a do Minecraft: o `rptag-3.42.0.jar` é para **1.21.1**. Outra versão do jogo precisa de recompilação.
-
----
-
-## Passo 1 — Instalar no servidor
-
-1. Instale o NeoForge no servidor (o instalador pergunta o caminho da pasta do servidor).
-2. Na pasta do servidor, entre em `mods/`.
-3. Copie o `rptag-3.42.0.jar` para dentro dela.
-4. Inicie o servidor uma vez para gerar os arquivos (aceite o EULA no `eula.txt` com `eula=true`).
-
-**Como saber se funcionou:** no log de boot procure a linha
-
-```
-RP Tag 2.0.0 (rptag)
-```
-
-Pronto — a partir daqui a tag já funciona no **chat** e na **TAB** para todos.
+| Versão | **3.56.1** (2026-10-08) |
+| Commit | `0e93318` (main; push é feito manualmente pelo dono do repo) |
+| Jar | `rptag-3.56.1.jar` (~1.891.082 B) |
+| Checks | `check.py` → **85 PASS / 0 FAIL** |
+| Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
+| Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
+| Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
 
 ---
 
-## Passo 2 — Instalar no cliente (opcional, para ver a tag na cabeça)
+## 2. O ritual de cada ciclo (como entregar)
 
-1. No launcher, crie/edite o perfil do NeoForge 1.21.1.
-2. Abra a pasta do jogo (opção "abrindo a pasta do jogo" no launcher) e entre em `mods/`.
-3. Copie o mesmo `rptag-3.42.0.jar` para lá.
-4. Entre no servidor.
-
-Sem o mod no cliente você ainda vê a tag no chat/TAB; com o mod, também vê **(ʀᴘ)** ou **(ᴏꜰꜰ ʀᴘ)** flutuando sobre a cabeça dos jogadores.
+1. **Editar as sources** do `/home/user/rp-tag` (feature/correção do ciclo).
+2. **`python3 check.py`** — checks estáticos do código; só segue se 0 FAIL.
+3. **Build** (seção 7) — `javac` SEM pipe em `exit 0`; só jarifica se compilou.
+4. **Smoke real** (seção 7) — servidor NeoForge sobe com o jar + comandos via RCON + `grep` de erros = 0.
+5. **Docs**: `CHANGELOG.md` (nova versão no topo), este WALKTHROUGH (seção 1 + seções afetadas), `divulgacao/COMO-USAR.md` (bloco "NOVO na X.Y.Z" no topo).
+6. **Git**: commit local (recriar `.git/config` se sumiu — seção 7) — **push é por fora** (só o dono tem o PAT).
+7. **Zip das sources**: `git archive --format=zip -o /home/user/rptag-fonte-<ver>.zip HEAD`.
+8. **Entrega**: copiar o jar pra `/home/user`, `divulgacao/` e `run/mods/`; **`present_file` do jar no chat**; apagar jars velhos do workspace.
+9. **Sempre avisar na resposta**: *"apague o jar antigo da pasta `mods` — no SERVIDOR e no CLIENTE"* (falha recorrente!).
+10. Responder em **PT-BR**.
 
 ---
 
-## Passo 3 — Usando em jogo
+## 3. Mapa do repositório
 
-Entre no servidor com qualquer conta e teste:
-
-| O que digitar | O que acontece |
+### Raiz
+| Arquivo | Papel |
 |---|---|
-| `/rp` | alterna: OFF RP → RP (e vice-versa) |
-| `/rp status` | mostra o estado atual: `Modo RP atual: (ʀᴘ)` |
-| `/rp on` | entra em RP direto |
-| `/rp off` | sai do RP direto |
-| `/rp set Steve off` | *(só OP/admin)* muda o estado de outro jogador |
+| `check.py` | 85 checks estáticos (roda antes de qualquer entrega) |
+| `toolchain.sh` | baixa JDK 21 + gera `nf-binary.jar` (MC desofuscado) + `cp.txt` (classpath) do zero |
+| `build.gradle` / `settings.gradle` | metadados (versão do mod em `version = '...'`) |
+| `CHANGELOG.md` | registro detalhado por versão |
+| `WALKTHROUGH.md` | **este documento** (memória de trabalho) |
+| `README.md` / `README.en.md` | vitrine do repo |
+| `ENTREGA.md` / `PUBLICAR.md` | notas de processo |
 
-**O que observar depois de `/rp`:**
+### Código — `src/main/java/dev/rptag/`
+| Área | Arquivos |
+|---|---|
+| Núcleo | `RPTagMod` (constantes/VERSION), `ModNetworking` (canal "5"), `ServerEvents`, `RPWorldData` |
+| Tag/Persona | `RPTags`, `Persona`, `PersonaCommands`, `PersonaSyncPayload`, `SyncRPStatePayload`, `RPCommands` (`/rp`, `/rp admin`, `/do`), `RPChat` |
+| Balões (comum) | `BalaoCommands` (`/balao`), `BubbleStyle`, `UpdateBubbleStylePayload`, `SetBubbleModePayload`, `OpenBubbleStylePayload`, `ChatBubblePayload`, `ScreenTextPayload`, `Stickers` |
+| Balões (client) | `client/BubbleRenderer` (desenho no mundo), `client/BubbleStyleScreen` (tela `/balao`), `client/ClientBubbleCache`, `client/BubbleBackgrounds` |
+| Nameplate | `client/NameplateRenderer`, `client/ClientGuiLayers` |
+| Medo | `RPEffects` (efeito `rptag:medo`), `FearPayload`, `client/ClientEffects` (HUD com shaders: `registerAboveAll` + véu 208) |
+| Lore Zone | `LoreZones` (tick/música), `LoreZoneCommands` (`criar/texto/som/musica/baixar/listar/remover`), `LorezoneMusicPayload` |
+| Música custom | `MusicFileQueryPayload`/`ChunkPayload`/`AnswerPayload` (sync servidor→clientes, chunks 30 kB), `MusicSync`, `client/MusicaCustom` |
+| Chat/Roll | `ChatCommands` (`/g`), `RollCommands` (`/roll NdM+K`) |
 
-- Mensagem de confirmação: `Modo RP ativado! Seu nome agora mostra (ʀᴘ).`
-- **Chat:** sua próxima mensagem aparece como `Alex (ʀᴘ): oi` (ciano) ou `Steve (ᴏꜰꜰ ʀᴘ): oi` (cinza).
-- **TAB:** seu nome na lista ganha a tag.
-- **Nametag:** com o mod no cliente, a tag aparece sobre a cabeça.
-- **Persistência:** deslogue, reinicie o servidor, morra... o estado continua salvo no mundo. Todo jogador novo começa em **OFF RP**.
-
-**Para testar o admin:** no console ou com um OP, use `/rp set <nick> on` e peça para a pessoa olhar o próprio nome no TAB.
+### Recursos — `src/main/resources/`
+- `META-INF/neoforge.mods.toml` (versão aqui TAMBÉM)
+- `assets/rptag/textures/gui/`: `bubble.png` (**512×256, texel de recheio = 248**), `quadrada.png` (**64×32, texel 255**), `ring.png`, `cartum.png`, `brilho.png`, `dashed.png` (192 px, períodos 8), `stickers_hi.png` (células 8×16), `medo_hd.png` (128, foto inteira + rampa alpha 14 px), `vinheta`, `preview_sky`, `grad_bar`, `linhas`, `dupla`, `gibi`
+- `assets/rptag/textures/mob_effect/medo.png` (64, ícone do efeito)
+- `assets/rptag/font/stickers.json` + `textures/font/stickers.png` (emojis da fala, código −0xE000)
 
 ---
 
-## Passo 4 — Compilando a partir do fonte
+## 4. O que o mod faz hoje (resumo por área)
 
-Para contribuir ou gerar seu próprio jar:
+- **Tag RP**: `/rp` liga/desliga; nome no chat, TAB e na cabeça com moldura.
+- **Persona**: título/subtítulo/cor por jogador, sync pra todos.
+- **Balões de fala** (o que o jogador escreve vira balão na cabeça):
+  - 6 molduras (Clássica, Cartum, Quadrada, Costura, Brilho, Sem borda), cores personalizáveis, adesivo à esquerda + emojis à direita;
+  - **3.56**: texto quebra em linhas equilibradas (`MAX_TEXT_WIDTH = 130`) → mais palavras = balão cresce **pra cima**; rabicho **pixel-art em degraus** (14×4 + 7×4) com contorno, igual nas todas as molduras;
+  - **3.56.1**: rabicho amostra a MESMA janela de texels da pílula (`bubble.png` 252–260 × 124–132, texel 248) → cor **exata**; Quadrada (texel 255) segue igual;
+  - tela `/balao` com prévia fiel (quebra a fala com as mesmas regras — `wrapPrev` — e ajusta o zoom; cor do rabicho via `escalaTexel` 248/255).
+- **Medo**: `/effect give <jogador> rptag:medo <s>` — ícone de foto inteira com borda dissolvendo + véu azul-noite 208 que esconde a tela; camada oficial de HUD (`registerAboveAll`), **funciona com shaders**.
+- **Lore Zone**: `/lorezone criar <id> <raio> <titulo>` cria esfera de lore; texto, som (preset ou `1x na entrada`) e **música**; `/lorezone baixar <url>` baixa de verdade no servidor (`config/rptag/musicas/`) e **sincroniza pros clientes** (todo mundo ouve).
+- **Roll**: `/roll` = 1d20; `/roll 2d6+3`, `/roll +3` = 1d20+3.
+- **Chat**: `/g` global; chat local por proximidade (`/rp admin chatlocal`).
 
+---
+
+## 5. Histórico (o que aconteceu até aqui)
+
+> Texto completo por versão: `CHANGELOG.md`. Resumo com foco em decisão:
+
+| Versão | O que marcou |
+|---|---|
+| 3.3x | base do chat/tag/persona e dos primeiros comandos |
+| 3.40–3.42 | polimento da tag e comandos admin |
+| 3.49.0 | reorganização das telas do `/balao` (2 colunas adesivo/emojis) |
+| 3.50.0 | música custom nas Lore Zones; nuvem do balão (depois removida) |
+| 3.51.x | rabicho discreto; Quadrada quadrada ao todo; balão 2 colunas; tela à prova de crash |
+| 3.52.0 | som de zona novo (muitos presets) + sliders de volume (Ambiente = `/lorezone som`, Música = `/lorezone musica`) |
+| 3.53.0 | ajustes de balão/nametag |
+| 3.54.x | medo com **shaders** (HUD `registerAboveAll`); ícone do medo = **foto inteira** (64/128) |
+| 3.55.0 | X vermelho na prévia sem tooltip; `/lorezone baixar` REAL + sync v5 (chunks 30 kB); `/lorezone musica <id> 1x <som>`; `/roll +3`; `/balao teste` **removido** (prévia usa a última fala real); ícone do medo com borda dissolvendo; lorezone explicada como ESFERA |
+| 3.56.0 | **balões reescritos**: wrap 130 (cresce pra cima), rabicho pixel em degraus p/ todas as molduras, prévia multi-linha, textura `bubble_tail.png` removida |
+| 3.56.1 | rabicho na cor **exata** do balão (texel 248); `/rp ajuda` sem a linha amarela do WALKTHROUGH |
+
+Commits recentes: `0e93318` (3.56.1) ← `69a211b` (3.56.0) ← `0d3f76e` (3.55.0) ← `928647f` (3.49.0). **Hashes de 3.50–3.54.1 foram perdidos** (regressão do `.git` num turno) — não referenciá-los.
+
+---
+
+## 6. Decisões permanentes & reprovados (NUNCA voltar)
+
+### Como o trabalho é feito
+- Push no GitHub **sem credenciais**: commit local sempre; quem faz push é o dono (PAT dele). "Arquivos pro GitHub" = commit + zip das sources + jar via `present_file`.
+- Entrega do jar **sempre** com `present_file` (o usuário cobra o download).
+- Respostas em PT-BR; testes ANTES de entregar; smoke RCON por ciclo.
+- Qualidade visual nível mods famosos; telas 1.21 usam `renderBackground` com fill opaco.
+
+### Visual do balão
+- ❌ Faixa/banda no balão; ❌ emoji via fonte na fala; ❌ emoji-tint no mundo; ❌ bandas de fonte; ❌ dashed antigo; ❌ balão-nuvem; ❌ contadores "emojis x/6"; ❌ botões Auto/"Minha cor"; ❌ ordem antiga dos botões; ❌ card escuro na prévia; ❌ editor baú.
+- ❌ **Rabicho triângulo** (grande ou curvado com `bubble_tail.png` — reprovado no 3.56) e ❌ quadrado-conector — o rabicho é **pixel-art em degraus**.
+- ✅ Balão cresce **pra cima** com o texto (linhas equilibradas, nunca tirinha deitada); ✅ recheio cobre o encaixe do rabicho (costura invisível).
+- Quadrada = quadrada AO TODO; Sem borda por último em 2 fileiras de 3; tela `/balao` à prova de crash.
+
+### Medo
+- Ícone = **FOTO INTEIRA** (carinha + palavra "medo") — nunca recortar/redesenhar; borda dissolvendo em alpha aprovada.
+- **COM shaders**: camada oficial de HUD (`registerAboveAll`) + véu 208 — não voltar para `RenderGuiEvent.Post`.
+- Mensagem só pra admin; paleta azul-noite; véu que ESCONDE a tela.
+
+### Outros
+- ❌ Nuvem no balão (removida a pedido no 3.50 — manter fora).
+- `/balao teste` **não existe mais** — testar é escrever no chat (a prévia usa a última fala).
+- Música baixada fica no **SERVIDOR** e sincroniza pros clientes ("iniciado/concluído"); todo mundo ouve.
+- Sons "1x na entrada" da lorezone: opção pedida explicitamente (manter).
+
+---
+
+## 7. Receitas operacionais
+
+### Toolchain do zero (o `/var/tmp`some entre sessões!)
 ```bash
-# requisitos: JDK 21 + internet
-git clone https://github.com/SEU_USUARIO/rp-tag.git
-cd rp-tag
-./gradlew build          # (Windows: gradlew.bat build)
+bash /home/user/rp-tag/toolchain.sh   # JDK 21 + nf-binary.jar + cp.txt (tudo automático)
+```
+- Gera: `/var/tmp/java-21/`, `/var/tmp/nf-binary.jar` (MC 1.21.1 mapeado + NeoForge), `/var/tmp/cp.txt` (classpath completo: nf-binary + **todos** os artifacts do cache NFRT — brigadier, etc — + libs do neoforge).
+- Internamente usa NFRT com um `neoform-edit.zip` **INTEIRO** (não só o `config.json` — o NFRT lê `config/joined.tsrg` de dentro!) com jvmargs de decompile `-Xmx1450m -XX:+UseSerialGC`.
+
+### Build
+```bash
+cd /home/user/rp-tag
+find src/main/java -name "*.java" > /var/tmp/sources.txt
+export PATH=/var/tmp/java-21/bin:$PATH
+rm -rf build/classes build/libs && mkdir -p build/classes
+# SEM pipe: só jarifica se exit 0 (senão sai jar STALE)
+javac --release 21 -encoding UTF-8 -proc:none -nowarn \
+  -cp "$(cat /var/tmp/cp.txt)" -d build/classes @/var/tmp/sources.txt \
+  && cp -r src/main/resources/* build/classes/ \
+  && (cd build/classes && jar --create --file ../libs/rptag-<ver>.jar .)
+cp build/libs/rptag-<ver>.jar /home/user/ /home/user/divulgacao/ /home/user/run/mods/
 ```
 
-O jar sai em `build/libs/rptag-3.42.0.jar`. A primeira compilação demora alguns minutos (baixa e prepara o Minecraft automaticamente — você não precisa instalar nada do jogo).
+### Smoke (servidor real + RCON)
+1. Se `run/libraries/net/minecraft/server/` estiver vazio → baixar o installer `neoforge-21.1.249-installer.jar` e `java -jar ... --installServer .` (~20 s).
+2. Subir em background: `JAVA_HOME=/var/tmp/java-21 PATH=/var/tmp/java-21/bin:$PATH ./run.sh` (cwd `run/`).
+3. Esperar `Done (` no `run/logs/latest.log`.
+4. RCON: `127.0.0.1:25575`, senha `test123` (pacote: struct `<ii` + type 3 no login). Testar `rp ajuda` (ler a resposta INTEIRA — os comandos respondem com paginação longa).
+5. `grep -icE "rptag.*(exception|ERROR)" run/logs/latest.log` → tem que ser 0.
+6. Parar o servidor no fim. `lorezone criar` por RCON falha ("A player is required") — esperado.
 
----
-
-## Passo 5 — Personalizando
-
-### Mudar a cor da tag
-
-Em `src/main/java/dev/rptag/RPTags.java`, método `tag(...)`:
-
-```java
-return inRp
-        ? Component.literal(tagText(true)).withStyle(ChatFormatting.AQUA)  // ciano
-        : Component.literal(tagText(false)).withStyle(ChatFormatting.GRAY); // cinza
+### Git (commit local)
+Se o `.git/config` sumir (não vai pro snapshot), recriar:
+```ini
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	url = https://github.com/EduCafilista/rp-tag.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "main"]
+	remote = origin
+	merge = refs/heads/main
+[user]
+	name = EduCafilista
+	email = EduCafilista@users.noreply.github.com
 ```
 
-Troque `AQUA`/`GRAY` por qualquer cor do enum: `DARK_AQUA`, `BLUE`, `YELLOW`, `GREEN`, `RED`, `WHITE`, `LIGHT_PURPLE`, `DARK_GREEN`...
-
-### Mudar o texto da tag
-
-No mesmo arquivo, topo da classe:
-
-```java
-public static final String TAG_ON  = "RP";      // vira (ʀᴘ)
-public static final String TAG_OFF = "OFF RP";  // vira (ᴏꜰꜰ ʀᴘ)
-```
-
-Pode escrever em qualquer estilo — os parênteses e as small caps são aplicados automaticamente. Se quiser texto 100% normal (sem small caps), use letras minúsculas no `toSmallCaps(...)`... ou simplesmente remova a chamada.
-
-### Reativar o nametag "bolinho" (pastilha arredondada)
-
-Em `src/main/java/dev/rptag/client/NameplateRenderer.java`:
-
-```java
-public static final boolean BADGE_ENABLED = true;
-```
-
-### Mudar as mensagens do comando
-
-Ficam em `RPCommands.java` (respostas do `/rp status` e do `/rp set`) e `ServerEvents.java` (confirmação de "Modo RP ativado/desativado").
-
-Depois de qualquer mudança: `./gradlew build` e substitua o jar nos `mods/`.
+### Geometria do balão (pra mexer sem quebrar)
+- `pillW = max(34, textW + pad16 + leftW + rightW)`; `pillH = speechH + 8`; `speechH = 10 × n° de linhas`; `yP1 = 0`, texto acima, topo em `yP0 = yText − 4`.
+- `leftW` (adesivo) = 14+6 se tiver; `rightW` (emojis) = n×14 + (n−1)×3 + 6.
+- Ordem de desenho (z): sombra −0.20 → contorno −0.15 → **rabicho pixel** (contorno −0.15, recheio −0.12) → recheio da pílula −0.10 (cobre o encaixe) → texto → adesivos.
+- Rabicho: `cxT = x0 + pillW/2 + 1`; degraus 14×4 e 7×4; recheio = texels `bubble.png` (252–260 × 124–132) ou `quadrada.png` (0.45–0.55) na Quadrada.
+- Prévia (menu): `wrapPrev(fala, 110)` com zoom K=2.0 (cai pra 1.5/1.2/0.95 conforme o nº de linhas), `simH = linhas × lineHeight × K + 8`, rabicho via `g.fill` + `escalaTexel` (×248/255 fora da Quadrada).
 
 ---
 
-## 🩺 Solução de problemas
+## 8. Pendências / próximas ideias
 
-| Sintoma | Causa provável | Solução |
-|---|---|---|
-| Tag aparece no chat mas não na cabeça | Mod ausente no cliente | Instale o jar também no `mods/` do cliente |
-| Tag não aparece em lugar nenhum | Mod ausente no servidor | Instale no `mods/` do **servidor** (o essencial) |
-| Aparecem quadradinhos `□□` | Cliente com resource pack que troca a fonte | Teste sem resource pack — as small caps usam a fonte padrão do jogo |
-| `/rp set` diz "permissoes insuficientes" | Você não é OP | Peça OP (`op SeuNick` no console) ou use o console direto |
-| Nomes duplicaram a tag depois de outro mod | Conflito raro de formatação | Reporte no repositório com o log |
+- (nenhuma crítica aberta — anotar aqui os pedidos que ficarem para o próximo ciclo)
+- Lembrete: o `WALKTHROUGH.en.md` ainda é o guia antigo de jogador em inglês (legado); se o repositório for público, vale atualizar ou remover.
 
 ---
 
-## Mapa rápido do código
-
-```
-Servidor                          Cliente
-─────────────────────────         ─────────────────────────────
-RPCommands.java  → /rp            ClientPayloadHandler.java ← recebe estado
-ServerEvents.java → chat/TAB      ClientRPStates.java       → cache
-RPWorldData.java  → salva NBT    ClientEvents.java         → nome local
-SyncRPStatePayload.java ──────────> (pacote servidor → cliente)
-```
-
-Bom RP! 🎭
-
----
-
-## 🗨️ Balões de fala (novo na v2.3.0)
-
-O que você digita no chat (local, `/g`, `/s`, `/w` ou `/me`) aparece num **balão
-arredondado sobre a sua cabeça** — perfeito pra ovos, crianças e quem não usa microfone.
-
-| Comando | Efeito |
-|---|---|
-| `/balao` | abre a TELA de personalização: seletor de cor (arrasta o mouse!), barra de destaque, fundos e emojis |
-| `/rp admin bolha off` | *(admin)* desliga balões do servidor inteiro |
-
-Cores disponíveis: branco, preto, cinza, cinzaescuro, vermelho, vermelhoescuro,
-laranja, dourado, amarelo, verde, verdeescuro, ciano, azul, azulescuro, roxo, rosa/lilas.
-O texto do balão escolhe preto ou branco sozinho, de acordo com a cor de fundo.
-
----
-
-## 🥚 Modo balão e TELA de personalização (v2.5.0)
-
-**Para ovos, crianças e personagens sem voz:** a fala vira **só o balão** — nada no chat.
-
-| Comando | Efeito |
-|---|---|
-| `/balao` | abre a **TELA de personalização** (seletor de cor, preview ao vivo) |
-| `/balao modo on` / `off` | liga/desliga o modo balão em si mesmo |
-| `/rp admin bolha <jogador> on` | *(admin)* ativa o modo balão para outro jogador |
-| `/rp admin balao <jogador> off` | *(admin)* proíbe o jogador de usar balão (fala volta só ao chat) |
-| `/rp admin balao <jogador> on` | *(admin)* permite o balão de volta |
-| `/rp admin balaolist` | *(admin)* lista quem está sem balão |
-| `/rp admin bolhas off` | *(admin)* desliga balões do servidor inteiro |
-
-### Como usar a tela (`/balao`)
-- **SIMULAÇÃO DE CHAT AO VIVO** — a linha `<Você> sua fala assim` (nome na
-  cor do balão, fala na cor da letra) + o balão em moldura com rabicho. Mudou
-  QUALQUER coisa (fundo, borda, molde, letra, adesivo)? A simulação reage NA
-  HORA. Rodapé com bolinhas das cores: `● #fundo ● borda ● letra`
-- **Adesivo com o MOUSE**: `✦ Adesivos` → a ARTE de cada emoji aparece no
-  teclado (2x) — **escolha vendo!** O nome aparece ao passar o mouse e no
-  rodapé. Clicou: gruda no mouse → **clique no balão da simulação** pra colar.
-  Clique no adesivo pra **pegar de volta**; **clique direito** no balão **tira**
-- **Pintar** — DOIS seletores independentes: **✦ Dentro** (esquerda) pinta o
-  recheio e **▣ Borda** (direita) pinta a moldura. Embaixo de cada um tem uma
-  **PALETA DE 1 CLIQUE** (8 cores prontas) — clicou, pintou, sem arrastar! Ou
-  arraste nos quadrados pra qualquer cor custom (hex ao vivo no rótulo)
-- **Borda** — 3 BOTÕES de cor: **▣ Auto** (combina sozinho) · **▣ Minha cor**
-  (a que você pintar no seletor da direita) · **▢ Sem borda** — o ativo fica
-  com moldura verde
-- **Molde** — 3 BOTÕES de estilo: **▤ Clássica** (linha fina) · **▤ Cartum**
-  (grossa, capa de quadrinho) · **▤ Dupla** (duas linhas com respiro)
-- **✎ Letra** — **Auto** (branco ou preto conforme o fundo, contraste sempre
-  perfeito) ou 8 cores de chat à 1 clique — a fala no balão muda na hora
-- **⏱ Duração** — ARRASTA a barra e escolhe 2 a 20 segundos de exibição
-- **☾ Modo balão** — liga/desliga ali mesmo
-- **✔ Salvar** (botão da DIREITA, como no Minecraft) ou **ESC** salvam —
-  nunca mais perder a customização · **↺ Padrão** restaura o original
-- **Fica salvo PRA SEMPRE**: saiu do servidor, voltou — cores, adesivo, molde
-  e duração continuam lá (salvos no arquivo do mundo)
-- **DIAGNÓSTICO DE JAR**: o canto superior direito da tela mostra a versão
-  do CLIENTE (ex.: "v3.4.0") e a mensagem ao salvar mostra a versão do
-  SERVIDOR ("💾 Salvo no servidor v3.4.0!"). As duas têm que ser IGUAIS — se
-  diferirem, troque o jar do lado antigo (cliente E servidor sempre juntos)
-- Depois é só **falar no chat** para ver o balão ✨
-
----
-
-## 📜 Lore Zones (regiões com história)
-
-O admin marca regiões do mapa que reagem quando um jogador entra: título
-épico na tela, subtítulo, som — e agora até **música em loop**.
-
-| Comando | Efeito |
-|---|---|
-| `/lorezone criar <id> <raio> <título>` | cria a zona onde você está (subtítulo vem do texto) |
-| `/lorezone texto <id> <texto>` | define o subtítulo da zona |
-| `/lorezone som <id> <som>` | som 1x ao entrar (ex.: `minecraft:ambient.cave`) |
-| `/lorezone musica <id> <som> [intervalo]` | **trilha em LOOP** enquanto estiver na zona — reinicia a cada `intervalo` segundos (10–600, padrão 45) e **para ao sair** |
-| `/lorezone listar` | lista as zonas |
-| `/lorezone remover <id>` | apaga a zona |
-
-Sons tensos que funcionam bem: `minecraft:ambient.cave`,
-`minecraft:entity.warden.heartbeat`, `minecraft:music.overworld.deep_dark`,
-`minecraft:music_disc.13`, `minecraft:music_disc.11`.
-
----
-
-## 😱 Efeitos de RP: MEDO e avisos
-
-| Comando | Efeito |
-|---|---|
-| `/rp admin medo <jogador> [segundos]` | a tela do jogador **ESCONDE** sob um véu azul-noite que pulsa, com vinheta escura, carinha piscando no HUD e **tremor de câmera** — pânico de verdade |
-| `/rp admin avisar <jogador> <texto>` | texto GRANDE na tela, cores com `&` (`&c` vermelho, `&6` laranja, `&l` negrito…) |
-| `/effect give <jogador> rptag:medo <s>` | o mesmo medo via comando vanilla |
-
-A mensagem de "está com medo" aparece **só para o admin** — o jogador sente
-o efeito sem saber quem mandou. E na 3.49 o balão-nuvem (estilo pensamento
-do Turma da Mônica) ganhou **bolas circulares HD de verdade**, sem quinas.
+*Última atualização: ciclo 3.56.1 (2026-10-08), commit `0e93318`.*

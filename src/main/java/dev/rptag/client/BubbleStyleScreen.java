@@ -63,26 +63,59 @@ public class BubbleStyleScreen extends Screen {
     private static final ResourceLocation HI_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/stickers_hi.png");
     private static final RenderType HI_TYPE = RenderType.text(HI_TEX);
+    // (3.50.0) PREVIA = O MUNDO: a pílula, as molduras e o rabicho sao os
+    // MESMOS quads texturizados do BubbleRenderer — fim da divergencia
+    // (fills 2D do menu nao batiam com o in-game e o balao "nao aparecia").
+    private static final ResourceLocation BUBBLE_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble.png");
+    private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
+    private static final ResourceLocation RING_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/ring.png");
+    private static final RenderType RING_TYPE = RenderType.text(RING_TEX);
+    private static final ResourceLocation CARTUM_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/cartum.png");
+    private static final RenderType CARTUM_TYPE = RenderType.text(CARTUM_TEX);
+    private static final ResourceLocation DASHED_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/dashed.png");
+    private static final RenderType DASHED_TYPE = RenderType.text(DASHED_TEX);
+    private static final ResourceLocation BRILHO_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/brilho.png");
+    private static final RenderType BRILHO_TYPE = RenderType.text(BRILHO_TEX);
+    private static final ResourceLocation QUAD_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/quadrada.png");
+    private static final RenderType QUAD_TYPE = RenderType.text(QUAD_TEX);
+    private static final float U_CAP_B = 16.0F / 64.0F; // tampa da pílula (16 de 64)
+    private static final float U_CAP_Q = 8.0F / 64.0F;  // tampa da Quadrada (8 de 64)
+    /** CEU da previa (gradiente + grama) — textura de verdade: BLIT estica,
+     * enquanto fills por linha sumiam no cliente de quem usa shader. */
+    private static final ResourceLocation SKY_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/preview_sky.png");
+    /** margem de cada moldura (IGUAL ao BubbleRenderer.RING_MARGIN). */
+    private static final float[] MARGEM = {2.0F, 4.0F, 2.5F, 3.0F, 4.0F, 2.5F};
     private static final int VERMELHO_TIRA = 0xFFE87A7A; // remover
     private static final int ZONA_VERDE = 0xFFB5F0C8;  // zona "colar no balao"
     private static final int ZONA_OURO = 0xFFFFE08A;   // zona "por na fala"
 
     private static final int PANEL_W = 268;
-    private static final int PANEL_H = 272;
+    private static final int PANEL_H = 306;
 
     // linhas verticais (a partir de py) — UMA fonte de verdade
+    // (3.50.0) RESPIRO: as linhas ficavam coladas ("Letra" em cima de
+    // "Moldura") e as placas comiam a primeira fileira — cada secao agora
+    // tem gap proprio e o TITULO das placas ocupa linha DENTRO da placa.
     private static final int ROW_HINT = 22;
-    private static final int ROW_CHAT = 32;
-    private static final int ROW_BUBBLE = 50;  // pilula real: 50..84 + rabinho ate ~92
-    private static final int ROW_DENTRO = 102;
-    private static final int ROW_BORDA = 117;
-    private static final int ROW_LETRA = 132;
-    private static final int ROW_BTN1 = 146;   // molduras: Auto / Minha cor / Sem
-    private static final int ROW_BTN2 = 164;   // Classica / Cartum / Dupla
-    private static final int ROW_BTN3 = 182;   // Costura / Brilho (a Nuvem ficou na fileira de cima)
-    private static final int ROW_BTN4 = 204;   // Adesivos + duracao (h18)
-    private static final int ROW_EXTRAS = 228; // slots de emojis (hit 223..247)
-    private static final int ROW_BTN5 = 252;   // modo / padrao / salvar
+    private static final int ROW_CHAT = 33;
+    private static final int CARD_Y = 42;   // card de previa: 42..98 (ceu+grama)
+    private static final int CARD_H = 56;
+    private static final int ROW_DENTRO = 115; // placa Cores 102..164
+    private static final int ROW_BORDA = 131;
+    private static final int ROW_LETRA = 147;
+    private static final int ROW_BTN1 = 179;   // molduras: Classica / Cartum / Quadrada
+    private static final int ROW_BTN2 = 197;   // Costura / Brilho / Sem borda
+    private static final int ROW_BTN3 = 215;   // Costura / Brilho
+    private static final int ROW_EXTRAS = 243; // slots de emojis (hit 240..260)
+    private static final int ROW_BTN4 = 264;   // Adesivos + duracao (h18)
+    private static final int ROW_BTN5 = 286;   // modo / padrao / salvar
 
     // paletas desenhadas como texto "● "
     private static final int SW_X = 64;
@@ -92,7 +125,7 @@ public class BubbleStyleScreen extends Screen {
     private static final int KB_CELL = 24;
 
     // slots de EMOJIS EXTRAS na fileira propria
-    private static final int MAX_SLOTS = 6; // BubbleStyle.MAX_EXTRAS / 2
+    private static final int MAX_SLOTS = 3; // coluna da DIREITA (3 + adesivo na esquerda)
     private static final int EX_X = 100;    // inicio dos slots (a partir de px)
     private static final int EX_PITCH = 24; // espacamento entre slots
 
@@ -203,205 +236,86 @@ public class BubbleStyleScreen extends Screen {
         Minecraft.getInstance().renderBuffers().bufferSource().endBatch();
     }
 
-    /** FATIA da pilula real (3 fatias: tampa + meio + tampa — pontas NUNCA deformam). */
-    /** CAPSULA perfeita (retangulo + 2 semicirculos) — igual a textura nova do mundo. */
-    /**
-     * (3.47.0) NUVEM na previa (igual ao mundo): bolas sobrepostas em volta
-     * da capsula (o recheio cobre as metades de dentro).
-     */
-    private void nuvemGui(GuiGraphics g, float simX0, float simY, float simW, float simH, int border) {
-        final int d = 13;
-        final int r = d / 2;
-        int cols = Math.max(3, Math.round(simW / (d * 0.72F)));
-        for (int i = 0; i <= cols; i++) {
-            float x = simX0 - r + (simW + d) * i / cols;
-            drawPill(g, x - r, simY - r, d, d, border);
-            drawPill(g, x - r, simY + simH - r, d, d, border);
-        }
-        int rows = Math.max(2, Math.round(simH / (d * 0.72F)));
-        for (int i = 0; i <= rows; i++) {
-            float y = simY - r + (simH + d) * i / rows;
-            drawPill(g, simX0 - r, y, d, d, border);
-            drawPill(g, simX0 + simW - r, y, d, d, border);
-        }
+    // =====================================================================
+    //  (3.50.0) HELPERS DE QUAD — os MESMOS caminhos do BubbleRenderer:
+    //  pílula/moldura/rabicho/costura por textura (RenderType.text). O que
+    //  aparece aqui e PIXEL A PIXEL o que aparece sobre a cabeca no mundo.
+    // =====================================================================
+
+    private static VertexConsumer buf(RenderType tipo) {
+        return Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(tipo);
     }
 
-    private void drawPill(GuiGraphics g, float x, float y, float w, float h, int argb) {
+    private static void endBatch() {
+        Minecraft.getInstance().renderBuffers().bufferSource().endBatch();
+    }
+
+    /** QUAD texturizado generico (mesma matematica do quad() do mundo). */
+    private static void quadGui(GuiGraphics g, RenderType tipo, float z,
+            float x1, float y1, float x2, float y2,
+            float u1, float v1, float u2, float v2, int argb) {
+        Matrix4f m = g.pose().last().pose();
+        VertexConsumer b = buf(tipo);
+        b.addVertex(m, x1, y1, z).setColor(argb).setUv(u1, v1).setUv1(0, 10).setLight(0xF000F0)
+                .setNormal(0.0F, 1.0F, 0.0F);
+        b.addVertex(m, x1, y2, z).setColor(argb).setUv(u1, v2).setUv1(0, 10).setLight(0xF000F0)
+                .setNormal(0.0F, 1.0F, 0.0F);
+        b.addVertex(m, x2, y2, z).setColor(argb).setUv(u2, v2).setUv1(0, 10).setLight(0xF000F0)
+                .setNormal(0.0F, 1.0F, 0.0F);
+        b.addVertex(m, x2, y1, z).setColor(argb).setUv(u2, v1).setUv1(0, 10).setLight(0xF000F0)
+                .setNormal(0.0F, 1.0F, 0.0F);
+    }
+
+    /** Pílula texturizada em 3 fatias (tampa + meio + tampa) — igual ao mundo. */
+    private static void pillGui(GuiGraphics g, RenderType tipo, float uCap, float z,
+            float x, float y, float w, float h, int argb) {
         if ((argb >>> 24) == 0 || w < 2) {
             return;
         }
-        int ix = Math.round(x);
-        int iy = Math.round(y);
-        int iw = Math.round(w);
-        int ih = Math.round(h);
-        int r = Math.min(ih / 2, iw / 2);
-        if (r < 2) {
-            g.fill(ix, iy, ix + iw, iy + ih, argb);
+        float capPx = uCap * 64.0F;
+        float cap = Math.min(capPx, w / 2.0F);
+        quadGui(g, tipo, z, x, y, x + cap, y + h, 0.0F, 0.0F, uCap, 1.0F, argb);
+        quadGui(g, tipo, z, x + cap, y, x + w - cap, y + h, uCap, 0.0F, 1.0F - uCap, 1.0F, argb);
+        quadGui(g, tipo, z, x + w - cap, y, x + w, y + h, 1.0F - uCap, 0.0F, 1.0F, 1.0F, argb);
+    }
+
+    /** ANEL/moldura texturizada (ring.png, cartum.png...) crescendo margin p/ fora. */
+    private static void ringGuiTex(GuiGraphics g, RenderType tipo, float uCap,
+            float x, float y, float w, float h, int argb, float margin) {
+        if ((argb >>> 24) == 0 || w < 4) {
             return;
         }
-        g.fill(ix + r, iy, ix + iw - r, iy + ih, argb); // miolo
-        for (int dy = 0; dy < r * 2; dy++) {
-            double dyc = dy - (r - 0.5);
-            int dx = (int) Math.floor(Math.sqrt((double) r * r - dyc * dyc));
-            g.fill(ix + r - dx, iy + dy, ix + r + 1, iy + dy + 1, argb);
-            g.fill(ix + iw - r - 1, iy + dy, ix + iw - r + dx + 1, iy + dy + 1, argb);
-        }
+        float capPx = uCap * 64.0F;
+        float cap = Math.min(capPx, w / 2.0F);
+        float y1 = y - margin, y2 = y + h + margin;
+        quadGui(g, tipo, 0.04F, x - margin, y1, x + cap, y2, 0.0F, 0.0F, uCap, 1.0F, argb);
+        quadGui(g, tipo, 0.04F, x + cap, y1, x + w - cap, y2, uCap, 0.0F, 1.0F - uCap, 1.0F, argb);
+        quadGui(g, tipo, 0.04F, x + w - cap, y1, x + w + margin, y2, 1.0F - uCap, 0.0F, 1.0F, 1.0F, argb);
     }
 
-    /** O RABICHO real (textura curvada) no menu. */
-    private void drawTail(GuiGraphics g, float cx, float yTop, float w, float h, int argb) {
-        if ((argb >>> 24) == 0) {
+    /** COSTURA no menu (portada do mundo): pontilhado em periodos de 8px 1:1. */
+    private static void costuraGui(GuiGraphics g, float x, float y, float w, float h, int argb, float margin) {
+        if ((argb >>> 24) == 0 || w < 40) {
             return;
         }
-        tailFill(g, Math.round(cx), Math.round(yTop), Math.round(w), Math.round(h), argb);
-    }
-
-
-    /** ESCURECE a cor (contorno dos gomos) sem perder a transparencia. */
-    private static int shaded(int argb, float fator) {
-        int a = (argb >>> 24) & 0xFF;
-        int r = (int) (((argb >>> 16) & 0xFF) * fator);
-        int gg = (int) (((argb >>> 8) & 0xFF) * fator);
-        int b = (int) ((argb & 0xFF) * fator);
-        return (a << 24) | (r << 16) | (gg << 8) | b;
-    }
-
-    /** CIRCULO preenchido via scanlines (fills — o metodo que SEMPRE funciona no menu). */
-    private void circleFill(GuiGraphics g, int cx, int cy, int r, int argb) {
-        for (int dy = -r; dy <= r; dy++) {
-            int dx = (int) Math.floor(Math.sqrt(r * (double) r - dy * (double) dy));
-            g.fill(cx - dx, cy + dy, cx + dx + 1, cy + dy + 1, argb);
-        }
-    }
-
-    /** Multiplica o RGB por um fator (0..255) mantendo alpha — igual ao tint do jogo. */
-    private static int shadeMask(int argb, int fator) {
-        int a = argb & 0xFF000000;
-        int r = ((argb >>> 16) & 0xFF) * fator >> 8;
-        int g = ((argb >>> 8) & 0xFF) * fator >> 8;
-        int b = (argb & 0xFF) * fator >> 8;
-        return a | (r << 16) | (g << 8) | b;
-    }
-
-    /** ANEL de tinta 2px (contorno CLASSICA) via scanlines — igual ao ring.png do mundo. */
-    private void ringGui(GuiGraphics g, float x, float y, float w, float h, int argb, int margem) {
-        if ((argb >>> 24) == 0) {
-            return;
-        }
-        int ix = Math.round(x) - margem;
-        int iy = Math.round(y) - margem;
-        int iw = Math.round(w) + 2 * margem;
-        int ih = Math.round(h) + 2 * margem;
-        int ro = ih / 2;
-        int ri = Math.min(Math.round(h) / 2, Math.round(w) / 2);
-        for (int dy = 0; dy < ih; dy++) {
-            double dyc = dy - (ro - 0.5);
-            int dxo = (int) Math.floor(Math.sqrt((double) ro * ro - dyc * dyc));
-            int xl = ix + ro - dxo;
-            int xr = ix + iw - ro + dxo + 1;
-            boolean faixa = dy >= 2 && dy < ih - 2 && ri >= 2;
-            if (!faixa) {
-                g.fill(xl, iy + dy, xr, iy + dy + 1, argb);
-            } else {
-                double dyi = (dy - 2) - (ri - 0.5);
-                int dxi = (int) Math.floor(Math.sqrt((double) ri * ri - dyi * dyi));
-                int il = ix + 2 + ri - dxi;
-                int ir = ix + iw - 2 - ri - dxi;
-                g.fill(xl, iy + dy, il, iy + dy + 1, argb);
-                g.fill(ir, iy + dy, xr, iy + dy + 1, argb);
-            }
-        }
-    }
-
-    /**
-     * COSTURA no menu (3.27.0): pontinhos na SILHUETA da capsula (igual ao
-     * dashed.png do mundo) — fim do "quadrado bugado" do tracejado.
-     */
-    private void dottedGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
-        if ((argb >>> 24) == 0) {
-            return;
-        }
-        float raio = Math.min(h, w) / 2.0F + 1.0F;
-        float a = Math.round(x) + w / 2.0F;
-        float b = Math.round(y) + h / 2.0F;
-        float retaW = Math.max(0.0F, w - h);
-        float per = (float) (2.0 * Math.PI * raio + 2.0 * retaW);
-        int n = Math.max(10, Math.round(per / 8.0F));
+        final float cap = 16.0F;
+        quadGui(g, DASHED_TYPE, 0.04F, x - margin, y - margin, x + cap, y + h + margin,
+                0.0F, 0.0F, 32.0F / 192.0F, 1.0F, argb);
+        float avail = w - 2.0F * cap;
+        int n = (int) (avail / 8.0F);
         for (int i = 0; i < n; i++) {
-            float s = i * per / n;
-            float px2, py2;
-            if (s < Math.PI * raio) {
-                double ang = -Math.PI / 2.0 + s / raio;
-                px2 = (float) (a - retaW / 2.0 + raio * Math.cos(ang));
-                py2 = (float) (b + raio * Math.sin(ang));
-            } else if (s < Math.PI * raio + retaW) {
-                px2 = (float) (a - retaW / 2.0 + (s - Math.PI * raio));
-                py2 = b - raio;
-            } else if (s < 2.0 * Math.PI * raio + retaW) {
-                double ang = -Math.PI / 2.0 + (s - Math.PI * raio - retaW) / raio;
-                px2 = (float) (a + retaW / 2.0 + raio * Math.cos(ang));
-                py2 = (float) (b + raio * Math.sin(ang));
-            } else {
-                px2 = (float) (a + retaW / 2.0 - (s - 2.0 * Math.PI * raio - retaW));
-                py2 = b + raio;
-            }
-            g.fill(Math.round(px2) - 1, Math.round(py2) - 1,
-                    Math.round(px2) + 2, Math.round(py2) + 2, argb);
+            float u0 = (32.0F + (i % 4) * 8.0F) / 192.0F;
+            quadGui(g, DASHED_TYPE, 0.04F, x + cap + i * 8.0F, y - margin,
+                    x + cap + (i + 1) * 8.0F, y + h + margin, u0, 0.0F, u0 + 8.0F / 192.0F, 1.0F, argb);
         }
-    }
-
-    /** Pílula com BRILHO (faixa clara no topo + sombra embaixo) — eco do mundo. */
-    private void drawPillGloss(GuiGraphics g, float x, float y, float w, float h, int argb) {
-        drawPill(g, x, y, w, h, argb);
-        int ix = Math.round(x);
-        int iy = Math.round(y);
-        int iw = Math.round(w);
-        int ih = Math.round(h);
-        int r = Math.min(ih / 2, iw / 2);
-        if (ih >= 14) {
-            g.fill(ix + r, iy + 2, ix + iw - r, iy + 4, 0x2EFFFFFF);
-            g.fill(ix + r, iy + ih - 3, ix + iw - r, iy + ih - 1, 0x24000000);
+        float resto = avail - n * 8.0F;
+        if (resto > 0.3F) {
+            float u0 = (32.0F + (n % 4) * 8.0F) / 192.0F;
+            quadGui(g, DASHED_TYPE, 0.04F, x + cap + n * 8.0F, y - margin,
+                    x + cap + n * 8.0F + resto, y + h + margin, u0, 0.0F, u0 + resto / 192.0F, 1.0F, argb);
         }
-    }
-
-    /** TRIANGULO (rabicho) via scanlines. */
-    private void tailFill(GuiGraphics g, int cx, int yTop, int w, int h, int argb) {
-        for (int i = 0; i < h; i++) {
-            int half = Math.max(1, w / 2 - i * (w / 2) / h);
-            g.fill(cx - half, yTop + i, cx + half, yTop + i + 1, argb);
-        }
-    }
-
-    /** TRACEJADA no menu: tracinhos em volta + descadinha (igual ao mundo). */
-
-    /** NUVEM no menu: base inflada + gomos fofos em toda a volta (igual ao mundo). */
-    private void cloudGui(GuiGraphics g, float x, float y, float w, float h, int argb) {
-        if ((argb >>> 24) == 0) {
-            return;
-        }
-        int escuro = shaded(argb, 0.45F);
-        int cx = Math.round(x + w / 2.0F);
-        // rabinho de pensamento: bolinhas com contorno, diminuindo (Turma da Monica)
-        int by0 = Math.round(y) + Math.round(h);
-        circleFill(g, cx - 4, by0 + 6, 6, escuro);
-        circleFill(g, cx - 4, by0 + 6, 4, argb);
-        circleFill(g, cx + 2, by0 + 12, 5, escuro);
-        circleFill(g, cx + 2, by0 + 12, 3, argb);
-        circleFill(g, cx + 7, by0 + 17, 3, escuro);
-        circleFill(g, cx + 7, by0 + 17, 2, argb);
-        // gomos contornados ao redor (circulo escuro atras, claro na frente)
-        int iy = Math.round(y);
-        int ih = Math.round(h);
-        int n = Math.max(4, Math.round(w) / 16);
-        for (int i = 0; i <= n; i++) {
-            int gx = Math.round(x) - 4 + i * (Math.round(w) + 8) / n;
-            circleFill(g, gx, iy + 3, 8, escuro);
-            circleFill(g, gx, iy + ih - 3, 8, escuro);
-            circleFill(g, gx, iy + 3, 6, argb);
-            circleFill(g, gx, iy + ih - 3, 6, argb);
-        }
-        // corpo por cima com BRILHO (paridade com a textura nova do mundo)
-        drawPillGloss(g, x + 2, y - 2, w - 4, h + 4, argb);
+        quadGui(g, DASHED_TYPE, 0.04F, x + w - cap, y - margin, x + w + margin, y + h + margin,
+                160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
     }
 
     /** Clareia um RGB em direcao ao branco (k 0..1) — halo do Brilho. */
@@ -422,15 +336,12 @@ public class BubbleStyleScreen extends Screen {
 
     /** Insere um espaco entre cada emoji (legivel, nada de muro de adesivos). */
     private static String spaced(String s) {
-        if (s.length() <= 2) {
-            return s;
-        }
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < s.length(); i += 2) {
+        for (int i = 0; i < s.length(); i++) { // (3.50.0) 1 char = 1 emoji
             if (i > 0) {
                 sb.append(' ');
             }
-            sb.append(s, i, Math.min(i + 2, s.length()));
+            sb.append(s.charAt(i));
         }
         return sb.toString();
     }
@@ -473,10 +384,9 @@ public class BubbleStyleScreen extends Screen {
         g.fill(x + 2, y + 2, x + w - 1, y + 3, 0x58FFFFFF);     // brilho no topo
         g.fill(x + 1, y + 1, x + 3, y + h - 1, OURO_VIVO);      // acento lateral dourado
         if (titulo != null && !titulo.isEmpty()) {
-            int tw = this.font.width(titulo);
-            g.fill(x + 6, y - 3, x + 6 + tw + 8, y + 7, TINTA);     // etiqueta de tinta
-            g.fill(x + 7, y - 2, x + 6 + tw + 7, y + 6, PLACA_BG);  // recheio da etiqueta
-            g.drawString(this.font, titulo, x + 10, y, OURO, true);
+            // (3.50.0) titulo DENTRO da placa, reservando a primeira linha —
+            // antes a etiqueta flutuava FORA e comia a primeira fileira de opcoes
+            g.drawString(this.font, titulo, x + 10, y + 2, OURO, true);
         }
     }
 
@@ -485,16 +395,15 @@ public class BubbleStyleScreen extends Screen {
     // =====================================================================
 
     private int extrasCount() {
-        return style.extras().length() / 2;
+        return style.extras().length(); // (3.50.0) 1 char = 1 emoji (glifo PUA e BMP)
     }
 
-    /** @return os emojis extras separados (cada um com 2 chars UTF-16). */
+    /** @return os emojis extras (cada glifo PUA e UM char UTF-16). */
     private String[] extrasList() {
         String e = style.extras();
-        int n = e.length() / 2;
-        String[] out = new String[n];
-        for (int i = 0; i < n; i++) {
-            out[i] = e.substring(i * 2, i * 2 + 2);
+        String[] out = new String[e.length()];
+        for (int i = 0; i < e.length(); i++) {
+            out[i] = String.valueOf(e.charAt(i));
         }
         return out;
     }
@@ -514,15 +423,15 @@ public class BubbleStyleScreen extends Screen {
 
     private void removeExtra(int slot) {
         String e = style.extras();
-        if (slot >= 0 && slot * 2 + 2 <= e.length()) {
-            style = withExtras(e.substring(0, slot * 2) + e.substring(slot * 2 + 2));
+        if (slot >= 0 && slot < e.length()) { // (3.50.0) 1 char por emoji
+            style = withExtras(e.substring(0, slot) + e.substring(slot + 1));
         }
     }
 
     /** @return o slot da fileira de extras sob o mouse (-1 = nenhum). */
     private int extrasSlotAt(double mx, double my) {
-        int y0 = py + ROW_EXTRAS - 5;
-        if (my < y0 || my >= y0 + 24) {
+        int y0 = py + ROW_EXTRAS - 7; // (3.52.0) cobre o mini-X do canto
+        if (my < y0 || my >= y0 + 26) {
             return -1;
         }
         int slot = (int) Math.floor((mx - (px + EX_X)) / (double) EX_PITCH);
@@ -553,18 +462,27 @@ public class BubbleStyleScreen extends Screen {
             return null;
         }
         float[] c = stickerCenter();
-        int bx = Math.min(simX0 + simW - 13, Math.round(c[0]) + 16);
-        int by = Math.round(c[1]) - 6;
+        // (3.52.0) caixinha de 14px (era 12) — mais facil de clicar
+        int bx = Math.min(simX0 + simW - 15, Math.round(c[0]) + 16);
+        int by = Math.round(c[1]) - 7;
         return new int[]{bx, by};
     }
 
     private boolean removeBoxAt(double mx, double my) {
         int[] b = removeBoxPos();
-        return b != null && inBox(mx, my, b[0], b[1], 12, 12);
+        return b != null && inBox(mx, my, b[0], b[1], 14, 14);
     }
 
     @Override
     protected void init() {
+        try {
+            initInterno();
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: erro ao montar a tela do balao", t);
+        }
+    }
+
+    private void initInterno() {
         px = Math.max(2, (this.width - PANEL_W) / 2);
         py = Math.max(2, (this.height - PANEL_H) / 2);
         kbX = px + (PANEL_W - KB_COLS * KB_CELL) / 2;
@@ -602,32 +520,33 @@ public class BubbleStyleScreen extends Screen {
             return;
         }
 
-        addRenderableWidget(Button.builder(Component.literal("▣ Auto"), b -> {
-                    style = withBorder(BubbleStyle.AUTO_BORDER);
-                }).bounds(px + 8, py + ROW_BTN1, 81, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("▣ Minha cor"), b -> {
-                    style = withBorder(lastBorda);
-                }).bounds(px + 93, py + ROW_BTN1, 81, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("▢ Sem borda"), b -> {
-                    style = withBorder(BubbleStyle.NO_BORDER);
-                }).bounds(px + 178, py + ROW_BTN1, 81, 16).build());
-
+        // (3.51.1) ORDEM ARRUMADA: as 5 molduras em 2 fileiras de 3 e o
+        // botao de borda no ULTIMO espaco (nao sobra buraco na grade):
+        //   [Classica] [Cartum]  [Quadrada]
+        //   [Costura]  [Brilho]  [Sem borda]
         addRenderableWidget(Button.builder(Component.literal("▤ Clássica"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CLASSIC);
-                }).bounds(px + 8, py + ROW_BTN2, 81, 16).build());
+                }).bounds(px + 8, py + ROW_BTN1, 81, 16).build());
         addRenderableWidget(Button.builder(Component.literal("▤ Cartum"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CARTOON);
-                }).bounds(px + 93, py + ROW_BTN2, 81, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("☁ Nuvem"), b -> {
-                    style = withBorderStyle(BubbleStyle.BORDER_DOUBLE); // id 2 = NUVEM (3.47.0)
-                }).bounds(px + 178, py + ROW_BTN2, 81, 16).build());
+                }).bounds(px + 93, py + ROW_BTN1, 81, 16).build());
+        addRenderableWidget(Button.builder(Component.literal("\u25a3 Quadrada"), b -> {
+                    style = withBorderStyle(BubbleStyle.BORDER_DOUBLE); // id 2 = QUADRADA (3.50.0)
+                }).bounds(px + 178, py + ROW_BTN1, 81, 16).build());
 
         addRenderableWidget(Button.builder(Component.literal("∴ Costura"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_DASHED);
-                }).bounds(px + 8, py + ROW_BTN3, 81, 16).build());
+                }).bounds(px + 8, py + ROW_BTN2, 81, 16).build());
         addRenderableWidget(Button.builder(Component.literal("◕ Brilho"), b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CLOUD);
-                }).bounds(px + 93, py + ROW_BTN3, 81, 16).build());
+                }).bounds(px + 93, py + ROW_BTN2, 81, 16).build());
+        // (3.51.0) Auto e "Minha cor" SAIRAM (obsoletos: a cor da borda se
+        // escolhe na paleta "Borda:" ali em cima). Ficou UM botao claro.
+        addRenderableWidget(Button.builder(bordaToggleLabel(), b -> {
+                    style = withBorder(style.borderRGB() == BubbleStyle.NO_BORDER
+                            ? lastBorda : BubbleStyle.NO_BORDER);
+                    b.setMessage(bordaToggleLabel());
+                }).bounds(px + 178, py + ROW_BTN2, 81, 16).build());
         addRenderableWidget(Button.builder(Component.literal("✦ Adesivos (80)"), b -> {
                     showKeyboard = true;
                     rebuildWidgets();
@@ -707,6 +626,13 @@ public class BubbleStyleScreen extends Screen {
         return Component.literal("⏱ " + style.durationSec() + "s");
     }
 
+    /** (3.51.0) rotulo do botao Sem borda / Com borda. */
+    private Component bordaToggleLabel() {
+        return style.borderRGB() == BubbleStyle.NO_BORDER
+                ? Component.literal("\u25a3 Com borda")
+                : Component.literal("\u25a2 Sem borda");
+    }
+
     private Component modeLabel() {
         return this.bubbleMode
                 ? Component.literal("☾ Balão: LIGADO").withStyle(ChatFormatting.GREEN)
@@ -731,16 +657,27 @@ public class BubbleStyleScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g, mouseX, mouseY, partialTick);
-        drawPanel(g);
-        drawTitle(g);
+        // (3.50.1) A PROVA DE CRASH (mesma filosofia do mundo): qualquer erro
+        // no desenho da tela NAO fecha o jogo — cai pro modo simples (so os
+        // BOTOES continuam) e registra o motivo no log.
+        try {
+            drawPanel(g);
+            drawTitle(g);
 
-        if (!showKeyboard) {
-            renderSim(g, mouseX, mouseY);
-            renderPalettes(g);
-            renderExtras(g, mouseX, mouseY);
-            renderHint(g, mouseX, mouseY);
+            if (!showKeyboard) {
+                renderSim(g, mouseX, mouseY);
+                renderPalettes(g);
+                renderExtras(g, mouseX, mouseY);
+                renderHint(g, mouseX, mouseY);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: erro ao desenhar a tela do balao (modo simples ativado)", t);
+            g.drawCenteredString(this.font, "Previa indisponivel - os botoes seguem funcionando",
+                    this.width / 2, py + 52, 0xFFFF7070);
         }
         super.render(g, mouseX, mouseY, partialTick);
+
+        try {
 
         // EMOJIS/CORES por cima dos widgets (drawInBatch = familia do TEXTO que
         // sempre funcionou; "█" colorido = unifont colorido das paletas ●)
@@ -753,18 +690,20 @@ public class BubbleStyleScreen extends Screen {
         }
         if (!showKeyboard) {
             int st = Mth.clamp(style.borderStyle(), 0, BubbleStyle.BORDER_STYLE_COUNT - 1);
+            if (st == 5) {
+                st = 2; // (3.50.0) Gibi/Nuvem migraram pra Quadrada
+            }
             if (style.borderRGB() == BubbleStyle.NO_BORDER) {
-                outline(g, px + 7 + 170, py + ROW_BTN1 - 1, 83, 18, VERDE_OK);
-            } else if (style.borderRGB() >= 0) {
-                outline(g, px + 7 + 85, py + ROW_BTN1 - 1, 83, 18, VERDE_OK);
-            } else {
-                outline(g, px + 7, py + ROW_BTN1 - 1, 83, 18, VERDE_OK);
+                outline(g, px + 7 + 170, py + ROW_BTN2 - 1, 83, 18, VERDE_OK);
             }
             if (st < 3) {
-                outline(g, px + 7 + st * 85, py + ROW_BTN2 - 1, 83, 18, VERDE_OK);
+                outline(g, px + 7 + st * 85, py + ROW_BTN1 - 1, 83, 18, VERDE_OK);
             } else {
-                outline(g, px + 7 + (st - 3) * 85, py + ROW_BTN3 - 1, 83, 18, VERDE_OK);
+                outline(g, px + 7 + (st - 3) * 85, py + ROW_BTN2 - 1, 83, 18, VERDE_OK);
             }
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: erro no overlay da tela do balao", t);
         }
     }
 
@@ -797,40 +736,44 @@ public class BubbleStyleScreen extends Screen {
             return;
         }
         if (holdingSticker != null) {
-            hint = "▶ Clique NA BORDA do balão pra colar (com os emotes) · ESC solta";
+            hint = "Esquerda do balao = adesivo \u00b7 Direita = emoji \u00b7 ESC solta";
             cor = ZONA_OURO;
         } else if (extrasCount() > 0) {
-            hint = "✨ " + extrasCount() + " emoji(s) na fala · clique em ✖ pra tirar";
+            hint = "Clique no X vermelho pra tirar um emoji";
             cor = OURO;
         } else {
-            hint = "✦ Prévia REAL: é EXATAMENTE assim que aparece no mundo";
+            hint = "✦ Prévia REAL: é EXATAMENTE assim que fica no mundo";
         }
         g.drawString(this.font, hint, px + 10, py + ROW_HINT, cor, true);
     }
 
-    /** @return dica da moldura sob o mouse (ou null). */
+    /** @return dica da moldura sob o mouse (ou null) — alinhada aos BOTOES. */
     private String molduraHover(int mouseX, int mouseY) {
         boolean l1 = mouseY >= py + ROW_BTN1 - 2 && mouseY <= py + ROW_BTN1 + 18;
         boolean l2 = mouseY >= py + ROW_BTN2 - 2 && mouseY <= py + ROW_BTN2 + 18;
         if (l1) {
             if (mouseX >= px + 8 && mouseX <= px + 89) {
-                return "§fClassica§7: contorno com relevo e brilho";
+                return "\u00a7fClassica\u00a77: contorno com relevo e brilho";
             }
             if (mouseX >= px + 93 && mouseX <= px + 174) {
-                return "§fCartum§7: tinta grossa de quadrinho";
+                return "\u00a7fCartum\u00a77: tinta grossa de quadrinho";
             }
             if (mouseX >= px + 178 && mouseX <= px + 259) {
-                return "§fNuvem§7: balao de pensamento fofo (bolinhas)";
+                return "\u00a7fQuadrada\u00a77: balao meio quadrado, cantinhos suaves";
             }
         }
         if (l2) {
             if (mouseX >= px + 8 && mouseX <= px + 89) {
-                return "§fCostura§7: pontilhado fino seguindo o balao";
+                return "\u00a7fCostura\u00a77: pontilhado fino seguindo o balao";
             }
             if (mouseX >= px + 93 && mouseX <= px + 174) {
-                return "§fBrilho§7: halo suave ao redor do balao";
+                return "\u00a7fBrilho\u00a77: halo suave ao redor do balao";
             }
-
+            if (mouseX >= px + 178 && mouseX <= px + 259) {
+                return style.borderRGB() == BubbleStyle.NO_BORDER
+                        ? "\u00a7fCom borda\u00a77: traz de volta a ultima cor de borda clicada"
+                        : "\u00a7fSem borda\u00a77: balao limpo, sem contorno";
+            }
         }
         return null;
     }
@@ -842,123 +785,148 @@ public class BubbleStyleScreen extends Screen {
         g.fill(x + w - 1, y, x + w, y + h, color);
     }
 
-    /** SIMULACAO com a PILULA REAL do mundo: mesma textura, rabicho e MOLDURAS de verdade. */
+    /**
+     * (3.50.0) SIMULACAO = O MUNDO: ceu+grama por BLIT (textura de verdade,
+     * estica sem depender de fills) e o balao pelos MESMOS quads texturizados
+     * do BubbleRenderer (pílula, molduras, rabicho). O menu agora mostra
+     * PIXEL A PIXEL como o balao fica sobre a cabeca — fim da "previa bugada".
+     */
     private void renderSim(GuiGraphics g, int mouseX, int mouseY) {
         int colorRGB = style.colorRGB() & 0xFFFFFF;
         int fill = BubbleBackgrounds.fillColorFor(colorRGB);
         int border = BubbleBackgrounds.borderColorFor(colorRGB, style.borderRGB());
         int textColor = effectiveTextColor();
         int bsC = Mth.clamp(Math.max(0, style.borderStyle()), 0, BubbleStyle.BORDER_STYLE_COUNT - 1);
+        if (bsC == 5) {
+            bsC = 2; // (3.50.0) antigo Gibi/Nuvem migraram pro balao QUADRADO
+        }
 
         // --- linha do chat (igual ao chat real: nome na cor do balao) ---
+        // (3.55.0) a previa usa a ULTIMA FALA REAL do jogador: so escrever
+        // no chat (com a tela fechada) e abrir o /balao pra ver a sua frase
+        String fala = falaPrev();
         int chatY = py + ROW_CHAT;
-        g.drawString(this.font, "<Você> ", px + 12, chatY, 0xFF000000 | colorRGB, true);
-        g.drawString(this.font, "sua fala assim", px + 12 + this.font.width("<Você> "),
+        g.drawString(this.font, "<Voc\u00ea> ", px + 12, chatY, 0xFF000000 | colorRGB, true);
+        g.drawString(this.font, fala, px + 12 + this.font.width("<Voc\u00ea> "),
                 chatY, textColor, true);
         String ex = style.extras();
         if (!ex.isEmpty()) {
             g.drawString(this.font, Stickers.styled(spaced(ex)),
-                    px + 12 + this.font.width("<Você> sua fala assim "), chatY, textColor, true);
+                    px + 12 + this.font.width("<Voc\u00ea> " + fala + " "), chatY, textColor, true);
         }
 
-        // --- CARD DE PREVIA (3.49.0): fundo de CEU + grama = o mundo de
-        // verdade (balao branco contra fundo escuro sumia e a previa
-        // "nao aparecia como fica no jogo")
-        for (int sy = 0; sy < 42; sy++) {
-            float f = sy / 41.0F;
-            int rr = (int) (108 + 70 * f);
-            int gg = (int) (160 + 60 * f);
-            int bb = (int) (235 + 15 * f);
-            g.fill(px + 8, py + 40 + sy, px + PANEL_W - 8, py + 41 + sy,
-                    0xFF000000 | (rr << 16) | (gg << 8) | bb);
-        }
-        g.fill(px + 8, py + 82, px + PANEL_W - 8, py + 96, 0xFF59A52E); // grama
-        g.fill(px + 8, py + 82, px + PANEL_W - 8, py + 84, 0xFF6FBD3A); // luz da grama
-        outline(g, px + 8, py + 40, PANEL_W - 16, 56, 0xFF2A3248);
-        g.fill(px + 8, py + 40, px + PANEL_W - 8, py + 41, OURO_VIVO);
-        g.fill(px + 8, py + 95, px + PANEL_W - 8, py + 96, 0x40000000);
-        int tagW = this.font.width("👀 Prévia") + 10;
-        g.fill(px + 12, py + 85, px + 12 + tagW, py + 95, 0xFF0D1220);
-        g.fill(px + 12, py + 85, px + 14, py + 95, OURO_VIVO);
-        g.drawString(this.font, "👀 Prévia", px + 16, py + 87, OURO, true);
+        // --- CARD DE PREVIA: CEU + GRAMA (blit estica a textura inteira) ---
+        int cardX = px + 8, cardY = py + CARD_Y, cardW = PANEL_W - 16, cardH = CARD_H;
+        g.blit(SKY_TEX, cardX, cardY, 0, 0, cardW, cardH, cardW, cardH);
+        outline(g, cardX, cardY, cardW, cardH, 0xFF2A3248);
+        g.fill(cardX, cardY, cardX + cardW, cardY + 1, OURO_VIVO);
+        String tag = "\u2726 Prev\u00eda no mundo";
+        int tagW = this.font.width(tag) + 8;
+        g.fill(cardX + 4, cardY + cardH - 12, cardX + 4 + tagW, cardY + cardH - 2, 0xCC0D1220);
+        g.fill(cardX + 4, cardY + cardH - 12, cardX + 6, cardY + cardH - 2, OURO_VIVO);
+        g.drawString(this.font, tag, cardX + 8, cardY + cardH - 10, OURO, true);
         // RECORTE: o balao vive DENTRO do card — nada invade as outras linhas
-        g.enableScissor(px + 9, py + 41, px + PANEL_W - 9, py + 95);
+        g.enableScissor(cardX + 1, cardY + 1, cardX + cardW - 1, cardY + cardH - 1);
 
-        // --- medidas da pilula (O BALAO DE VERDADE, tingido) ---
-        // (3.24.0) ZOOM NO CONTEUDO: a fala aparece 2x pra dar pra LER bem o
-        // que vai pro mundo antes de testar. Se nao couber, cai pra 1.5x.
+        // --- medidas da pilula (as MESMAS contas do mundo) ---
         boolean hasCorner = !style.corner().isEmpty();
-        boolean temAdesivo = hasCorner || !ex.isEmpty(); // (3.32.0) emotes = coluna
-        int falaW1x = this.font.width("sua fala assim");
-        float K = (falaW1x * 2 + 34 > 246) ? 1.5F : 2.0F; // zoom do texto
-        int conteudoW = Math.round(falaW1x * K);
-        // (3.43.0) MESMO REDESENHO do mundo: nada de "emblema pregado na
-        // borda" (metade pra fora) — o emoji/adesivo vive numa COLUNA
-        // DENTRO da pilula, do lado escolhido, ao lado do texto. A previa
-        // agora e EXATAMENTE o que acontece no jogo (antes divergia: aqui
-        // era um drag-and-drop livre em 2D, no mundo virou uma margem fixa
-        // de um lado so — pareciam balões diferentes).
-        int emblemItems = (hasCorner ? 1 : 0) + ex.length();
-        float emblemColW = emblemItems > 0
-                ? emblemItems * BADGE_PX + (emblemItems - 1) * BADGE_GAP_PX : 0;
-        emblemOnRight = style.stickerX() >= 50;
-        int emblemSpace = temAdesivo ? Math.round(TEXT_GAP_PX + emblemColW) : 0;
-        simW = Math.max(170, Math.min(246, conteudoW + 28 + emblemSpace));
-        simH = Math.round(this.font.lineHeight * K) + 8;
+        boolean temAdesivo = hasCorner || !ex.isEmpty(); // 1 char = 1 emoji (3.50.0)
+        // (3.51.0) DUAS COLUNAS como no mundo: adesivo na ESQUERDA, emojis
+        // na DIREITA — um de cada lado, com figuras diferentes.
+        float leftW = hasCorner ? BADGE_PX + TEXT_GAP_PX : 0;
+        float rightW = ex.length() > 0
+                ? ex.length() * BADGE_PX + (ex.length() - 1) * BADGE_GAP_PX + TEXT_GAP_PX : 0;
+        // (3.56.0) a previa QUEBRA a fala em linhas (igual ao mundo): mais
+        // palavras = mais balao PRA CIMA — o texto nunca mais vaza da pilula
+        java.util.List<String> linhasPrev = wrapPrev(falaPrev(), 110);
+        float K = 2.0F;
+        if (linhasPrev.size() > 2) {
+            K = 1.5F;
+            linhasPrev = wrapPrev(falaPrev(), 150);
+        }
+        if (linhasPrev.size() > 3) {
+            K = 1.2F;
+            linhasPrev = wrapPrev(falaPrev(), 185);
+        }
+        if (linhasPrev.size() > 4) {
+            K = 0.95F;
+            linhasPrev = wrapPrev(falaPrev(), 220);
+        }
+        int textWPrev = 0;
+        for (String l : linhasPrev) {
+            textWPrev = Math.max(textWPrev, this.font.width(l));
+        }
+        simW = Math.max(170, Math.min(246,
+                Math.round(textWPrev * K) + 28 + Math.round(leftW + rightW)));
+        simH = Math.round(linhasPrev.size() * this.font.lineHeight * K) + 8;
         simX0 = px + (PANEL_W - simW) / 2;
-        simY = py + 56; // centralizado no card; emblema acima nunca cortado pelo scissor
-        int ring = border != 0 ? border : fill;
+        simY = cardY + 5;
+        float margem = MARGEM[Math.max(0, Math.min(bsC, MARGEM.length - 1))];
         float cx = simX0 + simW / 2.0F;
 
         // --- SOMBRA (como no mundo) ---
-        drawPill(g, simX0 + 1, simY + 1, simW, simH, 0x40000000);
+        boolean quadradaPrev = (bsC == 2);
+        if (quadradaPrev) {
+            pillGui(g, QUAD_TYPE, U_CAP_Q, 0.02F, simX0 + 1, simY + 2, simW, simH, 0x33000000);
+        } else {
+            pillGui(g, BUBBLE_TYPE, U_CAP_B, 0.02F, simX0 + 1, simY + 2, simW, simH, 0x33000000);
+        }
 
-        // --- MOLDURA REAL (as 6, iguais as do mundo) ---
+        // --- MOLDURA REAL (texturas DO MUNDO; mesma margem de cada estilo) ---
         if (border != 0) {
             switch (bsC) {
-                case 1 -> { // CARTUM: tinta grossa (margem 4, igual ao mundo)
-                    ringGui(g, simX0, simY, simW, simH, border, 4);
-                    drawTail(g, cx, simY + simH - 4, 19, 17, border);
+                case 1 -> // CARTUM: tinta grossa
+                    ringGuiTex(g, CARTUM_TYPE, U_CAP_B, simX0, simY, simW, simH, border, margem);
+                case 2 -> // QUADRADA: contorno de cantinhos arredondados
+                    pillGui(g, QUAD_TYPE, U_CAP_Q, 0.04F, simX0 - margem, simY - margem,
+                            simW + 2.0F * margem, simH + 2.0F * margem, border);
+                case 3 -> // COSTURA: tracinhos em periodos de 8px (igual ao mundo)
+                    costuraGui(g, simX0, simY, simW, simH, border, margem);
+                case 4 -> { // BRILHO: halo CLARO + anel fino
+                    int halo = 0xCC000000 | lightenGui(colorRGB, 0.55F);
+                    ringGuiTex(g, BRILHO_TYPE, U_CAP_B, simX0, simY, simW, simH, halo, margem);
+                    ringGuiTex(g, RING_TYPE, U_CAP_B, simX0, simY, simW, simH, border, 2.0F);
                 }
-                case 2, 5 -> { // NUVEM (3.47.0): bolas + bolinhas (igual ao mundo)
-                    nuvemGui(g, simX0, simY, simW, simH, border);
-                }
-                case 3 -> dottedGui(g, simX0, simY, simW, simH, border); // COSTURA
-                case 4 -> { // BRILHO: halo CLARO + anel fino (igual ao mundo)
-                    ringGui(g, simX0, simY, simW, simH,
-                            0xCC000000 | lightenGui(colorRGB, 0.55F), 4);
-                    ringGui(g, simX0, simY, simW, simH, border, 2);
-                    drawTail(g, cx, simY + simH - 3, 14, 12, border);
-                }
-                default -> { // CLASSICA: contorno com relevo (igual ao mundo)
-                    ringGui(g, simX0, simY, simW, simH, border, 2);
-                    drawTail(g, cx, simY + simH - 3, 14, 12, border);
-                }
+                default -> // CLASSICA: contorno com relevo
+                    ringGuiTex(g, RING_TYPE, U_CAP_B, simX0, simY, simW, simH, border, margem);
             }
         }
 
-        // --- RECHEIO + rabicho (nuvem = bolinhas em vez de triangulo) ---
-        boolean nuvemGui = (bsC == 2 || bsC == 5);
-        if (!nuvemGui) {
-            drawTail(g, cx, simY + simH - 2, 12, 10, fill);
+        // --- RECHEIO (a pilula cobre o encaixe do rabicho, igual ao mundo) ---
+        if (quadradaPrev) {
+            pillGui(g, QUAD_TYPE, U_CAP_Q, 0.05F, simX0, simY, simW, simH, fill);
         } else {
-            drawPill(g, cx - 4.5F, simY + simH + 5, 9, 9, fill);
-            drawPill(g, cx + 0.5F, simY + simH + 11, 7, 7, fill);
-            drawPill(g, cx + 5.0F, simY + simH + 16, 5, 5, fill);
+            pillGui(g, BUBBLE_TYPE, U_CAP_B, 0.05F, simX0, simY, simW, simH, fill);
         }
-        drawPillGloss(g, simX0, simY, simW, simH, fill);
+        // (3.56.0) RABICHO PIXEL = os MESMOS degraus do mundo (nem quadrado,
+        // nem triangulo): contorno = degraus expandidos, recheio = degraus
+        int icx = Math.round(cx) + 1;
+        int ty0 = simY + simH - 1;
+        if (border != 0) {
+            g.fill(icx - 8, ty0 - 1, icx + 8, ty0 + 5, border);
+            g.fill(icx - 4, ty0 + 3, icx + 5, ty0 + 10, border);
+        }
+        // (3.56.1) texel da pilula e 248 (nao 255): fora da Quadrada, o
+        // rabicho usa a cor escalada pra ficar EXATAMENTE igual ao balao
+        int fillTex = quadradaPrev ? fill : escalaTexel(fill);
+        g.fill(icx - 7, ty0, icx + 7, ty0 + 4, fillTex);
+        g.fill(icx - 3, ty0 + 4, icx + 4, ty0 + 9, fillTex);
+        endBatch();
 
-        // --- fala DENTRO da pilula (o ring por tras garante o recorte) ---
-        // (3.43.0) a coluna de texto fica do lado OPOSTO ao emblema — sobra
-        // sempre TEXT_GAP de respiro entre letra e emoji, os dois sempre
-        // cabendo dentro da capsula (a largura dela ja reserva isso).
-        int tx = emblemOnRight ? simX0 + 14 : simX0 + simW - 14 - conteudoW;
-        int tyText = simY + (simH - Math.round(this.font.lineHeight * K)) / 2; // centralizado de verdade
-        g.pose().pushPose();
-        g.pose().translate(tx, tyText, 0.0F);
-        g.pose().scale(K, K, 1.0F); // ZOOM: a fala do preview legivel de longe
-        g.drawString(this.font, "sua fala assim", 0, 0, textColor, true);
-        g.pose().popPose();
+        // --- fala em MULTI-LINHAS dentro da pilula (zoom K, centrada) ---
+        int tx = simX0 + 14 + (int) leftW;
+        int blockH = Math.round(linhasPrev.size() * this.font.lineHeight * K);
+        int tyText = simY + (simH - blockH) / 2;
+        int cumPrev = 0;
+        for (String linha : linhasPrev) {
+            int lw = this.font.width(linha);
+            g.pose().pushPose();
+            g.pose().translate(tx + (textWPrev - lw) * K / 2.0F, tyText + cumPrev, 0.0F);
+            g.pose().scale(K, K, 1.0F);
+            g.drawString(this.font, linha, 0, 0, textColor, true);
+            g.pose().popPose();
+            cumPrev += Math.round(this.font.lineHeight * K);
+        }
 
         g.disableScissor();
 
@@ -968,25 +936,25 @@ public class BubbleStyleScreen extends Screen {
             outline(g, simX0 - 6, simY - 6, simW + 12, simH + 18, ZONA_VERDE);
         }
 
-        // --- (3.43.0) EMBLEMA = COLUNA DENTRO DA PILULA (igual ao mundo) ---
-        // Adesivo (se tiver) + emotes, um do lado do outro, sempre DENTRO da
-        // capsula — nunca mais "em cima das letras" nem "flutuando fora".
-        emblemColX = emblemOnRight ? simX0 + simW - 8 - emblemColW : simX0 + 8;
+        // --- EMBLEMA = DUAS COLUNAS DENTRO DA PILULA (igual ao mundo) ---
+        // ESQUERDA = adesivo (com o X pra tirar) · DIREITA = emojis da fala
+        emblemColX = simX0 + 8;
         emblemBadgeY = simY + (simH - BADGE_PX) / 2.0F;
         if (temAdesivo) {
             int i = 0;
             if (hasCorner) {
-                int idx = (style.corner().charAt(0) & 0xFFFF) - 0xE000;
+                int idx = (style.corner().codePointAt(0)) - 0xE000;
                 if (idx < 0 || idx >= Stickers.COUNT) {
                     idx = 0;
                 }
                 drawGlyphMenu(g, idx, Math.round(emblemColX), Math.round(emblemBadgeY),
                         BADGE_PX / 16.0F);
                 int[] rb = removeBoxPos();
-                if (rb != null) { // [x] SEMPRE visivel: impossivel nao achar como tirar
-                    g.fill(rb[0], rb[1], rb[0] + 12, rb[1] + 12, 0xFFB03030);
-                    g.fill(rb[0] + 1, rb[1] + 1, rb[0] + 11, rb[1] + 11, 0xFFD85858);
-                    g.drawString(this.font, "✖", rb[0] + 2, rb[1] + 2, 0xFFFFFFFF, false);
+                if (rb != null) { // [X] SEMPRE visivel: impossivel nao achar como tirar
+                    // (3.52.0) X MAIOR (14px) e centralizado — o "X sumiu" acabou
+                    g.fill(rb[0], rb[1], rb[0] + 14, rb[1] + 14, 0xFFB03030);
+                    g.fill(rb[0] + 1, rb[1] + 1, rb[0] + 13, rb[1] + 13, 0xFFD85858);
+                    g.drawString(this.font, "X", rb[0] + 4, rb[1] + 3, 0xFFFFFFFF, false);
                 }
                 float bx = emblemColX + BADGE_PX / 2.0F;
                 float by = emblemBadgeY + BADGE_PX / 2.0F;
@@ -996,14 +964,17 @@ public class BubbleStyleScreen extends Screen {
                 }
                 i++;
             }
-            for (int k = 0; k < ex.length(); k++) {
-                int eIdx = (ex.charAt(k) & 0xFFFF) - 0xE000;
-                if (eIdx < 0 || eIdx >= Stickers.COUNT) {
-                    eIdx = 0;
+            if (!ex.isEmpty()) { // coluna da DIREITA: os emojis da fala
+                float rColX = simX0 + simW - 8
+                        - (ex.length() * BADGE_PX + (ex.length() - 1) * BADGE_GAP_PX);
+                for (int k = 0; k < ex.length(); k++) { // 1 char = 1 emoji (fix 3.50.0)
+                    int eIdx = (ex.codePointAt(k)) - 0xE000;
+                    if (eIdx < 0 || eIdx >= Stickers.COUNT) {
+                        eIdx = 0;
+                    }
+                    drawGlyphMenu(g, eIdx, Math.round(rColX + k * (BADGE_PX + BADGE_GAP_PX)),
+                            Math.round(emblemBadgeY), BADGE_PX / 16.0F);
                 }
-                drawGlyphMenu(g, eIdx, Math.round(emblemColX + i * (BADGE_PX + BADGE_GAP_PX)),
-                        Math.round(emblemBadgeY), BADGE_PX / 16.0F);
-                i++;
             }
         } else {
             hoverSticker = false;
@@ -1020,7 +991,7 @@ public class BubbleStyleScreen extends Screen {
     }
 
     private void renderPalettes(GuiGraphics g) {
-        plate(g, px + 4, py + 96, PANEL_W - 8, 49, "🎨 Cores");
+        plate(g, px + 4, py + 102, PANEL_W - 8, 62, "\u25cf Cores");
         drawSwatchRow(g, py + ROW_DENTRO, "Dentro:", SW_IN, style.colorRGB());
         drawSwatchRow(g, py + ROW_BORDA, "Borda:", SW_BD,
                 style.borderRGB() >= 0 ? style.borderRGB() : -1);
@@ -1037,7 +1008,7 @@ public class BubbleStyleScreen extends Screen {
         g.drawString(this.font, "[Auto]", px + SW_X, ly + (auto ? -1 : 1),
                 auto ? VERDE_OK : CINZA, true);
         if (auto) {
-            g.drawString(this.font, "▼", px + SW_X + 12, ly - 9, VERDE_OK, false);
+            g.drawString(this.font, "\u25bc", px + SW_X + 12, ly - 9, VERDE_OK, false);
         }
         MutableComponent row = Component.empty();
         for (int c : TEXT_SW) {
@@ -1047,22 +1018,25 @@ public class BubbleStyleScreen extends Screen {
         if (!auto && style.textColorRGB() >= 0) {
             int i = indexOf(TEXT_SW, style.textColorRGB());
             if (i >= 0) {
-                g.drawString(this.font, "▼", px + SW_X + swSlotW * 4 + i * swSlotW + 3,
+                g.drawString(this.font, "\u25bc", px + SW_X + swSlotW * 4 + i * swSlotW + 3,
                         ly - 9, 0xFFFFFFFF, false);
             }
         }
-        plate(g, px + 4, py + 140, PANEL_W - 8, 64, "🖼 Moldura");
+        plate(g, px + 4, py + 168, PANEL_W - 8, 50, "\u25cf Moldura"); // (3.51.1) 2 fileiras
         // ICONE da moldura ativa (vede de relance qual esta escolhida)
-        String ic = switch (Mth.clamp(Math.max(0, style.borderStyle()), 0, 5)) {
-            case 1 -> "✒";
-            case 2 -> "◎";
-            case 3 -> "∴";
-            case 4 -> "◕";
-            case 5 -> "✦";
-            default -> "◉";
+        int stIc = Mth.clamp(Math.max(0, style.borderStyle()), 0, 5);
+        if (stIc == 5) {
+            stIc = 2; // (3.50.0) Gibi/Nuvem migraram pra Quadrada
+        }
+        String ic = switch (stIc) {
+            case 1 -> "\u2726";
+            case 2 -> "\u25a3";
+            case 3 -> "\u2234";
+            case 4 -> "\u25d5";
+            default -> "\u25c9";
         };
-        g.fill(px + PANEL_W - 28, py + 143, px + PANEL_W - 10, py + 159, 0xFF0D1220);
-        g.drawString(this.font, ic, px + PANEL_W - 23, py + 146, VERDE_OK, false);
+        g.fill(px + PANEL_W - 28, py + 171, px + PANEL_W - 10, py + 187, 0xFF0D1220);
+        g.drawString(this.font, ic, px + PANEL_W - 23, py + 174, VERDE_OK, false);
     }
 
     /**
@@ -1071,10 +1045,8 @@ public class BubbleStyleScreen extends Screen {
      * marca; clique tira (cheio) ou pega/abre (vazio); tooltip com o nome.
      */
     private void renderExtras(GuiGraphics g, int mouseX, int mouseY) {
-        int naFala = extrasCount();
-        int noBalao = style.corner().isEmpty() ? 0 : 1;
-        g.drawString(this.font, "✨ Emojis (" + naFala + "/" + MAX_SLOTS + " na fala · "
-                + noBalao + " no balão):", px + 8, py + ROW_EXTRAS - 1, OURO, true);
+        g.drawString(this.font, "Emojis (clique no X vermelho pra tirar):", px + 8,
+                py + ROW_EXTRAS + 1, OURO, true);
         String[] list = extrasList();
         int slot = extrasSlotAt(mouseX, mouseY);
         int y0 = py + ROW_EXTRAS - 3;
@@ -1084,20 +1056,76 @@ public class BubbleStyleScreen extends Screen {
             g.fill(sx + 1, y0 + 1, sx + 19, y0 + 19, 0xFF1E2432);
             if (s < list.length) {
                 drawGlyphMenu(g, (list[s].charAt(0) & 0xFFFF) - 0xE000, sx + 2, y0 + 2, 1.0F);
+                // (3.55.0) X vermelho GRANDE (10px) e SEMPRE visivel no canto
+                // do slot cheio — sem tooltip: clicou no slot = tirou
+                g.fill(sx + 10, y0 - 2, sx + 20, y0 + 8, 0xFFB03030);
+                g.fill(sx + 11, y0 - 1, sx + 19, y0 + 7, 0xFFD85858);
+                g.drawString(this.font, "X", sx + 13, y0, 0xFFFFFFFF, false);
                 if (s == slot) {
                     outline(g, sx - 1, y0 - 1, 22, 22, VERMELHO_TIRA);
-                    g.renderTooltip(this.font, Component.literal("✖ tirar " + nameOf(list[s])),
-                            mouseX, mouseY);
+                    // (3.55.0) o nome vai na LINHA DO TITULO (a tooltip
+                    // "tirar Morango" vivia presa na frente de tudo)
+                    String nome = "\u2716 tirar " + nameOf(list[s]);
+                    g.drawString(this.font, nome, px + PANEL_W - 8 - this.font.width(nome),
+                            py + ROW_EXTRAS + 1, VERMELHO_TIRA, true);
                 }
             } else {
                 g.drawString(this.font, "+", sx + 7, y0 + 6, 0xFF7A8498, false);
                 if (s == slot) {
                     outline(g, sx - 1, y0 - 1, 22, 22, VERDE_OK);
-                    g.renderTooltip(this.font,
-                            Component.literal("adicionar emoji"), mouseX, mouseY);
                 }
             }
         }
+    }
+
+    /**
+     * (3.55.0) a fala da previa = a ULTIMA frase que o jogador escreveu no
+     * chat (sem comando). Se ainda nao escreveu nada, usa o exemplo.
+     */
+    private static String falaPrev() {
+        String f = ClientRPStates.ultimaFala;
+        return (f == null || f.isBlank()) ? "sua fala assim" : f;
+    }
+
+    /** (3.56.1) multiplica o RGB por 248/255 (texel do recheio da pilula). */
+    private static int escalaTexel(int argb) {
+        int a = (argb >>> 24) & 0xFF;
+        int r = Math.min(255, (int) (((argb >>> 16) & 0xFF) * 248.0F / 255.0F + 0.5F));
+        int g = Math.min(255, (int) (((argb >>> 8) & 0xFF) * 248.0F / 255.0F + 0.5F));
+        int b = Math.min(255, (int) ((argb & 0xFF) * 248.0F / 255.0F + 0.5F));
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    /**
+     * (3.56.0) quebra gulosa por palavras (palavra gigante e fatiada) — a
+     * previa usa as MESMAS regras de largura do mundo.
+     */
+    private java.util.List<String> wrapPrev(String texto, float maxW) {
+        java.util.List<String> linhas = new java.util.ArrayList<>();
+        for (String bruta : texto.split(" ")) {
+            String w = bruta;
+            while (!w.isEmpty() && this.font.width(w) > maxW) {
+                int cut = w.length() - 1;
+                while (cut > 1 && this.font.width(w.substring(0, cut)) > maxW) {
+                    cut--;
+                }
+                linhas.add(w.substring(0, cut));
+                w = w.substring(cut);
+            }
+            if (w.isEmpty()) {
+                continue;
+            }
+            if (linhas.isEmpty()
+                    || this.font.width(linhas.get(linhas.size() - 1) + " " + w) > maxW) {
+                linhas.add(w);
+            } else {
+                linhas.set(linhas.size() - 1, linhas.get(linhas.size() - 1) + " " + w);
+            }
+        }
+        if (linhas.isEmpty()) {
+            linhas.add(texto);
+        }
+        return linhas;
     }
 
     /** @return nome do adesivo (pelo glifo) para tooltips. */
@@ -1184,6 +1212,16 @@ private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        try {
+            return cliqueInterno(mx, my, button);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: erro num clique da tela do balao", t);
+            holdingSticker = null;
+            return super.mouseClicked(mx, my, button);
+        }
+    }
+
+    private boolean cliqueInterno(double mx, double my, int button) {
         if (button == 0 && showKeyboard) {
             int idx = stickerAt(mx, my);
             if (idx >= 0) {
@@ -1196,15 +1234,19 @@ private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
         }
         if (!showKeyboard && button == 0 && holdingSticker != null) {
             String held = holdingSticker; // lido ANTES de soltar
-            // 1) NO balao da simulacao = adesivo LIVRE (posicao % salva)
+            // 1) NO balao da simulacao: METADE ESQUERDA = adesivo da coluna
+            // esquerda · METADE DIREITA = emoji(s) da coluna direita. Assim
+            // dá pra deixar um emoji DE CADA LADO, com figuras diferentes.
             if (inBox(mx, my, simX0 - 4, simY - 4, simW + 8, simH + 14)) {
                 holdingSticker = null;
-                int x = Mth.clamp((int) mx, simX0, simX0 + simW);
-                // (3.43.0) so o lado (esquerda/direita) importa agora — soltar
-                // na metade esquerda ou direita da pilula escolhe a margem.
-                // stickerY fica salvo sem uso (compatibilidade), nao afeta mais nada.
-                setSticker(Stickers.GLYPHS[Integer.parseInt(held)],
-                        Math.round((x - simX0) * 100.0F / simW), style.stickerY());
+                if (mx >= simX0 + simW / 2.0) { // DIREITA: vira emoji da fala
+                    if (extrasCount() >= MAX_SLOTS) {
+                        removeExtra(extrasCount() - 1); // substitui o ultimo
+                    }
+                    addExtra(Stickers.GLYPHS[Integer.parseInt(held)]);
+                } else { // ESQUERDA: vira o adesivo fixo
+                    setSticker(Stickers.GLYPHS[Integer.parseInt(held)], 25, style.stickerY());
+                }
                 return true;
             }
             // 2) slots de emojis: vazio = adiciona; cheio = tira (e solta)
@@ -1228,10 +1270,11 @@ private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
             if (holdingSticker == null) {
                 return super.mouseClicked(mx, my, button);
             }
-            // 4) qualquer outro lugar = EMPILHA na fala (e mantem na mao!)
-            if (extrasCount() < MAX_SLOTS) {
-                addExtra(Stickers.GLYPHS[Integer.parseInt(held)]);
-            }
+            // 4) qualquer outro lugar = SOLTA o adesivo. (3.52.0) FIM do
+            // "morango fantasma": antes ele empilhava na fala E ficava
+            // grudado no mouse — agora clicar fora do balao descarta.
+            // Pra empilhar emoji, use a metade DIREITA do balao (ou os slots).
+            holdingSticker = null;
             return true;
         }
         if (!showKeyboard && button == 0 && holdingSticker == null && removeBoxAt(mx, my)) {

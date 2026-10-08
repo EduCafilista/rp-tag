@@ -6,7 +6,7 @@
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-3.49.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.49.0.jar) (arquivo dentro do repositório).
+> 📥 **Download:** baixe o `rptag-3.52.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.52.0.jar) (arquivo dentro do repositório).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
@@ -79,12 +79,17 @@
 
 ### 📜 Lore Zones
 - Admins criam regiões com `/lorezone criar <id> <raio> <título>` que mostram **título épico na tela**, subtítulo e som quando um jogador entra (1x por sessão)
-- **Trilha em LOOP**: `/lorezone musica <id> <som> [intervalo]` toca uma música enquanto o jogador está na zona (para sozinha ao sair) — perfeita pra clima tenso
+- **Trilha em LOOP**: `/lorezone musica <id> <som>` (ou `<id> intervalo <segundos> <som>`) toca uma música enquanto o jogador está na zona (para sozinha ao sair) — perfeita pra clima tenso
+- **27 presets de som que tocam de verdade** (`/lorezone musicas`): caverna, coração do Warden, portal, trovão, vento das almas, dragão, discos… um som **substitui o outro** (nunca empilha) e som inválido é barrado na hora
+- **Música CUSTOM**: `/lorezone musica <id> @<nome>` toca o seu `.ogg` (pasta `config/rptag/musicas/` do cliente) em loop — converta qualquer música com `yt-dlp -x --audio-format vorbis`
+- **Música por LINK**: `/lorezone musica <id> https://site.com/tema.ogg` — os players baixam e tocam em loop sem fazer nada (`.ogg`/`.wav`; YouTube vira `.ogg` com yt-dlp)
+- **Volume no lado do jogador**: som pontual = slider *Ambiente* · música = slider *Música* (Opções → Música e Sons)
 - A história do servidor contada no próprio mapa
 
 ### 🏷️ Tag RP/OFF RP
 - **● ʀᴘ** (ponto ciano) ou **○ ᴏꜰꜰ ʀᴘ** (ponto cinza) no nome e **também no TAB** — small capitals, colorindo só a tag
 - Aparece no nametag, no chat e na TAB · `/rp` alterna, `/rp on|off|status`, `/rp set <jogador> on|off` (admin)
+- **`/rp ajuda` lista TODOS os comandos com a função de cada um** — admins veem também a seção de comandos de admin
 
 - **Tudo salvo no mundo** — sobrevive a relog, morte e reinício do servidor.
   Por padrão, todo mundo começa em **OFF RP**.
@@ -95,7 +100,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-3.49.0.jar` para a pasta `mods/` do **servidor**.
+2. Copie `rptag-3.50.0.jar` para a pasta `mods/` do **servidor**.
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -108,7 +113,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-3.49.0.jar`.
+O jar sai em `build/libs/rptag-3.50.0.jar`.
 
 ## 🎨 Personalizar
 

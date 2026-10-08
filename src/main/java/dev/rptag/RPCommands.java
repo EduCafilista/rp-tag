@@ -82,6 +82,49 @@ public final class RPCommands {
                 .withStyle(ChatFormatting.YELLOW), false); // (3.47.0) SO O ADMIN ve
     }
 
+    /**
+     * (3.50.0) /rp ajuda — lista TODOS os comandos com a funcao de cada um.
+     * Jogadores veem os comandos gerais; ADMIN tambem recebe a secao admin.
+     */
+    private static int ajuda(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
+        final boolean adm = ctx.getSource().hasPermission(2);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u00a76\u2554\u2550\u2550 RP Tag \u2014 COMANDOS \u2550\u2550"), false);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u00a7e/rp \u00a77\u2014 liga/desliga o modo RP (tag \u00a7b\u25cf RP\u00a7/\u00a77\u25cb off)\u00a7e\n"
+                + "/rp on|off \u00a77\u2014 define direto\u00a7e\n"
+                + "/rp status \u00a77\u2014 mostra seu estado (RP, persona, balao)\u00a7e\n"
+                + "/g <msg> \u00a77\u2014 fala GLOBAL (ouve o servidor todo)\u00a7e\n"
+                + "/s <msg> \u00a77\u2014 GRITA (alcance maior)\u00a7e\n"
+                + "/w <msg> \u00a77\u2014 sussurra (so quem esta colado ouve)\u00a7e\n"
+                + "/me <acao> \u00a77\u2014 acao em 3a pessoa (sem balao)\u00a7e\n"
+                + "/roll [NdN][+bonus] [motivo] \u00a77\u2014 dados pro evento (+3 = especialista)\u00a7e\n"
+                + "/persona criar <nome> \u00a77\u2014 cria sua persona\u00a7e\n"
+                + "/persona desc|idade|off|ver \u00a77\u2014 edita/ve a persona\u00a7e\n"
+                + "/balao \u00a77\u2014 TELA de personalizacao do balao\u00a7e\n"
+                + "/balao modo on|off \u00a77\u2014 fala so no balao (sem chat)"), false);
+        if (adm) {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a7c\u2014\u2014\u2014 SO ADMINS \u2014\u2014\u2014"), false);
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
+                    + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
+                    + "/rp admin avisar <jogador> <texto> \u00a77\u2014 texto grande na tela (cores &)\u00a7c\n"
+                    + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
+                    + "/rp admin bolha <jogador> on|off \u00a77\u2014 modo balao de outro\u00a7c\n"
+                    + "/rp admin balao <jogador> on|off \u00a77\u2014 libera/bloqueia o balao\u00a7c\n"
+                    + "/rp admin balaolist \u00a77\u2014 quem tem balao liberado\u00a7c\n"
+                    + "/rp admin bolhas on|off \u00a77\u2014 baloes do servidor inteiro\u00a7c\n"
+                    + "/do <texto> \u00a77\u2014 narracao de ambiente\u00a7c\n"
+                    + "/lorezone criar <id> <raio> <titulo> \u00a77\u2014 cria zona de lore onde voce esta\u00a7c\n"
+                    + "/lorezone texto|som|musica <id> ... \u00a77\u2014 edits a zona (musica aceita presets e @arquivo)\u00a7c\n"
+                    + "/lorezone musicas \u00a77\u2014 lista sons prontos + API de musica custom\u00a7c\n"
+                    + "/lorezone listar|remover <id> \u00a77\u2014 gerencia zonas\u00a7c\n"
+                    + "/effect give <jogador> rptag:medo <s> \u00a77\u2014 medo via efeito vanilla"), false);
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         LiteralArgumentBuilder<net.minecraft.commands.CommandSourceStack> root = Commands.literal("rp");
@@ -91,6 +134,10 @@ public final class RPCommands {
             ServerEvents.toggle(ctx.getSource().getPlayerOrException());
             return Command.SINGLE_SUCCESS;
         });
+
+        // (3.50.0) /rp ajuda (e /rp help) — lista comandos com a funcao de cada
+        root.then(Commands.literal("ajuda").executes(ctx -> ajuda(ctx)));
+        root.then(Commands.literal("help").executes(ctx -> ajuda(ctx)));
 
         // /rp on
         root.then(Commands.literal("on").executes(ctx -> {
