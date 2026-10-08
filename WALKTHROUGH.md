@@ -146,7 +146,13 @@ Commits recentes: `0e93318` (3.56.1) ← `69a211b` (3.56.0) ← `0d3f76e` (3.55.
 
 ## 7. Receitas operacionais
 
-### Toolchain do zero (o `/var/tmp`some entre sessões!)
+### Build pelo GRADLE (caminho dos humanos — o que o amigo usa)
+- O projeto é um **ModDevGradle 2.0.146** padrão (Gradle 9.2.1 via wrapper, NF 21.1.249, foojay-resolver).
+- `./gradlew build` → jar em `build/libs/rptag-<v>.jar`; `runClient`/`runServer` pra testar.
+- **Testado no sandbox até a etapa de descompilação do Minecraft** (wrapper ✓, plugin ✓, downloads ✓, 6 etapas do pipeline ✓) — a descompilação em si precisa de ~4 GB de RAM e o sandbox tem 2 GB (morre ali, KILL do cgroup, sem log de OOM). Em PC normal passa. NÃO mandar patch de memória pro repo (cache local do sandbox só).
+- Guia do dev externo: `COMO-EDITAR.md` (raiz do repo).
+
+### Toolchain do sandbox (o `/var/tmp`some entre sessões!)
 ```bash
 bash /home/user/rp-tag/toolchain.sh   # JDK 21 + nf-binary.jar + cp.txt (tudo automático)
 ```
