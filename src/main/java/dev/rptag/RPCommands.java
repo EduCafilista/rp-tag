@@ -97,6 +97,7 @@ public final class RPCommands {
                 + "/g <msg> \u00a77\u2014 fala GLOBAL (ouve o servidor todo)\u00a7e\n"
                 + "/s <msg> \u00a77\u2014 GRITA (alcance maior)\u00a7e\n"
                 + "/w <msg> \u00a77\u2014 sussurra (so quem esta colado ouve)\u00a7e\n"
+                + "/pensar <msg> \u00a77\u2014 pensamento (balao italico com parenteses)\u00a7e\n"
                 + "/me <acao> \u00a77\u2014 acao em 3a pessoa (sem balao)\u00a7e\n"
                 + "/roll [NdN][+bonus] [motivo] \u00a77\u2014 dados pro evento (+3 = especialista)\u00a7e\n"
                 + "/persona criar <nome> \u00a77\u2014 cria sua persona\u00a7e\n"

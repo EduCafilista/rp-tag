@@ -52,7 +52,7 @@ public final class ClientPayloadHandler {
                 ClientBubbleCache.set(payload.playerId(), payload.text(), payload.colorRGB(),
                         payload.borderRGB(), payload.borderStyle(), payload.textColorRGB(), payload.italic(),
                         payload.corner(), payload.extras(), payload.stickerX(), payload.stickerY(),
-                        payload.durationMs()));
+                        payload.durationMs(), payload.tone()));
     }
 
     public static void handleOpenBubbleStyle(final dev.rptag.OpenBubbleStylePayload payload, final IPayloadContext context) {

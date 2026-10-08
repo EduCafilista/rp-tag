@@ -71,6 +71,12 @@ public final class BubbleRenderer {
     private static final ResourceLocation BUBBLE_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble.png");
     private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
+
+    /** (3.58.0) rabicho RECORTE NA SILHUETA: texel BRANCO puro — a cor vem
+     * do tint e fica EXATAMENTE igual a da pilula (texel248/255). */
+    private static final ResourceLocation TAIL_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/tail.png");
+    private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
     /** CONTORNO COM RELEVO da Classica (tinta com luz em cima/sombra embaixo). */
     private static final ResourceLocation RING_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/ring.png");
@@ -122,12 +128,6 @@ public final class BubbleRenderer {
     private static final float V2 = 1.0F;
     private static final float U_CAP = 16.0F / 64.0F;
 
-    /** (3.56.1) janela central do bubble.png (texel 248 = recheio da pilula):
-     * o rabicho amostra AQUI pra ficar da MESMA cor exata do balao. */
-    private static final float TAIL_U1 = 252.0F / 512.0F;
-    private static final float TAIL_V1 = 124.0F / 256.0F;
-    private static final float TAIL_U2 = 260.0F / 512.0F;
-    private static final float TAIL_V2 = 132.0F / 256.0F;
 
     private BubbleRenderer() {
     }
@@ -212,7 +212,12 @@ public final class BubbleRenderer {
 
     /** FormattedCharSequence do segmento (adesivos com a fonte de imagem). */
     private static FormattedCharSequence seq(Seg seg) {
-        Style style = seg.sticker ? Stickers.stickerStyle() : Style.EMPTY;
+        return seq(seg, Style.EMPTY);
+    }
+
+    /** Com tom: itálico do pensamento/sussurro (mesma largura da reta). */
+    private static FormattedCharSequence seq(Seg seg, Style tom) {
+        Style style = seg.sticker ? Stickers.stickerStyle() : tom;
         return sink -> {
             seg.text.codePoints().forEach(cp -> sink.accept(0, style, cp));
             return true;
@@ -224,7 +229,7 @@ public final class BubbleRenderer {
      * herdando o alfa global) e texto na cor normal.
      */
     private static float drawLine(Font font, Matrix4f matrix, MultiBufferSource buffers,
-            List<Seg> segs, float x, float y, int textColor, float alpha) {
+            List<Seg> segs, float x, float y, int textColor, float alpha, int tone) {
         float pen = x;
         for (Seg seg : segs) {
             if (seg.sticker) {
@@ -244,8 +249,17 @@ public final class BubbleRenderer {
             // (3.35.0) SEM sombra: dentro de um balao claro a sombra preta do
             // vanilla borrava cada letra e dava aquele aspecto sujo/embacado.
             // O recheio ja e opaco, entao o contraste sozinho basta.
-            pen = font.drawInBatch(seq(seg), pen, y, textColor, false, matrix, buffers,
+            // (3.57.0) TONS DE FALA: pensamento/sussurro = ITALICO (a fonte
+            // vanilla tem a MESMA largura, a medida nao muda); grito =
+            // NEGRITO FAKE (2a passada 0.75px ao lado, mesmo avanço).
+            Style tom = tone == 1 ? Style.EMPTY.withItalic(true) : Style.EMPTY;
+            float sx = pen;
+            pen = font.drawInBatch(seq(seg, tom), pen, y, textColor, false, matrix, buffers,
                     Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+            if (tone == 2) {
+                font.drawInBatch(seq(seg, tom), sx + 0.75F, y, textColor, false, matrix, buffers,
+                        Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+            }
         }
         return pen;
     }
@@ -514,6 +528,15 @@ public final class BubbleRenderer {
         return out;
     }
 
+    /** (3.58.0) multiplica o RGB por 248/255 (texel do recheio da pilula). */
+    private static int texel248(int argb) {
+        int a = argb & 0xFF000000;
+        int r = Math.min(255, (int) (((argb >> 16) & 0xFF) * 248.0F / 255.0F + 0.5F));
+        int g = Math.min(255, (int) (((argb >> 8) & 0xFF) * 248.0F / 255.0F + 0.5F));
+        int b = Math.min(255, (int) ((argb & 0xFF) * 248.0F / 255.0F + 0.5F));
+        return a | (r << 16) | (g << 8) | b;
+    }
+
     private static int bubbleHeightPx(Font font, ClientBubbleCache.Bubble bubble) {
         // (3.32.0) fala = TEXTO PURO; os emotes moram na faixa (so a faixa conta)
         String speech = bubble.text();
@@ -528,7 +551,7 @@ public final class BubbleRenderer {
         int bsH = Math.max(0, bubble.borderStyle()); // (3.39.0) >= 0 SEMPRE (negativo = AIOOBE)
         int bsIdx = Math.min(bsH, RING_MARGIN.length - 1);
         // a moldura cresce pra fora nos DOIS lados + o rabicho pendura embaixo
-        return pillH + Math.round(2.0F * RING_MARGIN[bsIdx]) + 10;
+        return pillH + Math.round(2.0F * RING_MARGIN[bsIdx]) + 12;
     }
 
     /** Desenha UM balao da pilha, com pop-in + flutuacao + fade. */
@@ -682,45 +705,28 @@ public final class BubbleRenderer {
             }
         }
 
-        // ---- RABICHO PIXEL (3.56.0): DEGRAUS de pixel art com contorno —
-        // nem quadrado ligando no personagem, nem triangulo colorido. Vale
-        // pra TODAS as molduras (a Quadrada tambem — quadrada AO TODO).
-        // Tecnica: contorno = uniao dos degraus expandidos 1px; recheio =
-        // os degraus por cima; a pilula (desenhada DEPOIS) cobre o encaixe,
-        // entao o rabicho nasce de baixo dela com a costura invisivel.
+        // ---- RABICHO — RECORTE NA SILHUETA (3.58.0) ----
+        // O rabicho e parte do PROPRIO balao: curva de HQ com UM contorno so,
+        // SEM emenda nenhuma (escolha do dono na previa de opcoes — fim dos
+        // degraus). Vale pra TODAS as molduras. Tecnica: contorno = o mesmo
+        // rabicho expandido 1px embaixo (z -0.15); recheio = o rabicho por
+        // cima (z -0.12); a pilula (desenhada DEPOIS, z -0.10) cobre o
+        // encaixe e as duas curvas se fundem num contorno continuo.
+        // (3.58.1) TAMANHO PADRAO E FIXO: 13x9 unidades (o 26x18 da 3.58.0
+        // saiu GIGANTE na print do jogador). O rabicho NUNCA escala com o
+        // balao — e sempre esse padrao curto, em qualquer fala.
         float cxT = x0 + pillW / 2.0F + 1.0F;
         float ty0 = yP1 - 1.5F;
-        final float tw1 = 14.0F;
-        final float tw2 = 7.0F;
-        final float th1 = 4.0F;
-        final float th2 = 4.0F;
         if (border != 0) {
-            quad(matrix, buffers.getBuffer(QUAD_TYPE), -0.15F,
-                    cxT - tw1 / 2.0F - 1.0F, ty0 - 1.0F, cxT + tw1 / 2.0F + 1.0F, ty0 + th1 + 1.0F,
-                    0.45F, 0.45F, 0.55F, 0.55F, border);
-            quad(matrix, buffers.getBuffer(QUAD_TYPE), -0.15F,
-                    cxT - tw2 / 2.0F - 1.0F, ty0 + th1 - 1.0F, cxT + tw2 / 2.0F + 1.0F, ty0 + th1 + th2 + 1.0F,
-                    0.45F, 0.45F, 0.55F, 0.55F, border);
+            quad(matrix, buffers.getBuffer(TAIL_TYPE), -0.15F,
+                    cxT - 7.5F, ty0 - 1.0F, cxT + 7.5F, ty0 + 10.0F,
+                    0.0F, 0.0F, 1.0F, 1.0F, border);
         }
-        // (3.56.1) o recheio do rabicho usa OS MESMOS TEXELS da pilula —
-        // a bubble.png tem texel 248 (nao 255), entao o rabicho com texel
-        // branco ficava ~5% MAIS CLARO que o balao. A Quadrada (texel 255)
-        // continua como estava (cor exata).
-        if (quadrada) {
-            quad(matrix, buffers.getBuffer(QUAD_TYPE), -0.12F,
-                    cxT - tw1 / 2.0F, ty0, cxT + tw1 / 2.0F, ty0 + th1,
-                    0.45F, 0.45F, 0.55F, 0.55F, fill);
-            quad(matrix, buffers.getBuffer(QUAD_TYPE), -0.12F,
-                    cxT - tw2 / 2.0F, ty0 + th1, cxT + tw2 / 2.0F, ty0 + th1 + th2,
-                    0.45F, 0.45F, 0.55F, 0.55F, fill);
-        } else {
-            quad(matrix, buffers.getBuffer(BUBBLE_TYPE), -0.12F,
-                    cxT - tw1 / 2.0F, ty0, cxT + tw1 / 2.0F, ty0 + th1,
-                    TAIL_U1, TAIL_V1, TAIL_U2, TAIL_V2, fill);
-            quad(matrix, buffers.getBuffer(BUBBLE_TYPE), -0.12F,
-                    cxT - tw2 / 2.0F, ty0 + th1, cxT + tw2 / 2.0F, ty0 + th1 + th2,
-                    TAIL_U1, TAIL_V1, TAIL_U2, TAIL_V2, fill);
-        }
+        // tail.png tem texel 255: fora da Quadrada o tint e escalado por
+        // 248/255 pra ficar da cor EXATA da pilula (bubble.png = texel 248)
+        quad(matrix, buffers.getBuffer(TAIL_TYPE), -0.12F,
+                cxT - 6.5F, ty0, cxT + 6.5F, ty0 + 9.0F,
+                0.0F, 0.0F, 1.0F, 1.0F, quadrada ? fill : texel248(fill));
 
         // ---- RECHEIO (a cor de dentro escolhida) — cobre o encaixe do rabicho ----
         // (3.51.0) a QUADRADA usa a textura de cantinhos TAMBEM no recheio —
@@ -747,7 +753,8 @@ public final class BubbleRenderer {
             }
             float lineX = textColX + (textW - lineW) / 2.0F;
             float penY = yText + cum;
-            drawLine(font, matrix, buffers, segs, lineX, penY, textColor, alpha);
+            drawLine(font, matrix, buffers, segs, lineX, penY, textColor, alpha,
+                    bubble.tone());
             cum += LINE_HEIGHT;
         }
 

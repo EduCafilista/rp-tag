@@ -22,10 +22,12 @@ import net.minecraft.resources.ResourceLocation;
  * @param stickerY    posicao do adesivo em % na altura do balao
  * @param background  (compatibilidade; o visual usa as cores)
  * @param durationMs  tempo de exibicao em milissegundos
+ * @param tone        (3.57.0) tom da fala: 0 = normal, 1 = pensamento/sussurro
+ *                    (italico), 2 = grito (negrito)
  */
 public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int borderRGB, int borderStyle,
         int textColorRGB, boolean italic, String corner, String extras, int stickerX, int stickerY,
-        int background, int durationMs)
+        int background, int durationMs, int tone)
         implements CustomPacketPayload {
 
     public static final Type<ChatBubblePayload> TYPE =
@@ -47,6 +49,7 @@ public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int bo
                         ByteBufCodecs.VAR_INT.encode(buf, p.stickerY());
                         ByteBufCodecs.VAR_INT.encode(buf, p.background());
                         ByteBufCodecs.VAR_INT.encode(buf, p.durationMs());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.tone());
                     },
                     buf -> new ChatBubblePayload(
                             net.minecraft.core.UUIDUtil.STREAM_CODEC.decode(buf),
@@ -58,6 +61,7 @@ public record ChatBubblePayload(UUID playerId, String text, int colorRGB, int bo
                             ByteBufCodecs.BOOL.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),

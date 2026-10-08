@@ -69,6 +69,11 @@ public class BubbleStyleScreen extends Screen {
     private static final ResourceLocation BUBBLE_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bubble.png");
     private static final RenderType BUBBLE_TYPE = RenderType.text(BUBBLE_TEX);
+
+    /** (3.58.0) rabicho RECORTE NA SILHUETA (mesmo do mundo). */
+    private static final ResourceLocation TAIL_TEX =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/tail.png");
+    private static final RenderType TAIL_TYPE = RenderType.text(TAIL_TEX);
     private static final ResourceLocation RING_TEX =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/ring.png");
     private static final RenderType RING_TYPE = RenderType.text(RING_TEX);
@@ -898,19 +903,19 @@ public class BubbleStyleScreen extends Screen {
         } else {
             pillGui(g, BUBBLE_TYPE, U_CAP_B, 0.05F, simX0, simY, simW, simH, fill);
         }
-        // (3.56.0) RABICHO PIXEL = os MESMOS degraus do mundo (nem quadrado,
-        // nem triangulo): contorno = degraus expandidos, recheio = degraus
+        // (3.58.0) rabicho RECORTE NA SILHUETA = o MESMO do mundo (curva de
+        // HQ, contorno unico, sem emenda). Cor exata: tail.png e texel 255,
+        // entao fora da Quadrada o tint e escalado por 248/255 (escalaTexel)
+        // (3.58.1) tamanho PADRAO (13x9), igual ao mundo — o rabicho nunca
+        // escala com o balao
         int icx = Math.round(cx) + 1;
-        int ty0 = simY + simH - 1;
+        int ty0 = simY + simH - 2;
         if (border != 0) {
-            g.fill(icx - 8, ty0 - 1, icx + 8, ty0 + 5, border);
-            g.fill(icx - 4, ty0 + 3, icx + 5, ty0 + 10, border);
+            quadGui(g, TAIL_TYPE, 0.0455F, icx - 8, ty0 - 1, icx + 8, ty0 + 10,
+                    0.0F, 0.0F, 1.0F, 1.0F, border);
         }
-        // (3.56.1) texel da pilula e 248 (nao 255): fora da Quadrada, o
-        // rabicho usa a cor escalada pra ficar EXATAMENTE igual ao balao
-        int fillTex = quadradaPrev ? fill : escalaTexel(fill);
-        g.fill(icx - 7, ty0, icx + 7, ty0 + 4, fillTex);
-        g.fill(icx - 3, ty0 + 4, icx + 4, ty0 + 9, fillTex);
+        quadGui(g, TAIL_TYPE, 0.0475F, icx - 7, ty0, icx + 7, ty0 + 9,
+                0.0F, 0.0F, 1.0F, 1.0F, quadradaPrev ? fill : escalaTexel(fill));
         endBatch();
 
         // --- fala em MULTI-LINHAS dentro da pilula (zoom K, centrada) ---

@@ -269,7 +269,7 @@ public final class ServerEvents {
             if (!payload.on()) {
                 // (3.17.0) desligou o modo? o balao atual some NA HORA (balao vazio)
                 ChatBubblePayload clear = new ChatBubblePayload(player.getUUID(), "", 0xFFFFFF,
-                        -2, 0, -3, false, "", "", 50, 50, 0, 1);
+                        -2, 0, -3, false, "", "", 50, 50, 0, 1, 0);
                 for (ServerPlayer p : player.server.getPlayerList().getPlayers()) {
                     net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p, clear);
                 }

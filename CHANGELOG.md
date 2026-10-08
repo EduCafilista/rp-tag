@@ -2,6 +2,45 @@
 
 Todas as mudanças notáveis deste mod são documentadas aqui.
 
+## [3.58.1] - 2026-10-08
+
+### Corrigido — rabicho no TAMANHO PADRÃO
+- A 3.58.0 desenhou a curva em 26×18 unidades e ela saiu **GIGANTE** na tela
+  (print do jogador). Agora é **13×9 fixo** — o mesmo porte dos rabichos que
+  funcionavam — e **NUNCA escala** com o tamanho do balão.
+- Contorno continua único (acompanha a curva) e a prévia do `/balao` segue
+  idêntica ao mundo. Altura da pilha recalibrada (+12).
+
+## [3.58.0] - 2026-10-08
+
+### Mudado — Rabicho RECORTE NA SILHUETA (escolha do dono)
+- Prévia com 4 opções de ligação personagem → balão; o dono escolheu a
+  **opção B**: o rabicho é parte do **próprio balão** — curva de HQ com
+  **um contorno único, sem emenda nenhuma** (visual de mod premium).
+- Nova textura `tail.png` (texel BRANCO puro): a cor vem 100% do tint, com
+  escala 248/255 fora da Quadrada → cor **exata** do balão em TODAS as
+  molduras. Fim dos degraus pixel-art (3.56–3.57).
+- Contorno acompanha a curva do rabicho (mesmo expandido 1px) e a pílula
+  cobre o encaixe — sem linha atravessada, sem remendo.
+- Prévia do `/balao` usa o MESMO rabicho (mesma textura, mesma regra de cor).
+- Altura da pilha de balões atualizada pro rabicho mais fundo (+17px).
+
+## [3.57.0] - 2026-10-08
+
+### Novo — Tons de fala (inspirados no mod "Roleplay Speech Bubbles" de Fabric)
+- **`/pensar <msg>`** — pensamento: balão em itálico com a fala entre
+  parênteses `( assim )`, no chat local aparece `<Nome> pensa: ( ... )`.
+- **`/s <msg>` (grito)** agora também vira balão: **CAIXA ALTA + negrito**.
+- **`/w <msg>` (sussurro)** — o itálico era pedido no pacote desde sempre,
+  mas o renderer IGNORAVA a flag; agora é itálico de verdade.
+- Tons via pacote (`tone`: 0 fala, 1 pensamento/sussurro, 2 grito); o
+  itálico usa a fonte vanilla (mesma largura, a medida não muda) e o
+  negrito é "fake bold" (2ª passada 0,75px, mesmo avanço).
+- Estudo do mod Fabric: balão = entidade Text Display vanilla com cooldown,
+  sanitização e expiração — o rp-tag JÁ tinha equivalentes (flood-gate 250ms,
+  truncamento 96 chars, raio 64 blocos). ⚠️ O mod Fabric embute telemetria
+  (`creativemode-telemetry`) — NADA disso foi copiado.
+
 ## [3.56.1] - 2026-10-08
 
 ### Corrigido

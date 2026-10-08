@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('3.56.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('3.58.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 3.56.1 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 3.58.1 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -72,7 +72,8 @@ if os.path.exists(zp):
     z = zipfile.ZipFile(zp)
     n = z.namelist()
     check('jar: bola.png fora', 'assets/rptag/textures/gui/bola.png' not in n)
-    check('jar: sem bubble_tail (rabicho e pixel)', 'assets/rptag/textures/gui/bubble_tail.png' not in n)
+    check('jar: sem bubble_tail (rabicho antigo fora)', 'assets/rptag/textures/gui/bubble_tail.png' not in n)
+    check('jar: tail.png presente (rabicho novo)', 'assets/rptag/textures/gui/tail.png' in n)
     check('jar: quadrada.png dentro', 'assets/rptag/textures/gui/quadrada.png' in n)
     check('jar: preview_sky.png dentro', 'assets/rptag/textures/gui/preview_sky.png' in n)
     check('jar: classes do payload', any('LorezoneMusicPayload' in x for x in n))
@@ -82,11 +83,13 @@ else:
 
 # ---- 3.51.0: rabicho, quadrada inteira, colunas, botoes ----
 br = rd(C + '/BubbleRenderer.java')
-check('rabicho PIXEL em degraus (3.56.0)', 'RABICHO PIXEL (3.56.0)' in br)
+check('rabicho RECORTE NA SILHUETA (contorno unico)', 'RABICHO — RECORTE NA SILHUETA (3.58.0)' in br)
 check('sem asas no rabicho (sem margin*1.6)', 'margin * 1.6F' not in br)
+check('previa sem g.fill no rabicho (textura unica)', 'g.fill(icx - 7' not in bs)
+check('rabicho PEQUENO padrao (13x9, nunca escala)', 'cxT - 6.5F' in br and 'cxT + 6.5F' in br and 'ty0 + 9.0F' in br)
 check('menu: sem fileira 3 de molduras', 'py + ROW_BTN3' not in bs)
 check('quadrada com recheio quadrado', 'a QUADRADA usa a textura de cantinhos TAMBEM no recheio' in br)
-check('mesmo rabicho pixel pra TODAS as molduras', 'TODAS as molduras' in br)
+check('mesmo rabicho pra TODAS as molduras', 'Vale pra TODAS as molduras' in br)
 check('coluna ESQUERDA (adesivo)', 'coluna da ESQUERDA' in br)
 check('coluna DIREITA (emojis)', 'coluna da DIREITA' in br)
 check('menu: sem botao Auto', 'literal("\u25a3 Auto")' not in bs)
@@ -156,16 +159,25 @@ check('icone medo: borda dissolvida (fim do quadrado)', '208 * amp' in ce)
 
 # ---- 3.56.0: reescrita dos baloes (wrap, rabicho pixel, previa multi-linha) ----
 check('wrap mais cedo: 130px (mais palavras = mais balao pra cima)', 'MAX_TEXT_WIDTH = 130' in br)
-check('textura do rabicho antigo fora do codigo', 'bubble_tail' not in br and 'TAIL_TYPE' not in br and 'tailGui' not in bs)
+check('textura do rabicho antigo fora do codigo', 'bubble_tail' not in br and 'tailGui' not in bs and 'bubble_tail' not in bs)
 check('previa quebra a fala em linhas (wrapPrev)', 'wrapPrev' in bs and 'linhasPrev' in bs)
 check('previa cresce em altura com o texto', 'linhasPrev.size() * this.font.lineHeight * K' in bs)
-check('rabicho pixel na previa (mesmos degraus)', 'RABICHO PIXEL = os MESMOS degraus do mundo' in bs)
+check('previa com o rabicho recorte (tail.png)', 'TAIL_TYPE' in bs and '0.0475F' in bs)
 
 # ---- 3.56.1: rabicho da MESMA cor do balao + rp ajuda limpo ----
-check('rabicho usa os texels da pilula (janela 248 do bubble.png)', 'TAIL_U1 = 252.0F / 512.0F' in br)
-check('Quadrada mantem rabicho texel 255', 'if (quadrada) {' in br and 'TAIL_U1, TAIL_V1, TAIL_U2, TAIL_V2, fill)' in br)
+check('cor do rabicho = texel da pilula (escala 248)', 'texel248(fill)' in br)
+check('Quadrada usa o tint direto (texel 255)', 'quadrada ? fill : texel248(fill)' in br)
 check('previa com cor escalada 248/255', 'escalaTexel' in bs)
 check('rp ajuda SEM a linha do WALKTHROUGH', 'WALKTHROUGH' not in rp)
+
+# ---- 3.57.0: tons de fala (inspirados no mod fabric roleplay-speech-bubbles) ----
+check('payload com tom (0 fala / 1 pensamento / 2 grito)', 'int tone' in rd(R + '/ChatBubblePayload.java'))
+check('tom atravessa handler e cache', 'payload.tone()' in rd(R + '/client/ClientPayloadHandler.java') and 'int tone,' in rd(R + '/client/ClientBubbleCache.java'))
+check('italico REAL no renderer (pensamento/sussurro)', 'withItalic(true)' in br)
+check('grito = negrito fake (2a passada 0.75px)', 'sx + 0.75F' in br)
+check('/pensar <msg> (balao com parenteses)', 'literal("pensar")' in rd(R + '/ChatCommands.java'))
+check('rp ajuda lista /pensar', '/pensar <msg>' in rp)
+check('/s grita no balao MAIUSCULO com tom 2', 'msg.toUpperCase(), false, 2' in rd(R + '/ChatCommands.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

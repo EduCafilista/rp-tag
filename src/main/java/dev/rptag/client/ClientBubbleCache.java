@@ -19,7 +19,7 @@ public final class ClientBubbleCache {
     /** Um balao visivel. */
     public record Bubble(String text, int colorRGB, int borderRGB, int borderStyle, int textRGB,
             boolean italic, String corner, String extras, int stickerX, int stickerY,
-            long bornMillis, long expireMillis) {
+            int tone, long bornMillis, long expireMillis) {
         public boolean expired() {
             return System.currentTimeMillis() >= expireMillis;
         }
@@ -34,7 +34,8 @@ public final class ClientBubbleCache {
     }
 
     public static void set(UUID id, String text, int colorRGB, int borderRGB, int borderStyle, int textRGB,
-            boolean italic, String corner, String extras, int stickerX, int stickerY, int durationMs) {
+            boolean italic, String corner, String extras, int stickerX, int stickerY, int durationMs,
+            int tone) {
         // duracao escolhida pelo autor do balao (2 a 20 segundos)
         long duration = Math.min(20000, Math.max(2000, durationMs));
         long now = System.currentTimeMillis();
@@ -53,7 +54,7 @@ public final class ClientBubbleCache {
                 stack.clear();
             }
             stack.add(new Bubble(text, colorRGB, borderRGB, borderStyle, textRGB, italic, corner,
-                    extras, stickerX, stickerY, now, now + duration));
+                    extras, stickerX, stickerY, tone, now, now + duration));
             while (stack.size() > MAX_STACK) {
                 stack.remove(0); // o mais antigo sai da pilha
             }

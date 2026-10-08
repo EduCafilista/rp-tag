@@ -45,8 +45,19 @@ public final class RPChat {
     private static final java.util.Map<java.util.UUID, Long> LAST_BUBBLE =
             new java.util.concurrent.ConcurrentHashMap<>();
 
-    /** Mostra o balao de fala sobre a cabeca (se o recurso estiver ligado). */
+    /** Mostra o balao de fala sobre a cabeca (tom normal). */
     public static void spawnBubble(ServerPlayer from, String rawText, boolean italic) {
+        spawnBubble(from, rawText, italic, 0);
+    }
+
+    /**
+     * Mostra o balao de fala sobre a cabeca (se o recurso estiver ligado).
+     *
+     * @param tone  (3.57.0) 0 = fala normal, 1 = pensamento/sussurro (italico),
+     *              2 = grito (negrito) — os tons foram inspirados nos baloes de
+     *              roleplay classicos (fala/pensamento/enfase)
+     */
+    public static void spawnBubble(ServerPlayer from, String rawText, boolean italic, int tone) {
         RPWorldData data = RPWorldData.get(from.server);
         if (!data.isBubblesOn() || data.isBubbleOptOut(from.getUUID())
                 || !data.isBubbleAllowed(from.getUUID()) || !data.isBubbleMode(from.getUUID())) {
@@ -70,7 +81,8 @@ public final class RPChat {
         // o texto do balao e a fala pura, e o adesivo fica onde o jogador colou.
         ChatBubblePayload payload = new ChatBubblePayload(from.getUUID(), text, style.colorRGB(),
                 style.borderRGB(), style.borderStyle(), style.textColorRGB(), italic, style.corner(),
-                style.extras(), style.stickerX(), style.stickerY(), 0, style.durationSec() * 1000);
+                style.extras(), style.stickerX(), style.stickerY(), 0, style.durationSec() * 1000,
+                tone);
         for (ServerPlayer p : from.server.getPlayerList().getPlayers()) {
             if (p.level() == from.level()
                     && p.position().distanceToSqr(from.position()) <= 64.0 * 64.0) {

@@ -15,10 +15,10 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **3.56.1** (2026-10-08) |
-| Commit | `0e93318` (main; push é feito manualmente pelo dono do repo) |
-| Jar | `rptag-3.56.1.jar` (~1.891.082 B) |
-| Checks | `check.py` → **85 PASS / 0 FAIL** |
+| Versão | **3.58.1** (2026-10-08) |
+| Commit | (ver `git log`) |
+| Jar | `rptag-3.58.1.jar` (~1.892.264 B) |
+| Checks | `check.py` → **94 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
@@ -107,6 +107,9 @@
 | 3.55.0 | X vermelho na prévia sem tooltip; `/lorezone baixar` REAL + sync v5 (chunks 30 kB); `/lorezone musica <id> 1x <som>`; `/roll +3`; `/balao teste` **removido** (prévia usa a última fala real); ícone do medo com borda dissolvendo; lorezone explicada como ESFERA |
 | 3.56.0 | **balões reescritos**: wrap 130 (cresce pra cima), rabicho pixel em degraus p/ todas as molduras, prévia multi-linha, textura `bubble_tail.png` removida |
 | 3.56.1 | rabicho na cor **exata** do balão (texel 248); `/rp ajuda` sem a linha amarela do WALKTHROUGH |
+| 3.57.0 | **tons de fala** (estudo do mod Fabric "roleplay-speech-bubbles"): `/pensar` novo (itálico + parênteses), `/s` agora vira balão MAIÚSCULO+negrito, `/w` itálico que não funcionava CORRIGIDO; pacote `ChatBubblePayload` ganhou campo `tone`. ⚠️ O mod Fabric embute telemetria (`creativemode-telemetry`) — jamais replicar |
+| 3.58.0 | **rabicho = recorte na silhueta** (dono escolheu a opção B na prévia de 4 designs): textura `tail.png` texel branco + escala 248, contorno único sem emenda, prévia idêntica ao mundo |
+| 3.58.1 | rabicho 26×18 saiu GIGANTE na print → **13×9 FIXO (padrão)**, nunca escala com o balão; pilha +12 |
 
 Commits recentes: `0e93318` (3.56.1) ← `69a211b` (3.56.0) ← `0d3f76e` (3.55.0) ← `928647f` (3.49.0). **Hashes de 3.50–3.54.1 foram perdidos** (regressão do `.git` num turno) — não referenciá-los.
 
@@ -122,7 +125,7 @@ Commits recentes: `0e93318` (3.56.1) ← `69a211b` (3.56.0) ← `0d3f76e` (3.55.
 
 ### Visual do balão
 - ❌ Faixa/banda no balão; ❌ emoji via fonte na fala; ❌ emoji-tint no mundo; ❌ bandas de fonte; ❌ dashed antigo; ❌ balão-nuvem; ❌ contadores "emojis x/6"; ❌ botões Auto/"Minha cor"; ❌ ordem antiga dos botões; ❌ card escuro na prévia; ❌ editor baú.
-- ❌ **Rabicho triângulo** (grande ou curvado com `bubble_tail.png` — reprovado no 3.56) e ❌ quadrado-conector — o rabicho é **pixel-art em degraus**.
+- ❌ **Rabicho triângulo antigo** (`bubble_tail.png` com texels quebrados — reprovado na 3.56) e ❌ quadrado-conector; ❌ degraus pixel-art (3.56–3.57); ❌ **rabicho GRANDE** (26×18 da 3.58.0, reprovado na print). ✅ Rabicho atual = **recorte na silhueta PEQUENO e FIXO** (`tail.png` texel branco, 13×9, contorno único, cor exata).
 - ✅ Balão cresce **pra cima** com o texto (linhas equilibradas, nunca tirinha deitada); ✅ recheio cobre o encaixe do rabicho (costura invisível).
 - Quadrada = quadrada AO TODO; Sem borda por último em 2 fileiras de 3; tela `/balao` à prova de crash.
 
@@ -133,6 +136,8 @@ Commits recentes: `0e93318` (3.56.1) ← `69a211b` (3.56.0) ← `0d3f76e` (3.55.
 
 ### Outros
 - ❌ Nuvem no balão (removida a pedido no 3.50 — manter fora).
+- ❌ **TELEMETRIA/coleta de dados JAMAIS** (o mod Fabric estudado no 3.57.0 embute `creativemode-telemetry` — jar-in-jar que rastreia sessões/mods; serviu só de referência de mecânica).
+- Tons de fala (3.57.0): `tone` 0/1/2 no `ChatBubblePayload`; pensar/sussurro = itálico (fonte vanilla mantém a largura → medida intacta), grito = fake bold (2ª passada 0,75px).
 - `/balao teste` **não existe mais** — testar é escrever no chat (a prévia usa a última fala).
 - Música baixada fica no **SERVIDOR** e sincroniza pros clientes ("iniciado/concluído"); todo mundo ouve.
 - Sons "1x na entrada" da lorezone: opção pedida explicitamente (manter).
@@ -193,14 +198,15 @@ Se o `.git/config` sumir (não vai pro snapshot), recriar:
 - `pillW = max(34, textW + pad16 + leftW + rightW)`; `pillH = speechH + 8`; `speechH = 10 × n° de linhas`; `yP1 = 0`, texto acima, topo em `yP0 = yText − 4`.
 - `leftW` (adesivo) = 14+6 se tiver; `rightW` (emojis) = n×14 + (n−1)×3 + 6.
 - Ordem de desenho (z): sombra −0.20 → contorno −0.15 → **rabicho pixel** (contorno −0.15, recheio −0.12) → recheio da pílula −0.10 (cobre o encaixe) → texto → adesivos.
-- Rabicho: `cxT = x0 + pillW/2 + 1`; degraus 14×4 e 7×4; recheio = texels `bubble.png` (252–260 × 124–132) ou `quadrada.png` (0.45–0.55) na Quadrada.
+- Rabicho (3.58.1): `tail.png` 32×24 (texel branco 255, curva de HQ); quad **13×9 FIXO** (border +1px) em `cxT = x0 + pillW/2 + 1`, `ty0 = yP1 − 1.5`; contorno = quad expandido 1px (z −0.15) → recheio (z −0.12, `texel248(fill)` fora da Quadrada) → pílula (z −0.10) cobre o encaixe. Altura da pilha: `+ 12`. **Regra: o rabicho é tamanho padrão e NUNCA escala com o balão.**
 - Prévia (menu): `wrapPrev(fala, 110)` com zoom K=2.0 (cai pra 1.5/1.2/0.95 conforme o nº de linhas), `simH = linhas × lineHeight × K + 8`, rabicho via `g.fill` + `escalaTexel` (×248/255 fora da Quadrada).
 
 ---
 
 ## 8. Pendências / próximas ideias
 
-- (nenhuma crítica aberta — anotar aqui os pedidos que ficarem para o próximo ciclo)
+- Ideia do mod Fabric ainda NÃO portada: tela de composição de fala com botão "Enviar balão" + seletor de tom (aqui o fluxo é escrever no chat — discutir com o dono antes).
+- Lembrete: o `WALKTHROUGH.en.md` ainda é o guia antigo de jogador em inglês (legado); se o repositório for público, vale atualizar ou remover.
 - Lembrete: o `WALKTHROUGH.en.md` ainda é o guia antigo de jogador em inglês (legado); se o repositório for público, vale atualizar ou remover.
 
 ---

@@ -17,6 +17,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  *   <li>{@code /g <msg>} — global (servidor inteiro) + balao</li>
  *   <li>{@code /s <msg>} — grito (100 blocos, CAIXA ALTA) + balao</li>
  *   <li>{@code /w <msg>} — sussurro (5 blocos, italico) + balao italico</li>
+ *   <li>{@code /pensar <msg>} — pensamento (balao italico com parenteses)</li>
  *   <li>{@code /me <acao>} — acao do personagem (SO no chat RP, sem balao)</li>
  *   <li>{@code /do <descricao>} — descricao de ambiente (sem balao)</li>
  * </ul>
@@ -76,7 +77,9 @@ public final class ChatCommands {
                                     .append(RPChat.displayName(player))
                                     .append(Component.literal("> grita: ").withStyle(ChatFormatting.DARK_GRAY))
                                     .append(Component.literal(msg.toUpperCase()).withStyle(ChatFormatting.BOLD, ChatFormatting.WHITE)));
-                            RPChat.spawnBubble(player, msg, false);
+                            // (3.57.0) grito AGORA aparece no balao: CAIXA ALTA
+                            // + tom 2 (negrito) — antes o balao saia normal
+                            RPChat.spawnBubble(player, msg.toUpperCase(), false, 2);
                             return Command.SINGLE_SUCCESS;
                         })));
 
@@ -90,7 +93,23 @@ public final class ChatCommands {
                                     .append(RPChat.displayName(player))
                                     .append(Component.literal(" sussurra: ").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC))
                                     .append(Component.literal(msg).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
-                            RPChat.spawnBubble(player, msg, true);
+                            // (3.57.0) o italice era pedido no pacote desde a
+                            // 3.x, mas o renderer IGNORAVA — agora e tom 1
+                            RPChat.spawnBubble(player, msg, true, 1);
+                            return Command.SINGLE_SUCCESS;
+                        })));
+
+        // /pensar <msg> — (3.57.0) pensamento: balao italico "( ... )"
+        event.getDispatcher().register(Commands.literal("pensar")
+                .then(Commands.argument("msg", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                        .executes(ctx -> {
+                            ServerPlayer player = ctx.getSource().getPlayerOrException();
+                            String msg = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "msg");
+                            RPChat.sendLocal(player, RPWorldData.LOCAL_RANGE, Component.empty()
+                                    .append(RPChat.displayName(player))
+                                    .append(Component.literal(" pensa: ").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC))
+                                    .append(Component.literal("( " + msg + " )").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
+                            RPChat.spawnBubble(player, "( " + msg + " )", true, 1);
                             return Command.SINGLE_SUCCESS;
                         })));
 
