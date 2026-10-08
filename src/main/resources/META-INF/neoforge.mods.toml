@@ -4,7 +4,8 @@ license="MIT"
 
 [[mods]]
 modId="rptag"
-version="2.2.0"
+version="3.56.1"
+logoFile="rptag_logo.png"
 displayName="RP Tag"
 authors="RP Tag"
 description='''

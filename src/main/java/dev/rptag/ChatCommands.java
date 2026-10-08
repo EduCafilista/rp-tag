@@ -17,7 +17,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  *   <li>{@code /g <msg>} — global (servidor inteiro) + balao</li>
  *   <li>{@code /s <msg>} — grito (100 blocos, CAIXA ALTA) + balao</li>
  *   <li>{@code /w <msg>} — sussurro (5 blocos, italico) + balao italico</li>
- *   <li>{@code /me <acao>} — acao do personagem + balao italico</li>
+ *   <li>{@code /me <acao>} — acao do personagem (SO no chat RP, sem balao)</li>
  *   <li>{@code /do <descricao>} — descricao de ambiente (sem balao)</li>
  * </ul>
  */
@@ -100,21 +100,31 @@ public final class ChatCommands {
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             String acao = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "acao");
-                            RPChat.sendLocal(player, RPWorldData.LOCAL_RANGE, Component.empty()
+                            // (correcao) sendRpAction so entrega a quem esta EM RP —
+                            // um jogador OFF RP que der /me nao via nem a propria
+                            // acao e o comando "funcionava" sem avisar nada.
+                            if (!RPWorldData.get(player.server).isInRp(player.getUUID())) {
+                                ctx.getSource().sendFailure(Component.literal(
+                                        "Voce precisa estar em RP para usar /me. Use /rp on."));
+                                return Command.SINGLE_SUCCESS;
+                            }
+                            // (3.34.0) /me = AÇAO: SO no CHAT RP (regiao, so quem
+                            // esta em RP) — NUNCA vira balao (balao e FALA)!
+                            RPChat.sendRpAction(player, Component.empty()
                                     .append(Component.literal("✦ ").withStyle(ChatFormatting.DARK_PURPLE))
                                     .append(RPChat.displayName(player).withStyle(ChatFormatting.ITALIC))
                                     .append(Component.literal(" " + acao).withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.ITALIC)));
-                            RPChat.spawnBubble(player, "* " + acao, true);
                             return Command.SINGLE_SUCCESS;
                         })));
 
         // /do <descricao de ambiente> (sem balao)
-        event.getDispatcher().register(Commands.literal("do")
+        event.getDispatcher().register(Commands.literal("do").requires(src -> src.hasPermission(2)) // APENAS ADMIN
                 .then(Commands.argument("descricao", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             String desc = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "descricao");
-                            RPChat.sendLocal(player, RPWorldData.LOCAL_RANGE, Component.empty()
+                            // (3.34.0) /do = descricao de ambiente: mesmo canal RP
+                            RPChat.sendRpAction(player, Component.empty()
                                     .append(Component.literal("✦ ").withStyle(ChatFormatting.DARK_GRAY))
                                     .append(Component.literal(desc).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
                             return Command.SINGLE_SUCCESS;

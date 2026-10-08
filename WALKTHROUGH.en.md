@@ -13,9 +13,9 @@ Step-by-step guide, from download to the tag showing in game.
 | Minecraft **1.21.1** (Java Edition) | official launcher |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → version 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-2.2.0.jar` | this repository's *Releases* tab |
+| `rptag-3.42.0.jar` | this repository's *Releases* tab |
 
-> ⚠️ The mod version matches the game version: `rptag-2.2.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
+> ⚠️ The mod version matches the game version: `rptag-3.42.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
 
 ---
 
@@ -23,7 +23,7 @@ Step-by-step guide, from download to the tag showing in game.
 
 1. Install NeoForge on the server (the installer asks for the server folder path).
 2. Inside the server folder, open `mods/`.
-3. Copy `rptag-2.2.0.jar` into it.
+3. Copy `rptag-3.42.0.jar` into it.
 4. Start the server once to generate files (accept the EULA in `eula.txt` with `eula=true`).
 
 **How to know it worked:** in the boot log look for
@@ -40,7 +40,7 @@ Done — from this point the tag already works in **chat** and **TAB** for every
 
 1. In the launcher, create/edit the NeoForge 1.21.1 profile.
 2. Open the game folder ("open game folder" option in the launcher) and enter `mods/`.
-3. Copy the same `rptag-2.2.0.jar` there.
+3. Copy the same `rptag-3.42.0.jar` there.
 4. Join the server.
 
 Without the client mod you still see the tag in chat/TAB; with it, you also see **(ʀᴘ)** or **(ᴏꜰꜰ ʀᴘ)** floating above players' heads.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-The jar ends up at `build/libs/rptag-2.2.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
+The jar ends up at `build/libs/rptag-3.42.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
 
 ---
 
@@ -154,35 +154,124 @@ Happy RP! 🎭
 
 ---
 
-## 🗨️ Speech bubbles (new in v2.2.0)
+## 🗨️ Speech bubbles (new in v2.3.0)
 
 What you type (local chat, `/g`, `/s`, `/w`, `/me`) shows up in a **rounded bubble
 above your head** — perfect for eggs, kids and mic-less players.
 
 | Command | Effect |
 |---|---|
-| `/cor ciano` | sets YOUR color: paints your chat message and bubble background |
-| `/cor #55FFFF` | hex works too |
-| `/cor off` | back to white |
-| `/bolha off` / `/bolha on` | toggle your own bubbles |
+| `/balao` | opens the customization SCREEN: color picker (drag your mouse!), accent bar, backgrounds and emojis |
 | `/rp admin bolha off` | *(admin)* disables bubbles server-wide |
 
 ---
 
-## 🥚 Modo balão e tela de personalização (novo na v2.2.0)
+## 🥚 Bubble mode and the customization SCREEN (v2.5.0)
 
-**Para ovos, crianças e personagens sem voz:** a fala vira **só o balão** — nada no chat.
+**For eggs, kids and mic-less characters:** speech becomes **bubble-only** — nothing in chat.
 
-| Comando | Efeito |
+| Command | Effect |
 |---|---|
-| `/balao` | abre a TELA de personalização (cor, emojis, fundos — preview ao vivo) |
-| `/balao modo on` / `off` | liga/desliga o modo balão em si mesmo |
-| `/balao cor ciano` | cor da mensagem e do fundo |
-| `/balao emoji antes ✦` | emoji decorativo antes (ou "depois") |
-| `/balao fundo noite` | fundo: translucido/escuro/claro/gradiente/papel/noite/madeira |
-| `/rp admin bolha <jogador> on` | *(admin)* ativa o modo balão para outro jogador |
-| `/rp admin bolhas off` | *(admin)* desliga balões do servidor inteiro |
+| `/balao` | opens the **customization screen** (color picker, live preview) |
+| `/balao modo on` / `off` | toggle bubble mode for yourself |
+| `/rp admin bolha <player> on` | *(admin)* enables bubble mode for another player |
+| `/rp admin balao <player> off` | *(admin)* forbids the player from using bubbles (speech goes to chat only) |
+| `/rp admin balao <player> on` | *(admin)* allows bubbles again |
+| `/rp admin balaolist` | *(admin)* lists players without bubbles |
+| `/rp admin bolhas off` | *(admin)* disables bubbles server-wide |
 
-Na tela do `/balao` você vê o preview do balão em tempo real, ajusta o
-Vermelho/Verde/Azul, clica nas cores rápidas, adiciona emojis (✦ ★ ♥ ⚔ ☾ ✿ ♪ ⚡)
-e escolhe o fundo — tudo salvo no servidor.
+### How to use the screen (`/balao`)
+- **LIVE CHAT SIMULATION** — the top panel shows the line
+  `<Você> sua fala assim` (name in bubble color, speech in text color) and the
+  full bubble. Change ANYTHING (fill, border, frame, text color, sticker)? The
+  simulation reacts INSTANTLY. Footer: `#fill · ▣ border · ✎ text`
+- **Sticker with the MOUSE**: `✦ Adesivos` → each sticker is a **color dot +
+  number** (hover shows the NAME) → click an emoji (it sticks to the
+  cursor) → **click anywhere on the bubble** to place it. Click the placed
+  sticker to **pick it back** and reposition; **right-click** the bubble
+  **removes** it. **One sticker per bubble** — the old Before/Middle/After
+  slots migrated into it automatically. Click outside the bubble or
+  right-click to **cancel** without placing
+- **Paint** — TWO independent pickers: **✦ Dentro** (left) paints the fill
+  and **▣ Borda** (right) paints the frame. Under each one there is a
+  **ONE-CLICK PALETTE** (8 ready colors) — click, painted, no dragging! Or
+  drag the squares for any custom color (live hex on the label)
+- **Border** — 3 COLOR buttons: **▣ Auto** (always matches) · **▣ Minha cor**
+  (whatever you paint on the right picker) · **▢ Sem borda** — active one gets
+  a green frame
+- **Frame** — 3 STYLE buttons: **▤ Clássica** (thin) · **▤ Cartum** (thick
+  comic cover) · **▤ Dupla** (double line)
+- **✎ Letra (text)** — **Auto** (white or black depending on the fill, always
+  perfect contrast) or 8 chat colors at 1 click — the bubble text updates instantly
+- **⏱ Duration** — DRAG the slider for 2 to 20 seconds of display time
+- **☾ Bubble mode** — toggle right there
+- **✔ Save** (RIGHT-side button, Minecraft-style) or **ESC** stores
+  everything — no more losing your setup · **↺ Padrão** restores defaults
+- **Saved FOREVER**: leave and rejoin the server — colors, sticker, frame and
+  duration are stored in the world file
+- **JAR DIAGNOSTIC**: the top-right of the screen shows the CLIENT version
+  (e.g. "v3.4.0") and the save message shows the SERVER version ("💾 Salvo no
+  servidor v3.4.0!"). Both must MATCH — otherwise replace the old side's jar
+  (always update client AND server together)
+- Then just **say something in chat** to see your bubble ✨
+
+---
+
+## 📜 Lore Zones (story regions)
+
+Admins mark map regions that react when a player walks in: epic on-screen
+title, subtitle, sound — and now even **looping music**.
+
+| Command | Effect |
+|---|---|
+| `/lorezone criar <id> <raio> <titulo>` | creates the zone at your position (subtitle comes from the text) |
+| `/lorezone texto <id> <texto>` | sets the zone subtitle |
+| `/lorezone som <id> <som>` | one-shot sound on enter (e.g. `minecraft:ambient.cave`) |
+| `/lorezone musica <id> <som>` (ou `<id> intervalo <segundos> <som>`) | **LOOPING track** while inside — restarts every `intervalo` seconds (10–600, default 45) and **stops on exit** |
+| `/lorezone listar` | list zones |
+| `/lorezone remover <id>` | delete a zone |
+
+Spooky sounds that work well: `minecraft:ambient.cave`,
+`minecraft:entity.warden.heartbeat`, `minecraft:music.overworld.deep_dark`,
+`minecraft:music_disc.13`, `minecraft:music_disc.11`.
+
+---
+
+## 😱 RP effects: FEAR and warnings
+
+| Command | Effect |
+|---|---|
+| `/rp admin medo <player> [seconds]` | the player's screen gets **HIDDEN** under a pulsing night-blue veil, with a dark vignette, a blinking face on the HUD and **camera shake** — real panic |
+| `/rp admin avisar <player> <text>` | BIG on-screen text, `&` colors (`&c` red, `&6` orange, `&l` bold…) |
+| `/effect give <player> rptag:medo <s>` | same fear via the vanilla command |
+
+The "is afraid" toast shows **to admins only** — the player feels the
+effect without knowing who sent it. In 3.49 the cloud bubble (Turma da
+Mônica-style thought balloon) got **real HD circular balls**, no more seams.
+
+
+---
+
+## 🎵 CUSTOM music in Lore Zones (3.50.0)
+
+Any music you own can play inside a zone — even audio from a YouTube video.
+
+1. Convert it to OGG Vorbis: `yt-dlp -x --audio-format vorbis "<url>"`
+2. Drop the `.ogg` into the CLIENT's `config/rptag/musicas/` folder with a
+   simple name (e.g. `tense.ogg`)
+3. Apply it: `/lorezone musica <id> @tense` — it loops while the player is
+   inside the zone and stops the moment they leave. Each player needs the file.
+
+Ready-made presets (27): `caverna`, `coracao`, `warden`, `deepdark`,
+`disc13`, `disc11`, `disc5`, `mood`, `almas`, `pigstep`, plus `portal`,
+`portalviagem`, `nether`, `vento`, `dragao`, `ghast`, `creeper`, `trovao`,
+`chuva`, `fogo`, `agua`, `sino`, `outros`, `relic`, `creator`, `maldicao`
+and `nenhum` (clears the zone sound). `/lorezone musicas` lists them in game.
+Zones re-trigger when you **leave and come back** (1x per visit), a new sound
+**replaces** the previous one (never stacks), and music accepts a **direct
+file link** (`https://.../tema.ogg` — players download it automatically;
+YouTube must be converted first, the command gives you the ready `yt-dlp`
+line). Players adjust volume via Options → Music & Sounds → **Ambient**
+(zone sounds) and **Music** (soundtracks).
+**`/rp ajuda`** lists every command with what it does (admins also get the
+admin section).

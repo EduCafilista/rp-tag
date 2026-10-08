@@ -44,7 +44,7 @@ public final class RollCommands {
         ParsedRoll roll = parse(normalized);
         if (roll == null) {
             player.sendSystemMessage(Component.literal(
-                    "Formato invalido! Use: /roll, /roll d20, /roll 2d6+1, /roll 3d4 motivo")
+                    "Formato invalido! Use: /roll, /roll d20, /roll 2d6+1, /roll +3 (especialista), /roll 3d4 motivo")
                     .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -107,7 +107,12 @@ public final class RollCommands {
             int sides;
             int d = dicePart.indexOf('d');
             if (d < 0) {
-                return null;
+                // (3.55.0) "+3" sozinho = ESPECIALIDADE: vira 1d20+3
+                if (!dicePart.isEmpty()) {
+                    return null;
+                }
+                dicePart = "1d20";
+                d = 0;
             }
             if (d > 0) {
                 count = Integer.parseInt(dicePart.substring(0, d));

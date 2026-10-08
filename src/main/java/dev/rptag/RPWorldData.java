@@ -38,6 +38,8 @@ public final class RPWorldData extends SavedData {
     private final Map<UUID, Persona> personas = new HashMap<>();
     private final Map<UUID, Integer> colors = new HashMap<>();
     private final Map<UUID, Boolean> bubbleOptOut = new HashMap<>();
+    /** jogadores PROIBIDOS de usar balao por um admin (ausente = permitido). */
+    private final Map<UUID, Boolean> bubbleAllowed = new HashMap<>();
     private final Map<UUID, Boolean> bubbleMode = new HashMap<>();
     private final Map<UUID, BubbleStyle> styles = new HashMap<>();
     private boolean chatLocal = true;
@@ -131,18 +133,37 @@ public final class RPWorldData extends SavedData {
         setDirty();
     }
 
+    // ==== permissao de balao (ADMIN LIBERA — 3.17.0: so quem o admin liberar usa) ====
+
+    /** @return true se o admin LIBEROU o balao deste jogador (padrao: NINGUEM). */
+    public boolean isBubbleAllowed(UUID id) {
+        return bubbleAllowed.getOrDefault(id, false);
+    }
+
+    public void setBubbleAllowed(UUID id, boolean allowed) {
+        if (allowed) {
+            bubbleAllowed.put(id, true);
+        } else {
+            bubbleAllowed.remove(id);
+        }
+        setDirty();
+    }
+
+    public java.util.Set<UUID> bubbleAllowedIds() {
+        return bubbleAllowed.keySet();
+    }
+
     // ==== estilo do balao ====
 
     public BubbleStyle getStyle(UUID id) {
         BubbleStyle style = styles.get(id);
-        int color = colors.getOrDefault(id, DEFAULT_COLOR);
         if (style == null) {
-            return new BubbleStyle(color, "", "", 0);
+            int color = colors.getOrDefault(id, DEFAULT_COLOR);
+            return new BubbleStyle(color, BubbleStyle.DEFAULT_BORDER, BubbleStyle.BORDER_CLASSIC,
+                    BubbleStyle.TEXT_AUTO, "", "", "", "", "", BubbleStyle.DEFAULT_STICKER_X,
+                    BubbleStyle.DEFAULT_STICKER_Y, 0, BubbleStyle.DEFAULT_DURATION);
         }
-        if (style.colorRGB() != color) {
-            return new BubbleStyle(color, style.prefix(), style.suffix(), style.background());
-        }
-        return style;
+        return style; // a cor escolhida na tela manda SEMPRE
     }
 
     public void setStyle(UUID id, BubbleStyle style) {
@@ -203,6 +224,14 @@ public final class RPWorldData extends SavedData {
         });
         tag.put("BubbleOptOut", optOuts);
 
+        ListTag banned = new ListTag();
+        this.bubbleAllowed.forEach((id, b) -> {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", id);
+            banned.add(e);
+        });
+        tag.put("BubbleAllowed", banned);
+
         ListTag modes = new ListTag();
         this.bubbleMode.forEach((id, on) -> {
             if (on) {
@@ -253,7 +282,27 @@ public final class RPWorldData extends SavedData {
             data.bubbleOptOut.put(optOuts.getCompound(i).getUUID("Id"), true);
         }
 
-        data.chatLocal = tag.getBoolean("ChatLocal");
+        ListTag banned = tag.getList("BubbleAllowed", Tag.TAG_COMPOUND);
+        for (int i = 0; i < banned.size(); i++) {
+            data.bubbleAllowed.put(banned.getCompound(i).getUUID("Id"), true);
+        }
+
+        // CORRECAO: estilos e modos de balao agora voltam ao reiniciar o servidor!
+        ListTag modes = tag.getList("BubbleMode", Tag.TAG_COMPOUND);
+        for (int i = 0; i < modes.size(); i++) {
+            data.bubbleMode.put(modes.getCompound(i).getUUID("Id"), true);
+        }
+
+        ListTag stylesList = tag.getList("BubbleStyles", Tag.TAG_COMPOUND);
+        for (int i = 0; i < stylesList.size(); i++) {
+            CompoundTag e = stylesList.getCompound(i);
+            data.styles.put(e.getUUID("Id"), BubbleStyle.load(e.getCompound("Style")));
+        }
+
+        // (correcao) mesmo cuidado que ja existia pro "BubblesOn": se a tag
+        // nunca foi salva (mundo/save antigo), tem que manter o padrao real
+        // (ligado) em vez de virar "false" so por ausencia da chave.
+        data.chatLocal = !tag.contains("ChatLocal") || tag.getBoolean("ChatLocal");
         data.bubblesOn = !tag.contains("BubblesOn") || tag.getBoolean("BubblesOn");
         return data;
     }

@@ -11,6 +11,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientChatEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
@@ -22,6 +23,18 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 public final class ClientEvents {
 
     private ClientEvents() {
+    }
+
+    /**
+     * (3.55.0) guarda a ultima fala NORMAL do jogador — a previa do /balao
+     * mostra ela ("so escrever no chat ja testa o balao").
+     */
+    @SubscribeEvent
+    public static void onChatSend(ClientChatEvent event) {
+        String msg = event.getMessage();
+        if (msg != null && !msg.isBlank() && !msg.startsWith("/")) {
+            ClientRPStates.ultimaFala = msg.length() > 100 ? msg.substring(0, 100) : msg;
+        }
     }
 
     @SubscribeEvent
