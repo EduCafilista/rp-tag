@@ -66,6 +66,33 @@ public final class BalaoCommands {
                     return Command.SINGLE_SUCCESS;
                 })));
 
+        // (3.65.0) /balao typewriter [on|off] — a fala se escreve sozinha?
+        root.then(Commands.literal("typewriter")
+                .executes(ctx -> {
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    boolean novo = !RPWorldData.get(player.server).isTypewriter(player.getUUID());
+                    return alternarTypewriter(player, novo);
+                })
+                .then(Commands.literal("on").executes(ctx -> {
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    return alternarTypewriter(player, true);
+                }))
+                .then(Commands.literal("off").executes(ctx -> {
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    return alternarTypewriter(player, false);
+                })));
+
         event.getDispatcher().register(root);
+    }
+
+    /** (3.65.0) liga/desliga o typewriter do balao do jogador (persistente). */
+    private static int alternarTypewriter(ServerPlayer player, boolean on) {
+        RPWorldData.get(player.server).setTypewriter(player.getUUID(), on);
+        PacketDistributor.sendToPlayer(player, new TypewriterPayload(on));
+        player.sendSystemMessage(Component.literal(on
+                ? "\u270e Digitacao automatica LIGADA: suas falas se escrevem sozinhas no balao."
+                : "\u270e Digitacao automatica DESLIGADA: suas falas aparecem inteiras na hora.")
+                .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY));
+        return Command.SINGLE_SUCCESS;
     }
 }

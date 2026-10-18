@@ -28,7 +28,7 @@ uns 5~15 min conforme a internet) e **precisa de ~4 GB de RAM livres**
 (é o build padrão de mods NeoForge: ele descompila o Minecraft uma vez e
 guarda no cache; das outras vezes é rapidinho).
 
-✅ O jar pronto aparece em **`build/libs/rptag-3.58.1.jar`** — é esse que
+✅ O jar pronto aparece em **`build/libs/rptag-3.60.0.jar`** — é esse que
 vai na pasta `mods` do jogo/servidor (sempre APAGUE o jar antigo antes de
 pôr o novo, no SERVIDOR e no CLIENTE!).
 
@@ -44,6 +44,7 @@ pôr o novo, no SERVIDOR e no CLIENTE!).
 | Quero mudar... | Arquivo |
 |---|---|
 | Visual do balão no mundo | `src/main/java/dev/rptag/client/BubbleRenderer.java` |
+| **Forma/estilo do balão (geometria)** | `src/main/java/dev/rptag/client/BubbleGeometry.java` (Java puro — testa com `tools/teste-geometria.sh`) |
 | Tela de personalização `/balao` | `src/main/java/dev/rptag/client/BubbleStyleScreen.java` |
 | Comandos de chat (`/g /s /w /pensar /me /do`) | `src/main/java/dev/rptag/ChatCommands.java` |
 | Comando `/rp` e ajuda | `src/main/java/dev/rptag/RPCommands.java` |

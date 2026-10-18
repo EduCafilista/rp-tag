@@ -68,18 +68,99 @@ public final class RPCommands {
                 .withStyle(ChatFormatting.DARK_PURPLE), false); // (3.47.0) SO O ADMIN ve (era broadcast!)
     }
 
-    /** (3.44.0) Mostra o texto GRANDE na tela do alvo (padrao: vermelho). */
+    /** (3.64.0) Mostra o texto GRANDE na tela dos alvos. ESTILOS:
+     * 0 classico (faixa, cores &), 1 pesadelo (veu preto + sangue),
+     * 2 runico (veu arcano + runas), 3 real (azul-noite + ouro).
+     * Aceita VARIOS jogadores (nomes ou seletor @a — "avisar alguns players"). */
     private static void avisar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
-            ServerPlayer alvo, String texto) {
+            java.util.Collection<ServerPlayer> alvos, String estilo, String texto) {
+        int style = switch (estilo) {
+            case "pesadelo" -> 1;
+            case "runico" -> 2;
+            case "real" -> 3;
+            default -> 0;
+        };
         String traduzido = translateAmp(texto);
-        if (traduzido.indexOf('\u00a7') < 0) {
+        if (style == 0 && traduzido.indexOf('\u00a7') < 0) {
             traduzido = "\u00a7c" + traduzido; // sem cor? VERMELHO (o classic "voce esta sendo observado")
         }
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo,
-                new ScreenTextPayload(traduzido, 6));
+        ScreenTextPayload payload = new ScreenTextPayload(traduzido, 8, style); // (3.61.0) 8s: aviso serio pede tempo
+        for (ServerPlayer alvo : alvos) {
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, payload);
+            somAviso(alvo, style);
+        }
+        final int n = alvos.size();
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "Aviso na tela de " + alvo.getName().getString() + "!")
+                "Aviso (" + nomeEstilo(style) + ") na tela de " + n + " jogador(es)!")
                 .withStyle(ChatFormatting.YELLOW), false); // (3.47.0) SO O ADMIN ve
+    }
+
+    /** (3.64.0) nome bonito do estilo pro feedback do admin. */
+    private static String nomeEstilo(int style) {
+        return switch (style) {
+            case 1 -> "PESADELO";
+            case 2 -> "RUNICO";
+            case 3 -> "REAL";
+            default -> "classico";
+        };
+    }
+
+    /** (3.64.0) som do aviso direto no alvo (assustador pede som). */
+    private static void somAviso(ServerPlayer alvo, int style) {
+        switch (style) {
+            case 1 -> alvo.level().playSound(null, alvo.blockPosition(),
+                    net.minecraft.sounds.SoundEvents.ELDER_GUARDIAN_CURSE,
+                    net.minecraft.sounds.SoundSource.HOSTILE, 0.9F, 0.7F);
+            // (3.66.0) RUNICO tem SOM PROPRIO: sino de ametista (mystico,
+            // nada a ver com a maldicao do pesadelo)
+            case 2 -> alvo.level().playSound(null, alvo.blockPosition(),
+                    net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME,
+                    net.minecraft.sounds.SoundSource.BLOCKS, 1.2F, 0.65F);
+            case 3 -> alvo.level().playSound(null, alvo.blockPosition(),
+                    net.minecraft.sounds.SoundEvents.BEACON_ACTIVATE,
+                    net.minecraft.sounds.SoundSource.BLOCKS, 0.8F, 1.0F);
+            default -> { }
+        }
+    }
+
+    /**
+     * (3.61.0) AVISO pra TODA A LOREZONE: quem estiver dentro da esfera da
+     * zona &lt;id&gt; recebe o texto GRANDE na tela (igual /rp admin avisar).
+     *
+     * @return jogadores avisados (0 = zona inexistente ou vazia)
+     */
+    private static int avisarZona(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            String zonaId, String texto) {
+        LoreZones.LoreZonesData data = LoreZones.LoreZonesData.get(ctx.getSource().getServer());
+        LoreZones.Zone zona = data.get(zonaId);
+        if (zona == null) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "Zona '" + zonaId + "' nao existe. Veja os ids com /lorezone listar."));
+            return 0;
+        }
+        String traduzido = translateAmp(texto);
+        if (traduzido.indexOf('\u00a7') < 0) {
+            traduzido = "\u00a7c" + traduzido;
+        }
+        ScreenTextPayload payload = new ScreenTextPayload(traduzido, 8, 0);
+        int n = 0;
+        for (ServerPlayer p : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+            if (p.level().dimension() == zona.dimension()
+                    && p.position().distanceTo(zona.center()) <= zona.radius()) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p, payload);
+                n++;
+            }
+        }
+        if (n == 0) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "Ninguem dentro da zona '" + zonaId + "' agora — aviso nao entregue."));
+        } else {
+            final int total = n;
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "Aviso na tela de " + total + " jogador(es) dentro de '" + zonaId + "'!")
+                    .withStyle(ChatFormatting.YELLOW), false);
+        }
+        return n;
     }
 
     /**
@@ -89,7 +170,7 @@ public final class RPCommands {
     private static int ajuda(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
         final boolean adm = ctx.getSource().hasPermission(2);
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "\u00a76\u2554\u2550\u2550 RP Tag \u2014 COMANDOS \u2550\u2550"), false);
+                "\u00a76\u00bb RP Tag \u2014 Comandos"), false);
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "\u00a7e/rp \u00a77\u2014 liga/desliga o modo RP (tag \u00a7b\u25cf RP\u00a7/\u00a77\u25cb off)\u00a7e\n"
                 + "/rp on|off \u00a77\u2014 define direto\u00a7e\n"
@@ -103,18 +184,20 @@ public final class RPCommands {
                 + "/persona criar <nome> \u00a77\u2014 cria sua persona\u00a7e\n"
                 + "/persona desc|idade|off|ver \u00a77\u2014 edita/ve a persona\u00a7e\n"
                 + "/balao \u00a77\u2014 TELA de personalizacao do balao\u00a7e\n"
-                + "/balao modo on|off \u00a77\u2014 fala so no balao (sem chat)"), false);
+                + "/balao modo on|off \u00a77\u2014 fala so no balao (sem chat)" + "\n/balao typewriter on|off \u00a77\u2014 fala se escreve sozinha no balao (sua escolha)"), false);
         if (adm) {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c\u2014\u2014\u2014 SO ADMINS \u2014\u2014\u2014"), false);
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogador> <texto> \u00a77\u2014 texto grande na tela (cores &)\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, runico, real (alvos: nomes ou @a)\u00a7c\n"
+                + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
                     + "/rp admin bolha <jogador> on|off \u00a77\u2014 modo balao de outro\u00a7c\n"
                     + "/rp admin balao <jogador> on|off \u00a77\u2014 libera/bloqueia o balao\u00a7c\n"
                     + "/rp admin balaolist \u00a77\u2014 quem tem balao liberado\u00a7c\n"
+                    + "/rp admin canon on|off \u00a77\u2014 modo de perder vidas (todos j\u00e1 t\u00eam; quem morrer perde uma)\u00a7c\n"
                     + "/rp admin bolhas on|off \u00a77\u2014 baloes do servidor inteiro\u00a7c\n"
                     + "/do <texto> \u00a77\u2014 narracao de ambiente\u00a7c\n"
                     + "/lorezone criar <id> <raio> <titulo> \u00a77\u2014 cria zona de lore onde voce esta\u00a7c\n"
@@ -180,6 +263,16 @@ public final class RPCommands {
                             .withStyle(data.isBubbleMode(player.getUUID()) ? ChatFormatting.GREEN : ChatFormatting.GRAY))
                     .append(Component.literal(String.format(" · cor #%06X · moldura %d",
                             st.colorRGB() & 0xFFFFFF, st.borderStyle())).withStyle(ChatFormatting.GRAY)));
+            // (3.82.0) vidas canônicas no status: estoque X/5 + modo
+            int vidasCanon = data.getCanonLives(player.getUUID());
+            boolean canon = data.isCanonEvent();
+            player.sendSystemMessage(Component.empty()
+                    .append(Component.literal("Vidas canônicas: ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(vidasCanon + "/5").withStyle(
+                            vidasCanon > 0 ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.RED))
+                    .append(Component.literal(" · modo de PERDER: ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.literal(canon ? "LIGADO (quem morrer perde uma)" : "desligado")
+                            .withStyle(canon ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GRAY)));
             return Command.SINGLE_SUCCESS;
         }));
 
@@ -201,15 +294,50 @@ public final class RPCommands {
                                             medar(ctx, alvo, seg);
                                             return Command.SINGLE_SUCCESS;
                                         }))))
-                // (3.44.0) /rp admin avisar <jogador> <texto> — texto GRANDE na tela (cores com &)
+                // (3.64.0) /rp admin avisar <jogadores> [classico|pesadelo|runico|real]
+                // <texto> — varios alvos (nomes ou @a) + 4 estilos de tela
                 .then(Commands.literal("avisar")
-                        .then(Commands.argument("jogador", net.minecraft.commands.arguments.EntityArgument.player())
+                        .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
                                 .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                                         .executes(ctx -> {
-                                            ServerPlayer alvo = net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador");
+                                            var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
                                             String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
-                                            avisar(ctx, alvo, texto);
+                                            avisar(ctx, alvos, "classico", texto);
                                             return Command.SINGLE_SUCCESS;
+                                        }))
+                                .then(Commands.literal("pesadelo")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "pesadelo", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("runico")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "runico", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("real")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "real", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))))
+                // (3.61.0) /rp admin avisozona <id> <texto> — aviso na tela
+                // de TODOS que estiverem dentro da esfera da lorezone
+                .then(Commands.literal("avisozona")
+                        .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                        .executes(ctx -> {
+                                            String zonaId = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "id");
+                                            String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                            return avisarZona(ctx, zonaId, texto);
                                         }))))
                 .then(Commands.literal("chatlocal")
                         .then(Commands.literal("on").executes(ctx -> {
@@ -247,6 +375,29 @@ public final class RPCommands {
                                             .withStyle(ChatFormatting.GRAY));
                                     return Command.SINGLE_SUCCESS;
                                 }))))
+                // (3.80.0) /rp admin canon on|off — LIGA/DESLIGA o modo de
+                // PERDER vidas (todos os players JÁ têm vidas canônicas;
+                // com o modo ligado, quem morrer perde uma). SEM mensagem
+                // no chat: o aviso é o BANNER LORE ON/OFF pro servidor todo.
+                .then(Commands.literal("canon")
+                        .then(Commands.literal("on").executes(ctx -> {
+                            RPWorldData.get(ctx.getSource().getServer()).setCanonEvent(true);
+                            net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
+                                    new CanonBannerPayload("\u2740 LORE ON \u2740",
+                                            "\u2740 HARD-RP ON | VIDAS CANNON ON \u2740", 5, true));
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Vidas canônicas: modo de PERDER LIGADO (quem morrer perde uma)."), false);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .then(Commands.literal("off").executes(ctx -> {
+                            RPWorldData.get(ctx.getSource().getServer()).setCanonEvent(false);
+                            net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
+                                    new CanonBannerPayload("\u2740 LORE OFF \u2740",
+                                            "\u2740 HARD-RP ON | VIDAS CANNON OFF \u2740", 5, false));
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Vidas canônicas: modo de perder DESLIGADO."), false);
+                            return Command.SINGLE_SUCCESS;
+                        })))
                 .then(Commands.literal("balao")
                         .then(Commands.argument("jogador", EntityArgument.player())
                                 .then(Commands.literal("on").executes(ctx -> {

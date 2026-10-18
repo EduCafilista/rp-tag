@@ -8,6 +8,7 @@ import dev.rptag.MusicFileQueryPayload;
 import dev.rptag.PersonaSyncPayload;
 import dev.rptag.ScreenTextPayload;
 import dev.rptag.SyncRPStatePayload;
+import dev.rptag.TypewriterPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -59,6 +60,11 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> BubbleStyleScreen.open(payload));
     }
 
+    /** (3.65.0) TYPEWRITER: estado confirmado pelo servidor. */
+    public static void handleTypewriter(final TypewriterPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> ClientBubbleCache.TYPEWRITER = payload.on());
+    }
+
     /** (3.44.0) MEDO: liga a tremedeira + vinheta neste cliente. */
     public static void handleFear(final FearPayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> ClientEffects.startFear(payload.seconds()));
@@ -66,7 +72,14 @@ public final class ClientPayloadHandler {
 
     /** (3.44.0) AVISO: texto GRANDE no centro da tela. */
     public static void handleScreenText(final ScreenTextPayload payload, final IPayloadContext context) {
-        context.enqueueWork(() -> ClientEffects.startScreenText(payload.text(), payload.seconds()));
+        context.enqueueWork(() -> ClientEffects.startScreenText(payload.text(), payload.seconds(), payload.style()));
+    }
+
+    /** (3.77.0) BANNER da vida canônica (LORE ON/OFF). */
+    public static void handleCanonBanner(final dev.rptag.CanonBannerPayload payload,
+            final IPayloadContext context) {
+        context.enqueueWork(() -> ClientEffects.startCanonBanner(
+                payload.title(), payload.sub(), payload.seconds(), payload.on()));
     }
 
     /** (3.50.0) MUSICA CUSTOM de lore zone: toca/para o .ogg da pasta. */

@@ -41,6 +41,14 @@ public final class RPWorldData extends SavedData {
     /** jogadores PROIBIDOS de usar balao por um admin (ausente = permitido). */
     private final Map<UUID, Boolean> bubbleAllowed = new HashMap<>();
     private final Map<UUID, Boolean> bubbleMode = new HashMap<>();
+    /** (3.65.0) typewriter do balao por jogador (padrao LIGADO). */
+    private final Map<UUID, Boolean> typewriter = new HashMap<>();
+    /** (3.80.0) MODO de perder vidas (todos JÁ têm vidas canônicas; com
+     * o modo ligado, quem morrer perde uma). Persiste no mundo. */
+    private boolean canonEvent = false;
+    /** (3.82.0) VIDAS CANÔNICAS de cada jogador (quem nunca morreu tem
+     * VIDAS_INICIAIS = 5, guardado só quem já perdeu/ganhou diferente). */
+    private final Map<UUID, Integer> canonLives = new HashMap<>();
     private final Map<UUID, BubbleStyle> styles = new HashMap<>();
     private boolean chatLocal = true;
     private boolean bubblesOn = true;
@@ -111,6 +119,43 @@ public final class RPWorldData extends SavedData {
     }
 
     /** O jogador desligou os proprios baloes. */
+    /** (3.65.0) typewriter do balao (padrao LIGADO). */
+    // ==== (3.80.0) modo de perder vidas ====
+
+    /** @return true se o MODO está ligado (quem morrer perde uma vida). */
+    public boolean isCanonEvent() {
+        return canonEvent;
+    }
+
+    /** Liga/desliga o modo (persiste no mundo). */
+    public void setCanonEvent(boolean on) {
+        this.canonEvent = on;
+        setDirty();
+    }
+
+    // ==== (3.82.0) estoque de vidas canônicas ====
+
+    /** vidas canônicas do jogador (quem nunca perdeu tem as 5 iniciais). */
+    public int getCanonLives(UUID id) {
+        return canonLives.getOrDefault(id, 5);
+    }
+
+    /** define o estoque de vidas canônicas (persiste no mundo). */
+    public void setCanonLives(UUID id, int vidas) {
+        canonLives.put(id, Math.max(0, vidas));
+        setDirty();
+    }
+
+    public boolean isTypewriter(UUID id) {
+        return this.typewriter.getOrDefault(id, Boolean.TRUE);
+    }
+
+    /** (3.65.0) define o typewriter do jogador. */
+    public void setTypewriter(UUID id, boolean on) {
+        this.typewriter.put(id, on);
+        this.setDirty();
+    }
+
     public boolean isBubbleOptOut(UUID id) {
         return bubbleOptOut.getOrDefault(id, false);
     }
@@ -251,6 +296,29 @@ public final class RPWorldData extends SavedData {
         });
         tag.put("BubbleStyles", stylesList);
 
+        ListTag typewriterList = new ListTag();
+        this.typewriter.forEach((id, on) -> {
+            if (on) {
+                CompoundTag e = new CompoundTag();
+                e.putUUID("Id", id);
+                typewriterList.add(e);
+            }
+        });
+        tag.put("Typewriter", typewriterList);
+
+        // (3.80.0) modo de perder vidas
+        tag.putBoolean("CanonEvent", canonEvent);
+
+        // (3.82.0) vidas canônicas por jogador
+        ListTag vidasList = new ListTag();
+        for (Map.Entry<UUID, Integer> en : canonLives.entrySet()) {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", en.getKey());
+            e.putInt("Lives", en.getValue());
+            vidasList.add(e);
+        }
+        tag.put("CanonLives", vidasList);
+
         tag.putBoolean("ChatLocal", chatLocal);
         tag.putBoolean("BubblesOn", bubblesOn);
         return tag;
@@ -291,6 +359,19 @@ public final class RPWorldData extends SavedData {
         ListTag modes = tag.getList("BubbleMode", Tag.TAG_COMPOUND);
         for (int i = 0; i < modes.size(); i++) {
             data.bubbleMode.put(modes.getCompound(i).getUUID("Id"), true);
+        }
+
+        ListTag typewriterList = tag.getList("Typewriter", Tag.TAG_COMPOUND);
+        for (int i = 0; i < typewriterList.size(); i++) {
+            data.typewriter.put(typewriterList.getCompound(i).getUUID("Id"), true);
+        }
+
+        data.canonEvent = tag.getBoolean("CanonEvent");
+
+        ListTag vidasList = tag.getList("CanonLives", Tag.TAG_COMPOUND);
+        for (int i = 0; i < vidasList.size(); i++) {
+            CompoundTag e = vidasList.getCompound(i);
+            data.canonLives.put(e.getUUID("Id"), e.getInt("Lives"));
         }
 
         ListTag stylesList = tag.getList("BubbleStyles", Tag.TAG_COMPOUND);

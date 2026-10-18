@@ -50,9 +50,9 @@ public class BubbleStyleScreen extends Screen {
     //  TEMA CARTOON — mude aqui e o menu INTEIRO acompanha
     // =====================================================================
     private static final int TINTA = 0xFF171B26;       // contorno grosso de HQ
-    private static final int FUNDO = 0xFF2B3245;       // recheio do painel
+    private static final int FUNDO = 0xFF313B54;       // recheio do painel
     private static final int FUNDO_CLARO = 0xFF39415A; // filete de luz
-    private static final int PLACA_BG = 0xFF232A3B;    // fundo das placas
+    private static final int PLACA_BG = 0xFF2A2148;    // fundo das placas (veludo)
     private static final int OURO = 0xFFFFD98A;        // titulos e rotulos
     private static final int OURO_VIVO = 0xFFE8A83C;   // barra lateral / destaques
     private static final int TEXTO_CLARO = 0xFFE8ECFF; // valores
@@ -170,6 +170,9 @@ public class BubbleStyleScreen extends Screen {
 
     // geometria da pilula da simulacao (pra posicionar o adesivo e as zonas)
     private int simX0, simY, simW, simH;
+    /** (3.66.0) caixinhas de X dos emojis da DIREITA da previa
+     * {x0, y0, x1, y1} por slot — reconstruidas a cada renderSim. */
+    private final java.util.List<int[]> extrasXBoxes = new java.util.ArrayList<>();
     /** (3.43.0) geometria da COLUNA do emblema — calculada 1x no render, reusada nos cliques/hover. */
     private float emblemColX, emblemBadgeY;
     private boolean emblemOnRight;
@@ -498,12 +501,11 @@ public class BubbleStyleScreen extends Screen {
         }
 
         if (showKeyboard) {
-            addRenderableWidget(Button.builder(
-                    Component.literal(kbPage == 0 ? "✨ Fofos ▶" : "◀ Clássicos"),
-                    b -> {
+            addRenderableWidget(new GlassButton(kbPage == 0 ? "✨ Fofos ▶" : "◀ Clássicos",
+                    px + PANEL_W - 96, py + 14, 88, 16, 0xFFB07FE8, b -> {
                         kbPage = kbPage == 0 ? 1 : 0;
                         rebuildWidgets();
-                    }).bounds(px + PANEL_W - 96, py + 14, 88, 16).build());
+                    }));
             // GRADE = BOTÕES VANILLA (o caminho mais à prova de cliente que existe)
             int start = Stickers.pageStart(kbPage);
             int count = Stickers.pageCount(kbPage);
@@ -511,17 +513,18 @@ public class BubbleStyleScreen extends Screen {
                 final int idx = start + k;
                 int cx = kbX + (k % KB_COLS) * KB_CELL;
                 int cy = kbY + (k / KB_COLS) * KB_CELL;
-                addRenderableWidget(Button.builder(Component.literal(""), b -> {
-                    holdingSticker = String.valueOf(idx);
-                    showKeyboard = false;
-                    rebuildWidgets();
-                }).bounds(cx, cy, KB_CELL, KB_CELL).build());
+                addRenderableWidget(new GlassButton("", cx, cy, KB_CELL, KB_CELL,
+                        0xFF6B76A8, b -> {
+                            holdingSticker = String.valueOf(idx);
+                            showKeyboard = false;
+                            rebuildWidgets();
+                        }));
             }
-            addRenderableWidget(Button.builder(Component.literal("✔ Pronto — clique no balão ou na fala!"),
-                    b -> {
+            addRenderableWidget(new GlassButton("✔ Pronto — clique no balão ou na fala!",
+                    px + (PANEL_W - 220) / 2, py + PANEL_H - 26, 220, 20, OURO_VIVO, b -> {
                         showKeyboard = false;
                         rebuildWidgets();
-                    }).bounds(px + (PANEL_W - 220) / 2, py + PANEL_H - 26, 220, 20).build());
+                    }));
             return;
         }
 
@@ -529,61 +532,56 @@ public class BubbleStyleScreen extends Screen {
         // botao de borda no ULTIMO espaco (nao sobra buraco na grade):
         //   [Classica] [Cartum]  [Quadrada]
         //   [Costura]  [Brilho]  [Sem borda]
-        addRenderableWidget(Button.builder(Component.literal("▤ Clássica"), b -> {
+        addRenderableWidget(new GlassButton("▤ Clássica", px + 8, py + ROW_BTN1, 81, 16,
+                OURO_VIVO, b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CLASSIC);
-                }).bounds(px + 8, py + ROW_BTN1, 81, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("▤ Cartum"), b -> {
+                }));
+        addRenderableWidget(new GlassButton("▤ Cartum", px + 93, py + ROW_BTN1, 81, 16,
+                OURO_VIVO, b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CARTOON);
-                }).bounds(px + 93, py + ROW_BTN1, 81, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("\u25a3 Quadrada"), b -> {
+                }));
+        addRenderableWidget(new GlassButton("\u25a3 Quadrada", px + 178, py + ROW_BTN1, 81, 16,
+                OURO_VIVO, b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_DOUBLE); // id 2 = QUADRADA (3.50.0)
-                }).bounds(px + 178, py + ROW_BTN1, 81, 16).build());
+                }));
 
-        addRenderableWidget(Button.builder(Component.literal("∴ Costura"), b -> {
+        addRenderableWidget(new GlassButton("∴ Costura", px + 8, py + ROW_BTN2, 81, 16,
+                OURO_VIVO, b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_DASHED);
-                }).bounds(px + 8, py + ROW_BTN2, 81, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("◕ Brilho"), b -> {
+                }));
+        addRenderableWidget(new GlassButton("◕ Brilho", px + 93, py + ROW_BTN2, 81, 16,
+                OURO_VIVO, b -> {
                     style = withBorderStyle(BubbleStyle.BORDER_CLOUD);
-                }).bounds(px + 93, py + ROW_BTN2, 81, 16).build());
+                }));
         // (3.51.0) Auto e "Minha cor" SAIRAM (obsoletos: a cor da borda se
         // escolhe na paleta "Borda:" ali em cima). Ficou UM botao claro.
-        addRenderableWidget(Button.builder(bordaToggleLabel(), b -> {
+        addRenderableWidget(new GlassButton(bordaToggleLabel(), px + 178, py + ROW_BTN2, 81, 16,
+                OURO_VIVO, b -> {
                     style = withBorder(style.borderRGB() == BubbleStyle.NO_BORDER
                             ? lastBorda : BubbleStyle.NO_BORDER);
                     b.setMessage(bordaToggleLabel());
-                }).bounds(px + 178, py + ROW_BTN2, 81, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("✦ Adesivos (80)"), b -> {
+                }));
+        addRenderableWidget(new GlassButton("✦ Adesivos (80)", px + 8, py + ROW_BTN4, 124, 18,
+                0xFFE58ACC, b -> {
                     showKeyboard = true;
                     rebuildWidgets();
-                }).bounds(px + 8, py + ROW_BTN4, 124, 18).build());
-        addRenderableWidget(new AbstractSliderButton(px + 136, py + ROW_BTN4, 123, 18,
-                durationLabel(), (style.durationSec() - BubbleStyle.MIN_DURATION)
-                        / (float) (BubbleStyle.MAX_DURATION - BubbleStyle.MIN_DURATION)) {
-            @Override
-            protected void updateMessage() {
-                setMessage(durationLabel());
-            }
-
-            @Override
-            protected void applyValue() {
-                int secs = BubbleStyle.MIN_DURATION
-                        + (int) Math.round(this.value * (BubbleStyle.MAX_DURATION - BubbleStyle.MIN_DURATION));
-                style = withDuration(secs);
-            }
-        });
+                }));
+        addRenderableWidget(new GlassSlider(px + 136, py + ROW_BTN4, 123, 18));
 
         int row5 = py + ROW_BTN5;
-        addRenderableWidget(Button.builder(modeLabel(), b -> {
+        addRenderableWidget(new GlassButton(modeLabel(), px + 8, row5, 84, 16,
+                0xFF5CE87C, b -> {
                     this.bubbleMode = !this.bubbleMode;
                     this.modeChanged = true;
                     b.setMessage(modeLabel());
-                }).bounds(px + 8, row5, 84, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("↺ Padrão"), b -> {
+                }));
+        addRenderableWidget(new GlassButton("↺ Padrão", px + 96, row5, 78, 16,
+                0xFF8A92B4, b -> {
                     style = BubbleStyle.DEFAULT;
                     rebuildWidgets();
-                }).bounds(px + 96, row5, 78, 16).build());
-        addRenderableWidget(Button.builder(Component.literal("✔ Salvar"), b -> saveAndClose())
-                .bounds(px + 178, row5, 81, 16).build());
+                }));
+        addRenderableWidget(new GlassButton("✔ Salvar", px + 178, row5, 81, 16,
+                0xFF5CE87C, b -> saveAndClose()));
     }
 
     // =====================================================================
@@ -648,20 +646,144 @@ public class BubbleStyleScreen extends Screen {
     //  Desenho
     // =====================================================================
 
+    /** (3.71.0) VAZIO DE PROPOSITO — A CAUSA RAIZ DO "MENU EMBAÇADO":
+     * o Screen.render vanilla chama este metodo DEPOIS do painel (logo
+     * antes dos widgets) e o blur dele embaçava O MENU INTEIRO (print
+     * 3.70: painel ilegivel, botoes nítidos). O fundo embaçado do MUNDO
+     * e desenhado UMA unica vez, no comeco do render(). */
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        g.fill(0, 0, this.width, this.height, 0xFF0B0E15);
-        // vinheta suave (degrade por faixas) — profundidade sem textura
-        for (int i = 0; i < 5; i++) {
-            int a = 0x28 - i * 8;
-            g.fill(0, i * 4, this.width, i * 4 + 4, a << 24);
-            g.fill(0, this.height - i * 4 - 4, this.width, this.height - i * 4, a << 24);
+    }
+
+    /** (3.68.0) Ceu de GALAXIA: nebulosas de blob suave, faixa da via
+     * lactea, estrelas vivas e um cometa a cada 9 s — tudo procedural. */
+    private void desenhaGalaxia(GuiGraphics g, boolean leve) {
+        int w = this.width, h = this.height;
+        long t = System.currentTimeMillis();
+
+        if (!leve) {
+        // nebulosas: blobs achatados em deriva lentissima (roxo/azul/magenta)
+        int[] nebC = {0x7C4DBF, 0x4A5FD4, 0xC45FB0, 0x2E8FA8, 0x7C4DBF};
+        for (int i = 0; i < nebC.length; i++) {
+            float fx = ((i * 367 + 113) % 100) / 100.0F;
+            float fy = ((i * 149 + 47) % 100) / 100.0F;
+            float drift = (t / 90_000.0F + fx) % 1.0F;
+            blob(g, drift * w, fy * h, 70 + (i * 53) % 80,
+                    (0x2A - (i % 3) * 6) << 24 | nebC[i]);
+        }
+        // via lactea: neblina numa faixa diagonal + estrelas densas nela
+        for (int i = 0; i < 4; i++) {
+            float p = (i + 0.5F) / 4.0F;
+            blob(g, p * w, h * 0.78F - p * h * 0.5F, 110, 0x168FA8FF);
+        }
+        for (int i = 0; i < 46; i++) {
+            int sxx = (i * 257 + 13) % Math.max(1, w);
+            int syy = (int) (h * 0.78F - (sxx / (float) Math.max(1, w)) * h * 0.5F)
+                    + ((i * 83) % 56) - 28;
+            if (syy >= 0 && syy < h - 1) {
+                g.fill(sxx, syy, sxx + 1, syy + 1, (0x30 + ((i * 43) % 0x30)) << 24 | 0xDDE8FF);
+            }
+        }
+        } // fim do ceu completo (!leve) — no modo leve o mundo aparece
+        // estrelas distantes (fino, cintilando devagar)
+        long tt = t / 900L;
+        for (int i = 0; i < (leve ? 64 : 90); i++) {
+            int sxx = (i * 211 + 97) % Math.max(1, w);
+            int syy = (i * 113 + 53) % Math.max(1, h);
+            int al = 0x20 + ((i * 31 + (int) (tt % 3L)) % 0x26);
+            // (3.73.0) cada 7a estrela e de OURO (toque de realeza)
+            g.fill(sxx, syy, sxx + 1, syy + 1,
+                    al << 24 | ((i % 7 == 0) ? 0xFFE8A83C : 0xBFD4FF));
+        }
+        // estrelas vivas: 26 maiores com pulso e cruz de brilho no pico
+        for (int i = 0; i < (leve ? 12 : 26); i++) {
+            int sxx = (i * 419 + 211) % Math.max(1, w);
+            int syy = (i * 307 + 151) % Math.max(1, h);
+            int pul = (int) ((t / 500L + i) % 3L);
+            g.fill(sxx, syy, sxx + 2, syy + 2, (0x60 + pul * 0x2A) << 24 | 0xFFE9C8);
+            if (pul == 2) {
+                g.fill(sxx - 3, syy, sxx + 5, syy + 1, 0x40FFE9C8);
+                g.fill(sxx, syy - 3, sxx + 1, syy + 5, 0x40FFE9C8);
+            }
+        }
+        // cometa: a cada ~9 s risca o ceu numa janela de 1,1 s
+        long ciclo = t % 9000L;
+        if (ciclo < 1100L) {
+            float p = ciclo / 1100.0F;
+            int hx = (int) (w * (1.05F - 1.25F * p));
+            int hy = (int) (h * (0.06F + 0.34F * p));
+            for (int k = 0; k < 6; k++) {
+                g.fill(hx + k * 4, hy - k * 2, hx + k * 4 + 3, hy - k * 2 + 1,
+                        (0x90 - k * 0x18) << 24 | 0xCFE8FF);
+            }
+            g.fill(hx - 1, hy - 1, hx + 2, hy + 2, 0xE0FFFFFF);
+        }
+        // vinheta suave — so no ceu completo (no modo leve o mundo limpo)
+        if (!leve) {
+            for (int i = 0; i < 5; i++) {
+                int a = 0x28 - i * 8;
+                g.fill(0, i * 4, w, i * 4 + 4, a << 24);
+                g.fill(0, h - i * 4 - 4, w, h - i * 4, a << 24);
+            }
+        }
+    }
+
+    /** (3.73.0) COROA real 11x7: base ouro, 3 pontas e joias. */
+    private void desenhaCoroa(GuiGraphics g, int x, int y) {
+        g.fill(x + 1, y + 2, x + 3, y + 5, OURO_VIVO);    // ponta esquerda
+        g.fill(x + 4, y, x + 7, y + 5, OURO_VIVO);        // ponta central (alta)
+        g.fill(x + 8, y + 2, x + 10, y + 5, OURO_VIVO);   // ponta direita
+        g.fill(x, y + 5, x + 11, y + 7, OURO_VIVO);       // base
+        g.fill(x + 5, y + 5, x + 6, y + 7, 0xFFE04858);   // joia rubi
+        g.fill(x + 2, y + 5, x + 3, y + 6, 0xFF5878F0);   // joia safira
+        g.fill(x + 8, y + 5, x + 9, y + 6, 0xFF5878F0);   // joia safira
+        g.fill(x + 5, y - 1, x + 6, y, 0xFFFFF2C8);       // brilho do topo
+    }
+
+    /** (3.73.0) DIAMANTE ouro (losango 7x7) — ornamento dos cantos do painel. */
+    private void desenhaDiamante(GuiGraphics g, int cx, int cy) {
+        g.fill(cx, cy - 3, cx + 1, cy + 4, OURO_VIVO);      // vertical
+        g.fill(cx - 3, cy, cx + 4, cy + 1, OURO_VIVO);      // horizontal
+        g.fill(cx - 1, cy - 1, cx + 2, cy + 2, 0xFFFFD98A); // miolo claro
+        g.fill(cx, cy - 1, cx + 1, cy, 0xFFFFF2C8);         // faísca
+    }
+
+    /** Blob nebuloso: elipse achatada de retangulos concentricos (borda macia). */
+    private void blob(GuiGraphics g, float cx, float cy, float r, int argb) {
+        int core = argb & 0xFFFFFF;
+        int a0 = (argb >>> 24) & 0xFF;
+        for (int k = 5; k >= 1; k--) {
+            float rr = r * k / 5.0F;
+            int aa = Math.max(1, a0 * (6 - k) / 5);
+            g.fill((int) (cx - rr), (int) (cy - rr * 0.6F),
+                    (int) (cx + rr), (int) (cy + rr * 0.6F), aa << 24 | core);
         }
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        renderBackground(g, mouseX, mouseY, partialTick);
+        // (3.68.0) FUNDO EMBACADO: blur vanilla do mundo + galaxia por cima
+        // (o "quadrado com fundo embaçado" pedido). Sem mundo — ou se o
+        // blur falhar num shader exotico — usa o fundo opaco de sempre.
+        boolean blurOk = false;
+        if (this.minecraft != null && this.minecraft.level != null) {
+            try {
+                this.renderBlurredBackground(partialTick);
+                blurOk = true;
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.debug("RP Tag: blur do fundo indisponivel ({})", t.toString());
+            }
+        }
+        // (3.70.0) "a tela a pessoa tem que ver": com blur ok, véu LEVE e
+        // só as estrelinhas por cima — o mundo embaçado CONTINUA visível.
+        // Sem blur (menu de pausa / sem mundo) mantém o céu completo.
+        if (blurOk) {
+            g.fill(0, 0, this.width, this.height, 0x360B0E15);
+            desenhaGalaxia(g, true);
+        } else {
+            g.fill(0, 0, this.width, this.height, 0xFF0B0E15);
+            desenhaGalaxia(g, false);
+        }
         // (3.50.1) A PROVA DE CRASH (mesma filosofia do mundo): qualquer erro
         // no desenho da tela NAO fecha o jogo — cai pro modo simples (so os
         // BOTOES continuam) e registra o motivo no log.
@@ -712,22 +834,118 @@ public class BubbleStyleScreen extends Screen {
         }
     }
 
-    /** Painel cartoon: sombra dura, moldura de tinta, filete de luz e barra dourada. */
+    /** (3.68.0) Painel GALAXIA: vidro espacial em gradiente, moldura ouro
+     * com filete violeta, barra dourada lateral e cantinhos de luz. */
     private void drawPanel(GuiGraphics g) {
-        g.fill(px + 4, py + 4, px + PANEL_W + 4, py + PANEL_H + 4, 0x55000000); // sombra dura
-        g.fill(px, py, px + PANEL_W, py + PANEL_H, TINTA);                      // tinta grossa
-        g.fill(px + 2, py + 2, px + PANEL_W - 2, py + PANEL_H - 2, FUNDO);      // recheio
-        g.fill(px + 3, py + 3, px + PANEL_W - 3, py + 4, 0x44FFFFFF);           // luz no topo
-        g.fill(px, py, px + 3, py + PANEL_H, OURO_VIVO);                        // barra dourada
+        g.fill(px + 4, py + 5, px + PANEL_W + 4, py + PANEL_H + 5, 0x55000000); // sombra dura
+        // (3.73.0) VELUDO REAL: roxo profundo no topo, vino-real na base
+        g.fillGradient(px, py, px + PANEL_W, py + PANEL_H, 0xF23A2566, 0xF21E1140);
+        g.fill(px + 4, py + 4, px + PANEL_W - 4, py + 22, 0x15FFFFFF);           // luz no veludo
+        g.fill(px + 4, py + PANEL_H - 10, px + PANEL_W - 4, py + PANEL_H - 4, 0x158A5FE0);
+        g.fill(px, py, px + 3, py + PANEL_H, OURO_VIVO);                         // barra dourada
+        outline(g, px, py, PANEL_W, PANEL_H, 0xFFE8A83C);                        // moldura ouro
+        outline(g, px + 1, py + 1, PANEL_W - 2, PANEL_H - 2, 0x78E8A83C);        // filete ouro vivo
+        // (3.66.0, vivo) filete dourado interno
+        outline(g, px + 3, py + 3, PANEL_W - 6, PANEL_H - 6, 0x5CE8A83C);
+        // (3.73.0) DIAMANTES nos 4 cantos (no lugar dos cantinhos retos)
+        desenhaDiamante(g, px + 3, py + 3);
+        desenhaDiamante(g, px + PANEL_W - 4, py + 3);
+        desenhaDiamante(g, px + 3, py + PANEL_H - 4);
+        desenhaDiamante(g, px + PANEL_W - 4, py + PANEL_H - 4);
     }
 
     /** Faixa de titulo com sublinhado dourado e versao. */
     private void drawTitle(GuiGraphics g) {
-        g.fill(px + 3, py + 3, px + PANEL_W - 3, py + 17, 0xFF1F2534);
-        g.fill(px + 3, py + 15, px + PANEL_W - 3, py + 17, OURO_VIVO);
-        g.drawString(this.font, "✦ Balão de Fala", px + 10, py + 6, OURO, true);
+        // (3.73.0) FAIXA REAL: veludo + filete de ouro + COROAS ladeando
+        g.fill(px + 4, py + 4, px + PANEL_W - 4, py + 18, 0x66351F4A);
+        g.fill(px + 4, py + 4, px + PANEL_W - 4, py + 5, 0x2CE8A83C);
+        g.fill(px + 4, py + 15, px + PANEL_W - 4, py + 17, OURO_VIVO);
+        g.fill(px + 4, py + 17, px + PANEL_W - 4, py + 18, 0x66E8A83C);
+        String titulo = "Balão de Fala";
+        int tx0 = px + (PANEL_W - this.font.width(titulo)) / 2;
+        g.drawString(this.font, titulo, tx0, py + 6, 0xFFFFD98A, true);
+        desenhaCoroa(g, tx0 - 16, py + 7);
+        desenhaCoroa(g, tx0 + this.font.width(titulo) + 5, py + 7);
         String ver = "v" + RPTagMod.VERSION;
         g.drawString(this.font, ver, px + PANEL_W - 8 - this.font.width(ver), py + 6, CINZA, false);
+    }
+
+    /** (3.68.0) Botao de VIDRO da galaxia: vidro escuro, borda de luz,
+     * filete aceso no hover e texto creme — adeus cinza vanilla. */
+    private class GlassButton extends Button {
+        private final int accent;
+
+        private GlassButton(String label, int x, int y, int w, int h, int accent, OnPress onPress) {
+            this(Component.literal(label), x, y, w, h, accent, onPress);
+        }
+
+        private GlassButton(Component label, int x, int y, int w, int h, int accent, OnPress onPress) {
+            super(x, y, w, h, label, onPress, DEFAULT_NARRATION);
+            this.accent = accent;
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+            boolean hov = this.isHoveredOrFocused() && this.active;
+            g.fill(this.getX(), this.getY(), this.getX() + this.width, this.getY() + this.height,
+                    this.active ? (hov ? 0xFF3D3270 : 0xFF2A2350) : 0xFF221C38);
+            g.fill(this.getX(), this.getY(), this.getX() + this.width, this.getY() + 2,
+                    hov ? 0x3CFFFFFF : 0x1AFFFFFF);
+            outline(g, this.getX(), this.getY(), this.width, this.height,
+                    this.active ? (hov ? accent : 0xFF7A6AA8) : 0xFF443C64);
+            if (hov) {
+                g.fill(this.getX() + 1, this.getY() + this.height - 2,
+                        this.getX() + this.width - 1, this.getY() + this.height - 1, accent);
+            }
+            g.drawCenteredString(font, this.getMessage(), this.getX() + this.width / 2,
+                    this.getY() + (this.height - 8) / 2, this.active ? 0xFFFFE9B8 : 0xFF8A92B4);
+        }
+    }
+
+    /** (3.68.0) Slider de vidro: trilho escuro, preenchimento ouro, knob claro. */
+    private class GlassSlider extends AbstractSliderButton {
+        private GlassSlider(int x, int y, int w, int h) {
+            super(x, y, w, h, durationLabel(),
+                    (style.durationSec() - BubbleStyle.MIN_DURATION)
+                            / (float) (BubbleStyle.MAX_DURATION - BubbleStyle.MIN_DURATION));
+        }
+
+        @Override
+        protected void updateMessage() {
+            setMessage(durationLabel());
+        }
+
+        @Override
+        protected void applyValue() {
+            int secs = BubbleStyle.MIN_DURATION
+                    + (int) Math.round(this.value * (BubbleStyle.MAX_DURATION - BubbleStyle.MIN_DURATION));
+            style = withDuration(secs);
+        }
+
+        @Override
+        public void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+            int cy = this.getY() + this.height / 2;
+            g.fill(this.getX() + 1, cy - 2, this.getX() + this.width - 1, cy + 2, 0xFF221C38);
+            int fillW = 2 + (int) ((this.width - 6) * this.value);
+            g.fill(this.getX() + 2, cy - 1, this.getX() + 1 + fillW, cy + 1, 0xB0FFD98A);
+            int kx = this.getX() + 1 + fillW;
+            g.fill(kx, this.getY() + 2, kx + 5, this.getY() + this.height - 2,
+                    this.isHoveredOrFocused() ? 0xFFFFD98A : 0xFFE8A83C);
+            g.drawCenteredString(font, this.getMessage(), this.getX() + this.width / 2,
+                    this.getY() + (this.height - 8) / 2, 0xFFFFE9B8);
+        }
+    }
+
+    /** (3.72.0) corta a string pra caber em maxW (reticencias no fim) —
+     * NENHUM texto de uma linha pode mais vazar pra fora do painel. */
+    private String corta(String s, int maxW) {
+        if (this.font.width(s) <= maxW) {
+            return s;
+        }
+        while (s.length() > 1 && this.font.width(s + "\u2026") > maxW) {
+            s = s.substring(0, s.length() - 1);
+        }
+        return s + "\u2026";
     }
 
     /** Dica contextual (muda quando tem adesivo na mao). */
@@ -737,19 +955,24 @@ public class BubbleStyleScreen extends Screen {
         // PASSOU O MOUSE NUM BOTAO DE MOLDURA? explica na hora (sem enigma)
         String mh = molduraHover(mouseX, mouseY);
         if (mh != null) {
-            g.drawString(this.font, mh, px + 10, py + ROW_HINT, VERDE_OK, true);
+            g.drawString(this.font, corta(mh, PANEL_W - 20), px + 10, py + ROW_HINT,
+                    VERDE_OK, true);
             return;
         }
         if (holdingSticker != null) {
             hint = "Esquerda do balao = adesivo \u00b7 Direita = emoji \u00b7 ESC solta";
             cor = ZONA_OURO;
         } else if (extrasCount() > 0) {
-            hint = "Clique no X vermelho pra tirar um emoji";
-            cor = OURO;
+            // (3.72.0) dica ENCURTADA — a antiga tinha o dobro da largura do
+            // painel e vazava pela borda direita (print 3.71)
+            hint = ClientBubbleCache.TYPEWRITER
+                    ? "\u270e Digitacao LIGADA \u2014 /balao typewriter off"
+                    : "\u270e Digitacao off \u2014 /balao typewriter on";
+            cor = ClientBubbleCache.TYPEWRITER ? OURO : CINZA;
         } else {
-            hint = "✦ Prévia REAL: é EXATAMENTE assim que fica no mundo";
+            hint = "✦ Prévia REAL: é assim que fica no mundo";
         }
-        g.drawString(this.font, hint, px + 10, py + ROW_HINT, cor, true);
+        g.drawString(this.font, corta(hint, PANEL_W - 20), px + 10, py + ROW_HINT, cor, true);
     }
 
     /** @return dica da moldura sob o mouse (ou null) — alinhada aos BOTOES. */
@@ -811,25 +1034,53 @@ public class BubbleStyleScreen extends Screen {
         // no chat (com a tela fechada) e abrir o /balao pra ver a sua frase
         String fala = falaPrev();
         int chatY = py + ROW_CHAT;
-        g.drawString(this.font, "<Voc\u00ea> ", px + 12, chatY, 0xFF000000 | colorRGB, true);
-        g.drawString(this.font, fala, px + 12 + this.font.width("<Voc\u00ea> "),
-                chatY, textColor, true);
+        // (3.72.0) a fala agora TRUNCA com "…" — falas compridas nao vazam
+        // mais pra fora do painel na linha do chat
         String ex = style.extras();
+        String sufixo = ex.isEmpty() ? "" : " " + spaced(ex);
+        String falaMostrada = corta(fala,
+                PANEL_W - 24 - this.font.width("<Voc\u00ea> ") - this.font.width(sufixo));
+        g.drawString(this.font, "<Voc\u00ea> ", px + 12, chatY, 0xFF000000 | colorRGB, true);
+        g.drawString(this.font, falaMostrada, px + 12 + this.font.width("<Voc\u00ea> "),
+                chatY, textColor, true);
         if (!ex.isEmpty()) {
             g.drawString(this.font, Stickers.styled(spaced(ex)),
-                    px + 12 + this.font.width("<Voc\u00ea> " + fala + " "), chatY, textColor, true);
+                    px + 12 + this.font.width("<Voc\u00ea> " + falaMostrada + " "), chatY, textColor, true);
         }
 
-        // --- CARD DE PREVIA: CEU + GRAMA (blit estica a textura inteira) ---
+        // --- CARD DE PREVIA: CENARIO PROCEDURAL (ceu + lua cheia + grama) ---
+        // (3.68.0) trocou o blit SKY_TEX por um mini-cenario desenhado:
+        // visivel SEMPRE, combina com a galaxia e nao depende de textura.
         int cardX = px + 8, cardY = py + CARD_Y, cardW = PANEL_W - 16, cardH = CARD_H;
-        g.blit(SKY_TEX, cardX, cardY, 0, 0, cardW, cardH, cardW, cardH);
-        outline(g, cardX, cardY, cardW, cardH, 0xFF2A3248);
+        g.fillGradient(cardX, cardY, cardX + cardW, cardY + cardH, 0xFF1A2A5E, 0xFF2A1650);
+        long tc = System.currentTimeMillis() / 700L;
+        for (int i = 0; i < 26; i++) {
+            int sxx = cardX + 3 + (i * 47 + 5) % (cardW - 6);
+            int syy = cardY + 3 + (i * 29 + 3) % (cardH - 18);
+            int al = 0x50 + ((i * 37 + (int) (tc % 3L)) % 0x40);
+            g.fill(sxx, syy, sxx + 1, syy + 1, al << 24 | 0xCFE0FF);
+        }
+        // lua cheia com halo e crateras
+        g.fill(cardX + cardW - 26, cardY + 5, cardX + cardW - 10, cardY + 21, 0x2AF2E6B8);
+        g.fill(cardX + cardW - 23, cardY + 7, cardX + cardW - 13, cardY + 17, 0xFFF2E6B8);
+        g.fill(cardX + cardW - 21, cardY + 9, cardX + cardW - 19, cardY + 11, 0x66D8C898);
+        g.fill(cardX + cardW - 17, cardY + 13, cardX + cardW - 15, cardY + 15, 0x66D8C898);
+        // grama da base (2 tons + dentes)
+        int gy0 = cardY + cardH - 7;
+        g.fill(cardX + 1, gy0, cardX + cardW - 1, gy0 + 3, 0xFF3E9B44);
+        g.fill(cardX + 1, gy0 + 3, cardX + cardW - 1, cardY + cardH - 1, 0xFF2C7234);
+        for (int bxx = cardX + 3; bxx < cardX + cardW - 3; bxx += 5) {
+            g.fill(bxx, gy0 - 2, bxx + 1, gy0, 0xFF3E9B44);
+        }
+        outline(g, cardX, cardY, cardW, cardH, 0xFF8A6A2E); // (3.73.0) ouro-antigo
         g.fill(cardX, cardY, cardX + cardW, cardY + 1, OURO_VIVO);
         String tag = "\u2726 Prev\u00eda no mundo";
         int tagW = this.font.width(tag) + 8;
-        g.fill(cardX + 4, cardY + cardH - 12, cardX + 4 + tagW, cardY + cardH - 2, 0xCC0D1220);
-        g.fill(cardX + 4, cardY + cardH - 12, cardX + 6, cardY + cardH - 2, OURO_VIVO);
-        g.drawString(this.font, tag, cardX + 8, cardY + cardH - 10, OURO, true);
+        // (3.72.0) tag SUBIU: em cima da grama parecia uma barra verde
+        // quebrada — agora fica no ceu do mini-cenario
+        g.fill(cardX + 4, cardY + cardH - 21, cardX + 4 + tagW, cardY + cardH - 11, 0xCC0D1220);
+        g.fill(cardX + 4, cardY + cardH - 21, cardX + 6, cardY + cardH - 11, OURO_VIVO);
+        g.drawString(this.font, tag, cardX + 8, cardY + cardH - 19, OURO, true);
         // RECORTE: o balao vive DENTRO do card — nada invade as outras linhas
         g.enableScissor(cardX + 1, cardY + 1, cardX + cardW - 1, cardY + cardH - 1);
 
@@ -845,15 +1096,17 @@ public class BubbleStyleScreen extends Screen {
         // palavras = mais balao PRA CIMA — o texto nunca mais vaza da pilula
         java.util.List<String> linhasPrev = wrapPrev(falaPrev(), 110);
         float K = 2.0F;
-        if (linhasPrev.size() > 2) {
+        // (3.60.0) o rabicho agora e desenhado inteiro na previa: o zoom cai um
+        // degrau mais cedo (2+ linhas) pra pilula + rabicho caberem no card
+        if (linhasPrev.size() > 1) {
             K = 1.5F;
             linhasPrev = wrapPrev(falaPrev(), 150);
         }
-        if (linhasPrev.size() > 3) {
+        if (linhasPrev.size() > 2) {
             K = 1.2F;
             linhasPrev = wrapPrev(falaPrev(), 185);
         }
-        if (linhasPrev.size() > 4) {
+        if (linhasPrev.size() > 3) {
             K = 0.95F;
             linhasPrev = wrapPrev(falaPrev(), 220);
         }
@@ -869,6 +1122,32 @@ public class BubbleStyleScreen extends Screen {
         float margem = MARGEM[Math.max(0, Math.min(bsC, MARGEM.length - 1))];
         float cx = simX0 + simW / 2.0F;
 
+        if (BubbleRenderer.modern) {
+            // (3.60.0) MESMA GEOMETRIA DO MUNDO (BubbleGeometry): silhueta unica com
+            // rabicho de HQ, contorno exato, sombra macia, degrade e gloss. A previa
+            // e o balao de verdade, nao uma imitacao. A geometria e desenhada em
+            // "unidades do mundo" e ampliada por G (so o desenho; o texto tem o seu K).
+            final float G = Math.min(1.5F, K);
+            BubbleGeometry.Look look = new BubbleGeometry.Look();
+            look.style = Math.max(0, Math.min(bsC, 4));
+            look.fill = fill;
+            look.border = border;
+            look.baseRgb = colorRGB;
+            look.alpha = 1.0F;
+            look.x0 = 0.0F;
+            look.y0 = 0.0F;
+            look.w = simW / G;
+            look.h = simH / G;
+            look.tailCx = simW / G / 2.0F + 1.0F;
+            PoseStack gp = g.pose();
+            gp.pushPose();
+            gp.translate(simX0, simY, 0.0F);
+            gp.scale(G, G, 1.0F);
+            MultiBufferSource.BufferSource src = Minecraft.getInstance().renderBuffers().bufferSource();
+            BubbleGeometry.build(new BubbleSink(gp.last().pose(), src.getBuffer(RenderType.gui()), 0.40F), look);
+            gp.popPose();
+            src.endBatch(RenderType.gui());
+        } else {
         // --- SOMBRA (como no mundo) ---
         boolean quadradaPrev = (bsC == 2);
         if (quadradaPrev) {
@@ -888,7 +1167,8 @@ public class BubbleStyleScreen extends Screen {
                 case 3 -> // COSTURA: tracinhos em periodos de 8px (igual ao mundo)
                     costuraGui(g, simX0, simY, simW, simH, border, margem);
                 case 4 -> { // BRILHO: halo CLARO + anel fino
-                    int halo = 0xCC000000 | lightenGui(colorRGB, 0.55F);
+                    // (3.67.0) halo mais suave no card (o 0xCC "sujava" o ceu)
+                    int halo = 0x77000000 | lightenGui(colorRGB, 0.55F);
                     ringGuiTex(g, BRILHO_TYPE, U_CAP_B, simX0, simY, simW, simH, halo, margem);
                     ringGuiTex(g, RING_TYPE, U_CAP_B, simX0, simY, simW, simH, border, 2.0F);
                 }
@@ -917,6 +1197,11 @@ public class BubbleStyleScreen extends Screen {
         quadGui(g, TAIL_TYPE, 0.0475F, icx - 7, ty0, icx + 7, ty0 + 9,
                 0.0F, 0.0F, 1.0F, 1.0F, quadradaPrev ? fill : escalaTexel(fill));
         endBatch();
+        }
+        // tudo que vem DEPOIS (texto, emojis, X, zonas) sobe em Z pra ficar na
+        // FRENTE do balao (a geometria do balao ocupa z de 0.06 a 0.28)
+        g.pose().pushPose();
+        g.pose().translate(0.0F, 0.0F, 0.9F);
 
         // --- fala em MULTI-LINHAS dentro da pilula (zoom K, centrada) ---
         int tx = simX0 + 14 + (int) leftW;
@@ -946,7 +1231,6 @@ public class BubbleStyleScreen extends Screen {
         emblemColX = simX0 + 8;
         emblemBadgeY = simY + (simH - BADGE_PX) / 2.0F;
         if (temAdesivo) {
-            int i = 0;
             if (hasCorner) {
                 int idx = (style.corner().codePointAt(0)) - 0xE000;
                 if (idx < 0 || idx >= Stickers.COUNT) {
@@ -967,22 +1251,39 @@ public class BubbleStyleScreen extends Screen {
                     hoverSticker = true;
                     g.drawString(this.font, "+", Math.round(bx) - 2, Math.round(by) - 9, 0xFFFFFFFF, false);
                 }
-                i++;
-            }
-            if (!ex.isEmpty()) { // coluna da DIREITA: os emojis da fala
-                float rColX = simX0 + simW - 8
-                        - (ex.length() * BADGE_PX + (ex.length() - 1) * BADGE_GAP_PX);
-                for (int k = 0; k < ex.length(); k++) { // 1 char = 1 emoji (fix 3.50.0)
-                    int eIdx = (ex.codePointAt(k)) - 0xE000;
-                    if (eIdx < 0 || eIdx >= Stickers.COUNT) {
-                        eIdx = 0;
-                    }
-                    drawGlyphMenu(g, eIdx, Math.round(rColX + k * (BADGE_PX + BADGE_GAP_PX)),
-                            Math.round(emblemBadgeY), BADGE_PX / 16.0F);
-                }
             }
         } else {
             hoverSticker = false;
+        }
+        // (3.67.0) DIREITA: emojis da fala SEMPRE desenhados (nao somem sem
+        // adesivo) — o X vermelho aparece SO quando o mouse esta em cima do
+        // emoji (os X permanentes da 3.66 flutuavam fora do lugar). Clique
+        // no emoji com X = tira (extrasXBoxes testado antes de tudo).
+        extrasXBoxes.clear();
+        if (!ex.isEmpty()) {
+            float rColX = simX0 + simW - 8
+                    - (ex.length() * BADGE_PX + (ex.length() - 1) * BADGE_GAP_PX);
+            int bpx = Math.round(BADGE_PX);
+            for (int k = 0; k < ex.length(); k++) { // 1 char = 1 emoji (fix 3.50.0)
+                int eIdx = (ex.codePointAt(k)) - 0xE000;
+                if (eIdx < 0 || eIdx >= Stickers.COUNT) {
+                    eIdx = 0;
+                }
+                int gx = Math.round(rColX + k * (BADGE_PX + BADGE_GAP_PX));
+                int gy = Math.round(emblemBadgeY);
+                drawGlyphMenu(g, eIdx, gx, gy, BADGE_PX / 16.0F);
+                extrasXBoxes.add(new int[]{gx - 3, gy - 3, gx + bpx + 3, gy + bpx + 3});
+                boolean hoverEmoji = mouseX >= gx - 3 && mouseX <= gx + bpx + 3
+                        && mouseY >= gy - 3 && mouseY <= gy + bpx + 3;
+                if (hoverEmoji) {
+                    outline(g, gx - 4, gy - 4, bpx + 8, bpx + 8, VERMELHO_TIRA);
+                    int x0 = gx + bpx - 8;
+                    int y0 = gy - 4;
+                    g.fill(x0, y0, x0 + 12, y0 + 12, 0xFFB03030);
+                    g.fill(x0 + 1, y0 + 1, x0 + 11, y0 + 11, 0xFFD85858);
+                    g.drawString(this.font, "X", x0 + 3, y0 + 2, 0xFFFFFFFF, false);
+                }
+            }
         }
         if (holdingSticker != null) {
             int hi = Integer.parseInt(holdingSticker);
@@ -993,6 +1294,7 @@ public class BubbleStyleScreen extends Screen {
             g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
             outline(g, gx - 9, gy - 9, 18, 18, ZONA_VERDE);
         }
+        g.pose().popPose(); // fim do "levantar em Z" (texto/emojis na frente do balao)
     }
 
     private void renderPalettes(GuiGraphics g) {
@@ -1040,7 +1342,10 @@ public class BubbleStyleScreen extends Screen {
             case 4 -> "\u25d5";
             default -> "\u25c9";
         };
+        // (3.72.0) o chip preto sem borda parecia um BUG na print — ganhou
+        // contorno pra se ler como indicador de proposito
         g.fill(px + PANEL_W - 28, py + 171, px + PANEL_W - 10, py + 187, 0xFF0D1220);
+        outline(g, px + PANEL_W - 28, py + 171, 18, 16, 0xFF4A5480);
         g.drawString(this.font, ic, px + PANEL_W - 23, py + 174, VERDE_OK, false);
     }
 
@@ -1050,22 +1355,27 @@ public class BubbleStyleScreen extends Screen {
      * marca; clique tira (cheio) ou pega/abre (vazio); tooltip com o nome.
      */
     private void renderExtras(GuiGraphics g, int mouseX, int mouseY) {
+        // (3.67.0) FIX: o titulo ficava NA MESMA linha dos slots (243) e os
+        // slots (20px) o COBRIAM — "os emojis de tirar no lugar errado".
+        // Titulo ganhou linha propria; slots continuam em 243 (hit 240..260).
         g.drawString(this.font, "Emojis (clique no X vermelho pra tirar):", px + 8,
-                py + ROW_EXTRAS + 1, OURO, true);
+                py + ROW_EXTRAS - 19, OURO, true);
         String[] list = extrasList();
         int slot = extrasSlotAt(mouseX, mouseY);
         int y0 = py + ROW_EXTRAS - 3;
         for (int s = 0; s < MAX_SLOTS; s++) {
             int sx = px + EX_X + s * EX_PITCH;
             g.fill(sx, y0, sx + 20, y0 + 20, TINTA);
-            g.fill(sx + 1, y0 + 1, sx + 19, y0 + 19, 0xFF1E2432);
+            g.fill(sx + 1, y0 + 1, sx + 19, y0 + 19, 0xFF241D3D);
             if (s < list.length) {
                 drawGlyphMenu(g, (list[s].charAt(0) & 0xFFFF) - 0xE000, sx + 2, y0 + 2, 1.0F);
                 // (3.55.0) X vermelho GRANDE (10px) e SEMPRE visivel no canto
                 // do slot cheio — sem tooltip: clicou no slot = tirou
-                g.fill(sx + 10, y0 - 2, sx + 20, y0 + 8, 0xFFB03030);
-                g.fill(sx + 11, y0 - 1, sx + 19, y0 + 7, 0xFFD85858);
-                g.drawString(this.font, "X", sx + 13, y0, 0xFFFFFFFF, false);
+                // (3.72.0) X DENTRO do slot — o antigo (10px em y0-2) vazava
+                // 2px pra FORA da caixinha e ficava em cima do emoji
+                g.fill(sx + 12, y0 + 1, sx + 20, y0 + 9, 0xFFB03030);
+                g.fill(sx + 13, y0 + 2, sx + 19, y0 + 8, 0xFFD85858);
+                g.drawString(this.font, "X", sx + 14, y0 + 2, 0xFFFFFFFF, false);
                 if (s == slot) {
                     outline(g, sx - 1, y0 - 1, 22, 22, VERMELHO_TIRA);
                     // (3.55.0) o nome vai na LINHA DO TITULO (a tooltip
@@ -1281,6 +1591,17 @@ private void renderKeyboard(GuiGraphics g, int mouseX, int mouseY) {
             // Pra empilhar emoji, use a metade DIREITA do balao (ou os slots).
             holdingSticker = null;
             return true;
+        }
+        // (3.66.0) X dos EMOJIS da previa: clicou = tirou (teste ANTES do
+        // clique no balao, que ADICIONA emoji na metade direita)
+        if (!showKeyboard && button == 0 && holdingSticker == null) {
+            for (int xi = 0; xi < extrasXBoxes.size(); xi++) {
+                int[] b = extrasXBoxes.get(xi);
+                if (mx >= b[0] && mx <= b[2] && my >= b[1] && my <= b[3]) {
+                    removeExtra(xi);
+                    return true;
+                }
+            }
         }
         if (!showKeyboard && button == 0 && holdingSticker == null && removeBoxAt(mx, my)) {
             setSticker("", style.stickerX(), style.stickerY()); // tira o adesivo livre

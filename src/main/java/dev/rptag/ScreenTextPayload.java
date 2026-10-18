@@ -13,7 +13,14 @@ import net.minecraft.resources.ResourceLocation;
  * @param text    texto com codigos de cor (<= 160 chars)
  * @param seconds duracao em segundos (servidor clampa 1..60)
  */
-public record ScreenTextPayload(String text, int seconds) implements CustomPacketPayload {
+/**
+ * (3.64.0) + ESTILO do aviso: 0 = classico (faixa), 1 = pesadelo (veu
+ * preto + vermelho-sangue), 2 = runico (veu arcano + runas), 3 = real
+ * (azul-noite + dourado). Estilos 1-3 ignoram codigos de cor (a paleta
+ * E o estilo).
+ */
+public record ScreenTextPayload(String text, int seconds, int style)
+        implements CustomPacketPayload {
 
     public static final Type<ScreenTextPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "screen_text"));
@@ -23,9 +30,11 @@ public record ScreenTextPayload(String text, int seconds) implements CustomPacke
                     (buf, p) -> {
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.text());
                         ByteBufCodecs.VAR_INT.encode(buf, p.seconds());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.style());
                     },
                     buf -> new ScreenTextPayload(
                             ByteBufCodecs.STRING_UTF8.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf)));
 
     @Override

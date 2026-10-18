@@ -260,6 +260,17 @@ public final class ServerEvents {
         });
     }
 
+    /** (3.65.0) TYPEWRITER: jogador ligou/desligou a digitacao do balao
+     * (comando ou tela) — guarda por jogador e CONFIRMA pro cliente. */
+    public static void handleSetTypewriter(final TypewriterPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer sp) {
+                RPWorldData.get(sp.getServer()).setTypewriter(sp.getUUID(), payload.on());
+                PacketDistributor.sendToPlayer(sp, new TypewriterPayload(payload.on()));
+            }
+        });
+    }
+
     public static void handleSetBubbleMode(final SetBubbleModePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {

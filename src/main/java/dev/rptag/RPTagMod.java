@@ -1,8 +1,19 @@
 package dev.rptag;
 
+import java.util.function.Supplier;
+
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
  * RP Tag — mostra o estado RP no nome dos jogadores, baloes de fala e comandos /rp.
@@ -21,12 +32,45 @@ import net.neoforged.fml.common.Mod;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "3.58.1";
+    public static final String VERSION = "3.84.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
+    /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
+    public static final DeferredRegister<SoundEvent> SOUNDS =
+            DeferredRegister.create(Registries.SOUND_EVENT, MODID);
+    public static final Supplier<SoundEvent> SOM_CANON_DEATH =
+            SOUNDS.register("canon_death", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "canon_death")));
+
+    /** (3.84.0) BLOCO/ITEM/BE do Coração Canônico (só adm obtém via /give;
+     * nunca spawna naturalmente). */
+    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
+    public static final DeferredRegister<Item> ITEMS = DeferredRegister.createItems(MODID);
+    public static final DeferredRegister<BlockEntityType<?>> BE_TYPES =
+            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
+
+    public static final Supplier<CanonCoracaoBlock> CORACAO_BLOCK =
+            BLOCKS.register("coracao_canon", () -> new CanonCoracaoBlock(
+                    BlockBehaviour.Properties.of()
+                            .strength(-1.0F, 3600000.0F) // indestrutivel em survival
+                            .sound(SoundType.AMETHYST)
+                            .noOcclusion()));
+    public static final Supplier<BlockEntityType<CanonCoracaoBlockEntity>> CORACAO_BE =
+            BE_TYPES.register("coracao_canon", () -> BlockEntityType.Builder
+                    .of(CanonCoracaoBlockEntity::new, CORACAO_BLOCK.get()).build(null));
+    public static final Supplier<Item> CORACAO_ITEM =
+            ITEMS.register("coracao_canon", () -> new BlockItem(CORACAO_BLOCK.get(),
+                    new Item.Properties()));
 
     public RPTagMod(IEventBus modEventBus, ModContainer modContainer) {
         // (3.45.0) o efeito MEDO usa DeferredRegister (registro oficial,
         // aparece no /effect give e no HUD como efeito de verdade).
         RPEffects.EFFECTS.register(modEventBus);
+        // (3.76.0) sons proprios (mesmo padrao do Portais da Lore)
+        SOUNDS.register(modEventBus);
+        // (3.84.0) coracao canonico
+        BLOCKS.register(modEventBus);
+        ITEMS.register(modEventBus);
+        BE_TYPES.register(modEventBus);
     }
 }

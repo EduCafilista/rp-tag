@@ -28,6 +28,9 @@ public final class ClientBubbleCache {
     /** Maximo de baloes empilhados por jogador (padrao dos mods famosos). */
     public static final int MAX_STACK = 3;
 
+    /** (3.65.0) OPCAO do jogador: a fala se escreve sozinha? (padrao ON) */
+    public static volatile boolean TYPEWRITER = true;
+
     private static final Map<UUID, List<Bubble>> BUBBLES = new ConcurrentHashMap<>();
 
     private ClientBubbleCache() {

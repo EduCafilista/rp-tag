@@ -1,6 +1,350 @@
 # Changelog
 
+
+
+## 3.84.0 — O CORAÇÃO CANÔNICO 3D 🫀 (2026-10-18)
+
+- **Item novo**: `Coração da Vida Canônica` — só admin obtém
+  (`/give <player> rptag:coracao_canon`); NUNCA spawna no mundo.
+- **Colocado no chão**, vira um CORAÇÃO 3D voxel GIRANDO, BATENDO e
+  flutuando (desenho procedural — sem modelo externo).
+- **Player encontra → SHIFT + clique direito** = recupera 1 vida! O
+  coração se consome, toca o sino de ametista e aparece na tela (caixa
+  de fala): "VOCÊ GANHOU UMA NOVA CHANCE — uma vida canônica foi
+  restaurada (X/5)".
+- Vidas cheias (5/5)? O coração fica lá — não se desperdiça.
+- Indestrutível em survival (só creative remove, sem drop).
+
+## 3.83.0 — ÚLTIMA VIDA = terror puro (2026-10-18)
+
+- Ao perder a última vida canônica, o aviso vira **"VOCÊ PERDEU SUA
+  ÚLTIMA VIDA — TOME CUIDADO"**.
+- E ela leva um **MEDO ABSURDO**: 30 segundos do efeito de medo no
+  máximo (véu azul-noite que ESCONDE a tela + tremedeira + ícone no
+  HUD) por cima do strondo, do véu vermelho e do audio. Bizarro.
+
+## 3.82.0 — Letras nítidas + 5 VIDAS com limite (2026-10-17)
+
+- **Sem embaçamento**: o halo de brilho atrás das letras do banner foi
+  removido — só sombra + letra sólida, nitidez total.
+- **Cada player tem 5 vidas canônicas** (persistidas no mundo).
+- **LIMITE anti-mortes-seguidas**: depois de perder uma vida, o player
+  fica protegido por 5 minutos — morrer de novo logo em seguida NÃO
+  perde mais vidas de uma vez (relogar não burla).
+- O aviso mostra quantas restam: "VOCÊ PERDEU UMA VIDA — RESTAM 4" (e
+  na última: "VOCÊ PERDEU SUA ÚLTIMA VIDA CANÔNICA").
+- `/rp status` mostra "Vidas canônicas: X/5".
+
+## 3.81.0 — Banner LORE ON/OFF refeito (limpo e sólido) (2026-10-17)
+
+- Fim do efeito "patchwork" (cada letra de uma cor): agora a frase
+  inteira é de UMA cor — verde vivo (ON) ou vermelho vivo (OFF) — com
+  sombra escura e brilho claro uniformes.
+- Faixa escura atrás mais fechada (79% de preto) com filete forte na
+  cor do banner — lê em qualquer cenário.
+
+## 3.80.0 — Vidas canônicas pra TODO MUNDO, modo do adm (2026-10-17)
+
+- **Todos os players JÁ têm vidas canônicas** — não é efeito individual.
+- **`/rp admin canon on|off`** (sem jogador): liga/desliga o MODO onde
+  quem morrer PERDE UMA VIDA. Persiste no mundo.
+- **Nada no chat**: o único aviso é o BANNER "❀ LORE ON/OFF ❀" que o
+  SERVIDOR INTEIRO vê (verde/vermelho, texturizado, com faixa escura).
+- Ao morrer com o modo ligado: ⚡strondo → tela avermelhada → "VOCÊ
+  PERDEU UMA VIDA" (reto, texturizado) → 🎵 o audio da lore.
+
+## 3.79.0 — Sem tremido + banner legível (2026-10-17)
+
+- **"VOCÊ PERDEU UMA VIDA" ficou RETO** — nada de tremedeira: a
+  mensagem aparece na cara da pessoa, grande e estável (a textura agora
+  é só nas cores: manchas de sangue e topo irregular).
+- **Banner LORE ON/OFF legível**: ganhou uma faixa escura atrás das
+  duas linhas — o verde/vermelho não morre mais contra o céu.
+
+## 3.78.0 — Ritual completo: STRONDO + tela vermelha + audio (2026-10-17)
+
+- Quando o portador de vida canônica morre, ao renascer:
+  1. ⚡ **STRONDO** — um trovão rasga o momento;
+  2. 🔴 **A tela fica MEIO AVERMELHADA** (véu de sangue pulsando,
+     "respirando", com fade in/out) enquanto ele fica congelado;
+  3. 🔊 **O AUDIO da lore entra** ~1,5 s depois do trovão — só ele ouve;
+  4. 🩸 "VOCÊ PERDEU UMA VIDA" texturizado por cima de tudo.
+- Funciona com shaders (tudo na camada oficial de HUD).
+
+## 3.77.0 — Banner LORE ON/OFF + canon mira players (2026-10-17)
+
+- **Dois avisos novos** (como nos exemplos): ao CONCEDER a vida
+  canônica, o jogador vê o banner verde **"❀ LORE ON ❀ / ❀ HARD-RP ON |
+  VIDAS CANNON ON ❀"**; ao TIRAR, o vermelho **"❀ LORE OFF ❀ / ❀
+  HARD-RP ON | VIDAS CANNON OFF ❀"** — texto texturizado estático (não
+  se mexe), na camada oficial (funciona com shaders).
+- **`/rp admin canon <jogador> on|off`**: agora funciona como o efeito
+  de MEDO — o admin aplica em quem quiser (persiste até outro admin
+  tirar). `/rp status` mostra se VOCÊ tem.
+- Morte de portador continua igual: congela 5s + "VOCÊ PERDEU UMA
+  VIDA" + O SOM.
+
+## 3.76.0 — Vida Canônica virou EVENTO + som da lore (2026-10-17)
+
+- **`/rp admin canon on|off`** (sem jogador!): EVENTO server-wide —
+  enquanto ligado, TODO jogador que morrer perde uma vida. Persiste no
+  mundo até um admin desligar.
+- **Aviso simples e direto**: "VOCÊ PERDEU UMA VIDA" — com a fonte
+  TEXTURIZADA da referência (camadas de sangue, letras com desvio fixo)
+  mas ESTÁTICA: as letras NÃO se mexem. Sem bruxa em lugar nenhum.
+- **O SOM da lore** (o mp3 do catbox) virou ogg próprio do mod e toca
+  NA HORA da morte — só pra vítima, bem alto.
+- Congelamento de 5 s ao renascer mantido.
+- O pesadelo do /rp admin avisar continua igual (aquele é à parte).
+
+## 3.75.0 — VIDA CANÔNICA + pesadelo remodelado (2026-10-17)
+
+- **Vida Canônica** (`/rp admin canon <jogador> on|off`): efeito
+  PERMANENTE (persiste no mundo até um admin tirar). Quando o portador
+  morre, ao renascer ele fica **congelado por 5 segundos** (sem se
+  mexer), recebe o aviso insano **"SEU CORAÇÃO PAROU — UM FRAGMENTO DA
+  SUA VIDA FOI DEVORADO PELA BRUXA"** (estilo pesadelo, com typewriter
+  e texto corrompido) e ouve a homenagem a Re:Zero: **três batidas de
+  coração acelerando, o ESMAGAMENTO e a maldição baixa** — só ele ouve.
+- `/rp status` agora mostra a Vida canônica.
+- **Pesadelo remodelado**: o texto inteiro escorrega de lado devagar,
+  cada letra ondula com fase própria (nada de senoide certinha) e as
+  letras que "falham" deixam um rastro escuro (ghost) atrás.
+
+## 3.74.0 — Texto CORROMPIDO do pesadelo (2026-10-16)
+
+- A mensagem vermelha do pesadelo ganhou a cara "texturizada" de
+  terror: as letras **flutuam numa onda lenta**, o preenchimento tem
+  **3 camadas de sangue** (degradê vertical) e alguns caracteres
+  **"falham"** — deslizam e escurecem por uns 2 segundos, como na
+  referência ("Não há escolha a ser feita.").
+- O typewriter continua (as letras corrompidas vão sendo escritas).
+- Véu, bordas, faixas e som do pesadelo INTACTOS; rúnico/real/clássico
+  não mudaram.
+
+## 3.73.0 — EDIÇÃO REAL 👑 (2026-10-16)
+
+- **Coroas de verdade**: duas coroas douradas com joias (rubi e
+  safiras) ladeiam o título "Balão de Fala".
+- **Veludo real**: o painel agora é roxo-profundo em gradiente, com
+  filete de ouro vivo e DIAMANTES de ouro nos 4 cantos.
+- **Placas, slots e botões** em tons de veludo roxo (botões continuam
+  de vidro, agora roxo-real); slider com preenchimento ouro.
+- **Toque final**: a moldura do card da prévia ficou ouro-antigo e a
+  galáxia ganhou estrelas de ouro (cada 7ª).
+
+## 3.72.0 — Cinco bugs da print corrigidos (2026-10-16)
+
+- **Dica não vaza mais**: o aviso de digitação era maior que o painel e
+  passava da borda — agora todo texto de uma linha trunca com "…" (e a
+  dica ficou mais curta).
+- **Falas longas** na linha do chat do menu também truncam com "…".
+- **X dos slots de emoji** agora fica DENTRO da caixinha (vazava 2px
+  pra cima e cobria o emoji).
+- **Tag "Prévia no mundo"** subiu pra sair de cima da grama.
+- **Chip da moldura ativa** (direita da faixa "Moldura") ganhou contorno
+  — o quadrado preto sem borda parecia glitch.
+
+## 3.71.0 — PAINEL NÍTIDO (causa raiz do menu embaçado) (2026-10-16)
+
+- **Achada a causa real**: o blur vanilla do jogo estava rodando DEPOIS
+  do painel ser desenhado (dentro do `super.render`), borrando o menu
+  inteiro — os botões escapavam porque nasciam depois do blur.
+- Agora o blur acontece UMA vez, só no mundo, no começo do frame:
+  **mundo embaçado atrás, painel 100% nítido na frente**.
+
+## 3.70.0 — O fundo embaçado agora DEIXA O MUNDO APARECER (2026-10-16)
+
+- Correção do 3.68: o véu escuro era forte demais e a galáxia era
+  pintada por cima do blur — o mundo sumia. Agora, com o menu aberto no
+  mundo, só um véu leve + estrelinhas discretas e o cometa: **a cena
+  continua visível** (embaçada, como deve ser).
+- A galáxia completa (nebulosas, via láctea) ficou pro caso sem blur
+  (menu de pausa / sem mundo).
+- Painel e botões INTACTOS (aprovados!).
+
+## 3.69.0 — Aviso CLÁSSICO = Caixa de Fala typewriter (2026-10-16)
+
+- **O campo aparece primeiro, as letras depois**: o aviso clássico (o
+  padrão, sem estilo) virou uma caixa de fala embaixo da tela, igual
+  "Sniper: eu vou atras de voces hein" — a caixa entra com um pop e o
+  texto vai sendo ESCRITO letra por letra, com cursor piscando.
+- **Nome colorido**: o que vem antes do primeiro ":" fica azul (o nome
+  de quem "fala") e o resto é branco.
+- **Caixa estável**: ela nasce com o tamanho final (quebra o texto em
+  até 3 linhas antes de começar a digitar) — não pula enquanto escreve.
+- Pesadelo, rúnico e real continuam IGUAIS (grandes, no centro).
+
+## 3.68.0 — Menu GALAXIA com fundo embaçado (2026-10-15)
+
+- **Fundo embaçado de verdade**: o mundo atrás do menu aparece com o
+  blur vanilla do jogo (e a galáxia por cima). Sem mundo, o fundo
+  continua opaco.
+- **Céu de GALAXIA**: nebulosas roxas/azuis/magenta em deriva lenta,
+  via láctea diagonal, estrelas cintilando (algumas com cruz de brilho)
+  e um COMETA riscando o céu a cada 9 segundos.
+- **Painel de vidro espacial**: gradiente noite→violeta, moldura ouro
+  com filete violeta, barra dourada e cantinhos de luz.
+- **Botões de vidro**: adeus cinza vanilla — todos os botões (teclado
+  de adesivos incluso) e o slider agora são de vidro escuro com brilho
+  dourado no hover.
+- **Prévia com cenário**: o card da prévia virou um mini-cenário
+  desenhado (céu estrelado, lua cheia com halo e grama) — sempre
+  visível, sem depender de textura.
+
+## 3.67.0 — O menu consertado e bonito (2026-10-15)
+
+- **"Emojis pra tirar no lugar errado"**: o título "Emojis (clique no X
+  vermelho pra tirar)" estava na MESMA linha que os slots de emoji — os
+  slots o cobriam (e encostavam no botão "◐ 13s"). Título ganhou linha
+  própria; a fileira de slots continua logo abaixo.
+- **X da prévia agora é ONDE VOCÊ OLHA**: o X vermelho aparece quando o
+  mouse passa em cima do emoji (com contorno vermelho destacando) em vez
+  de X's permanentes flutuando fora do balão.
+- **"Parte transparente bugada" em volta do balão**: o halo do estilo
+  Brilho na prévia foi suavizado (não mancha mais o céu do card).
+- **Menu mais bonito**: faixa do título agora VISÍVEL (dourada, com
+  filete duplo), fundo do painel mais claro/contraste, estrelas do fundo
+  discretas (menos "chuva de pontos").
+
+## 3.66.0 — O aviso escreve de verdade + menu frufu (2026-10-15)
+
+- **FIX do aviso "só a letra C"**: o efeito máquina de escrever do aviso
+  nunca anexava os caracteres normais — agora a palavra inteira se
+  escreve, letra por letra, e o aviso ainda **cresce** suavemente ao
+  entrar (scale-in).
+- **Som rúnico próprio**: sino de ametista (o som de maldição ficou só
+  no pesadelo).
+- **X vermelho nos emojis da DIREITA da prévia** (e a coluna direita não
+  desaparece mais quando não há adesivo).
+- **Menu**: fundo 100% opaco (fim da parte transparente), céu de
+  estrelinhas, filete dourado com cantinhos no painel e título
+  centralizado.
+- check.py: 138 PASS / 0 FAIL.
+
+## 3.65.0 — Typewriter vira opção + avisos blindados (2026-10-15)
+
+- **`/balao typewriter on|off`** — a digitação automática do balão agora
+  é OPÇÃO do jogador (padrão LIGADA; fica salva por jogador; o estado
+  aparece na tela /balao).
+- **Avisos de tela blindados**: camadas do medo e do aviso têm flags e
+  proteções SEPARADAS (um erro num não desliga mais o outro) + logs de
+  diagnóstico ("AVISO recebido", "desenhando aviso") pra rastrear
+  qualquer falha de exibição.
+- **Menu**: dica do "X vermelho" não duplica mais; o topo mostra o estado
+  da digitação automática.
+- check.py: 131 PASS / 0 FAIL.
+
+## 3.64.0 — A fala que se escreve + avisos de tela com estilo (2026-10-15)
+
+- **TYPEWRITER no balão**: toda fala agora se ESCREVE sozinha, letra por
+  letra (28 ms/char, ritmo de NPC de jogo), e o balão cresce junto. Feito
+  só no cliente usando o instante de nascimento que o balão já carregava.
+- **AVISO com 4 ESTILOS e VÁRIOS alvos**:
+  `/rp admin avisar <jogadores|@a> [classico|pesadelo|runico|real] <texto>`
+  - `classico` — faixa grande (como era; aceita cores &)
+  - `pesadelo` — tela afunda no preto, borda vermelho-sangue, texto de
+    sangue + maldição de guardião ancião (ASSUSTADOR de verdade)
+  - `runico` — véu arcano roxo, marquinhas de runa nas bordas
+  - `real` — azul-noite, texto de ouro com filetes e diamantes (anúncios)
+  - todos com typewriter no aviso, SEM pulso (coisa séria), camada oficial
+    de HUD (funciona com shaders) e som direto no alvo
+- **Menu /rp ajuda** atualizado com o novo avisar.
+- check.py: 125 PASS / 0 FAIL.
+
+
 Todas as mudanças notáveis deste mod são documentadas aqui.
+
+## [3.63.0] - 2026-10-09
+
+### Corrigido
+- **"Triângulo bugado" nas prints**: a SOMBRA do balão procedural ainda
+  desenhava o rabicho mesmo com `tail=false` — o pendurado cinza que
+  apareceu nas molduras Clássica/Costura/Brilho. A sombra agora segue a
+  silhueta limpa (sem rabicho) em TODAS as molduras.
+- **`/rp ajuda` com título limpo**: o `╔══ ... ══` quebrava na fonte do
+  canto da tela; agora é `» RP Tag — Comandos` (o » é da fonte padrão e
+  nunca quebra).
+
+## [3.62.0] - 2026-10-09
+
+### Redesenhado — Balão FLUTUANTE (sem rabicho, inspiração nos mods de referência)
+- PESQUISA: os mods campeões de balão de fala — **Talk Balloons** (~282 mil
+  downloads), **TalkBubbles**, **Vanilla Chat Bubbles** e **Better Chat
+  Bubbles** — NENHUM usa conector/rabicho; o balão flutua direto sobre a
+  cabeça e a POSIÇÃO é a própria ligação.
+- Quatro designs de rabicho foram aprovados e reprovados pelo dono
+  (triângulo, degraus, curva pequena, recorte na silhueta) — o que sempre
+  sobrava feio era o "pescoço" pendurado. **O rabicho saiu dos DOIS
+  formatos** (procedural: `Look.tail = false`, nova opção pública na
+  geometria; antigo: quads do rabicho removidos).
+- Silhueta pura (retângulo arredondado), mais respiro na pilha (+4) e o
+  visual que o dono elogiou na 3.58 ("que bonitinho") sem o pendurado.
+
+## [3.61.0] - 2026-10-09
+
+### Corrigido
+- **AVISO não pulsa mais na tela** (pedido do dono) — texto firme, com fade
+  de entrada/saida apenas.
+- **AVISO aparece COM SHADERS**: mudou pra CAMADA OFICIAL de HUD
+  (`registerAboveAll`) — vivia no `RenderGuiEvent.Post` e sumia com Iris (o
+  mesmo mal do medo na 3.54).
+- **AVISO MUITO MAIOR e serio**: escala ate 3.2x (era 2.2x), faixa mais
+  alta e peso de tinta (negrito em duas passadas). Duracao 8s (era 6).
+
+### Novo
+- **`/rp admin avisozona <id> <texto>`** — aviso na tela de **TODOS que
+  estiverem dentro da lorezone** (esfera da zona), para anuncios da
+  historia. Avisa quanto gente recebeu; erro claro se a zona nao existe ou
+  esta vazia.
+
+### Corrigido — balao com shaders
+- Com shaderpack LIGADO o jogo volta SOZINHO pro formato antigo (por
+  texturas, comprovado com shaders) — o formato procedural novo usa
+  `RenderType.gui()` e o Iris engolia ele no mundo (balao invisivel, print
+  do dono). Quando o pack desliga, o procedural volta. `/rpformato novo`
+  avisa se shaders estiverem ativos.
+
+## [3.60.0] - 2026-10-09
+
+### Reescrito — COMO o balão é gerado (procedural, sem textura)
+- Até a 3.58 o balão era montado com **texturas fatiadas** (pílula em 3
+  pedaços, anéis por PNG, rabicho como quad separado com contorno próprio).
+  Isso causava: bordas borradas quando a textura estica, **emenda** entre
+  rabicho e corpo, cantos deformados em balão alto e uma cor diferente de
+  tinta em cada textura. Agora o balão é **UMA silhueta de verdade**, gerada
+  por código (`client/BubbleGeometry.java`):
+  - corpo de cantos arredondados + **rabicho curvo de HQ no MESMO contorno**
+    (um polígono só, sem emenda, tamanho fixo 11,5×9 que nunca escala);
+  - **contorno de espessura exata** seguindo a silhueta (inclusive em volta
+    do rabicho), com **anti-aliasing** (bordas suaves, sem serrilhado);
+  - **sombra macia** (gradiente), **degrade** vertical no recheio e **gloss**
+    (faixa de brilho no topo) — o branco não vira mais cinza sujo;
+  - raio do canto proporcional à altura (balão de várias linhas deixa de
+    parecer uma cápsula esticada).
+- As **5 molduras** viraram geometria própria e ficaram bem distintas:
+  Clássica (fina) · Cartum (grossa + sombra de tinta de HQ) · Quadrada
+  (cantos pequenos) · Costura (pontilhado interno) · Brilho (halo claro).
+- **A prévia do `/balao` usa a MESMA função** do mundo (`BubbleSink` +
+  `BubbleGeometry.build`) — o que você vê no menu é exatamente o que aparece
+  sobre a cabeça, inclusive o rabicho inteiro.
+- Camadas em Z separadas e **o eixo Z cresce com a distância** (`zk`): longe,
+  sombra/borda/recheio não piscam mais no depth buffer.
+
+### Segurança do formato novo
+- Se o formato novo lançar qualquer exceção ao desenhar, o mod **volta sozinho
+  pro desenho antigo** (texturas) e registra no log — o balão nunca some.
+- Troca manual no jogo: `/rpformato novo` · `/rpformato antigo`.
+- O desenho antigo continua no código (fallback) e as texturas continuam no mod.
+
+### Testado sem o Minecraft
+- `BubbleGeometry` é Java puro: `bash tools/teste-geometria.sh` (JDK 21)
+  verifica a triangulação (4.000 formas aleatórias: área dos triângulos =
+  área do polígono) e roda `build()` em 6.000 combinações aleatórias (sem
+  erro/NaN, ~0,1 ms por balão, ~710 triângulos).
+- Corrigido nesses testes: laço infinito no pontilhado da Costura (arredondamento
+  de float) — nunca chegou a uma versão publicada.
+- `check.py`: +13 verificações (107 no total).
 
 ## [3.58.1] - 2026-10-08
 

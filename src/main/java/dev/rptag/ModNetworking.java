@@ -38,6 +38,9 @@ public final class ModNetworking {
                 ClientPayloadHandler::handleFear);
         registrar.playToClient(ScreenTextPayload.TYPE, ScreenTextPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleScreenText);
+        // (3.77.0) BANNER da vida canônica (LORE ON/OFF verde/vermelho)
+        registrar.playToClient(dev.rptag.CanonBannerPayload.TYPE, dev.rptag.CanonBannerPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleCanonBanner);
         // (3.50.0) MUSICA CUSTOM de lore zone (.ogg da pasta do cliente)
         registrar.playToClient(LorezoneMusicPayload.TYPE, LorezoneMusicPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleLorezoneMusic);
@@ -50,6 +53,18 @@ public final class ModNetworking {
                 ServerEvents::handleMusicAnswer);
         registrar.playToServer(UpdateBubbleStylePayload.TYPE, UpdateBubbleStylePayload.STREAM_CODEC,
                 ServerEvents::handleUpdateBubbleStyle);
+        // (3.65.0) TYPEWRITER: BIDIRECIONAL (C2S = jogador pede; S2C = server
+        // confirma). O MESMO TYPE nao pode ser registrado 2x (provado no boot:
+        // "Cannot register payload rptag:typewriter as it is already
+        // registered") — playBidirectional + rotas pelo flow.
+        registrar.playBidirectional(TypewriterPayload.TYPE, TypewriterPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.flow().isServerbound()) {
+                        ServerEvents.handleSetTypewriter(payload, context);
+                    } else {
+                        ClientPayloadHandler.handleTypewriter(payload, context);
+                    }
+                });
         registrar.playToServer(SetBubbleModePayload.TYPE, SetBubbleModePayload.STREAM_CODEC,
                 ServerEvents::handleSetBubbleMode);
     }

@@ -32,5 +32,19 @@ public final class ClientGuiLayers {
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "medo_veu"),
                 (g, delta) -> ClientEffects.desenharMedoCamada(g));
+        // (3.78.0) VÉU avermelhado da vida perdida (ANTES do aviso = o
+        // texto fica POR CIMA do véu)
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "canon_veu"),
+                (g, delta) -> ClientEffects.desenhaVeuCanon(g));
+        // (3.61.0) AVISO na camada oficial tambem: no RenderGuiEvent.Post ele
+        // ficava FORA da saida do shader e sumia com Iris (mesmo mal do medo)
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "aviso_hud"),
+                (g, delta) -> ClientEffects.desenhaAviso(g));
+        // (3.77.0) BANNER da vida canônica (na camada oficial = com shaders)
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "canon_banner"),
+                (g, delta) -> ClientEffects.desenhaBannerCanon(g));
     }
 }

@@ -1,0 +1,10 @@
+{
+  "canon_death": {
+    "sounds": [
+      {
+        "name": "rptag:canon_death",
+        "stream": false
+      }
+    ]
+  }
+}

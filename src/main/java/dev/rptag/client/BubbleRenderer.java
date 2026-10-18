@@ -10,6 +10,8 @@ import dev.rptag.BubbleStyle;
 import dev.rptag.RPTagMod;
 import dev.rptag.Stickers;
 import net.minecraft.client.Minecraft;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -22,6 +24,7 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import org.joml.Matrix4f;
 
@@ -52,6 +55,9 @@ public final class BubbleRenderer {
     // ---- ANIMACAO (o padrao dos mods famosos) ----
     /** Duracao do POP-IN com ressalto. */
     private static final long POP_MS = 130;
+    /** (3.64.0) TYPEWRITER: ms por caractere digitado (28 ms = msg de
+     * 40 chars escreve em ~1,1 s, ritmo de NPC de jogo). */
+    private static final long TYPE_MS_PER_CHAR = 28L;
     /** Tempo em que o balao sobe suavemente (depois para de flutuar). */
     private static final long FLOAT_MS = 3000;
     /** Quanto o balao sobe, em pixels de mundo (x 0.030 de escala). */
@@ -134,6 +140,64 @@ public final class BubbleRenderer {
 
     private static boolean disabled = false;
 
+    /**
+     * (3.60.0) FORMATO DO BALAO: true = geometria PROCEDURAL (BubbleGeometry:
+     * silhueta unica com rabicho, bordas suaves, sombra macia, gloss);
+     * false = desenho ANTIGO por texturas. Se o formato novo der qualquer
+     * erro de render, o mod cai sozinho pro antigo (e avisa no log) — o balao
+     * nunca some. Troca manual no jogo: /rpformato novo | antigo.
+     */
+    static volatile boolean modern = true;
+
+    // (3.61.0) SHADERS: o formato procedural usa RenderType.gui() e o
+    // pipeline do Iris ENGOLE ele no mundo (o balao fica invisivel — print
+    // do dono: so o texto aparece). O formato ANTIGO, por texturas
+    // (RenderType.text), e comprovado com shaders desde a 3.4x. Entao com
+    // shaderpack ligado o jogo usa o antigo SOZINHO (sem perder o moderno
+    // quando o pack desligar). Detecta pela API do Iris/Oculus via reflexao
+    // (sem o mod instalado = nunca ativo). Cache de 1s: reflect e caro.
+    private static long shaderCheckMs;
+    private static boolean shaderCache;
+
+    private static boolean shadersAtivos() {
+        long now = System.currentTimeMillis();
+        if (now - shaderCheckMs > 1000L) {
+            shaderCheckMs = now;
+            try {
+                Class<?> api = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+                Object inst = api.getMethod("getInstance").invoke(null);
+                shaderCache = (Boolean) api.getMethod("isShaderPackInUse").invoke(inst);
+            } catch (Throwable t) {
+                shaderCache = false;
+            }
+        }
+        return shaderCache;
+    }
+
+    /** formato EFETIVO: procedural so roda SEM shaders. */
+    private static boolean usaModern() {
+        return modern && !shadersAtivos();
+    }
+
+    @SubscribeEvent
+    public static void onClientCommands(RegisterClientCommandsEvent event) {
+        event.getDispatcher().register(Commands.literal("rpformato")
+                .then(Commands.literal("novo").executes(ctx -> {
+                    modern = true;
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "Balao: formato NOVO (procedural) ligado." + (shadersAtivos()
+                                    ? " (com shaders LIGADOS o jogo usa o antigo por seguranca)"
+                                    : "")), false);
+                    return 1;
+                }))
+                .then(Commands.literal("antigo").executes(ctx -> {
+                    modern = false;
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "Balao: formato ANTIGO (texturas) ligado."), false);
+                    return 1;
+                })));
+    }
+
     @SubscribeEvent
     public static void onRenderLivingPost(RenderLivingEvent.Post<?, ?> event) {
         if (disabled) {
@@ -142,6 +206,12 @@ public final class BubbleRenderer {
         try {
             renderBubble(event);
         } catch (Throwable t) {
+            if (modern) {
+                // o formato novo falhou: volta pro antigo e segue (nunca some o balao)
+                modern = false;
+                RPTagMod.LOGGER.error("RP Tag: formato novo do balao falhou - voltando ao formato antigo", t);
+                return;
+            }
             // A PROVA DE CRASH: qualquer erro desliga os baloes desta sessao
             // (a tag RP, chat e comandos continuam funcionando) e registra o motivo.
             disabled = true;
@@ -540,6 +610,15 @@ public final class BubbleRenderer {
     private static int bubbleHeightPx(Font font, ClientBubbleCache.Bubble bubble) {
         // (3.32.0) fala = TEXTO PURO; os emotes moram na faixa (so a faixa conta)
         String speech = bubble.text();
+        // (3.64.0) typewriter: a ALTURA da pilha acompanha o texto digitado
+        long agoraT = System.currentTimeMillis();
+        if (ClientBubbleCache.TYPEWRITER) {
+            int visCh = (int) Math.min(speech.length(),
+                    (agoraT - bubble.bornMillis()) / TYPE_MS_PER_CHAR);
+            if (visCh < speech.length()) {
+                speech = speech.substring(0, visCh);
+            }
+        }
         int nLines = wrapBalanced(font, speech).size();
         if (nLines == 0) {
             return 0;
@@ -549,9 +628,12 @@ public final class BubbleRenderer {
         // texto) — nao protrude mais pra cima/baixo, entao nao precisa somar
         // altura extra aqui. So a largura muda (e largura nao afeta a pilha).
         int bsH = Math.max(0, bubble.borderStyle()); // (3.39.0) >= 0 SEMPRE (negativo = AIOOBE)
-        int bsIdx = Math.min(bsH, RING_MARGIN.length - 1);
-        // a moldura cresce pra fora nos DOIS lados + o rabicho pendura embaixo
-        return pillH + Math.round(2.0F * RING_MARGIN[bsIdx]) + 12;
+        int st = bsH == 5 ? 2 : Math.min(bsH, 4);
+        // a moldura cresce pra fora nos DOIS lados (+4 de respiro — sem
+        // rabicho desde a 3.62.0, nada pendura embaixo)
+        float om = usaModern() ? BubbleGeometry.outerMargin(st)
+                : RING_MARGIN[Math.min(st, RING_MARGIN.length - 1)];
+        return pillH + Math.round(2.0F * om) + 4;
     }
 
     /** Desenha UM balao da pilha, com pop-in + flutuacao + fade. */
@@ -564,6 +646,18 @@ public final class BubbleRenderer {
         // A fala e 100% texto; os emojis moram na FAIXA (igual ao adesivo) —
         // linha de emoji NUNCA mais (fim do espaco vazio do print).
         String speech = bubble.text();
+        // (3.64.0) TYPEWRITER: a fala se ESCREVE SOZINHA, letra por letra
+        // (mecanica dos mods famosos de balao: o nascedouro ja e registrado
+        // em bornMillis — basta revelar por tempo). O balao cresce junto.
+        long agoraT = System.currentTimeMillis();
+        // (3.65.0) OPCAO do jogador: typewriter desligado = texto inteiro na hora
+        if (ClientBubbleCache.TYPEWRITER) {
+            int visCh = (int) Math.min(speech.length(),
+                    (agoraT - bubble.bornMillis()) / TYPE_MS_PER_CHAR);
+            if (visCh < speech.length()) {
+                speech = speech.substring(0, visCh);
+            }
+        }
         // (3.38.0) linhas EQUILIBRADAS (fim da palavra orfa na quebra de linha)
         List<String> linesTxt = wrapBalanced(font, speech);
         if (linesTxt.isEmpty()) {
@@ -660,7 +754,12 @@ public final class BubbleRenderer {
         poseStack.translate(0.0, player.getBbHeight() + 0.95 + upBlocks + floatUp * 0.030F, 0.0);
         poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
         // (3.35.0) 0.034 -> 0.040: balao ~18% maior, legivel de mais longe
-        poseStack.scale(SCALE * distComp * popScale(age), -SCALE * distComp * popScale(age), SCALE); // (3.36.1) cresce c/ a distancia = legivel de longe
+        // (3.60.0) o eixo Z (so separa as CAMADAS do balao: sombra, borda, recheio,
+        // texto) tambem cresce com a distancia — senao, a ~30+ blocos, as camadas
+        // ficam mais proximas que a precisao do depth buffer e piscam (z-fighting).
+        float zk = Mth.clamp(Mth.sqrt((float) minecraft.getEntityRenderDispatcher().distanceToSqr(player)) / 10.0F,
+                1.0F, 8.0F);
+        poseStack.scale(SCALE * distComp * popScale(age), -SCALE * distComp * popScale(age), SCALE * zk); // (3.36.1) cresce c/ a distancia = legivel de longe
         Matrix4f matrix = poseStack.last().pose();
         MultiBufferSource buffers = event.getMultiBufferSource();
 
@@ -673,6 +772,24 @@ public final class BubbleRenderer {
         float margin = RING_MARGIN[Math.max(0, Math.min(bs, RING_MARGIN.length - 1))]; // (3.39.0) nunca negativo
         boolean quadrada = (bs == 2);
 
+        if (usaModern()) {
+            // ---- (3.60.0) BALAO PROCEDURAL: UMA silhueta (corpo + rabicho de HQ no
+            // mesmo contorno), contorno de espessura exata, sombra macia, degrade e
+            // gloss — tudo geometria, sem textura. Mesmo codigo da previa do /balao.
+            BubbleGeometry.Look look = new BubbleGeometry.Look();
+            look.style = Math.max(0, Math.min(bs, 4));
+            look.fill = fill;
+            look.border = border;
+            look.baseRgb = colorRGB;
+            look.alpha = alpha;
+            look.x0 = x0;
+            look.y0 = yP0;
+            look.w = pillW;
+            look.h = pillH;
+            look.tailCx = x0 + pillW / 2.0F + 1.0F;
+            look.tail = false; // (3.62.0) balao flutuante — sem rabicho
+            BubbleGeometry.build(new BubbleSink(matrix, buffers.getBuffer(RenderType.gui()), 0.0F), look);
+        } else {
         // ---- SOMBRA (suave, quase sem deslocamento — a antiga era um eco duro
         // deslocado 2px que dava cara de clipart) ----
         if (quadrada) {
@@ -706,27 +823,12 @@ public final class BubbleRenderer {
         }
 
         // ---- RABICHO — RECORTE NA SILHUETA (3.58.0) ----
-        // O rabicho e parte do PROPRIO balao: curva de HQ com UM contorno so,
-        // SEM emenda nenhuma (escolha do dono na previa de opcoes — fim dos
-        // degraus). Vale pra TODAS as molduras. Tecnica: contorno = o mesmo
-        // rabicho expandido 1px embaixo (z -0.15); recheio = o rabicho por
-        // cima (z -0.12); a pilula (desenhada DEPOIS, z -0.10) cobre o
-        // encaixe e as duas curvas se fundem num contorno continuo.
-        // (3.58.1) TAMANHO PADRAO E FIXO: 13x9 unidades (o 26x18 da 3.58.0
-        // saiu GIGANTE na print do jogador). O rabicho NUNCA escala com o
-        // balao — e sempre esse padrao curto, em qualquer fala.
-        float cxT = x0 + pillW / 2.0F + 1.0F;
-        float ty0 = yP1 - 1.5F;
-        if (border != 0) {
-            quad(matrix, buffers.getBuffer(TAIL_TYPE), -0.15F,
-                    cxT - 7.5F, ty0 - 1.0F, cxT + 7.5F, ty0 + 10.0F,
-                    0.0F, 0.0F, 1.0F, 1.0F, border);
-        }
-        // tail.png tem texel 255: fora da Quadrada o tint e escalado por
-        // 248/255 pra ficar da cor EXATA da pilula (bubble.png = texel 248)
-        quad(matrix, buffers.getBuffer(TAIL_TYPE), -0.12F,
-                cxT - 6.5F, ty0, cxT + 6.5F, ty0 + 9.0F,
-                0.0F, 0.0F, 1.0F, 1.0F, quadrada ? fill : texel248(fill));
+        // (3.62.0) SEM RABICHO — balao FLUTUANTE: os mods de referencia
+        // (Talk Balloons, TalkBubbles, Vanilla Chat Bubbles — centenas de mil
+        // de downloads) nao usam conector nenhum; o balao flutua DIRETO sobre
+        // a cabeca e a posicao e a propia ligacao. Quatro designs de rabicho
+        // foram aprovados e reprovados pelo dono: o que sempre sobrava feio
+        // era o "pescoco". O recheio cobre a pílula inteira e acabou.
 
         // ---- RECHEIO (a cor de dentro escolhida) — cobre o encaixe do rabicho ----
         // (3.51.0) a QUADRADA usa a textura de cantinhos TAMBEM no recheio —
@@ -736,6 +838,8 @@ public final class BubbleRenderer {
             pillTex(matrix, buffers, QUAD_TYPE, U_CAP_Q, -0.10F, x0, yP0, pillW, pillH, fill);
         } else {
             pill(matrix, buffers, -0.10F, x0, yP0, pillW, pillH, fill);
+        }
+
         }
 
         // ---- texto + adesivos dentro da fala (sombra vanilla = legivel e limpo) ----

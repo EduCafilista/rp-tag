@@ -3,3 +3,4 @@ run/
 .gradle/
 *.iml
 .idea/
+installer.jar.log
