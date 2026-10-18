@@ -69,8 +69,16 @@ monorepo (pedido do user: os 2 mods NO MESMO repositório) — rp-tag na raiz +
 portais-da-lore/ dentro; README raiz tem tabela dos 2 mods e o aviso "PORTAIS
 EM PAUSA TEMPORÁRIA" (palavra do user: "fala que ta la o mod mas descontinuado
 temporariamente pq nao quero mexer nele"); portais-da-lore/README.md = banner
-de pausa. Conta pelo README antigo: **EduCafilista**. Push/releases PENDENTES
-de PAT do user (releases: rptag-3.84.0.jar + portais-da-lore-1.3.2.jar).
+de pausa. Conta pelo README antigo: **EduCafilista**. FEITO (mesmo dia): repo PÚBLICO **github.com/EduCafilista/rp-tag** já existia
+(conteúdo 3.52) → **force push** do monorepo (main = 6450fb1; d7c1d1e antigo
+substituído). RELEASES criadas: `v3.84.0` (id 416734009, marcada latest) com
+rptag-3.84.0.jar + `portais-v1.3.2` (id 416734024) com portais-da-lore-
+1.3.2.jar; tamanhos conferidos byte a byte; 6 links públicos testados 200
+(repo, releases, 2 downloads, 2 READMEs). ROTINA DE CICLO agora termina com:
+commit + `git push --force` SE necessário / push normal (URL inline com o
+PAT — NÃO salvar remote com token em .git/config, que some entre ciclos;
+token vive só na conversa — se o user revogar, pedir outro). Usuário:
+**EduCafilista**.
 
 **3.83.0 (2026-10-18)** — "na ultima vida coloque 'SUA ULTIMA VIDA
 TOME CUIDADO' algo assim, na ultima tem que dar um medo abusrdo, para
