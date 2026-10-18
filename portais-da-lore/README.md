@@ -8,4 +8,4 @@ Portais **redondos e grandes** com a galáxia dos dois lados, feitos com
 PAR + MOLDE (flood-fill), som próprio de travessia e painel de status.
 Documentação: [LORE.md](LORE.md) · [WALKTHROUGH.md](WALKTHROUGH.md)
 
-**Jar pronto:** aba [Releases](../../releases) → `portais-1.3.2.jar`
+**Jar pronto:** aba [Releases](../../releases) → `portais-da-lore-1.3.2.jar`

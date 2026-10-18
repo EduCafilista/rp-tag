@@ -70,7 +70,7 @@ portais-da-lore/ dentro; README raiz tem tabela dos 2 mods e o aviso "PORTAIS
 EM PAUSA TEMPORÁRIA" (palavra do user: "fala que ta la o mod mas descontinuado
 temporariamente pq nao quero mexer nele"); portais-da-lore/README.md = banner
 de pausa. Conta pelo README antigo: **EduCafilista**. Push/releases PENDENTES
-de PAT do user (releases: rptag-3.84.0.jar + portais-1.3.2.jar).
+de PAT do user (releases: rptag-3.84.0.jar + portais-da-lore-1.3.2.jar).
 
 **3.83.0 (2026-10-18)** — "na ultima vida coloque 'SUA ULTIMA VIDA
 TOME CUIDADO' algo assim, na ultima tem que dar um medo abusrdo, para

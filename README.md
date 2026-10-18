@@ -15,7 +15,7 @@
 | Mod | Onde | Status | Jar pronto |
 |---|---|---|---|
 | 🏷️ **RP Tag** | na raiz (este) | ✅ em desenvolvimento ativo — v3.84.0 | [Releases](../../releases) → `rptag-3.84.0.jar` |
-| 🌀 **Portais da Lore** | [pasta `portais-da-lore/`](portais-da-lore/) | ⏸️ **EM PAUSA TEMPORÁRIA** — v1.3.2 | [Releases](../../releases) → `portais-1.3.2.jar` |
+| 🌀 **Portais da Lore** | [pasta `portais-da-lore/`](portais-da-lore/) | ⏸️ **EM PAUSA TEMPORÁRIA** — v1.3.2 | [Releases](../../releases) → `portais-da-lore-1.3.2.jar` |
 
 > ⚠️ **O Portais da Lore está temporariamente descontinuado** — não estou mexendo
 > nele por agora (o foco tá todo no RP Tag 😄). Ele **continua funcionando
