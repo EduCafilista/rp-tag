@@ -1,0 +1,10 @@
+{
+  "portal_entrada": {
+    "sounds": [
+      {
+        "name": "loreportals:portal_entrada",
+        "stream": false
+      }
+    ]
+  }
+}

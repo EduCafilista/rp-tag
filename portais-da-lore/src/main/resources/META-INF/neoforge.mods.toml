@@ -1,0 +1,33 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="loreportals"
+version="1.3.2"
+displayName="Portais da Lore"
+authors="Lore"
+description='''
+Portais redondos para contar historia.
+
+DOIS MODOS:
+- PAR: coloque dois Nucleos e conecte com o Cristal de Vinculo.
+- MOLDE: construa o anel redondo de 11 Molduras Runicas ao redor do
+  Nucleo — o portal grande de galaxia acorda sozinho.
+
+Atravesse o disco para viajar ate o portal ligado a ele.
+'''
+
+[[dependencies.loreportals]]
+    modId="neoforge"
+    type="required"
+    versionRange="[21.1.0,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.loreportals]]
+    modId="minecraft"
+    type="required"
+    versionRange="[1.21.1,1.22)"
+    ordering="NONE"
+    side="BOTH"

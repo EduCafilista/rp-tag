@@ -1,0 +1,33 @@
+# Gradle NAO roda no sandbox do amigo de trabalho (2 GB de cgroup).
+# Este build.gradle existe pro repositorio / IDE (o fluxo oficial aqui e
+# o toolchain.sh + javac, igual ao rp-tag — veja LORE.md).
+plugins {
+    id 'net.neoforged.gradle.userdev' version '7.0.171'
+}
+
+version = '1.3.2'
+group = 'dev.loreportals'
+
+base {
+    archivesName = 'portais-da-lore'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "net.neoforged:neoforge:21.1.249"
+}
+
+tasks.withType(ProcessResources).configureEach {
+    var replaceProperties = [
+        mod_version: version
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}

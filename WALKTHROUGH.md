@@ -59,6 +59,19 @@ cp.txt + rcon.py), toolchain + rcon recriados. LIÇÃO: heredoc de docs
 precisa rodar NO DIRETÓRIO do repo (1x falhou com cwd errado — os docs
 não escreveram mas o commit foi; refazer docs + commit extra).
 
+(extra pós-3.84) **.git REGREDIU DE NOVO (3ª vez)**: HEAD voltou sozinho a
+8f3b809 (3.58.1!) e os commits 3.59→3.84 se perderam; working tree intacta →
+re-commitado CONSOLIDADO **a9b2e82** ("3.59.0→3.84.0 CONSOLIDADO"). Portais
+perdeu o .git inteiro → re-init + commit **8cdeb61** (1 commit, estado 1.3.2).
+LIÇÃO NO RITUAL: começo de TODO ciclo → `git log --oneline -1`; HEAD errado =
+re-commitar consolidado ANTES de qualquer coisa. PLANO DEFINITIVO: GITHUB
+monorepo (pedido do user: os 2 mods NO MESMO repositório) — rp-tag na raiz +
+portais-da-lore/ dentro; README raiz tem tabela dos 2 mods e o aviso "PORTAIS
+EM PAUSA TEMPORÁRIA" (palavra do user: "fala que ta la o mod mas descontinuado
+temporariamente pq nao quero mexer nele"); portais-da-lore/README.md = banner
+de pausa. Conta pelo README antigo: **EduCafilista**. Push/releases PENDENTES
+de PAT do user (releases: rptag-3.84.0.jar + portais-1.3.2.jar).
+
 **3.83.0 (2026-10-18)** — "na ultima vida coloque 'SUA ULTIMA VIDA
 TOME CUIDADO' algo assim, na ultima tem que dar um medo abusrdo, para
 a pessoa ficar preocupada, muito bizarro". CanonLife.ritualDeVidaPerdida

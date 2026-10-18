@@ -6,9 +6,22 @@
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-3.52.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases) ou no [link direto](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.52.0.jar) (arquivo dentro do repositório).
+> 📥 **Download:** baixe o `rptag-3.84.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases).
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
+
+## 📦 Este repositório tem 2 mods
+
+| Mod | Onde | Status | Jar pronto |
+|---|---|---|---|
+| 🏷️ **RP Tag** | na raiz (este) | ✅ em desenvolvimento ativo — v3.84.0 | [Releases](../../releases) → `rptag-3.84.0.jar` |
+| 🌀 **Portais da Lore** | [pasta `portais-da-lore/`](portais-da-lore/) | ⏸️ **EM PAUSA TEMPORÁRIA** — v1.3.2 | [Releases](../../releases) → `portais-1.3.2.jar` |
+
+> ⚠️ **O Portais da Lore está temporariamente descontinuado** — não estou mexendo
+> nele por agora (o foco tá todo no RP Tag 😄). Ele **continua funcionando
+> perfeitamente**: o código da versão 1.3.2 está na pasta
+> [`portais-da-lore/`](portais-da-lore/) e o jar pronto fica nas
+> [Releases](../../releases). Quando eu voltar a mexer, este aviso muda!
 
 ## ✨ O que ele faz
 
@@ -91,6 +104,18 @@
 - Aparece no nametag, no chat e na TAB · `/rp` alterna, `/rp on|off|status`, `/rp set <jogador> on|off` (admin)
 - **`/rp ajuda` lista TODOS os comandos com a função de cada um** — admins veem também a seção de comandos de admin
 
+### 🫀 Vidas Canônicas (modo canon)
+- `/rp admin canon on` — cada player tem **5 vidas canônicas**; morrer custa 1,
+  com ritual completo: strondo, véu vermelho, áudio de lore e o aviso
+  **"VOCÊ PERDEU UMA VIDA — RESTAM N"**
+- Na **última vida** o aviso muda pra **"TOME CUIDADO"** + **medo absurdo** por 30s
+- **🫀 Coração da Vida Canônica** — item que só admin dá
+  (`/give <player> rptag:coracao_canon`), nunca spawna sozinho: no chão vira um
+  **coração 3D girando, batendo e flutuando**; quem achar usa
+  **SHIFT + clique direito** e recupera 1 vida — **"VOCÊ GANHOU UMA NOVA CHANCE"**
+  (vidas cheias 5/5? o coração fica lá, não se desperdiça)
+- Limite anti-mortes-seguidas de 5 minutos — relogar não burla
+
 - **Tudo salvo no mundo** — sobrevive a relog, morte e reinício do servidor.
   Por padrão, todo mundo começa em **OFF RP**.
 - **Sem dependências** — só precisa do NeoForge.
@@ -100,7 +125,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-3.50.0.jar` para a pasta `mods/` do **servidor**.
+2. Copie `rptag-3.84.0.jar` para a pasta `mods/` do **servidor** (e **apague o jar antigo** de lá!).
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -113,7 +138,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-3.50.0.jar`.
+O jar sai em `build/libs/rptag-3.84.0.jar`.
 
 ## 🎨 Personalizar
 
@@ -138,6 +163,10 @@ src/main/java/dev/rptag/
   RPCommands.java          # comando /rp
   client/                  # nametag no cliente + cache de estados
 ```
+
+> *(acima está só o núcleo original — o mod cresceu muito: canon, coração
+> canônico, balões, avisos, medo... O mapa completo dos arquivos está no
+> [WALKTHROUGH.md](WALKTHROUGH.md) e no [COMO-EDITAR.md](COMO-EDITAR.md).)*
 
 ## 📄 Licença
 

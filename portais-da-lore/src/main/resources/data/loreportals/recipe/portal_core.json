@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "RAR",
+    "AEA",
+    "RAR"
+  ],
+  "key": {
+    "R": {
+      "item": "loreportals:portal_frame"
+    },
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "E": {
+      "item": "minecraft:ender_eye"
+    }
+  },
+  "result": {
+    "id": "loreportals:portal_core",
+    "count": 1
+  }
+}
