@@ -181,6 +181,7 @@ public final class BubbleRenderer {
 
     @SubscribeEvent
     public static void onClientCommands(RegisterClientCommandsEvent event) {
+        FxComando.registrarComando(event); // (4.2.0) /rpfx
         event.getDispatcher().register(Commands.literal("rpformato")
                 .then(Commands.literal("novo").executes(ctx -> {
                     modern = true;
