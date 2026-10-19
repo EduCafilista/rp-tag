@@ -1,7 +1,9 @@
 package dev.rptag;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.network.chat.Component;
@@ -11,6 +13,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.minecraft.world.entity.Entity;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -60,6 +64,41 @@ public final class CanonLife {
 
     private static final Map<UUID, Freeze> FREEZES = new HashMap<>();
 
+    /** (4.1.0) mortes que NÃO contam: quem morreu levou o golpe de alguém
+     *  que estava OFF RP. Marcado no LivingDeathEvent (o respawn já não
+     *  sabe quem matou) e consumido em {@link #aoRenascer}. */
+    private static final Set<UUID> MORTE_NAO_CONTA = new HashSet<>();
+
+    /**
+     * (4.1.0) Na HORA da morte, olha quem matou. Se o matador é um JOGADOR
+     * que está OFF RP, essa morte não é canônica: a vítima não perde vida.
+     * (Morte sem matador — queda, mob, lava, /kill — continua contando.)
+     */
+    @SubscribeEvent
+    public static void aoMorrer(LivingDeathEvent e) {
+        if (!(e.getEntity() instanceof ServerPlayer vitima)) {
+            return;
+        }
+        RPWorldData wd = RPWorldData.get(vitima.server);
+        if (!wd.isCanonEvent()) {
+            return;
+        }
+        Entity agressor = e.getSource().getEntity();
+        if (!(agressor instanceof ServerPlayer matador)) {
+            return; // morte "do mundo" (queda, mob, fogo...): conta normal
+        }
+        if (matador.getUUID().equals(vitima.getUUID())) {
+            return; // se matou sozinho: conta normal
+        }
+        if (wd.isInRp(matador.getUUID())) {
+            return; // matador em RP: morte canônica normal
+        }
+        // matador OFF RP -> a morte foi fora do RP: NÃO desconta vida
+        MORTE_NAO_CONTA.add(vitima.getUUID());
+        RPTagMod.LOGGER.info("RP Tag: {} morreu para {} (OFF RP) — VIDA CANONICA PRESERVADA",
+                vitima.getName().getString(), matador.getName().getString());
+    }
+
     @SubscribeEvent
     public static void aoRenascer(PlayerEvent.PlayerRespawnEvent e) {
         if (!(e.getEntity() instanceof ServerPlayer p)) {
@@ -67,6 +106,11 @@ public final class CanonLife {
         }
         RPWorldData wd = RPWorldData.get(p.server);
         if (!wd.isCanonEvent()) {
+            return;
+        }
+        // (4.1.0) matador OFF RP: essa morte NÃO desconta vida (marca
+        // posta no LivingDeathEvent; some assim que é lida)
+        if (MORTE_NAO_CONTA.remove(p.getUUID())) {
             return;
         }
         long now = System.currentTimeMillis();
@@ -136,6 +180,7 @@ public final class CanonLife {
     @SubscribeEvent
     public static void aoSair(PlayerEvent.PlayerLoggedOutEvent e) {
         FREEZES.remove(e.getEntity().getUUID());
+        MORTE_NAO_CONTA.remove(e.getEntity().getUUID());
         // (3.82.0) PROTECAO_ATE é de propósito NÃO limpa no logout: sair e
         // voltar não burla o limite anti-mortes-seguidas
     }

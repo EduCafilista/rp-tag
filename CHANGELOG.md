@@ -2,6 +2,39 @@
 
 
 
+## 4.1.0 — MORTE FORA DO RP NÃO CONTA + FX DE MORTE + NOVO PESADELO ☠️ (2026-10-19)
+
+### ⚖️ Vida canônica: matador OFF RP não tira vida
+- Se quem **matou** estava **OFF RP**, a morte é considerada **fora do RP**:
+  a vítima **NÃO perde vida canônica** — sem ritual, sem aviso, sem som
+- Continua contando normal: morte por **mob, queda, lava, fogo ou /kill**
+  (sem matador jogador) e morte causada por **quem está ON RP**
+- A checagem é feita **no instante da morte** (onde o matador é conhecido)
+  e consumida no respawn — não vaza para a próxima morte
+- O log do servidor registra:
+  `RP Tag: <vitima> morreu para <matador> (OFF RP) — VIDA CANONICA PRESERVADA`
+
+### ☠️ Novo aviso de MORTE — "Linha Reta"
+- Monitor cardíaco batendo cada vez mais devagar… até virar **linha reta**
+- **Crânio em pixel art** que se forma do pó, olhos em brasa que se apagam,
+  e no fim vira cinzas subindo
+- Visão em túnel, tela esfriando pra cinza, borda pulsando em vermelho
+  no ritmo das batidas; cinzas caindo o tempo todo
+- Sino fúnebre grave + batidas + apito da linha reta
+- Usa o mesmo motor dos outros avisos: título **"AVISO"** grande + a
+  **mensagem embaixo** (padrão de todos os FX)
+- Vale para `/rp admin avisar @a 4 <msg>` **e** para o ritual da vida
+  canônica (o véu avermelhado e o áudio `canon_death` continuam)
+
+### 😴 Novo PESADELO (estilo 1) — minimalista, "Seguido"
+- Tela quase apaga; moldura vermelha fina + 2 linhas dividindo em terços
+  que piscam e falham
+- Mensagem **digitada** letra por letra, às vezes **corrompendo** (`#%&?/*`)
+- Coração acelerando + estática sutil; **sem figuras** (terror minimalista)
+- Mantém as partículas do servidor + **Escuridão 5 s**
+- **O pesadelo antigo ("Seguido" com a figura pálida) saiu do lugar** —
+  o código dele está salvo em `backup/` no workspace
+
 ## 4.0.0 — BARREIRA DA LOREZONE (só admin) + FAIXA VERTICAL + VARINHA 🧱 (2026-10-19)
 
 ### 🧱 "Barreira" visível só para admins

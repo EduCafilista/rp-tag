@@ -45,6 +45,10 @@ public final class ClientGuiLayers {
         // (3.98.0) estilo 11 = PESADELO2 "Sono Sem Descanso" (o modelo
         // antigo, do 3.96.4, mantido como opcao ao lado do "Seguido")
         PesadeloAntigoAvisoFx.registrar(event);
+        // (4.1.0) estilo 4 = MORTE "Linha Reta" (monitor cardiaco que vira
+        // linha reta + cranio pixel art + cinzas) — vale pro aviso de morte
+        // do /rp admin avisar e pro ritual da VIDA CANONICA
+        MorteAvisoFx.registrar(event);
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "medo_veu"),
                 (g, delta) -> ClientEffects.desenharMedoCamada(g));

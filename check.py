@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.0.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.1.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.0.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.1.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -342,7 +342,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.0.0', 'RP Tag 4.0.0' in ce)
+check('4.0: boot log 4.1.0', 'RP Tag 4.1.0' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -524,11 +524,13 @@ check('3.96: VoidAvisoFx adaptado (pacote + escala do prot\u00f3tipo: t\u00edtul
       and 'public static void iniciar(String t, String s)' in vf
       and 'float S = k * 1.9f, ty = cy - 4 * S;' in vf
       and 'w * 0.86f' not in vf)
-check('3.97: PesadeloAvisoFx = prototipo "Seguido" (found-footage) adaptado',
+# (4.1.0) o "Seguido" found-footage (figura palida em cortes, da 3.97.0) foi
+# SUBSTITUIDO a pedido do dono pelo prototipo NOVO de pesadelo (minimalista,
+# sem figuras). O arquivo antigo fica em /home/user/backup/ se precisar voltar.
+check('3.97/4.1: PesadeloAvisoFx adaptado ao mod (pacote + titulo/mensagem)',
       pf.startswith('package dev.rptag.client;')
       and 'public static void iniciar(String titulo, String mensagem)' in pf
-      and 'HEAD_SZ' in pf and 'GRASS_STEP' in pf and 'ENDERMAN_STARE' in pf
-      and 'tentaculo' not in pf.lower())
+      and 'registerAboveAll' in pf and 'tentaculo' not in pf.lower())
 check('3.96: VoidAvisoFx completo (buraco negro + tunel)',
       'anel' in vf.lower() and 'Buf' in vf)
 check('3.97: os 4 FX novos adaptados (pacote + iniciar(titulo, mensagem))',
@@ -655,6 +657,42 @@ check('4.0: varinha so admin (permissao 2) + so o clicante recebe',
       and 'sendToPlayer(player' in rd(R + '/LorezoneWand.java'))
 check('4.0: /lorezone listar mostra a faixa Y quando limitada',
       'faixaVertical()' in lzcmd and 'Y " + Math.round(z.minY())' in lzcmd)
+
+# ---- 4.1.0: morte OFF RP nao desconta vida canonica + FX de morte + novo pesadelo ----
+cl = rd(R + '/CanonLife.java')
+check('4.1: matador OFF RP NAO faz a vitima perder vida canonica (LivingDeathEvent)',
+      'LivingDeathEvent' in cl and 'MORTE_NAO_CONTA' in cl
+      and 'if (!(agressor instanceof ServerPlayer matador))' in cl
+      and 'if (wd.isInRp(matador.getUUID()))' in cl)
+check('4.1: morte sem matador (queda/mob) continua contando',
+      'return; // morte "do mundo" (queda, mob, fogo...): conta normal' in cl)
+check('4.1: marca consumida no respawn (nao vaza entre mortes)',
+      'if (MORTE_NAO_CONTA.remove(p.getUUID()))' in cl
+      and 'MORTE_NAO_CONTA.remove(e.getEntity().getUUID())' in cl)
+
+mafx = rd(C + '/MorteAvisoFx.java')
+check('4.1: MorteAvisoFx "Linha Reta" adaptado (pacote + iniciar(titulo, mensagem))',
+      mafx.startswith('package dev.rptag.client;')
+      and 'public static void iniciar(String titulo, String mensagem)' in mafx
+      and 'CRANIO' in mafx and 'ECG_END' in mafx and 'particulasMundo(ServerPlayer p)' in mafx)
+check('4.1: MorteAvisoFx registra a camada aviso_morte', 'aviso_morte' in mafx
+      and 'MorteAvisoFx.registrar(event)' in rd(C + '/ClientGuiLayers.java'))
+check('4.1: estilo 4 (morte) usa o FX, mantendo veu + audio da lore',
+      'style == 4' in rd(C + '/ClientEffects.java')
+      and 'MorteAvisoFx.iniciar("AVISO", limpo4)' in rd(C + '/ClientEffects.java')
+      and 'somCanonDue = agora4 + 1500L' in rd(C + '/ClientEffects.java'))
+check('4.1: MorteAvisoFx poe a MENSAGEM embaixo do titulo (padrao 3.96.4)',
+      'cy + 25 * k' in mafx and 'f.width(sub)' in mafx)
+
+pafx = rd(C + '/PesadeloAvisoFx.java')
+check('4.1: PESADELO novo = prototipo minimalista (Seguido sem figuras)',
+      'LIXO' in pafx and 'beat(' in pafx and 'CRANIO' not in pafx
+      and 'public static void iniciar(String titulo, String mensagem)' in pafx)
+check('4.1: PESADELO novo mantem escuridao + particulas do servidor',
+      'particulasMundo(ServerPlayer p, boolean escuridao)' in pafx
+      and 'MobEffects.DARKNESS' in pafx and 'particulasPesadelo(alvo, true)' in rp)
+check('4.1: PESADELO novo poe a MENSAGEM embaixo do titulo (padrao 3.96.4)',
+      'cy + 25 * k' in pafx and 'f.width(sub)' in pafx)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

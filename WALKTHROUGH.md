@@ -15,9 +15,9 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.0.0** (2026-10-19) |
+| Versão | **4.1.0** (2026-10-19) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.0.0.jar` (entregue + GitHub Release) |
+| Jar | `rptag-4.1.0.jar` (entregue + GitHub Release) |
 | Checks | `check.py` → **259 PASS / 0 FAIL** (3.96.0: VOID = Queda Sem Fundo, PESADELO = Sono Sem Descanso — 5 FX cinematográficos) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
@@ -50,6 +50,40 @@ RECUPERACAO OFFLINE: a regressao do `.git` voltou DUAS vezes (abertura e meio de
 Alem do ritual `fetch --tags` + `reset --mixed origin/main`, foi criado o backup
 `/home/user/rp-tag-git.bundle` (`git bundle create ... --all`): se o remoto falhar, da pra
 restaurar com `git clone /home/user/rp-tag-git.bundle`.
+
+### 🧰 TOOLCHAIN (recriada 2026-10-19, /var/tmp e volátil — some entre turnos)
+Reconstrução completa em ~1 min: (1) JDK 21 do Adoptium em `/var/tmp/java-21`;
+(2) `installer.jar` do neoforge 21.1.249; (3) **`launcher_profiles.json` falso**
+(`{"profiles":{},"settings":{},"version":3}`) ANTES do `--installClient /var/tmp/mcdir`
+— sem esse arquivo o instalador aborta com "There is no minecraft launcher profile";
+(4) `--installServer /home/user/run` (se `run/libraries` sumiu, dá
+"Missing or unsupported mandatory dependencies: minecraft [MISSING]" no boot — é só
+reinstalar); (5) classpath = neoforge-client + client-srg + neoforge-universal +
+server-srg + todas as libs das duas árvores (excluir `net/minecraft/server/1.21.1/`)
++ **lwjgl-openal e lwjgl do Maven Central** (sem eles: "package org.lwjgl.openal does
+not exist" no `MusicaCustom`); (6) `javac --release 21 -proc:none`.
+**RCON**: o pacote correto é tamanho = `8 + len(payload) + 2` e o campo de id é
+`<ii` — montar com `10 + len(b)` dá timeout silencioso (aconteceu neste turno).
+
+**4.1.0 (2026-10-19) — MORTE OFF RP NAO CONTA + FX de morte + pesadelo novo.** User:
+"se a pessoa que estiver off rp matar uma pessoa on rp, quando estiver vida canon, ele nao
+pode perder uma vida canon"; mandou 2 prototipos do catbox: 9mvdzc = aviso de MORTE
+("Linha Reta") e 1jsrwv = **o novo pesadelo**.
+IMPLEMENTADO: (1) `CanonLife` ganhou `aoMorrer(LivingDeathEvent)` + set `MORTE_NAO_CONTA`:
+se `e.getSource().getEntity()` for jogador e `!wd.isInRp(matador)`, marca a vitima; o
+`aoRenascer` faz `remove(uuid)` e RETORNA antes de descontar. Morte sem matador (mob,
+queda, lava, /kill) e matador ON RP continuam contando. Limpeza no logout.
+(2) `client/MorteAvisoFx` = prototipo 9mvdzc adaptado: pacote dev.rptag.client,
+`iniciar(titulo, mensagem)`, mensagem em `cy + 25*k` (regra 3.96.4), registrado em
+`ClientGuiLayers` (camada `aviso_morte`); estilo 4 no `ClientEffects` agora chama o FX
+ANTES de agendar veu+audio (veilStart/veilUntil/somCanonDue preservados).
+(3) `client/PesadeloAvisoFx` REESCRITO com o prototipo 1jsrwv (minimalista: moldura que
+falha, texto digitado com corrupcao, batida acelerando, SEM figuras). O "Seguido"
+found-footage saiu — backup em `/home/user/backup/PesadeloAvisoFx_Seguido_figura_3.98.java`.
+check.py: 312 PASS/0 FAIL (10 checks novos). javac rc=0 (87 classes), jar 2194303 B,
+smoke verde: "RP Tag 4.1.0", `rp admin avisar @a 4 ...` e `... 1 ...` reconhecidos,
+`canon on/off` OK, 0 ERROR/FATAL. Verificacao visual de layout em
+`verificacao/4_1_0_{morte,pesadelo}_layout.png` (titulo y=533/509, mensagem y=652).
 
 **4.0.0 (2026-10-19) — BARREIRA admin-only + faixa vertical + varinha.** User: "faça um
 bloco, wand para os adm saber até onde vai a lorezone, algo que só os adm podem ver, tipo

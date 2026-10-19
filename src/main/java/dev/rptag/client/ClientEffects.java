@@ -156,6 +156,22 @@ public final class ClientEffects {
             RPTagMod.LOGGER.info("RP Tag: GEADA ETERNA iniciada (FX proprio)");
             return;
         }
+        // (4.1.0) estilo 4 = MORTE: o FX "Linha Reta" (monitor cardiaco que
+        // desacelera ate virar linha reta, cranio em pixel art que se forma
+        // do po e vira cinza) assume o desenho. O VEU avermelhado e o AUDIO
+        // da lore (canon_death, 1,5 s depois do strondo) continuam valendo:
+        // sao ligados ANTES de sair.
+        if (style == 4) {
+            String limpo4 = text.replaceAll("\u00a7.", "");
+            long agora4 = System.currentTimeMillis();
+            veilStart = agora4;
+            veilUntil = agora4 + Math.max(1, Math.min(60, seconds)) * 1000L;
+            somCanonDue = agora4 + 1500L;
+            somCanonPlayed = false;
+            MorteAvisoFx.iniciar("AVISO", limpo4);
+            RPTagMod.LOGGER.info("RP Tag: LINHA RETA (aviso de morte) iniciado (FX proprio)");
+            return;
+        }
         screenText = text;
         textStart = System.currentTimeMillis();
         textDuration = Math.max(1, Math.min(60, seconds)) * 1000L;
@@ -181,7 +197,7 @@ public final class ClientEffects {
     }
 
     static {
-        RPTagMod.LOGGER.info("RP Tag 4.0.0: camada de avisos carregada");
+        RPTagMod.LOGGER.info("RP Tag 4.1.0: camada de avisos carregada");
     }
 
     /** (3.78.0) VÉU da vida perdida: tela MEIO AVERMELHADA durante o
