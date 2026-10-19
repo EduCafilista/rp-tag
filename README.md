@@ -8,7 +8,7 @@
 >
 > 📥 **Download:** baixe o `rptag-4.0.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases/latest).
 >
-> 🧹 **Só a versão mais recente fica publicada** — as Releases antigas são removidas a cada ciclo.
+> 🧹 **Só a versão mais recente fica no repositório** — o `rptag-4.0.0.jar` está aqui na raiz e nas Releases; as antigas são apagadas a cada ciclo.
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 

@@ -4,3 +4,6 @@ run/
 *.iml
 .idea/
 installer.jar.log
+# jars de versoes antigas (so o jar da versao atual fica versionado)
+rptag-*.jar
+!rptag-4.0.0.jar
