@@ -35,6 +35,19 @@ Decisões do dono:
 
 ## 2. Arquitetura
 
+> **Revisão (plano):** em vez de uma camada de GUI própria + `FxTexto`, o
+> `VideoFx` é só o **player** (sem camada). Quem compõe a tela é a classe
+> do aviso que já existe (ex.: `MorteAvisoFx`): no **modo vídeo** ela
+> desenha a camada cinza → `VideoFx.desenhar(g, t)` → o texto e os sons
+> de sempre, e **pula** o desenho procedural (ECG, crânio, vinheta, cinzas).
+> Se o player falhar, ela volta ao procedural **no mesmo instante t** (o
+> fallback não reinicia o aviso). Isso reaproveita o texto/sons atuais sem
+> duplicar código. Os **tempos** (batidas, linha reta, duração) ficam numa
+> classe Java pura (`MorteTempos`) que é a fonte única: a cena do Blender
+> usa os mesmos números e um teste JUnit confere que os marcadores do
+> `fx.json` batem com ela. A tabela abaixo é a versão original.
+
+
 ### Peças novas (todas em `src/main/java/dev/rptag/client/`)
 
 | Arquivo | Responsabilidade | Depende de |
@@ -151,7 +164,11 @@ arte/.gitignore         *.blend, *.blend1, render/ (PNG brutos)
   `java.util.Properties` na inicialização do cliente e criado com o padrão
   se não existir: `fxVideo=true|false` (padrão `true`); `false` → sempre
   FX procedural. Arquivo ilegível → assume o padrão e registra no log.
-- `/rp status` mostra: modo vídeo ligado/desligado e quantos avisos têm vídeo.
+- Comando **de cliente** `/rpfx status|on|off` (registrado junto do
+  `/rpformato` no `RegisterClientCommandsEvent`): mostra se o modo vídeo
+  está ligado e quantos avisos têm vídeo; `on/off` grava `fxVideo`.
+  (Revisão: `/rp status` roda no servidor e não enxerga a config do
+  cliente, por isso o comando é do cliente.)
 
 ## 5. Testes
 
