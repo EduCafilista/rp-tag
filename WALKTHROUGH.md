@@ -41,7 +41,20 @@ API do 1.21.1 daqui), modelo `minecraft:item/blaze_rod`, lang pt/en; `LorezoneWa
 (PlayerInteractEvent.RightClickBlock/RightClickItem — `setCancellationResult` so existe
 nas SUBCLASSES, nao na base) com cooldown de 250ms pra nao disparar 2x, permissao 2 e
 `distance - radius <= 256`; (6) `/lorezone varinha`, `/lorezone mostrar <id> [seg]`,
-`/lorezone esconder`. check.py 302 PASS/0 FAIL; smoke 4.0.0 verde (comandos parseiam,
+`/lorezone esconder`.   Publicado: commit `62d63af` (tag `v4.0.0`), Release id 417221397, asset
+  `rptag-4.0.0.jar` 2188446 B, download `-L` 200 e `cmp` identico.
+  REGRESSAO DO .git NAO MORREU: ao abrir o turno o HEAD local estava em `437bb48`
+  (3.84.0) — `8de56f6` nao existia como objeto e nao havia tag nenhuma. A ARVORE de
+  arquivos estava intacta (check.py 302 PASS), so o historico tinha sumido. RECEITA DE
+  RECUPERACAO (funcionou): `git remote set-url origin <url com PAT>`;
+  `git fetch --tags origin main` (traz `origin/main` + todas as tags);
+  `git reset --mixed origin/main` (NAO toca nos arquivos — o diff volta a ser so o do
+  ciclo, conferido com `git status --porcelain`: 18 entradas esperadas);
+  `git add <lista explicita>` (deixar o jar de fora) + commit + push (foi fast-forward).
+  LICAO: antes de qualquer coisa, `git log --oneline -1`; se nao for o commit do ciclo
+  anterior, NAO commitar por cima — buscar o remoto primeiro.
+
+check.py 302 PASS/0 FAIL; smoke 4.0.0 verde (comandos parseiam,
 `give rptag:lorezone_wand` reconhece o item, 0 ERROR/FATAL).
 
 **3.99.0 (2026-10-19) — LOREZONES: aviso unico + audio com tempo maximo.** User:
