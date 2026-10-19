@@ -23,6 +23,21 @@
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
 
+### 🧹 Rotina nova (2026-10-19): só a release ATUAL fica no GitHub
+User pediu: "no github remova as versões anteriores, pode deixar somente a mais atual,
+se não vai ficar muita informação nele". FEITO: apagadas 20 releases (v3.84.0→v3.99.0) e
+as 20 tags correspondentes; sobraram **v4.0.0** (`62d63af`, jar 2188446 B) e
+**portais-v1.3.2** (`6450fb1`, mantida porque e a unica release do outro mod e o aviso de
+pausa NUNCA sai). A partir de agora, a cada ciclo: publicar a release nova, marcar
+`make_latest`, baixar/conferir o asset e **apagar a release + tag anteriores**:
+`GET /releases` -> `DELETE /releases/<id>` -> `GET /git/refs/tags` ->
+`DELETE /git/refs/tags/<tag>`. O historico de codigo NAO se perde: os commits continuam
+todos na `main`.
+RECUPERACAO OFFLINE: a regressao do `.git` voltou DUAS vezes (abertura e meio de turno).
+Alem do ritual `fetch --tags` + `reset --mixed origin/main`, foi criado o backup
+`/home/user/rp-tag-git.bundle` (`git bundle create ... --all`): se o remoto falhar, da pra
+restaurar com `git clone /home/user/rp-tag-git.bundle`.
+
 **4.0.0 (2026-10-19) — BARREIRA admin-only + faixa vertical + varinha.** User: "faça um
 bloco, wand para os adm saber até onde vai a lorezone, algo que só os adm podem ver, tipo
 uma barreira circulando... se o evento for debaixo das cavernas, eu quero que os players
