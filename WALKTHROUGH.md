@@ -23,6 +23,19 @@
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
 
+### 🔍 ACHADO IMPORTANTE (2026-10-19): "versoes antigas no GitHub" NAO eram as Releases
+User reclamou que a pagina do GitHub ainda mostrava da 3.85 ate a 3.99. NAO era cache nem
+a API: os **19 jars estavam COMMITADOS na raiz do repo** (entraram no commit `8de56f6`,
+o do 3.99.0). O GitHub lista os arquivos da raiz na home e o visitante ve tudo. Diagnostico
+correto: `curl /contents/?ref=main` -> contar arquivos `.jar` (a API de releases ja dizia 2).
+Correcao: `git rm` nos 19 jars + `git add -f rptag-4.0.0.jar` (o `.gitignore` passou a ter
+`rptag-*.jar` com excecao `!rptag-4.0.0.jar`, entao so o jar ATUAL fica versionado) +
+commit `6f058dd`. Conferido por fora: home do repo com 0 ocorrencias de `rptag-3.*.jar`.
+REGRA NOVA para os proximos ciclos: ao subir o jar novo, `git rm` o jar da versao anterior
+e fazer o `git add -f` do atual — a home do repositorio nunca deve acumular jars.
+CUIDADO: `git status` pode ESCONDER isso (o `.gitignore` nao lista `*.jar`, mas o caminho
+`git rm` + re-add pode passar batido); sempre confira com `git ls-tree HEAD --name-only | grep jar`.
+
 ### 🧹 Rotina nova (2026-10-19): só a release ATUAL fica no GitHub
 User pediu: "no github remova as versões anteriores, pode deixar somente a mais atual,
 se não vai ficar muita informação nele". FEITO: apagadas 20 releases (v3.84.0→v3.99.0) e
