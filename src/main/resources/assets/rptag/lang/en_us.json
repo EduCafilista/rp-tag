@@ -1,4 +1,6 @@
 {
   "effect.rptag.medo": "Fear",
-  "block.rptag.coracao_canon": "Canonical Life Heart"
+  "block.rptag.coracao_canon": "Canonical Life Heart",
+  "item.rptag.lorezone_wand": "Lorezone Wand",
+  "item.rptag.lorezone_wand.desc": "Right-click near a lorezone to see its barrier (admin only)"
 }

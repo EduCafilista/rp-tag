@@ -15,13 +15,34 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **3.99.0** (2026-10-19) |
+| Versão | **4.0.0** (2026-10-19) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-3.99.0.jar` (entregue + GitHub Release) |
+| Jar | `rptag-4.0.0.jar` (entregue + GitHub Release) |
 | Checks | `check.py` → **259 PASS / 0 FAIL** (3.96.0: VOID = Queda Sem Fundo, PESADELO = Sono Sem Descanso — 5 FX cinematográficos) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
+
+**4.0.0 (2026-10-19) — BARREIRA admin-only + faixa vertical + varinha.** User: "faça um
+bloco, wand para os adm saber até onde vai a lorezone, algo que só os adm podem ver, tipo
+uma barreira circulando... se o evento for debaixo das cavernas, eu quero que os players
+so consigam o aviso assim que chegarem do lado da caverna e nao la no topo".
+IMPLEMENTADO: (1) `Zone` ganhou `minY/maxY` (record + save/load "MinY"/"MaxY"; zonas
+antigas = esfera inteira) e `faixaVertical()`; trigger exige `py >= minY && py <= maxY`;
+(2) `/lorezone vertical <id> <minY> <maxY>` e `... auto`; listar mostra "Y a..b";
+(3) `ZoneShowPayload` (codec MANUAL — `StreamCodec.composite` nao aceita 9 campos;
+ByteBuf puro nao tem writeUtf/writeVarInt nesta API -> UTF-8 com writeInt+writeBytes);
+(4) `client/ZoneVisualizer` desenha arame de esfera (12 meridianos + paralelos dentro da
+faixa) + paredes amarelas em minY/maxY + linha central, no stage
+`AFTER_TRANSLUCENT_BLOCKS` (AFTER_TRANSLUCENT_TERRAIN nao existe no 1.21.1), via
+`RenderType.lines()` e `renderBuffers().bufferSource()`; expira sozinho; ninguem mais ve;
+(5) item `rptag:lorezone_wand` (DeferredHolder<Item,Item> — DeferredItem nao existe na
+API do 1.21.1 daqui), modelo `minecraft:item/blaze_rod`, lang pt/en; `LorezoneWand`
+(PlayerInteractEvent.RightClickBlock/RightClickItem — `setCancellationResult` so existe
+nas SUBCLASSES, nao na base) com cooldown de 250ms pra nao disparar 2x, permissao 2 e
+`distance - radius <= 256`; (6) `/lorezone varinha`, `/lorezone mostrar <id> [seg]`,
+`/lorezone esconder`. check.py 302 PASS/0 FAIL; smoke 4.0.0 verde (comandos parseiam,
+`give rptag:lorezone_wand` reconhece o item, 0 ERROR/FATAL).
 
 **3.99.0 (2026-10-19) — LOREZONES: aviso unico + audio com tempo maximo.** User:
 "se o player ficar entrando e saindo da lorezone, vai ficar tocando toda vez a musica e

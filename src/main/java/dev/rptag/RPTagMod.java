@@ -32,7 +32,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "3.99.0";
+    public static final String VERSION = "4.0.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -68,6 +68,13 @@ public final class RPTagMod {
     public static final Supplier<Item> CORACAO_ITEM =
             ITEMS.register("coracao_canon", () -> new BlockItem(CORACAO_BLOCK.get(),
                     new Item.Properties()));
+    /** (4.0.0) VARINHA DE LOREZONE (so admin): clique direito mostra/esconde
+     *  a barreira da zona mais proxima. Nao faz nada nas maos de um player. */
+    public static final net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.world.item.Item,
+            net.minecraft.world.item.Item> LOREZONE_WAND = ITEMS.register("lorezone_wand",
+                    () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()
+                            .stacksTo(1)
+                            .rarity(net.minecraft.world.item.Rarity.EPIC)));
 
     public RPTagMod(IEventBus modEventBus, ModContainer modContainer) {
         // (3.45.0) o efeito MEDO usa DeferredRegister (registro oficial,

@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('3.99.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.0.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 3.99.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.0.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -333,8 +333,8 @@ check('3.85: 5 estilos por nome (classico..morte)',
       '"morte", 4' in zc and '"pesadelo", 1' in zc)
 check('3.85: setAviso/limparAviso chamados',
       'setAviso(ctx' in zc and 'limparAviso(ctx' in zc)
-check('3.85: criar inicia sem aviso',
-      '45, "", 0, 8)' in zc)
+check('3.85/4.0: criar inicia sem aviso e com faixa vertical = esfera',
+      '45, "", 0, 8,' in zc and 'player.position().y - raio, player.position().y + raio' in zc)
 check('3.85: listar mostra [aviso:estilo]',
       '[aviso:' in zc and 'nomeEstilo' in zc)
 rp = rd(R + '/RPCommands.java')
@@ -342,7 +342,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('3.99: boot log 3.99.0', 'RP Tag 3.99.0' in ce)
+check('4.0: boot log 4.0.0', 'RP Tag 4.0.0' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -621,6 +621,40 @@ check('3.99: handlers definem o limite ao tocar/baixar',
 check('3.99: servidor passa o maxSeg (arquivo e URL)',
       'MusicSync.pedir(player, nome, maxSeg)' in lz
       and 'new LorezoneMusicPayload(true, inside.music(), maxSeg)' in lz)
+
+# ---- 4.0.0: BARREIRA admin-only + faixa vertical (caverna) + varinha ----
+check('4.0: Zone tem faixa vertical (minY/maxY) salva e carregada',
+      'double minY, double maxY' in lz and 'tag.putDouble("MinY", minY)' in lz
+      and 'tag.contains("MinY") ? tag.getDouble("MinY")' in lz and 'faixaVertical()' in lz)
+check('4.0: aviso so dispara DENTRO da faixa vertical (nao no topo)',
+      'py >= zone.minY() && py <= zone.maxY()' in lz)
+check('4.0: /lorezone vertical <id> <minY> <maxY> + auto',
+      'literal("vertical")' in lzcmd and 'literal("auto")' in lzcmd
+      and 'agora so dispara entre Y' in lzcmd)
+av = rd(C + '/ZoneVisualizer.java')
+zsp = rd(R + '/ZoneShowPayload.java')
+check('4.0: BARREIRA client-side (arame de esfera + faixa amarela)',
+      av.startswith('package dev.rptag.client;')
+      and 'RenderLevelStageEvent' in av and 'RenderType.lines()' in av
+      and 'meridianos' in av and 'paredes da FAIXA VERTICAL' in av)
+check('4.0: pacote ZoneShowPayload (codec manual, 9 campos)',
+      'record ZoneShowPayload(' in zsp and 'StreamCodec.of(' in zsp
+      and 'buf.writeDouble(p.minY())' in zsp)
+check('4.0: payload registrado + handler no cliente',
+      'ZoneShowPayload.TYPE' in rd(R + '/ModNetworking.java')
+      and 'handleZoneShow' in cph and 'ZoneVisualizer.aplicar(payload)' in cph)
+check('4.0: /lorezone mostrar + esconder (so o admin ve)',
+      'literal("mostrar")' in lzcmd and 'literal("esconder")' in lzcmd
+      and 'sendToPlayer(p,' in lzcmd)
+check('4.0: VARINHA de lorezone (item registrado + modelo + lang)',
+      'LOREZONE_WAND' in rtm and 'ITEMS.register("lorezone_wand"' in rtm
+      and os.path.exists('src/main/resources/assets/rptag/models/item/lorezone_wand.json')
+      and 'item.rptag.lorezone_wand' in rd('src/main/resources/assets/rptag/lang/pt_br.json'))
+check('4.0: varinha so admin (permissao 2) + so o clicante recebe',
+      'hasPermissions(2)' in rd(R + '/LorezoneWand.java')
+      and 'sendToPlayer(player' in rd(R + '/LorezoneWand.java'))
+check('4.0: /lorezone listar mostra a faixa Y quando limitada',
+      'faixaVertical()' in lzcmd and 'Y " + Math.round(z.minY())' in lzcmd)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

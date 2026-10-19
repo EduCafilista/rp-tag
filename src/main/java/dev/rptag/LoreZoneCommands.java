@@ -121,6 +121,32 @@ public final class LoreZoneCommands {
         return som;
     }
 
+    /** (4.0.0) manda a BARREIRA da zona SÓ para o admin que pediu. */
+    private static int mostrar(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx,
+            String id, int segundos) {
+        ServerPlayer p = ctx.getSource().getPlayer();
+        if (p == null) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "\u00a7cUse dentro do jogo (a barreira aparece na tela do admin)."));
+            return 0;
+        }
+        LoreZones.Zone z = LoreZones.LoreZonesData.get(ctx.getSource().getServer()).get(id);
+        if (z == null) {
+            ctx.getSource().sendFailure(Component.literal("Zona '" + id + "' nao existe."));
+            return 0;
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p,
+                new ZoneShowPayload(true, z.id(), z.center().x, z.center().y, z.center().z,
+                        z.radius(), z.minY(), z.maxY(), segundos));
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u00a7aBarreira da zona \u00a7f" + id + "\u00a7a aparecendo s\u00f3 pra VOCE:"
+                        + " \u00a7bciano = esfera\u00a7a, \u00a7eamarelo = faixa onde o aviso dispara"
+                        + "\u00a7a (Y " + Math.round(z.minY()) + " a " + Math.round(z.maxY()) + ")"
+                        + (segundos > 0 ? " \u00a77por " + segundos + "s" : " \u00a77(use /lorezone esconder)")
+                        + "."), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
     /** (3.48.0) define a musica de fundo da zona (loop + stop ao sair). */
     private static int setMusica(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
             String id, String som, int intervalo) {
@@ -153,7 +179,7 @@ public final class LoreZoneCommands {
         }
         LoreZones.Zone nova = new LoreZones.Zone(zone.id(), zone.dimension(), zone.center(),
                 zone.radius(), zone.title(), zone.text(), zone.sound(), resolvido, intervalo,
-                zone.aviso(), zone.avisoEstilo(), zone.avisoSeg());
+                zone.aviso(), zone.avisoEstilo(), zone.avisoSeg(), zone.minY(), zone.maxY());
         data.put(nova);
         String msg;
         if (resolvido.startsWith("@")) {
@@ -339,7 +365,7 @@ public final class LoreZoneCommands {
         final int segFinal = Math.max(1, Math.min(60, segundos));
         LoreZones.Zone nova = new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(),
                 z.title(), z.text(), z.sound(), z.music(), z.musicInterval(),
-                avisoFinal, estiloFinal, segFinal);
+                avisoFinal, estiloFinal, segFinal, z.minY(), z.maxY());
         data.put(nova);
         String dica = estiloFinal == 0
                 ? "\u00a77 (aceita codigos & — ex. &lnegrito)"
@@ -370,7 +396,8 @@ public final class LoreZoneCommands {
             return 0;
         }
         LoreZones.Zone nova = new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(),
-                z.title(), z.text(), z.sound(), z.music(), z.musicInterval(), "", 0, 8);
+                z.title(), z.text(), z.sound(), z.music(), z.musicInterval(), "", 0, 8,
+                z.minY(), z.maxY());
         data.put(nova);
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "Aviso da zona '" + id + "' removido \u2014 voltou ao t\u00edtulo cl\u00e1ssico \u2726"), true);
@@ -394,7 +421,8 @@ public final class LoreZoneCommands {
                                             String titulo = StringArgumentType.getString(ctx, "titulo");
                                             LoreZones.LoreZonesData.get(player.server).put(new LoreZones.Zone(
                                                     id, player.level().dimension(), player.position(),
-                                                    raio, titulo, "", "", "", 45, "", 0, 8));
+                                                    raio, titulo, "", "", "", 45, "", 0, 8,
+                                                    player.position().y - raio, player.position().y + raio));
                                             ctx.getSource().sendSuccess(() -> Component.literal(
                                                     "Zona '" + id + "' criada aqui! \u00a7eRaio " + raio
                                                             + "\u00a77 = ESFERA de " + raio + " blocos em TODAS as dire\u00e7\u00f5es"
@@ -417,10 +445,98 @@ public final class LoreZoneCommands {
                                         ctx.getSource().sendFailure(Component.literal("Zona '" + id + "' nao existe."));
                                         return 0;
                                     }
-                                    data.put(new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(), z.title(), texto, z.sound(), z.music(), z.musicInterval(), z.aviso(), z.avisoEstilo(), z.avisoSeg()));
+                                    data.put(new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(), z.title(), texto, z.sound(), z.music(), z.musicInterval(), z.aviso(), z.avisoEstilo(), z.avisoSeg(), z.minY(), z.maxY()));
                                     ctx.getSource().sendSuccess(() -> Component.literal("Texto da zona '" + id + "' atualizado."), true);
                                     return Command.SINGLE_SUCCESS;
                                 }))));
+
+        // (4.0.0) /lorezone vertical <id> <minY> <maxY> — faixa vertical da zona
+        // (ex.: evento na caverna: so dispara entre Y=-20 e Y=40; quem estiver
+        // la no topo do mundo NAO recebe o aviso)
+        root.then(Commands.literal("vertical")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(ZONE_IDS)
+                        .then(Commands.literal("auto").executes(ctx -> {
+                            String id = StringArgumentType.getString(ctx, "id");
+                            var data = LoreZones.LoreZonesData.get(ctx.getSource().getServer());
+                            LoreZones.Zone z = data.get(id);
+                            if (z == null) {
+                                ctx.getSource().sendFailure(Component.literal("Zona '" + id + "' nao existe."));
+                                return 0;
+                            }
+                            data.put(new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(),
+                                    z.title(), z.text(), z.sound(), z.music(), z.musicInterval(),
+                                    z.aviso(), z.avisoEstilo(), z.avisoSeg(),
+                                    z.center().y - z.radius(), z.center().y + z.radius()));
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "\u00a7aZona '" + id + "' voltou a usar a ESFERA inteira (sem faixa vertical)."), true);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .then(Commands.argument("minY", DoubleArgumentType.doubleArg(-512, 512))
+                                .then(Commands.argument("maxY", DoubleArgumentType.doubleArg(-512, 512))
+                                        .executes(ctx -> {
+                                            String id = StringArgumentType.getString(ctx, "id");
+                                            double minY = DoubleArgumentType.getDouble(ctx, "minY");
+                                            double maxY = DoubleArgumentType.getDouble(ctx, "maxY");
+                                            var data = LoreZones.LoreZonesData.get(ctx.getSource().getServer());
+                                            LoreZones.Zone z = data.get(id);
+                                            if (z == null) {
+                                                ctx.getSource().sendFailure(Component.literal("Zona '" + id + "' nao existe."));
+                                                return 0;
+                                            }
+                                            if (maxY <= minY) {
+                                                ctx.getSource().sendFailure(Component.literal(
+                                                        "\u00a7cO maxY precisa ser MAIOR que o minY."));
+                                                return 0;
+                                            }
+                                            data.put(new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(),
+                                                    z.title(), z.text(), z.sound(), z.music(), z.musicInterval(),
+                                                    z.aviso(), z.avisoEstilo(), z.avisoSeg(), minY, maxY));
+                                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                                    "\u00a7aZona '" + id + "' agora so dispara entre Y \u00a7f"
+                                                            + Math.round(minY) + "\u00a7a e Y \u00a7f" + Math.round(maxY)
+                                                            + "\u00a7a. Use \u00a7f/lorezone mostrar " + id
+                                                            + "\u00a7a para ver a barreira."), true);
+                                            return Command.SINGLE_SUCCESS;
+                                        }))))
+                .then(Commands.argument("minY", DoubleArgumentType.doubleArg(-512, 512))
+                        .then(Commands.argument("maxY", DoubleArgumentType.doubleArg(-512, 512))
+                                .executes(ctx -> {
+                                    ctx.getSource().sendFailure(Component.literal(
+                                            "\u00a7cUso: /lorezone vertical <id> <minY> <maxY>"));
+                                    return 0;
+                                }))));
+
+        // (4.0.0) /lorezone mostrar <id> [segundos] — BARREIRA so pra VOCE
+        // (esfera em ciano + faixa vertical em amarelo). Ninguem mais ve.
+        root.then(Commands.literal("mostrar")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(ZONE_IDS)
+                        .executes(ctx -> mostrar(ctx, StringArgumentType.getString(ctx, "id"), 0))
+                        .then(Commands.argument("segundos", IntegerArgumentType.integer(3, 600))
+                                .executes(ctx -> mostrar(ctx,
+                                        StringArgumentType.getString(ctx, "id"),
+                                        IntegerArgumentType.getInteger(ctx, "segundos"))))));
+        root.then(Commands.literal("esconder").executes(ctx -> {
+            ServerPlayer p = ctx.getSource().getPlayer();
+            if (p != null) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p,
+                        new ZoneShowPayload(false, "", 0, 0, 0, 0, 0, 0, 0));
+            }
+            ctx.getSource().sendSuccess(() -> Component.literal("\u00a77Barreira escondida."), false);
+            return Command.SINGLE_SUCCESS;
+        }));
+
+        // (4.0.0) /lorezone varinha — pega a Varinha de Lorezone (admin)
+        root.then(Commands.literal("varinha").executes(ctx -> {
+            ServerPlayer p = ctx.getSource().getPlayerOrException();
+            var stack = new net.minecraft.world.item.ItemStack(RPTagMod.LOREZONE_WAND.get());
+            if (!p.getInventory().add(stack)) {
+                p.drop(stack, false);
+            }
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a7aPegou a \u00a7dVarinha de Lorezone\u00a7a! Clique DIREITO perto de uma zona para ver a barreira"
+                            + " \u00a77(shift + clique esconde)\u00a7a."), false);
+            return Command.SINGLE_SUCCESS;
+        }));
 
         // (3.99.0) /lorezone avisos reset <jogador> — o jogador ve os avisos
         // das zonas DE NOVO (os avisos sao unicos e ficam salvos no mundo)
@@ -467,7 +583,7 @@ public final class LoreZoneCommands {
                                             return 0;
                                         }
                                     }
-                                    LoreZones.Zone nova = new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(), z.title(), z.text(), som, z.music(), z.musicInterval(), z.aviso(), z.avisoEstilo(), z.avisoSeg());
+                                    LoreZones.Zone nova = new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(), z.title(), z.text(), som, z.music(), z.musicInterval(), z.aviso(), z.avisoEstilo(), z.avisoSeg(), z.minY(), z.maxY());
                                     data.put(nova);
                                     String dica = som.isEmpty()
                                             ? "\u00a77 (som removido da zona)"
@@ -599,9 +715,13 @@ public final class LoreZoneCommands {
                 String marcaAviso = z.aviso() == null || z.aviso().isEmpty()
                         ? ""
                         : " \u00a76[aviso:" + nomeEstilo(z.avisoEstilo()) + "]";
+                // (4.0.0) faixa vertical: mostra quando a zona e limitada em Y
+                String faixa = z.faixaVertical()
+                        ? " \u00a7eY " + Math.round(z.minY()) + ".." + Math.round(z.maxY())
+                        : "";
                 ctx.getSource().sendSuccess(() -> Component.literal(
                         "  • " + z.id() + " [" + z.dimension().location() + "] r=" + (int) z.radius()
-                                + " — " + z.title() + marcaAviso).withStyle(ChatFormatting.GRAY), false);
+                                + " — " + z.title() + marcaAviso + faixa).withStyle(ChatFormatting.GRAY), false);
             }
             return Command.SINGLE_SUCCESS;
         }));

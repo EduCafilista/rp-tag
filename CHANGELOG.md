@@ -2,6 +2,30 @@
 
 
 
+## 4.0.0 — BARREIRA DA LOREZONE (só admin) + FAIXA VERTICAL + VARINHA 🧱 (2026-10-19)
+
+### 🧱 "Barreira" visível só para admins
+- `/lorezone mostrar <id> [segundos]` → desenha na SUA tela:
+  - **ciano** = arame da esfera da zona (meridianos + paralelos)
+  - **amarelo** = as duas paredes da **faixa vertical** = onde o aviso dispara
+  - **laranja** = linha do centro mostrando o alcance em Y
+- `/lorezone esconder` tira
+- **Só quem pediu vê**: o servidor manda o pacote só pro admin que executou
+  (players comuns nunca recebem nada)
+
+### 🪄 Varinha de Lorezone (item de admin)
+- `/lorezone varinha` → item na mão
+- **Clique direito** perto de uma zona (até 256 blocos) → mostra a barreira
+- **Shift + clique direito** → esconde
+- Se um player comum pegar, **não funciona** (permissão 2 obrigatória)
+
+### ⛏️ Faixa vertical: aviso só no nível certo (o caso da CAVERNA)
+- `/lorezone vertical <id> <minY> <maxY>` → a zona só dispara entre esses Y
+  - Ex.: evento na caverna em Y=-30..20 → quem estiver no topo do mundo
+    (Y=120) **não recebe** o aviso; só quando descer até a caverna
+- `/lorezone vertical <id> auto` → volta a valer a esfera inteira
+- O `/lorezone listar` mostra `Y -30..20` nas zonas limitadas
+
 ## 3.99.0 — LOREZONE: aviso ÚNICO + música/som com TEMPO MÁXIMO 🔁 (2026-10-19)
 
 O problema: entrando e saindo da lorezone, **toda vez** aparecia o aviso e a

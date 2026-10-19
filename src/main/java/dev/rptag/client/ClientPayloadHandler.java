@@ -83,6 +83,12 @@ public final class ClientPayloadHandler {
     }
 
     /** (3.50.0) MUSICA CUSTOM de lore zone: toca/para o .ogg da pasta. */
+    /** (4.0.0) barreira da lorezone — SO o admin que pediu recebe este pacote. */
+    public static void handleZoneShow(final dev.rptag.ZoneShowPayload payload,
+            final IPayloadContext context) {
+        context.enqueueWork(() -> ZoneVisualizer.aplicar(payload));
+    }
+
     public static void handleLorezoneMusic(final dev.rptag.LorezoneMusicPayload payload,
             final IPayloadContext context) {
         context.enqueueWork(() -> {

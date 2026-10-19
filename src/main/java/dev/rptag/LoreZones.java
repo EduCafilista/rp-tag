@@ -40,7 +40,13 @@ public final class LoreZones {
     public record Zone(String id, ResourceKey<Level> dimension, Vec3 center,
             double radius, String title, String text, String sound,
             String music, int musicInterval,
-            String aviso, int avisoEstilo, int avisoSeg) {
+            String aviso, int avisoEstilo, int avisoSeg,
+            double minY, double maxY) {
+
+        /** (4.0.0) a zona tem faixa vertical limitada (ex.: so a caverna)? */
+        public boolean faixaVertical() {
+            return maxY - minY < 2 * radius - 0.001;
+        }
 
         public CompoundTag save() {
             CompoundTag tag = new CompoundTag();
@@ -61,6 +67,9 @@ public final class LoreZones {
             tag.putString("Aviso", aviso == null ? "" : aviso);
             tag.putInt("AvisoEstilo", avisoEstilo);
             tag.putInt("AvisoSeg", avisoSeg == 0 ? 8 : avisoSeg);
+            // (4.0.0) faixa vertical (minY/maxY) — ex.: so a caverna
+            tag.putDouble("MinY", minY);
+            tag.putDouble("MaxY", maxY);
             return tag;
         }
 
@@ -80,7 +89,10 @@ public final class LoreZones {
                     tag.contains("Aviso") ? tag.getString("Aviso") : "",
                     Math.max(0, Math.min(11, tag.getInt("AvisoEstilo"))),
                     tag.contains("AvisoSeg") && tag.getInt("AvisoSeg") > 0
-                            ? tag.getInt("AvisoSeg") : 8);
+                            ? tag.getInt("AvisoSeg") : 8,
+                    // (4.0.0) zonas antigas: sem faixa = esfera inteira
+                    tag.contains("MinY") ? tag.getDouble("MinY") : tag.getDouble("Y") - tag.getDouble("Radius"),
+                    tag.contains("MaxY") ? tag.getDouble("MaxY") : tag.getDouble("Y") + tag.getDouble("Radius"));
         }
     }
 
@@ -250,7 +262,11 @@ public final class LoreZones {
                 if (zone.dimension() != player.level().dimension()) {
                     continue;
                 }
-                boolean inside = player.position().distanceTo(zone.center()) <= zone.radius();
+                // (4.0.0) dentro da esfera E dentro da faixa vertical
+                // (ex.: evento na caverna nao dispara la no topo do mundo)
+                double py = player.position().y;
+                boolean inside = player.position().distanceTo(zone.center()) <= zone.radius()
+                        && py >= zone.minY() && py <= zone.maxY();
                 if (!inside) {
                     continue;
                 }
