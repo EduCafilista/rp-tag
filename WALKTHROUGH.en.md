@@ -13,9 +13,9 @@ Step-by-step guide, from download to the tag showing in game.
 | Minecraft **1.21.1** (Java Edition) | official launcher |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → version 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-3.42.0.jar` | this repository's *Releases* tab |
+| `rptag-4.1.0.jar` | this repository's *Releases* tab |
 
-> ⚠️ The mod version matches the game version: `rptag-3.42.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
+> ⚠️ The mod version matches the game version: `rptag-4.1.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
 
 ---
 
@@ -23,7 +23,7 @@ Step-by-step guide, from download to the tag showing in game.
 
 1. Install NeoForge on the server (the installer asks for the server folder path).
 2. Inside the server folder, open `mods/`.
-3. Copy `rptag-3.42.0.jar` into it.
+3. Copy `rptag-4.1.0.jar` into it.
 4. Start the server once to generate files (accept the EULA in `eula.txt` with `eula=true`).
 
 **How to know it worked:** in the boot log look for
@@ -40,7 +40,7 @@ Done — from this point the tag already works in **chat** and **TAB** for every
 
 1. In the launcher, create/edit the NeoForge 1.21.1 profile.
 2. Open the game folder ("open game folder" option in the launcher) and enter `mods/`.
-3. Copy the same `rptag-3.42.0.jar` there.
+3. Copy the same `rptag-4.1.0.jar` there.
 4. Join the server.
 
 Without the client mod you still see the tag in chat/TAB; with it, you also see **(ʀᴘ)** or **(ᴏꜰꜰ ʀᴘ)** floating above players' heads.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-The jar ends up at `build/libs/rptag-3.42.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
+The jar ends up at `build/libs/rptag-4.1.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
 
 ---
 
@@ -210,8 +210,8 @@ above your head** — perfect for eggs, kids and mic-less players.
 - **Saved FOREVER**: leave and rejoin the server — colors, sticker, frame and
   duration are stored in the world file
 - **JAR DIAGNOSTIC**: the top-right of the screen shows the CLIENT version
-  (e.g. "v3.4.0") and the save message shows the SERVER version ("💾 Salvo no
-  servidor v3.4.0!"). Both must MATCH — otherwise replace the old side's jar
+  (e.g. "v4.1.0") and the save message shows the SERVER version ("💾 Salvo no
+  servidor v4.1.0!"). Both must MATCH — otherwise replace the old side's jar
   (always update client AND server together)
 - Then just **say something in chat** to see your bubble ✨
 
@@ -242,12 +242,15 @@ Spooky sounds that work well: `minecraft:ambient.cave`,
 | Command | Effect |
 |---|---|
 | `/rp admin medo <player> [seconds]` | the player's screen gets **HIDDEN** under a pulsing night-blue veil, with a dark vignette, a blinking face on the HUD and **camera shake** — real panic |
-| `/rp admin avisar <player> <text>` | BIG on-screen text, `&` colors (`&c` red, `&6` orange, `&l` bold…) |
+| `/rp admin avisar <player\|@a> <style> <text>` | cinematic warning, **12 styles**: `classico`, `pesadelo`, `runico`, `real`, `morte`, `inferno`, `gelo`, `divino`, `void`, `sangue`, `demoniaco`, `pesadelo2` |
+| `/rp admin avisar @a 4 VOCE MORREU` | example: "Linha Reta" death warning on everyone's screen |
 | `/effect give <player> rptag:medo <s>` | same fear via the vanilla command |
 
 The "is afraid" toast shows **to admins only** — the player feels the
-effect without knowing who sent it. In 3.49 the cloud bubble (Turma da
-Mônica-style thought balloon) got **real HD circular balls**, no more seams.
+effect without knowing who sent it.
+
+Every warning follows the same layout: big **"AVISO"** title (letter by
+letter, never auto-shrunk) with the **message always BELOW it**.
 
 
 ---
@@ -275,3 +278,25 @@ line). Players adjust volume via Options → Music & Sounds → **Ambient**
 (zone sounds) and **Music** (soundtracks).
 **`/rp ajuda`** lists every command with what it does (admins also get the
 admin section).
+
+---
+
+## 🧱 Lore zone barrier + the CAVE case (4.0.0)
+
+- `/lorezone mostrar <id> [seconds]` — draws the zone **only on the admin's screen**:
+  cyan wireframe sphere, **yellow walls** of the vertical band and an orange center line
+- `/lorezone esconder` — hides it · normal players **never** receive the packet
+- `/lorezone varinha` — gives `rptag:lorezone_wand`: **right-click** near a zone (≤256 blocks) shows its barrier,
+  **shift + right-click** hides it (admins only)
+- `/lorezone vertical <id> <minY> <maxY>` — the warning **only fires between those Y levels**:
+  an event inside a cave at Y=-30..20 will NOT warn someone standing on the surface;
+  `... auto` restores the full sphere (older zones keep working unchanged)
+
+## 🫀 Canon lives (5 per player)
+
+- `/rp admin canon on|off` — turns the mode on for the **whole server** (banner, no chat spam)
+- Dying costs 1 life, with the full ritual: thunder → frozen 5 s → death warning → lore audio
+- **Last life**: "TOME CUIDADO" + 30 s of extreme fear · **5-minute** anti-chain protection
+- **Deaths outside RP don't count (4.1.0)**: if the **killer was OFF RP**, the victim loses **no** canon life
+  (no ritual, no warning, no sound). Mobs, falls, lava, fire and `/kill` still count
+- **Canon Heart**: `/give <player> rptag:coracao_canon` → shift + right-click gives 1 life back

@@ -1,85 +1,216 @@
 # ENTREGA — Guia pra continuar o RP Tag
 
-Ola! Este documento e o mapa completo do projeto pra quem vai dar
-continuidade. Versao atual: **3.43.0** (veja o `CHANGELOG.md` pra todo o
-historico). Minecraft **1.21.1** + **NeoForge** (moddev 2.0.146).
+Olá! Este documento é o mapa do projeto pra quem vai dar continuidade.
 
-## O que o mod faz hoje
+- **Versão atual: 4.1.0** — histórico completo no `CHANGELOG.md`
+- **Diário de bordo técnico: `WALKTHROUGH.md`** (decisões, receitas de build/teste, o que foi reprovado e por quê) — **leia ele depois deste**
+- Minecraft **1.21.1** + **NeoForge 21.1.x** + **Java 21**
+- Repo público: `github.com/EduCafilista/rp-tag`
 
-- **Tag RP**: nome com tag `(RP)`/`(OFF RP)` em small caps no chat, nametag
-  e TAB (o TAB atualiza ao ligar/desligar).
-- **Balao de fala** acima da cabeca: 6 molduras distintas (Classica, Cartum,
-  Dupla, Costura, Brilho, Gibi), cor/borda/letra/duracao personalizaveis na
-  tela `/balao`, adesivo + emotes como EMBLEMA na borda, pilha de ate 3
-  baloes sem sobreposicao, billboard (cada jogador ve o balao virado pra
-  si), compensacao de distancia (legivel de longe), quebra de linha
-  equilibrada (nada de palavra orfa).
-- **Canais de chat RP**: `/g` (global), `/s` (grito), `/w` (sussurro),
-  `/me` e `/do` (acoes — so no chat RP, nunca viram balao; quem esta
-  OFF RP na regiao nao ve).
-- **Admin**: `/rp admin balao <jogador> on|off` (default = NINGUEM tem
-  balao), `/rp admin balaolist`, `/rp admin chatlocal on|off`,
-  `/rp admin bolhas on|off`.
-- **Utilidade**: `/balao teste <frase>` (previa na hora) e `/rp status`
-  (diagnostico completo).
+> ⚠️ **Regra de publicação**: só a **versão mais recente** fica no GitHub.
+> A cada ciclo, publique a release nova e **apague a release + tag anteriores**
+> (o histórico de código continua na branch `main`). Detalhes no `PUBLICAR.md`.
 
-## Como buildar
+---
 
-1. Instale o **JDK 21** (templeate: `openjdk-21-jdk-headless`).
-2. `./gradlew build` (ou `gradle build` com Gradle 9.2.1). O jar sai em
-   `build/libs/rptag-<versao>.jar`. Precisa de ~4GB de RAM livres (o
-   NeoForm decompila o Minecraft na primeira vez — demora ~8 min frio).
-3. Pra testar: `./gradlew runServer` (aceite o eula em `run/eula.txt`).
+## 1. O que o mod faz hoje
 
-## Arquitetura (mapa rapido)
+### 🏷️ Identidade RP
+- **Tag RP**: `ʀᴘ` (ciano) / `ᴏꜰꜰ ʀᴘ` (cinza) em small caps no **chat**, **nametag**
+  e **TAB** (o TAB atualiza na hora ao ligar/desligar).
+- **Persona**: `/persona criar <nome>`, `/persona idade <n>`, `/persona desc <texto>`,
+  `/persona ver [jogador]`, `/persona off` — ficha RP ao passar o mouse no nome.
+- **Dados**: `/roll` (rolagem de dados no chat).
 
+### 💬 Chat e balões
+- **Canais RP**: `/g` (global), `/s` (grito), `/w` (sussurro), `/me` e `/do`
+  (ações — só no chat RP, **nunca** viram balão; quem está OFF RP na região não vê).
+- **Balão de fala** acima da cabeça: 6 molduras (Clássica, Cartum, Dupla, Costura,
+  Brilho, Gibi), cor/borda/letra/duração na tela `/balao`, 80 emojis como **emblema
+  na borda**, pilha de até 3 sem sobreposição, billboard, legível de longe,
+  quebra de linha equilibrada, **typewriter opcional por jogador**.
+- **Balão é privilégio de admin** (default: ninguém tem; `/rp admin balao <jogador> on|off`).
+
+### 🎭 Medo
+- `/rp admin medo <jogador> [segundos]` — efeito `rptag:medo`: véu azul-noite que
+  **esconde** a tela, tremida de câmera, ícone no HUD. Teto de 30 s.
+
+### 🎬 Avisos cinematográficos (a parte mais visível do mod)
+`/rp admin avisar <jogador|@a> <estilo> <mensagem>` — 12 estilos:
+
+| # | Estilo | # | Estilo |
+|---|---|---|---|
+| 0 | Clássico (texto) | 6 | Gelo — "Geada Eterna" |
+| 1 | Pesadelo — minimalista | 7 | Divino — celestial |
+| 2 | Rúnico — "Tradução Arcana" | 8 | Void — "Queda Sem Fundo" |
+| 3 | Real (texto) | 9 | Sangue — "Sangria" |
+| 4 | Morte — "Linha Reta" | 10 | Demoníaco — "Chamado do Abismo" |
+| 5 | Inferno — "Fornalha" | 11 | Pesadelo 2 — "Sono Sem Descanso" |
+
+Todos os FX seguem o mesmo padrão: **título "AVISO"** grande, letra por letra, com a
+**MENSAGEM embaixo do título** (`cy + 25*k`). Nenhum FX redimensiona o título.
+
+### 🧭 Lore zones
+- `/lorezone criar <id> <raio>` — cria uma zona esférica no lugar onde você está.
+- `/lorezone texto <id> <mensagem>` e `/lorezone aviso <id> <estilo>`
+  — o aviso que dispara pra quem entra.
+- `/lorezone som <id> <preset|som>` e `/lorezone musica <id> <arquivo|intervalo|unica>`
+  — trilha da zona (loop com **tempo máximo**; `unica` = só na primeira entrada).
+- **Aviso único por jogador**: cada um vê o aviso **uma vez** (persistente);
+  `/lorezone avisos reset <jogador>` reexibe.
+- `/lorezone listar`, `/lorezone remover <id>`.
+
+### 🧱 Barreira da lorezone (só admin) — 4.0.0
+- `/lorezone mostrar <id> [segundos]` — desenha **na sua tela**: arame ciano da
+  esfera + **paredes amarelas** da faixa vertical + linha central laranja.
+- `/lorezone esconder` — some.
+- `/lorezone varinha` — item `rptag:lorezone_wand`: **clique direito** mostra a
+  barreira da zona mais próxima (≤256 blocos); **shift + clique** esconde.
+- O pacote vai **só pra quem executou**: jogador comum nunca vê.
+
+### ⛏️ Faixa vertical (o caso da caverna) — 4.0.0
+- `/lorezone vertical <id> <minY> <maxY>` — a zona **só dispara entre esses Y**.
+  Evento na caverna: quem está no topo **não recebe** o aviso; só ao descer.
+- `/lorezone vertical <id> auto` — volta a valer a esfera inteira.
+- Zonas criadas antes continuam funcionando (esfera completa).
+
+### ❤️ Vidas canônicas
+- `/rp admin canon on|off` — liga o modo no **servidor todo** (banner na tela, sem chat).
+- Cada jogador começa com **5 vidas**. Quem morrer em modo canon passa pelo ritual:
+  **strondo → congelado 5 s → aviso de morte (estilo 4) → áudio `canon_death`**.
+- **Anti-chain**: depois de perder uma vida, 5 min de proteção (morrer seguido não acumula).
+- **Última vida**: "TOME CUIDADO" + **medo absurdo** de 30 s.
+- **Morte fora do RP não conta (4.1.0)**: se quem matou estava **OFF RP**, a vítima
+  **não perde vida** — sem ritual, sem aviso, sem som. Vale só quando há matador
+  jogador; mob/queda/lava/fogo/`/kill` continuam contando.
+- **Coração Canônico 3D**: bloco/item decorativo (só admin dá com `/give`,
+  `shift + clique direito` = +1 vida), animação de batida + flutuação.
+
+### 🛠️ Utilidade
+- `/balao teste <frase>`, `/rp status` (diagnóstico), `/rp ajuda`, `/rp admin ajuda`.
+
+---
+
+## 2. Como buildar
+
+### Opção A — Gradle (o jeito normal)
+1. Instale o **JDK 21** (Temurin).
+2. `./gradlew build` — o jar sai em `build/libs/rptag-4.1.0.jar`.
+3. Primeiro build demora (~5–15 min, descompacta/decompila o Minecraft) e pede
+   ~4 GB de RAM livres. Depois é rápido (cache).
+4. Pra testar: `./gradlew runServer` (aceite o eula em `run/eula.txt`) ou
+   `./gradlew runClient`.
+
+### Opção B — compilar só com javac (usado no ambiente de entrega)
+Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
+1. JDK 21 do Adoptium;
+2. installer do NeoForge → `--installServer` e `--installClient`;
+   ⚠️ no cliente é preciso um **`launcher_profiles.json` falso** antes;
+3. classpath = neoforge-client + client-srg + neoforge-universal + server-srg +
+   libs das duas árvores + **lwjgl-openal/lwjgl do Maven Central**;
+4. `javac --release 21 -encoding UTF-8 -proc:none -cp "$(cat cp.txt)" -d build/classes @sources.txt`.
+
+> ⚠️ **Sempre apague o jar antigo** da pasta `mods` — no **servidor e no cliente**.
+> Jar duplicado é a causa nº 1 de "o mod não mudou nada".
+
+---
+
+## 3. Arquitetura (mapa rápido)
+
+### Raiz (`dev/rptag/`)
 | Arquivo | Papel |
 |---|---|
-| `client/BubbleRenderer.java` | O coracao visual: geometria da pilula (ANCORA: base = yP1 = 0, cresce so pra cima!), wrap equilibrado (`wrapBalanced`), emblema na borda, quads HD dos emojis, 6 molduras (`RING_MARGIN`), pop/fade/pilha, compensacao de distancia (`distComp`) |
-| `client/BubbleStyleScreen.java` | Tela `/balao` (menu cartoon de placas, previa IGUAL ao mundo, emoji picker, adesivo na borda com hover) |
-| `client/ClientBubbleCache.java` | Pilha de baloes por jogador (max 3, expira, off limpa tudo) |
-| `client/BubbleBackgrounds.java` | Cores derivadas (recheio/borda/texto legivel) |
-| `client/Stickers.java` (raiz) | Os 80 emojis Noto (atlas POT `font/stickers.png` 128x256 + `gui/stickers_hi.png` 1024x2048, codepoints 0xE000+) |
-| `RPEffects.java` | Efeitos de status (MEDO = `rptag:medo`, icone no HUD via `textures/mob_effect/medo.png`) |
-| `client/ClientEffects.java` | Tremedeira de camera + vinheta do MEDO + texto GRANDE central (avisos) |
-| `ServerEvents.java` | Estado RP/persona, nomes (chat/TAB), payload do estilo BLINDADO (clamp 0..5, 0..100%, 2..20s, stickers <= 4/8) |
-| `RPChat.java` | Canais + `spawnBubble` (gates: global on, opt-out, ADMIN, modo; ANTI-FLOOD 250ms) + `sendRpAction` (chat RP: so EM RP na regiao) |
-| `ChatCommands.java` | /g /s /w /me /do (o /me vanilla e removido) |
-| `RPWorldData.java` | Persistencia NBT (tag RP, persona, chatLocal, bubblesOn, allowlist, estilos) |
+| `RPTagMod.java` | Registro do mod, `VERSION`, itens (varinha, coração), sons |
+| `RPTags.java` | Texto/cores da tag (`ʀᴘ` / `ᴏꜰꜰ ʀᴘ`), small caps |
+| `RPWorldData.java` | **Persistência NBT** (tag RP, persona, chatLocal, balões, vidas, estilo, typewriter) |
+| `ServerEvents.java` | Estado RP/persona, nomes no chat/TAB |
+| `RPChat.java` | Canais RP + `spawnBubble` (gates + anti-flood 250 ms) |
+| `ChatCommands.java` | `/g /s /w /me /do` |
+| `RPCommands.java` | `/rp` + `/rp admin` (avisos, medo, canon, balões) |
+| `PersonaCommands.java` / `RollCommands.java` | `/persona`, `/roll` |
+| `CanonLife.java` | **Vidas canônicas**: respawn, congelamento, ritual, morte OFF RP |
+| `CanonCoracaoBlock(+Entity).java` | Coração canônico 3D (bloco + item) |
+| `LoreZones.java` | Zonas (esfera + **faixa vertical minY/maxY**), aviso único, som/música, aviso na entrada |
+| `LoreZoneCommands.java` | `/lorezone ...` (criar, vertical, mostrar, esconder, varinha, avisos, som, musica, listar) |
+| `LorezoneWand.java` | Item da varinha (permissão 2, clique direito, dedupe 250 ms) |
+| `MusicSync.java` | Envio de arquivos de música pro cliente em pedaços |
+| `RPEffects.java` | Efeito `rptag:medo` |
+| `Stickers.java` | 80 emojis Noto (atlas POT, codepoints 0xE000+) |
+| `*Payload.java` | Rede: `ScreenTextPayload`, `FearPayload`, `ChatBubblePayload`, `ZoneShowPayload`, `LorezoneMusicPayload`, `MusicFile*Payload`, `CanonBannerPayload`, `PersonaSyncPayload`, `SyncRPStatePayload`, `TypewriterPayload`, etc. |
 
-## REGRAS DE OURO (aprovados/reprovados em batalha — nao reverter!)
+### `client/`
+| Arquivo | Papel |
+|---|---|
+| `AvisoFxUtil.java` | **Motor compartilhado** dos FX: `Buf` (tri/quad/rect/seg/circ/anel/vinheta/brilho), `preparar/normal/aditivo`, `tocar`, helpers de cor e easing |
+| `*AvisoFx.java` (9) | `Divino`, `Demoniaco`, `Sangue`, `Void`, `Pesadelo`, `PesadeloAntigo`, `Inferno`, `Gelo`, `Runico` |
+| `MorteAvisoFx.java` | FX "Linha Reta" (estilo 4) |
+| `ClientEffects.java` | **Central dos avisos**: roteia o estilo pro FX, véu do canon, banner, áudio da lore |
+| `ClientGuiLayers.java` | Registra as camadas com `registerAboveAll` (com shaders, por cima de tudo) |
+| `BubbleRenderer.java` | Coração visual do balão (pílula = tamanho exato do texto; âncora na base) |
+| `BubbleStyleScreen.java` | Tela `/balao` (menu cartoon, preview igual ao mundo, emoji picker) |
+| `ClientBubbleCache.java` / `BubbleSink.java` / `BubbleGeometry.java` / `BubbleBackgrounds.java` | Pilha, fila, geometria e cores derivadas dos balões |
+| `ZoneVisualizer.java` | **Barreira** da lorezone (`RenderLevelStageEvent`, `RenderType.lines()`) — 4.0.0 |
+| `CanonCoracaoRenderer.java` | Coração 3D (batida + flutuação + balanço) |
+| `MusicaCustom.java` | Música custom por streaming/arquivo, com **tempo máximo** |
+| `ClientPayloadHandler.java` | Handlers de todos os pacotes no cliente |
+| `NameplateRenderer.java` / `ClientRenderers.java` / `ClientEvents.java` | Nametag, renderers, eventos |
 
-1. **EMOJI NUNCA via fonte na fala** = blocos pretos. So via quads do atlas
-   (`emojiQuad`) — na fala (emoji digitado) e no emblema da borda.
-2. **PILULA = tamanho EXATO do texto** (`pillH = speechH + 8`). NUNCA criar
-   faixa/linha/expansao pro emoji (o "ar" gigante que o usuario odiou).
-3. **Ancora**: base da pilula em `yP1 = 0` (o eixo Y e invertido: positivo
-   DESCE sobre o nametag). Crescent pra cima, sempre.
-4. **Adesivo/emotes = EMBLEMA NA BORDA** (metade pra fora, na frente),
-   nunca sobre letras.
-5. **Sticker no mundo = bitmap COLORIDO, NUNCA tintado** (o laço preto e
-   tint na ARTE do asset, isso e permitido).
-6. **Balao e privilegio de admin** (default NINGUEM) e `/balao modo off`
-   some NA HORA.
-7. **Render nunca crasha**: `catch (Throwable)` com auto-desliga da sessao.
-8. MOLDURA Costura usa `dashed.png` (768x256, periodos de 8px — nao
-   esticar); texturas POT sempre (2^n).
-9. `/me` = acao no chat RP (sem balao). Balao e FALA.
-10. Testes (suete de greps) + smoke RCON antes de toda entrega.
+---
 
-## Roadmap / ideias do dono
+## 4. REGRAS DE OURO (aprovadas/reprovadas em batalha — **não reverter!**)
 
-- ~~**Comando do MEDO**~~ **FEITO na 3.44.0**: `/rp admin medo <jogador>
-  [segundos]` (camera treme + vinheta vermelha nas bordas) e
-  `/rp admin avisar <jogador> <texto>` (texto GRANDE central, cores via
-  &). Canais fear/screen_text, protocolo de rede v3.
-- Diferenciar ainda mais os estilos / "menos pixel e mais imagem".
-- Regioes RP avancadas (o chat de acoes ja respeita quem esta EM RP).
+1. **Emoji nunca via fonte na fala** = blocos pretos. Só via quads do atlas.
+2. **Pílula do balão = tamanho EXATO do texto.** Nunca criar faixa/linha pro emoji.
+3. **Âncora do balão**: base em `yP1 = 0`, cresce pra cima (eixo Y invertido).
+4. **Adesivo/emote = emblema na BORDA**, metade pra fora — nunca sobre letras.
+5. **Sticker no mundo = bitmap COLORIDO**, nunca tintado.
+6. **Balão é privilégio de admin**; `/balao modo off` some na hora.
+7. **Render nunca crasha**: `catch (Throwable)` com auto-desliga da sessão.
+8. **Texturas POT sempre** (potência de 2); `dashed.png` não esticar.
+9. **`/me` e `/do` são ação no chat** — não viram balão.
+10. **Avisos**: título "AVISO" **letra por letra**, **sem auto-ajuste no título**;
+    a mensagem **sempre embaixo**, `translate(cx - w*S2/2, cy + 25*k)`.
+    `ty - 12*k` (mensagem acima) é **proibido**.
+11. **Medo/AVISO com shaders** = `registerAboveAll` (nunca `RenderGuiEvent.Post`).
+12. **`renderBackground` vazio** (blur) nos menus — **nunca remover**.
+13. **Nunca portar telemetria** de referências externas.
+14. **Testes antes de entregar**: `check.py` (312 checks) + smoke do servidor por RCON.
 
-## Credito e licencas
+---
+
+## 5. Ciclo de entrega (o que fazer em toda versão)
+
+1. Bump da versão em **3 lugares**: `RPTagMod.VERSION`, `build.gradle`, `neoforge.mods.toml`
+   (e o log de boot no `ClientEffects`).
+2. Atualizar **`CHANGELOG.md`** e **`WALKTHROUGH.md`** (o walkthrough é a memória do projeto:
+   anote o que foi feito, o que falhou e as receitas novas).
+3. `python3 check.py` → tem que terminar **0 FAIL**.
+4. Compilar → jar em `rptag-<versão>.jar`; conferir `unzip -l | grep -c .class`.
+5. Smoke: subir o servidor, testar os comandos por RCON, `grep -c "ERROR\|FATAL"` = 0.
+6. Commit + push (ver `PUBLICAR.md`; o PAT vai **inline** na URL, nunca em arquivo).
+7. Release com o jar + `make_latest` + **apagar release/tag anteriores**.
+8. Deixar **só o jar atual** na raiz do repo (`git rm` o antigo, `git add -f` o novo).
+
+---
+
+## 6. Roadmap / ideias em aberto
+
+- **FX ignoram a duração configurada**: todos têm `DUR = 6.0f` fixo, mas a lorezone
+  aceita 1–60 s — avisos longos ficam com tela vazia no fim (**correção pendente**).
+- **Altura do título varia por estilo** (`cy` = 0.42h / 0.45h / 0.5h) — padronizar.
+- **Flag `reduzido`** existe em todos os FX (modo sem flicker) mas **nunca é ligada**:
+  virar opção por jogador.
+- Estilos 0 (clássico) e 3 (real) são só texto — o "real" pede um tratamento
+  cinematográfico (grão/VHS), mas isso é **design novo** (não fazer sem pedido).
+- Barreira da lorezone é estática (fade-in, pulso nas paredes, rótulo com a faixa Y).
+- Portais da Lore (segundo mod do repo) está **EM PAUSA** — não mexer sem pedido.
+
+---
+
+## 7. Créditos e licenças
 
 - Emojis: **Noto Emoji** (googlefonts/noto-emoji) — Apache 2.0 / OFL 1.1.
-- Repo: `github.com/EduCafilista/rp-tag` (publishing: apagar jar antigo +
-  upload + Release; NUNCA apagar o repo).
+- Repo: `github.com/EduCafilista/rp-tag` (MIT).
+- **Nunca** apagar o repositório; publicação = Release com o jar.
 
-Bom trabalho! — RP Tag 3.43.0
+Bom trabalho! — **RP Tag 4.1.0**

@@ -99,10 +99,25 @@
 - **Música CUSTOM**: `/lorezone musica <id> @<nome>` toca o seu `.ogg` (pasta `config/rptag/musicas/` do cliente) em loop — converta qualquer música com `yt-dlp -x --audio-format vorbis`
 - **Música por LINK**: `/lorezone musica <id> https://site.com/tema.ogg` — os players baixam e tocam em loop sem fazer nada (`.ogg`/`.wav`; YouTube vira `.ogg` com yt-dlp)
 - **Volume no lado do jogador**: som pontual = slider *Ambiente* · música = slider *Música* (Opções → Música e Sons)
-- **AVISO CINEMATOGRÁFICO ao entrar**: `/lorezone aviso <id> <classico|pesadelo|runico|real|morte|inferno|gelo|divino|void|sangue|demoniaco> <segundos> <texto>`
+- **AVISO CINEMATOGRÁFICO ao entrar**: `/lorezone aviso <id> <classico|pesadelo|runico|real|morte|inferno|gelo|divino|void|sangue|demoniaco|pesadelo2> <segundos> <texto>`
   dispara os avisos de tela do `/rp admin avisar` na entrada da zona (no lugar do título clássico; som continua;
   `off` volta) — ex.: `/lorezone aviso floresta pesadelo 8 &4ALGO TE OBSERVA`
 - A história do servidor contada no próprio mapa
+
+### 🧱 Barreira da zone + varinha (só admin vê)
+- `/lorezone mostrar <id> [segundos]` — desenha **na SUA tela**: o arame ciano da
+  esfera (até onde a zona pega), as **paredes amarelas** da faixa vertical e a linha
+  central laranja · `/lorezone esconder` tira
+- O pacote vai **só pra quem executou** — jogador comum nunca vê nada
+- `/lorezone varinha` — item `rptag:lorezone_wand`: **clique direito** perto de uma
+  zona (até 256 blocos) mostra a barreira dela; **shift + clique** esconde
+
+### ⛏️ Aviso só no nível certo (o caso da CAVERNA)
+- `/lorezone vertical <id> <minY> <maxY>` — a zona **só dispara entre esses Y**:
+  evento na caverna em Y=-30..20 e o cara está no topo (Y=120)? **não recebe nada**;
+  o aviso aparece quando ele desce até o nível da caverna
+- `/lorezone vertical <id> auto` — volta a valer a esfera inteira
+- Zonas antigas continuam funcionando (esfera completa) e o `/lorezone listar` mostra `Y -30..20`
 
 ### 🏷️ Tag RP/OFF RP
 - **● ʀᴘ** (ponto ciano) ou **○ ᴏꜰꜰ ʀᴘ** (ponto cinza) no nome e **também no TAB** — small capitals, colorindo só a tag
@@ -119,6 +134,9 @@
   **coração 3D girando, batendo e flutuando**; quem achar usa
   **SHIFT + clique direito** e recupera 1 vida — **"VOCÊ GANHOU UMA NOVA CHANCE"**
   (vidas cheias 5/5? o coração fica lá, não se desperdiça)
+- **Morte fora do RP não conta**: se quem **matou** estava **OFF RP**, a vítima
+  **não perde vida** (sem ritual, sem aviso, sem som). Mob, queda, lava, fogo e
+  `/kill` continuam contando normalmente
 - Limite anti-mortes-seguidas de 5 minutos — relogar não burla
 
 - **Tudo salvo no mundo** — sobrevive a relog, morte e reinício do servidor.

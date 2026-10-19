@@ -6,7 +6,9 @@
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
 >
-> 📥 **Download:** grab `rptag-3.52.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-3.52.0.jar).
+> 📥 **Download:** grab `rptag-4.1.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases/latest) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-4.1.0.jar).
+>
+> 🧹 **Only the newest version stays published** — old releases are removed every cycle.
 
 ## ✨ Features
 
@@ -67,11 +69,30 @@
 - `/roll` (d20) · `/roll d100` · `/roll 2d6+1 <reason>` — announced nearby, with dice breakdown
 
 ### 📜 Lore zones
-- Admins: `/lorezone create <id> <radius> <title>` — regions that show an **epic title**, subtitle and sound when a player walks in (once per session)
+- Admins: `/lorezone criar <id> <radius> [title]` — regions that show an **epic screen title**, sound or a full
+  **cinematic warning** (`/lorezone aviso <id> <style> <seconds> <text>`) when a player walks in
+- **Warning shown ONCE per player** (saved forever) · `/lorezone avisos reset <player>` shows it again
+- **Loop soundtrack** with a **maximum time**: `/lorezone musica <id> <sound>`,
+  `... intervalo <10-600> <sound>`, `... unica <sound>` (first entry only). 27 built-in presets
+  (`/lorezone musicas`), custom `.ogg` from your client or a direct link
+- **Admin-only barrier view** — `/lorezone mostrar <id> [seconds]` draws the zone sphere (cyan) and the
+  vertical walls (yellow) **only on the admin's screen**; `/lorezone esconder` hides it.
+  `/lorezone varinha` gives the `rptag:lorezone_wand` item: right-click shows, shift-right-click hides
+- **Vertical band (the cave case)** — `/lorezone vertical <id> <minY> <maxY>` makes the warning fire **only
+  between those Y levels**, so someone at the surface is NOT warned until they reach the cave.
+  `... auto` restores the full sphere (old zones keep working unchanged)
 
 ### 🏷️ RP/OFF RP tag
 - **● ʀᴘ** (cyan dot) or **○ ᴏꜰꜰ ʀᴘ** (gray dot) on the name and **also in the TAB list** — small caps, only the tag is colored
 - Nametag, chat and TAB · `/rp` toggles, `/rp on|off|status`, `/rp set <player> on|off` (admin)
+
+### 🫀 Canon lives
+- `/rp admin canon on|off` — every player gets **5 canon lives**; dying costs one, with the full ritual
+  (thunder, red veil, lore audio, "VOCÊ PERDEU UMA VIDA — RESTAM N")
+- **Last life**: "TOME CUIDADO" warning + 30 s of extreme fear · 5-minute anti-chain protection
+- **Deaths outside RP don't count**: if the **killer was OFF RP**, the victim **loses no canon life**
+  (no ritual, no warning, no sound). Mobs, falls, lava, fire and `/kill` still count
+- **🫀 Canon Heart** item (`/give <player> rptag:coracao_canon`) — shift + right-click gives 1 life back
 
 - **Everything saved to the world** — survives relog, death and restarts. Everyone starts in **OFF RP**.
 - **No dependencies** — only NeoForge.
@@ -81,7 +102,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-3.50.0.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-4.1.0.jar` into the **server's** `mods/` folder.
 3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
@@ -92,7 +113,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-3.50.0.jar`.
+The jar ends up at `build/libs/rptag-4.1.0.jar`.
 
 ## 🎨 Customizing
 
@@ -120,9 +141,20 @@ src/main/java/dev/rptag/
   PersonaCommands.java     # /persona
   ChatCommands.java        # /g /s /w /me /do (admin)
   RollCommands.java        # /roll
-  LoreZones.java           # lore regions + tick trigger
-  LoreZoneCommands.java    # /lorezone
-  client/                  # bubbles renderer, nametag, caches
+  LoreZones.java           # lore zones (sphere + vertical band), one-shot warning, music
+  LoreZoneCommands.java    # /lorezone (criar, vertical, mostrar, esconder, varinha, avisos, som, musica)
+  LorezoneWand.java        # admin wand item
+  ZoneShowPayload.java     # admin-only barrier packet
+  CanonLife.java           # canon lives ritual (OFF-RP killer doesn't count)
+  MusicSync.java           # streams custom music to the client
+  client/
+    AvisoFxUtil.java       # shared FX engine (Buf/vinheta/aditivo/tocar)
+    *AvisoFx.java          # 9 cinematic warnings (divino, demoniaco, sangue, void,
+                           #   pesadelo, pesadelo2, inferno, gelo, runico)
+    MorteAvisoFx.java      # "Linha Reta" death warning (style 4)
+    ZoneVisualizer.java    # admin-only lore zone barrier
+    ClientEffects.java     # routes each style to its FX + canon veil/banner
+    (bubbles renderer, nametag, caches)
 ```
 
 ## 📄 License

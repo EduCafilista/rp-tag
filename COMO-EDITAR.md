@@ -28,7 +28,7 @@ uns 5~15 min conforme a internet) e **precisa de ~4 GB de RAM livres**
 (é o build padrão de mods NeoForge: ele descompila o Minecraft uma vez e
 guarda no cache; das outras vezes é rapidinho).
 
-✅ O jar pronto aparece em **`build/libs/rptag-3.60.0.jar`** — é esse que
+✅ O jar pronto aparece em **`build/libs/rptag-4.1.0.jar`** — é esse que
 vai na pasta `mods` do jogo/servidor (sempre APAGUE o jar antigo antes de
 pôr o novo, no SERVIDOR e no CLIENTE!).
 
@@ -51,6 +51,13 @@ pôr o novo, no SERVIDOR e no CLIENTE!).
 | Molduras/cores/adesivos (dados) | `src/main/java/dev/rptag/BubbleStyle.java` |
 | Efeito do MEDO | `src/main/java/dev/rptag/RPEffects.java` + `client/ClientEffects.java` |
 | Zonas de lore | `src/main/java/dev/rptag/LoreZones.java` + `LoreZoneCommands.java` |
+| **Barreira/varinha da zone** | `client/ZoneVisualizer.java` + `LorezoneWand.java` + `ZoneShowPayload.java` |
+| **Vidas canônicas (ritual)** | `CanonLife.java` (+ `CanonCoracaoBlock.java`, `client/CanonCoracaoRenderer.java`) |
+| **Um aviso cinematográfico (FX)** | `src/main/java/dev/rptag/client/<Estilo>AvisoFx.java` |
+| **Qual FX toca em cada estilo** | `client/ClientEffects.java` (`startScreenText`) |
+| **Motor compartilhado dos FX** | `src/main/java/dev/rptag/client/AvisoFxUtil.java` |
+| **Registrar uma camada nova de tela** | `client/ClientGuiLayers.java` (`registerAboveAll`) |
+| **Música custom da zone** | `MusicSync.java` + `client/MusicaCustom.java` |
 | Texturas (balão, molduras, rabicho...) | `src/main/resources/assets/rptag/textures/gui/` |
 | Textos no jogo (PT/EN) | `src/main/resources/assets/rptag/lang/pt_br.json` e `en_us.json` |
 
@@ -61,7 +68,7 @@ pôr o novo, no SERVIDOR e no CLIENTE!).
 ## 5. Checklist antes de entregar
 
 1. `gradlew build` sem erro
-2. `python3 check.py` → 94 checks (se tiver Python; no Windows: `py check.py`)
+2. `python3 check.py` → **319 checks, 0 FAIL** (no Windows: `py check.py`)
 3. Testou no jogo (runClient) o que você mexeu
 4. Atualizou `CHANGELOG.md` e o `WALKTHROUGH.md`
 5. Comita (`git add -A && git commit -m "o que mudou"`)
@@ -72,5 +79,9 @@ pôr o novo, no SERVIDOR e no CLIENTE!).
 - Ícone do medo = foto inteira (não recortar/redesenhar).
 - O rabicho do balão é pequeno e de tamanho FIXO (nunca escala).
 - Medo usa camada oficial de HUD (`registerAboveAll`) — funciona com shaders.
+- **Avisos**: título "AVISO" letra por letra, **sem auto-ajuste no título**; a mensagem
+  **sempre embaixo** (`translate(cx - w*S2/2, cy + 25*k)`). Nunca `ty - 12*k`.
+- **Não redesenhar** o que já foi aprovado sem o dono pedir (vale pra balão, canon, FX).
+- Publicação: só a versão atual fica no GitHub (`PUBLICAR.md`).
 
 Bom código! 🎈

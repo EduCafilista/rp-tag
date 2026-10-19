@@ -70,8 +70,23 @@ check('PANEL_H 306 (respiro novo)', 'PANEL_H = 306' in bs)
 check('placa com título interno', 'titulo, x + 10, y + 2' in bs.replace('(this.font,', '(this.font,'))
 
 # ---- 9. texturas órfãs fora
-zp = 'build/libs/rptag-3.51.1.jar'
-if os.path.exists(zp):
+# (4.1.0) o caminho do jar estava CRAVADO em 3.51.1 — os 7 checks de jar
+# nunca rodavam ("jar ainda nao buildado"). Agora acha sozinho: build/libs
+# primeiro, depois a raiz do repo (onde fica o jar da versao atual).
+def _acha_jar():
+    import glob as _g
+    def _versao(p):
+        try:
+            return [int(x) for x in p.rsplit('rptag-', 1)[1].replace('.jar', '').split('.')]
+        except Exception:
+            return [0]
+    achados = _g.glob('build/libs/rptag-*.jar') + _g.glob('rptag-*.jar')
+    achados = [a for a in achados if 'sources' not in a and 'javadoc' not in a]
+    return max(achados, key=_versao) if achados else None
+
+zp = _acha_jar()
+if zp:
+    print(f'   (jar encontrado: {zp})')
     z = zipfile.ZipFile(zp)
     n = z.namelist()
     check('jar: bola.png fora', 'assets/rptag/textures/gui/bola.png' not in n)
