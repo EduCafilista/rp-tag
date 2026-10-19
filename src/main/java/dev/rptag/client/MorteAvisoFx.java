@@ -26,8 +26,9 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
  * USO: modBus.addListener(MorteAvisoFx::registrar);  MorteAvisoFx.iniciar("AVISO", "VOCE MORREU");  MorteAvisoFx.particulasMundo(p);
  */
 public final class MorteAvisoFx {
-    private static final float DUR = 6.0f, FLAT = 3.9f, ECG_END = 4.6f;
-    private static final float[] BEATS = {0.6f, 1.5f, 2.5f, 3.7f};
+    // (4.2.0) tempos agora em MorteTempos (fonte unica: FX, cena do Blender e fx.json)
+    private static final float DUR = MorteTempos.DUR, FLAT = MorteTempos.FLAT, ECG_END = MorteTempos.ECG_END;
+    private static final float[] BEATS = MorteTempos.BEATS;
     private static final int BONE = 0xE1DAC3, BONE_D = 0xA8A08C, RED = 0xD21E28, DRED = 0x5A0008, ASH = 0x9696A0, DARK = 0x0A0000;
     private static final String[] CRANIO = {
         "....########....",
