@@ -15,13 +15,418 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **3.84.0** (2026-10-18) |
+| Versão | **3.99.0** (2026-10-19) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-3.84.0.jar` (entregue) |
-| Checks | `check.py` → **204 PASS / 0 FAIL** (3.84.0: CORAÇÃO CANÔNICO 3D) |
+| Jar | `rptag-3.99.0.jar` (entregue + GitHub Release) |
+| Checks | `check.py` → **259 PASS / 0 FAIL** (3.96.0: VOID = Queda Sem Fundo, PESADELO = Sono Sem Descanso — 5 FX cinematográficos) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
+
+**3.99.0 (2026-10-19) — LOREZONES: aviso unico + audio com tempo maximo.** User:
+"se o player ficar entrando e saindo da lorezone, vai ficar tocando toda vez a musica e
+toda vez vai aparecer um aviso na cara dele, faça com que seja unico esse aviso...
+se tiver o som toca toda vez, mas nao fica para sempre o som... na primeira vez isso tbm
+nao pode ocorrer da musica ficar para sempre... faz um limite de tempo".
+IMPLEMENTADO: (1) `LoreZonesData.avisosVistos` PERSISTENTE (Map<UUID,Set<String>> salvo
+em `AvisosVistos` no .dat) — `avisoVisto/marcarAvisoVisto/resetAvisos`; o `SEEN` em
+memoria e o `seen.remove(zid)` ao sair foram REMOVIDOS (era o bug do "aviso toda visita");
+(2) `show()` nao toca mais som — o som pontual toca em `entrouAgora` (TODA entrada) e
+para em `SOM_MAX_MS=30s` ou ao sair (SOM_ATIVO ganhou [2]=inicioMs); (3) `tickMusic`
+reescrito: `MusicState(zoneId, startedMs, silenced)`, `maxSeg = musicInterval>0 ?
+min(600, musicInterval) : 60`, ao vencer → `stopMusic` + silenced (nao volta ate sair);
+`-2` = musica UNICA (chave persistente "m:<zona>"); (4) musicas custom/URL tambem
+limitadas: `LorezoneMusicPayload` e `MusicFileQueryPayload` ganharam `maxSeg` (VAR_INT),
+`MusicaCustom.definirLimite/armarVigia` (thread daemon para no prazo, teto 600s) — cobre
+o caso do download terminar DEPOIS do STOP do servidor; (5) `/lorezone avisos reset
+<jogador>` + `/lorezone musica <id> unica <som>`. Verificado com simulacao da maquina de
+estados (`verificacao/simula_lorezone.py`, 3 cenarios) + check.py 292 PASS/0 FAIL +
+smoke (comandos parseiam; 0 ERROR/FATAL). ATENCAO: `MusicSync.pedir` agora exige maxSeg.
+
+**3.98.0 (2026-10-19)** — user pediu: "adicione os dois modelos de pesadelo, tanto o
+com o fundo que voce deixou na versao 3.96.4, quanto a versao atual, eu quero as duas
+opções". FEITO: estilo 11 = `pesadelo2` = **"Sono Sem Descanso"** (classe nova
+`PesadeloAntigoAvisoFx`, camada `rptag:aviso_pesadelo2`), recuperado da tag v3.96.4 via
+raw.githubusercontent (a REGRESSÃO .git 11ª apagou o commit local — o working tree
+estava íntegro e o remoto tinha tudo). O estilo 1 `pesadelo` continua = "Seguido".
+Ambos com `cy + 25k` (msg embaixo) e Escuridão 5s (`particulasPesadelo(alvo,true)`).
+Mudanças de superfície: RPCommands (parser `case "pesadelo2" -> 11`, nomeEstilo
+"PESADELO SONO", literal do subcomando, ajuda), LoreZoneCommands (ESTILOS +
+nomeEstilo + lista), LoreZones clamp `Math.min(10` → `11` ×2, ClientEffects clamp
+idem + rota 11, ClientGuiLayers registra as DUAS camadas. check.py 283 PASS/0 FAIL
+(várias âncoras antigas de "ascensao removido" usavam `'case 11' not in` → reescritas
+para checar o que importa: `ascensao` ausente + `case "pesadelo2" -> 11` presente).
+
+**3.97.0 (2026-10-19)** — user mandou 5 .java da catbox: `0ncp46` = **AvisoFxUtil**
+(compartilhada), `qbupf3` = **GeloAvisoFx** "Geada Eterna", `xe44nh` = **InfernoAvisoFx**
+"Fornalha", `oj68ax` = **PesadeloAvisoFx "Seguido"** (o user rotulou como "atualize o
+aviso inferno", mas o arquivo é um PESADELO — aplicado como novo pesadelo, estilo 1),
+`nb9qgd` = **RunicoAvisoFx** "Tradução Arcana". Os 4 protótipos tinham
+`iniciar(String mensagem)` ÚNICO e desenhavam a msg como texto grande; adaptados para
+`iniciar(String titulo, String mensagem)` com o bloco de SUB padrão em `cy + 25 * k`
+(mesma linha dos demais; a verificação `cy + 25 * k, 0` agora cobre os 8 FX).
+Mapa de estilos: 1 pesadelo, 2 runico, 3 real, 4 morte, 5 inferno, 6 gelo, 7 divino,
+8 void, 9 sangue, 10 demoniaco. 2/5/6 perderam o som do servidor (FX agora tem trilha
+própria: runico = mesa de encantamento + sinos pentatônicos; inferno = firecharge/ghast/
+lava; gelo = quebra de vidro + sinos) — `somAviso` só mantém sons em 3 (beacon) e 4
+(respawn anchor). Partículas novas: particulasRunico/Inferno/Gelo (server-safe). O
+`AvisoFxUtil` usa `Tesselator`/`BufferUploader` (1.21.1) e `SimpleSoundInstance.forUI(ev,pitch,vol)`.
+check.py: 278 PASS/0 FAIL (custou reescrever 8 âncoras que auditavam o pesadelo antigo).
+
+**3.96.4 (2026-10-19) — “a mensagem tem que ser embaixo do aviso padrão” (3ª cobrança)**:
+user disse "ja pedi para voce arrumar isso, consegue verificar se ficou certo agora?".
+DIAGNÓSTICO CERTO: a msg estava embaixo nos 5 desde o 3.96.1, mas cada FX usava
+uma LINHA DIFERENTE (divino oy+9k=72px, demoniaco oy+11k=81px, sangue/pesadelo
+ty+14.5S=47px/30px, void ty+17.5S=73px) → visual "desconexo" entre estilos.
+FIX 3.96.4: TODOS → `cy + 25 * k` (linha única, mesma distância do centro em
+qualquer resolução); void reflexo 16S→15S pra abrir folga.
+VERIFICAÇÃO: (1) simulação PIL em 1080p com a MESMA matemática do Java →
+`verificacao/avisos_verificacao_1080p.png` (5 painéis, linhas verde=base do
+título/amarela=topo da msg); (2) bytecode `javap` → `25.0f` nas 5 classes.
+**BUG GRANDE DO check.py DESCOBERTO E CORRIGIDO**: `print(PASS/FAIL)` estava na
+linha 487 e TODOS os checks anexados desde a 3.95 (linhas 488+) NUNCA executavam
+→ placar congelado em 259 desde então. Bloco movido pra ANTES do resumo:
+agora **273 PASS / 0 FAIL** com os checks de 3.95/3.96/3.96.1/3.96.2/3.96.3/3.96.4
+rodando DE VERDADE. LIÇÃO: SEMPRE conferir que o número de PASS muda ao
+adicionar check; inserir seções novas ANTES do `print` do resumo.
+Toolchain: /var/tmp zerado neste turno (JDK + installer + cp.txt rebaixados);
+cp.txt precisa do CLIENT (`--installClient /var/tmp/mcdir`) + lwjgl 3.3.3.
+
+**3.96.3 (2026-10-19)** — user pediu para ADICIONAR o susto extra no
+pesadelo para testar: "qualquer coisa eu vou mudar o estilo do susto nao
+curti tanto preferia o modelo antigo". FEITO: `RPCommands` case 1 →
+`particulasPesadelo(alvo, true)` = DARKNESS 100 ticks (5s) + partículas.
+Aviso importante ao user: ele PREFERE o modelo antigo do pesadelo (véu +
+coração) — se pedir, reverter o estilo 1 para o pesadelo antigo
+(3.63–3.94) é o caminho; NÃO mexer sem pedido explícito. Reverter o
+susto = `particulasPesadelo(alvo, false)` (1 parâmetro).
+Toolchain perdido no turno (volátil /var/tmp): JDK 21 + installer
+rebaixados; cp.txt agora PRECISA do classpath de CLIENT — obtido via
+`java -jar installer.jar --installClient /var/tmp/mcdir` (cria
+client-...-srg.jar) + lwjgl/lwjgl-openal 3.3.3 do Maven Central.
+ORDEM do cp.txt importa: neoforge-server/client ANTES dos jars do
+minecraft (senão `Player.refreshDisplayName()` e
+`MinecraftServer.getPlayerList()` não existem na classe vanilla); excluir
+`*slim*` e `*unpacked*` (vanilla sem patches NeoForge).
+
+**3.96.2 (2026-10-19)** — user mandou print do void com a mensagem
+"se fudeu" EM CIMA do AVISO e pediu: mensagem embaixo do aviso, igual
+divino/demoniaco, nos 5 FX ("esse aviso não deveria ser a mensagem...
+faz direito igual ta no divino e no demoniaco"). EVIDÊNCIA: sangue
+(confirmado certo) e pesadelo/void tinham o MESMO código de posicionamento
+no 3.96.1 (ty+14.5S) — e o print do void mostrava o desenho EXATO do
+3.96.0 → jar velho no mods do CLIENTE na hora do teste (falha recorrente).
+Além disso, void foi alinhado: sub ty+27.5S → **ty+17.5S** (logo abaixo
+do reflexo invertido, faixa visual cy+~25k = mesma de divino/demoniaco).
+Layout FINAL dos 5 FX: título "AVISO" grande (S=k·1.9, cy−4S) +
+mensagem do comando embaixo (banda cy+20k..27k) ou nada. User também
+observou que "o pesadelo antigo dava um medo a mais" (não pediu nada
+explicitamente; OPCIONAL futuro: Escuridão 5s do protótipo —
+particulasPesadelo(alvo, true) — ou véu do pesadelo antigo; SÓ com
+pedido).
+
+**3.96.1 (2026-10-19)** — user mandou print do sangue: a MENSAGEM
+aparecia EM CIMA do "AVISO" ("A MENSAGEM DEVE FICAR EMBAIXO DO AVISO
+NE?"). Causa: os protótipos sangue/void/pesadelo desenham o sub em
+`ty - 12 * k` (ACIMA do título) — divino/demoniaco desenham embaixo
+(oy + 9k/11k com oy = cy + 5.5S) e por isso ficaram certos. FIX:
+sangue/pesadelo `ty - 12*k` → `ty + 14.5 * S` (logo abaixo do título,
+~cy + 20k = mesma altura visual de divino/demoniaco); void →
+`ty + 27.5 * S` (abaixo do REFLEXO invertido que ocupa ty+16S..~ty+25S).
+check.py: âncora nova "mensagem EMBAIXO nos 5 FX" (ty - 12 * k ausente
+dos 5). ⚠️ LIÇÃO: NEM TUDO nos protótipos é o desejado — posição do sub
+nos protótipos sangue/void/pesadelo era acima; decisão do user: sub
+SEMPRE abaixo do AVISO.
+
+**3.96.0 (2026-10-19)** — user mandou +2 protótipos: catbox hvl6ev.java
+("VoidAvisoFx — Queda Sem Fundo": buraco negro c/ anel de acreção,
+túnel infinito, estrelas sugadas, título c/ aberraação cromática +
+reflexo invertido; particulasMundo = PORTAL 120 + REVERSE_PORTAL 40) e
+8za21k.java ("PesadeloAvisoFx — Sono Sem Descanso": túnel que respira,
+tentáculos c/ garras, 16 olhos que seguem o título + olho gigante,
+estática, caixinha desafinada CT/CP + coração HB + grito;
+particulasMundo(p, escuridao) = SCULK_SOUL 30 + SQUID_INK 20 + SMOKE 40
++ DARKNESS 100 opcional). Adaptados 1:1 (package + USO doc; NADA
+injetado; escala fixa k·1.9 intacta). Rotas: style 1 → PesadeloAvisoFx,
+style 8 → VoidAvisoFx (iniciar("AVISO", limpoN) + return). somAviso:
+case 1 (ELDER_GUARDIAN_CURSE) e case 8 (PORTAL_TRIGGER+WITHER_AMBIENT)
+SAÍRAM → particulasPesadelo(alvo, **false**) / particulasVoid(alvo)
+(server-safe FQN; escuridao=true EXISTE no método mas o comando usa
+false — afeta gameplay). Estilos c/ FX próprio: 1, 7, 8, 9, 10; desenho
+legacy restante: 0, 2, 3, 4, 5, 6. somAviso c/ som só em 2, 3, 4, 5, 6.
+check.py: seção 3.96 (+6) + âncora 3.64 reescrita (ELDER_GUARDIAN_CURSE
+saiu) → 259/0.
+
+**3.95.0 (2026-10-19)** — pedidos do user: (1) "tira essa informaçao
+que vem embaixo" (as legendas "AVISO DIVINO"/"CHAMADO DO ABISMO" eram da
+integração 3.92/3.93; agora o subtítulo só mostra a MENSAGEM digitada no
+comando — comportamento do próprio protótipo, cujo sub default é vazio);
+(2) "tire o 'ascençao' quero esse seja o atual divino, nao quero adicionar
+mais avisar": estilo 11 REMOVIDO (literal, mapa, nomeEstilo, case 11,
+lorezone entry) e o FX celestial assumiu o **estilo 7 (divino)** — clamps
+`Math.min(11`→`Math.min(10` (ClientEffects + LoreZones ×2); sonAviso case
+7 saiu (ALLAY+BELL) → `particulasAscensao(alvo)`; (3) "para o aviso de
+sangue coloque esse no lugar" (catbox 01a9gl.java = "SangueAvisoFx —
+Sangria"): **sangue é o estilo 9** (4 = morte/canon INTACTO!); arquivo
+1:1 (package dev.rptag.client + USO doc; NADA injetado), camada
+`rptag:aviso_sangue`, rota `style == 9 → SangueAvisoFx.iniciar("AVISO",
+limpo9)`, somAviso case 9 saiu (WARDEN_HEARTBEAT) → `particulasSangue`
+(port do particulasMundo: BLOCK redstone 60 + FALLING_DUST 24, server-safe
+FQN). somAviso agora só tem sons nos estilos SEM FX (4,5,6,8 + clássicos);
+7/9/10 = partículas server-safe. check.py: seção 3.95 (+6) e 7 âncoras
+reescritas p/ comportamento novo → 259/0. ⚠️ BUG PEGO NO CHECK: replace
+removiu `case 10 -> "demoniaco"` do nomeEstilo do LoreZoneCommands junto
+com o 11 — restaurado; conferir switches inteiros ao remover cases.
+
+**3.94.0 (2026-10-19)** — user testou os 2 FX e reportou: "não ficou
+parecido [com o modelo], quero parecido com o modelo que enviei". CAUSA
+RAIZ (diff contra os originais): eu tinha INVERTIDO a ordem dos argumentos
+de `iniciar` — os protótipos são `iniciar("AVISO", mensagem)` (título
+grande FIXO "AVISO" + mensagem configurável no SUBTÍTULO), mas eu chamava
+`iniciar(msg, "❀ ... ❀")` e ainda injetara auto-ajuste `S=min(S,w·0.86/tot)`
+que ENCOLHIA o título. FIX: chamadas corrigidas no ClientEffects
+(`iniciar("AVISO", limpo)` / `iniciar("AVISO", limpoD)`) + linhas de
+auto-ajuste REMOVIDAS dos 2 FX (diff vs catbox = só package/docs;
+particulasMundo segue portada server-safe no RPCommands). check.py: 4
+âncoras reescritas para ancorar FIDELIDADE (escala `k·1.9` presente,
+`w * 0.86f` AUSENTE, ordem da chamada) → 259/0. ⚠️ LIÇÃO: quando adaptar
+protótipo do user, a assinatura/documentação do protótipo DEFINE a ordem
+dos parâmetros — conferir o doc comment antes de integrar.
+
+**3.93.0 (2026-10-19)** — user mandou o 2º arquivo (catbox k1dqve.java,
+19.8KB "DemoniacoAvisoFx: Chamado do Abismo"): "faça o mesmo para o
+aviso demoniaco". ADAPTAÇÃO IDÊNTICA ao 3.92: package dev.rptag.client
++ camada própria "aviso_demoniaco" no ClientGuiLayers + AUTO-AJUSTE da
+mensagem (S = min(S, w·0.86/tot) + ty = cy−4·S antes de x0 — o
+protótipo tinha S fixo) + ClientEffects.startScreenText intercepta
+style 10 → DemoniacoAvisoFx.iniciar(texto sem §, "❀ CHAMADO DO ABISMO
+❀") + RETURN (o desenho 3.91 do demoníaco virou código morto — fica
+arquivado no arquivo, um if a menos por frame). O FX: tela em vinho
+PULSANDO no ritmo cardíaco (som+visual sincronizados, beat()), DENTES/
+mandíbulas negros fechando das bordas, fissuras de lava do centro,
+pentagrama invertido em brasa girando + 2 CHIFRES incandescentes,
+texto subindo das trevas com glitch/shadows vermelho+laranja, OLHO de
+fenda abrindo sob o título, brasas; trilha própria (ENDER_DRAGON_GROWL
+0.6 + batidas + fim). somAviso case 10 → particulasAbismo(alvo)
+SERVER-SAFE (do particulasMundo do protótipo: PENTAGRAMA de
+SOUL_FIRE_FLAME no chão (5 cordas i→i+2, 15 pontos cada) + círculo de
+FLAME (40) + LARGE_SMOKE (30, coluna) + LAVA respingos (14)). check
+259/0 (+5; âncoras 3.90 "WITHER_AMBIENT >= 2" e 3.87 atualizadas — o
+case 10 do somAviso não toca mais sons do servidor). 12 estilos, 2 com
+FX cinematográfico (ascensao + demoniaco).
+
+**3.92.0 (2026-10-19)** — user mandou o ARQUIVO pronto (catbox 10jv3n.
+java — DESSA VEZ baixou! ~16KB, "DivinoAvisoFx: Ascensão Celestial",
+protótipo gerado pra ele): clarão + vinheta, pilar de luz, halo rúnico
+(anéis + tiques + HEXAGRAMA), 2 camadas de raios girando opostos, ASAS
+de luz (2×9 penas batendo), letras caindo uma a uma com brilho dourado
+varrendo (sweep), faíscas em estrela, ornamento, sub-mensagem, acorde
+de sinos (BEACON_ACTIVATE + 5×AMETHYST_CHIME em tons 0.79-2.00 +
+BEACON_DEACTIVATE) e partículas END_ROD no mundo. "adorei a animação
+que ficou" = o 3.91 foi APROVADO. ADAPTAÇÃO: package dev.rptag.client
+(era com.exemplo.rptag), camada própria via DivinoAvisoFx.registrar(e)
+no ClientGuiLayers (registerAboveAll "aviso_divino"), Título = MENSAGEM
+do comando com AUTO-AJUSTE (S = min(k·1.9, w·0.86/tot) — mensagens
+longas encolhem, NUNCA vazam; o protótipo não tinha fit!), sub fixo
+"❀ AVISO DIVINO ❀". VIRA O ESTILO 12º "ascensao" (11) — NÃO substitui
+o divino (user amou o atual): RPCommands case "ascensao"->11 +
+nomeEstilo + literal + somAviso case 11 = SÓ partículas (o FX tem
+trilha própria no cliente — beacon+acorde+deactivate; e SOM do servidor
+não faria sentido duplicar) + particulasAscensao(alvo) = método SERVER-
+SAFE (ServerLevel.sendParticles + END_ROD: anel 72 que sobe + espiral
+48 — NUNCA chamar classe client de código common!). ClientEffects
+.startScreenText intercepta style 11 → DivinoAvisoFx.iniciar(texto sem
+§, sub) e RETURN (não seta screenText — o FX tem timeline própria 6s).
+LoreZone ESTILOS ofEntries +ascensao/11 + nomeEstilo + lista; clamps
+min(11)×2 em LoreZones. BUGS evitados: float elapsed (assinatura
+desenhaOrbes já corrigida no 3.91); partículas via FQN (sem import
+pile). JAVAC OK DE PRIMEIRA (o protótipo era sólido). check 254/0
+(+7, −2 âncoras de clamp/min). 12 estilos no total!
+
+**3.91.0 (2026-10-19)** — prints do user: "o demoniaco ainda está muito
+oval, eu nao quero esses efeitos girando no inferno e nem no demoniaco...
+esses pixel ficaram esquisitos e ja pedi para tirar, melhore o do divino
+o simbolo ta estranho... esse é o mod que te falei (curseforge tensura-
+ascensions), veja como elas funcionam e coloque algo assim... remova
+esses feixes de luz do demoniaco e do inferno, deixe so no divino mas
+melhore". Página do CurseForge LIDA: a assinatura do mod é o ritual de
+awakening = "10-second cinematic with levitation, ORBITING ENERGY
+BULLETS, layered audio" → trouxe a ASSINATURA (técnica própria): ORBES
+de energia orbitando (desenhaOrbes: n=6, elipse achatada raio·0.42,
+glow 6px + núcleo 3px, fase = 2π·i/n + elapsed·0.0011) nos 3 avisos
+(divino dourado, inferno brasa, demoníaco sangue). MUDANÇAS: (1)
+desenhaAnel = varredura ANGULAR (passos=max(64,ra+rb), pontos 2px) —
+arco perfeito em qualquer proporção (fim dos "dots" do halo achatado da
+print). (2) INFERNO: leque FORA; orbes de brasa + radial + halo triplo
+liso. (3) DEMONIACO: leque FORA e o anel-oval do texto FORA; agora =
+aura negra + veias + CÍRCULO DE INVOCAÇÃO REDONDO centrado na TELA
+(Rinv = min(w,h)/4, ra=rb — nunca oval) com 3 anéis + 12 runas radiais
+ESTÁTICAS + orbes de sangue + letras corrompidas. (4) DIVINO: coroa
+FORA → SOL SAGRADO (desenhaSol: disco degradê 8 camadas + anel + 8
+raios desenhaRaio — 4 cardeais 3.1r/0.42r + 4 diagonais 2.2r/0.26r) +
+radial RESPIRANDO (resp7 = 0.90+0.10·sin·0.0021) + orbes dourados;
+feixes SÓ no divino ✓. BUGS: float→long (elapsed é float no método —
+assinatura de desenhaOrbes era long); 1 patch rodou com cwd ERRADO
+(/home/user) e o jar saiu SEM classes → CONFERIR ClientEffects.class no
+jar antes de entregar (novo passo do ritual: unzip -l | grep Client
+Effects). check 247/0 (+3/−3 âncoras).
+
+**3.90.0 (2026-10-19)** — feedback do user c/ print: "o avisar demoniaco
+ficou oval... faça a mesma pegada... no angelical eu nao gostei daquele
+monte de pixels, mude essa coroa de anjos... o do inferno ta mais ou
+menos... melhore o som algo mais daora (catbox rxavzi.mp3) corte esse
+audio e deixe uma parte para o inferno... melhore essa parte do circulo
+de fogo... adicione mais coisas no aviso de sangue para ficar bizarro...
+pegue a tematica do mod de tensura que tem os bagulhos espaciais".
+(1) desenhaAnel REESCRITO = varre LINHAS e desenha arcos laterais 2px
+CONTÍNUOS (o tracejado por colunas é que dava o efeito "oval de
+pontinhos"); rb maiores (menos achatado). (2) COROA DE ANJOS = glow
+(ra170/rb22 α55) + núcleo brilhante (ra150/rb16 α215 0xFFF3C4) + acento
+interno (ra104/rb11 α150). (3) inferno: mesmo desenho de anel em fogo
+(0xD84E0A glow / 0xFFA050 núcleo / 0xFFD9A0 acento). (4) DEMONIACO =
+AURA NEGRA: véu 205·resp + brilho radial 24 camadas 0x3A0208 + leque de
+16 raios escuros girando (angBaseD = elapsed·0.0034, 12/6px, α70/45) +
+veias + CÍRCULO duplo liso em volta do texto (glow raioX+12/bh+34 +
+núcleo 0x8A0F0F) + letras corrompidas (mantidas) + som = WITHER_SPAWN +
+WITHER_AMBIENT EM CAMADAS. (5) SANGUE: + CORAÇÃO GIGANTE translúcido
+batendo ATRÁS do texto (MASCARA_CORACAO = a silhueta do coração 3D,
+desenhaCoracaoFundo, esc = max(w,h)/14 · (0.90+0.14·pulsoCard), α34
+0x6E0B0B) + veias + gotas+pulso (mantidos). (6) VOID = NEBULOSA: 2
+brilhos radiais deslocados (roxo 0x3A1E7A α7 / azul 0x14285E α6, 18
+camadas — temática espacial Tensura com a técnica do degradê
+acumulado, TUDO original) + anel cósmico liso 0x7A5CCF + estrelas
+(mantidas). (7) SOM DO INFERNO: o catbox rxavzi.mp3 deu 404 (página de
+erro do catbox — link morto ou ainda processando; 3 tentativas) → criei
+o SOM PROPRIO sintetizado com numpy+soundfile (pip na hora): riser
+sombrio 9s 32kHz (boom 90→42Hz + rumble marrom LFO + sweep 70→190Hz +
+impacto em 6.5s + 90 crackles de fogo, pico 0.60) =
+assets/sounds/inferno_aviso.ogg (82.7KB) + sounds.json + SOM_INFERNO
+createVariableRangeEvent; case 5 toca SOM_INFERNO.get() 1.6F + BLAZE
+0.35F (ghast scream SAIU). QUANDO O USER REENVIAR O LINK: só trocar o
+.ogg e rebuildar. BUG da hora: âncora com "1 espaço" de diferença (*
+macabro vs *  macabro) — âncora de docstring é frágil, preferir
+substituição de token único. check 244/0 (+8/−1 âncora).
+
+**3.89.0 (2026-10-19)** — "mude o inferno faça na mesma pegada do
+angelical, faça algo bonito de se ver, ai ja testo os dois juntos de uma
+vez". INFERNO = AURA ARDENTE (espelho do 3.88): FORA muralha de dentes de
+fogo e brasas/pontos; brilho radial 26 camadas 0xFFB060 (alpha 10·vis·
+(1.05−s)), leque de 14 raios desenhaRaio girando NO SENTIDO CONTRARIO
+(angBase5 = −elapsed·0.0055 — divino e inferno giram opostos, juntos
+formam um sol de dois hemisférios), larguras 15/9, cores 0xFF8A2A/
+0xD84E0A, HALO TRIPLO de brasa (ra 150/112/76, 0xD84E0A/0xFF8A2A/0xFFD9A0)
++ filetes 0x8A2400. Véu base 150 (0x140301). SOM mantido (ghast+blaze).
+tinta 0xFFA347 mantida. check: âncora do inferno trocada (angBase5/
+0xFFB060/haloY5 SEM yBrasa/resp5) + âncora 3.86 de cor trocada → 236/0.
+
+**3.88.0 (2026-10-19)** — "no divino tira essas faixas na vertical,
+melhora a qualidade disso, quero algo mais bonito nao varios pontos e
+pontos... tem o mod do tensura que tem umas animacoes bonitas, consegue
+fazer algo assim" (referência visual apenas — SEM decompilar, política).
+DIVINO REFEITO como AURA SAGRADA: (1) FORA: as 7 colunas verticais e as
+26 faísce/pontos. (2) BRILHO RADIAL: 26 retângulos concêntricos
+ACUMULANDO alpha (9·vis·(1.05−s), cada 1) = degradê contínuo quente
+0xFFF0C0 no centro morrendo nas bordas — o truque do degradê com fill()
+é acumular camadas finas (blend ligado). (3) LEQUE DE LUZ: 14 raios
+AFILADOS girando devagar (angBase = elapsed·0.0045°/ms) desenhados com
+desenhaRaio — pushPose/translate/mulPose(ZP) e 4 segmentos com alpha
+decrescente (a·(12−j·3)/12) e largura CRESCENTE (w·(1+j·0.22)) = raio
+que esvae ao longo; larguras alternadas 14/8px, cores 0xFFF3C4/0xE8C765.
+(4) HALO TRIPLO (3 anéis desenhaAnel, ra 150/112/76, alphas 95/140/185).
+Véu base 115 (era 140). ERROS: var `a` já existia no método (→alpha) —
+3ª sombra de variável neste ciclo (cy, cx, a: SEMPRE usar nomes únicos
+em código dentro de métodos enormes). Referência Tensura: atende com
+técnica própria (aura + leque girando), visual "mandala sagrada".
+
+**3.87.0 (2026-10-19)** — pedido do user: "o aviso inferno deve ser algo
+mais bizarro... mude o divino quero algo mais angelical,celestial, o void
+está legal mas quero um som mais fundo profundo bizarro, o aviso de sangue
+deve ser o pulsar mais profundo o som, o aviso demoniaco (crie) algo
+bizarro de se ver, letras vermelhas e o mais macabro possivel". (1) INFERNO
+(5): véu RESPIRANDO (sin·0.004 ±14) + MURALHA de fogo no rodapé (dentes
+estáticos 0xD84E0A/0xFF7A1A) + 60 BRASAS que SOBEM (y = yB - elapsed·0.05·
+(1+i%3) mod h — animadas!) + som = GHAST_SCREAM 0.6 + BLAZE_BURN 0.5.
+(2) DIVINO (7) CELESTIAL: HALO duplo (2 anéis elípticos desenhaAnel acima
+do texto, 0xE8C765/0xFFF3C4) + 7 raios claros largos + 26 FAÍSCES que
+SOBEM (ascensão, elapsed·0.03) + som = ALLAY_ITEM_GIVEN 0.9 (coro de
+anjo) + BELL_RESONATE 2.0. (3) VOID (8): som = PORTAL_TRIGGER pitch 0.3
+(grave demais) + WITHER_AMBIENT 0.55 (gemido sepulcral). (4) SANGUE (9):
+véu e gotas PULSAM em ritmo cardíaco DUPLO (pulsoCard = 0.70+0.30·min(1,
+bat1³+0.6·bat2³), sin·0.0069 e sin·0.0069-0.9) + som = WARDEN_HEARTBEAT
+**pitch 0.4 vol 1.3** (pulso profundo). (5) NOVO DEMONIACO (10): véu
+0x0A0002 RESPIRANDO (sin·0.0031) + desenhaVeias (gretas de sangue dos 4
+cantos em direção ao centro, LCG seed 666, 9 segmentos/canto, 0x6E0B0B/
+0x450404) + desenhaAnel em volta do texto (elipse tracejada 0x5E0808,
+raioX = min(w/2-16, tW·scale/2+46), rb = bh+20) + LETRAS = texto
+CORROMPIDO (style==1||style==10 → desenhaTextoCorrompido) + som =
+WITHER_SPAWN 0.45 vol 1.2. HELPERS novos: desenhaAnel (elipse tracejada
+por colunas dx+=2, sqrt(1-(dx/ra)²)) e desenhaVeias. ESTILOS do lorezone
+virou Map.ofEntries (Map.of SÓ ACEITA 10 PARES — 11 estoura!). SONS:
+javap confirmou que os campos NÃO têm prefixo ENTITY_ (GHAST_SCREAM,
+ALLAY_ITEM_GIVEN, WITHER_AMBIENT, WITHER_SPAWN — todos SoundEvent puro,
+sem .value()); ERREI o cast float<<int DE NOVO na faísca divino (padrão
+do bug: (int) ternário * vis precisa ((int) (((a)?x:y)·vis))<<24).
+check +8/-2 âncoras → 236/0. Smoke verde (demoniaco/inferno/divino/void/
+sangue parseiam, 0 ERROR).
+
+**3.86.0 (2026-10-19)** — "faça mais estilos de avisar... o coração ficou
+meio esquisito, melhore o 3d dele" (print do coração em uploads: as fatias
+retangulares viraram pirâmide listrada). (1) CORAÇÃO REDESENHADO: máscara
+pixel-art LINHAS (13px largura × 10 linhas: 2 lóbulos com vale nas linhas
+0-1 {2,5,8,11}/{1,6,7,12}, corpo {1,12}, ponta em V {6,7}) EXTRUDADA 5px
+(Z0=-2, Z1=3); caixa() com cor POR FACE (tampa clareia(FRENTE[r],0.22),
+frente = gradiente FRENTE[10 linhas] de 0xFF7A93 a 0xAE1A3C, paredes LADO
+0x9E1234, costas TRAS 0x70102A); reflexo BRILHO 0xFFC9D6 (2×2px no lóbulo
+esquerdo, z+0.002); animação + balanço ZP 4°·sin(t·0.0016); translate y
+0.02+dy. (2) 6 ESTILOS NOVOS de aviso (client clamp min(9)): 5 INFERNO
+(véu 0x150401 + 46 brasas estáticas seed LCG + filete 0x8A2400, tinta
+0xFFA347), 6 GELO (véu 0x081523 + 8 losangos desenhaLosango 0xBFE8FF,
+tinta 0xDFF4FF), 7 DIVINO (véu 0x110C02 + 5 feixes de luz verticais
+0xE8C765/0xC9A227 + ouro, tinta 0xFFEDB8), 8 VOID (véu 0x060310 + 60
+estrelas estáticas 0xCBB2FF/branco, tinta 0xCBB2FF), 9 SANGUE (véu
+0x0F0103 + colunas de sangue descendo do topo com bolha na ponta, tinta
+0xE02020). TODOS com som próprio no somAviso: morte=RESPAWN_ANCHOR_
+DEPLETE.value() (HOLDER! usa .value()), inferno=BLAZE_BURN, gelo=PLAYER_
+HURT_FREEZE, divino=BELL_RESONATE, void=PORTAL_TRIGGER, sangue=WARDEN_
+HEARTBEAT. /rp admin avisar ganhou os 6 LITERAIS (morte não existia!);
+nomeEstilo/ajuda/lorezone ESTILOS (10 entradas) e clamps Math.min(9) nos
+2 pontos de LoreZones. check +15 → 229/0 (2 âncoras antigas atualizadas:
+FATIAS→LINHAS, min(4)→min(9)). ERROS DE COMPILação CORRIGIDOS: import do
+BlockEntityRenderer DERRUBADO na reescrita (lição de novo: SEMPRE conferir
+imports ao reescrever arquivo inteiro); var cy já existia no método (→gcx/
+gcy); (int) ternário sem parênteses quebra <<24; quad de 2 pontos não
+existe (4 pontos); Holder.Reference<SoundEvent> precisa .value().
+/var/tmp sumiu INTEIRO + libraries de novo (installer 25ª, toolchain 26ª).
+
+(3.86 extra) **REGRESSÃO DO .git DURANTE o ciclo de novo**: o commit 3.85
+(cef4e1e) SUMIU da cadeia local (HEAD voltou a 437bb48) e o commit 3.86
+(2248cbf) nasceu em cima do buraco → push rejeitado ("fetch first").
+RESOLVIDO: force push (o 2248cbf contém as mudanças de 3.85 E 3.86 — nada
+perdido) + tag v3.86.0 recriada apontando pro 2248cbf. NOVO RITUAL (antes
+de commitar): `git log --oneline -2` tem que mostrar o commit do ciclo
+anterior — se sumiu, re-commitar consolidado ANTES e avisar no commit.
+
+**3.85.0 (2026-10-18)** — "teria como colocar aqueles avisos em lorezone?"
+SIM: a lorezone agora TEM aviso persistente com os estilos do /rp admin
+avisar. (1) Zone record +3 campos: `String aviso, int avisoEstilo, int
+avisoSeg` (NBT "Aviso"/"AvisoEstilo"/"AvisoSeg"; zonas antigas = aviso
+vazio → título clássico, SEM migration). (2) show(): aviso não-vazio →
+ScreenTextPayload(aviso, seg clamp 1..60, estilo clamp 0..4) SUBSTITUI o
+título vanilla (som pontual continua); 5 call sites do `new Zone(`
+atualizados (load/criar/texto/som/setMusica — os 3 últimos preservam
+z.aviso*). (3) `/lorezone aviso <id> <classico|pesadelo|runico|real|
+morte> <segundos 1..60> <texto>` + `/lorezone aviso <id> off`; ESTILOS
+Map nome→int; translateAmp do RPCommands virou package-private (era
+private); estilo 0 sem § = vermelho (padrão avisar); >160 chars corta;
+QUEM JÁ ESTÁ DENTRO vê o aviso novo NA HORA (teste imediato, igual
+atualizarSons). (4) listar mostra `• id [dim] r=N — título
+[aviso:pesadelo]` (nomeEstilo). check +10 → 214/0. Smoke: bibliotecas
+INCOMPLETAS (73MB, net/minecraft VAZIO — NOVA variante: o teto do
+snapshot não só apaga run/ como TRUNCA; sintoma = "minecraft [MISSING]"
++ NoSuchElementException no boot) → installer 24ª resolveu; `jar` não
+está no PATH → /var/tmp/java-21/bin/jar; rcon.py recriado. Smoke verde:
+`lorezone listar` OK + `aviso`/`aviso off` respondem "Zona nao existe"
+(prova registro), 0 ERROR/FATAL.
 
 **3.84.0 (2026-10-18)** — "faça um item que teria como colocar no chao
 ... o player poderia recuperar uma vida canon, faça um modelo 3d de um
@@ -670,4 +1075,4 @@ Se o `.git/config` sumir (não vai pro snapshot), recriar:
 
 ---
 
-*Última atualização: ciclo 3.84.0 (2026-10-18), commit `git log -1`.*
+*Última atualização: ciclo 3.93.0 (2026-10-19), commit `git log -1`.*

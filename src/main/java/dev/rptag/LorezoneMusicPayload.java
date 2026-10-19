@@ -12,10 +12,13 @@ import net.minecraft.resources.ResourceLocation;
  * um video do YouTube, com yt-dlp — joga na pasta e usa
  * {@code /lorezone musica <id> @<nome>}).
  *
- * @param tocar true = tocar em loop · false = parar a musica atual
- * @param nome  nome do arquivo SEM extensao (letras, numeros, _ e -)
+ * @param tocar  true = tocar em loop · false = parar a musica atual
+ * @param nome   nome do arquivo SEM extensao (letras, numeros, _ e -)
+ * @param maxSeg (3.99.0) tempo MAXIMO de reproducao em segundos (0 = padrao
+ *               10 min). O cliente para sozinho — musica nunca fica eterna.
  */
-public record LorezoneMusicPayload(boolean tocar, String nome) implements CustomPacketPayload {
+public record LorezoneMusicPayload(boolean tocar, String nome, int maxSeg)
+        implements CustomPacketPayload {
 
     public static final Type<LorezoneMusicPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "lorezone_music"));
@@ -24,6 +27,7 @@ public record LorezoneMusicPayload(boolean tocar, String nome) implements Custom
             StreamCodec.composite(
                     ByteBufCodecs.BOOL, LorezoneMusicPayload::tocar,
                     ByteBufCodecs.STRING_UTF8, LorezoneMusicPayload::nome,
+                    ByteBufCodecs.VAR_INT, LorezoneMusicPayload::maxSeg,
                     LorezoneMusicPayload::new);
 
     @Override

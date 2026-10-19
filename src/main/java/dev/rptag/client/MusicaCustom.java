@@ -47,6 +47,40 @@ public final class MusicaCustom {
      * (3.52.0) se {@code nome} for um LINK http(s) direto de .ogg/.wav, baixa
      * com cache local e toca — os players nao precisam fazer NADA.
      */
+    /** (3.99.0) prazo ABSOLUTO em ms (0 = sem limite). Definido pelo servidor. */
+    private static volatile long limiteMs = 0L;
+
+    /** (3.99.0) limite PADRAO de seguranca: musica custom nunca passa disso. */
+    public static final int MAX_PADRAO_SEG = 600;
+
+    /**
+     * (3.99.0) define o TEMPO MAXIMO de reproducao (segundos). Conta a partir
+     * de AGORA (inclusive o tempo de download) — a musica NUNCA fica eterna.
+     */
+    public static void definirLimite(int seg) {
+        int s2 = seg > 0 ? seg : MAX_PADRAO_SEG;
+        limiteMs = System.currentTimeMillis() + s2 * 1000L;
+    }
+
+    /** (3.99.0) vigia: quando o prazo vence, para a musica sozinha. */
+    private static void armarVigia() {
+        long alvo = limiteMs;
+        if (alvo <= 0) {
+            return;
+        }
+        Thread vigia = new Thread(() -> {
+            try {
+                while (System.currentTimeMillis() < alvo) {
+                    Thread.sleep(400L);
+                }
+                Minecraft.getInstance().execute(MusicaCustom::parar);
+            } catch (Throwable ignored) {
+            }
+        }, "RPTag-MusicaLimite");
+        vigia.setDaemon(true);
+        vigia.start();
+    }
+
     public static void tocar(String nome) {
         parar();
         if (nome.startsWith("http://") || nome.startsWith("https://")) {
@@ -198,7 +232,10 @@ public final class MusicaCustom {
             AL10.alSourcef(fonte, AL10.AL_GAIN, 0.9F * vol);
             AL10.alSourcePlay(fonte);
             atual = nome;
-            RPTagMod.LOGGER.info("RP Tag: tocando musica custom '{}' em loop (zona)", nome);
+            armarVigia(); // (3.99.0) para sozinha no tempo maximo
+            RPTagMod.LOGGER.info("RP Tag: tocando musica custom '{}' (tempo maximo de {}s)",
+                    nome, limiteMs <= 0 ? MAX_PADRAO_SEG
+                            : Math.max(0, (limiteMs - System.currentTimeMillis()) / 1000));
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: falha ao tocar musica custom '{}'", nome, t);
             parar();
@@ -222,6 +259,7 @@ public final class MusicaCustom {
         fonte = -1;
         buffer = -1;
         atual = "";
+        limiteMs = 0L; // (3.99.0) sem musica, sem prazo
     }
 
     /** @return nome da musica tocando agora ("" = nenhuma). */

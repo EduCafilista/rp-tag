@@ -16,14 +16,17 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('3.84.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('3.99.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 3.84.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 3.99.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
 check('lorezone: mapa INSIDE existe', 'INSIDE' in lz)
-check('lorezone: saiu da zona esquece (seen.remove)', 'seen.remove(zid)' in lz)
+check('3.99: AVISO unico e persistente (nao reseta ao sair; salvo no mundo)',
+      'seen.remove(zid)' not in lz and 'avisosVistos' in lz
+      and 'avisoVisto(uuid, zone.id())' in lz and 'marcarAvisoVisto(uuid, zone.id())' in lz
+      and 'tag.put("AvisosVistos", vistos)' in lz)
 
 # ---- 3. /rp ajuda
 rp = rd(R + '/RPCommands.java')
@@ -106,9 +109,10 @@ mcm = rd(C + '/MusicaCustom.java')
 check('som REGISTRADO (BuiltInRegistries.getValue)', 'BuiltInRegistries.SOUND_EVENT.get(' in lz)
 check('sem createVariableRangeEvent solto', 'createVariableRangeEvent' not in lz)
 check('som pontual: para o anterior (SOM_ATIVO)', 'SOM_ATIVO' in lz)
-check('musica: para a anterior antes de tocar', 'para a musica anterior' in lz)
+check('musica: para a anterior antes de tocar (stopMusic)', 'stopMusic(player, uuid)' in lz)
 check('troca na hora (atualizarSons)', 'atualizarSons' in lz)
-check('som para ao sair da zona (nao fica ecoando)', 'nao fica ecoando' in lz)
+check('3.99: som para ao sair E no tempo maximo (nao vira ambiencia eterna)',
+      'SOM_MAX_MS' in lz and 'pararSomPontual' in lz and 'boolean saiu = !insideNow.contains' in lz)
 check('+17 presets (portal/trovao/ghast/vento/sino)', all(k in lzc for k in ['"portal"', '"trovao"', '"ghast"', '"vento"', '"sino"']))
 check('preset "nenhum" limpa o som', 'Map.entry("nenhum", "")' in lzc)
 check('valida som inexistente (admin descobre na hora)', 'nao existe no jogo' in lzc)
@@ -147,7 +151,9 @@ rollc = rd(R + '/RollCommands.java')
 check('protocolo v5 (3 payloads de musica)', 'registrar("5")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
-check('musica 1x (intervalo -1, sem loop)', 'literal("1x")' in lzcmd and 'umaVez' in lzz)
+check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
+      'literal("1x")' in lzcmd and 'MUSIC_MAX_PADRAO_SEG' in lzz
+      and 'st.silenced()' in lzz and 'now - st.startedMs() >= maxMs' in lzz)
 check('raio explicado na criacao (esfera)', 'ESFERA' in lzcmd)
 check('cliente grava o arquivo e toca', 'handleMusicChunk' in cph and 'tocarArquivoNome' in cph)
 check('/roll +3 sozinho = especialista (1d20+3)', 'ESPECIALIDADE: vira 1d20+3' in rollc)
@@ -207,7 +213,7 @@ check('aviso na CAMADA OFICIAL (aparece com shaders)', 'aviso_hud' in cgl and 'd
 check('aviso dura 8s (payload com estilo)', 'new ScreenTextPayload(traduzido, 8, style)' in rp)
 check('avisar aceita VARIOS alvos (players/@a)', 'EntityArgument.players()' in rp and 'getPlayers(ctx, "jogadores")' in rp)
 check('4 ESTILOS de aviso (pesadelo/runico/real/classico)', 'literal("pesadelo")' in rp and 'literal("runico")' in rp and 'literal("real")' in rp)
-check('som assustador no aviso (maldicao do guardiao)', 'ELDER_GUARDIAN_CURSE' in rp and 'BEACON_ACTIVATE' in rp)
+check('som assustador no aviso (real=sino do beacon; pesadelo=FX c/ trilha propria)', 'BEACON_ACTIVATE' in rp and 'particulasPesadelo' in rp and 'ELDER_GUARDIAN_CURSE' not in rp)
 check('payload do aviso leva o estilo (codec)', 'p.style()' in rd(R + '/ScreenTextPayload.java'))
 check('TYPEWRITER no balao (28 ms/char, nasceu->escreve)', 'TYPE_MS_PER_CHAR' in br and 'bornMillis()) / TYPE_MS_PER_CHAR' in br)
 check('TYPEWRITER no aviso (30 ms/char, sem quebrar codigos)', 'private static String typed(' in ce and "c == '\\u00a7'" in ce)
@@ -222,7 +228,8 @@ check('AVISO: flag/try PROPRIOS (nao morre junto com o medo)', 'avisoDisabled' i
 check('AVISO: log de diagnostico (chegou/desenhando)', 'AVISO recebido' in ce and 'desenhando aviso' in ce)
 check('FIX do typed: anexa os caracteres normais', 'sb.append(c);' in ce and '1 + (int) Math.min(998' in ce)
 check('AVISO CRESCENDO (scale-in 0.88->1.0)', '0.88F + 0.12F' in ce)
-check('som RUNICO proprio (amarela, maldicao so no pesadelo)', 'AMETHYST_BLOCK_CHIME' in rp and 'case 1, 2' not in rp)
+check('RUNICO: FX c/ trilha propria + particulas no servidor (sem som duplicado)',
+      'particulasRunico' in rp and 'AMETHYST_BLOCK_CHIME' not in rp and 'case 1, 2' not in rp)
 check('X vermelho nos EMOJIS da DIREITA da previa', 'extrasXBoxes' in bs and 'removeExtra(xi)' in bs)
 check('coluna direita da previa SEMPRE desenha (sem adesivo tb)', 'extrasXBoxes.clear();' in bs)
 check('menu: fundo embaçado (blur) com fallback opaco', 'renderBlurredBackground(partialTick)' in bs and 'blurOk' in bs)
@@ -276,13 +283,13 @@ check('CORAÇÃO CANÔNICO: bloco+item+BE registrados', '"coracao_canon"' in rtm
 check('coracao NUNCA spawna natural (só /give, indestrutível)', 'strength(-1.0F, 3600000.0F)' in rtm and 'EntityArgument' not in rtm)
 check('SHIFT + clique direito = +1 vida (coração se consome)', 'isShiftKeyDown' in blk and 'setCanonLives' in blk and 'removeBlock' in blk and 'NOVA CHANCE' in blk)
 check('vidas cheias 5/5: não consome (coração fica)', 'vidas >= 5' in blk and 'continua aqui' in blk)
-check('coração 3D PROCEDURAL girando/batendo (BER)', 'RenderType.lightning()' in rdr and 'rotationDegrees' in rdr and 'pulso' in rdr and 'FATIAS' in rdr)
+check('coração 3D PROCEDURAL girando/batendo (BER — máscara 3.86)', 'RenderType.lightning()' in rdr and 'rotationDegrees' in rdr and 'pulso' in rdr and 'LINHAS' in rdr)
 check('BER registrado (ClientRenderers, camada cliente)', 'registerBlockEntityRenderer' in rd(C + '/ClientRenderers.java'))
 check('assets do coração completos (estado/modelo/item/textura)', _os.path.exists(A + '/textures/item/coracao_canon.png') and _os.path.exists(A + '/blockstates/coracao_canon.json') and '"elements": []' in rd(A + '/models/block/coracao_canon.json'))
 check('protecao NÃO some no logout (relog nao burla)', 'PROTECAO_ATE é de propósito NÃO limpa' in cl)
 check('status mostra X/5', '+ "/5"' in rp)
 check('status mostra as vidas canônicas', 'Vidas canônicas:' in rp)
-check('estilo 4 TEXTURIZADO estático (letras não mexem)', 'desenhaTextoTexturizado' in ce and 'Math.min(4, textStyle)' in ce)
+check('estilo 4 TEXTURIZADO estático (letras não mexem)', 'desenhaTextoTexturizado' in ce and 'Math.min(11, textStyle)' in ce)
 check('pesadelo: sway + ghost + fase por char', 'sin(now * 0.0008' in ce and 'GHOST' in ce and 'seed % 7L' in ce)
 check('cursor de digitação piscando', 'digitando' in ce and '"_"' in ce)
 check('caixa ancorada acima do hotbar', 'h - 70 - boxH' in ce)
@@ -311,6 +318,309 @@ check('balao COM SHADERS = formato antigo automatico', 'isShaderPackInUse' in br
 check('SOMBRA do procedural sem rabicho (bug das prints)', 'ss.tail = k.tail' in bg)
 check('rp ajuda com titulo limpo (sem box-drawing)', chr(92)+'u2554' not in rp and chr(92)+'u00bb' in rp)
 
+# ---- 3.85.0: AVISO da lorezone (estilos do /rp admin avisar ao entrar) ----
+lz = rd(R + '/LoreZones.java')
+zc = rd(R + '/LoreZoneCommands.java')
+check('3.85: Zone guarda aviso+estilo+segundos',
+      'String aviso, int avisoEstilo, int avisoSeg' in lz)
+check('3.85: aviso persiste no NBT (mundos antigos viram titulo classico)',
+      '"Aviso"' in lz and '"AvisoEstilo"' in lz and '"AvisoSeg"' in lz)
+check('3.85: show() dispara ScreenTextPayload na entrada',
+      'new ScreenTextPayload(zone.aviso(), seg, estilo)' in lz)
+check('3.85: /lorezone aviso + off registrados',
+      'literal("aviso")' in zc and 'literal("off")' in zc)
+check('3.85: 5 estilos por nome (classico..morte)',
+      '"morte", 4' in zc and '"pesadelo", 1' in zc)
+check('3.85: setAviso/limparAviso chamados',
+      'setAviso(ctx' in zc and 'limparAviso(ctx' in zc)
+check('3.85: criar inicia sem aviso',
+      '45, "", 0, 8)' in zc)
+check('3.85: listar mostra [aviso:estilo]',
+      '[aviso:' in zc and 'nomeEstilo' in zc)
+rp = rd(R + '/RPCommands.java')
+check('3.85: translateAmp compartilhado com LoreZoneCommands',
+      'static String translateAmp' in rp
+      and 'private static String translateAmp' not in rp)
+ce = rd(C + '/ClientEffects.java')
+check('3.99: boot log 3.99.0', 'RP Tag 3.99.0' in ce)
+
+# ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
+ccr = rd(C + '/CanonCoracaoRenderer.java')
+check('3.86: coracao = mascara pixel-art (lobulos + ponta em V)',
+      'LINHAS' in ccr and 'topo dos l' + chr(243) + 'bulos' in ccr and 'ponta em V' in ccr)
+check('3.86: gradiente por linha + paredes escuras + brilho',
+      'FRENTE[r]' in ccr and 'LADO' in ccr and 'BRILHO' in ccr)
+check('3.86: extrusao 5px + balanco em Z',
+      'Z0 = -2, Z1 = 3' in ccr and 'Axis.ZP.rotationDegrees' in ccr)
+ce = rd(C + '/ClientEffects.java')
+check('3.98: client aceita estilos ate 11 (pesadelo2)', 'Math.min(11, textStyle)' in ce)
+check('3.86/3.91: INFERNO aura (fundo + brasa)', '0x140301' in ce and '0xFFC080' in ce)
+check('3.86: GELO (cristais/losango)', '0x081523' in ce and 'desenhaLosango' in ce)
+check('3.86/3.87: DIVINO celestial (raios + ouro)', '0x120D03' in ce and '0xE8C765' in ce)
+check('3.86: VOID (estrelas)', '0x060310' in ce and '0xCBB2FF' in ce)
+check('3.86: SANGUE (gotas escorrendo)', '0x0F0103' in ce and '0xB01616' in ce)
+rp = rd(R + '/RPCommands.java')
+check('3.86: avisar mapeia morte..sangue',
+      'case "morte" -> 4' in rp and 'case "sangue" -> 9' in rp
+      and 'case "void" -> 8' in rp)
+check('3.86: literais novos no /rp admin avisar',
+      all('literal("' + s + '")' in rp for s in
+          ['morte', 'inferno', 'gelo', 'divino', 'void', 'sangue', 'demoniaco']))
+check('3.86/3.97: sons restantes = real (3) e morte (4) — os 8 demais'
+      ' viraram FX c/ trilha propria no cliente',
+      'RESPAWN_ANCHOR_DEPLETE' in rp and 'BEACON_ACTIVATE' in rp
+      and 'BLAZE_BURN' not in rp and 'PLAYER_HURT_FREEZE' not in rp
+      and 'AMETHYST_BLOCK_CHIME' not in rp
+      and 'BELL_RESONATE' not in rp and 'WARDEN_HEARTBEAT' not in rp
+      and 'ALLAY_ITEM_GIVEN' not in rp and 'PORTAL_TRIGGER' not in rp
+      and 'ELDER_GUARDIAN_CURSE' not in rp)
+check('3.86: ajuda lista os 10 estilos',
+      'morte, inferno, gelo, divino, void, sangue' in rp)
+zc = rd(R + '/LoreZoneCommands.java')
+check('3.86: lorezone aviso aceita os 10 estilos',
+      '"inferno", 5' in zc and '"sangue", 9' in zc and '"void", 8' in zc)
+lz = rd(R + '/LoreZones.java')
+check('3.98: clamp de estilo da zona vai ate 11 (pesadelo2)', lz.count('Math.min(11,') == 2)
+
+# ---- 3.87.0: inferno bizarro, divino celestial, void profundo,
+# sangue pulsando fundo, DEMONIACO macabro ----
+ce = rd(C + '/ClientEffects.java')
+check('3.87: DEMONIACO (veias + anel + letras corrompidas)',
+      'desenhaVeias' in ce and 'desenhaAnel' in ce
+      and 'style == 1 || style == 10' in ce and '0x0A0002' in ce)
+check('3.89/3.91: INFERNO = AURA ARDENTE (sem leque, com orbes)',
+      '0xFFB060' in ce and 'haloY5' in ce and 'angBase5' not in ce)
+check('3.88: DIVINO = aura sagrada (sem colunas, sem pontos)',
+      'desenhaRaio' in ce and 'angBase' in ce and 'cy - bh - 26' in ce
+      and '0xFFF0C0' in ce and 'yF' not in ce
+      and 'colunas de luz' not in ce)
+check('3.87: SANGUE pulsa (batida cardiaca dupla)',
+      'pulsoCard' in ce and 'bat1' in ce and 'bat2' in ce)
+rp = rd(R + '/RPCommands.java')
+check('3.87: demoniaco registrado (mapa + nome + literal)',
+      'case "demoniaco" -> 10' in rp and 'case 10 -> "DEMONIACO"' in rp
+      and 'literal("demoniaco")' in rp)
+check('3.87/3.96: void = FX c/ trilha propria (portal+wither saíram)',
+      'WITHER_AMBIENT' not in rp and 'ALLAY_ITEM_GIVEN' not in rp
+      and 'GHAST_SCREAM' not in rp)
+zc = rd(R + '/LoreZoneCommands.java')
+check('3.87/3.95: lorezone aceita demoniaco',
+      'Map.entry("demoniaco", 10)' in zc and 'case 10 -> "demoniaco"' in zc)
+
+# ---- 3.90.0: anel continuo, coroa nova, demoniaco aura, sangue bizarro,
+# void nebula, som custom do inferno ----
+ce = rd(C + '/ClientEffects.java')
+check('3.91: anel por varredura ANGULAR (arco perfeito)',
+      '(Math.PI * 2 * i) / passos' in ce and 'cx + rx - 1' not in ce)
+check('3.90/3.91: halo divino agora e o SOL SAGRADO', 'desenhaSol' in ce)
+check('3.90: circulo de fogo do inferno redesenhado',
+      '0xFFA050' in ce and 'Math.min(170, w / 4), 22' in ce)
+check('3.91: SEM feixes no inferno/demoniaco (so o divino tem)',
+      'angBase5' not in ce and 'angBaseD' not in ce)
+check('3.91: ORBES orbitando nos 3 (divino/inferno/demoniaco)',
+      'desenhaOrbes' in ce and ce.count('desenhaOrbes(g') == 3
+      and 'orbitando' in ce)
+check('3.91: demoniaco = circulo de invocacao REDONDO + runas',
+      'Math.min(w, h) / 4' in ce and 'runas radiais' in ce
+      and 'raioX + 12' not in ce)
+check('3.91: SOL SAGRADO no divino (fim da coroa)',
+      'desenhaSol' in ce and 'SOL SAGRADO' in ce
+      and 'COROA DE ANJOS' not in ce)
+check('3.90: SANGUE bizarro (coracao gigante batendo + veias)',
+      'desenhaCoracaoFundo' in ce and 'MASCARA_CORACAO' in ce
+      and 'desenhaVeias(g, w, h, vis)' in ce and 'escC' in ce)
+check('3.90: VOID nebula cosmica (roxo/azul + anel)',
+      '0x3A1E7A' in ce and '0x14285E' in ce and '0x7A5CCF' in ce)
+mod = rd(R + '/RPTagMod.java')
+sj = rd(A + '/sounds.json')
+check('3.90: SOM_INFERNO registrado + sounds.json + ogg no jar',
+      'SOM_INFERNO' in mod and 'inferno_aviso' in sj
+      and os.path.exists(A + '/sounds/inferno_aviso.ogg'))
+rp = rd(R + '/RPCommands.java')
+check('3.90/3.97: inferno = FX c/ trilha propria + particulas; demoniaco c/ particulas',
+      'particulasInferno' in rp and 'particulasAbismo' in rp
+      and 'SOUL_FIRE_FLAME' in rp and 'RPTagMod.SOM_INFERNO.get()' not in rp)
+
+# ---- 3.92.0: estilo ASCENSAO (FX do user adaptado: asas, hexagrama,
+# letras caindo, mensagem configuravel) ----
+daf = rd(C + '/DivinoAvisoFx.java')
+check('3.92: DivinoAvisoFx adaptado (pacote + escala do prot\u00f3tipo: t\u00edtulo nunca encolhe)',
+      daf.startswith('package dev.rptag.client;')
+      and 'public static void iniciar(String t, String s)' in daf
+      and 'float S = k * 1.9f, ty = cy - 4 * S;' in daf
+      and 'w * 0.86f' not in daf)
+check('3.92: FX completo (asas 9 penas + hexagrama + letras caindo)',
+      'void asa(' in daf and 'hexagrama' in daf and '0.09f * i' in daf)
+cgl = rd(C + '/ClientGuiLayers.java')
+check('3.92: camada do FX registrada', 'DivinoAvisoFx.registrar(event)' in cgl)
+ce = rd(C + '/ClientEffects.java')
+check('3.95: startScreenText roteia estilo 7 (divino) pro FX',
+      'style == 7' in ce and 'DivinoAvisoFx.iniciar("AVISO", limpo7)' in ce
+      and 'Math.min(11, textStyle)' in ce)
+rp = rd(R + '/RPCommands.java')
+check('3.95/3.98: estilo ascensao REMOVIDO (case 11 = pesadelo2)',
+      'case "ascensao"' not in rp and 'ASCENSAO' not in rp
+      and 'literal("ascensao")' not in rp
+      and 'case "pesadelo2" -> 11' in rp
+      and 'particulasAscensao' in rp and 'ParticleTypes.END_ROD' in rp
+      and 'class DivinoAvisoFx' not in rp)
+zc = rd(R + '/LoreZoneCommands.java')
+check('3.95/3.98: lorezone sem ascensao (case 11 = pesadelo2)',
+      'entry("ascensao"' not in zc and 'ascensao' not in zc
+      and 'entry("pesadelo2", 11)' in zc and 'case 11 -> "pesadelo2"' in zc)
+rp2 = rd(R + '/RPCommands.java')
+check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco (alvos' in rp2
+      and 'ascensao' not in rp2 and 'pesadelo, pesadelo2, runico' in rp2)
+
+# ---- 3.93.0: DEMONIACO = FX "Chamado do Abismo" (arquivo do user) ----
+dafx = rd(C + '/DemoniacoAvisoFx.java')
+check('3.93: DemoniacoAvisoFx adaptado (pacote + escala do prot\u00f3tipo: t\u00edtulo nunca encolhe)',
+      dafx.startswith('package dev.rptag.client;')
+      and 'public static void iniciar(String t, String s)' in dafx
+      and 'float S = k * 1.9f, ty = cy - 4 * S;' in dafx
+      and 'w * 0.86f' not in dafx)
+check('3.93: FX completo (mandibulas + pentagrama + olho + chifres)',
+      'fissuras' in dafx and 'chifre(' in dafx and 'void olho(' in dafx
+      and 'pentagrama' in dafx.lower())
+cgl = rd(C + '/ClientGuiLayers.java')
+check('3.93: camada do FX registrada', 'DemoniacoAvisoFx.registrar(event)' in cgl)
+ce = rd(C + '/ClientEffects.java')
+check('3.93: startScreenText roteia estilo 10 pro FX (ordem do prot\u00f3tipo)',
+      'style == 10' in ce and 'DemoniacoAvisoFx.iniciar("AVISO", limpoD)' in ce
+      and 'Math.min(11, textStyle)' in ce)
+rp = rd(R + '/RPCommands.java')
+check('3.93: somAviso case 10 = particulasAbismo (server-safe)',
+      'case 10 -> particulasAbismo(alvo)' in rp
+      and 'class DemoniacoAvisoFx' not in rp)
+
+# ---- 3.95.0: SANGUE = FX "Sangria" (arquivo do user) ----
+saf = rd(C + '/SangueAvisoFx.java')
+lz = rd(R + '/LoreZones.java')
+check('3.95: SangueAvisoFx adaptado (pacote + escala do prot\u00f3tipo: t\u00edtulo nunca encolhe)',
+      saf.startswith('package dev.rptag.client;')
+      and 'public static void iniciar(String t, String s)' in saf
+      and 'float S = k * 1.9f, ty = cy - 4 * S;' in saf
+      and 'w * 0.86f' not in saf)
+check('3.95: FX Sangria completo (veias + po\u00e7a + pingos DR + BufferUploader)',
+      'void veia(' in saf and 'poolY' in saf and 'DR' in saf
+      and 'BufferUploader' in saf)
+check('3.95: camada aviso_sangue registrada', 'SangueAvisoFx.registrar(event)' in cgl)
+check('3.95: startScreenText roteia estilo 9 (sangue) pro FX',
+      'style == 9' in ce and 'SangueAvisoFx.iniciar("AVISO", limpo9)' in ce)
+check('3.95: somAviso case 7 = particulasAscensao (server-safe)',
+      'case 7 -> particulasAscensao(alvo)' in rp)
+check('3.95: somAviso case 9 = particulasSangue (server-safe)',
+      'case 9 -> particulasSangue(alvo)' in rp and 'REDSTONE_BLOCK' in rp
+      and 'class SangueAvisoFx' not in rp)
+check('3.98: clamp de estilo max 11 (ClientEffects + LoreZones \u00d72)',
+      'Math.min(11, textStyle)' in ce and lz.count('Math.min(11') == 2)
+
+# ---- 3.96.0: VOID = "Queda Sem Fundo" + PESADELO = "Sono Sem Descanso"
+# (arquivos do user) ----
+vf = rd(C + '/VoidAvisoFx.java')
+pf = rd(C + '/PesadeloAvisoFx.java')
+check('3.96: VoidAvisoFx adaptado (pacote + escala do prot\u00f3tipo: t\u00edtulo nunca encolhe)',
+      vf.startswith('package dev.rptag.client;')
+      and 'public static void iniciar(String t, String s)' in vf
+      and 'float S = k * 1.9f, ty = cy - 4 * S;' in vf
+      and 'w * 0.86f' not in vf)
+check('3.97: PesadeloAvisoFx = prototipo "Seguido" (found-footage) adaptado',
+      pf.startswith('package dev.rptag.client;')
+      and 'public static void iniciar(String titulo, String mensagem)' in pf
+      and 'HEAD_SZ' in pf and 'GRASS_STEP' in pf and 'ENDERMAN_STARE' in pf
+      and 'tentaculo' not in pf.lower())
+check('3.96: VoidAvisoFx completo (buraco negro + tunel)',
+      'anel' in vf.lower() and 'Buf' in vf)
+check('3.97: os 4 FX novos adaptados (pacote + iniciar(titulo, mensagem))',
+      all(rd(C + '/%s.java' % f).startswith('package dev.rptag.client;')
+          and 'public static void iniciar(String titulo, String mensagem)' in rd(C + '/%s.java' % f)
+          for f in ['InfernoAvisoFx', 'GeloAvisoFx', 'RunicoAvisoFx', 'PesadeloAvisoFx']))
+check('3.97: AvisoFxUtil compartilhada (Buf/vinheta/aditivo/normal)',
+      rd(C + '/AvisoFxUtil.java').startswith('package dev.rptag.client;')
+      and 'public static final class Buf' in rd(C + '/AvisoFxUtil.java')
+      and 'vinheta(' in rd(C + '/AvisoFxUtil.java'))
+check('3.97: camadas aviso_inferno/gelo/runico registradas',
+      'InfernoAvisoFx.registrar(event)' in cgl
+      and 'GeloAvisoFx.registrar(event)' in cgl
+      and 'RunicoAvisoFx.registrar(event)' in cgl)
+check('3.97: ClientEffects roteia 2/5/6 pro FX (titulo AVISO + mensagem)',
+      'RunicoAvisoFx.iniciar("AVISO", limpo2)' in ce
+      and 'InfernoAvisoFx.iniciar("AVISO", limpo5)' in ce
+      and 'GeloAvisoFx.iniciar("AVISO", limpo6)' in ce)
+check('3.97: particulas server-safe de runico/inferno/gelo',
+      'particulasRunico(alvo)' in rp and 'particulasInferno(alvo)' in rp
+      and 'particulasGelo(alvo)' in rp and 'PACKED_ICE' in rp and 'ENCHANT' in rp)
+check('3.96: camadas aviso_void + aviso_pesadelo registradas',
+      'VoidAvisoFx.registrar(event)' in cgl
+      and 'PesadeloAvisoFx.registrar(event)' in cgl)
+check('3.96: startScreenText roteia 1 (pesadelo) e 8 (void) pros FX',
+      'style == 1' in ce and 'PesadeloAvisoFx.iniciar("AVISO", limpo1)' in ce
+      and 'style == 8' in ce and 'VoidAvisoFx.iniciar("AVISO", limpo8)' in ce)
+check('3.96: somAviso cases 1 e 8 = particulas server-safe',
+      'case 1 -> particulasPesadelo(alvo, true)' in rp
+      and 'case 8 -> particulasVoid(alvo)' in rp
+      and 'SCULK_SOUL' in rp and 'REVERSE_PORTAL' in rp
+      and 'class VoidAvisoFx' not in rp and 'class PesadeloAvisoFx' not in rp)
+
+# ---- 3.96.4: LINHA UNICA da mensagem (cy + 25k) nos 5 FX ----
+check('3.96.4/3.97: mensagem na MESMA linha (cy + 25k) nos 8 FX, nunca acima',
+      all(('cy + 25 * k, 0)' in rd(C + '/%s.java' % f)
+          and 'ty - 12 * k' not in rd(C + '/%s.java' % f))
+          for f in ['DivinoAvisoFx', 'DemoniacoAvisoFx', 'SangueAvisoFx',
+                    'VoidAvisoFx', 'PesadeloAvisoFx', 'InfernoAvisoFx',
+                    'GeloAvisoFx', 'RunicoAvisoFx']))
+
+# ---- 3.98.0: PESADELO2 = "Sono Sem Descanso" (modelo antigo, estilo 11) ----
+pa = rd(C + '/PesadeloAntigoAvisoFx.java')
+check('3.98: PesadeloAntigoAvisoFx = "Sono Sem Descanso" (tunel + tentaculos + 16 olhos)',
+      pa.startswith('package dev.rptag.client;')
+      and 'class PesadeloAntigoAvisoFx' in pa
+      and 'public static void iniciar(String t, String s)' in pa
+      and 'tentaculo' in pa.lower() and 'PesadeloAvisoFx' not in pa.replace('PesadeloAntigoAvisoFx', ''))
+check('3.98: camada aviso_pesadelo2 registrada (as DUAS opcoes convivem)',
+      'PesadeloAntigoAvisoFx.registrar(event)' in cgl
+      and 'PesadeloAvisoFx.registrar(event)' in cgl
+      and 'aviso_pesadelo2' in pa and '"aviso_pesadelo"' in rd(C + '/PesadeloAvisoFx.java'))
+check('3.98: estilo 11 roteia pro PesadeloAntigoAvisoFx',
+      'style == 11' in ce and 'PesadeloAntigoAvisoFx.iniciar("AVISO", limpo11)' in ce)
+check('3.98: comando aceita pesadelo2 (parser + literal + nome + particulas)',
+      'case "pesadelo2" -> 11' in rp and 'literal("pesadelo2")' in rp
+      and 'case 11 -> "PESADELO SONO"' in rp and 'case 11 -> particulasPesadelo(alvo, true)' in rp)
+check('3.98: mensagem embaixo tambem no pesadelo2',
+      'cy + 25 * k, 0)' in pa)
+
+# ---- 3.99.0: lorezone - aviso unico + musica/som com tempo maximo ----
+check('3.99: aviso so na PRIMEIRA entrada (entrouAgora + avisoVisto)',
+      'boolean entrouAgora = !prev.contains(zone.id())' in lz
+      and 'if (!data.avisoVisto(uuid, zone.id()))' in lz)
+check('3.99: som pontual toca a CADA entrada (fora do bloco do aviso)',
+      lz.count('tocarSom(player, zone)') == 1
+      and 'if (!zone.sound().isEmpty()) {\n                        tocarSom(player, zone);' in lz)
+check('3.99: musica nunca eterna (limite vira silencio ate sair)',
+      'MUSIC_MAX_PADRAO_SEG = 60' in lz
+      and 'MUSIC.put(uuid, new MusicState(inside.id(), st.startedMs(), true))' in lz)
+check('3.99: /lorezone avisos reset <jogador> (admin reexibe avisos)',
+      'literal("avisos")' in lzcmd and 'resetAvisos(' in lz)
+check('3.99: mensagem do comando explica o TEMPO MAXIMO',
+      'tempo maximo; nao fica em loop eterno' in lzcmd)
+
+# ---- 3.99.0 (cliente): musica custom TAMBEM tem tempo maximo ----
+mcm = rd(C + '/MusicaCustom.java')
+lmp = rd(R + '/LorezoneMusicPayload.java')
+qry = rd(R + '/MusicFileQueryPayload.java')
+cph = rd(C + '/ClientPayloadHandler.java')
+check('3.99: payload de musica carrega o TEMPO MAXIMO (URL e arquivo)',
+      'int maxSeg' in lmp and 'ByteBufCodecs.VAR_INT, LorezoneMusicPayload::maxSeg' in lmp
+      and 'int maxSeg' in qry and 'ByteBufCodecs.VAR_INT, MusicFileQueryPayload::maxSeg' in qry)
+check('3.99: cliente para a musica custom sozinho (vigia do prazo)',
+      'private static volatile long limiteMs' in mcm and 'armarVigia()' in mcm
+      and 'MAX_PADRAO_SEG = 600' in mcm and 'limiteMs = 0L' in mcm)
+check('3.99: handlers definem o limite ao tocar/baixar',
+      'MusicaCustom.definirLimite(payload.maxSeg())' in cph
+      and cph.count('definirLimite(payload.maxSeg())') == 2)
+check('3.99: servidor passa o maxSeg (arquivo e URL)',
+      'MusicSync.pedir(player, nome, maxSeg)' in lz
+      and 'new LorezoneMusicPayload(true, inside.music(), maxSeg)' in lz)
+
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
-

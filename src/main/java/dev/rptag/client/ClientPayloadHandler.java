@@ -87,6 +87,8 @@ public final class ClientPayloadHandler {
             final IPayloadContext context) {
         context.enqueueWork(() -> {
             if (payload.tocar()) {
+                // (3.99.0) a musica tem TEMPO MAXIMO (nunca fica eterna)
+                MusicaCustom.definirLimite(payload.maxSeg());
                 MusicaCustom.tocar(payload.nome());
             } else {
                 MusicaCustom.parar();
@@ -106,6 +108,8 @@ public final class ClientPayloadHandler {
     public static void handleMusicQuery(final MusicFileQueryPayload payload,
             final IPayloadContext context) {
         context.enqueueWork(() -> {
+            // (3.99.0) o prazo comeca a contar JA (inclui o download)
+            MusicaCustom.definirLimite(payload.maxSeg());
             boolean tem = false;
             try {
                 java.nio.file.Path p = MusicaCustom.pasta().resolve(payload.nome());

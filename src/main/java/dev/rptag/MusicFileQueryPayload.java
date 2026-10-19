@@ -14,10 +14,12 @@ import net.minecraft.resources.ResourceLocation;
  * com {@link MusicFileAnswerPayload}: se ja tem, toca na hora; se nao tem, o
  * servidor manda os bytes em pedaços ({@link MusicFileChunkPayload}).
  *
- * @param nome nome do ARQUIVO com extensao (ex.: "musica-x.ogg")
- * @param size tamanho esperado em bytes
+ * @param nome   nome do ARQUIVO com extensao (ex.: "musica-x.ogg")
+ * @param size   tamanho esperado em bytes
+ * @param maxSeg (3.99.0) tempo MAXIMO de reproducao em segundos (0 = padrao)
  */
-public record MusicFileQueryPayload(String nome, long size) implements CustomPacketPayload {
+public record MusicFileQueryPayload(String nome, long size, int maxSeg)
+        implements CustomPacketPayload {
 
     public static final Type<MusicFileQueryPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "music_query"));
@@ -26,6 +28,7 @@ public record MusicFileQueryPayload(String nome, long size) implements CustomPac
             StreamCodec.composite(
                     ByteBufCodecs.STRING_UTF8, MusicFileQueryPayload::nome,
                     ByteBufCodecs.VAR_LONG, MusicFileQueryPayload::size,
+                    ByteBufCodecs.VAR_INT, MusicFileQueryPayload::maxSeg,
                     MusicFileQueryPayload::new);
 
     @Override

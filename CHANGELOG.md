@@ -2,6 +2,337 @@
 
 
 
+## 3.99.0 — LOREZONE: aviso ÚNICO + música/som com TEMPO MÁXIMO 🔁 (2026-10-19)
+
+O problema: entrando e saindo da lorezone, **toda vez** aparecia o aviso e a
+música voltava a tocar sem fim. Agora:
+
+### 📖 Aviso: UMA VEZ POR JOGADOR, PARA SEMPRE
+- Entrou a primeira vez → viu o aviso → **nunca mais** (nem saindo/voltando,
+  nem relogando, nem reiniciando o servidor)
+- Fica gravado no mundo (`AvisosVistos` no `rptag_lorezones.dat`)
+- Admin pode liberar de novo: `/lorezone avisos reset <jogador>`
+
+### 🔊 Som: toca a CADA entrada — mas com LIMITE
+- O som pontual da zona toca toda vez que o jogador entra
+- Para sozinho em **30 s** (nunca vira ambiência eterna), e também ao sair
+
+### 🎵 Música: TEMPO MÁXIMO sempre (nem na primeira vez é infinita)
+- Toca ao entrar e **para no tempo máximo** — não recomeça enquanto o jogador
+  estiver dentro
+- O número do `/lorezone musica <id> intervalo <seg> <som>` agora é o
+  **tempo máximo** de reprodução (10–600 s)
+- `/lorezone musica <id> 1x <som>` = toca ao entrar, limite de 60 s
+- **NOVO** `/lorezone musica <id> unica <som>` = toca **só na primeira entrada
+  da vida** daquele jogador (e com limite de 60 s)
+- Músicas custom (`@arquivo`) e por link também recebem o limite: o servidor
+  manda o `maxSeg` no pacote e o **cliente para sozinho** (vigia de prazo no
+  `MusicaCustom`, teto de segurança de 10 min) — mesmo se o STOP se perder
+
+### 🧪 Verificação
+- Simulação da máquina de estados (3 cenários) em
+  `verificacao/simula_lorezone.py`: aviso 1x, som/silêncio por limite,
+  música parando no tempo máximo e voltando só na próxima entrada
+
+## 3.98.0 — AS DUAS OPÇÕES DE PESADELO 😴😱 (2026-10-19)
+
+Agora existem **dois estilos de pesadelo** — escolha o que combinar com a cena:
+
+| Comando | Estilo | Modelo | O que é |
+|---|---|---|---|
+| `/rp admin avisar @a pesadelo <msg>` | 1 | **"Seguido"** | found-footage: figura pálida se aproximando em cortes |
+| `/rp admin avisar @a pesadelo2 <msg>` | 11 | **"Sono Sem Descanso"** | o modelo ANTIGO (3.96.4): túnel que respira, tentáculos com garras, 16 olhos que seguem o título, olho gigante, estática |
+
+- 🧩 Classe nova `PesadeloAntigoAvisoFx` (camada `rptag:aviso_pesadelo2`)
+- 📐 O antigo veio do 3.96.4 **já com a mensagem embaixo** (`cy + 25k`) — padrão mantido
+- 🌑 Ambos continuam com a **Escuridão de 5s** (susto extra)
+- ⌨️ Também funciona no `/lorezone ... aviso pesadelo2 ...` (mapa + clamp até 11)
+- 📖 Ajuda do `/rp` lista `pesadelo, pesadelo2, runico, ...`
+
+## 3.97.0 — 8 FX CINEMATOGRÁFICOS: inferno, gelo, rúnico + pesadelo novo 🎬 (2026-10-19)
+
+Arquivos do user integrados (catbox 0ncp46/qbupf3/xe44nh/oj68ax/nb9qgd),
+adaptados ao padrão do mod: **título "AVISO" grande + mensagem EMBAIXO**
+(mesma linha `cy + 25k` dos outros FX).
+
+| Estilo | FX | O que tem |
+|---|---|---|
+| 1 😴 pesadelo | **"Seguido"** (found-footage) | tela quase apaga, moldura vermelha tremendo, **figura pálida que se aproxima em cortes**, mensagem digitada, coração acelerando + passos + olhar do Enderman |
+| 2 🔮 rúnico | **"Tradução Arcana"** | círculo de invocação em perspectiva (3 anéis + octagrama + 16 runas), pilar de luz, chuva rúnica, texto em língua encantada que se traduz |
+| 5 🔥 inferno | **"Fornalha"** | muralha de fogo, redemoinho, meteoros, ~100 brasas, fumaça, texto de metal derretido |
+| 6 ❄️ gelo | **"Geada Eterna"** | tela congelando em dendritos, trinca de vidro, cristais, floco geométrico, nevasca, texto congelando |
+
+- 🧩 Nova classe compartilhada `AvisoFxUtil` (Buf/vinheta/anel/brilho/tocar)
+- 🔊 2/5/6 agora têm **trilha própria no cliente** (não tocam mais o som do servidor — sem áudio duplicado)
+- 🌀 partículas no servidor: `particulasRunico` (ENCHANT+WITCH+anel END_ROD), `particulasInferno` (tornado de chamas), `particulasGelo` (nevasca+estilhaços)
+- ⚠️ O 4º arquivo enviado (rotulado "inferno") é na verdade um **PesadeloAvisoFx "Seguido"** — foi aplicado como o **novo pesadelo** (substitui o "Sono Sem Descanso")
+- 🌑 Escuridão 5s do pesadelo continua LIGADA (susto extra pedido no 3.96.3)
+
+## 3.96.4 — MENSAGEM NA MESMA LINHA NOS 5 FX (correção de verdade) 📐 (2026-10-19)
+
+- 🎯 **Achei o defeito real**: a mensagem estava embaixo em todos, mas em
+  **linhas diferentes** (divino 72px, demoniaco 81px, sangue 47px,
+  pesadelo 30px, void 73px abaixo do título) — daí a sensação de
+  "desconexo" entre os estilos
+- ✅ **Agora os 5 usam a MESMA linha**: `cy + 25 * k` (mesma posição
+  relativa ao centro da tela em todos os FX)
+- 🕳️ `void`: reflexo invertido puxado de 16S → 15S pra abrir espaço,
+  mensagem entra logo abaixo do reflexo
+- 🔍 **Verificação visual** em 1080p gerada: `verificacao/avisos_verificacao_1080p.png`
+  (5 painéis com as linhas medidas) + conferência no **bytecode** do jar
+  (constante `25.0f` presente nas 5 classes)
+- 🐞 **BUG DO PRÓPRIO check.py corrigido**: as seções anexadas desde a
+  3.95 estavam DEPOIS do `print` do resumo e **nunca executavam** — o
+  placar era congelado em 259. Movidas pra antes do resumo: agora
+  **273 checks rodando de verdade**
+
+## 3.96.3 — SUSTO EXTRA no pesadelo: ESCURIDÃO 5s 🌑 (2026-10-19)
+
+- 😴 `pesadelo` agora aplica **Escuridão por 5 segundos** (efeito real:
+  o player fica sem ver nada ao redor enquanto o aviso roda) — a pedido
+  do user, **para teste**
+- 🔧 Fácil de reverter: é o parâmetro `escuridao` de
+  `particulasPesadelo(alvo, true)` (voltar para `false` desliga)
+- ⚠️ O user avisou que **prefere o modelo antigo** do pesadelo (véu +
+  coração do Warden) — se o teste não agradar, o pesadelo volta ao
+  estilo antigo no 3.96.4
+
+## 3.96.2 — PADRÃO ÚNICO: MENSAGEM EMBAIXO DO AVISO ⬇️ (2026-10-19)
+
+- 📏 **Os 5 FX agora seguem EXATAMENTE o mesmo padrão** (igual divino e
+  demoniaco): título **"AVISO" grande** + **mensagem do comando logo
+  abaixo** (ou nada, se não digitar mensagem)
+- 🕳️ `void`: a mensagem subiu de muito abaixo do reflexo para **logo
+  abaixo dele**, na mesma faixa visual dos outros FX
+- 🩸 `sangue` e 😴 `pesadelo`: já estavam embaixo no 3.96.1 — **se ainda
+  viu mensagem em cima, o jar antigo (3.96.0) ainda estava na pasta
+  `mods` do cliente!** (o print do void mostrava exatamente o desenho
+  antigo)
+
+## 3.96.1 — MENSAGEM EMBAIXO DO AVISO ⬇️ (2026-10-19)
+
+- 🐞 **Correção reportada com print**: em `sangue` (e também em `void` e
+  `pesadelo`, que tinham o mesmo defeito nos protótipos) a **mensagem
+  aparecia EM CIMA do título "AVISO"**
+- ⬇️ Agora a mensagem fica **EMBAIXO do AVISO**, igual ao `divino` e ao
+  `demoniaco`:
+  - `sangue` e `pesadelo`: logo abaixo do título
+  - `void`: abaixo também do **reflexo invertido** do título (para não
+    sobrepor o espelho)
+
+## 3.96.0 — QUEDA SEM FUNDO + SONO SEM DESCANSO 🕳️😴 (2026-10-19)
+
+- 🕳️ **`void` ganhou o FX "Queda Sem Fundo"** (arquivo do autor, visual
+  idêntico):
+  - 🌌 Onda de choque lavanda abre a tela e o centro vira um
+    **BURACO NEGRO com anel de acreção inclinado**
+  - 🌀 **Túnel infinito de anéis ondulantes** (você CAI pra dentro!)
+  - ⭐ **Estrelas esticadas em listras** sugadas pro centro
+  - 🖤 **Estilhaços da realidade** à deriva rumo ao buraco
+  - 🪞 Título em **órbita lenta com aberração cromática** + REFLEXO
+    invertido embaixo
+  - 🌍 No mundo: **portais sendo sugados** ao redor do alvo
+- 😴 **`pesadelo` ganhou o FX "Sono Sem Descanso"** (arquivo do autor):
+  - 🫁 A visão **fecha e abre como uma respiração** (túnel que respira)
+  - 🖐️ **Tentáculos/mãos de sombra** rastejam das bordas COM GARRAS
+  - 👁️ **16 OLHOS** abrem em tempos diferentes, piscam e **SEGUIEM o
+    título** (e um olho GIGANTE vigia por cima!)
+  - 📺 **Chuvisco de estática** (barras que piscam)
+  - 🎼 Título trêmulo e torto com **visão dupla** + falhas de sumiço
+  - 🔊 **Caixinha de música desafinada + coração lento + grito distante**
+  - 🌍 No mundo: sculk + tinta de lula + fumaça rasteira
+- 🔊 Agora **5 estilos têm FX com trilha própria** (pesadelo, divino,
+  void, sangue, demoniaco); sons no servidor só em morte/inferno/gelo +
+  clássicos
+- ℹ️ A Escuridão opcional do pesadelo (afetaria o gameplay) ficou
+  DESLIGADA no comando
+
+## 3.95.0 — SANGRIA + SEM LEGENDA + SEM ESTILO NOVO 🩸 (2026-10-19)
+
+- 🩸 **`sangue` ganhou o FX "Sangria"** (arquivo do autor, visual idêntico):
+  - 💥 **IMPACTO em 0,15s**: o sangue espirra do centro (gotas esticadas
+    que escorrem pela tela)
+  - 🩹 **Crosta pingando do teto**: ~22 filetes com cabeça de gota,
+    brilho e gravidade (com som de pingo!)
+  - 🌊 **Poça de sangue** sobe do rodapé com ondas e drena no fim
+  - 🧬 **Veias/capilares** crescem das 4 bordas, pulsando (vinheta viva)
+  - 📢 O texto **bate na tela, treme e PINGA**: cada letra solta filetes!
+  - 🌍 **No mundo**: espirro de bloco de redstone + poeira vermelha caindo
+- 🕊️ **`divino` AGORA É O FX CELESTIAL** (pilar de luz, asas, hexagrama,
+  letras caindo) — o estilo extra "ascensao" **foi removido** (sem estilos
+  novos: melhorando os que temos!)
+- 🚫 **SEM LEGENDA FIXA embaixo** — nem "AVISO DIVINO", nem "CHAMADO DO
+  ABISMO": embaixo só aparece **se você digitar uma mensagem** no comando
+- 🔊 Sons no servidor só onde ainda não há FX (divino/sangue têm trilha
+  própria no cliente agora); partículas de mundo server-side
+
+## 3.94.0 — FIDELIDADE TOTAL AOS PROTÓTIPOS 🎯 (2026-10-19)
+
+- 🐞 **CORREÇÃO de fidelidade**: os FX `ascensao` e `demoniaco` agora rodam
+  **exatamente como os arquivos originais** enviados pelo autor do mod:
+  - O **título grande fixo é "AVISO"** (cai/sobe letra a letra, do tamanho
+    do protótipo) — antes eu estava colocando a mensagem no lugar do título
+    e ainda encolhendo ela (auto-ajuste removido!);
+  - A **mensagem configurável do comando** agora vai no **subtítulo**, na
+    posição exata em que ela fica no protótipo (ela se ajusta sozinha, como
+    sempre foi no modelo);
+  - Código de render **byte a byte igual ao protótipo** (só package/registro
+    adaptados) — comparação `diff` limpa contra os arquivos originais.
+- 🧪 check.py reescrito para auditar a fidelidade (escala fixa `k·1.9`,
+  título nunca encolhe, chamada `iniciar("AVISO", mensagem)`) → **259/0**.
+
+## 3.93.0 — DEMONÍACO = CHAMADO DO ABISMO 😈 (2026-10-19)
+
+- O estilo `demoniaco` agora é o **FX cinematográfico completo** (com a
+  **mensagem que você quiser**, auto-ajustável):
+  - 🫀 A tela escurece em **vinho e PULSA no ritmo de um coração** (som e
+    visual sincronizados!)
+  - 🦷 **DENTES/GARRAS negros** fecham das bordas, como mandíbulas
+  - 🌋 **Fissuras de lava** racham a tela a partir do centro
+  - ⬡ **Pentagrama invertido rúnico girando em brasa** coroado por
+    **2 chifres incandescentes**
+  - 👁️ Um **OLHO DE FENDA** se abre sob o título
+  - 🩸 O texto **sobe das trevas**, treme e **glitcha** com sombras
+    vermelha/laranja
+- 🔊 **Trilha própria**: crescendo do dragão + batidas sincronizadas
+- 🌍 **Partículas no mundo**: **PENTAGRAMA de fogo de alma** desenhado no
+  chão + círculo de chamas + coluna de fumaça + respingos de lava!
+- Funciona em `/rp admin avisar @a demoniaco <texto>` e `/lorezone
+  aviso <id> demoniaco <seg> <texto>`
+
+## 3.92.0 — ASCENSÃO CELESTIAL 🕊️ (2026-10-19)
+
+- **NOVO ESTILO: `ascensao`** — o FX cinematográfico completo, com a
+  **mensagem que VOCÊ quiser** (ela cai letra por letra, com auto-ajuste
+  pra nunca vazar da tela!):
+  - ⚡ **Clarão de abertura** + vinheta escura
+  - 🏛️ **Pilar de luz descendo do céu**
+  - ⭕ **Halo rúnico**: 3 anéis + tiques + **hexagrama girando**
+  - 🪽 **ASAS DE LUZ** (2×9 penas) que se abrem e batem devagar
+  - ✨ Faíscas em estrela subindo o tempo todo
+  - 🔔 **Trilha própria**: beacon + acorde de 5 sinos + dissolução
+  - 🌍 **Partículas no mundo**: coroa de varetas END que se expande e
+    sobe + espiral ao redor de quem recebe!
+- Funciona em `/rp admin avisar @a ascensao <texto>` **e** `/lorezone
+  aviso <id> ascensao <seg> <texto>` — **12 estilos no total!**
+- O divino (sol + orbes) que você amou **continua igual** 😄
+
+## 3.91.0 — Orbes de energia + Sol Sagrado ✨🔥😈 (2026-10-19)
+
+- 🌀 **ORBES DE ENERGIA ORBITANDO** (a assinatura dos rituais de
+  despertar estilo Tensura, feita com técnica própria): 6 orbes girando
+  ao redor do texto no **divino** (dourados), **inferno** (brasas) e
+  **demoníaco** (sangue)
+- ❌ **Feixes girando REMOVIDOS** do inferno e do demoníaco — agora só o
+  divino tem (como pedido!)
+- ⭕ **FIM DEFINITIVO dos anéis "oval de pontinhos"**: anéis agora são
+  desenhados por varredura angular — arco liso perfeito em qualquer
+  proporção
+- 😈 **demoníaco = CÍRCULO DE INVOCAÇÃO REDONDO** (centrado na tela,
+  perfeitamente circular) com 3 anéis + 12 runas radiais + aura negra +
+  veias + orbes de sangue
+- ✨ **divino = SOL SAGRADO**: disco radiante com degradê, anel fino e 8
+  raios afilados (4 longos + 4 curtos) no lugar da "coroa" — icônico,
+  limpo, bonito de se ver; o brilho da tela agora **respira** suavinho
+
+## 3.90.0 — Refinamento geral dos avisos 🔧 (2026-10-19)
+
+- ⭕ **FIM do anel oval de pontinhos**: os anéis agora são **linhas
+  contínuas e lisas** (2px) — no demoníaco, no divino e no inferno
+- 😈 **demoniaco virou AURA NEGRA**: brilho radial vermelho-escuro +
+  **leque de raios negros girando** + veias + **círculo macabro duplo e
+  liso** em volta do texto + som do **Wither em camadas** (invocação +
+  gemido)
+- ✨ **coroa de anjos redesenhada**: glow suave + anel núcleo brilhante +
+  acento interno — halo de verdade, sem "monte de pixels"
+- 🔥 **círculo de fogo do inferno redesenhado** (mesma técnica, paleta de
+  brasa) + **SOM NOVO PRÓPRIO**: riser sombrio com boom grave, rumble e
+  estalos de fogo (~9s) *(o link do catbox enviado deu 404 — quando
+  reenviar o áudio, eu corto a parte boa e troco a faixa!)*
+- 🩸 **sangue BIZARRO**: um **CORAÇÃO GIGANTE translúcido batendo** atrás
+  do texto (pulsando junto com a batida do Warden) + **veias rastejando**
+  dos cantos + gotas
+- 🌌 **void cósmico** (temática espacial estilo Tensura): **nebulosa**
+  roxa/azul com profundidade + anel cósmico liso + estrelas
+
+## 3.89.0 — Inferno = AURA ARDENTE 🔥 (2026-10-19)
+
+- O inferno agora é o **par maligno do divino**: mesma técnica bonita,
+  paleta de fogo
+- ✅ **Brilho radial ardente** — degradê quente (laranja → brasa) nascendo
+  do centro da tela
+- ✅ **Leque de fogo girando** — 14 raios afilados de brasa girando NO
+  SENTIDO CONTRÁRIO do divino (os dois juntos formam um sol de dois
+  hemisférios: luz e fogo)
+- ✅ **Halo triplo de brasa** — 3 anéis de fogo sobre o texto
+- ❌ Fora a muralha de dentes de fogo e os pontinhos de brasa
+- Som mantido (grito de ghast + fogo rugindo)
+
+## 3.88.0 — Divino = AURA SAGRADA ✨ (2026-10-19)
+
+- ❌ Fora as **faixas verticais** e os **pontinhos** (pedido do dono!)
+- ✅ **Brilho radial contínuo**: degradê quente dourado nascendo do centro
+  da tela e morrendo suavemente nas bordas (26 camadas acumuladas)
+- ✅ **Leque de luz celestial**: 14 raios afilados que **giram devagar**
+  em volta do texto, cada um esvaindo do centro pra fora (estilo aura
+  sagrada / mandala — a qualidade das animações dos mods famosos)
+- ✅ **Halo triplo**: 3 anéis dourados concêntricos sobre o texto, do mais
+  suave ao mais brilhante
+- Som celestial (coro de anjos + sino) mantido — o texto dourado agora
+  flutua numa aura de verdade
+
+## 3.87.0 — Terror refinado + 😈 DEMONÍACO (2026-10-19)
+
+- 🔥 **inferno** ficou BIZARRO: a tela **respira**, uma **muralha de fogo**
+  cresce no rodapé e **brasas sobem** pela tela; o aviso vem com **grito de
+  ghast** torcido + fogo rugindo
+- ✨ **divino** ficou CELESTIAL/ANGELICAL: **halo duplo dourado** sobre o
+  texto, raios de luz brancos, **faíscas que sobem** (ascensão) e o **coro
+  de anjos** (allay) + sino ressoando agudo
+- 🌌 **void** ganhou o som mais FUNDO: portal em pitch 0.3 (grave demais)
+  + **gemido sepulcral de wither** — o abismo responde
+- 🩸 **sangue** agora PULSA: véu e gotas batem em **ritmo cardíaco duplo**
+  (bate forte, bate fraco) com o **pulso mais profundo** (coração do Warden
+  em pitch 0.4, mais alto)
+- 😈 **NOVO: demoniaco** — o mais macabro do mod: véu quase preto que
+  **respira**, **veias de sangue** crescendo dos 4 cantos da tela, um
+  **anel macabro** fechando em volta do texto e as **letras vermelhas
+  ondulando** (corrompidas). Som: **invocação de wither** afinada pro fundo
+- Funciona em `/rp admin avisar` E `/lorezone aviso` — 11 estilos no total!
+
+## 3.86.0 — 10 estilos de aviso + Coração 3D bonito 🎨 (2026-10-19)
+
+- **6 estilos de aviso NOVOS** (além dos 4 existentes — agora são 10!):
+  - ⚰️ **morte** — as letras retas de sangue do ritual canônico, agora
+    também no comando (com som de âncora de respawn)
+  - 🔥 **inferno** — brasas flutuando na tela + letras laranja-fogo
+  - ❄️ **gelo** — véu glacial com cristais + letras brancas-gelo
+  - ✨ **divino** — feixes de luz dourada descendo + sino de igreja
+  - 🌌 **void** — céu estrelado do End + letras lilás
+  - 🩸 **sangue** — gotas escorrendo do topo da tela + pulso do Warden
+- Funcionam em `/rp admin avisar` **E** em `/lorezone aviso` (todos os 10!)
+- **Coração Canônico REDESENHADO**: máscara pixel-art de verdade (dois
+  lóbulos com vale + ponta em V), extrudado com profundidade, gradiente
+  de cor (rosa claro no topo → vinho na ponta), paredes escuras de
+  volume e reflexo brilhante no lóbulo — mais um balanço sutil no giro.
+  Adeus pirâmide listrada! 🫀
+
+## 3.85.0 — Avisos cinematográficos na LORE ZONE 🎬 (2026-10-18)
+
+- **`/lorezone aviso <id> <estilo> <segundos> <texto>`** — a zona agora
+  pode disparar um **AVISO de tela** quando alguém entra, com os mesmos
+  estilos do `/rp admin avisar`: **classico** (faixa, aceita códigos &),
+  **pesadelo** (véu preto + sangue), **runico** (véu arcano + runas),
+  **real** (azul-noite + dourado) e **morte** (letras retas de cima).
+- O aviso **substitui o título clássico** da zona (o som continua!) —
+  `/lorezone aviso <id> off` volta ao `✦ título ✦` de sempre.
+- Quem **já está dentro** da zona vê o aviso novo **na hora** (teste
+  imediato, sem precisar sair e voltar).
+- Duração de 1 a 60 segundos por zona; o `/lorezone listar` marca as
+  zonas com aviso: `• id [...] — título [aviso:pesadelo]`.
+- Exemplo: `/lorezone aviso floresta pesadelo 8 &4ALGO TE OBSERVA ENTRE
+  AS ÁRVORES`
+
 ## 3.84.0 — O CORAÇÃO CANÔNICO 3D 🫀 (2026-10-18)
 
 - **Item novo**: `Coração da Vida Canônica` — só admin obtém

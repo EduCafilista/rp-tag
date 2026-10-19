@@ -29,6 +29,22 @@ public final class ClientGuiLayers {
 
     @SubscribeEvent
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        // (3.92.0) ASCENSÃO: camada do FX cinematográfico (pilar de luz,
+        // asas, hexagrama, letras caindo) — a mensagem vem do comando
+        DivinoAvisoFx.registrar(event);
+        // (3.93.0) CHAMADO DO ABISMO: camada do FX do demoniaco (mandibulas,
+        // fissuras de lava, pentagrama, chifres, olho) — mensagem do comando
+        DemoniacoAvisoFx.registrar(event);
+        SangueAvisoFx.registrar(event);
+        VoidAvisoFx.registrar(event);
+        PesadeloAvisoFx.registrar(event);
+        // (3.97.0) FORNALHA (inferno), GEADA ETERNA (gelo), TRADUCAO ARCANA (runico)
+        InfernoAvisoFx.registrar(event);
+        GeloAvisoFx.registrar(event);
+        RunicoAvisoFx.registrar(event);
+        // (3.98.0) estilo 11 = PESADELO2 "Sono Sem Descanso" (o modelo
+        // antigo, do 3.96.4, mantido como opcao ao lado do "Seguido")
+        PesadeloAntigoAvisoFx.registrar(event);
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "medo_veu"),
                 (g, delta) -> ClientEffects.desenharMedoCamada(g));

@@ -28,8 +28,12 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  *   <li>{@code /lorezone criar <id> <raio> <titulo>} — cria na sua posicao</li>
  *   <li>{@code /lorezone texto <id> <texto>} — lore exibida no subtitulo/chat</li>
  *   <li>{@code /lorezone som <id> <som>} — ex.: minecraft:ambient.cave</li>
- *   <li>{@code /lorezone musica <id> <som> [intervalo]} — MUSICA DE FUNDO
+ *   <li>{@code /lorezone musica <id> <som> [intervalo]} — MUSICA DE FUNDO (toca ao ENTRAR e para no TEMPO MAXIMO)
  *       em loop enquanto o jogador esta na zona (para ao sair)</li>
+ *   <li>{@code /lorezone aviso <id> <classico|pesadelo|runico|real|morte|inferno|gelo|divino|void|sangue>
+ *       <segundos> <texto>} — (3.85.0) AVISO cinematografico ao ENTRAR na
+ *       zona (os mesmos estilos do /rp admin avisar); {@code off} volta ao
+ *       titulo classico</li>
  *   <li>{@code /lorezone remover <id>} — apaga a zona</li>
  *   <li>{@code /lorezone listar} — lista as zonas</li>
  * </ul>
@@ -148,7 +152,8 @@ public final class LoreZoneCommands {
             }
         }
         LoreZones.Zone nova = new LoreZones.Zone(zone.id(), zone.dimension(), zone.center(),
-                zone.radius(), zone.title(), zone.text(), zone.sound(), resolvido, intervalo);
+                zone.radius(), zone.title(), zone.text(), zone.sound(), resolvido, intervalo,
+                zone.aviso(), zone.avisoEstilo(), zone.avisoSeg());
         data.put(nova);
         String msg;
         if (resolvido.startsWith("@")) {
@@ -158,13 +163,22 @@ public final class LoreZoneCommands {
         } else if (resolvido.startsWith("http")) {
             msg = "Musica por LINK da zona '" + id + "': " + resolvido
                     + " — os players baixam o audio automaticamente (cache local) e tocam em LOOP.";
+        } else if (intervalo == -2) {
+            // (3.99.0) MUSICA UNICA: so na primeira entrada da vida
+            msg = "Musica UNICA da zona '" + id + "' definida: " + resolvido
+                    + " — toca so na PRIMEIRA entrada de cada jogador (e para em no maximo "
+                    + LoreZones.MUSIC_MAX_PADRAO_SEG + "s). Presets: /lorezone musicas";
         } else if (intervalo == -1) {
-            // (3.55.0) 1x = toca uma unica vez QUANDO ENTRAR na zona
+            // (3.55.0) 1x = toca uma unica vez quando o jogador ENTRA na zona
+            // (3.99.0) e para sozinha no TEMPO MAXIMO padrao (nunca pra sempre)
             msg = "Musica da zona '" + id + "' definida: " + resolvido
-                    + " — toca 1x SÓ QUANDO ENTRAR na zona (sem loop). Presets: /lorezone musicas";
+                    + " — toca ao ENTRAR e para em no maximo " + LoreZones.MUSIC_MAX_PADRAO_SEG
+                    + "s (nunca fica pra sempre). Presets: /lorezone musicas";
         } else {
-            msg = "Musica da zona '" + id + "' definida: " + resolvido + " em LOOP de " + intervalo
-                    + "s (para ao sair). Presets: /lorezone musicas · custom: /lorezone musica " + id + " @arquivo";
+            // (3.99.0) o numero agora e o TEMPO MAXIMO de reproducao
+            msg = "Musica da zona '" + id + "' definida: " + resolvido + " — toca ao entrar e PARA em "
+                    + intervalo + "s (tempo maximo; nao fica em loop eterno). Presets: /lorezone musicas"
+                    + " · custom: /lorezone musica " + id + " @arquivo";
         }
         String dicaVol = "\u00a77 (\u00a7fvolume\u00a77: Opcoes > Musica e Sons > \u00a7fMusica\u00a77)";
         ctx.getSource().sendSuccess(() -> Component.literal(msg + dicaVol), true);
@@ -266,6 +280,103 @@ public final class LoreZoneCommands {
         }
     }
 
+    /** (3.85.0) estilos de aviso por NOME (igual /rp admin avisar). */
+    private static final java.util.Map<String, Integer> ESTILOS = java.util.Map.ofEntries(
+            java.util.Map.entry("classico", 0), java.util.Map.entry("pesadelo", 1),
+            java.util.Map.entry("runico", 2), java.util.Map.entry("real", 3),
+            java.util.Map.entry("morte", 4), java.util.Map.entry("inferno", 5),
+            java.util.Map.entry("gelo", 6), java.util.Map.entry("divino", 7),
+            java.util.Map.entry("void", 8), java.util.Map.entry("sangue", 9),
+            java.util.Map.entry("demoniaco", 10), java.util.Map.entry("pesadelo2", 11));
+
+    /** (3.85.0) nome do estilo pra exibir no /lorezone listar. */
+    private static String nomeEstilo(int e) {
+        return switch (e) {
+            case 1 -> "pesadelo";
+            case 2 -> "runico";
+            case 3 -> "real";
+            case 4 -> "morte";
+            case 5 -> "inferno";
+            case 6 -> "gelo";
+            case 7 -> "divino";
+            case 8 -> "void";
+            case 9 -> "sangue";
+            case 10 -> "demoniaco";
+            case 11 -> "pesadelo2";
+            default -> "classico";
+        };
+    }
+
+    /**
+     * (3.85.0) define o AVISO da zona: quando um jogador ENTRAR, recebe o
+     * aviso cinematografico (estilo escolhido) no lugar do titulo classico.
+     * Quem ja esta dentro ve o aviso novo NA HORA (teste imediato).
+     */
+    private static int setAviso(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            String id, String estiloNome, int segundos, String texto) {
+        var data = LoreZones.LoreZonesData.get(ctx.getSource().getServer());
+        LoreZones.Zone z = data.get(id);
+        if (z == null) {
+            ctx.getSource().sendFailure(Component.literal("Zona '" + id + "' nao existe."));
+            return 0;
+        }
+        Integer estilo = ESTILOS.get(estiloNome.toLowerCase());
+        if (estilo == null) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "\u00a7cEstilo '" + estiloNome + "' nao existe! Opcoes (TAB):"
+                            + " classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco"));
+            return 0;
+        }
+        String traduzido = RPCommands.translateAmp(texto);
+        if (estilo == 0 && traduzido.indexOf('\u00a7') < 0) {
+            traduzido = "\u00a7c" + traduzido; // classico sem cor = VERMELHO (padrao do avisar)
+        }
+        if (traduzido.length() > 160) {
+            traduzido = traduzido.substring(0, 160);
+        }
+        final String avisoFinal = traduzido;
+        final int estiloFinal = estilo;
+        final int segFinal = Math.max(1, Math.min(60, segundos));
+        LoreZones.Zone nova = new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(),
+                z.title(), z.text(), z.sound(), z.music(), z.musicInterval(),
+                avisoFinal, estiloFinal, segFinal);
+        data.put(nova);
+        String dica = estiloFinal == 0
+                ? "\u00a77 (aceita codigos & — ex. &lnegrito)"
+                : "\u00a77 (a paleta \u00e9 do estilo — c\u00f3digos & s\u00e3o ignorados)";
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "Aviso da zona '" + id + "': \u00a7e" + estiloNome.toUpperCase() + "\u00a77 por "
+                        + segFinal + "s \u2014 dispara QUANDO ALGU\u00c9M ENTRAR"
+                        + " (o t\u00edtulo cl\u00e1ssico d\u00e1 lugar ao aviso; \u00a7f/lorezone aviso " + id
+                        + " off\u00a77 volta ao t\u00edtulo). " + dica), true);
+        // quem JA ESTA dentro da zona ve o aviso novo NA HORA
+        for (ServerPlayer p : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+            if (p.level().dimension() == z.dimension()
+                    && p.position().distanceTo(z.center()) <= z.radius()) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p,
+                        new ScreenTextPayload(avisoFinal, segFinal, estiloFinal));
+            }
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (3.85.0) remove o aviso da zona (volta ao titulo classico). */
+    private static int limparAviso(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            String id) {
+        var data = LoreZones.LoreZonesData.get(ctx.getSource().getServer());
+        LoreZones.Zone z = data.get(id);
+        if (z == null) {
+            ctx.getSource().sendFailure(Component.literal("Zona '" + id + "' nao existe."));
+            return 0;
+        }
+        LoreZones.Zone nova = new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(),
+                z.title(), z.text(), z.sound(), z.music(), z.musicInterval(), "", 0, 8);
+        data.put(nova);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "Aviso da zona '" + id + "' removido \u2014 voltou ao t\u00edtulo cl\u00e1ssico \u2726"), true);
+        return Command.SINGLE_SUCCESS;
+    }
+
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         var root = Commands.literal("lorezone")
@@ -283,7 +394,7 @@ public final class LoreZoneCommands {
                                             String titulo = StringArgumentType.getString(ctx, "titulo");
                                             LoreZones.LoreZonesData.get(player.server).put(new LoreZones.Zone(
                                                     id, player.level().dimension(), player.position(),
-                                                    raio, titulo, "", "", "", 45));
+                                                    raio, titulo, "", "", "", 45, "", 0, 8));
                                             ctx.getSource().sendSuccess(() -> Component.literal(
                                                     "Zona '" + id + "' criada aqui! \u00a7eRaio " + raio
                                                             + "\u00a77 = ESFERA de " + raio + " blocos em TODAS as dire\u00e7\u00f5es"
@@ -306,8 +417,25 @@ public final class LoreZoneCommands {
                                         ctx.getSource().sendFailure(Component.literal("Zona '" + id + "' nao existe."));
                                         return 0;
                                     }
-                                    data.put(new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(), z.title(), texto, z.sound(), z.music(), z.musicInterval()));
+                                    data.put(new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(), z.title(), texto, z.sound(), z.music(), z.musicInterval(), z.aviso(), z.avisoEstilo(), z.avisoSeg()));
                                     ctx.getSource().sendSuccess(() -> Component.literal("Texto da zona '" + id + "' atualizado."), true);
+                                    return Command.SINGLE_SUCCESS;
+                                }))));
+
+        // (3.99.0) /lorezone avisos reset <jogador> — o jogador ve os avisos
+        // das zonas DE NOVO (os avisos sao unicos e ficam salvos no mundo)
+        root.then(Commands.literal("avisos")
+                .then(Commands.literal("reset")
+                        .then(Commands.argument("jogador",
+                                        net.minecraft.commands.arguments.EntityArgument.player())
+                                .executes(ctx -> {
+                                    var alvo = net.minecraft.commands.arguments.EntityArgument
+                                            .getPlayer(ctx, "jogador");
+                                    int n = LoreZones.LoreZonesData.get(ctx.getSource().getServer())
+                                            .resetAvisos(alvo.getUUID());
+                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                            "\u00a7aAvisos resetados de \u00a7f" + alvo.getGameProfile().getName()
+                                                    + "\u00a7a (" + n + " zona(s)) — ele vai ver de novo ao entrar."), true);
                                     return Command.SINGLE_SUCCESS;
                                 }))));
 
@@ -339,7 +467,7 @@ public final class LoreZoneCommands {
                                             return 0;
                                         }
                                     }
-                                    LoreZones.Zone nova = new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(), z.title(), z.text(), som, z.music(), z.musicInterval());
+                                    LoreZones.Zone nova = new LoreZones.Zone(z.id(), z.dimension(), z.center(), z.radius(), z.title(), z.text(), som, z.music(), z.musicInterval(), z.aviso(), z.avisoEstilo(), z.avisoSeg());
                                     data.put(nova);
                                     String dica = som.isEmpty()
                                             ? "\u00a77 (som removido da zona)"
@@ -377,6 +505,17 @@ public final class LoreZoneCommands {
                                                             StringArgumentType.getString(ctx, "som"),
                                                             IntegerArgumentType.getInteger(ctx, "segundos"));
                                                 }))))
+                        // (3.99.0) /lorezone musica <id> unica <som> — toca SO
+                        // na PRIMEIRA entrada do jogador (para sempre) e com
+                        // limite de tempo (nunca fica tocando eternamente)
+                        .then(Commands.literal("unica")
+                                .then(Commands.argument("som", StringArgumentType.greedyString()).suggests(SONS)
+                                        .executes(ctx -> {
+                                            return setMusica(ctx,
+                                                    StringArgumentType.getString(ctx, "id"),
+                                                    StringArgumentType.getString(ctx, "som"),
+                                                    -2);
+                                        })))
                         // (3.55.0) /lorezone musica <id> 1x <som> — toca UMA vez
                         // quando o jogador ENTRA na zona (sem loop)
                         .then(Commands.literal("1x")
@@ -413,6 +552,26 @@ public final class LoreZoneCommands {
             return Command.SINGLE_SUCCESS;
         }));
 
+        // (3.85.0) /lorezone aviso <id> <classico|pesadelo|runico|real|morte>
+        //          <segundos> <texto>  —  /lorezone aviso <id> off
+        // AVISO cinematografico que dispara QUANDO O JOGADOR ENTRA na zona
+        // (os mesmos estilos do /rp admin avisar), no lugar do titulo classico.
+        root.then(Commands.literal("aviso")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(ZONE_IDS)
+                        .then(Commands.literal("off")
+                                .executes(ctx -> limparAviso(ctx,
+                                        StringArgumentType.getString(ctx, "id"))))
+                        .then(Commands.argument("estilo", StringArgumentType.word())
+                                .suggests((c, b) -> SharedSuggestionProvider.suggest(
+                                        ESTILOS.keySet(), b))
+                                .then(Commands.argument("segundos", IntegerArgumentType.integer(1, 60))
+                                        .then(Commands.argument("texto", StringArgumentType.greedyString())
+                                                .executes(ctx -> setAviso(ctx,
+                                                        StringArgumentType.getString(ctx, "id"),
+                                                        StringArgumentType.getString(ctx, "estilo"),
+                                                        IntegerArgumentType.getInteger(ctx, "segundos"),
+                                                        StringArgumentType.getString(ctx, "texto"))))))));
+
         // /lorezone remover <id>
         root.then(Commands.literal("remover")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(ZONE_IDS)
@@ -437,9 +596,12 @@ public final class LoreZoneCommands {
             }
             ctx.getSource().sendSuccess(() -> Component.literal("Lore zones (" + all.size() + "):").withStyle(ChatFormatting.GOLD), false);
             for (LoreZones.Zone z : all) {
+                String marcaAviso = z.aviso() == null || z.aviso().isEmpty()
+                        ? ""
+                        : " \u00a76[aviso:" + nomeEstilo(z.avisoEstilo()) + "]";
                 ctx.getSource().sendSuccess(() -> Component.literal(
                         "  • " + z.id() + " [" + z.dimension().location() + "] r=" + (int) z.radius()
-                                + " — " + z.title()).withStyle(ChatFormatting.GRAY), false);
+                                + " — " + z.title() + marcaAviso).withStyle(ChatFormatting.GRAY), false);
             }
             return Command.SINGLE_SUCCESS;
         }));

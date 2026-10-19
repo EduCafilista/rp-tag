@@ -28,8 +28,9 @@ public final class RPCommands {
     private RPCommands() {
     }
 
-    /** (3.44.0) Traduz codigos & (0-9, a-f, k-o, r; && = &) p/ section codes. */
-    private static String translateAmp(String in) {
+    /** (3.44.0) Traduz codigos & (0-9, a-f, k-o, r; && = &) p/ section codes.
+     *  (3.85.0) package-private: LoreZoneCommands usa no /lorezone aviso. */
+    static String translateAmp(String in) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < in.length(); i++) {
             char c = in.charAt(i);
@@ -69,8 +70,11 @@ public final class RPCommands {
     }
 
     /** (3.64.0) Mostra o texto GRANDE na tela dos alvos. ESTILOS:
-     * 0 classico (faixa, cores &), 1 pesadelo (veu preto + sangue),
-     * 2 runico (veu arcano + runas), 3 real (azul-noite + ouro).
+     * 0 classico (caixa de fala, cores &), 1 pesadelo (veu preto + sangue),
+     * 2 runico (veu arcano + runas), 3 real (azul-noite + ouro),
+     * 4 morte (letras retas de sangue), 5 inferno (brasas), 6 gelo
+     * (cristais), 7 divino (feixes de luz), 8 void (estrelas),
+     * 9 sangue (gotas escorrendo). (3.86.0) +6 estilos novos.
      * Aceita VARIOS jogadores (nomes ou seletor @a — "avisar alguns players"). */
     private static void avisar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
             java.util.Collection<ServerPlayer> alvos, String estilo, String texto) {
@@ -78,6 +82,14 @@ public final class RPCommands {
             case "pesadelo" -> 1;
             case "runico" -> 2;
             case "real" -> 3;
+            case "morte" -> 4;
+            case "inferno" -> 5;
+            case "gelo" -> 6;
+            case "divino" -> 7;
+            case "void" -> 8;
+            case "sangue" -> 9;
+            case "demoniaco" -> 10;
+            case "pesadelo2" -> 11;   // (3.98.0) Sono Sem Descanso (antigo)
             default -> 0;
         };
         String traduzido = translateAmp(texto);
@@ -101,24 +113,205 @@ public final class RPCommands {
             case 1 -> "PESADELO";
             case 2 -> "RUNICO";
             case 3 -> "REAL";
+            case 4 -> "MORTE";
+            case 5 -> "INFERNO";
+            case 6 -> "GELO";
+            case 7 -> "DIVINO";
+            case 8 -> "VOID";
+            case 9 -> "SANGUE";
+            case 10 -> "DEMONIACO";
+            case 11 -> "PESADELO SONO";
             default -> "classico";
         };
     }
 
-    /** (3.64.0) som do aviso direto no alvo (assustador pede som). */
+    /** (3.93.0) PARTICULAS de mundo do DEMONIACO (server-side puro:
+     *  PENTAGRAMA de fogo de alma no chao + circulo de chamas + coluna
+     *  de fumaca + respingos de lava ao redor do jogador). Sem tocar em
+     *  nenhuma classe client! */
+    private static void particulasAbismo(ServerPlayer p) {
+        net.minecraft.server.level.ServerLevel lv = p.serverLevel();
+        double x = p.getX(), y = p.getY() + 0.1, z = p.getZ(), R = 3.2;
+        for (int i = 0; i < 5; i++) { // pentagrama (cordas i -> i+2)
+            double a0 = i * 72 * Math.PI / 180, a1 = ((i + 2) % 5) * 72 * Math.PI / 180;
+            for (int s = 0; s <= 14; s++) {
+                double u = s / 14.0;
+                double px = x + R * (Math.cos(a0) * (1 - u) + Math.cos(a1) * u);
+                double pz = z + R * (Math.sin(a0) * (1 - u) + Math.sin(a1) * u);
+                lv.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                        px, y, pz, 0, 0, 0.04, 0, 1.0);
+            }
+        }
+        for (int i = 0; i < 40; i++) { // circulo
+            double a = i * Math.PI * 2 / 40;
+            lv.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
+                    x + Math.cos(a) * R, y, z + Math.sin(a) * R, 0, 0, 0.03, 0, 1.0);
+        }
+        for (int i = 0; i < 30; i++) {
+            lv.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                    x, y + i * 0.15, z, 2, 0.4, 0.05, 0.4, 0.01);
+        }
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.LAVA,
+                x, y + 1, z, 14, 1.2, 0.3, 1.2, 0);
+    }
+
+    /** (3.95.0) PARTICULAS de mundo do DIVINO (server-side puro:
+     *  coroa de END_ROD que se expande e sobe + espiral ascendente
+     *  ao redor do jogador). Sem tocar em nenhuma classe client! */
+    private static void particulasAscensao(ServerPlayer p) {
+        net.minecraft.server.level.ServerLevel lv = p.serverLevel();
+        double x = p.getX(), y = p.getY(), z = p.getZ();
+        for (int i = 0; i < 72; i++) {
+            double a = i * Math.PI * 2 / 72;
+            lv.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+                    x + Math.cos(a) * 2.5, y + 0.1, z + Math.sin(a) * 2.5,
+                    0, Math.cos(a) * 0.08, 0.10 + (i % 3) * 0.04, Math.sin(a) * 0.08, 1.0);
+        }
+        for (int i = 0; i < 48; i++) {
+            double a = i * 0.55;
+            lv.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+                    x + Math.cos(a) * 1.2, y + i * 0.12, z + Math.sin(a) * 1.2,
+                    1, 0, 0.02, 0, 0.0);
+        }
+    }
+
+    /** (3.96.0) VOID: portais sendo sugados ao redor do alvo (server-side puro). */
+    private static void particulasVoid(ServerPlayer p) {
+        net.minecraft.server.level.ServerLevel lv = p.serverLevel();
+        double x = p.getX(), y = p.getY(), z = p.getZ();
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL,
+                x, y + 1, z, 120, 1.5, 1.5, 1.5, 0.8);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.REVERSE_PORTAL,
+                x, y + 1, z, 40, 0.6, 0.8, 0.6, 0.05);
+    }
+
+    /** (3.97.0) PESADELO "Seguido": fumaca rasteira + almas de sculk
+     *  (server-side puro). escuridao=true aplica o efeito Escuridao
+     *  por 5s (afeta gameplay) — LIGADO desde 3.96.3 (susto extra). */
+    private static void particulasPesadelo(ServerPlayer p, boolean escuridao) {
+        net.minecraft.server.level.ServerLevel lv = p.serverLevel();
+        double x = p.getX(), y = p.getY(), z = p.getZ();
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
+                x, y + 0.2, z, 40, 1.5, 0.1, 1.5, 0.01);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
+                x, y + 0.5, z, 12, 1.0, 0.6, 1.0, 0.02);
+        if (escuridao) p.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                net.minecraft.world.effect.MobEffects.DARKNESS, 100, 0, false, false));
+    }
+
+    /** (3.97.0) INFERNO "Fornalha": tornado de chamas em espiral +
+     *  respingos de lava + fumaca densa (server-safe). */
+    private static void particulasInferno(ServerPlayer p) {
+        net.minecraft.server.level.ServerLevel lv = p.serverLevel();
+        double x = p.getX(), y = p.getY(), z = p.getZ();
+        for (int i = 0; i < 60; i++) {
+            double a = i * 0.6, r = 1.5 + i * 0.04;
+            lv.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
+                    x + Math.cos(a) * r, y + 0.1 + i * 0.05,
+                    z + Math.sin(a) * r, 0, 0, 0.12, 0, 1.0);
+        }
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.LAVA,
+                x, y + 1, z, 20, 1.2, 0.3, 1.2, 0);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                x, y + 2.5, z, 25, 1.0, 0.4, 1.0, 0.02);
+    }
+
+    /** (3.97.0) GELO "Geada Eterna": nevasca + estilhacos de gelo
+     *  compactado + brilhos (server-safe; nao congela o player). */
+    private static void particulasGelo(ServerPlayer p) {
+        net.minecraft.server.level.ServerLevel lv = p.serverLevel();
+        double x = p.getX(), y = p.getY(), z = p.getZ();
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.SNOWFLAKE,
+                x, y + 1.2, z, 80, 1.5, 1.0, 1.5, 0.05);
+        lv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                        net.minecraft.core.particles.ParticleTypes.BLOCK,
+                        net.minecraft.world.level.block.Blocks.PACKED_ICE.defaultBlockState()),
+                x, y + 1.0, z, 40, 0.5, 0.6, 0.5, 0.2);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+                x, y + 1.0, z, 15, 1.0, 1.0, 1.0, 0.02);
+    }
+
+    /** (3.97.0) RUNICO "Traducao Arcana": runas de verdade (ENCHANT)
+     *  voando pro alvo + magia + anel de END_ROD no chao. */
+    private static void particulasRunico(ServerPlayer p) {
+        net.minecraft.server.level.ServerLevel lv = p.serverLevel();
+        double x = p.getX(), y = p.getY(), z = p.getZ();
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,
+                x, y + 1.5, z, 80, 1.5, 1.0, 1.5, 0.5);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.WITCH,
+                x, y + 1.0, z, 25, 0.8, 0.8, 0.8, 0.05);
+        for (int i = 0; i < 24; i++) {
+            double a = i * Math.PI * 2 / 24;
+            lv.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+                    x + Math.cos(a) * 2.5, y + 0.1, z + Math.sin(a) * 2.5, 0, 0, 0.05, 0, 1.0);
+        }
+    }
+
+    /** (3.95.0) SANGUE: espirro de sangue no alvo — bloco de redstone
+     *  explodindo + poeira vermelha caindo do ceu (server-safe). */
+    private static void particulasSangue(ServerPlayer p) {
+        net.minecraft.server.level.ServerLevel lv = p.serverLevel();
+        double x = p.getX(), y = p.getY(), z = p.getZ();
+        net.minecraft.core.particles.BlockParticleOption blk =
+                new net.minecraft.core.particles.BlockParticleOption(
+                        net.minecraft.core.particles.ParticleTypes.BLOCK,
+                        net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState());
+        net.minecraft.core.particles.BlockParticleOption fall =
+                new net.minecraft.core.particles.BlockParticleOption(
+                        net.minecraft.core.particles.ParticleTypes.FALLING_DUST,
+                        net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState());
+        lv.sendParticles(blk, x, y + 1.0, z, 60, 0.45, 0.6, 0.45, 0.25);
+        for (int i = 0; i < 24; i++)
+            lv.sendParticles(fall, x + (Math.random() - 0.5) * 2.4, y + 3.2,
+                    z + (Math.random() - 0.5) * 2.4, 1, 0, 0, 0, 0);
+    }
+
+    /** (3.64.0) som do aviso direto no alvo (assustador pede som).
+     *  (3.86.0) os 6 estilos novos ganharam som proprio. */
     private static void somAviso(ServerPlayer alvo, int style) {
         switch (style) {
-            case 1 -> alvo.level().playSound(null, alvo.blockPosition(),
-                    net.minecraft.sounds.SoundEvents.ELDER_GUARDIAN_CURSE,
-                    net.minecraft.sounds.SoundSource.HOSTILE, 0.9F, 0.7F);
-            // (3.66.0) RUNICO tem SOM PROPRIO: sino de ametista (mystico,
-            // nada a ver com a maldicao do pesadelo)
-            case 2 -> alvo.level().playSound(null, alvo.blockPosition(),
-                    net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME,
-                    net.minecraft.sounds.SoundSource.BLOCKS, 1.2F, 0.65F);
+            // (3.96.0) PESADELO: o FX do cliente tem TRILHA propria
+            // (enderman + caixinha desafinada + coracao + grito) — o
+            // servidor faz as PARTICULAS (sculk + tinta + fumaca) + o
+            // SUSTO EXTRA: Escuridao 5s (3.96.3, a pedido do user p/ testar)
+            case 1 -> particulasPesadelo(alvo, true);
+            // (3.97.0) RUNICO: o FX tem TRILHA propria (mesa de encantamento
+            // + sinos pentatonicos por runa) — o servidor so faz as PARTICULAS
+            case 2 -> particulasRunico(alvo);
             case 3 -> alvo.level().playSound(null, alvo.blockPosition(),
                     net.minecraft.sounds.SoundEvents.BEACON_ACTIVATE,
                     net.minecraft.sounds.SoundSource.BLOCKS, 0.8F, 1.0F);
+            // (3.86.0) MORTE: ancora de respawn se esvaziando (sepulcral) ·
+            // INFERNO: blaze queimando · GELO: congelamento · DIVINO: sino
+            // de igreja · VOID: portal distorcido grave · SANGUE: coração
+            // do Warden (pulso escuro)
+            case 4 -> alvo.level().playSound(null, alvo.blockPosition(),
+                    net.minecraft.sounds.SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(),
+                    net.minecraft.sounds.SoundSource.HOSTILE, 0.8F, 0.55F);
+            // (3.97.0) INFERNO: o FX tem TRILHA propria (firecharge + ghast
+            // + lava/ambiencia de fogo) — o servidor so faz as PARTICULAS
+            case 5 -> particulasInferno(alvo);
+            // (3.97.0) GELO: o FX tem TRILHA propria (quebra de vidro +
+            // sinos de gelo) — o servidor so faz as PARTICULAS
+            case 6 -> particulasGelo(alvo);
+            // (3.95.0) DIVINO: o FX do cliente tem TRILHA propria (beacon
+            // + acorde de sinos + deactivate) — o servidor so faz as
+            // PARTICULAS de mundo (coroa de END_ROD subindo)
+            case 7 -> particulasAscensao(alvo);
+            // (3.96.0) VOID: o FX do cliente tem TRILHA propria (portal
+            // do End) — o servidor so faz as PARTICULAS (portais sugados)
+            case 8 -> particulasVoid(alvo);
+            // (3.95.0) SANGUE: o FX do cliente tem TRILHA propria (slime +
+            // splash + pingos de dripstone) — o servidor so faz as
+            // PARTICULAS (espirro de bloco de redstone + poeira caindo)
+            case 9 -> particulasSangue(alvo);
+            // (3.93.0) DEMONIACO: o FX do cliente tem TRILHA propria
+            // (crescendo do dragao + batidas sincronizadas) — o servidor
+            // so faz as PARTICULAS (pentagrama de fogo de alma no chao)
+            case 10 -> particulasAbismo(alvo);
+            // (3.98.0) PESADELO2 (Sono Sem Descanso): particulas do modelo
+            // antigo (sculk + tinta) + Escuridao 5s (mesmo susto extra)
+            case 11 -> particulasPesadelo(alvo, true);
             default -> { }
         }
     }
@@ -191,7 +384,7 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, runico, real (alvos: nomes ou @a)\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco (alvos: nomes ou @a)\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
                     + "/rp admin bolha <jogador> on|off \u00a77\u2014 modo balao de outro\u00a7c\n"
@@ -294,8 +487,9 @@ public final class RPCommands {
                                             medar(ctx, alvo, seg);
                                             return Command.SINGLE_SUCCESS;
                                         }))))
-                // (3.64.0) /rp admin avisar <jogadores> [classico|pesadelo|runico|real]
-                // <texto> — varios alvos (nomes ou @a) + 4 estilos de tela
+                // (3.64.0) /rp admin avisar <jogadores> [estilo] <texto>
+                // (3.86.0) 10 estilos: classico, pesadelo, runico, real, morte,
+                // inferno, gelo, divino, void, sangue — (3.87.0) +demoniaco
                 .then(Commands.literal("avisar")
                         .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
                                 .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
@@ -311,6 +505,70 @@ public final class RPCommands {
                                                     var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                                     avisar(ctx, alvos, "pesadelo", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("pesadelo2")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "pesadelo2", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("morte")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "morte", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("inferno")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "inferno", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("gelo")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "gelo", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("divino")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "divino", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("void")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "void", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("sangue")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "sangue", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("demoniaco")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "demoniaco", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))
                                 .then(Commands.literal("runico")

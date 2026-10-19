@@ -32,7 +32,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "3.84.0";
+    public static final String VERSION = "3.99.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -41,6 +41,13 @@ public final class RPTagMod {
     public static final Supplier<SoundEvent> SOM_CANON_DEATH =
             SOUNDS.register("canon_death", () -> SoundEvent.createVariableRangeEvent(
                     ResourceLocation.fromNamespaceAndPath(MODID, "canon_death")));
+
+    /** (3.90.0) SOM do aviso INFERNO: riser sombrio sintetizado (boom +
+     *  rumble + crackles de fogo, ~9s). Quando o user reenviar o link do
+     *  audio (o catbox rxavzi.mp3 deu 404), basta trocar o .ogg. */
+    public static final Supplier<SoundEvent> SOM_INFERNO =
+            SOUNDS.register("inferno_aviso", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "inferno_aviso")));
 
     /** (3.84.0) BLOCO/ITEM/BE do Coração Canônico (só adm obtém via /give;
      * nunca spawna naturalmente). */

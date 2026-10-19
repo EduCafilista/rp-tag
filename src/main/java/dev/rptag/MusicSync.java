@@ -66,13 +66,13 @@ public final class MusicSync {
      * PERGUNTA (o cliente que tem o arquivo toca direto; quem nao tem baixa
      * do servidor em pedaços). Nomes tentam .ogg e .wav.
      */
-    public static void pedir(ServerPlayer player, String nomeSemExt) {
+    public static void pedir(ServerPlayer player, String nomeSemExt, int maxSeg) {
         for (String ext : new String[]{".ogg", ".wav"}) {
             String arq = nomeSemExt + ext;
             byte[] b = carregar(arq);
             if (b != null) {
                 net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
-                        player, new MusicFileQueryPayload(arq, b.length));
+                        player, new MusicFileQueryPayload(arq, b.length, maxSeg));
                 return;
             }
         }

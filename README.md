@@ -97,6 +97,9 @@
 - **Música CUSTOM**: `/lorezone musica <id> @<nome>` toca o seu `.ogg` (pasta `config/rptag/musicas/` do cliente) em loop — converta qualquer música com `yt-dlp -x --audio-format vorbis`
 - **Música por LINK**: `/lorezone musica <id> https://site.com/tema.ogg` — os players baixam e tocam em loop sem fazer nada (`.ogg`/`.wav`; YouTube vira `.ogg` com yt-dlp)
 - **Volume no lado do jogador**: som pontual = slider *Ambiente* · música = slider *Música* (Opções → Música e Sons)
+- **AVISO CINEMATOGRÁFICO ao entrar**: `/lorezone aviso <id> <classico|pesadelo|runico|real|morte|inferno|gelo|divino|void|sangue|demoniaco> <segundos> <texto>`
+  dispara os avisos de tela do `/rp admin avisar` na entrada da zona (no lugar do título clássico; som continua;
+  `off` volta) — ex.: `/lorezone aviso floresta pesadelo 8 &4ALGO TE OBSERVA`
 - A história do servidor contada no próprio mapa
 
 ### 🏷️ Tag RP/OFF RP
