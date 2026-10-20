@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.3.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.4.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.3.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.4.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -298,7 +298,9 @@ check('CORAÇÃO CANÔNICO: bloco+item+BE registrados', '"coracao_canon"' in rtm
 check('coracao NUNCA spawna natural (só /give, indestrutível)', 'strength(-1.0F, 3600000.0F)' in rtm and 'EntityArgument' not in rtm)
 check('SHIFT + clique direito = +1 vida (coração se consome)', 'isShiftKeyDown' in blk and 'setCanonLives' in blk and 'removeBlock' in blk and 'NOVA CHANCE' in blk)
 check('vidas cheias 5/5: não consome (coração fica)', 'vidas >= 5' in blk and 'continua aqui' in blk)
-check('coração 3D PROCEDURAL girando/batendo (BER — máscara 3.86)', 'RenderType.lightning()' in rdr and 'rotationDegrees' in rdr and 'pulso' in rdr and 'LINHAS' in rdr)
+check('coração 3D PROCEDURAL girando/batendo (BER — sólido voxel 4.4)',
+      'RenderType.lightning()' in rdr and 'rotationDegrees' in rdr and 'pulso' in rdr
+      and 'MASCARA' in rdr and 'SOLIDO' in rdr)
 check('BER registrado (ClientRenderers, camada cliente)', 'registerBlockEntityRenderer' in rd(C + '/ClientRenderers.java'))
 check('assets do coração completos (estado/modelo/item/textura)', _os.path.exists(A + '/textures/item/coracao_canon.png') and _os.path.exists(A + '/blockstates/coracao_canon.json') and '"elements": []' in rd(A + '/models/block/coracao_canon.json'))
 check('protecao NÃO some no logout (relog nao burla)', 'PROTECAO_ATE é de propósito NÃO limpa' in cl)
@@ -357,16 +359,17 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.2.0', 'RP Tag 4.2.0' in ce)
+check('4.0: boot log 4.2.0', 'RP Tag 4.4.0' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
-check('3.86: coracao = mascara pixel-art (lobulos + ponta em V)',
-      'LINHAS' in ccr and 'topo dos l' + chr(243) + 'bulos' in ccr and 'ponta em V' in ccr)
-check('3.86: gradiente por linha + paredes escuras + brilho',
-      'FRENTE[r]' in ccr and 'LADO' in ccr and 'BRILHO' in ccr)
-check('3.86: extrusao 5px + balanco em Z',
-      'Z0 = -2, Z1 = 3' in ccr and 'Axis.ZP.rotationDegrees' in ccr)
+check('4.4: coracao = SOLIDO voxel (mascara 15x13 + 13 fatias infladas)',
+      'MASCARA' in ccr and 'NY = 13' in ccr and 'construirSolido' in ccr and 'FATOR_PROF' in ccr)
+check('4.4: so faces expostas + sombreamento por face (volume)',
+      'construirFaces' in ccr and 'shade(' in ccr and 'tem(x, y - 1, z)' in ccr)
+check('4.4: giro por relogio de parede (nao trava, nao pula) + batida tum-tum',
+      'System.nanoTime()' in ccr and 'Axis.YP.rotationDegrees' in ccr
+      and 'Math.exp(-bt * 18.0)' in ccr and 'getBlockPos().getX() * 37' in ccr)
 ce = rd(C + '/ClientEffects.java')
 check('3.98: client aceita estilos ate 11 (pesadelo2)', 'Math.min(11, textStyle)' in ce)
 check('3.86/3.91: INFERNO aura (fundo + brasa)', '0x140301' in ce and '0xFFC080' in ce)
@@ -743,6 +746,21 @@ check('4.3: sangue mantem contrato do FX (iniciar + registerAboveAll + particula
       and 'registerAboveAll(ResourceLocation.fromNamespaceAndPath("rptag", "aviso_sangue")' in saf2
       and 'public static void particulasMundo(ServerPlayer p)' in saf2
       and 'cy + 25 * k' in saf2)
+
+# ---- 4.4.0: /rp admin vida (tirar/dar/definir/ver) + coracao voxel ----
+check('4.4: /rp admin vida <jogador> tirar|dar|definir|ver existe',
+      '.then(Commands.literal("vida")' in rp and 'vidaTirar' in rp
+      and 'vidaDar' in rp and 'vidaDefinir' in rp and 'vidaVer' in rp)
+check('4.4: tirar vida usa o MESMO estoque do ritual (get/setCanonLives)',
+      'wd.getCanonLives(alvo.getUUID())' in rp and 'wd.setCanonLives(alvo.getUUID(), depois)' in rp)
+check('4.4: tirar vida avisa o alvo (estilo 4) + trovao + MEDO na ultima',
+      'ScreenTextPayload(msg, 8, 4)' in rp and 'LIGHTNING_BOLT_THUNDER' in rp
+      and 'FearPayload(30)' in rp)
+check('4.4: tirar vida NAO congela o jogador (nao houve morte)',
+      'FREEZES' not in rp.rsplit('vidaTirar', 1)[1].split('private static int vidaDar')[0])
+check('4.4: ajuda lista o /rp admin vida', 'admin vida <jogador> tirar|dar' in rp)
+check('4.4: coracao mantem o pickup SHIFT (+1 vida) e o teto 5/5',
+      'isShiftKeyDown' in blk and 'vidas >= 5' in blk and 'NOVA CHANCE' in blk)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

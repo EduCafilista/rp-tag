@@ -68,7 +68,7 @@ pôr o novo, no SERVIDOR e no CLIENTE!).
 ## 5. Checklist antes de entregar
 
 1. `gradlew build` sem erro
-2. `python3 check.py` → **331 checks, 0 FAIL** (no Windows: `py check.py`) e `./gradlew test` → **22 testes JUnit**
+2. `python3 check.py` → **337 checks, 0 FAIL** (no Windows: `py check.py`) e `./gradlew test` → **26 testes JUnit**
 3. Testou no jogo (runClient) o que você mexeu
 4. Atualizou `CHANGELOG.md` e o `WALKTHROUGH.md`
 5. Comita (`git add -A && git commit -m "o que mudou"`)

@@ -57,6 +57,97 @@ public final class RPCommands {
     }
 
     /** (3.44.0) Aplica o MEDO no alvo (tela treme + vinheta). */
+    /**
+     * (4.4.0) /rp admin vida <jogador> tirar|dar|definir — MEXE nas vidas canônicas
+     * de alguém NA HORA (sem esperar morte). É o mesmo estoque que o ritual de morte
+     * usa (getCanonLives/setCanonLives), então o que este comando tira aparece no
+     * /rp status e no coração do mundo.
+     *
+     * Quem LEVA a perda recebe o mesmo aviso de morte canônica ("VOCÊ PERDEU UMA
+     * VIDA — RESTAM n", estilo 4) e o trovão; se chegar a ZERO, o MEDO ABSURDO (30 s)
+     * entra igual ao ritual. NÃO congela o jogador (não houve morte — quem aplica é
+     * um admin, muitas vezes no meio de uma cena).
+     */
+    private static int vidaTirar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            ServerPlayer alvo, int qtd) {
+        RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
+        int antes = wd.getCanonLives(alvo.getUUID());
+        int depois = VidaCanonica.tirar(antes, qtd);
+        if (depois == antes) {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    alvo.getName().getString() + " ja esta SEM vidas canonicas (0/5) - nada a tirar.")
+                    .withStyle(ChatFormatting.GRAY), false);
+            return Command.SINGLE_SUCCESS;
+        }
+        wd.setCanonLives(alvo.getUUID(), depois);
+        String msg = depois > 0
+                ? "VOCE PERDEU UMA VIDA \u2014 RESTAM " + depois
+                : "VOCE PERDEU SUA ULTIMA VIDA \u2014 TOME CUIDADO";
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, new ScreenTextPayload(msg, 8, 4));
+        alvo.playNotifySound(net.minecraft.sounds.SoundEvents.LIGHTNING_BOLT_THUNDER,
+                net.minecraft.sounds.SoundSource.WEATHER, 3.0F, 0.8F);
+        if (depois == 0) {
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, new FearPayload(30));
+            alvo.addEffect(new net.minecraft.world.effect.MobEffectInstance(RPEffects.MEDO, 30 * 20, 0, false, false));
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u2620 " + alvo.getName().getString() + ": " + antes + "/5 -> " + depois
+                        + "/5 (vida canonica REMOVIDA por admin)")
+                .withStyle(ChatFormatting.RED), true);
+        RPTagMod.LOGGER.info("RP Tag: admin removeu vida canonica de {} ({} -> {})",
+                alvo.getName().getString(), antes, depois);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (4.4.0) oposto do tirar: devolve vida canonica (teto 5), com o mesmo aviso do coracao. */
+    private static int vidaDar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            ServerPlayer alvo, int qtd) {
+        RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
+        int antes = wd.getCanonLives(alvo.getUUID());
+        int depois = VidaCanonica.dar(antes, qtd);
+        if (depois == antes) {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    alvo.getName().getString() + " ja esta com as vidas CHEIAS (5/5).")
+                    .withStyle(ChatFormatting.GRAY), false);
+            return Command.SINGLE_SUCCESS;
+        }
+        wd.setCanonLives(alvo.getUUID(), depois);
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, new ScreenTextPayload(
+                "VOCE GANHOU UMA NOVA CHANCE \u2014 uma vida canonica foi restaurada (" + depois + "/5)", 6, 0));
+        alvo.playNotifySound(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
+                net.minecraft.sounds.SoundSource.PLAYERS, 0.9F, 1.4F);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u2740 " + alvo.getName().getString() + ": " + antes + "/5 -> " + depois
+                        + "/5 (vida canonica DEVOLVIDA por admin)")
+                .withStyle(ChatFormatting.LIGHT_PURPLE), true);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (4.4.0) define o total de uma vez (0..5). */
+    private static int vidaDefinir(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            ServerPlayer alvo, int valor) {
+        RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
+        int antes = wd.getCanonLives(alvo.getUUID());
+        int depois = VidaCanonica.definir(valor);
+        wd.setCanonLives(alvo.getUUID(), depois);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u2740 " + alvo.getName().getString() + ": " + antes + "/5 -> " + depois
+                        + "/5 (vidas canonicas DEFINIDAS por admin)")
+                .withStyle(ChatFormatting.GOLD), true);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (4.4.0) mostra quantas vidas canonicas o alvo tem. */
+    private static int vidaVer(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            ServerPlayer alvo) {
+        int v = RPWorldData.get(ctx.getSource().getServer()).getCanonLives(alvo.getUUID());
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u2740 " + alvo.getName().getString() + ": " + v + "/5 vidas canonicas"
+                        + (v == 0 ? " (SEM vidas!)" : ""))
+                .withStyle(v == 0 ? ChatFormatting.RED : ChatFormatting.LIGHT_PURPLE), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
     private static void medar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
             ServerPlayer alvo, int seg) {
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, new FearPayload(seg));
@@ -391,6 +482,9 @@ public final class RPCommands {
                     + "/rp admin balao <jogador> on|off \u00a77\u2014 libera/bloqueia o balao\u00a7c\n"
                     + "/rp admin balaolist \u00a77\u2014 quem tem balao liberado\u00a7c\n"
                     + "/rp admin canon on|off \u00a77\u2014 modo de perder vidas (todos j\u00e1 t\u00eam; quem morrer perde uma)\u00a7c\n"
+                    + "/rp admin vida <jogador> tirar|dar [n] \u00a77\u2014 tira/devolve vida can\u00f4nica na hora (0..5)\u00a7c\n"
+                    + "/rp admin vida <jogador> definir <n> \u00a77\u2014 define o total\u00a7c\n"
+                    + "/rp admin vida <jogador> ver \u00a77\u2014 mostra quantas restam\u00a7c\n"
                     + "/rp admin bolhas on|off \u00a77\u2014 baloes do servidor inteiro\u00a7c\n"
                     + "/do <texto> \u00a77\u2014 narracao de ambiente\u00a7c\n"
                     + "/lorezone criar <id> <raio> <titulo> \u00a77\u2014 cria zona de lore onde voce esta\u00a7c\n"
@@ -487,6 +581,36 @@ public final class RPCommands {
                                             medar(ctx, alvo, seg);
                                             return Command.SINGLE_SUCCESS;
                                         }))))
+                // (4.4.0) /rp admin vida <jogador> tirar|dar [n] / definir <n> / ver
+                // tira (ou devolve) vidas CANONICAS na hora — o mesmo estoque que o
+                // ritual de morte usa. Sem congelar: o cara nao morreu, um admin agiu.
+                .then(Commands.literal("vida")
+                        .then(Commands.argument("jogador", net.minecraft.commands.arguments.EntityArgument.player())
+                                .then(Commands.literal("tirar")
+                                        .executes(ctx -> vidaTirar(ctx,
+                                                net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"), 1))
+                                        .then(Commands.argument("quantia",
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 5))
+                                                .executes(ctx -> vidaTirar(ctx,
+                                                        net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "quantia")))))
+                                .then(Commands.literal("dar")
+                                        .executes(ctx -> vidaDar(ctx,
+                                                net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"), 1))
+                                        .then(Commands.argument("quantia",
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 5))
+                                                .executes(ctx -> vidaDar(ctx,
+                                                        net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "quantia")))))
+                                .then(Commands.literal("definir")
+                                        .then(Commands.argument("quantia",
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 5))
+                                                .executes(ctx -> vidaDefinir(ctx,
+                                                        net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "quantia")))))
+                                .then(Commands.literal("ver")
+                                        .executes(ctx -> vidaVer(ctx,
+                                                net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"))))))
                 // (3.64.0) /rp admin avisar <jogadores> [estilo] <texto>
                 // (3.86.0) 10 estilos: classico, pesadelo, runico, real, morte,
                 // inferno, gelo, divino, void, sangue — (3.87.0) +demoniaco
