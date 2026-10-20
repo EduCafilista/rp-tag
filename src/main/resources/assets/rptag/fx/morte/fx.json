@@ -1,0 +1,42 @@
+{
+  "id": "morte",
+  "fps": 24,
+  "frames": 144,
+  "width": 1280,
+  "height": 720,
+  "blend": "normal",
+  "markers": [
+    {
+      "name": "texto_entra",
+      "frame": 12
+    },
+    {
+      "name": "batida",
+      "frame": 14
+    },
+    {
+      "name": "batida",
+      "frame": 36
+    },
+    {
+      "name": "batida",
+      "frame": 60
+    },
+    {
+      "name": "batida",
+      "frame": 89
+    },
+    {
+      "name": "linha_reta",
+      "frame": 94
+    },
+    {
+      "name": "cinzas",
+      "frame": 106
+    },
+    {
+      "name": "texto_sai",
+      "frame": 120
+    }
+  ]
+}

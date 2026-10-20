@@ -6,8 +6,8 @@ O repo é `github.com/EduCafilista/rp-tag` (público).
 > 🧹 **Regra número 1: só a versão mais recente fica publicada.**
 > A cada ciclo, publique a release nova e **apague a release + a tag anteriores**.
 > O histórico de código **não se perde** — todos os commits continuam na `main`.
-> Cuidado extra: **nenhum jar antigo** pode ficar commitado na raiz do repo
-> (é isso que aparece como "arquivos" na página inicial do GitHub).
+> Cuidado extra: **nenhum jar** fica commitado no repo (desde a 4.2.0 o jar
+> vai só na Release — ver a seção 5).
 
 ---
 
@@ -77,25 +77,21 @@ git push "https://<TOKEN>@github.com/EduCafilista/rp-tag.git" HEAD:main
 
 ---
 
-## 5. Jars: só o atual na raiz
+## 5. Jars: NENHUM no repositório (desde a 4.2.0)
 
-```bash
-git rm rptag-<versao-anterior>.jar       # sai do repo e do disco
-cp build/libs/rptag-<nova>.jar .
-git add -f rptag-<nova>.jar              # -f porque o .gitignore ignora rptag-*.jar
-```
-
-O `.gitignore` tem:
+Com os avisos em vídeo o jar cresce a cada ciclo e passa de 100 MB, que é o
+limite do GitHub para arquivos no git. Por isso o jar **não vai mais pro repo**:
+ele fica **só na Release**. O `.gitignore` tem:
 
 ```
-rptag-*.jar
-!rptag-<versao-atual>.jar
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
 ```
 
 **Confira sempre** (o `git status` esconde esse tipo de coisa):
 
 ```bash
-git ls-tree HEAD --name-only | grep jar     # deve listar SÓ o jar atual
+git ls-tree HEAD --name-only | grep jar     # deve listar NADA na raiz
 ```
 
 ---

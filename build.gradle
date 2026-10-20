@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'dev.rptag'
-version = '4.1.0'
+version = '4.2.0'
 
 base {
     archivesName = 'rptag'
@@ -23,10 +23,16 @@ neoForge {
     runs {
         client {
             client()
+            // (4.2.0) ./gradlew runClient -PrptagTeste = entra sozinho no servidor de teste (run-server/)
+            if (project.hasProperty('rptagTeste')) {
+                programArguments.addAll('--quickPlayMultiplayer', '127.0.0.1:25565')
+            }
         }
         server {
             server()
             programArgument '--nogui'
+            // (4.2.0) servidor de teste em pasta propria (o cliente usa run/; logs nao se misturam)
+            gameDirectory = file('run-server')
         }
     }
 
@@ -50,4 +56,15 @@ jar {
                 'Implementation-Version': project.version
         ])
     }
+}
+
+// (4.2.0) primeiros testes Java (JUnit 5) — so classes puras, sem Minecraft
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'com.google.code.gson:gson:2.11.0'
+}
+
+test {
+    useJUnitPlatform()
 }

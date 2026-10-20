@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.1.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.2.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.1.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.2.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -357,7 +357,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.1.0', 'RP Tag 4.1.0' in ce)
+check('4.0: boot log 4.2.0', 'RP Tag 4.2.0' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -708,6 +708,24 @@ check('4.1: PESADELO novo mantem escuridao + particulas do servidor',
       and 'MobEffects.DARKNESS' in pafx and 'particulasPesadelo(alvo, true)' in rp)
 check('4.1: PESADELO novo poe a MENSAGEM embaixo do titulo (padrao 3.96.4)',
       'cy + 25 * k' in pafx and 'f.width(sub)' in pafx)
+
+# ---- 4.2.0: avisos em VIDEO (Blender) - player + MORTE em modo video
+vfx = rd(C + '/VideoFx.java')
+ldr = rd(C + '/VideoFrameLoader.java')
+cfg = rd(C + '/FxConfig.java') + rd(C + '/FxComando.java')
+check('4.2: VideoFx existe com abrir/desenhar/fechar',
+      'static boolean abrir(String id)' in vfx and 'Estado desenhar(GuiGraphics g, float t)' in vfx
+      and 'static void fechar()' in vfx)
+check('4.2: loader em thread daemon rptag-fx-loader', 'rptag-fx-loader' in ldr and 'setDaemon(true)' in ldr)
+check('4.2: MORTE tenta video antes do procedural', 'VideoFx.abrir("morte")' in mafx)
+check('4.2: MORTE cai pro procedural no mesmo t (FALHOU)', 'Estado.FALHOU' in mafx and 'video = false' in mafx)
+check('4.2: render do player protegido (catch Throwable)', 'catch (Throwable' in vfx)
+check('4.2: fecha o video ao sair do mundo', 'VideoFx.fechar()' in rd(C + '/ClientEvents.java'))
+check('4.2: fxVideo em cliente.properties + /rpfx',
+      'cliente.properties' in cfg and 'fxVideo' in cfg and 'literal("rpfx")' in cfg)
+import subprocess
+check('4.2: assets de video validos (arte/validar.py)',
+      subprocess.run([sys.executable, '-I', 'arte/validar.py'], capture_output=True).returncode == 0)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

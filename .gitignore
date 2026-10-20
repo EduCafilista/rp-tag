@@ -1,9 +1,11 @@
 build/
 run/
+run-server/
 .gradle/
 *.iml
 .idea/
 installer.jar.log
-# jars de versoes antigas (so o jar da versao atual fica versionado)
-rptag-*.jar
-!rptag-4.1.0.jar
+# (4.2.0) NENHUM jar no git: com os avisos em video o jar passa de 100 MB
+# (limite do GitHub no git). Jars so nas Releases.
+*.jar
+!gradle/wrapper/gradle-wrapper.jar

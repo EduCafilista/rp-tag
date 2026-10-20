@@ -2,7 +2,7 @@
 
 Olá! Este documento é o mapa do projeto pra quem vai dar continuidade.
 
-- **Versão atual: 4.1.0** — histórico completo no `CHANGELOG.md`
+- **Versão atual: 4.2.0** — histórico completo no `CHANGELOG.md`
 - **Diário de bordo técnico: `WALKTHROUGH.md`** (decisões, receitas de build/teste, o que foi reprovado e por quê) — **leia ele depois deste**
 - Minecraft **1.21.1** + **NeoForge 21.1.x** + **Java 21**
 - Repo público: `github.com/EduCafilista/rp-tag`
@@ -50,6 +50,14 @@ Olá! Este documento é o mapa do projeto pra quem vai dar continuidade.
 Todos os FX seguem o mesmo padrão: **título "AVISO"** grande, letra por letra, com a
 **MENSAGEM embaixo do título** (`cy + 25*k`). Nenhum FX redimensiona o título.
 
+### 🎞️ Avisos em VÍDEO renderizados no Blender — 4.2.0
+Os avisos estão sendo refeitos como **vídeo** (piloto: **Morte "Linha Reta"**; os
+outros 11 seguem procedurais). O vídeo é o fundo; o **texto e os sons continuam no
+código**. Qualquer falha (sem vídeo, quadro corrompido, PC lento) → o FX procedural
+assume **no mesmo instante**. Jogador desliga em `config/rptag/cliente.properties`
+(`fxVideo=false`) ou com o comando do cliente `/rpfx status|on|off`.
+Pipeline das cenas em `arte/README.md`; spec e plano em `docs/superpowers/`.
+
 ### 🧭 Lore zones
 - `/lorezone criar <id> <raio>` — cria uma zona esférica no lugar onde você está.
 - `/lorezone texto <id> <mensagem>` e `/lorezone aviso <id> <estilo>`
@@ -95,7 +103,7 @@ Todos os FX seguem o mesmo padrão: **título "AVISO"** grande, letra por letra,
 
 ### Opção A — Gradle (o jeito normal)
 1. Instale o **JDK 21** (Temurin).
-2. `./gradlew build` — o jar sai em `build/libs/rptag-4.1.0.jar`.
+2. `./gradlew build` — o jar sai em `build/libs/rptag-4.2.0.jar` (roda também os testes JUnit).
 3. Primeiro build demora (~5–15 min, descompacta/decompila o Minecraft) e pede
    ~4 GB de RAM livres. Depois é rápido (cache).
 4. Pra testar: `./gradlew runServer` (aceite o eula em `run/eula.txt`) ou
@@ -143,7 +151,10 @@ Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
 |---|---|
 | `AvisoFxUtil.java` | **Motor compartilhado** dos FX: `Buf` (tri/quad/rect/seg/circ/anel/vinheta/brilho), `preparar/normal/aditivo`, `tocar`, helpers de cor e easing |
 | `*AvisoFx.java` (9) | `Divino`, `Demoniaco`, `Sangue`, `Void`, `Pesadelo`, `PesadeloAntigo`, `Inferno`, `Gelo`, `Runico` |
-| `MorteAvisoFx.java` | FX "Linha Reta" (estilo 4) |
+| `MorteAvisoFx.java` | FX "Linha Reta" (estilo 4) — desde a 4.2.0 compõe cinza → **vídeo** → texto/sons, com fallback procedural |
+| `VideoFx.java` / `VideoFrameLoader.java` | **Player dos avisos em vídeo** (4.2.0): quadro pelo relógio, uma textura 1280x720, thread `rptag-fx-loader` |
+| `VideoEstado` / `FxTimeline` / `FxCor` / `FxJpeg` / `MorteTempos` | Java puro com JUnit: estados do player, `fx.json`, cor+alfa, leitura estrita do JPEG, tempos do MORTE |
+| `FxConfig.java` / `FxComando.java` | `config/rptag/cliente.properties` (`fxVideo`) + `/rpfx status\|on\|off` |
 | `ClientEffects.java` | **Central dos avisos**: roteia o estilo pro FX, véu do canon, banner, áudio da lore |
 | `ClientGuiLayers.java` | Registra as camadas com `registerAboveAll` (com shaders, por cima de tudo) |
 | `BubbleRenderer.java` | Coração visual do balão (pílula = tamanho exato do texto; âncora na base) |
@@ -174,7 +185,9 @@ Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
 11. **Medo/AVISO com shaders** = `registerAboveAll` (nunca `RenderGuiEvent.Post`).
 12. **`renderBackground` vazio** (blur) nos menus — **nunca remover**.
 13. **Nunca portar telemetria** de referências externas.
-14. **Testes antes de entregar**: `check.py` (312 checks) + smoke do servidor por RCON.
+14. **Testes antes de entregar**: `check.py` (320 checks) + `./gradlew test` (JUnit) + smoke do servidor por RCON.
+15. **Vídeo dos avisos**: o texto **nunca** vai no vídeo; decodificar pelo **raster**
+    (nunca `getRGB`, ~35 ms/quadro); JPEG com aviso do decodificador = **erro** (fallback).
 
 ---
 
@@ -184,12 +197,13 @@ Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
    (e o log de boot no `ClientEffects`).
 2. Atualizar **`CHANGELOG.md`** e **`WALKTHROUGH.md`** (o walkthrough é a memória do projeto:
    anote o que foi feito, o que falhou e as receitas novas).
-3. `python3 check.py` → tem que terminar **0 FAIL**.
+3. `python3 check.py` → tem que terminar **0 FAIL**; `./gradlew test` verde.
 4. Compilar → jar em `rptag-<versão>.jar`; conferir `unzip -l | grep -c .class`.
 5. Smoke: subir o servidor, testar os comandos por RCON, `grep -c "ERROR\|FATAL"` = 0.
 6. Commit + push (ver `PUBLICAR.md`; o PAT vai **inline** na URL, nunca em arquivo).
 7. Release com o jar + `make_latest` + **apagar release/tag anteriores**.
-8. Deixar **só o jar atual** na raiz do repo (`git rm` o antigo, `git add -f` o novo).
+8. **Nenhum jar no repositório** (desde a 4.2.0; o `.gitignore` já ignora `*.jar`):
+   com os vídeos o jar passa de 100 MB, o limite do GitHub no git. Jar **só na Release**.
 
 ---
 
@@ -213,4 +227,4 @@ Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
 - Repo: `github.com/EduCafilista/rp-tag` (MIT).
 - **Nunca** apagar o repositório; publicação = Release com o jar.
 
-Bom trabalho! — **RP Tag 4.1.0**
+Bom trabalho! — **RP Tag 4.2.0**

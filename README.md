@@ -6,9 +6,9 @@
 
 > 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
 >
-> 📥 **Download:** baixe o `rptag-4.1.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases/latest).
+> 📥 **Download:** baixe o `rptag-4.2.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases/latest).
 >
-> 🧹 **Só a versão mais recente fica no repositório** — o `rptag-4.1.0.jar` está aqui na raiz e nas Releases; as antigas são apagadas a cada ciclo.
+> 🧹 **O jar fica só nas Releases** (desde a 4.2.0, com os avisos em vídeo, ele não vai mais pro repositório). Só a versão mais recente fica publicada.
 >
 > 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
 
@@ -16,7 +16,7 @@
 
 | Mod | Onde | Status | Jar pronto |
 |---|---|---|---|
-| 🏷️ **RP Tag** | na raiz (este) | ✅ em desenvolvimento ativo — v4.1.0 | [Releases](../../releases/latest) → `rptag-4.1.0.jar` |
+| 🏷️ **RP Tag** | na raiz (este) | ✅ em desenvolvimento ativo — v4.2.0 | [Releases](../../releases/latest) → `rptag-4.2.0.jar` |
 | 🌀 **Portais da Lore** | [pasta `portais-da-lore/`](portais-da-lore/) | ⏸️ **EM PAUSA TEMPORÁRIA** — v1.3.2 | [Releases](../../releases) → `portais-da-lore-1.3.2.jar` |
 
 > ⚠️ **O Portais da Lore está temporariamente descontinuado** — não estou mexendo
@@ -148,7 +148,7 @@
 **Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-4.1.0.jar` para a pasta `mods/` do **servidor** (e **apague o jar antigo** de lá!).
+2. Copie `rptag-4.2.0.jar` para a pasta `mods/` do **servidor** (e **apague o jar antigo** de lá!).
    → a tag no **chat** e na **TAB** já funciona pra todo mundo.
 3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
    jar também na pasta `mods/` do **cliente**.
@@ -161,7 +161,7 @@ Requisitos: **JDK 21** e internet.
 ./gradlew build
 ```
 
-O jar sai em `build/libs/rptag-4.1.0.jar`.
+O jar sai em `build/libs/rptag-4.2.0.jar`.
 
 ## 🎨 Personalizar
 
