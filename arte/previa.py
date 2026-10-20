@@ -18,6 +18,14 @@ def fade(meta,t):
     f = meta.get('fade')
     return ss(*f['in'],t)*(1-ss(*f['out'],t)) if f else 1.
 
+def enquadrar(imagem,largura:int,altura:int):
+    """Cover centralizado 16:9 -> largura x altura sem deformar (igual ao FxTimeline.cobrir do jogo)."""
+    s=max(largura/imagem.width,altura/imagem.height)
+    w,h=round(imagem.width*s),round(imagem.height*s)
+    grande=imagem.resize((w,h),Image.Resampling.LANCZOS)
+    x=(w-largura)//2;y=(h-altura)//2
+    return grande.crop((x,y,x+largura,y+altura))
+
 def compor(png,meta,quadro,mensagem=None,fundo=None,alfa=None):
     t = quadro/FPS
     with Image.open(png) as src:

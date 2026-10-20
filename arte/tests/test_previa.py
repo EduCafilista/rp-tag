@@ -43,3 +43,35 @@ class CompositorTest(unittest.TestCase):
 
 if __name__=='__main__': unittest.main()
 
+
+
+class EnquadrarTest(unittest.TestCase):
+    """O cover da previa tem que bater com FxTimeline.cobrir: 16:9 centralizado, sem deformar."""
+
+    def _referencia(self):
+        im = Image.new('RGB', (1280, 720), (0, 0, 0))
+        im.paste((255, 0, 0), (620, 340, 660, 380))   # quadrado 40x40 no centro
+        return im
+
+    def _caixa_vermelha(self, im):
+        px = im.load()
+        xs = [x for x in range(im.width) for y in (im.height // 2,) if px[x, y][0] > 200 and px[x, y][1] < 60]
+        ys = [y for y in range(im.height) for x in (im.width // 2,) if px[x, y][0] > 200 and px[x, y][1] < 60]
+        return max(xs) - min(xs) + 1, max(ys) - min(ys) + 1, (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+
+    def test_16_10_corta_os_lados_sem_deformar(self):
+        out = previa.enquadrar(self._referencia(), 1152, 720)
+        self.assertEqual(out.size, (1152, 720))
+        w, h, cx, cy = self._caixa_vermelha(out)
+        self.assertLessEqual(abs(w - h), 2)
+        self.assertLessEqual(abs(cx - 576), 2)
+        self.assertLessEqual(abs(cy - 360), 2)
+
+    def test_21_9_corta_em_cima_e_embaixo_sem_deformar(self):
+        out = previa.enquadrar(self._referencia(), 1680, 720)
+        self.assertEqual(out.size, (1680, 720))
+        w, h, cx, cy = self._caixa_vermelha(out)
+        self.assertLessEqual(abs(w - h), 2)
+        self.assertAlmostEqual(w, 40 * 1680 / 1280, delta=3)
+        self.assertLessEqual(abs(cx - 840), 2)
+        self.assertLessEqual(abs(cy - 360), 2)
