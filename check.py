@@ -708,6 +708,9 @@ check('4.2: render do player protegido (catch Throwable)', 'catch (Throwable' in
 check('4.2: fecha o video ao sair do mundo', 'VideoFx.fechar()' in rd(C + '/ClientEvents.java'))
 check('4.2: fxVideo em cliente.properties + /rpfx',
       'cliente.properties' in cfg and 'fxVideo' in cfg and 'literal("rpfx")' in cfg)
+import subprocess
+check('4.2: assets de video validos (arte/validar.py)',
+      subprocess.run([sys.executable, '-I', 'arte/validar.py'], capture_output=True).returncode == 0)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
