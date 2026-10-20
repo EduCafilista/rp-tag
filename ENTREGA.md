@@ -1,8 +1,28 @@
 # ENTREGA — Guia pra continuar o RP Tag
 
 Ola! Este documento e o mapa completo do projeto pra quem vai dar
-continuidade. Versao atual: **3.43.0** (veja o `CHANGELOG.md` pra todo o
+continuidade. Versao atual: **4.2.0** (veja o `CHANGELOG.md` pra todo o
 historico). Minecraft **1.21.1** + **NeoForge** (moddev 2.0.146).
+
+> **Atencao:** varias secoes abaixo foram escritas na 3.43.0. O diario
+> atualizado de cada ciclo fica no `WALKTHROUGH.md`.
+
+## Avisos em VIDEO (4.2.0)
+
+Os avisos de tela cheia estao sendo refeitos como VIDEO renderizado no
+Blender (piloto: MORTE "Linha Reta"; os outros 11 ainda sao procedurais).
+
+| Peca | Papel |
+|---|---|
+| `arte/cenas/<id>.py` | Monta a cena do Blender do zero e renderiza (ver `arte/README.md`) |
+| `arte/exportar.py` / `arte/validar.py` | Render -> pares JPEG cor+alfa + `fx.json` no jar / confere os assets |
+| `client/VideoFx.java` | Player: quadro pelo relogio, uma textura 1280x720, fallback pro procedural |
+| `client/VideoFrameLoader.java` | Thread `rptag-fx-loader` que decodifica ate 8 quadros a frente |
+| `client/FxConfig.java` + `FxComando.java` | `config/rptag/cliente.properties` (`fxVideo`) + `/rpfx status|on|off` |
+| `client/MorteTempos.java` | Tempos do MORTE (fonte unica: FX, cena e teste do `fx.json`) |
+
+Regra: o jar **nao vai mais pro git** (passa de 100 MB com todos os videos);
+so na Release. Testes: `./gradlew test` (JUnit) + `python check.py`.
 
 ## O que o mod faz hoje
 
@@ -82,4 +102,4 @@ historico). Minecraft **1.21.1** + **NeoForge** (moddev 2.0.146).
 - Repo: `github.com/EduCafilista/rp-tag` (publishing: apagar jar antigo +
   upload + Release; NUNCA apagar o repo).
 
-Bom trabalho! — RP Tag 3.43.0
+Bom trabalho! — RP Tag 4.2.0

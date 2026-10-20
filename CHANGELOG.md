@@ -2,6 +2,33 @@
 
 
 
+## 4.2.0 — AVISO DE MORTE EM VÍDEO (BLENDER) 🎬 (2026-10-19)
+
+### ☠️ "Linha Reta" agora é um vídeo renderizado no Blender
+- O aviso de **morte** (`/rp admin avisar <alvo> morte <msg>` e o ritual da vida
+  canônica) toca um **vídeo de 6 s a 24 fps** feito no Blender: crânio de
+  **voxels 3D com luz de verdade** que se forma do pó e vira cinzas, olhos em
+  brasa no ritmo do coração, monitor cardíaco com brilho, túnel e borda vermelha
+- **Mesma essência:** os mesmos tempos (batidas, linha reta, cinzas), os mesmos
+  sons, o título **"AVISO"** com a **mensagem embaixo** e o texto que vira osso
+  na linha reta — o texto continua desenhado pelo código, então a mensagem do
+  comando aparece normal
+- O véu avermelhado e o áudio da lore (`canon_death`) continuam iguais
+
+### 🛟 Nunca fica sem aviso
+- Sem vídeo, quadro corrompido ou PC lento demais → o aviso segue no **FX
+  antigo (procedural) no mesmo instante**, sem reiniciar e sem crash
+- PC lento mostra o quadro mais novo pronto (pula quadros) em vez de travar
+
+### ⚙️ Opção do jogador
+- `config/rptag/cliente.properties` → `fxVideo=false` desliga os vídeos
+  (sempre o FX antigo)
+- Comando do cliente **`/rpfx status|on|off`**
+
+### 📦 Jar
+- O jar ficou com **~10 MB** (o vídeo do MORTE tem 9,6 MB) e agora fica **só nas
+  Releases** — não vai mais pro repositório
+
 ## 4.1.0 — MORTE FORA DO RP NÃO CONTA + FX DE MORTE + NOVO PESADELO ☠️ (2026-10-19)
 
 ### ⚖️ Vida canônica: matador OFF RP não tira vida

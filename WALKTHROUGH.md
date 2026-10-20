@@ -15,13 +15,36 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.1.0** (2026-10-19) |
+| Versão | **4.2.0** (2026-10-19) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.1.0.jar` (entregue + GitHub Release) |
-| Checks | `check.py` → **259 PASS / 0 FAIL** (3.96.0: VOID = Queda Sem Fundo, PESADELO = Sono Sem Descanso — 5 FX cinematográficos) |
+| Jar | `rptag-4.2.0.jar` (~10 MB; **só na GitHub Release** — não vai mais pro git) |
+| Checks | `check.py` → **320 PASS / 0 FAIL** + **JUnit 20/20** (`./gradlew test`, desde a 4.2.0) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
+
+### 🎬 4.2.0 (2026-10-19): avisos em VÍDEO renderizados no Blender (piloto: MORTE)
+- **Spec e plano:** `docs/superpowers/specs/2026-10-19-avisos-em-video-design.md` e
+  `docs/superpowers/plans/2026-10-19-avisos-em-video-piloto-morte.md`.
+- **Pipeline:** `arte/cenas/<id>.py` monta a cena do zero → `blender -b --factory-startup -P`
+  renderiza 144 PNG RGBA 1280x720 → `python arte/previa.py <id> --gif` (o DONO APROVA) →
+  `python arte/exportar.py <id>` (pares JPEG cor+alfa + `fx.json`) → `arte/validar.py`
+  (chamado pelo `check.py`). Detalhes em `arte/README.md`.
+- **No mod:** `VideoFx` (player, sem camada) + `VideoFrameLoader` (thread `rptag-fx-loader`)
+  + `VideoEstado`/`FxTimeline`/`FxCor`/`FxJpeg` (Java puro, com JUnit). A classe do aviso
+  (ex.: `MorteAvisoFx`) desenha cinza → vídeo → texto/sons; falhou → procedural NO MESMO t.
+  Tempos em `MorteTempos` (fonte única: FX, cena do Blender e teste dos marcadores).
+- **Cliente:** `config/rptag/cliente.properties` (`fxVideo=true|false`) + `/rpfx status|on|off`.
+- **ACHADOS no teste no jogo (não repetir):** (1) `BufferedImage.getRGB` custa ~35 ms/quadro
+  (> 41,7 ms do orçamento a 24 fps) → decodificar pelo RASTER (`FxCor.abgrDeRaster`, ~10 ms)
+  e mostrar o quadro PRONTO mais novo ≤ o atual (exigir o quadro exato travava PC lento);
+  (2) JPEG cortado o `ImageIO` lê "pela metade" só com AVISO → `FxJpeg` transforma aviso em erro.
+- **Teste no jogo automatizado:** `./gradlew runServer` (pasta `run-server/`, RCON em localhost,
+  senha no `server.properties` de lá) + `./gradlew runClient -PrptagTeste` (entra sozinho) +
+  `python tools/rcon.py "rp admin avisar Dev morte TESTE"`. Capturas em `verificacao/4_2_0_*`.
+- **REGRA NOVA:** jar **nenhum** no git (`.gitignore` = `*.jar` menos o gradle-wrapper);
+  o `rptag-4.1.0.jar` saiu do repositório. Jar só na Release.
+- **Próximos ciclos:** 1–2 avisos por vez (4.3.0, 4.4.0…), mesma rotina com prévia aprovada.
 
 ### 🔍 ACHADO IMPORTANTE (2026-10-19): "versoes antigas no GitHub" NAO eram as Releases
 User reclamou que a pagina do GitHub ainda mostrava da 3.85 ate a 3.99. NAO era cache nem
