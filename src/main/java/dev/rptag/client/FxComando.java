@@ -25,7 +25,7 @@ public final class FxComando {
 
     static String status() {
         return "RP Tag FX: video " + (FxConfig.video() ? "LIGADO" : "DESLIGADO")
-                + " — " + 0 + " aviso(s) com video";
+                + " — " + VideoFx.contarVideos() + " aviso(s) com video";
     }
 
     public static void registrarComando(RegisterClientCommandsEvent event) {
