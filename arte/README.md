@@ -18,23 +18,32 @@ Cada aviso em vídeo nasce de um script Python que monta a cena **do zero**
 - O texto ("AVISO" + mensagem) **não** vai no vídeo: é desenhado pelo código.
 - `render/` e `previa/` são gerados e ficam fora do git.
 
-## Proximos avisos: previas de Inferno e Gelo
+## Inferno e Gelo (4.3.0, no jar)
 
-As cenas `arte/cenas/inferno.py` e `arte/cenas/gelo.py` compartilham
-`elementais.py` e as primitivas do piloto. Cada uma gera 144 PNG RGBA,
-marcadores e `inspecao.json` (camera, objetos, resolucao e ausencia de texto).
+As cenas `arte/cenas/inferno.py` e `arte/cenas/gelo.py` usam so as primitivas de
+`arte/cenas/comum.py` (nao dependem do `morte.py`). Cada uma gera 144 PNG RGBA,
+`marcadores.json` e `inspecao.json` (camera, objetos, resolucao, ausencia de texto).
+O titulo desses dois avisos fica em `cy = 0.45 h` (mundo y = +0.45); a zona de
+leitura (2 a 4,8 s) e x 20-80 %, y 32-66 %.
 
 ```powershell
 & 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' -b --factory-startup -P arte/cenas/inferno.py
 & 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' -b --factory-startup -P arte/cenas/gelo.py
-python arte/previa.py inferno --quadros 24,60,108 --gif
-python arte/previa.py gelo --quadros 24,60,108 --gif
+python arte/inspecionar.py inferno --quadros 12,36,72,127
+python arte/previa.py inferno --quadros 12,36,72,127 --fundo arte/referencias/gameplay_claro.png
+python arte/previa.py inferno --gif --fundo arte/referencias/gameplay_escuro.png
+python arte/exportar.py inferno
+python arte/previa.py inferno --quadros 12,72 --exportado --fundo arte/referencias/gameplay_claro.png
 ```
 
-Estado: previas para avaliacao visual. Ainda sem exportacao para os assets do
-jar e sem mudancas nos efeitos Java. As fontes continuam em 4.2.0.
+Licoes desta rodada (nao repetir): fogo precisa de ruido que SOBE + limiar curto
+(borda nitida) + rampa de temperatura; geada so nas bordas com frente irregular
+(nunca um veu na tela inteira); Voronoi grande parece pedra rachada (use escala alta);
+rastro de meteoro com poucos sprites vira "contas" (use 30+ bem juntos); nao gire
+o objeto de uma elipse (ela inclina): anime a posicao ao longo dela.
+Gelo exporta ~32 MB (a textura fina de geada pesa no JPEG); Inferno ~14 MB.
 
-## Redesign hibrido (em producao)
+## Compositor de previas
 
 `arte/previa.py` aceita `--fundo CAMINHO`, `--mensagem TEXTO` e `--exportado`
 para compor o par JPEG cor/alfa. O fade ja exportado nao e aplicado duas vezes.
@@ -42,5 +51,8 @@ As referencias `arte/referencias/gameplay_claro.png` e `gameplay_escuro.png`
 sao capturas do cliente local em mundo plano, modo espectador, sem chat visivel.
 O texto nas previas e aproximado, com contorno para conferir leitura.
 A previa anterior foi preservada em `arte/referencias/elementais_v1.py`.
+
+`previa.enquadrar(imagem, largura, altura)` faz o mesmo cover 16:9 do jogo
+(`FxTimeline.cobrir`) para conferir cortes 16:10/21:9.
 
 Testes do compositor: `python -m unittest discover -s arte/tests -v`.

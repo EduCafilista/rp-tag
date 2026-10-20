@@ -15,13 +15,28 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.2.0** (2026-10-19) |
+| Versão | **4.3.0** (2026-10-20) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.2.0.jar` (~10 MB; **só na GitHub Release** — não vai mais pro git) |
-| Checks | `check.py` → **320 PASS / 0 FAIL** + **JUnit 20/20** (`./gradlew test`, desde a 4.2.0) |
+| Jar | `rptag-4.3.0.jar` (~54 MB com 3 vídeos; **só na GitHub Release**) |
+| Checks | `check.py` → **341 PASS / 0 FAIL** + **JUnit 25/25** (`./gradlew test`) + `python -m unittest discover -s arte/tests` |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
+
+### 🔥❄️ 4.3.0 (2026-10-20): INFERNO e GELO em vídeo (redesign híbrido)
+- **Spec e plano:** `docs/superpowers/specs/2026-10-20-inferno-gelo-hibrido-design.md` e
+  `docs/superpowers/plans/2026-10-20-inferno-gelo-hibrido.md`. Gates cumpridos: 4 quadros
+  aprovados, movimento aprovado, depois exportação/integração.
+- **Cenas:** `arte/cenas/inferno.py` (fissura serrilhada atrás do título, fogo orgânico que sobe,
+  fumaça iluminada no teto, meteoros na faixa de cima, redemoinho de brasas) e `arte/cenas/gelo.py`
+  (vidro estilhaçado, geada só nas bordas, samambaias de gelo, cristais em aglomerados, neve).
+- **No mod:** `InfernoAvisoFx`/`GeloAvisoFx` no mesmo padrão do MORTE; `FxVideoPolitica`
+  (vídeo só com `fxVideo` ligado **e** fora do modo reduzido); um aviso novo de qualquer estilo
+  chama `parar()` de MORTE/INFERNO/GELO (o player é um só).
+- **ACHADO no jogo (não repetir):** sem o fundo procedural escuro, texto claro some no céu claro →
+  no modo vídeo há **contorno escuro** (`AvisoFxUtil.contornoEscuro`) + apoio de leitura mais forte.
+- **Pendente:** smoke com o jar numa instalação NeoForge separada (precisa do launcher logado).
+- A captura de tela dos testes só grava se o Minecraft estiver NA FRENTE (guarda de foreground).
 
 ### 🎬 4.2.0 (2026-10-19): avisos em VÍDEO renderizados no Blender (piloto: MORTE)
 - **Spec e plano:** `docs/superpowers/specs/2026-10-19-avisos-em-video-design.md` e
