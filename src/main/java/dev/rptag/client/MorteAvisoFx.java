@@ -75,6 +75,13 @@ public final class MorteAvisoFx {
         RPTagMod.LOGGER.info("RP Tag: LINHA RETA em {}", video ? "VIDEO" : "procedural");
     }
 
+    /** (4.3.0) Encerra o aviso na hora (um aviso novo substitui este). */
+    public static void parar() {
+        if (video) VideoFx.fechar();
+        video = false;
+        inicio = -1;
+    }
+
     /** SERVIDOR: almas subindo, cinzas e um anel de fogo-de-alma. */
     public static void particulasMundo(ServerPlayer p) {
         ServerLevel lv = p.serverLevel();

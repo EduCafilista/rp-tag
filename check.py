@@ -723,6 +723,21 @@ check('4.2: render do player protegido (catch Throwable)', 'catch (Throwable' in
 check('4.2: fecha o video ao sair do mundo', 'VideoFx.fechar()' in rd(C + '/ClientEvents.java'))
 check('4.2: fxVideo em cliente.properties + /rpfx',
       'cliente.properties' in cfg and 'fxVideo' in cfg and 'literal("rpfx")' in cfg)
+# ---- 4.3.0: Inferno e Gelo em VIDEO (Blender), mesmo player do MORTE
+for _id, _cls in (('inferno', 'InfernoAvisoFx'), ('gelo', 'GeloAvisoFx')):
+    _src = rd(C + '/%s.java' % _cls)
+    check('4.3: %s tenta video (politica + abrir) antes do procedural' % _cls,
+          ('FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("%s")' % _id) in _src)
+    check('4.3: %s cai pro procedural no mesmo t (FALHOU)' % _cls,
+          'VideoEstado.FALHOU' in _src and 'video = false' in _src)
+    check('4.3: %s toca os sons so depois de resolver a carga' % _cls,
+          'VideoEstado.CARREGANDO' in _src and _src.index('VideoEstado.CARREGANDO') < _src.index('        sons(t);'))
+    check('4.3: %s tem parar() (aviso novo encerra o anterior)' % _cls, 'public static void parar()' in _src)
+    check('4.3: assets do video %s no jar' % _id, os.path.exists(A + '/fx/%s/fx.json' % _id))
+check('4.3: aviso novo encerra os avisos em video anteriores (ClientEffects)',
+      all(('%s.parar()' % k) in rd(C + '/ClientEffects.java') for k in ('MorteAvisoFx', 'InfernoAvisoFx', 'GeloAvisoFx')))
+check('4.3: politica do video (reduzido = procedural) em Java puro',
+      'return habilitado && !reduzido;' in rd(C + '/FxVideoPolitica.java'))
 import subprocess
 check('4.2: assets de video validos (arte/validar.py)',
       subprocess.run([sys.executable, '-I', 'arte/validar.py'], capture_output=True).returncode == 0)
