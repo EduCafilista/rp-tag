@@ -121,7 +121,8 @@ public final class VideoFx {
         if (tl.aditivo()) RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
         else RenderSystem.defaultBlendFunc();
         int w = FxTimeline.LARGURA, h = FxTimeline.ALTURA;
-        g.blit(TEX, 0, 0, g.guiWidth(), g.guiHeight(), 0, 0, w, h, w, h);
+        int[] r = FxTimeline.cobrir(g.guiWidth(), g.guiHeight()); // 16:9 sem distorcer
+        g.blit(TEX, r[0], r[1], r[2], r[3], 0, 0, w, h, w, h);
         g.flush();
         RenderSystem.defaultBlendFunc();
     }

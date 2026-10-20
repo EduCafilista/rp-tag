@@ -3,6 +3,7 @@ package dev.rptag.client;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,9 +19,11 @@ public final class FxJpeg {
     private FxJpeg() {}
 
     public static BufferedImage ler(InputStream in) throws IOException {
-        try (ImageInputStream iis = ImageIO.createImageInputStream(in)) {
-            Iterator<ImageReader> it = iis == null ? null : ImageIO.getImageReaders(iis);
-            if (it == null || !it.hasNext()) throw new IOException("nao e JPEG");
+        // cache em MEMORIA: o createImageInputStream padrao grava um arquivo temporario
+        // no disco a cada leitura (288 por aviso) — lento e sujando o %TEMP%
+        try (ImageInputStream iis = new MemoryCacheImageInputStream(in)) {
+            Iterator<ImageReader> it = ImageIO.getImageReaders(iis);
+            if (!it.hasNext()) throw new IOException("nao e JPEG");
             ImageReader r = it.next();
             String[] aviso = new String[1];
             r.addIIOReadWarningListener((src, msg) -> aviso[0] = msg);

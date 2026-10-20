@@ -68,6 +68,17 @@ public final class FxTimeline {
         return (int) Math.min(frames, Math.floor(t * fps));
     }
 
+    /**
+     * Retangulo {x, y, largura, altura} do video na tela: SEMPRE 16:9 (nao
+     * distorce em 16:10/21:9), centralizado e cobrindo a tela inteira (corta
+     * as sobras dos lados ou de cima/baixo).
+     */
+    public static int[] cobrir(int telaW, int telaH) {
+        float s = Math.max(telaW / (float) LARGURA, telaH / (float) ALTURA);
+        int w = Math.round(LARGURA * s), h = Math.round(ALTURA * s);
+        return new int[]{(int) Math.floor((telaW - w) / 2f), (int) Math.floor((telaH - h) / 2f), w, h};
+    }
+
     public List<Integer> marcadores(String nome) {
         return Collections.unmodifiableList(marcadores.getOrDefault(nome, List.of()));
     }

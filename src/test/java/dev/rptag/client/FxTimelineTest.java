@@ -48,4 +48,12 @@ class FxTimelineTest {
         assertEquals(144, tl.quadroEm(6.0f));
         assertEquals(144, tl.quadroEm(60f));
     }
+
+    @Test
+    void cobreATelaSemDistorcer() {
+        // {x, y, largura, altura} do video na tela (GUI), sempre 16:9, centralizado, cobrindo tudo
+        assertArrayEquals(new int[]{0, 0, 427, 240}, FxTimeline.cobrir(427, 240));   // 16:9
+        assertArrayEquals(new int[]{-22, 0, 427, 240}, FxTimeline.cobrir(384, 240)); // 16:10: corta os lados
+        assertArrayEquals(new int[]{0, -38, 560, 315}, FxTimeline.cobrir(560, 240)); // 21:9: corta em cima/baixo
+    }
 }
