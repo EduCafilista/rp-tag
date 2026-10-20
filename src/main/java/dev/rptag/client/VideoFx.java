@@ -93,13 +93,13 @@ public final class VideoFx {
                         tex.setPixels(img); // fecha a imagem anterior
                     }
                     tex.upload();
-                    mostrado = q;
+                    mostrado = loader.ultimoPego();
                     esperaDesde = agora;
                 }
             } else {
                 esperaDesde = agora;
             }
-            VideoEstado e = VideoEstado.decidir(q, tl.frames(), mostrado == q, loader.erro(),
+            VideoEstado e = VideoEstado.decidir(q, tl.frames(), VideoEstado.emDia(mostrado, q), loader.erro(),
                     (agora - esperaDesde) / 1e9f, loader.prontos(), true);
             if (e == VideoEstado.FALHOU) {
                 RPTagMod.LOGGER.warn("RP Tag FX: video sem quadro a tempo (quadro {}), seguindo procedural", q);

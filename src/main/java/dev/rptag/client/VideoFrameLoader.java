@@ -8,6 +8,7 @@ import net.minecraft.server.packs.resources.Resource;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
@@ -31,6 +32,7 @@ final class VideoFrameLoader implements Runnable {
     private final Map<Integer, NativeImage> prontos = new ConcurrentHashMap<>();
     private final Thread thread;
     private volatile int alvo = 0;
+    private int ultimoPego = -1;
     private volatile boolean parar, erro;
 
     VideoFrameLoader(String id, FxTimeline tl, int geracao, IntSupplier geracaoAtual) {
@@ -46,17 +48,27 @@ final class VideoFrameLoader implements Runnable {
     boolean erro() { return erro; }
     int prontos() { return prontos.size(); }
 
-    /** Entrega o quadro q (a posse passa pra quem chamou) ou null; descarta os anteriores. */
+    /**
+     * Entrega o quadro PRONTO mais novo que nao passa de q (a posse passa pra
+     * quem chamou) ou null; descarta os mais velhos. Atrasado? Mostra o que tem
+     * (nunca fica esperando o quadro exato — era o que travava o PC lento).
+     */
     NativeImage pegar(int q) {
         alvo = q;
-        for (Integer k : prontos.keySet()) {
-            if (k < q) {
-                NativeImage velho = prontos.remove(k);
+        int k = VideoEstado.escolher(prontos.keySet(), q);
+        for (Integer v : prontos.keySet()) {
+            if (v < k) {
+                NativeImage velho = prontos.remove(v);
                 if (velho != null) velho.close();
             }
         }
-        return prontos.remove(q);
+        if (k < 0) return null;
+        ultimoPego = k;
+        return prontos.remove(k);
     }
+
+    /** Indice do ultimo quadro entregue pelo pegar(). */
+    int ultimoPego() { return ultimoPego; }
 
     void parar() {
         parar = true;
@@ -78,7 +90,7 @@ final class VideoFrameLoader implements Runnable {
             while (!parar && prox < tl.frames()) {
                 if (!VideoEstado.aceitaGeracao(geracao, geracaoAtual.getAsInt())) break;
                 int a = alvo;
-                if (prox < a) prox = a;                       // atrasou: pula
+                if (prox < a) prox = a + 1;                   // atrasou: pula (1 a frente: o decode leva ~1 quadro)
                 if (prox - a >= BUFFER) { Thread.sleep(2); continue; }
                 NativeImage img = decodificar(prox);
                 if (parar || !VideoEstado.aceitaGeracao(geracao, geracaoAtual.getAsInt())) { img.close(); break; }
@@ -102,12 +114,21 @@ final class VideoFrameLoader implements Runnable {
         int w = FxTimeline.LARGURA, h = FxTimeline.ALTURA;
         if (cor.getWidth() != w || cor.getHeight() != h || alfa.getWidth() != w || alfa.getHeight() != h)
             throw new IOException("quadro " + q + " nao e 1280x720");
-        int[] rgb = cor.getRGB(0, 0, w, h, null, 0, w);
-        int[] a = alfa.getRGB(0, 0, w, h, null, 0, w);
+        int[] px = new int[w * h];
+        if (cor.getType() == BufferedImage.TYPE_3BYTE_BGR && alfa.getType() == BufferedImage.TYPE_BYTE_GRAY) {
+            // caminho RAPIDO (~10 ms/quadro): bytes direto do raster
+            FxCor.abgrDeRaster(((DataBufferByte) cor.getRaster().getDataBuffer()).getData(),
+                    ((DataBufferByte) alfa.getRaster().getDataBuffer()).getData(), px);
+        } else {
+            // formato inesperado: caminho lento, mas correto
+            int[] rgb = cor.getRGB(0, 0, w, h, null, 0, w);
+            int[] a = alfa.getRGB(0, 0, w, h, null, 0, w);
+            for (int i = 0; i < px.length; i++) px[i] = FxCor.abgr(rgb[i], (a[i] >> 16) & 0xFF);
+        }
         NativeImage img = new NativeImage(NativeImage.Format.RGBA, w, h, false);
         for (int y = 0, i = 0; y < h; y++)
             for (int x = 0; x < w; x++, i++)
-                img.setPixelRGBA(x, y, FxCor.abgr(rgb[i], (a[i] >> 16) & 0xFF));
+                img.setPixelRGBA(x, y, px[i]);
         return img;
     }
 

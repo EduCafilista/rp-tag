@@ -23,10 +23,16 @@ neoForge {
     runs {
         client {
             client()
+            // (4.2.0) ./gradlew runClient -PrptagTeste = entra sozinho no servidor de teste (run-server/)
+            if (project.hasProperty('rptagTeste')) {
+                programArguments.addAll('--quickPlayMultiplayer', '127.0.0.1:25565')
+            }
         }
         server {
             server()
             programArgument '--nogui'
+            // (4.2.0) servidor de teste em pasta propria (o cliente usa run/; logs nao se misturam)
+            gameDirectory = file('run-server')
         }
     }
 

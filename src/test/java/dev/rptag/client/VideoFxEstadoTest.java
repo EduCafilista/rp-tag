@@ -34,4 +34,20 @@ class VideoFxEstadoTest {
         assertFalse(VideoEstado.aceitaGeracao(1, 2));
         assertTrue(VideoEstado.aceitaGeracao(2, 2));
     }
+
+    @Test
+    void escolheOMaisNovoAteOQuadroAtual() {
+        assertEquals(12, VideoEstado.escolher(java.util.Set.of(10, 12, 15), 13));
+        assertEquals(15, VideoEstado.escolher(java.util.Set.of(10, 12, 15), 15));
+        assertEquals(-1, VideoEstado.escolher(java.util.Set.of(15, 16), 13));
+        assertEquals(-1, VideoEstado.escolher(java.util.Set.of(), 3));
+    }
+
+    @Test
+    void toleraAteDoisQuadrosDeAtraso() {
+        assertTrue(VideoEstado.emDia(30, 30));
+        assertTrue(VideoEstado.emDia(28, 30));
+        assertFalse(VideoEstado.emDia(27, 30));
+        assertFalse(VideoEstado.emDia(-1, 0));
+    }
 }

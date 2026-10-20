@@ -29,4 +29,19 @@ public enum VideoEstado {
     public static boolean aceitaGeracao(int quadroGeracao, int atual) {
         return quadroGeracao == atual;
     }
+
+    /** Atraso maximo (em quadros) que ainda conta como "em dia" (PC lento mostra o mais novo pronto). */
+    public static final int ATRASO_MAX = 2;
+
+    /** O quadro mais novo PRONTO que nao passa do quadro atual q, ou -1. */
+    public static int escolher(java.util.Collection<Integer> prontos, int q) {
+        int melhor = -1;
+        for (int k : prontos) if (k <= q && k > melhor) melhor = k;
+        return melhor;
+    }
+
+    /** O quadro mostrado ainda serve pro instante q (ate ATRASO_MAX quadros atras)? */
+    public static boolean emDia(int mostrado, int q) {
+        return mostrado >= 0 && q - mostrado <= ATRASO_MAX;
+    }
 }
