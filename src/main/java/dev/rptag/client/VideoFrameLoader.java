@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.IOException;
@@ -137,9 +136,9 @@ final class VideoFrameLoader implements Runnable {
         Optional<Resource> r = Minecraft.getInstance().getResourceManager().getResource(rl);
         if (r.isEmpty()) throw new IOException("faltando " + rl);
         try (InputStream in = r.get().open()) {
-            BufferedImage img = ImageIO.read(in);
-            if (img == null) throw new IOException("JPEG ilegivel " + rl);
-            return img;
+            return FxJpeg.ler(in);
+        } catch (IOException e) {
+            throw new IOException(rl + ": " + e.getMessage(), e);
         }
     }
 }
