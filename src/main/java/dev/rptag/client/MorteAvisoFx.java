@@ -1,5 +1,7 @@
 package dev.rptag.client;
 
+import dev.rptag.RPTagMod;
+
 import static dev.rptag.client.AvisoFxUtil.*;
 
 import net.minecraft.client.DeltaTracker;
@@ -54,6 +56,8 @@ public final class MorteAvisoFx {
     private static String sub = "";
     private static int evIdx, apitoIdx;
     private static boolean sino1, sino2;
+    /** (4.2.0) true = o fundo vem do VIDEO do Blender (VideoFx); false = procedural. */
+    private static boolean video;
 
     private MorteAvisoFx() {}
 
@@ -66,6 +70,9 @@ public final class MorteAvisoFx {
         sub = (mensagem == null) ? "" : mensagem;
         inicio = System.nanoTime();
         evIdx = 0; apitoIdx = 0; sino1 = sino2 = false;
+        // (4.2.0) tenta o VIDEO renderizado no Blender; sem video -> procedural
+        video = VideoFx.abrir("morte");
+        RPTagMod.LOGGER.info("RP Tag: LINHA RETA em {}", video ? "VIDEO" : "procedural");
     }
 
     /** SERVIDOR: almas subindo, cinzas e um anel de fogo-de-alma. */
@@ -85,14 +92,18 @@ public final class MorteAvisoFx {
     private static void render(GuiGraphics g, DeltaTracker dt) {
         if (inicio < 0) return;
         float t = (System.nanoTime() - inicio) / 1e9f;
-        if (t >= DUR) { inicio = -1; return; }
+        if (t >= DUR) {
+            inicio = -1;
+            if (video) VideoFx.fechar();
+            video = false;
+            return;
+        }
 
         Minecraft mc = Minecraft.getInstance();
         int w = g.guiWidth(), h = g.guiHeight();
         float cx = w / 2f, cy = h * 0.5f, k = Math.min(w, h) / 240f;
         float env = ss(0, 0.5f, t) * (1 - ss(DUR - 1.0f, DUR, t));
         float pulse = pulso(t);
-        sons(t);
 
         Font f = mc.font;
         int len = msg.length();
@@ -105,8 +116,27 @@ public final class MorteAvisoFx {
         preparar(g);
         Buf b = new Buf(g.pose().last().pose());
 
-        // 1) esfria (cinza), visão em túnel, pulso vermelho de vida baixa
+        // 1) esfria (cinza) — fica no codigo (o video nao enxerga o jogo por tras)
         b.rect(0, 0, w, h, col(0x464650, 0.22f * ss(1f, 3.5f, t) * env));
+        if (video) {
+            // (4.2.0) fundo = VIDEO (ECG, cranio, tunel, borda, cinzas) entre o cinza e o texto
+            b.flush();
+            VideoEstado ve = VideoFx.desenhar(g, t);
+            if (ve == VideoEstado.CARREGANDO) {
+                inicio = System.nanoTime(); // relogio parado ate ter quadros
+                com.mojang.blaze3d.systems.RenderSystem.enableDepthTest();
+                return;
+            }
+            if (ve == VideoEstado.FALHOU) {
+                // segue procedural NESTE MESMO t (nao reinicia o aviso)
+                video = false;
+                RPTagMod.LOGGER.warn("RP Tag: video do aviso falhou — seguindo procedural");
+            }
+            preparar(g);
+            b = new Buf(g.pose().last().pose());
+        }
+        sons(t);
+        if (!video) {
         float tunel = 0.30f + 0.18f * ss(1.5f, 4f, t) * (1 - ss(DUR - 1.4f, DUR - 0.2f, t));
         b.vinheta(w, h, Math.min(w, h) * tunel, 0x000000, 0.92f * env);
         float pa = (reduzido ? 0.10f : 0.20f) + (reduzido ? 0.20f : 0.45f) * pulse;
@@ -169,6 +199,10 @@ public final class MorteAvisoFx {
             float ex = sx + (e == 0 ? 5 : 11) * px0, ey = sy + 7 * px0;
             b.brilho(ex, ey, 5 * px0, RED, 0.35f * eyeA * env * ss(1.0f, 1.4f, t) * (1 - ss(DUR - 1.4f, DUR - 0.6f, t)));
         }
+        } // (4.2.0) fim do desenho procedural
+        b.flush();
+        aditivo();
+        b = new Buf(g.pose().last().pose());
         b.brilho(cx, ty + 4 * S, Math.max(tot * S * 0.6f, 60 * k), RED, (0.10f + 0.15f * pulse) * env * (1 - ss(FLAT, FLAT + 0.8f, t)));
         b.flush();
 

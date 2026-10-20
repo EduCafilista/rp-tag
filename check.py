@@ -694,5 +694,20 @@ check('4.1: PESADELO novo mantem escuridao + particulas do servidor',
 check('4.1: PESADELO novo poe a MENSAGEM embaixo do titulo (padrao 3.96.4)',
       'cy + 25 * k' in pafx and 'f.width(sub)' in pafx)
 
+# ---- 4.2.0: avisos em VIDEO (Blender) - player + MORTE em modo video
+vfx = rd(C + '/VideoFx.java')
+ldr = rd(C + '/VideoFrameLoader.java')
+cfg = rd(C + '/FxConfig.java') + rd(C + '/FxComando.java')
+check('4.2: VideoFx existe com abrir/desenhar/fechar',
+      'static boolean abrir(String id)' in vfx and 'Estado desenhar(GuiGraphics g, float t)' in vfx
+      and 'static void fechar()' in vfx)
+check('4.2: loader em thread daemon rptag-fx-loader', 'rptag-fx-loader' in ldr and 'setDaemon(true)' in ldr)
+check('4.2: MORTE tenta video antes do procedural', 'VideoFx.abrir("morte")' in mafx)
+check('4.2: MORTE cai pro procedural no mesmo t (FALHOU)', 'Estado.FALHOU' in mafx and 'video = false' in mafx)
+check('4.2: render do player protegido (catch Throwable)', 'catch (Throwable' in vfx)
+check('4.2: fecha o video ao sair do mundo', 'VideoFx.fechar()' in rd(C + '/ClientEvents.java'))
+check('4.2: fxVideo em cliente.properties + /rpfx',
+      'cliente.properties' in cfg and 'fxVideo' in cfg and 'literal("rpfx")' in cfg)
+
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

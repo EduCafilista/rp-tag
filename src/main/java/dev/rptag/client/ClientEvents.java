@@ -66,5 +66,6 @@ public final class ClientEvents {
         ClientRPStates.clear();
         ClientPersonaCache.clear();
         ClientBubbleCache.clear();
+        VideoFx.fechar(); // (4.2.0) nada de video sobrando no proximo mundo
     }
 }
