@@ -23,6 +23,21 @@
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
 
+### ✅ ENTREGA 4.2.0 (2026-10-19) — o que EU verifiquei e publiquei
+O amigo empurrou 17 commits (merge `86990bd`) com o aviso MORTE em VÍDEO; o codigo
+ja estava no GitHub, mas **sem tag e sem Release**. Verificado aqui do zero:
+toolchain reconstruida (JDK 21 + installer client/server + launcher_profiles falso +
+lwjgl); `javac` rc=0 → **96 classes**; `check.py` **327 PASS/0 FAIL**;
+`arte/validar.py` **8/8** (288 quadros, todos 1280x720, todo `_c` tem `_a`);
+**JUnit 22/22** (precisa de `src/test/resources` no classpath — sem isso os 3 testes do
+`FxJpegTest` falham com "InputStream null", nao e bug do mod); jar **10.298.836 B**
+(288 frames = 9,6 MB); smoke do servidor: "RP Tag 4.2.0", avisos 4 e 1 e `canon on/off`
+ok, **0 ERROR/FATAL**.
+Publicado: tag+Release **v4.2.0** (id 417947996, asset 10298836, `make_latest`,
+download `-L` 200 + `cmp` identico, tag em `d84ec85`); **v4.1.0 apagada** (release+tag).
+REGRA NOVA do amigo: **nenhum jar no git** — o `.gitignore` virou `*.jar` com excecao do
+`gradle-wrapper.jar`; o jar vive so na Release (com video, cada ciclo adiciona ~10 MB).
+
 ### 🎬 4.2.0 (2026-10-19): avisos em VÍDEO renderizados no Blender (piloto: MORTE)
 - **Spec e plano:** `docs/superpowers/specs/2026-10-19-avisos-em-video-design.md` e
   `docs/superpowers/plans/2026-10-19-avisos-em-video-piloto-morte.md`.
