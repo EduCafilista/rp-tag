@@ -32,14 +32,14 @@ Opções: **(a)** substituir o atual (guardar backup do Sangria),
 - [ ] `registerAboveAll` em `ClientGuiLayers` (nunca `RenderGuiEvent.Post`)
 - [ ] rota em `ClientEffects.startScreenText` (estilo 9)
 - [ ] partículas + som no SERVIDOR (`RPCommands.somAviso`, caso 9)
-- [ ] `check.py` antes do `print(PASS/FAIL)` e **327 → sobe** (nunca diminui)
+- [ ] `check.py` antes do `print(PASS/FAIL)` e **331 → sobe** (nunca diminui)
 - [ ] verificação visual em `verificacao/` (o user cobra a cada ciclo)
 - [ ] CHANGELOG + WALKTHROUGH no fim do ciclo
 - [ ] jar → Release nova + **apagar release/tag anterior**
 - [ ] **nenhum** jar no git (regra do amigo, 4.2.0)
 
 ## Estado do projeto (verificado agora)
-- Versão **4.2.0**, `check.py` **327 PASS / 0 FAIL**
+- Versão **4.2.0**, `check.py` **331 PASS / 0 FAIL**
 - HEAD `cdd4fe9` = remoto, `git status` limpo
 - 288 frames do vídeo do MORTE presentes
 - Release **v4.2.0** (id 417947996) = latest, jar 10.298.836 B

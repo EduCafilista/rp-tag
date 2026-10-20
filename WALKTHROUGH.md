@@ -18,7 +18,7 @@
 | Versão | **4.2.0** (2026-10-19) |
 | Commit | (ver `git log`) |
 | Jar | `rptag-4.2.0.jar` (~10 MB; **só na GitHub Release** — não vai mais pro git) |
-| Checks | `check.py` → **327 PASS / 0 FAIL** + **JUnit 22/22** (`./gradlew test`, desde a 4.2.0) |
+| Checks | `check.py` → **331 PASS / 0 FAIL** + **JUnit 22/22** (`./gradlew test`, desde a 4.2.0) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
@@ -27,7 +27,7 @@
 O amigo empurrou 17 commits (merge `86990bd`) com o aviso MORTE em VÍDEO; o codigo
 ja estava no GitHub, mas **sem tag e sem Release**. Verificado aqui do zero:
 toolchain reconstruida (JDK 21 + installer client/server + launcher_profiles falso +
-lwjgl); `javac` rc=0 → **96 classes**; `check.py` **327 PASS/0 FAIL**;
+lwjgl); `javac` rc=0 → **95 classes**; `check.py` **331 PASS/0 FAIL**;
 `arte/validar.py` **8/8** (288 quadros, todos 1280x720, todo `_c` tem `_a`);
 **JUnit 22/22** (precisa de `src/test/resources` no classpath — sem isso os 3 testes do
 `FxJpegTest` falham com "InputStream null", nao e bug do mod); jar **10.298.836 B**
@@ -1209,4 +1209,28 @@ Se o `.git/config` sumir (não vai pro snapshot), recriar:
 
 ---
 
-*Última atualização: ciclo 3.93.0 (2026-10-19), commit `git log -1`.*
+## 9. FX de aviso — estilo 9 (SANGUE) = "HEMORRAGIA" (4.3.0, 2026-10-20)
+
+Substitui o "Sangria" (protótipo 3.95, `backup/SangueAvisoFx_Sangria_3.95.java`). O dono reclamou:
+"o atual está muito cartoon" — o que fazia cartoon eram as **gotas redondas com brilho branco**
+(`GLOSS = 0xFF8C8C`). Regra nova: **nada de gloss branco, nada de elipse perfeita.**
+
+- Arquivo: `client/SangueAvisoFx.java` (~600 linhas, só `AvisoFxUtil`/`Buf`, sem RenderSystem manual).
+- Timeline: 0,00–0,30 s **costura** (pele esticando) → 0,30 s **RUPTURA** (clarão + tremor + estalo)
+  → ferida abre em 0,35 s com elástico → **escapa sangue até 6 s**.
+- Peças: `carne()` (vinheta granulada), `veias()`/`veia()` (capilares recursivos das 4 bordas),
+  `costura()`, `ferida()` (rasgo + lábios + estrias + **tendões curvos** + **escorrido em fita** +
+  fibras internas), `jatos()` (11 partículas por batida com gravidade), `manchas()` (14 respingos +
+  escorridos com **cabeça achatada**), `manchasFrente()` (4 cantos), `cortina()`, `poco()`, `grao()`.
+- Coração: `BEATS` 12 batidas acelerando e afrouxando; `batida()` soma `exp(-dt*8.5)` com eco de 0,20 s.
+- Paleta: `VOID 0x070001, CRUST 0x240003, DEEP 0x3D0006, BLOOD 0x8E0510, BLOOD_B 0xC4121F,
+  FLESH 0x8E1512, FLESH_D 0x4A0806, GLOSS 0xE07070` (só para fio de luz, nunca branco).
+- Texto: `S = k*1.9`, `ty = cy - 4*S` (nunca encolhe), mensagem em `cy + 25*k` (regra 3.96.4).
+- Verificação: `verificacao/simula_4_3_0_sangue.py` reproduz a MESMA matemática em numpy/PIL e gera
+  4 PNGs 1080p + `4_3_0_sangue_timeline.png` (6 quadros) + `4_3_0_sangue_animacao.gif` (6 s, 12 fps).
+  **Não é screenshot do jogo** — é prova de geometria/cor.
+- Checks: 331 (4 novos em `check.py`, seção 4.3).
+
+---
+
+*Última atualização: ciclo 4.3.0 (2026-10-20) — FX de sangue "HEMORRAGIA".*

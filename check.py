@@ -727,5 +727,22 @@ import subprocess
 check('4.2: assets de video validos (arte/validar.py)',
       subprocess.run([sys.executable, '-I', 'arte/validar.py'], capture_output=True).returncode == 0)
 
+# ---- 4.3.0: SANGUE = "HEMORRAGIA" (substitui o "Sangria" cartoon) ----
+saf2 = rd(C + '/SangueAvisoFx.java')
+check('4.3: sangue sem gloss branco (era o que deixava cartoon)',
+      'GLOSS = 0xE07070' in saf2 and '0xFF9A9A' not in saf2 and '0xFF8C8C' not in saf2
+      and 'WHITE' not in saf2)
+check('4.3: sangue tem ferida que rasga + jatos no ritmo do coracao',
+      'RUPTURA' in saf2 and 'private static void ferida(' in saf2 and 'private static void jatos(' in saf2
+      and 'BEATS' in saf2)
+check('4.3: sangue escorre no vidro e forma poca (sem gota redonda com brilho)',
+      'private static void manchas(' in saf2 and 'private static void poco(' in saf2
+      and 'elipse(dx, y0 + L, 0, 1' in saf2 and 'private static void grao(' in saf2)
+check('4.3: sangue mantem contrato do FX (iniciar + registerAboveAll + particulasMundo)',
+      'public static void iniciar(String t, String s)' in saf2
+      and 'registerAboveAll(ResourceLocation.fromNamespaceAndPath("rptag", "aviso_sangue")' in saf2
+      and 'public static void particulasMundo(ServerPlayer p)' in saf2
+      and 'cy + 25 * k' in saf2)
+
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

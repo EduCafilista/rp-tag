@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.3.0 — 2026-10-20 — 🩸 SANGUE novo: "HEMORRAGIA"
+
+- **`avisar` estilo 9 (sangue) refeito do zero.** O antigo ("Sangria") lembrava desenho animado:
+  gotas redondas com brilho branco. Agora a tela é um corpo que **se rasga**.
+- 0,3 s: a pele estica numa costura fina → **RUPTURA** (clarão, tremor, estalo) → a ferida abre
+  com efeito elástico, lábios de carne irregular, estrias de músculo e tendões que **estalam**.
+- O coração **acelera e afrouxa**: cada batida esguicha jatos arteriais com gravidade.
+- Sangue **escorre pelo vidro** em respingos irregulares e poças; o chão enche e drena no fim.
+- Capilares crescem das 4 bordas; grão de filme tira o aspecto "vetor limpo".
+- Sem brilho branco em lugar nenhum (era o que deixava cartoon). Mensagem continua **embaixo** do título.
+- Verificação: `verificacao/4_3_0_sangue_animacao.gif` + 4 PNGs 1080p + timeline de 6 quadros.
+- `check.py`: 331 checks (4 novos).
+
+
 
 
 ## 4.2.0 — AVISO DE MORTE EM VÍDEO (BLENDER) 🎬 (2026-10-19)
