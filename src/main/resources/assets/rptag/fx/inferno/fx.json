@@ -1,0 +1,70 @@
+{
+  "id": "inferno",
+  "fps": 24,
+  "frames": 144,
+  "width": 1280,
+  "height": 720,
+  "blend": "normal",
+  "markers": [
+    {
+      "name": "impacto",
+      "frame": 0
+    },
+    {
+      "name": "texto_entra",
+      "frame": 7
+    },
+    {
+      "name": "texto_sai",
+      "frame": 115
+    },
+    {
+      "name": "crepitar",
+      "frame": 12
+    },
+    {
+      "name": "crepitar",
+      "frame": 23
+    },
+    {
+      "name": "crepitar",
+      "frame": 34
+    },
+    {
+      "name": "crepitar",
+      "frame": 44
+    },
+    {
+      "name": "crepitar",
+      "frame": 55
+    },
+    {
+      "name": "crepitar",
+      "frame": 66
+    },
+    {
+      "name": "crepitar",
+      "frame": 77
+    },
+    {
+      "name": "crepitar",
+      "frame": 88
+    },
+    {
+      "name": "crepitar",
+      "frame": 98
+    },
+    {
+      "name": "crepitar",
+      "frame": 109
+    },
+    {
+      "name": "crepitar",
+      "frame": 120
+    },
+    {
+      "name": "fim",
+      "frame": 122
+    }
+  ]
+}

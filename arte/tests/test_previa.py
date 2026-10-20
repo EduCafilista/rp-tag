@@ -75,3 +75,23 @@ class EnquadrarTest(unittest.TestCase):
         self.assertAlmostEqual(w, 40 * 1680 / 1280, delta=3)
         self.assertLessEqual(abs(cx - 840), 2)
         self.assertLessEqual(abs(cy - 360), 2)
+
+
+class AlfaJpegTest(unittest.TestCase):
+    def test_alfa_jpeg_sobre_fundo_claro(self):
+        """Par JPEG cor+alfa: onde o alfa e 0 o fundo aparece intacto (tolerancia de 8 por canal)."""
+        tmp = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[2] / '.superpowers')
+        try:
+            root = Path(tmp.name)
+            cor = Image.new('RGB', (1280, 720), (255, 120, 20)); alfa = Image.new('L', (1280, 720), 0)
+            alfa.paste(255, (0, 0, 640, 720))                       # metade esquerda opaca
+            cor.save(root / '0000_c.jpg', quality=85); alfa.save(root / '0000_a.jpg', quality=90)
+            fundo = root / 'fundo.png'; Image.new('RGB', (1280, 720), (200, 220, 240)).save(fundo)
+            out = previa.compor(root / '0000_c.jpg', {'markers': []}, 0, fundo=fundo, alfa=root / '0000_a.jpg')
+            for x in (700, 900, 1270):
+                r, g, b = out.getpixel((x, 360))
+                self.assertLessEqual(max(abs(r - 200), abs(g - 220), abs(b - 240)), 8)
+            r, g, b = out.getpixel((300, 360))
+            self.assertLessEqual(max(abs(r - 255), abs(g - 120), abs(b - 20)), 8)
+        finally:
+            tmp.cleanup()
