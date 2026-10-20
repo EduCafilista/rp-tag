@@ -733,6 +733,8 @@ for _id, _cls in (('inferno', 'InfernoAvisoFx'), ('gelo', 'GeloAvisoFx')):
     check('4.3: %s toca os sons so depois de resolver a carga' % _cls,
           'VideoEstado.CARREGANDO' in _src and _src.index('VideoEstado.CARREGANDO') < _src.index('        sons(t);'))
     check('4.3: %s tem parar() (aviso novo encerra o anterior)' % _cls, 'public static void parar()' in _src)
+    check('4.3: %s com contorno escuro na mensagem no modo video (legivel no ceu claro)' % _cls,
+          'CONTORNO_VIDEO' in _src and 'if (video) contornoEscuro(' in _src)
     check('4.3: assets do video %s no jar' % _id, os.path.exists(A + '/fx/%s/fx.json' % _id))
 check('4.3: aviso novo encerra os avisos em video anteriores (ClientEffects)',
       all(('%s.parar()' % k) in rd(C + '/ClientEffects.java') for k in ('MorteAvisoFx', 'InfernoAvisoFx', 'GeloAvisoFx')))

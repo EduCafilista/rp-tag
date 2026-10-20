@@ -28,6 +28,8 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
  */
 public final class InfernoAvisoFx {
     private static final float DUR = 6.0f;
+    /** (4.3.0) contorno escuro do texto no modo video (marrom-carvao). */
+    private static final int CONTORNO_VIDEO = 0x200800;
     private static final int RED = 0xFF4600, ORG = 0xFF8C1E, YEL = 0xFFD23C, HOTW = 0xFFFAD2, SMOKE = 0x140804;
 
     /** true = sem clarão, menos meteoros/brasas. */
@@ -130,7 +132,7 @@ public final class InfernoAvisoFx {
             b.brilho(sx, sy, (60 + 50 * rnd(i, 73)) * k, SMOKE, 0.30f * env);
         }
         } // (4.3.0) fim do fundo procedural (camada 1)
-        b.brilho(cx, cy, 85 * k, 0x000000, 0.30f * env);               // apoio de leitura do texto
+        b.brilho(cx, cy, 85 * k, 0x000000, (video ? 0.45f : 0.30f) * env); // apoio de leitura do texto
         b.flush();
 
         // 2) fogo (aditivo)
@@ -225,6 +227,7 @@ public final class InfernoAvisoFx {
                 g.pose().pushPose();
                 g.pose().translate(cx - f.width(sub) * S2 / 2, cy + 25 * k, 0);
                 g.pose().scale(S2, S2, 1);
+                if (video) contornoEscuro(g, f, sub, 0, 0, a8s, CONTORNO_VIDEO);
                 g.drawString(f, sub, 0, 0, (a8s << 24) | 0xFFD23C, true);
                 g.pose().popPose();
             }

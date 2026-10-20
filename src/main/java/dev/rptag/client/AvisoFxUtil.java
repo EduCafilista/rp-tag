@@ -91,6 +91,17 @@ public final class AvisoFxUtil {
         return (r << 16) | (g << 8) | b;
     }
     public static int col(int rgb, float a) { return ((int) (cl(a) * 255) << 24) | (rgb & 0xFFFFFF); }
+    /**
+     * (4.3.0) Contorno escuro (4 copias deslocadas 1 px, na escala atual) atras de um texto —
+     * no modo video o fundo procedural escuro some e o texto claro precisa disso sobre ceu claro.
+     */
+    public static void contornoEscuro(net.minecraft.client.gui.GuiGraphics g, net.minecraft.client.gui.Font f,
+                                      String s, float x, float y, int a8, int rgb) {
+        int c = ((int) (a8 * 0.75f) << 24) | (rgb & 0xFFFFFF);
+        g.drawString(f, s, x - 1, y, c, false); g.drawString(f, s, x + 1, y, c, false);
+        g.drawString(f, s, x, y - 1, c, false); g.drawString(f, s, x, y + 1, c, false);
+    }
+
     public static float cl(float x) { return x < 0 ? 0 : Math.min(x, 1); }
     public static float ss(float a, float b, float x) { float u = cl((x - a) / (b - a)); return u * u * (3 - 2 * u); }
     public static float eo(float x) { return 1 - (1 - x) * (1 - x) * (1 - x); }

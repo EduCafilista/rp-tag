@@ -33,6 +33,8 @@ public final class GeloAvisoFx {
     private static final float DUR = 6.0f;
     private static final int ICE = 0xD2F0FF, LIGHT = 0xBEEBFF, MID = 0x5AA0DC, DEEP = 0x0A2850, GLOW = 0x50A0FF, WHITE = 0xFFFFFF;
     private static final float[] CH = {0.5f, 1.2f, 2.0f, 3.0f};
+    /** (4.3.0) contorno escuro do texto no modo video (azul-noite). */
+    private static final int CONTORNO_VIDEO = 0x0A1C38;
     private static final float[] CP = {1.5f, 1.9f, 2.0f, 1.7f};
 
     /** true = sem clarão, menos neve e dendritos. */
@@ -127,7 +129,7 @@ public final class GeloAvisoFx {
         b.rect(0, 0, w, h, col(MID, 0.12f * env));
         b.vinheta(w, h, Math.min(w, h) * 0.30f, ICE, 0.50f * env);
         }
-        b.brilho(cx, cy, 85 * k, DEEP, 0.30f * env);                   // apoio de leitura
+        b.brilho(cx, cy, 85 * k, DEEP, (video ? 0.5f : 0.30f) * env);  // apoio de leitura (mais forte sem o fundo procedural)
         if (!video) {
         float gg = eo(cl((t - 0.2f) / 1.4f)), gl = Math.min(w, h) * 0.30f, ga = 0.75f * env;
         int[] per = reduzido ? new int[]{1, 3} : new int[]{0, 1, 2, 3};
@@ -237,6 +239,7 @@ public final class GeloAvisoFx {
             g.pose().translate(xs[i], ty, 0);
             g.pose().scale(S, S, 1);
             int glow = ((int) (a8 * 0.35f) << 24) | 0x50A0FF;
+            if (video) contornoEscuro(g, f, ch, 0, 0, a8, CONTORNO_VIDEO);
             g.drawString(f, ch, -1, 0, glow, false); g.drawString(f, ch, 1, 0, glow, false);
             g.drawString(f, ch, 0, -1, glow, false); g.drawString(f, ch, 0, 1, glow, false);
             g.drawString(f, ch, -1.5f, 0, ((int) (a8 * 0.35f) << 24) | 0x78E6FF, false);
@@ -252,6 +255,7 @@ public final class GeloAvisoFx {
                 g.pose().pushPose();
                 g.pose().translate(cx - f.width(sub) * S2 / 2, cy + 25 * k, 0);
                 g.pose().scale(S2, S2, 1);
+                if (video) contornoEscuro(g, f, sub, 0, 0, a8s, CONTORNO_VIDEO);
                 g.drawString(f, sub, 0, 0, (a8s << 24) | 0xD2F0FF, true);
                 g.pose().popPose();
             }
