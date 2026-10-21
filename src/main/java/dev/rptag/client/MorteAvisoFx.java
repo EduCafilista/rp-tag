@@ -76,7 +76,7 @@ public final class MorteAvisoFx {
         RPTagMod.LOGGER.info("RP Tag: LINHA RETA em {}", video ? "VIDEO" : "procedural");
     }
 
-    /** (4.3.0) Encerra o aviso na hora (um aviso novo substitui este). */
+    /** (4.5.0) Encerra o aviso na hora (um aviso novo substitui este). */
     public static void parar() {
         if (video) VideoFx.fechar();
         video = false;

@@ -28,7 +28,7 @@ uns 5~15 min conforme a internet) e **precisa de ~4 GB de RAM livres**
 (é o build padrão de mods NeoForge: ele descompila o Minecraft uma vez e
 guarda no cache; das outras vezes é rapidinho).
 
-✅ O jar pronto aparece em **`build/libs/rptag-4.1.0.jar`** — é esse que
+✅ O jar pronto aparece em **`build/libs/rptag-4.2.0.jar`** — é esse que
 vai na pasta `mods` do jogo/servidor (sempre APAGUE o jar antigo antes de
 pôr o novo, no SERVIDOR e no CLIENTE!).
 
@@ -68,7 +68,7 @@ pôr o novo, no SERVIDOR e no CLIENTE!).
 ## 5. Checklist antes de entregar
 
 1. `gradlew build` sem erro
-2. `python3 check.py` → **319 checks, 0 FAIL** (no Windows: `py check.py`)
+2. `python3 check.py` → **337 checks, 0 FAIL** (no Windows: `py check.py`) e `./gradlew test` → **26 testes JUnit**
 3. Testou no jogo (runClient) o que você mexeu
 4. Atualizou `CHANGELOG.md` e o `WALKTHROUGH.md`
 5. Comita (`git add -A && git commit -m "o que mudou"`)

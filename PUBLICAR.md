@@ -1,4 +1,4 @@
-# Como publicar no GitHub (rotina atual — 4.1.0)
+# Como publicar no GitHub (rotina atual — 4.2.0)
 
 Passo a passo do que **realmente** é feito a cada versão nova.
 O repo é `github.com/EduCafilista/rp-tag` (público).
@@ -35,10 +35,10 @@ git status --porcelain            # o diff deve ser só o do ciclo atual
 
 | Arquivo | O que muda |
 |---|---|
-| `src/main/java/dev/rptag/RPTagMod.java` | `VERSION = "4.1.0"` |
-| `build.gradle` | `version = '4.1.0'` |
-| `src/main/resources/META-INF/neoforge.mods.toml` | `version="4.1.0"` |
-| `src/main/java/dev/rptag/client/ClientEffects.java` | log de boot `"RP Tag 4.1.0: ..."` |
+| `src/main/java/dev/rptag/RPTagMod.java` | `VERSION = "4.2.0"` |
+| `build.gradle` | `version = '4.2.0'` |
+| `src/main/resources/META-INF/neoforge.mods.toml` | `version="4.2.0"` |
+| `src/main/java/dev/rptag/client/ClientEffects.java` | log de boot `"RP Tag 4.2.0: ..."` |
 | `check.py` | a verificação de versão também muda |
 
 ⚠️ No `.toml`, a faixa do Minecraft é `[1.21.1,1.22)` — colocar `[1.21.1]` **mata o boot**.
@@ -65,7 +65,7 @@ Depois compile e faça o smoke do servidor:
 
 ```bash
 git add <arquivos do ciclo>       # deixe o jar FORA deste add
-git commit -m "4.1.0: <resumo do ciclo>"
+git commit -m "4.2.0: <resumo do ciclo>"
 
 git push "https://<TOKEN>@github.com/EduCafilista/rp-tag.git" HEAD:main
 ```
@@ -103,18 +103,18 @@ Sem `target_commitish`: **crie a tag pelo git e publique a release sem esse camp
 
 ```bash
 PAT="<token>"
-git tag -f v4.1.0 HEAD
-git push "https://$PAT@github.com/EduCafilista/rp-tag.git" refs/tags/v4.1.0
+git tag -f v4.2.0 HEAD
+git push "https://$PAT@github.com/EduCafilista/rp-tag.git" refs/tags/v4.2.0
 
 # 1) cria a release
 curl -X POST -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
   https://api.github.com/repos/EduCafilista/rp-tag/releases -d @release.json
-#    release.json = { "tag_name": "v4.1.0", "name": "...", "body": "..." }
+#    release.json = { "tag_name": "v4.2.0", "name": "...", "body": "..." }
 
 # 2) sobe o jar
 curl -X POST -H "Authorization: Bearer $PAT" -H "Content-Type: application/java-archive" \
-  "https://uploads.github.com/repos/EduCafilista/rp-tag/releases/<ID>/assets?name=rptag-4.1.0.jar" \
-  --data-binary @rptag-4.1.0.jar
+  "https://uploads.github.com/repos/EduCafilista/rp-tag/releases/<ID>/assets?name=rptag-4.2.0.jar" \
+  --data-binary @rptag-4.2.0.jar
 
 # 3) marca como latest
 curl -X PATCH -H "Authorization: Bearer $PAT" -H "Content-Type: application/json" \
@@ -153,18 +153,18 @@ segundo mod do repo (que está em pausa) e o aviso de pausa nunca sai.
 ## 8. Conferir tudo (nunca confie, verifique)
 
 ```bash
-# 1) só devem sobrar v4.1.0 e portais-v1.3.2
+# 1) só devem sobrar v4.2.0 e portais-v1.3.2
 curl -s -H "Authorization: Bearer $PAT" \
   "https://api.github.com/repos/EduCafilista/rp-tag/releases?per_page=100"
 
 # 2) o download precisa responder e ser idêntico ao jar local
 curl -sL -o /tmp/dl.jar -w "HTTP %{http_code} bytes=%{size_download}\n" \
-  https://github.com/EduCafilista/rp-tag/releases/download/v4.1.0/rptag-4.1.0.jar
-cmp /tmp/dl.jar rptag-4.1.0.jar && echo "JAR OK"
+  https://github.com/EduCafilista/rp-tag/releases/download/v4.2.0/rptag-4.2.0.jar
+cmp /tmp/dl.jar rptag-4.2.0.jar && echo "JAR OK"
 
 # 3) a tag tem que apontar pro commit publicado
 curl -s -H "Authorization: Bearer $PAT" \
-  https://api.github.com/repos/EduCafilista/rp-tag/git/ref/tags/v4.1.0
+  https://api.github.com/repos/EduCafilista/rp-tag/git/ref/tags/v4.2.0
 
 # 4) nenhum jar antigo na raiz
 curl -s "https://api.github.com/repos/EduCafilista/rp-tag/contents/?ref=main" \

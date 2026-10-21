@@ -6,9 +6,9 @@
 
 > 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
 >
-> 📥 **Download:** grab `rptag-4.1.0.jar` from the [Releases page](https://github.com/EduCafilista/rp-tag/releases/latest) or the [direct link](https://github.com/EduCafilista/rp-tag/raw/main/rptag-4.1.0.jar).
+> 📥 **Download:** grab `rptag-4.2.0.jar` (~10 MB) from the [Releases page](https://github.com/EduCafilista/rp-tag/releases/latest).
 >
-> 🧹 **Only the newest version stays published** — old releases are removed every cycle.
+> 🧹 **Only the newest version stays published** — old releases are removed every cycle. The jar does **not** live in the repository (only in Releases).
 
 ## ✨ Features
 
@@ -102,7 +102,7 @@
 **Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
 
 1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-4.1.0.jar` into the **server's** `mods/` folder.
+2. Drop `rptag-4.2.0.jar` into the **server's** `mods/` folder.
 3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
 
 ## 🔧 Building from source
@@ -113,7 +113,7 @@ Requirements: **JDK 21** and internet access.
 ./gradlew build
 ```
 
-The jar ends up at `build/libs/rptag-4.1.0.jar`.
+The jar ends up at `build/libs/rptag-4.2.0.jar`.
 
 ## 🎨 Customizing
 

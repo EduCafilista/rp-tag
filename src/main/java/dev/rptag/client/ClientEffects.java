@@ -81,7 +81,7 @@ public final class ClientEffects {
 
     /** Mostra o texto GRANDE por N segundos (servidor clampa 1..60). */
     public static void startScreenText(String text, int seconds, int style) {
-        // (4.3.0) os avisos em VIDEO dividem um so player: um aviso novo (de
+        // (4.5.0) os avisos em VIDEO dividem um so player: um aviso novo (de
         // qualquer estilo) encerra o anterior em vez de deixar o video preso
         MorteAvisoFx.parar();
         InfernoAvisoFx.parar();
@@ -202,7 +202,7 @@ public final class ClientEffects {
     }
 
     static {
-        RPTagMod.LOGGER.info("RP Tag 4.3.0: camada de avisos carregada");
+        RPTagMod.LOGGER.info("RP Tag 4.5.0: camada de avisos carregada");
     }
 
     /** (3.78.0) VÉU da vida perdida: tela MEIO AVERMELHADA durante o

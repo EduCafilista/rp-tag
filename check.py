@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.3.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.5.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.3.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.5.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -298,7 +298,9 @@ check('CORAÇÃO CANÔNICO: bloco+item+BE registrados', '"coracao_canon"' in rtm
 check('coracao NUNCA spawna natural (só /give, indestrutível)', 'strength(-1.0F, 3600000.0F)' in rtm and 'EntityArgument' not in rtm)
 check('SHIFT + clique direito = +1 vida (coração se consome)', 'isShiftKeyDown' in blk and 'setCanonLives' in blk and 'removeBlock' in blk and 'NOVA CHANCE' in blk)
 check('vidas cheias 5/5: não consome (coração fica)', 'vidas >= 5' in blk and 'continua aqui' in blk)
-check('coração 3D PROCEDURAL girando/batendo (BER — máscara 3.86)', 'RenderType.lightning()' in rdr and 'rotationDegrees' in rdr and 'pulso' in rdr and 'LINHAS' in rdr)
+check('coração 3D PROCEDURAL girando/batendo (BER — sólido voxel 4.4)',
+      'RenderType.lightning()' in rdr and 'rotationDegrees' in rdr and 'pulso' in rdr
+      and 'MASCARA' in rdr and 'SOLIDO' in rdr)
 check('BER registrado (ClientRenderers, camada cliente)', 'registerBlockEntityRenderer' in rd(C + '/ClientRenderers.java'))
 check('assets do coração completos (estado/modelo/item/textura)', _os.path.exists(A + '/textures/item/coracao_canon.png') and _os.path.exists(A + '/blockstates/coracao_canon.json') and '"elements": []' in rd(A + '/models/block/coracao_canon.json'))
 check('protecao NÃO some no logout (relog nao burla)', 'PROTECAO_ATE é de propósito NÃO limpa' in cl)
@@ -357,16 +359,17 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.3.0', 'RP Tag 4.3.0' in ce)
+check('4.0: boot log 4.5.0', 'RP Tag 4.5.0' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
-check('3.86: coracao = mascara pixel-art (lobulos + ponta em V)',
-      'LINHAS' in ccr and 'topo dos l' + chr(243) + 'bulos' in ccr and 'ponta em V' in ccr)
-check('3.86: gradiente por linha + paredes escuras + brilho',
-      'FRENTE[r]' in ccr and 'LADO' in ccr and 'BRILHO' in ccr)
-check('3.86: extrusao 5px + balanco em Z',
-      'Z0 = -2, Z1 = 3' in ccr and 'Axis.ZP.rotationDegrees' in ccr)
+check('4.4: coracao = SOLIDO voxel (mascara 15x13 + 13 fatias infladas)',
+      'MASCARA' in ccr and 'NY = 13' in ccr and 'construirSolido' in ccr and 'FATOR_PROF' in ccr)
+check('4.4: so faces expostas + sombreamento por face (volume)',
+      'construirFaces' in ccr and 'shade(' in ccr and 'tem(x, y - 1, z)' in ccr)
+check('4.4: giro por relogio de parede (nao trava, nao pula) + batida tum-tum',
+      'System.nanoTime()' in ccr and 'Axis.YP.rotationDegrees' in ccr
+      and 'Math.exp(-bt * 18.0)' in ccr and 'getBlockPos().getX() * 37' in ccr)
 ce = rd(C + '/ClientEffects.java')
 check('3.98: client aceita estilos ate 11 (pesadelo2)', 'Math.min(11, textStyle)' in ce)
 check('3.86/3.91: INFERNO aura (fundo + brasa)', '0x140301' in ce and '0xFFC080' in ce)
@@ -723,30 +726,62 @@ check('4.2: render do player protegido (catch Throwable)', 'catch (Throwable' in
 check('4.2: fecha o video ao sair do mundo', 'VideoFx.fechar()' in rd(C + '/ClientEvents.java'))
 check('4.2: fxVideo em cliente.properties + /rpfx',
       'cliente.properties' in cfg and 'fxVideo' in cfg and 'literal("rpfx")' in cfg)
-# ---- 4.3.0: Inferno e Gelo em VIDEO (Blender), mesmo player do MORTE
+# ---- 4.5.0: Inferno e Gelo em VIDEO (Blender), mesmo player do MORTE
 for _id, _cls in (('inferno', 'InfernoAvisoFx'), ('gelo', 'GeloAvisoFx')):
     _src = rd(C + '/%s.java' % _cls)
-    check('4.3: %s tenta video (politica + abrir) antes do procedural' % _cls,
+    check('4.5: %s tenta video (politica + abrir) antes do procedural' % _cls,
           ('FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("%s")' % _id) in _src)
-    check('4.3: %s cai pro procedural no mesmo t (FALHOU)' % _cls,
+    check('4.5: %s cai pro procedural no mesmo t (FALHOU)' % _cls,
           'VideoEstado.FALHOU' in _src and 'video = false' in _src)
-    check('4.3: %s toca os sons so depois de resolver a carga' % _cls,
+    check('4.5: %s toca os sons so depois de resolver a carga' % _cls,
           'VideoEstado.CARREGANDO' in _src and _src.index('VideoEstado.CARREGANDO') < _src.index('        sons(t);'))
-    check('4.3: %s tem parar() (aviso novo encerra o anterior)' % _cls, 'public static void parar()' in _src)
-    check('4.3: %s com contorno escuro na mensagem no modo video (legivel no ceu claro)' % _cls,
+    check('4.5: %s tem parar() (aviso novo encerra o anterior)' % _cls, 'public static void parar()' in _src)
+    check('4.5: %s com contorno escuro na mensagem no modo video (legivel no ceu claro)' % _cls,
           'CONTORNO_VIDEO' in _src and 'if (video) contornoEscuro(' in _src)
-    check('4.3: assets do video %s no jar' % _id, os.path.exists(A + '/fx/%s/fx.json' % _id))
-check('4.3: aviso novo encerra os avisos em video anteriores (ClientEffects)',
+    check('4.5: assets do video %s no jar' % _id, os.path.exists(A + '/fx/%s/fx.json' % _id))
+check('4.5: aviso novo encerra os avisos em video anteriores (ClientEffects)',
       all(('%s.parar()' % k) in rd(C + '/ClientEffects.java') for k in ('MorteAvisoFx', 'InfernoAvisoFx', 'GeloAvisoFx')))
-check('4.3: sair do mundo encerra os avisos em video (nada volta ao reentrar)',
+check('4.5: sair do mundo encerra os avisos em video (nada volta ao reentrar)',
       all(('%s.parar()' % k) in rd(C + '/ClientEvents.java') for k in ('MorteAvisoFx', 'InfernoAvisoFx', 'GeloAvisoFx')))
-check('4.3: MORTE tambem respeita a politica (reduzido = procedural)',
+check('4.5: MORTE tambem respeita a politica (reduzido = procedural)',
       'FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("morte")' in rd(C + '/MorteAvisoFx.java'))
-check('4.3: politica do video (reduzido = procedural) em Java puro',
+check('4.5: politica do video (reduzido = procedural) em Java puro',
       'return habilitado && !reduzido;' in rd(C + '/FxVideoPolitica.java'))
 import subprocess
 check('4.2: assets de video validos (arte/validar.py)',
       subprocess.run([sys.executable, '-I', 'arte/validar.py'], capture_output=True).returncode == 0)
+
+# ---- 4.3.0: SANGUE = "HEMORRAGIA" (substitui o "Sangria" cartoon) ----
+saf2 = rd(C + '/SangueAvisoFx.java')
+check('4.3: sangue sem gloss branco (era o que deixava cartoon)',
+      'GLOSS = 0xE07070' in saf2 and '0xFF9A9A' not in saf2 and '0xFF8C8C' not in saf2
+      and 'WHITE' not in saf2)
+check('4.3: sangue tem ferida que rasga + jatos no ritmo do coracao',
+      'RUPTURA' in saf2 and 'private static void ferida(' in saf2 and 'private static void jatos(' in saf2
+      and 'BEATS' in saf2)
+check('4.3: sangue escorre no vidro e forma poca (sem gota redonda com brilho)',
+      'private static void manchas(' in saf2 and 'private static void poco(' in saf2
+      and 'elipse(dx, y0 + L, 0, 1' in saf2 and 'private static void grao(' in saf2)
+check('4.3: sangue mantem contrato do FX (iniciar + registerAboveAll + particulasMundo)',
+      'public static void iniciar(String t, String s)' in saf2
+      and 'registerAboveAll(ResourceLocation.fromNamespaceAndPath("rptag", "aviso_sangue")' in saf2
+      and 'public static void particulasMundo(ServerPlayer p)' in saf2
+      and 'cy + 25 * k' in saf2)
+
+# ---- 4.4.0: /rp admin vida (tirar/dar/definir/ver) + coracao voxel ----
+check('4.4: /rp admin vida <jogador> tirar|dar|definir|ver existe',
+      '.then(Commands.literal("vida")' in rp and 'vidaTirar' in rp
+      and 'vidaDar' in rp and 'vidaDefinir' in rp and 'vidaVer' in rp)
+check('4.4: tirar vida usa o MESMO estoque do ritual (get/setCanonLives)',
+      'wd.getCanonLives(alvo.getUUID())' in rp and 'wd.setCanonLives(alvo.getUUID(), depois)' in rp)
+check('4.4: tirar vida avisa o alvo (estilo 4) + trovao + MEDO na ultima',
+      'ScreenTextPayload(msg, 8, 4)' in rp and 'LIGHTNING_BOLT_THUNDER' in rp
+      and 'FearPayload(30)' in rp)
+check('4.4: tirar vida NAO congela o jogador (nao houve morte)',
+      'FREEZES' not in rp.rsplit('vidaTirar', 1)[1].split('private static int vidaDar')[0])
+check('4.4: ajuda lista o /rp admin vida', 'admin vida <jogador> tirar|dar' in rp)
+check('4.4: coracao mantem o pickup SHIFT (+1 vida) e o teto 5/5',
+      'isShiftKeyDown' in blk and 'vidas >= 5' in blk and 'NOVA CHANCE' in blk)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -92,7 +92,7 @@ public final class AvisoFxUtil {
     }
     public static int col(int rgb, float a) { return ((int) (cl(a) * 255) << 24) | (rgb & 0xFFFFFF); }
     /**
-     * (4.3.0) Contorno escuro (4 copias deslocadas 1 px, na escala atual) atras de um texto —
+     * (4.5.0) Contorno escuro (4 copias deslocadas 1 px, na escala atual) atras de um texto —
      * no modo video o fundo procedural escuro some e o texto claro precisa disso sobre ceu claro.
      */
     public static void contornoEscuro(net.minecraft.client.gui.GuiGraphics g, net.minecraft.client.gui.Font f,

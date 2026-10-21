@@ -28,7 +28,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
  */
 public final class InfernoAvisoFx {
     private static final float DUR = 6.0f;
-    /** (4.3.0) contorno escuro do texto no modo video (marrom-carvao). */
+    /** (4.5.0) contorno escuro do texto no modo video (marrom-carvao). */
     private static final int CONTORNO_VIDEO = 0x200800;
     private static final int RED = 0xFF4600, ORG = 0xFF8C1E, YEL = 0xFFD23C, HOTW = 0xFFFAD2, SMOKE = 0x140804;
 
@@ -40,7 +40,7 @@ public final class InfernoAvisoFx {
     private static String sub = "";
     private static int crackIdx;
     private static boolean fimTocado, impacto;
-    /** (4.3.0) true = fundo vem do video do Blender (VideoFx). */
+    /** (4.5.0) true = fundo vem do video do Blender (VideoFx). */
     private static boolean video;
 
     private InfernoAvisoFx() {}
@@ -54,13 +54,13 @@ public final class InfernoAvisoFx {
         sub = (mensagem == null) ? "" : mensagem;
         inicio = System.nanoTime();
         crackIdx = 0; fimTocado = false; impacto = false;
-        // (4.3.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
+        // (4.5.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
         FxComando.garantirConfig();
         video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("inferno");
         RPTagMod.LOGGER.info("RP Tag: FORNALHA em {}", video ? "VIDEO" : "procedural");
     }
 
-    /** (4.3.0) Encerra o aviso na hora (um aviso novo substitui este). */
+    /** (4.5.0) Encerra o aviso na hora (um aviso novo substitui este). */
     public static void parar() {
         if (video) VideoFx.fechar();
         video = false;
@@ -108,7 +108,7 @@ public final class InfernoAvisoFx {
 
         preparar(g);
         if (video) {
-            // (4.3.0) fundo = VIDEO; texto, efeitos das letras e sons continuam no codigo
+            // (4.5.0) fundo = VIDEO; texto, efeitos das letras e sons continuam no codigo
             VideoEstado ve = VideoFx.desenhar(g, t);
             if (ve == VideoEstado.CARREGANDO) {
                 inicio = System.nanoTime(); // relogio parado ate ter quadros
@@ -131,7 +131,7 @@ public final class InfernoAvisoFx {
             float sx = w * rnd(i, 71) + sin(t * 0.3f + i) * 60 * k, sy = h * 0.14f * rnd(i, 72) + sin(t * 0.5f + i * 2) * 10 * k;
             b.brilho(sx, sy, (60 + 50 * rnd(i, 73)) * k, SMOKE, 0.30f * env);
         }
-        } // (4.3.0) fim do fundo procedural (camada 1)
+        } // (4.5.0) fim do fundo procedural (camada 1)
         b.brilho(cx, cy, 85 * k, 0x000000, (video ? 0.45f : 0.30f) * env); // apoio de leitura do texto
         b.flush();
 
@@ -187,7 +187,7 @@ public final class InfernoAvisoFx {
             float sz = (0.8f + 1.8f * rnd(i, 4)) * k * 0.8f, al = env * (1 - p) * (0.6f + 0.4f * sin(t * 12 + i));
             b.diamante(px, py, sz * 0.5f, sz * 1.3f, col(mix(YEL, ORG, p), al));
         }
-        } // (4.3.0) fim do fundo procedural (camada 2)
+        } // (4.5.0) fim do fundo procedural (camada 2)
 
         for (int i = 0; i < len; i++) {                                 // chamas lambendo cada letra
             float age = t - 0.3f - 0.06f * i;

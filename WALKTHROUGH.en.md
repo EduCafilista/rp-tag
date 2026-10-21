@@ -13,9 +13,9 @@ Step-by-step guide, from download to the tag showing in game.
 | Minecraft **1.21.1** (Java Edition) | official launcher |
 | **NeoForge 21.1.x** | https://neoforged.net/ → *Downloads* → version 21.1.x |
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
-| `rptag-4.1.0.jar` | this repository's *Releases* tab |
+| `rptag-4.2.0.jar` | this repository's *Releases* tab |
 
-> ⚠️ The mod version matches the game version: `rptag-4.1.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
+> ⚠️ The mod version matches the game version: `rptag-4.2.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
 
 ---
 
@@ -23,7 +23,7 @@ Step-by-step guide, from download to the tag showing in game.
 
 1. Install NeoForge on the server (the installer asks for the server folder path).
 2. Inside the server folder, open `mods/`.
-3. Copy `rptag-4.1.0.jar` into it.
+3. Copy `rptag-4.2.0.jar` into it.
 4. Start the server once to generate files (accept the EULA in `eula.txt` with `eula=true`).
 
 **How to know it worked:** in the boot log look for
@@ -40,7 +40,7 @@ Done — from this point the tag already works in **chat** and **TAB** for every
 
 1. In the launcher, create/edit the NeoForge 1.21.1 profile.
 2. Open the game folder ("open game folder" option in the launcher) and enter `mods/`.
-3. Copy the same `rptag-4.1.0.jar` there.
+3. Copy the same `rptag-4.2.0.jar` there.
 4. Join the server.
 
 Without the client mod you still see the tag in chat/TAB; with it, you also see **(ʀᴘ)** or **(ᴏꜰꜰ ʀᴘ)** floating above players' heads.
@@ -82,7 +82,7 @@ cd rp-tag
 ./gradlew build          # (Windows: gradlew.bat build)
 ```
 
-The jar ends up at `build/libs/rptag-4.1.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
+The jar ends up at `build/libs/rptag-4.2.0.jar`. The first build takes a few minutes (it downloads and prepares Minecraft automatically — you don't need the game installed).
 
 ---
 
@@ -210,8 +210,8 @@ above your head** — perfect for eggs, kids and mic-less players.
 - **Saved FOREVER**: leave and rejoin the server — colors, sticker, frame and
   duration are stored in the world file
 - **JAR DIAGNOSTIC**: the top-right of the screen shows the CLIENT version
-  (e.g. "v4.1.0") and the save message shows the SERVER version ("💾 Salvo no
-  servidor v4.1.0!"). Both must MATCH — otherwise replace the old side's jar
+  (e.g. "v4.2.0") and the save message shows the SERVER version ("💾 Salvo no
+  servidor v4.2.0!"). Both must MATCH — otherwise replace the old side's jar
   (always update client AND server together)
 - Then just **say something in chat** to see your bubble ✨
 
@@ -297,6 +297,28 @@ admin section).
 - `/rp admin canon on|off` — turns the mode on for the **whole server** (banner, no chat spam)
 - Dying costs 1 life, with the full ritual: thunder → frozen 5 s → death warning → lore audio
 - **Last life**: "TOME CUIDADO" + 30 s of extreme fear · **5-minute** anti-chain protection
-- **Deaths outside RP don't count (4.1.0)**: if the **killer was OFF RP**, the victim loses **no** canon life
+- **Deaths outside RP don't count (4.2.0)**: if the **killer was OFF RP**, the victim loses **no** canon life
   (no ritual, no warning, no sound). Mobs, falls, lava, fire and `/kill` still count
 - **Canon Heart**: `/give <player> rptag:coracao_canon` → shift + right-click gives 1 life back
+
+---
+
+## 🎞️ Video warnings rendered in Blender (4.2.0)
+
+The **death** warning ("Linha Reta") is now a **6-second, 24 fps video** rendered in
+Blender (288 JPEG frames: 144 color + 144 alpha, 1280x720, ~9.6 MB) packed inside the jar.
+
+- The video is the **background**; the **title "AVISO", the message below it and all
+  sounds stay in code** — `/rp admin avisar @a 4 <your text>` still shows your text
+- Same timing (heartbeats, flatline at 3.9 s, ashes), same sounds, same red veil +
+  `canon_death` audio in the canon ritual
+- **Never left without a warning**: missing video, corrupted frame or a slow PC →
+  the **procedural FX** takes over instantly (no restart, no crash); slow PCs skip
+  frames instead of freezing
+- **Player option**: `config/rptag/cliente.properties` → `fxVideo=false`, or the client
+  command **`/rpfx status|on|off`**
+- Art pipeline: `arte/README.md` (Blender scene, exporter, validator);
+  spec/plan under `docs/superpowers/`
+
+**Rule:** text never goes into the video; JPEG decoding goes through the **raster**
+(never `getRGB`); a decoder warning means **error → fallback**.

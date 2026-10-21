@@ -1,8 +1,6 @@
 # Changelog
 
-
-
-## 4.3.0 — INFERNO E GELO EM VÍDEO (BLENDER) 🔥❄️ (2026-10-20)
+## 4.5.0 — INFERNO E GELO EM VÍDEO (BLENDER) 🔥❄️ (2026-10-20)
 
 ### 🔥 "Fornalha" refeita no Blender
 - Uma **fissura incandescente** se abre atrás do título com clarão e onda de calor,
@@ -29,6 +27,43 @@
 ### 📦 Jar
 - ~54 MB com os três vídeos (Morte 9,6 MB, Inferno 14,1 MB, Gelo 32,4 MB),
   continua **só nas Releases**
+
+## 4.4.0 — 2026-10-20 — 💗 Coração 3D de verdade + `/rp admin vida`
+
+- **`/rp admin vida <jogador> tirar|dar [n] | definir <n> | ver`** — mexe nas vidas
+  canônicas NA HORA, sem esperar morte. É o mesmo estoque do ritual (`getCanonLives`),
+  então aparece no `/rp status` e no coração do mundo.
+  - `tirar` manda o aviso de morte canônica (estilo 4) + trovão pro alvo; na última
+    vida entra o MEDO ABSURDO de 30 s. **Não congela** (não houve morte).
+  - `dar` devolve vida (teto 5) com o aviso de "nova chance".
+  - `definir` põe o total de uma vez; `ver` só mostra.
+- **Coração canônico redesenhado (4.4.0):** saiu a "máscara extrudada" (fatias de 5px
+  que viravam tábuas ao girar), entrou um **sólido voxel**: silhueta 15×13 inflada por
+  distance transform em **13 fatias** de profundidade. Só as faces expostas são
+  desenhadas (630 quads), com sombreamento por face e gradiente rosa→vinho.
+- **O giro no chão** agora está documentado no código: quem gira é o BER, chamado a cada
+  quadro, lendo `System.nanoTime()` — não depende de ticker nem de blockstate, então
+  não trava com lag, não pula e continua de onde parou.
+- Batida em dois tempos (tum-tum), flutuação suave e inclinação de 5°.
+- Verificação: `verificacao/4_4_0_coracao_giro.png` (8 ângulos), `_no_chao.png` e
+  `_giro.gif`. `check.py` 337, JUnit 26/26.
+
+
+## 4.3.0 — 2026-10-20 — 🩸 SANGUE novo: "HEMORRAGIA"
+
+- **`avisar` estilo 9 (sangue) refeito do zero.** O antigo ("Sangria") lembrava desenho animado:
+  gotas redondas com brilho branco. Agora a tela é um corpo que **se rasga**.
+- 0,3 s: a pele estica numa costura fina → **RUPTURA** (clarão, tremor, estalo) → a ferida abre
+  com efeito elástico, lábios de carne irregular, estrias de músculo e tendões que **estalam**.
+- O coração **acelera e afrouxa**: cada batida esguicha jatos arteriais com gravidade.
+- Sangue **escorre pelo vidro** em respingos irregulares e poças; o chão enche e drena no fim.
+- Capilares crescem das 4 bordas; grão de filme tira o aspecto "vetor limpo".
+- Sem brilho branco em lugar nenhum (era o que deixava cartoon). Mensagem continua **embaixo** do título.
+- Verificação: `verificacao/4_3_0_sangue_animacao.gif` + 4 PNGs 1080p + timeline de 6 quadros.
+- `check.py`: 331 checks (4 novos).
+
+
+
 
 ## 4.2.0 — AVISO DE MORTE EM VÍDEO (BLENDER) 🎬 (2026-10-19)
 

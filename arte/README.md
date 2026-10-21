@@ -18,7 +18,7 @@ Cada aviso em vídeo nasce de um script Python que monta a cena **do zero**
 - O texto ("AVISO" + mensagem) **não** vai no vídeo: é desenhado pelo código.
 - `render/` e `previa/` são gerados e ficam fora do git.
 
-## Inferno e Gelo (4.3.0, no jar)
+## Inferno e Gelo (4.5.0, no jar)
 
 As cenas `arte/cenas/inferno.py` e `arte/cenas/gelo.py` usam so as primitivas de
 `arte/cenas/comum.py` (nao dependem do `morte.py`). Cada uma gera 144 PNG RGBA,

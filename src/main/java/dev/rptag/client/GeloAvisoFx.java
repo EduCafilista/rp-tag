@@ -33,7 +33,7 @@ public final class GeloAvisoFx {
     private static final float DUR = 6.0f;
     private static final int ICE = 0xD2F0FF, LIGHT = 0xBEEBFF, MID = 0x5AA0DC, DEEP = 0x0A2850, GLOW = 0x50A0FF, WHITE = 0xFFFFFF;
     private static final float[] CH = {0.5f, 1.2f, 2.0f, 3.0f};
-    /** (4.3.0) contorno escuro do texto no modo video (azul-noite). */
+    /** (4.5.0) contorno escuro do texto no modo video (azul-noite). */
     private static final int CONTORNO_VIDEO = 0x0A1C38;
     private static final float[] CP = {1.5f, 1.9f, 2.0f, 1.7f};
 
@@ -45,7 +45,7 @@ public final class GeloAvisoFx {
     private static String sub = "";
     private static int chIdx;
     private static boolean impacto, fim;
-    /** (4.3.0) true = fundo vem do video do Blender (VideoFx). */
+    /** (4.5.0) true = fundo vem do video do Blender (VideoFx). */
     private static boolean video;
 
     private GeloAvisoFx() {}
@@ -59,13 +59,13 @@ public final class GeloAvisoFx {
         sub = (mensagem == null) ? "" : mensagem;
         inicio = System.nanoTime();
         chIdx = 0; impacto = false; fim = false;
-        // (4.3.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
+        // (4.5.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
         FxComando.garantirConfig();
         video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("gelo");
         RPTagMod.LOGGER.info("RP Tag: GEADA ETERNA em {}", video ? "VIDEO" : "procedural");
     }
 
-    /** (4.3.0) Encerra o aviso na hora (um aviso novo substitui este). */
+    /** (4.5.0) Encerra o aviso na hora (um aviso novo substitui este). */
     public static void parar() {
         if (video) VideoFx.fechar();
         video = false;
@@ -109,7 +109,7 @@ public final class GeloAvisoFx {
 
         preparar(g);
         if (video) {
-            // (4.3.0) fundo = VIDEO; texto, efeitos das letras e sons continuam no codigo
+            // (4.5.0) fundo = VIDEO; texto, efeitos das letras e sons continuam no codigo
             VideoEstado ve = VideoFx.desenhar(g, t);
             if (ve == VideoEstado.CARREGANDO) {
                 inicio = System.nanoTime(); // relogio parado ate ter quadros
@@ -174,7 +174,7 @@ public final class GeloAvisoFx {
                 b.seg(x - bw, y0, x, ty2, 1.0f, col(WHITE, 0.6f * env), col(WHITE, 0.9f * env));
             }
         }
-        } // (4.3.0) fim do fundo procedural (camada 1)
+        } // (4.5.0) fim do fundo procedural (camada 1)
         float ra = 0.8f * env;                                           // pingentes sob as letras
         for (int i = 0; i < len; i++) {
             float age = t - 0.9f - 0.1f * i;
@@ -222,7 +222,7 @@ public final class GeloAvisoFx {
             float px = w * (0.1f + 0.8f * rnd(i, 101)), py = h * (0.1f + 0.8f * rnd(i, 102)), s = (6 + 6 * rnd(i, 103)) * k * tw;
             b.diamante(px, py, s * 0.12f, s, col(WHITE, env * tw)); b.diamante(px, py, s, s * 0.12f, col(WHITE, env * tw));
         }
-        } // (4.3.0) fim do fundo procedural (camada 2)
+        } // (4.5.0) fim do fundo procedural (camada 2)
         b.flush();
 
         // 3) texto: congela letra a letra, reflexo varrendo
