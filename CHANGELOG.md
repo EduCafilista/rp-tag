@@ -1,5 +1,39 @@
 # Changelog
 
+## 4.5.1 — 2026-10-21 — 🚑 CORREÇÃO: "Invalid player data" ao entrar no mundo
+
+> **Quem está na 4.5.0 precisa atualizar.** Na 4.5.0 ninguém conseguia entrar no
+> mundo: o jogo expulsava com **"Invalid player data"**. Não era o save, não era
+> corrupção de mundo — era o mod, e o save está intacto.
+
+- **O que acontecia:** criei um tipo de argumento de comando próprio
+  (`ListaAlvosArgument`, para aceitar `Ana,Beto` e `@a` no `/rp admin vida`) e
+  **esqueci de registrá-lo** no registry `minecraft:command_argument_type`.
+  O servidor funcionava sozinho, mas no momento em que um jogador entrava ele
+  montava a lista de comandos para enviar e chamava
+  `ArgumentTypeInfos.byClass(...)` — que só conhece tipos registrados. Estourava
+  `IllegalArgumentException: Unrecognized argument type dev.rptag.ListaAlvosArgument`
+  e a conexão caía com "Invalid player data".
+- **O que foi feito:**
+  - `RpArgumentTypes` registra o argumento do jeito certo (mesmo padrão que o
+    NeoForge usa no `ModIdArgument`): `ArgumentTypeInfos.registerByClass(...)`
+    dentro de um `DeferredRegister` no `COMMAND_ARGUMENT_TYPE`.
+  - O registro saiu do `<clinit>` da classe do argumento — o `DeferredHolder` do
+    NeoForge resolve o registry na criação, e isso quebrava qualquer uso da classe
+    fora do jogo.
+  - **Rede de segurança:** `/rp admin vida` agora pergunta
+    `ListaAlvosArgument.disponivel()` antes de usar o tipo custom. Se por qualquer
+    motivo o registro não estiver ativo, ele cai para o `word()` do vanilla (o admin
+    perde a lista com vírgula, mas **o servidor continua aceitando jogadores**).
+  - Log de boot: `RP Tag: /rp admin vida usando lista_alvos (...)` — se um dia
+    aparecer "usando o argumento padrao", o motivo está logo acima no log.
+- **Testes que travam a regressão:** `LoginCommandsPacketTest` monta o
+  `ClientboundCommandsPacket` — o objeto exato que o servidor cria no login — com e
+  sem o registro, e `ArgumentoSerializavelTest` faz o mesmo com
+  `ArgumentTypeInfos.unpack`. `check.py` ganhou 7 checks (agora **369**).
+- **Nada do save precisa ser mexido.** Basta trocar o jar; os jogadores voltam a
+  entrar normalmente.
+
 ## 4.5.0 — 2026-10-21 — 🏺 AFK, regras de RP, vidas offline e o OLHO DE HÓRUS
 
 - **AFK (novo)** — ficar parado vira AFK **sozinho** e o comando `/afk` faz na mão.

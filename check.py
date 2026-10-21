@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.5.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.5.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.5.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.5.1 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.2.0', 'RP Tag 4.5.0' in ce)
+check('4.0: boot log 4.2.0', 'RP Tag 4.5.1' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -828,6 +828,28 @@ check('4.5: EGIPICIO registrado acima de tudo (registerAboveAll)',
 check('4.5: EGIPICIO desenha titulo AVISO letra a letra e mensagem EMBAIXO',
       'cy + 25' in egi and 'AVISO' in egi)
 check('4.5: EGIPICIO no servidor: areia/incenso no alvo', 'FALLING_DUST' in rp and 'CAMPFIRE_COSY_SMOKE' in rp)
+
+
+# ============ 4.5.1: BUG "Invalid player data" (argumento custom sem registro) ============
+argt = rd(R + '/RpArgumentTypes.java')
+lsta = rd(R + '/ListaAlvosArgument.java')
+mod2 = rd(R + '/RPTagMod.java')
+
+check('4.5.1: argumento custom registrado em COMMAND_ARGUMENT_TYPE',
+      'Registries.COMMAND_ARGUMENT_TYPE' in argt and 'ARGUMENT_TYPES.register' in argt)
+check('4.5.1: registro usa ArgumentTypeInfos.registerByClass (senao o login quebra)',
+      'ArgumentTypeInfos.registerByClass' in argt and 'SingletonArgumentInfo' in argt)
+check('4.5.1: o mod registra RpArgumentTypes no mod bus',
+      'RpArgumentTypes.ARGUMENT_TYPES.register(modEventBus)' in mod2)
+_codigo = '\n'.join(l for l in lsta.splitlines() if not l.strip().startswith(('*', '//', '/*')))
+check('4.5.1: registro fora do <clinit> do argumento (DeferredHolder exige registries)',
+      'DeferredRegister<' not in _codigo and 'DeferredHolder<' not in _codigo)
+check('4.5.1: fallback nunca derruba o servidor (usa word() do vanilla)',
+      'StringArgumentType.word()' in rp and 'argumentoAlvos()' in rp and 'disponivel()' in lsta)
+check('4.5.1: rede de seguranca nao toca em RPTagMod (logger proprio)',
+      'RPTagMod.LOGGER' not in _codigo)
+check('4.5.1: teste JUnit reproduz o unpack do ClientboundCommandsPacket',
+      'ArgumentTypeInfos.unpack' in rd('src/test/java/dev/rptag/ArgumentoSerializavelTest.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

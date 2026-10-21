@@ -239,9 +239,26 @@ public final class RPCommands {
         }
     }
 
+    /**
+     * (4.5.1) O argumento de alvo: o custom (aceita "Ana,Beto" e @a) quando ele está
+     * registrado; senão o word() do vanilla. O custom sem registro quebrava o LOGIN
+     * de todo mundo com "Invalid player data" — o fallback existe pra isso nunca mais
+     * acontecer, mesmo se algo der errado no registro.
+     */
+    private static com.mojang.brigadier.arguments.ArgumentType<String> argumentoAlvos() {
+        boolean ok = ListaAlvosArgument.disponivel();
+        // (4.5.1) deixa rastro no log: sem isso, o unico sintoma de um argumento
+        // custom fora do registry era "Invalid player data" no login do jogador
+        RPTagMod.LOGGER.info("RP Tag: /rp admin vida usando {}",
+                ok ? "lista_alvos (aceita Ana,Beto e @a)" : "o argumento padrao (SOMENTE nomes simples)");
+        return ok
+                ? ListaAlvosArgument.alvos()
+                : com.mojang.brigadier.arguments.StringArgumentType.word();
+    }
+
     /** (4.5.0) monta os 4 verbos (tirar/dar/definir/ver) para o nó de alvo. */
     private static com.mojang.brigadier.builder.ArgumentBuilder<net.minecraft.commands.CommandSourceStack, ?> verbosVida() {
-        var no = Commands.argument("jogador", ListaAlvosArgument.alvos());
+        var no = Commands.argument("jogador", argumentoAlvos());
         return no
                 .then(Commands.literal("tirar")
                         .executes(c -> vidaTirarVarios(c, alvos(c), 1))
@@ -913,7 +930,7 @@ public final class RPCommands {
                         .executes(ctx -> vidaListar(ctx))
                         .then(verbosVida())
                         .then(Commands.literal("lote")
-                                .then(Commands.argument("jogador", ListaAlvosArgument.alvos())
+                                .then(Commands.argument("jogador", argumentoAlvos())
                                         .then(Commands.literal("tirar")
                                                 .executes(ctx -> vidaLote(ctx, "tirar", 1))
                                                 .then(Commands.argument("quantia",

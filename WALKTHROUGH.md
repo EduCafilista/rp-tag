@@ -15,10 +15,10 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.5.0** (2026-10-21) |
+| Versão | **4.5.1** (2026-10-21) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.5.0.jar` (~10,3 MB; **só na GitHub Release** — não vai mais pro git) |
-| Checks | `check.py` → **362 PASS / 0 FAIL** + **JUnit 33/33** (`./gradlew test`) |
+| Jar | `rptag-4.5.1.jar` (~10,3 MB; **só na GitHub Release** — não vai mais pro git) |
+| Checks | `check.py` → **369 PASS / 0 FAIL** + **JUnit 38/38** (`./gradlew test`) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
@@ -37,6 +37,37 @@ Publicado: tag+Release **v4.2.0** (id 417947996, asset 10298836, `make_latest`,
 download `-L` 200 + `cmp` identico, tag em `d84ec85`); **v4.1.0 apagada** (release+tag).
 REGRA NOVA do amigo: **nenhum jar no git** — o `.gitignore` virou `*.jar` com excecao do
 `gradle-wrapper.jar`; o jar vive so na Release (com video, cada ciclo adiciona ~10 MB).
+
+### 🚑 4.5.1 (2026-10-21) — "Invalid player data" (LIÇÃO QUE CUSTA CARO)
+
+**Sintoma:** ninguém entrava no mundo na 4.5.0; o jogo expulsava com **"Invalid
+player data"**. O save NÃO estava corrompido.
+
+**Causa:** `ListaAlvosArgument` (argumento custom do `/rp admin vida`) existia sem
+`ArgumentTypeInfo` registrada. O servidor sobe, aceita RCON, tudo funciona — mas
+quando um jogador entra, `PlayerList.placeNewPlayer → Commands.sendCommands` monta o
+`ClientboundCommandsPacket` e chama `ArgumentTypeInfos.byClass(type)` para cada
+argumento. Tipo custom fora do registry → `IllegalArgumentException` → queda com
+"Invalid player data".
+
+**REGRA (vale pra qualquer argumento novo):**
+```java
+// RpArgumentTypes.java — o registro NÃO pode morar no <clinit> do argumento
+// (DeferredHolder resolve o registry na criação: ExceptionInInitializerError fora do jogo)
+public static final DeferredRegister<ArgumentTypeInfo<?, ?>> ARGUMENT_TYPES =
+        DeferredRegister.create(Registries.COMMAND_ARGUMENT_TYPE, RPTagMod.MODID);
+public static final DeferredHolder<..., SingletonArgumentInfo<ListaAlvosArgument>> LISTA_ALVOS =
+        ARGUMENT_TYPES.register("lista_alvos",
+                () -> ArgumentTypeInfos.registerByClass(ListaAlvosArgument.class,
+                        SingletonArgumentInfo.<ListaAlvosArgument>contextFree(ListaAlvosArgument::alvos)));
+```
++ `RpArgumentTypes.ARGUMENT_TYPES.register(modEventBus)` no `RPTagMod`.
++ **Rede de segurança:** o comando pergunta `ListaAlvosArgument.disponivel()` e cai
+  para `StringArgumentType.word()` se o registro não estiver ativo — assim um erro
+  desses nunca mais derruba o login de ninguém.
++ **Teste:** `LoginCommandsPacketTest` instancia o `ClientboundCommandsPacket` real
+  com e sem registro (é o objeto que o servidor cria no login). Roda sem servidor.
++ **Log de boot** para conferir: `RP Tag: /rp admin vida usando lista_alvos (...)`.
 
 ### 🏺 4.5.0 (2026-10-21) — AFK, regras de RP, vidas offline e o OLHO DE HÓRUS
 
