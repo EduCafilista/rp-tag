@@ -2,9 +2,12 @@
 FPS = 24
 
 
-def _meta(fx, seed, eventos, fade_in, preview):
-    return {'id': fx, 'seed': seed, 'markers': [{'name': n, 'frame': round(t*FPS)} for n, t in eventos],
-            'fade': {'in': [0, fade_in], 'out': [4.8, 6.]}, 'preview': preview}
+def _meta(fx, seed, eventos, fade_in, preview, jpeg=None):
+    m = {'id': fx, 'seed': seed, 'markers': [{'name': n, 'frame': round(t*FPS)} for n, t in eventos],
+         'fade': {'in': [0, fade_in], 'out': [4.8, 6.]}, 'preview': preview}
+    if jpeg:   # o Divino cobre a tela toda: cor 75 para caber (~27 MB), aprovado pelo dono
+        m['jpeg'] = jpeg
+    return m
 
 
 def _elementais(fx,seed):
@@ -31,5 +34,5 @@ def metadata(fx, seed):
         return _meta(fx, seed, [('texto_entra', .35), ('texto_sai', 4.8)]
                      + [('sino', t) for t in (.05, .30, .55, .80, 1.10)] + [('fim', 5.1)], .5,
                      {'color': [255, 240, 190], 'message': 'OS CEUS SE ABRIRAM',
-                      'title_y': .42, 'message_y': .42 + 25/240})
+                      'title_y': .42, 'message_y': .42 + 25/240}, jpeg={'cor': 75})
     raise ValueError('aviso sem metadados: %r' % fx)

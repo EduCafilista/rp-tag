@@ -92,6 +92,26 @@ def mat_radial_oco(nome, cor, ini, fim):
     return _saida(m, cor, _op(nt, 'MULTIPLY', queda, sobe))
 
 
+def mat_raio(nome, cor, ha):
+    """Raio no eixo +x local, perfil gaussiano no angulo (largura ha), miolo apagado, ponta some."""
+    m = c.material(nome)
+    nt = m.node_tree
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ')
+    nt.links.new(tc.outputs['Object'], sep.inputs[0])
+    ln = nt.nodes.new('ShaderNodeVectorMath')
+    ln.operation = 'LENGTH'
+    nt.links.new(tc.outputs['Object'], ln.inputs[0])
+    raio = ln.outputs['Value']
+    queda = _op(nt, 'SUBTRACT', 1., raio)
+    queda.node.use_clamp = True
+    sobe = _op(nt, 'DIVIDE', _op(nt, 'SUBTRACT', raio, .05), .17)
+    sobe.node.use_clamp = True
+    ang = _op(nt, 'DIVIDE', _op(nt, 'DIVIDE', sep.outputs['Y'], _op(nt, 'MAXIMUM', sep.outputs['X'], .001)), ha)
+    g = _op(nt, 'EXPONENT', _op(nt, 'MULTIPLY', _op(nt, 'MULTIPLY', ang, ang), -1.))
+    return _saida(m, cor, _op(nt, 'MULTIPLY', _op(nt, 'MULTIPLY', queda, sobe), g))
+
+
 def mat_feixe(nome, cor, sigma):
     """Feixe vertical: perfil gaussiano em x (coordenadas do objeto) e ponta de baixo suave."""
     m = c.material(nome)
@@ -173,25 +193,18 @@ def montar():
     c.visibilidade(clarao, lambda t: (1 - t / .3) * .45 if t < .3 else 0.)
 
     # ------------------------------------------------ raios (duas coroas, sentidos opostos)
-    mat_g = mat_radial_oco('RaioOuro', GOLD, .05, .22)
-    mat_c = mat_radial_oco('RaioCreme', CREAM, .05, .22)
-    for nome, n, ha, mat, alfa, vel in [('RaioOuro', 16, .028, mat_g, .34, 4), ('RaioCreme', 12, .010, mat_c, .46, -6)]:
+    for nome, n, ha, cor, alfa, vel in [('RaioOuro', 16, .028, GOLD, .40, 4), ('RaioCreme', 12, .010, CREAM, .50, -6)]:
+        mat = mat_raio(nome, cor, ha)
         for i in range(n):
             a = i * TAU / n + rng.uniform(-.04, .04)
-            vs = [(0, 0, 0), (math.cos(a - ha), math.sin(a - ha), 0), (math.cos(a + ha), math.sin(a + ha), 0)]
+            hb = ha * 3.2
+            vs = [(0, 0, 0), (math.cos(hb), -math.sin(hb), 0), (math.cos(hb), math.sin(hb), 0)]
             ob = mesh(f'{nome}{i:02d}', vs, [(0, 1, 2)], mat, 1. if nome == 'RaioOuro' else 1.1)
             comp = 18.4 * (.9 if nome == 'RaioCreme' else 1.)
             escala(ob, lambda t, comp=comp: comp * (.55 + .45 * rev(t)) * (.7 + .3 * c.ss(0, .5, t)))
-            c.animar(ob, 'rotation_euler', lambda t, v=vel: v * t * DEG, 2)
+            c.animar(ob, 'rotation_euler', lambda t, v=vel, a=a: a + v * t * DEG, 2)
             pulso = rng.uniform(0, TAU)
             c.visibilidade(ob, lambda t, a=alfa, p=pulso: a * (.85 + .15 * math.sin(1.7 * t + p)))
-            # volume: o mesmo raio 3x mais largo e fraco (borda suave)
-            hb = ha * 3
-            vs = [(0, 0, 0), (math.cos(a - hb), math.sin(a - hb), 0), (math.cos(a + hb), math.sin(a + hb), 0)]
-            vol = mesh(f'{nome}Volume{i:02d}', vs, [(0, 1, 2)], mat, .9)
-            escala(vol, lambda t, comp=comp: comp * (.55 + .45 * rev(t)) * (.7 + .3 * c.ss(0, .5, t)))
-            c.animar(vol, 'rotation_euler', lambda t, v=vel: v * t * DEG, 2)
-            c.visibilidade(vol, lambda t, a=alfa, p=pulso: .22 * a * (.85 + .15 * math.sin(1.7 * t + p)))
 
     # ------------------------------------------------ pilar de luz (desce ate o topo do titulo)
     topo_titulo = CY + 5 * S

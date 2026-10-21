@@ -783,5 +783,14 @@ check('4.4: ajuda lista o /rp admin vida', 'admin vida <jogador> tirar|dar' in r
 check('4.4: coracao mantem o pickup SHIFT (+1 vida) e o teto 5/5',
       'isShiftKeyDown' in blk and 'vidas >= 5' in blk and 'NOVA CHANCE' in blk)
 
+# ---- 4.6.0: Void e Divino em VIDEO (Blender) — tamanho dos videos no jar
+def _tam_pasta(p):
+    return sum(os.path.getsize(os.path.join(r, f)) for r, _, fs in os.walk(p) for f in fs)
+# meta ~15 MB; o Divino cobre a tela toda e o dono aprovou ~27 MB (cor em qualidade 75)
+for _id, _teto in (('void', 16), ('divino', 27)):
+    check('4.6: assets do video %s no jar' % _id, os.path.exists(A + '/fx/%s/fx.json' % _id))
+    check('4.6: video %s <= %d MiB' % (_id, _teto),
+          os.path.isdir(A + '/fx/' + _id) and _tam_pasta(A + '/fx/' + _id) <= _teto * 1024 * 1024)
+
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -1,0 +1,38 @@
+{
+  "id": "void",
+  "fps": 24,
+  "frames": 144,
+  "width": 1280,
+  "height": 720,
+  "blend": "normal",
+  "markers": [
+    {
+      "name": "impacto",
+      "frame": 0
+    },
+    {
+      "name": "texto_entra",
+      "frame": 14
+    },
+    {
+      "name": "texto_sai",
+      "frame": 115
+    },
+    {
+      "name": "ressoar",
+      "frame": 36
+    },
+    {
+      "name": "ressoar",
+      "frame": 65
+    },
+    {
+      "name": "ressoar",
+      "frame": 94
+    },
+    {
+      "name": "fim",
+      "frame": 122
+    }
+  ]
+}

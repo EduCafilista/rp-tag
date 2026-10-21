@@ -4,7 +4,7 @@ Uso: python arte/exportar.py <id> [--blend normal|aditivo]
 
 Le arte/render/<id>/NNNN.png (RGBA) + marcadores.json e grava em
 src/main/resources/assets/rptag/fx/<id>/:
-  frames/NNNN_c.jpg  cor (RGB, qualidade 85)
+  frames/NNNN_c.jpg  cor (RGB, qualidade 85, ou "jpeg.cor" do marcadores.json)
   frames/NNNN_a.jpg  alfa (tons de cinza, qualidade 90)
   fx.json            fps, quadros, tamanho, mistura e marcadores
 O "fade" do marcadores.json (entrada/saida suave, o env do Java) e
@@ -33,6 +33,13 @@ def fade(meta, t):
     return ss(f["in"][0], f["in"][1], t) * (1 - ss(f["out"][0], f["out"][1], t))
 
 
+def qualidades(meta):
+    """(cor, alfa) do JPEG. A cena pode baixar a cor (marcadores.json "jpeg": {"cor": N});
+    o alfa fica sempre em 90 (abaixo disso o recorte ganha halo)."""
+    cor = int(meta.get("jpeg", {}).get("cor", 85))
+    return cor, 90
+
+
 def main():
     args = sys.argv[1:]
     if not args:
@@ -55,6 +62,7 @@ def main():
     for velho in glob.glob(os.path.join(frames_dir, "*.jpg")):
         os.remove(velho)
     total = 0
+    q_cor, q_alfa = qualidades(meta)
     for q, p in enumerate(pngs):
         img = Image.open(p).convert("RGBA")
         if img.size != (LARG, ALT):
@@ -65,8 +73,8 @@ def main():
             a = a.point(lambda v, e=env: int(round(v * e)))
         c_path = os.path.join(frames_dir, "%04d_c.jpg" % q)
         a_path = os.path.join(frames_dir, "%04d_a.jpg" % q)
-        Image.merge("RGB", (r, g, b)).save(c_path, "JPEG", quality=85, optimize=True)
-        a.save(a_path, "JPEG", quality=90, optimize=True)
+        Image.merge("RGB", (r, g, b)).save(c_path, "JPEG", quality=q_cor, optimize=True)
+        a.save(a_path, "JPEG", quality=q_alfa, optimize=True)
         total += os.path.getsize(c_path) + os.path.getsize(a_path)
 
     fxjson = {

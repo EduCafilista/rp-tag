@@ -42,6 +42,11 @@ class MetasTest(unittest.TestCase):
         self.assertEqual(m['preview']['color'], [255, 240, 190])
         self.assertEqual(m['preview']['message'], 'OS CEUS SE ABRIRAM')
 
+    def test_divino_cor_jpeg_75_os_outros_padrao(self):
+        self.assertEqual(metas.metadata('divino', 733)['jpeg'], {'cor': 75})
+        for fx, sd in (('void', 615), ('inferno', 482), ('gelo', 618)):
+            self.assertNotIn('jpeg', metas.metadata(fx, sd))
+
     def test_id_desconhecido(self):
         with self.assertRaises(ValueError):
             metas.metadata('sangue', 1)
