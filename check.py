@@ -306,7 +306,7 @@ check('assets do coração completos (estado/modelo/item/textura)', _os.path.exi
 check('protecao NÃO some no logout (relog nao burla)', 'PROTECAO_ATE é de propósito NÃO limpa' in cl)
 check('status mostra X/5', '+ "/5"' in rp)
 check('status mostra as vidas canônicas', 'Vidas canônicas:' in rp)
-check('estilo 4 TEXTURIZADO estático (letras não mexem)', 'desenhaTextoTexturizado' in ce and 'Math.min(11, textStyle)' in ce)
+check('estilo 4 TEXTURIZADO estático (letras não mexem)', 'desenhaTextoTexturizado' in ce and 'Math.min(12, textStyle)' in ce)
 check('pesadelo: sway + ghost + fase por char', 'sin(now * 0.0008' in ce and 'GHOST' in ce and 'seed % 7L' in ce)
 check('cursor de digitação piscando', 'digitando' in ce and '"_"' in ce)
 check('caixa ancorada acima do hotbar', 'h - 70 - boxH' in ce)
@@ -371,7 +371,7 @@ check('4.4: giro por relogio de parede (nao trava, nao pula) + batida tum-tum',
       'System.nanoTime()' in ccr and 'Axis.YP.rotationDegrees' in ccr
       and 'Math.exp(-bt * 18.0)' in ccr and 'getBlockPos().getX() * 37' in ccr)
 ce = rd(C + '/ClientEffects.java')
-check('3.98: client aceita estilos ate 11 (pesadelo2)', 'Math.min(11, textStyle)' in ce)
+check('3.98/4.5: client aceita estilos ate 12 (egipicio)', 'Math.min(12, textStyle)' in ce)
 check('3.86/3.91: INFERNO aura (fundo + brasa)', '0x140301' in ce and '0xFFC080' in ce)
 check('3.86: GELO (cristais/losango)', '0x081523' in ce and 'desenhaLosango' in ce)
 check('3.86/3.87: DIVINO celestial (raios + ouro)', '0x120D03' in ce and '0xE8C765' in ce)
@@ -398,7 +398,7 @@ zc = rd(R + '/LoreZoneCommands.java')
 check('3.86: lorezone aviso aceita os 10 estilos',
       '"inferno", 5' in zc and '"sangue", 9' in zc and '"void", 8' in zc)
 lz = rd(R + '/LoreZones.java')
-check('3.98: clamp de estilo da zona vai ate 11 (pesadelo2)', lz.count('Math.min(11,') == 2)
+check('3.98/4.5: clamp de estilo da zona vai ate 12 (egipicio)', lz.count('Math.min(12,') == 2)
 
 # ---- 3.87.0: inferno bizarro, divino celestial, void profundo,
 # sangue pulsando fundo, DEMONIACO macabro ----
@@ -474,7 +474,7 @@ check('3.92: camada do FX registrada', 'DivinoAvisoFx.registrar(event)' in cgl)
 ce = rd(C + '/ClientEffects.java')
 check('3.95: startScreenText roteia estilo 7 (divino) pro FX',
       'style == 7' in ce and 'DivinoAvisoFx.iniciar("AVISO", limpo7)' in ce
-      and 'Math.min(11, textStyle)' in ce)
+      and 'Math.min(12, textStyle)' in ce)
 rp = rd(R + '/RPCommands.java')
 check('3.95/3.98: estilo ascensao REMOVIDO (case 11 = pesadelo2)',
       'case "ascensao"' not in rp and 'ASCENSAO' not in rp
@@ -487,7 +487,7 @@ check('3.95/3.98: lorezone sem ascensao (case 11 = pesadelo2)',
       'entry("ascensao"' not in zc and 'ascensao' not in zc
       and 'entry("pesadelo2", 11)' in zc and 'case 11 -> "pesadelo2"' in zc)
 rp2 = rd(R + '/RPCommands.java')
-check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco (alvos' in rp2
+check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio (alvos' in rp2
       and 'ascensao' not in rp2 and 'pesadelo, pesadelo2, runico' in rp2)
 
 # ---- 3.93.0: DEMONIACO = FX "Chamado do Abismo" (arquivo do user) ----
@@ -505,7 +505,7 @@ check('3.93: camada do FX registrada', 'DemoniacoAvisoFx.registrar(event)' in cg
 ce = rd(C + '/ClientEffects.java')
 check('3.93: startScreenText roteia estilo 10 pro FX (ordem do prot\u00f3tipo)',
       'style == 10' in ce and 'DemoniacoAvisoFx.iniciar("AVISO", limpoD)' in ce
-      and 'Math.min(11, textStyle)' in ce)
+      and 'Math.min(12, textStyle)' in ce)
 rp = rd(R + '/RPCommands.java')
 check('3.93: somAviso case 10 = particulasAbismo (server-safe)',
       'case 10 -> particulasAbismo(alvo)' in rp
@@ -530,8 +530,8 @@ check('3.95: somAviso case 7 = particulasAscensao (server-safe)',
 check('3.95: somAviso case 9 = particulasSangue (server-safe)',
       'case 9 -> particulasSangue(alvo)' in rp and 'REDSTONE_BLOCK' in rp
       and 'class SangueAvisoFx' not in rp)
-check('3.98: clamp de estilo max 11 (ClientEffects + LoreZones \u00d72)',
-      'Math.min(11, textStyle)' in ce and lz.count('Math.min(11') == 2)
+check('3.98/4.5: clamp de estilo max 12 (ClientEffects + LoreZones \u00d72)',
+      'Math.min(12, textStyle)' in ce and lz.count('Math.min(12') == 2)
 
 # ---- 3.96.0: VOID = "Queda Sem Fundo" + PESADELO = "Sono Sem Descanso"
 # (arquivos do user) ----
@@ -806,6 +806,94 @@ for _id, _teto in (('void', 16), ('divino', 27)):
     check('4.6: assets do video %s no jar' % _id, os.path.exists(A + '/fx/%s/fx.json' % _id))
     check('4.6: video %s <= %d MiB' % (_id, _teto),
           os.path.isdir(A + '/fx/' + _id) and _tam_pasta(A + '/fx/' + _id) <= _teto * 1024 * 1024)
+
+# ================= 4.5.0: AFK + regras de RP + vidas offline + EGIPICIO =================
+afk = rd(R + '/AfkSistema.java')
+reg = rd(R + '/RegrasRp.java')
+vad = rd(R + '/VidasAdmin.java')
+wdd = rd(R + '/RPWorldData.java')
+egi = rd(C + '/EgipcioAvisoFx.java')
+
+check('4.5: AFK varre os online a cada 5s (100 ticks)',
+      'VARREDURA_TICKS = 100' in afk and 'getLastActionTime()' in afk)
+check('4.5: AFK por tempo parado + /afk manual (mesma funcao alternar)',
+      'TIMEOUT_PADRAO_S' in afk and 'alternar(' in afk and 'literal("afk")' in rp)
+check('4.5: ficar AFK DESLIGA o RP automaticamente',
+      'setInRp(p.getUUID(), false)' in afk and 'saiu do RP automaticamente' in afk)
+check('4.5: acorda ao mexer (mover/olhar/chat/atacar/clicar)',
+      'ACORDA_MOVE2' in afk and 'AttackEntityEvent' in afk
+      and 'receiveCanceled' in afk and 'resetLastActionTime' in afk)
+check('4.5: nao fica preso no AFK depois de relogar',
+      'aoEntrar' in afk and 'aoSair' in afk and 'AFK.remove' in afk)
+check('4.5: timeout do AFK persiste no mundo (AfkTimeout)',
+      'afkTimeout' in wdd and 'tag.putInt("AfkTimeout"' in wdd and 'getAfkTimeout' in wdd)
+
+check('4.5: regra PvP barra golpe corpo a corpo (AttackEntityEvent)',
+      'AttackEntityEvent' in reg and 'isRegraPvp' in reg)
+check('4.5: regra PvP barra dano indireto (flecha/pocao/TNT)',
+      'LivingIncomingDamageEvent' in reg and 'getSource().getEntity()' in reg)
+check('4.5: regra quebrar (BlockEvent.BreakEvent) e colocar (EntityPlaceEvent)',
+      'BlockEvent.BreakEvent' in reg and 'EntityPlaceEvent' in reg
+      and 'isRegraQuebrar' in reg and 'isRegraColocar' in reg)
+check('4.5: balde tambem conta como colocar (TriState.FALSE)',
+      'TriState.FALSE' in reg and 'BucketItem' in reg)
+check('4.5: staff (permissao 2) passa pelas regras',
+      reg.count('hasPermissions(2)') >= 4)
+check('4.5: regras persistem no mundo (RegraPvp/Quebrar/Colocar)',
+      'tag.putBoolean("RegraPvp"' in wdd and 'tag.putBoolean("RegraQuebrar"' in wdd
+      and 'tag.putBoolean("RegraColocar"' in wdd)
+check('4.5: /rp admin regra [pvp|quebrar|colocar] on|off + tudo bloquear|liberar',
+      '.then(Commands.literal("regra")' in rp and 'mostrarRegras' in rp and 'liberar' in rp)
+
+check('4.5: vida do admin acha jogador OFFLINE (cache de perfis)',
+      'getProfileCache()' in vad and 'record Alvo' in vad)
+check('4.5: vida offline guarda recado pro proximo login',
+      'setRecadoVida' in rp and 'consumirRecadoVida' in rd(R + '/ServerEvents.java')
+      and 'RecadosVida' in wdd)
+check('4.5: vida em LOTE pede confirmacao (sem aplicar direto)',
+      'guardar(' in rp and 'vidaConfirmar' in rp and 'VALIDADE_MS' in vad)
+check('4.5: /rp admin vida sem argumento lista quem esta abaixo de 5/5',
+      'vidaListar' in rp and 'canonLivesIds' in wdd)
+check('4.5: ajuda lista regra + afk + lote', 'admin regra [pvp|quebrar|colocar]' in rp
+      and 'admin afk tempo' in rp and 'vida lote A,B,C' in rp)
+
+check('4.5: EGIPICIO e o estilo 12 (parse + nome + ajuda)',
+      'case "egipicio", "egipcio" -> 12' in rp and 'case 12 -> "EGIPICIO"' in rp
+      and 'egipicio (alvos' in rp)
+check('4.5: EGIPICIO desenha o OLHO DE HORUS (sobrancelha/amendoa/iris)',
+      'EgipcioAvisoFx' in egi and 'olho' in egi.lower())
+check('4.5: EGIPICIO tem templo, areia, hieroglifos e cartucho',
+      all(k in egi for k in ['noite', 'piramides', 'areia', 'hieroglifos', 'cartucho']))
+check('4.5: EGIPICIO tem trilha propria (alaude pentatonico)',
+      'NOTE_BLOCK_HARP.value()' in egi and 'ESCALA' in egi)
+check('4.5: EGIPICIO registrado acima de tudo (registerAboveAll)',
+      'EgipcioAvisoFx.registrar(event)' in rd(C + '/ClientGuiLayers.java')
+      and 'renderBackground' not in egi)
+check('4.5: EGIPICIO desenha titulo AVISO letra a letra e mensagem EMBAIXO',
+      'cy + 25' in egi and 'AVISO' in egi)
+check('4.5: EGIPICIO no servidor: areia/incenso no alvo', 'FALLING_DUST' in rp and 'CAMPFIRE_COSY_SMOKE' in rp)
+
+
+# ============ 4.5.1: BUG "Invalid player data" (argumento custom sem registro) ============
+argt = rd(R + '/RpArgumentTypes.java')
+lsta = rd(R + '/ListaAlvosArgument.java')
+mod2 = rd(R + '/RPTagMod.java')
+
+check('4.5.1: argumento custom registrado em COMMAND_ARGUMENT_TYPE',
+      'Registries.COMMAND_ARGUMENT_TYPE' in argt and 'ARGUMENT_TYPES.register' in argt)
+check('4.5.1: registro usa ArgumentTypeInfos.registerByClass (senao o login quebra)',
+      'ArgumentTypeInfos.registerByClass' in argt and 'SingletonArgumentInfo' in argt)
+check('4.5.1: o mod registra RpArgumentTypes no mod bus',
+      'RpArgumentTypes.ARGUMENT_TYPES.register(modEventBus)' in mod2)
+_codigo = '\n'.join(l for l in lsta.splitlines() if not l.strip().startswith(('*', '//', '/*')))
+check('4.5.1: registro fora do <clinit> do argumento (DeferredHolder exige registries)',
+      'DeferredRegister<' not in _codigo and 'DeferredHolder<' not in _codigo)
+check('4.5.1: fallback nunca derruba o servidor (usa word() do vanilla)',
+      'StringArgumentType.word()' in rp and 'argumentoAlvos()' in rp and 'disponivel()' in lsta)
+check('4.5.1: rede de seguranca nao toca em RPTagMod (logger proprio)',
+      'RPTagMod.LOGGER' not in _codigo)
+check('4.5.1: teste JUnit reproduz o unpack do ClientboundCommandsPacket',
+      'ArgumentTypeInfos.unpack' in rd('src/test/java/dev/rptag/ArgumentoSerializavelTest.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

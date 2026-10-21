@@ -130,6 +130,13 @@ public final class ClientEffects {
             RPTagMod.LOGGER.info("RP Tag: QUEDA SEM FUNDO iniciada (FX proprio)");
             return;
         }
+        // (4.5.0) estilo 12 = EGIPICIO: o Olho de Horus (FX proprio)
+        if (style == 12) {
+            String limpo12 = text.replaceAll("\u00a7.", "");
+            EgipcioAvisoFx.iniciar("AVISO", limpo12);
+            RPTagMod.LOGGER.info("RP Tag: OLHO DE HORUS iniciado (FX proprio)");
+            return;
+        }
         // (3.98.0) estilo 11 = PESADELO2: o modelo ANTIGO "Sono Sem Descanso"
         // (tunel que respira, tentaculos com garras, 16 olhos) — fica ao
         // lado do "Seguido" (estilo 1) como segunda opcao de pesadelo.
@@ -515,7 +522,7 @@ public final class ClientEffects {
             screenText = null;
             return;
         }
-        int style = Math.max(0, Math.min(11, textStyle));
+        int style = Math.max(0, Math.min(12, textStyle));   // (4.5.0) 12 = egipicio
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
         int w = g.guiWidth();

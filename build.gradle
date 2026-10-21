@@ -62,8 +62,12 @@ jar {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation 'com.google.code.gson:gson:2.11.0'
+    // gson vem das dependencias do jogo (versao estrita 2.10.1), via addModdingDependenciesTo
 }
+
+// (4.6.0) os testes da 4.5.1 (ArgumentoSerializavelTest, LoginCommandsPacketTest) usam
+// classes do Minecraft/Brigadier: o classpath de teste precisa das dependencias do jogo
+neoForge.addModdingDependenciesTo(sourceSets.test)
 
 test {
     useJUnitPlatform()

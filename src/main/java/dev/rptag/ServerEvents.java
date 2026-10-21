@@ -103,6 +103,14 @@ public final class ServerEvents {
         PacketDistributor.sendToAllPlayers(new SyncRPStatePayload(joined.getUUID(), data.isInRp(joined.getUUID())));
         PacketDistributor.sendToAllPlayers(PersonaSyncPayload.of(joined.getUUID(), data.getPersona(joined.getUUID())));
 
+        // (4.5.0) recado de vida deixado por um admin enquanto a pessoa estava offline
+        String recado = data.consumirRecadoVida(joined.getUUID());
+        if (recado != null && !recado.isBlank()) {
+            PacketDistributor.sendToPlayer(joined, new ScreenTextPayload(recado, 8, 4));
+            joined.playNotifySound(net.minecraft.sounds.SoundEvents.LIGHTNING_BOLT_THUNDER,
+                    net.minecraft.sounds.SoundSource.WEATHER, 1.2F, 0.8F);
+        }
+
         // Estado e persona de todos os online para o novo jogador.
         for (ServerPlayer other : server.getPlayerList().getPlayers()) {
             PacketDistributor.sendToPlayer(joined, new SyncRPStatePayload(other.getUUID(), data.isInRp(other.getUUID())));

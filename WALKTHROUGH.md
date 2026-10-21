@@ -20,7 +20,7 @@
 | Versão | **4.6.0** (2026-10-20) |
 | Commit | (ver `git log`) |
 | Jar | `rptag-4.6.0.jar` (~95 MB com 5 vídeos; **só na GitHub Release**) |
-| Checks | `check.py` → **369 PASS / 0 FAIL** + **JUnit 31/31** (`./gradlew test`) + `python -m unittest discover -s arte/tests` (26) |
+| Checks | `check.py` → **401 PASS / 0 FAIL** + **JUnit 43/43** (`./gradlew test`) + `python -m unittest discover -s arte/tests` (26) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
@@ -47,10 +47,15 @@
 - **Teste no jogo:** os dois em vídeo, `/rpfx off` → procedural, troca Void→Divino→clássico,
   JPEG corrompido → procedural no mesmo t, kick no meio. Capturas em `verificacao/4_6_0_*`.
   Modo reduzido coberto só por teste (não há opção no jogo para ativá-lo).
+- **Integração com o GitHub (4.5.0/4.5.1 do EduCafilista):** os testes novos da 4.5.1
+  (`ArgumentoSerializavelTest`, `LoginCommandsPacketTest`) não compilavam nem no `origin/main`:
+  usam classes do Minecraft, ausentes no classpath de teste. Correção no `build.gradle`:
+  `neoForge.addModdingDependenciesTo(sourceSets.test)` e remoção do `gson:2.11.0` de teste
+  (o jogo exige gson 2.10.1 estrito; ele já vem pelas dependências do jogo).
 - **Pendências menores:** o som de abertura pode tocar até 0,5 s antes do primeiro quadro
   em disco lento.
 
-### 4.5.0 (2026-10-20): INFERNO e GELO em vídeo (redesign híbrido)
+### 4.6.0 (parte 1, 2026-10-20): INFERNO e GELO em vídeo (redesign híbrido; nunca publicado sozinho — o número 4.5.0 ficou com a versão do EduCafilista)
 - **Spec e plano:** `docs/superpowers/specs/2026-10-20-inferno-gelo-hibrido-design.md` e
   `docs/superpowers/plans/2026-10-20-inferno-gelo-hibrido.md`. Gates cumpridos: 4 quadros
   aprovados, movimento aprovado, depois exportação/integração.
@@ -79,6 +84,88 @@ Publicado: tag+Release **v4.2.0** (id 417947996, asset 10298836, `make_latest`,
 download `-L` 200 + `cmp` identico, tag em `d84ec85`); **v4.1.0 apagada** (release+tag).
 REGRA NOVA do amigo: **nenhum jar no git** — o `.gitignore` virou `*.jar` com excecao do
 `gradle-wrapper.jar`; o jar vive so na Release (com video, cada ciclo adiciona ~10 MB).
+
+### 🚑 4.5.1 (2026-10-21) — "Invalid player data" (LIÇÃO QUE CUSTA CARO)
+
+**Sintoma:** ninguém entrava no mundo na 4.5.0; o jogo expulsava com **"Invalid
+player data"**. O save NÃO estava corrompido.
+
+**Causa:** `ListaAlvosArgument` (argumento custom do `/rp admin vida`) existia sem
+`ArgumentTypeInfo` registrada. O servidor sobe, aceita RCON, tudo funciona — mas
+quando um jogador entra, `PlayerList.placeNewPlayer → Commands.sendCommands` monta o
+`ClientboundCommandsPacket` e chama `ArgumentTypeInfos.byClass(type)` para cada
+argumento. Tipo custom fora do registry → `IllegalArgumentException` → queda com
+"Invalid player data".
+
+**REGRA (vale pra qualquer argumento novo):**
+```java
+// RpArgumentTypes.java — o registro NÃO pode morar no <clinit> do argumento
+// (DeferredHolder resolve o registry na criação: ExceptionInInitializerError fora do jogo)
+public static final DeferredRegister<ArgumentTypeInfo<?, ?>> ARGUMENT_TYPES =
+        DeferredRegister.create(Registries.COMMAND_ARGUMENT_TYPE, RPTagMod.MODID);
+public static final DeferredHolder<..., SingletonArgumentInfo<ListaAlvosArgument>> LISTA_ALVOS =
+        ARGUMENT_TYPES.register("lista_alvos",
+                () -> ArgumentTypeInfos.registerByClass(ListaAlvosArgument.class,
+                        SingletonArgumentInfo.<ListaAlvosArgument>contextFree(ListaAlvosArgument::alvos)));
+```
++ `RpArgumentTypes.ARGUMENT_TYPES.register(modEventBus)` no `RPTagMod`.
++ **Rede de segurança:** o comando pergunta `ListaAlvosArgument.disponivel()` e cai
+  para `StringArgumentType.word()` se o registro não estiver ativo — assim um erro
+  desses nunca mais derruba o login de ninguém.
++ **Teste:** `LoginCommandsPacketTest` instancia o `ClientboundCommandsPacket` real
+  com e sem registro (é o objeto que o servidor cria no login). Roda sem servidor.
++ **Log de boot** para conferir: `RP Tag: /rp admin vida usando lista_alvos (...)`.
+
+### 🏺 4.5.0 (2026-10-21) — AFK, regras de RP, vidas offline e o OLHO DE HÓRUS
+
+**Pedido do dono:** aprender com o repo `TioNickZeus/in-rp-1.21.1` (AFK, regras, vidas),
+gerenciar vidas de quem está **offline**, e criar o aviso `egipicio` de olho egípcio.
+
+- **`AfkSistema.java`** — varredura a cada `VARREDURA_TICKS = 100` (5 s) lendo
+  `player.getLastActionTime()` (o relógio do próprio jogo, não um contador caseiro).
+  `TIMEOUT_PADRAO_S = 300`, persistido no mundo (`AfkTimeout`). **Entrar em AFK desliga o
+  RP** (`setInRp(false)` + mensagem). Acorda com movimento (`ACORDA_MOVE2 = 0.0225`, ou
+  seja 1,5 cm), giro de 2°, chat (`ServerChatEvent`, `receiveCanceled = true`), ataque e
+  clique. Login/logout/`ServerStoppingEvent` limpam o estado — ninguém fica preso.
+  `/afk` alterna (cooldown 3 s), `/rp admin afk tempo <s>` e `/rp admin afk status`.
+- **`RegrasRp.java`** — três regras, **liberadas por padrão** (não muda servidor antigo):
+  `pvp` (`AttackEntityEvent` + `LivingIncomingDamageEvent` para flecha/poção/TNT, vale se
+  qualquer lado está em RP), `quebrar` (`BlockEvent.BreakEvent`) e `colocar`
+  (`BlockEvent.EntityPlaceEvent` + balde via `RightClickBlock` → `TriState.FALSE` e
+  `RightClickItem` → `FAIL`). Staff (permissão 2) passa. Persiste no mundo.
+  Comandos: `/rp admin regra [pvp|quebrar|colocar] on|off`, `/rp admin regra`,
+  `/rp admin regra tudo bloquear|liberar`.
+- **`VidasAdmin.java`** — resolve o alvo por **nome** (online ou `ProfileCache` para
+  offline), com `record Alvo(UUID, nome, ServerPlayer online)` e `getUUID()` para o
+  código antigo continuar igual. Offline: o valor muda no `RPWorldData` (que já é por
+  UUID) e fica um **recado** (`RecadosVida` no NBT) entregue no login por
+  `ServerEvents.onLoggedIn` (estilo 4 + trovão).
+  `/rp admin vida` sem argumento lista quem está abaixo de 5/5;
+  `/rp admin vida lote A,B,C tirar 1` guarda os UUIDs e espera `/rp admin confirmar`
+  (30 s, `VALIDADE_MS`) — `/rp admin cancelar` desiste.
+- **`ListaAlvosArgument`** — o `StringArgumentType.word()` do brigadier **não aceita
+  vírgula** (só `[A-Za-z0-9_.+-]`), e o lote morria com "Expected whitespace to end one
+  argument". Este argumento lê manualmente até o espaço e aceita lista/seletores.
+- **`EgipcioAvisoFx.java`** (estilo **12**, `egipicio`/`egipcio`) — O Olho de Hórus,
+  `DUR = 6.5 s`, `ABRE = 2.45 s`, `TEXTO = 1.55 s`:
+  - `noite` (papiro + fibras + manchas) → `ra` (disco no horizonte, `h*0.71`, atrás das
+    pirâmides) → `piramides` (3, silhueta + aresta dourada) → `areiaChao` → `hieroglifos`
+    (2 colunas rolando + ankh/olho/água/sol/junco) → **poço escuro** + `olho` → `cartucho`
+    → `graos`; camada aditiva (`brilhoOlho`, flash na abertura); `texto`; `vinheta`.
+  - Olho: **acima do título** em `cy - 46*k`, `R = 22*k`, desenhado traço por traço
+    (sobrancelha → amêndoa → íris `ri*0.58` 0x140E02 → lágrima → espiral).
+  - Título **AVISO** letra a letra dentro do cartucho (`hh = 5.2*S + 10*k`), mensagem
+    **sempre** em `cy + 25*k`.
+  - Áudio: harpa/flauta pentatônica (`ESCALA`), `ENDER_EYE_LAUNCH` + `AMETHYST_BLOCK_CHIME`
+    + `BEACON_ACTIVATE` no ABRE, sino e baixo depois. No mundo: `FALLING_DUST` de areia,
+    `BLOCK` de areia, `CAMPFIRE_COSY_SMOKE` e `END_ROD` (servidor, `particulasEgipcio`).
+- **Verificação**: `verificacao/simula_4_5_0_egipcio.py` (PIL, espelha a matemática do
+  Java) → `4_5_0_egipcio_como_ficou.png` (3 momentos), `_frame.png`, `_olho.png`,
+  `_egipcio.gif` (65 quadros). `check.py` **362**, JUnit **33/33**, `javac` 104 classes.
+- **Aprendizado do in-rp:** sweep 100 ticks + `lastActionTime`; `resetLastActionTime` no
+  wake; graça de 1 s; regras por evento com bypass de staff; confirmação por UUID em lote.
+  O que NÃO copiamos: o JSON separado de vidas (nosso `SavedData` já é por UUID) e o
+  `EntityArgument` (que só enxerga online).
 
 ### 4.2.0 (2026-10-19): avisos em VÍDEO renderizados no Blender (piloto: MORTE)
 - **Spec e plano:** `docs/superpowers/specs/2026-10-19-avisos-em-video-design.md` e

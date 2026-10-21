@@ -26,9 +26,13 @@
 - ~95 MB com cinco vídeos (Void 15,9 MB; Divino 25,8 MB, com cor JPEG em qualidade 75
   porque o efeito cobre quase toda a tela); distribuído **só nas Releases**
 
-## 4.5.0 — INFERNO E GELO EM VÍDEO (BLENDER)  (2026-10-20)
+### Correção de build
+- Os testes automáticos da 4.5.1 voltam a compilar (dependências do jogo no classpath de teste)
 
-### "Fornalha" refeita no Blender
+### Também nesta versão: Inferno e Gelo em vídeo
+(feitos antes da 4.6.0 e nunca publicados separadamente; o número 4.5.0 ficou com a versão abaixo)
+
+#### "Fornalha" refeita no Blender
 - Uma **fissura incandescente** se abre atrás do título com clarão e onda de calor,
   e se desfaz em fragmentos carbonizados
 - **Fogo de verdade** subindo pelo rodapé e pelos cantos (línguas irregulares,
@@ -36,23 +40,94 @@
   **meteoros** com rastro e um **redemoinho de brasas** discreto atrás do texto
 - O centro fica livre para ler a mensagem
 
-### "Geada Eterna" refeita no Blender
+#### "Geada Eterna" refeita no Blender
 - O impacto **estilhaça a tela como vidro** (trincas e anéis quebrados)
 - A **geada cresce das bordas** com veios cristalinos e "samambaias" de gelo,
   **cristais translúcidos** em aglomerados nos cantos, neve em profundidade
   e um floco discreto girando atrás do título; no fim, fragmentos se soltam
 
-### Leitura
+#### Leitura
 - No modo vídeo o texto ganha **contorno escuro**, legível até sobre céu claro
 
-### Igual ao MORTE
+#### Igual ao MORTE
 - Sem vídeo, quadro corrompido ou PC lento → o FX antigo assume **no mesmo instante**
 - `fxVideo=false` ou **modo reduzido** → sempre o FX antigo
 - Um aviso novo (de qualquer estilo) encerra o aviso em vídeo anterior
 
-### Jar
+#### Jar
 - ~54 MB com os três vídeos (Morte 9,6 MB, Inferno 14,1 MB, Gelo 32,4 MB),
   continua **só nas Releases**
+
+## 4.5.1 — 2026-10-21 — 🚑 CORREÇÃO: "Invalid player data" ao entrar no mundo
+
+> **Quem está na 4.5.0 precisa atualizar.** Na 4.5.0 ninguém conseguia entrar no
+> mundo: o jogo expulsava com **"Invalid player data"**. Não era o save, não era
+> corrupção de mundo — era o mod, e o save está intacto.
+
+- **O que acontecia:** criei um tipo de argumento de comando próprio
+  (`ListaAlvosArgument`, para aceitar `Ana,Beto` e `@a` no `/rp admin vida`) e
+  **esqueci de registrá-lo** no registry `minecraft:command_argument_type`.
+  O servidor funcionava sozinho, mas no momento em que um jogador entrava ele
+  montava a lista de comandos para enviar e chamava
+  `ArgumentTypeInfos.byClass(...)` — que só conhece tipos registrados. Estourava
+  `IllegalArgumentException: Unrecognized argument type dev.rptag.ListaAlvosArgument`
+  e a conexão caía com "Invalid player data".
+- **O que foi feito:**
+  - `RpArgumentTypes` registra o argumento do jeito certo (mesmo padrão que o
+    NeoForge usa no `ModIdArgument`): `ArgumentTypeInfos.registerByClass(...)`
+    dentro de um `DeferredRegister` no `COMMAND_ARGUMENT_TYPE`.
+  - O registro saiu do `<clinit>` da classe do argumento — o `DeferredHolder` do
+    NeoForge resolve o registry na criação, e isso quebrava qualquer uso da classe
+    fora do jogo.
+  - **Rede de segurança:** `/rp admin vida` agora pergunta
+    `ListaAlvosArgument.disponivel()` antes de usar o tipo custom. Se por qualquer
+    motivo o registro não estiver ativo, ele cai para o `word()` do vanilla (o admin
+    perde a lista com vírgula, mas **o servidor continua aceitando jogadores**).
+  - Log de boot: `RP Tag: /rp admin vida usando lista_alvos (...)` — se um dia
+    aparecer "usando o argumento padrao", o motivo está logo acima no log.
+- **Testes que travam a regressão:** `LoginCommandsPacketTest` monta o
+  `ClientboundCommandsPacket` — o objeto exato que o servidor cria no login — com e
+  sem o registro, e `ArgumentoSerializavelTest` faz o mesmo com
+  `ArgumentTypeInfos.unpack`. `check.py` ganhou 7 checks (agora **369**).
+- **Nada do save precisa ser mexido.** Basta trocar o jar; os jogadores voltam a
+  entrar normalmente.
+
+## 4.5.0 — 2026-10-21 — 🏺 AFK, regras de RP, vidas offline e o OLHO DE HÓRUS
+
+- **AFK (novo)** — ficar parado vira AFK **sozinho** e o comando `/afk` faz na mão.
+  - Varredura a cada 5 s em cima do `getLastActionTime()` do próprio jogo (não é
+    contador caseiro: dormir, abrir baú e lag não enganam).
+  - **Entrar em AFK DESLIGA o RP.** Ao voltar, é só `/rp on` — a mensagem avisa.
+  - Acorda ao **mover** (>1,5 cm), **virar a cabeça** (>2°), falar no chat, atacar ou
+    clicar. No relog, o estado é limpo (ninguém fica preso AFK).
+  - `/rp admin afk tempo <segundos>` (0 desliga; padrão 300) e `/rp admin afk status`.
+    O tempo fica no mundo (`AfkTimeout`).
+- **Regras em RP** — três interruptores, todos **liberados por padrão** (servidor antigo
+  não muda de comportamento):
+  - `/rp admin regra pvp on|off` — barra o golpe (`AttackEntityEvent`) **e** o dano
+    indireto (flecha, tridente, poção, TNT) quando qualquer um dos dois está em RP.
+  - `/rp admin regra quebrar on|off` · `/rp admin regra colocar on|off` (blocos **e**
+    baldes de água/lava/mob).
+  - `/rp admin regra` mostra o estado; `tudo bloquear|liberar` de uma vez.
+  - Quem tem permissão 2 (staff) passa direto — dá pra montar cenário sem desligar a regra.
+    O aviso é discreto, na barra de ação.
+- **Vidas de quem está OFFLINE** — era o buraco da 4.4.0 (só achava quem estava online):
+  - `/rp admin vida <nome>` agora resolve pelo cache de perfis do servidor; o estoque é
+    por UUID, então muda igual. A pessoa recebe o aviso (estilo 4 + trovão) **no login**.
+  - `/rp admin vida` sem argumento lista quem está abaixo de 5/5.
+  - `/rp admin vida lote Ana,Beto,Caio tirar 1|dar|definir` — **não aplica na hora**:
+    mostra a lista e espera `/rp admin confirmar` em até 30 s (`/rp admin cancelar` desiste).
+- **Aviso estilo 12: `egipicio`** (aceita `egipcio`) — *"O Olho de Hórus"*, 6,5 s:
+  - Templo à noite em papiro, **3 pirâmides** no horizonte e **o disco de Rá nascendo
+    atrás delas**; areia soprando e incenso.
+  - O **olho é desenhado traço por traço** (sobrancelha → amêndoa → íris → pupila →
+    lágrima → espiral do canto), com poço escuro atrás pra o ouro saltar.
+  - Título **AVISO** letra a letra dentro de um **cartucho** (moldura oval com o nó e a
+    faixa de lápis-lazúli) e a mensagem **sempre embaixo** (`cy + 25k`).
+  - Áudio próprio: arpejo de **alaúde/flauta em escala pentatônica**, olho abrindo
+    (clarão + coro), sino de templo no fim.
+  - No mundo, o alvo recebe areia caindo, incenso e brilho.
+- `check.py` **362** (25 checks novos), JUnit **33/33** (7 novos).
 
 ## 4.4.0 — 2026-10-20 —  Coração 3D de verdade + `/rp admin vida`
 

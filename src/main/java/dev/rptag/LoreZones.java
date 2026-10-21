@@ -87,7 +87,7 @@ public final class LoreZones {
                     tag.contains("MusicInterval") ? tag.getInt("MusicInterval") : 45,
                     // (3.85.0) zonas antigas: sem aviso = titulo classico
                     tag.contains("Aviso") ? tag.getString("Aviso") : "",
-                    Math.max(0, Math.min(11, tag.getInt("AvisoEstilo"))),
+                    Math.max(0, Math.min(12, tag.getInt("AvisoEstilo"))),
                     tag.contains("AvisoSeg") && tag.getInt("AvisoSeg") > 0
                             ? tag.getInt("AvisoSeg") : 8,
                     // (4.0.0) zonas antigas: sem faixa = esfera inteira
@@ -412,7 +412,7 @@ public final class LoreZones {
     private static void show(ServerPlayer player, Zone zone) {
         var connection = player.connection;
         if (zone.aviso() != null && !zone.aviso().isEmpty()) {
-            int estilo = Math.max(0, Math.min(11, zone.avisoEstilo()));
+            int estilo = Math.max(0, Math.min(12, zone.avisoEstilo()));
             int seg = Math.max(1, Math.min(60,
                     zone.avisoSeg() == 0 ? 8 : zone.avisoSeg()));
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,

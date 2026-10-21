@@ -86,5 +86,10 @@ public final class RPTagMod {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         BE_TYPES.register(modEventBus);
+        // (4.5.1) BUG QUE DERRUBA JOGADOR NO LOGIN: argumento de comando custom
+        // PRECISA estar no registry COMMAND_ARGUMENT_TYPE. Sem isso o servidor
+        // nao consegue serializar a arvore de comandos e o cliente cai com
+        // "Invalid player data" (IllegalArgumentException em ArgumentTypeInfos.byClass).
+        RpArgumentTypes.ARGUMENT_TYPES.register(modEventBus);
     }
 }
