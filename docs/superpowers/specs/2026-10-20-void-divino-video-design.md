@@ -1,4 +1,4 @@
-# Void e Divino — avisos em vídeo (4.4.0)
+# Void e Divino — avisos em vídeo (4.6.0)
 
 Data: 2026-10-20
 Estado: design aprovado na conversa, seção por seção; especificação escrita para revisão final.
@@ -6,11 +6,11 @@ Estado: design aprovado na conversa, seção por seção; especificação escrit
 ## Objetivo e contexto
 
 Levar os avisos Void "Queda Sem Fundo" e Divino "Ascensão Celestial" para o modo
-vídeo, com a mesma rotina da 4.3.0 (Inferno e Gelo): cena Blender reproduzível,
+vídeo, com a mesma rotina da 4.5.0 (Inferno e Gelo; antes numerada 4.3.0): cena Blender reproduzível,
 quadros aprovados pelo dono, exportação em pares JPEG cor+alfa e integração no
 player existente, com fallback para o FX procedural.
 
-Diferente da 4.3.0, aqui **não há redesenho**: a coreografia dos efeitos atuais
+Diferente da 4.5.0, aqui **não há redesenho**: a coreografia dos efeitos atuais
 (`VoidAvisoFx`, `DivinoAvisoFx`) é mantida e renderizada em 3D. O ganho esperado
 vem de profundidade real, luz, brilho e materiais que o procedural 2D não tem.
 
@@ -29,8 +29,8 @@ aviso, testes e verificação no jogo, atualização de `WALKTHROUGH.md` e
 `arte/README.md` na entrega.
 
 Não inclui: os outros 7 avisos procedurais, sons novos, mudanças de gameplay,
-push ou Release. A implementação acontece em branch própria da 4.4.0, criada a
-partir da 4.3.0 conforme o plano. A aprovação desta especificação autoriza
+push ou Release. A implementação acontece em branch própria da 4.6.0, criada a
+partir do `main` local (que já tem a 4.5.0) conforme o plano. A aprovação desta especificação autoriza
 escrever o plano; a execução vem após aprovação do plano.
 
 ## Sequência visual aprovada
@@ -87,7 +87,7 @@ partículas do servidor continuam no código, com os tempos atuais.
   ficar em no máximo ~35 % do brilho dos anéis. O hexagrama atravessa o texto só
   em baixa opacidade.
 - Nos dois, o texto do modo vídeo usa o contorno escuro existente
-  (`AvisoFxUtil.contornoEscuro`) e o apoio de leitura da 4.3.0.
+  (`AvisoFxUtil.contornoEscuro`) e o apoio de leitura da 4.5.0.
 - Conferir sobre `arte/referencias/gameplay_claro.png` e `gameplay_escuro.png`.
   O caso crítico é o Divino sobre céu claro.
 
@@ -160,7 +160,7 @@ Mesmo padrão de `InfernoAvisoFx` e `GeloAvisoFx`:
   `python tools/rcon.py "rp admin avisar Dev void TESTE"` (e `divino`).
   Conferir: cada vídeo até o fim, `fxVideo` desligado, modo reduzido, JPEG
   corrompido, troca por outro aviso no meio e saída do mundo. Capturas em
-  `verificacao/4_4_0_*`.
+  `verificacao/4_6_0_*`.
 
 Critérios de aceite:
 
