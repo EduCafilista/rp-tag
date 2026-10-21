@@ -16,6 +16,7 @@ import math
 import random
 import comum as c
 import perspectiva as P
+import suave as S
 
 SEED = 615
 CY = .45
@@ -40,13 +41,17 @@ def rev(t):
     return eo((t - .1) / 1.2)
 
 
-def na_zona_texto(x, y, z, t, folga=.15):
-    """1 se o ponto (mundo) cai na zona do texto entre 1 e 4.8 s (com bordas suaves)."""
-    if t < .8 or t > 5.0:
+def na_zona_texto(x, y, z, t, comprimento=0.):
+    """Peso SUAVE (0..1) de um risco (mundo, de z ate z - comprimento) sobre a zona do texto,
+    so no periodo de leitura. Mede as duas pontas: a de dentro aponta para o centro."""
+    jt = S.janela_texto(t)
+    if jt <= 0.:
         return 0.
-    u, v = P.projetar(CAM, x, y, z)
-    dentro = (.25 - folga / 4 < u < .75 + folga / 4) and (.40 - folga / 8 < v < .58 + folga / 8)
-    return (c.ss(.8, 1., t) * (1 - c.ss(4.8, 5., t))) if dentro else 0.
+    peso = 0.
+    for zz in (z, z - comprimento):
+        u, v = P.projetar(CAM, x, y, zz)
+        peso = max(peso, S.zona(u, v, .23, .77, .39, .59, .08))
+    return jt * peso
 
 
 def coroa(nome, raio, largura, mat, z=0., n=96, onda=0., fase=0., a0=0., a1=TAU):
@@ -188,8 +193,7 @@ def montar():
             a = math.sin(math.pi * u) * .55 * env_meio(t)
             # raio na tela (unidades do quadro): atenua enquanto passa sobre o texto
             rt = R * DIST / (DIST - z_de(t))
-            if 1.2 < rt < 4.6 and .8 < t < 5.:
-                a *= .2
+            a *= 1 - .8 * S.janela_texto(t) * S.anel_sobre_texto(rt)
             return a
         c.visibilidade(ob, alfa)
 
@@ -210,10 +214,10 @@ def montar():
             return fr(s - t * v)
         c.animar(ob, 'location', lambda t, rho=rho: -70 + 78 * rho(t), 2)
 
-        def alfa(t, rho=rho, x=x, y=y):
+        def alfa(t, rho=rho, x=x, y=y, L=L):
             r = rho(t)
             a = c.ss(0, .15, r) * (1 - c.ss(.85, 1, r)) * .9 * env_meio(t)
-            return a * (1 - na_zona_texto(x, y, -70 + 78 * r, t))
+            return a * (1 - na_zona_texto(x, y, -70 + 78 * r, t, L))
         c.visibilidade(ob, alfa)
 
     # ------------------------------------------------ estilhacos da realidade (por fora do texto)
@@ -271,7 +275,7 @@ def montar():
 
                 def alfa_h(t, am=am, r=RH * fator, a=alfa * k_a):
                     u, v = P.projetar(CAM, math.cos(am) * r * rev(t), CY + math.sin(am) * r * rev(t), 0)
-                    sob_msg = (c.ss(.8, 1., t) * (1 - c.ss(4.8, 5., t))) if (.25 < u < .75 and .505 < v < .60) else 0.
+                    sob_msg = S.janela_texto(t) * S.zona(u, v, .25, .75, .505, .60, .03)
                     return a * c.ss(.08, .3, t) * (1 - .85 * sob_msg)
                 c.visibilidade(ob, alfa_h)
 
@@ -308,7 +312,7 @@ def montar():
                 wy = CY + (lx * math.sin(ph) + y1 * math.cos(ph)) * s_
                 wz = z1 * s_
                 u, v = P.projetar(CAM, wx, wy, wz)
-                frente_msg = c.ss(.8, 1., t) * (1 - c.ss(4.8, 5., t)) if (.25 < u < .75 and .505 < v < .60) else 0.
+                frente_msg = S.janela_texto(t) * S.zona(u, v, .25, .75, .505, .60, .03)
                 return min(1., base * perto) * (1 - .88 * frente_msg) * c.ss(.1, .5, t)
             c.visibilidade(ob, alfa)
             c.visibilidade(gl, lambda t, alfa=alfa: .16 * alfa(t))

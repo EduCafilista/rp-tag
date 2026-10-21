@@ -13,6 +13,7 @@ import bpy
 import math
 import random
 import comum as c
+import suave as SV
 
 SEED = 733
 CY = .72
@@ -38,10 +39,10 @@ def rev(t):
 
 
 def zona_texto(x, y, t):
-    """1 dentro da zona do texto (mundo) entre 1 e 4.8 s, com bordas suaves no tempo."""
-    if not (-4.2 < x < 4.2 and -.6 < y < 1.3):
-        return 0.
-    return c.ss(.8, 1., t) * (1 - c.ss(4.8, 5., t))
+    """Peso SUAVE (0..1) da zona do texto (mundo x -4,2..4,2, y -0,6..1,3), so na leitura.
+    Converte para fracao da tela e usa margem de rampa (nada some por degrau)."""
+    return SV.janela_texto(t) * SV.zona((x + 8) / 16, (4.5 - y) / 9, (-4.2 + 8) / 16, (4.2 + 8) / 16,
+                                      (4.5 - 1.3) / 9, (4.5 + .6) / 9, .05)
 
 
 def _op(nt, tipo, *vals):
