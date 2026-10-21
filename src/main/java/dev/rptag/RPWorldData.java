@@ -53,6 +53,18 @@ public final class RPWorldData extends SavedData {
     private boolean chatLocal = true;
     private boolean bubblesOn = true;
 
+    // ==== (4.5.0) REGRAS EM RP (padrao: tudo LIBERADO) ====
+    /** PvP permitido em RP (false = bloqueia; vale se qualquer lado estiver em RP). */
+    private boolean regraPvp = true;
+    /** Quebrar bloco permitido em RP. */
+    private boolean regraQuebrar = true;
+    /** Colocar bloco (e balde) permitido em RP. */
+    private boolean regraColocar = true;
+    /** (4.5.0) segundos parado ate virar AFK sozinho (0 = desligado). */
+    private int afkTimeout = 300;
+    /** (4.5.0) recado de vida pra quem estava OFFLINE quando o admin mexeu. */
+    private final Map<UUID, String> recadosVida = new HashMap<>();
+
     public static RPWorldData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
                 new SavedData.Factory<>(RPWorldData::new, RPWorldData::load, null), DATA_NAME);
@@ -228,6 +240,67 @@ public final class RPWorldData extends SavedData {
         setDirty();
     }
 
+    // ==== (4.5.0) regras em RP ====
+
+    public boolean isRegraPvp() {
+        return regraPvp;
+    }
+
+    public boolean isRegraQuebrar() {
+        return regraQuebrar;
+    }
+
+    public boolean isRegraColocar() {
+        return regraColocar;
+    }
+
+    public void setRegraPvp(boolean permitido) {
+        this.regraPvp = permitido;
+        setDirty();
+    }
+
+    public void setRegraQuebrar(boolean permitido) {
+        this.regraQuebrar = permitido;
+        setDirty();
+    }
+
+    public void setRegraColocar(boolean permitido) {
+        this.regraColocar = permitido;
+        setDirty();
+    }
+
+    /** (4.5.0) UUIDs com vida gravada (pra /rp admin vida sem argumento). */
+    public java.util.Set<UUID> canonLivesIds() {
+        return java.util.Collections.unmodifiableSet(canonLives.keySet());
+    }
+
+    /** (4.5.0) guarda o recado que o jogador (offline) vai ver ao entrar. */
+    public void setRecadoVida(UUID id, String texto) {
+        if (texto == null || texto.isBlank()) {
+            recadosVida.remove(id);
+        } else {
+            recadosVida.put(id, texto);
+        }
+        setDirty();
+    }
+
+    /** (4.5.0) entrega e apaga (chamado no login). */
+    public String consumirRecadoVida(UUID id) {
+        String t = recadosVida.remove(id);
+        if (t != null) setDirty();
+        return t;
+    }
+
+    /** (4.5.0) segundos parado ate entrar em AFK; 0 desliga o automatico. */
+    public int getAfkTimeout() {
+        return afkTimeout;
+    }
+
+    public void setAfkTimeout(int segundos) {
+        this.afkTimeout = Math.max(0, segundos);
+        setDirty();
+    }
+
     // ==== NBT ====
 
     @Override
@@ -321,6 +394,20 @@ public final class RPWorldData extends SavedData {
 
         tag.putBoolean("ChatLocal", chatLocal);
         tag.putBoolean("BubblesOn", bubblesOn);
+        // (4.5.0) regras + AFK
+        tag.putBoolean("RegraPvp", regraPvp);
+        tag.putBoolean("RegraQuebrar", regraQuebrar);
+        tag.putBoolean("RegraColocar", regraColocar);
+        tag.putInt("AfkTimeout", afkTimeout);
+        // (4.5.0) recados de vida de quem estava offline
+        ListTag recados = new ListTag();
+        for (var en : recadosVida.entrySet()) {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", en.getKey());
+            e.putString("Texto", en.getValue());
+            recados.add(e);
+        }
+        tag.put("RecadosVida", recados);
         return tag;
     }
 
@@ -385,6 +472,17 @@ public final class RPWorldData extends SavedData {
         // (ligado) em vez de virar "false" so por ausencia da chave.
         data.chatLocal = !tag.contains("ChatLocal") || tag.getBoolean("ChatLocal");
         data.bubblesOn = !tag.contains("BubblesOn") || tag.getBoolean("BubblesOn");
+
+        // (4.5.0) mesmo cuidado: save antigo nao tem as chaves -> padrao LIBERADO
+        data.regraPvp = !tag.contains("RegraPvp") || tag.getBoolean("RegraPvp");
+        data.regraQuebrar = !tag.contains("RegraQuebrar") || tag.getBoolean("RegraQuebrar");
+        data.regraColocar = !tag.contains("RegraColocar") || tag.getBoolean("RegraColocar");
+        data.afkTimeout = tag.contains("AfkTimeout") ? tag.getInt("AfkTimeout") : AfkSistema.TIMEOUT_PADRAO_S;
+        ListTag recados = tag.getList("RecadosVida", Tag.TAG_COMPOUND);
+        for (int i = 0; i < recados.size(); i++) {
+            CompoundTag e = recados.getCompound(i);
+            data.recadosVida.put(e.getUUID("Id"), e.getString("Texto"));
+        }
         return data;
     }
 }

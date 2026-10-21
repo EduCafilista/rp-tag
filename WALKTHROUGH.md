@@ -15,10 +15,10 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.2.0** (2026-10-19) |
+| Versão | **4.5.0** (2026-10-21) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.2.0.jar` (~10 MB; **só na GitHub Release** — não vai mais pro git) |
-| Checks | `check.py` → **337 PASS / 0 FAIL** + **JUnit 26/26** (`./gradlew test`, desde a 4.2.0) |
+| Jar | `rptag-4.5.0.jar` (~10,3 MB; **só na GitHub Release** — não vai mais pro git) |
+| Checks | `check.py` → **362 PASS / 0 FAIL** + **JUnit 33/33** (`./gradlew test`) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
@@ -37,6 +37,57 @@ Publicado: tag+Release **v4.2.0** (id 417947996, asset 10298836, `make_latest`,
 download `-L` 200 + `cmp` identico, tag em `d84ec85`); **v4.1.0 apagada** (release+tag).
 REGRA NOVA do amigo: **nenhum jar no git** — o `.gitignore` virou `*.jar` com excecao do
 `gradle-wrapper.jar`; o jar vive so na Release (com video, cada ciclo adiciona ~10 MB).
+
+### 🏺 4.5.0 (2026-10-21) — AFK, regras de RP, vidas offline e o OLHO DE HÓRUS
+
+**Pedido do dono:** aprender com o repo `TioNickZeus/in-rp-1.21.1` (AFK, regras, vidas),
+gerenciar vidas de quem está **offline**, e criar o aviso `egipicio` de olho egípcio.
+
+- **`AfkSistema.java`** — varredura a cada `VARREDURA_TICKS = 100` (5 s) lendo
+  `player.getLastActionTime()` (o relógio do próprio jogo, não um contador caseiro).
+  `TIMEOUT_PADRAO_S = 300`, persistido no mundo (`AfkTimeout`). **Entrar em AFK desliga o
+  RP** (`setInRp(false)` + mensagem). Acorda com movimento (`ACORDA_MOVE2 = 0.0225`, ou
+  seja 1,5 cm), giro de 2°, chat (`ServerChatEvent`, `receiveCanceled = true`), ataque e
+  clique. Login/logout/`ServerStoppingEvent` limpam o estado — ninguém fica preso.
+  `/afk` alterna (cooldown 3 s), `/rp admin afk tempo <s>` e `/rp admin afk status`.
+- **`RegrasRp.java`** — três regras, **liberadas por padrão** (não muda servidor antigo):
+  `pvp` (`AttackEntityEvent` + `LivingIncomingDamageEvent` para flecha/poção/TNT, vale se
+  qualquer lado está em RP), `quebrar` (`BlockEvent.BreakEvent`) e `colocar`
+  (`BlockEvent.EntityPlaceEvent` + balde via `RightClickBlock` → `TriState.FALSE` e
+  `RightClickItem` → `FAIL`). Staff (permissão 2) passa. Persiste no mundo.
+  Comandos: `/rp admin regra [pvp|quebrar|colocar] on|off`, `/rp admin regra`,
+  `/rp admin regra tudo bloquear|liberar`.
+- **`VidasAdmin.java`** — resolve o alvo por **nome** (online ou `ProfileCache` para
+  offline), com `record Alvo(UUID, nome, ServerPlayer online)` e `getUUID()` para o
+  código antigo continuar igual. Offline: o valor muda no `RPWorldData` (que já é por
+  UUID) e fica um **recado** (`RecadosVida` no NBT) entregue no login por
+  `ServerEvents.onLoggedIn` (estilo 4 + trovão).
+  `/rp admin vida` sem argumento lista quem está abaixo de 5/5;
+  `/rp admin vida lote A,B,C tirar 1` guarda os UUIDs e espera `/rp admin confirmar`
+  (30 s, `VALIDADE_MS`) — `/rp admin cancelar` desiste.
+- **`ListaAlvosArgument`** — o `StringArgumentType.word()` do brigadier **não aceita
+  vírgula** (só `[A-Za-z0-9_.+-]`), e o lote morria com "Expected whitespace to end one
+  argument". Este argumento lê manualmente até o espaço e aceita lista/seletores.
+- **`EgipcioAvisoFx.java`** (estilo **12**, `egipicio`/`egipcio`) — O Olho de Hórus,
+  `DUR = 6.5 s`, `ABRE = 2.45 s`, `TEXTO = 1.55 s`:
+  - `noite` (papiro + fibras + manchas) → `ra` (disco no horizonte, `h*0.71`, atrás das
+    pirâmides) → `piramides` (3, silhueta + aresta dourada) → `areiaChao` → `hieroglifos`
+    (2 colunas rolando + ankh/olho/água/sol/junco) → **poço escuro** + `olho` → `cartucho`
+    → `graos`; camada aditiva (`brilhoOlho`, flash na abertura); `texto`; `vinheta`.
+  - Olho: **acima do título** em `cy - 46*k`, `R = 22*k`, desenhado traço por traço
+    (sobrancelha → amêndoa → íris `ri*0.58` 0x140E02 → lágrima → espiral).
+  - Título **AVISO** letra a letra dentro do cartucho (`hh = 5.2*S + 10*k`), mensagem
+    **sempre** em `cy + 25*k`.
+  - Áudio: harpa/flauta pentatônica (`ESCALA`), `ENDER_EYE_LAUNCH` + `AMETHYST_BLOCK_CHIME`
+    + `BEACON_ACTIVATE` no ABRE, sino e baixo depois. No mundo: `FALLING_DUST` de areia,
+    `BLOCK` de areia, `CAMPFIRE_COSY_SMOKE` e `END_ROD` (servidor, `particulasEgipcio`).
+- **Verificação**: `verificacao/simula_4_5_0_egipcio.py` (PIL, espelha a matemática do
+  Java) → `4_5_0_egipcio_como_ficou.png` (3 momentos), `_frame.png`, `_olho.png`,
+  `_egipcio.gif` (65 quadros). `check.py` **362**, JUnit **33/33**, `javac` 104 classes.
+- **Aprendizado do in-rp:** sweep 100 ticks + `lastActionTime`; `resetLastActionTime` no
+  wake; graça de 1 s; regras por evento com bypass de staff; confirmação por UUID em lote.
+  O que NÃO copiamos: o JSON separado de vidas (nosso `SavedData` já é por UUID) e o
+  `EntityArgument` (que só enxerga online).
 
 ### 🎬 4.2.0 (2026-10-19): avisos em VÍDEO renderizados no Blender (piloto: MORTE)
 - **Spec e plano:** `docs/superpowers/specs/2026-10-19-avisos-em-video-design.md` e

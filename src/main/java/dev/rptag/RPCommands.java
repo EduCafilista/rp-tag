@@ -63,19 +63,23 @@ public final class RPCommands {
      * usa (getCanonLives/setCanonLives), então o que este comando tira aparece no
      * /rp status e no coração do mundo.
      *
-     * Quem LEVA a perda recebe o mesmo aviso de morte canônica ("VOCÊ PERDEU UMA
-     * VIDA — RESTAM n", estilo 4) e o trovão; se chegar a ZERO, o MEDO ABSURDO (30 s)
-     * entra igual ao ritual. NÃO congela o jogador (não houve morte — quem aplica é
-     * um admin, muitas vezes no meio de uma cena).
+     * <p>(4.5.0) O alvo pode estar OFFLINE: o estoque é por UUID, então o valor muda
+     * igual; o que fica guardado é um recado ("VOCÊ PERDEU UMA VIDA — RESTAM n")
+     * entregue quando a pessoa voltar (ver {@code ServerEvents.onLoggedIn}).
+     *
+     * <p>Quem LEVA a perda ONLINE recebe o mesmo aviso de morte canônica (estilo 4) e
+     * o trovão; se chegar a ZERO, o MEDO ABSURDO (30 s) entra igual ao ritual. NÃO
+     * congela o jogador (não houve morte — quem aplica é um admin, muitas vezes no
+     * meio de uma cena).
      */
     private static int vidaTirar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
-            ServerPlayer alvo, int qtd) {
+            VidasAdmin.Alvo alvo, int qtd) {
         RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
         int antes = wd.getCanonLives(alvo.getUUID());
         int depois = VidaCanonica.tirar(antes, qtd);
         if (depois == antes) {
             ctx.getSource().sendSuccess(() -> Component.literal(
-                    alvo.getName().getString() + " ja esta SEM vidas canonicas (0/5) - nada a tirar.")
+                    alvo.nome() + " ja esta SEM vidas canonicas (0/5) - nada a tirar.")
                     .withStyle(ChatFormatting.GRAY), false);
             return Command.SINGLE_SUCCESS;
         }
@@ -83,41 +87,53 @@ public final class RPCommands {
         String msg = depois > 0
                 ? "VOCE PERDEU UMA VIDA \u2014 RESTAM " + depois
                 : "VOCE PERDEU SUA ULTIMA VIDA \u2014 TOME CUIDADO";
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, new ScreenTextPayload(msg, 8, 4));
-        alvo.playNotifySound(net.minecraft.sounds.SoundEvents.LIGHTNING_BOLT_THUNDER,
-                net.minecraft.sounds.SoundSource.WEATHER, 3.0F, 0.8F);
-        if (depois == 0) {
-            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, new FearPayload(30));
-            alvo.addEffect(new net.minecraft.world.effect.MobEffectInstance(RPEffects.MEDO, 30 * 20, 0, false, false));
+        ServerPlayer online = alvo.online();
+        if (online != null) {
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(online, new ScreenTextPayload(msg, 8, 4));
+            online.playNotifySound(net.minecraft.sounds.SoundEvents.LIGHTNING_BOLT_THUNDER,
+                    net.minecraft.sounds.SoundSource.WEATHER, 3.0F, 0.8F);
+            if (depois == 0) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(online, new FearPayload(30));
+                online.addEffect(new net.minecraft.world.effect.MobEffectInstance(RPEffects.MEDO, 30 * 20, 0, false, false));
+            }
+        } else {
+            // (4.5.0) offline: fica o recado pro proximo login
+            wd.setRecadoVida(alvo.getUUID(), msg);
         }
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "\u2620 " + alvo.getName().getString() + ": " + antes + "/5 -> " + depois
+                "\u2620 " + alvo.nome() + (alvo.isOnline() ? "" : " (OFFLINE)") + ": " + antes + "/5 -> " + depois
                         + "/5 (vida canonica REMOVIDA por admin)")
                 .withStyle(ChatFormatting.RED), true);
-        RPTagMod.LOGGER.info("RP Tag: admin removeu vida canonica de {} ({} -> {})",
-                alvo.getName().getString(), antes, depois);
+        RPTagMod.LOGGER.info("RP Tag: admin removeu vida canonica de {} ({} -> {}){}",
+                alvo.nome(), antes, depois, alvo.isOnline() ? "" : " [offline]");
         return Command.SINGLE_SUCCESS;
     }
 
     /** (4.4.0) oposto do tirar: devolve vida canonica (teto 5), com o mesmo aviso do coracao. */
     private static int vidaDar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
-            ServerPlayer alvo, int qtd) {
+            VidasAdmin.Alvo alvo, int qtd) {
         RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
         int antes = wd.getCanonLives(alvo.getUUID());
         int depois = VidaCanonica.dar(antes, qtd);
         if (depois == antes) {
             ctx.getSource().sendSuccess(() -> Component.literal(
-                    alvo.getName().getString() + " ja esta com as vidas CHEIAS (5/5).")
+                    alvo.nome() + " ja esta com as vidas CHEIAS (5/5).")
                     .withStyle(ChatFormatting.GRAY), false);
             return Command.SINGLE_SUCCESS;
         }
         wd.setCanonLives(alvo.getUUID(), depois);
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, new ScreenTextPayload(
-                "VOCE GANHOU UMA NOVA CHANCE \u2014 uma vida canonica foi restaurada (" + depois + "/5)", 6, 0));
-        alvo.playNotifySound(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
-                net.minecraft.sounds.SoundSource.PLAYERS, 0.9F, 1.4F);
+        ServerPlayer online = alvo.online();
+        if (online != null) {
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(online, new ScreenTextPayload(
+                    "VOCE GANHOU UMA NOVA CHANCE \u2014 uma vida canonica foi restaurada (" + depois + "/5)", 6, 0));
+            online.playNotifySound(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
+                    net.minecraft.sounds.SoundSource.PLAYERS, 0.9F, 1.4F);
+        } else {
+            wd.setRecadoVida(alvo.getUUID(), "VOCE GANHOU UMA NOVA CHANCE \u2014 uma vida canonica foi restaurada ("
+                    + depois + "/5)");
+        }
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "\u2740 " + alvo.getName().getString() + ": " + antes + "/5 -> " + depois
+                "\u2740 " + alvo.nome() + (alvo.isOnline() ? "" : " (OFFLINE)") + ": " + antes + "/5 -> " + depois
                         + "/5 (vida canonica DEVOLVIDA por admin)")
                 .withStyle(ChatFormatting.LIGHT_PURPLE), true);
         return Command.SINGLE_SUCCESS;
@@ -125,13 +141,16 @@ public final class RPCommands {
 
     /** (4.4.0) define o total de uma vez (0..5). */
     private static int vidaDefinir(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
-            ServerPlayer alvo, int valor) {
+            VidasAdmin.Alvo alvo, int valor) {
         RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
         int antes = wd.getCanonLives(alvo.getUUID());
         int depois = VidaCanonica.definir(valor);
         wd.setCanonLives(alvo.getUUID(), depois);
+        if (!alvo.isOnline()) {
+            wd.setRecadoVida(alvo.getUUID(), "SUAS VIDAS CANONICAS FORAM DEFINIDAS PELO ADMIN: " + depois + "/5");
+        }
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "\u2740 " + alvo.getName().getString() + ": " + antes + "/5 -> " + depois
+                "\u2740 " + alvo.nome() + (alvo.isOnline() ? "" : " (OFFLINE)") + ": " + antes + "/5 -> " + depois
                         + "/5 (vidas canonicas DEFINIDAS por admin)")
                 .withStyle(ChatFormatting.GOLD), true);
         return Command.SINGLE_SUCCESS;
@@ -139,14 +158,199 @@ public final class RPCommands {
 
     /** (4.4.0) mostra quantas vidas canonicas o alvo tem. */
     private static int vidaVer(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
-            ServerPlayer alvo) {
+            VidasAdmin.Alvo alvo) {
         int v = RPWorldData.get(ctx.getSource().getServer()).getCanonLives(alvo.getUUID());
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "\u2740 " + alvo.getName().getString() + ": " + v + "/5 vidas canonicas"
+                "\u2740 " + alvo.nome() + (alvo.isOnline() ? "" : " (OFFLINE)") + ": " + v + "/5 vidas canonicas"
                         + (v == 0 ? " (SEM vidas!)" : ""))
                 .withStyle(v == 0 ? ChatFormatting.RED : ChatFormatting.LIGHT_PURPLE), false);
         return Command.SINGLE_SUCCESS;
     }
+
+    /** (4.5.0) /rp admin vida — sem argumento: quem NAO esta com 5/5 (online e offline). */
+    private static int vidaListar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
+        var server = ctx.getSource().getServer();
+        RPWorldData wd = RPWorldData.get(server);
+        java.util.TreeMap<String, Integer> mapa = new java.util.TreeMap<>();
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            mapa.put(p.getName().getString(), wd.getCanonLives(p.getUUID()));
+        }
+        for (java.util.UUID id : wd.canonLivesIds()) {
+            String nome = VidasAdmin.nomeDe(server, id);
+            mapa.putIfAbsent(nome, wd.getCanonLives(id));
+        }
+        if (mapa.isEmpty()) {
+            ctx.getSource().sendSuccess(() -> Component.literal("Ninguem perdeu vida ainda (todos 5/5).")
+                    .withStyle(ChatFormatting.GRAY), false);
+            return Command.SINGLE_SUCCESS;
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal("\u2740 VIDAS CANONICAS").withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        mapa.forEach((nome, v) -> ctx.getSource().sendSuccess(() -> Component.literal(
+                        "  " + nome + ": " + v + "/5" + (v == 0 ? "  (SEM vidas)" : ""))
+                .withStyle(v == 0 ? ChatFormatting.RED : v < 3 ? ChatFormatting.YELLOW : ChatFormatting.GRAY), false));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /**
+     * (4.5.0) Resolve o argumento "alvo" da vida. Aceita NOME (online ou offline),
+     * os seletores do vanilla que fazem sentido aqui (@a, @p, @s) e uma LISTA com
+     * vírgula. Devolve todos os alvos — quem aplica itera.
+     */
+    private static java.util.List<VidasAdmin.Alvo> alvos(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        String cru = ListaAlvosArgument.get(ctx, "jogador").trim();
+        var server = ctx.getSource().getServer();
+        java.util.List<VidasAdmin.Alvo> out = new java.util.ArrayList<>();
+        if (cru.startsWith("@")) {
+            switch (cru) {
+                case "@a" -> {
+                    for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                        out.add(new VidasAdmin.Alvo(p.getUUID(), p.getName().getString(), p));
+                    }
+                }
+                case "@p" -> {
+                    ServerPlayer p = ctx.getSource().getPlayer();
+                    if (p == null) throw VidasAdmin.soJogador();
+                    out.add(new VidasAdmin.Alvo(p.getUUID(), p.getName().getString(), p));
+                }
+                case "@s" -> {
+                    ServerPlayer p = ctx.getSource().getPlayerOrException();
+                    out.add(new VidasAdmin.Alvo(p.getUUID(), p.getName().getString(), p));
+                }
+                default -> throw VidasAdmin.seletorInvalido(cru);
+            }
+            return out;
+        }
+        for (String nome : VidasAdmin.dividirNomes(cru)) {
+            out.add(VidasAdmin.resolver(ctx.getSource(), nome));
+        }
+        if (out.isEmpty()) throw VidasAdmin.naoAchei();
+        return out;
+    }
+
+    /** (4.5.0) uma linha de resposta por alvo (usada pelos verbos em lote). */
+    private static void resumo(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.List<VidasAdmin.Alvo> alvos) {
+        if (alvos.size() > 1) {
+            final int n = alvos.size();
+            ctx.getSource().sendSuccess(() -> Component.literal("(" + n + " alvos)")
+                    .withStyle(ChatFormatting.GRAY), false);
+        }
+    }
+
+    /** (4.5.0) monta os 4 verbos (tirar/dar/definir/ver) para o nó de alvo. */
+    private static com.mojang.brigadier.builder.ArgumentBuilder<net.minecraft.commands.CommandSourceStack, ?> verbosVida() {
+        var no = Commands.argument("jogador", ListaAlvosArgument.alvos());
+        return no
+                .then(Commands.literal("tirar")
+                        .executes(c -> vidaTirarVarios(c, alvos(c), 1))
+                        .then(Commands.argument("quantia", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 5))
+                                .executes(c -> vidaTirarVarios(c, alvos(c),
+                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "quantia")))))
+                .then(Commands.literal("dar")
+                        .executes(c -> vidaDarVarios(c, alvos(c), 1))
+                        .then(Commands.argument("quantia", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 5))
+                                .executes(c -> vidaDarVarios(c, alvos(c),
+                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "quantia")))))
+                .then(Commands.literal("definir")
+                        .then(Commands.argument("quantia", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 5))
+                                .executes(c -> vidaDefinirVarios(c, alvos(c),
+                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "quantia")))))
+                .then(Commands.literal("ver").executes(c -> vidaVerVarios(c, alvos(c))));
+    }
+
+    // (4.5.0) wrappers que iteram: o comando aceita vários alvos de uma vez
+    private static int vidaTirarVarios(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> c,
+            java.util.List<VidasAdmin.Alvo> lista, int qtd) {
+        for (VidasAdmin.Alvo a : lista) vidaTirar(c, a, qtd);
+        resumo(c, lista);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int vidaDarVarios(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> c,
+            java.util.List<VidasAdmin.Alvo> lista, int qtd) {
+        for (VidasAdmin.Alvo a : lista) vidaDar(c, a, qtd);
+        resumo(c, lista);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int vidaDefinirVarios(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> c,
+            java.util.List<VidasAdmin.Alvo> lista, int v) {
+        for (VidasAdmin.Alvo a : lista) vidaDefinir(c, a, v);
+        resumo(c, lista);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int vidaVerVarios(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> c,
+            java.util.List<VidasAdmin.Alvo> lista) {
+        for (VidasAdmin.Alvo a : lista) vidaVer(c, a);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (4.5.0) LOTE: "/rp admin vida lote A,B,C tirar 1" -> guarda e pede confirmacao. */
+    private static int vidaLote(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            String acao, int qtd) {
+        String cru = ListaAlvosArgument.get(ctx, "jogador");
+        java.util.List<VidasAdmin.Alvo> alvos = new java.util.ArrayList<>();
+        java.util.List<String> falhas = new java.util.ArrayList<>();
+        for (String nome : VidasAdmin.dividirNomes(cru)) {
+            try {
+                alvos.add(VidasAdmin.resolver(ctx.getSource(), nome));
+            } catch (com.mojang.brigadier.exceptions.CommandSyntaxException ex) {
+                falhas.add(nome);
+            }
+        }
+        if (alvos.isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal("Nenhum nome valido na lista."));
+            return 0;
+        }
+        VidasAdmin.guardar(ctx.getSource(), alvos, acao, qtd);
+        StringBuilder sb = new StringBuilder();
+        for (VidasAdmin.Alvo a : alvos) {
+            if (!sb.isEmpty()) sb.append(", ");
+            sb.append(a.nome());
+        }
+        String lista = sb.toString();
+        String acaoTxt = acao.equals("definir") ? "definir " + qtd : acao + " " + qtd;
+        ctx.getSource().sendSuccess(() -> Component.literal("\u26a0 CONFIRMAR: " + acaoTxt + " em " + alvos.size()
+                        + " jogador(es): " + lista
+                        + (falhas.isEmpty() ? "" : "  [ignorados: " + String.join(",", falhas) + "]"))
+                .withStyle(ChatFormatting.GOLD), false);
+        ctx.getSource().sendSuccess(() -> Component.literal("Digite /rp admin confirmar em ate 30s (ou /rp admin cancelar).")
+                .withStyle(ChatFormatting.GRAY), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (4.5.0) aplica o lote guardado. */
+    private static int vidaConfirmar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
+        VidasAdmin.Pendente pend;
+        try {
+            pend = VidasAdmin.pegar(ctx.getSource());
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException ex) {
+            ctx.getSource().sendFailure(Component.literal(ex.getMessage()));
+            return 0;
+        }
+        VidasAdmin.limpar(ctx.getSource());
+        int ok = 0;
+        for (int i = 0; i < pend.ids().size(); i++) {
+            java.util.UUID id = pend.ids().get(i);
+            String nome = pend.nomes().get(i);
+            ServerPlayer online = ctx.getSource().getServer().getPlayerList().getPlayer(id);
+            VidasAdmin.Alvo alvo = new VidasAdmin.Alvo(id, nome, online);
+            switch (pend.acao()) {
+                case "tirar" -> vidaTirar(ctx, alvo, pend.qtd());
+                case "dar" -> vidaDar(ctx, alvo, pend.qtd());
+                default -> vidaDefinir(ctx, alvo, pend.qtd());
+            }
+            ok++;
+        }
+        int total = ok;
+        ctx.getSource().sendSuccess(() -> Component.literal("\u2714 Lote aplicado em " + total + " jogador(es).")
+                .withStyle(ChatFormatting.GREEN), true);
+        return Command.SINGLE_SUCCESS;
+    }
+
 
     private static void medar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
             ServerPlayer alvo, int seg) {
@@ -181,6 +385,7 @@ public final class RPCommands {
             case "sangue" -> 9;
             case "demoniaco" -> 10;
             case "pesadelo2" -> 11;   // (3.98.0) Sono Sem Descanso (antigo)
+            case "egipicio", "egipcio" -> 12;   // (4.5.0) O Olho de Horus
             default -> 0;
         };
         String traduzido = translateAmp(texto);
@@ -198,6 +403,46 @@ public final class RPCommands {
                 .withStyle(ChatFormatting.YELLOW), false); // (3.47.0) SO O ADMIN ve
     }
 
+    /** (4.5.0) liga/desliga UMA regra e responde colorido. */
+    private static int regra(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            String nome, boolean permitido) {
+        RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
+        switch (nome) {
+            case "pvp" -> wd.setRegraPvp(permitido);
+            case "quebrar" -> wd.setRegraQuebrar(permitido);
+            default -> wd.setRegraColocar(permitido);
+        }
+        String estado = permitido ? "LIBERADO" : "BLOQUEADO em RP";
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                        "\u2696 " + nome.toUpperCase() + ": " + estado)
+                .withStyle(permitido ? ChatFormatting.GREEN : ChatFormatting.RED), true);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (4.5.0) estado das 3 regras (+ AFK) num lugar só. */
+    private static int mostrarRegras(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
+        RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
+        int seg = wd.getAfkTimeout();
+        ctx.getSource().sendSuccess(() -> Component.literal("\u2696 REGRAS EM RP")
+                .withStyle(ChatFormatting.GOLD), false);
+        regraLinha(ctx, "pvp", wd.isRegraPvp());
+        regraLinha(ctx, "quebrar", wd.isRegraQuebrar());
+        regraLinha(ctx, "colocar", wd.isRegraColocar());
+        ctx.getSource().sendSuccess(() -> Component.literal("AFK: "
+                        + (seg <= 0 ? "automatico desligado" : seg + "s parado"))
+                .withStyle(ChatFormatting.GRAY), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static void regraLinha(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            String nome, boolean liberado) {
+        ctx.getSource().sendSuccess(() -> Component.literal("  " + nome + ": "
+                        + (liberado ? "liberado" : "BLOQUEADO em RP"))
+                .withStyle(liberado ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+    }
+
     /** (3.64.0) nome bonito do estilo pro feedback do admin. */
     private static String nomeEstilo(int style) {
         return switch (style) {
@@ -212,6 +457,7 @@ public final class RPCommands {
             case 9 -> "SANGUE";
             case 10 -> "DEMONIACO";
             case 11 -> "PESADELO SONO";
+            case 12 -> "EGIPICIO";
             default -> "classico";
         };
     }
@@ -359,6 +605,24 @@ public final class RPCommands {
 
     /** (3.64.0) som do aviso direto no alvo (assustador pede som).
      *  (3.86.0) os 6 estilos novos ganharam som proprio. */
+    /** (4.5.0) EGIPICIO: o deserto responde no servidor (areia + incenso + ouro). */
+    private static void particulasEgipcio(ServerPlayer p) {
+        var lv = p.serverLevel();
+        double x = p.getX(), y = p.getY(), z = p.getZ();
+        var areiaCai = new net.minecraft.core.particles.BlockParticleOption(
+                net.minecraft.core.particles.ParticleTypes.FALLING_DUST,
+                net.minecraft.world.level.block.Blocks.SAND.defaultBlockState());
+        var areiaSol = new net.minecraft.core.particles.BlockParticleOption(
+                net.minecraft.core.particles.ParticleTypes.BLOCK,
+                net.minecraft.world.level.block.Blocks.SAND.defaultBlockState());
+        lv.sendParticles(areiaCai, x, y + 3.2, z, 40, 1.2, 0.8, 1.2, 0.02);
+        lv.sendParticles(areiaSol, x, y + 0.2, z, 30, 0.9, 0.1, 0.9, 0.06);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.CAMPFIRE_COSY_SMOKE,
+                x, y + 0.4, z, 18, 0.7, 0.2, 0.7, 0.012);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+                x, y + 1.6, z, 10, 0.8, 1.0, 0.8, 0.01);
+    }
+
     private static void somAviso(ServerPlayer alvo, int style) {
         switch (style) {
             // (3.96.0) PESADELO: o FX do cliente tem TRILHA propria
@@ -396,6 +660,9 @@ public final class RPCommands {
             // splash + pingos de dripstone) — o servidor so faz as
             // PARTICULAS (espirro de bloco de redstone + poeira caindo)
             case 9 -> particulasSangue(alvo);
+            // (4.5.0) EGIPICIO: o FX do cliente tem TRILHA propria (alaude
+            // pentatonica) — o servidor faz a AREIA e o incenso
+            case 12 -> particulasEgipcio(alvo);
             // (3.93.0) DEMONIACO: o FX do cliente tem TRILHA propria
             // (crescendo do dragao + batidas sincronizadas) — o servidor
             // so faz as PARTICULAS (pentagrama de fogo de alma no chao)
@@ -475,7 +742,7 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco (alvos: nomes ou @a)\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio (alvos: nomes ou @a)\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
                     + "/rp admin bolha <jogador> on|off \u00a77\u2014 modo balao de outro\u00a7c\n"
@@ -484,7 +751,10 @@ public final class RPCommands {
                     + "/rp admin canon on|off \u00a77\u2014 modo de perder vidas (todos j\u00e1 t\u00eam; quem morrer perde uma)\u00a7c\n"
                     + "/rp admin vida <jogador> tirar|dar [n] \u00a77\u2014 tira/devolve vida can\u00f4nica na hora (0..5)\u00a7c\n"
                     + "/rp admin vida <jogador> definir <n> \u00a77\u2014 define o total\u00a7c\n"
-                    + "/rp admin vida <jogador> ver \u00a77\u2014 mostra quantas restam\u00a7c\n"
+                    + "/rp admin vida <jogador> ver \u00a77\u2014 mostra quantas restam (nome vale OFFLINE)\u00a7c\n"
+                    + "/rp admin vida lote A,B,C tirar 1 \u00a77\u2014 em lote, pede /rp admin confirmar\u00a7c\n"
+                    + "/rp admin regra [pvp|quebrar|colocar] on|off \u00a77\u2014 regras do RP (tudo bloquear|liberar)\u00a7c\n"
+                    + "/rp admin afk tempo <s>|status \u00a77\u2014 tempo parado at\u00e9 virar AFK\u00a7c\n"
                     + "/rp admin bolhas on|off \u00a77\u2014 baloes do servidor inteiro\u00a7c\n"
                     + "/do <texto> \u00a77\u2014 narracao de ambiente\u00a7c\n"
                     + "/lorezone criar <id> <raio> <titulo> \u00a77\u2014 cria zona de lore onde voce esta\u00a7c\n"
@@ -581,36 +851,92 @@ public final class RPCommands {
                                             medar(ctx, alvo, seg);
                                             return Command.SINGLE_SUCCESS;
                                         }))))
+                // (4.5.0) /rp admin regra [pvp|quebrar|colocar] on|off | tudo bloquear|liberar
+                .then(Commands.literal("regra")
+                        .executes(ctx -> mostrarRegras(ctx))
+                        .then(Commands.literal("tudo")
+                                .then(Commands.literal("bloquear").executes(ctx -> {
+                                    RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
+                                    wd.setRegraPvp(false);
+                                    wd.setRegraQuebrar(false);
+                                    wd.setRegraColocar(false);
+                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                            "Regras em RP: PvP, QUEBRAR e COLOCAR agora estao BLOQUEADOS.")
+                                            .withStyle(ChatFormatting.RED), true);
+                                    return Command.SINGLE_SUCCESS;
+                                }))
+                                .then(Commands.literal("liberar").executes(ctx -> {
+                                    RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
+                                    wd.setRegraPvp(true);
+                                    wd.setRegraQuebrar(true);
+                                    wd.setRegraColocar(true);
+                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                            "Regras em RP: PvP, QUEBRAR e COLOCAR agora estao LIBERADOS.")
+                                            .withStyle(ChatFormatting.GREEN), true);
+                                    return Command.SINGLE_SUCCESS;
+                                })))
+                        .then(Commands.literal("pvp")
+                                .then(Commands.literal("on").executes(ctx -> regra(ctx, "pvp", true)))
+                                .then(Commands.literal("off").executes(ctx -> regra(ctx, "pvp", false))))
+                        .then(Commands.literal("quebrar")
+                                .then(Commands.literal("on").executes(ctx -> regra(ctx, "quebrar", true)))
+                                .then(Commands.literal("off").executes(ctx -> regra(ctx, "quebrar", false))))
+                        .then(Commands.literal("colocar")
+                                .then(Commands.literal("on").executes(ctx -> regra(ctx, "colocar", true)))
+                                .then(Commands.literal("off").executes(ctx -> regra(ctx, "colocar", false)))))
+                // (4.5.0) /rp admin afk tempo <segundos> | status
+                .then(Commands.literal("afk")
+                        .then(Commands.literal("status").executes(ctx -> {
+                            int seg = RPWorldData.get(ctx.getSource().getServer()).getAfkTimeout();
+                            int n = AfkSistema.totalAfk();
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "AFK: " + (seg <= 0 ? "automatico DESLIGADO" : "depois de " + seg + "s parado")
+                                            + " | agora: " + n + " pessoa(s) AFK")
+                                    .withStyle(ChatFormatting.GOLD), false);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .then(Commands.literal("tempo")
+                                .then(Commands.argument("segundos",
+                                                com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 86400))
+                                        .executes(ctx -> {
+                                            int seg = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "segundos");
+                                            RPWorldData.get(ctx.getSource().getServer()).setAfkTimeout(seg);
+                                            ctx.getSource().sendSuccess(() -> Component.literal(seg <= 0
+                                                    ? "AFK automatico DESLIGADO (so /afk manual)."
+                                                    : "AFK automatico: " + seg + "s parado -> sai do RP sozinho.")
+                                                    .withStyle(ChatFormatting.GOLD), true);
+                                            return Command.SINGLE_SUCCESS;
+                                        }))))
                 // (4.4.0) /rp admin vida <jogador> tirar|dar [n] / definir <n> / ver
-                // tira (ou devolve) vidas CANONICAS na hora — o mesmo estoque que o
-                // ritual de morte usa. Sem congelar: o cara nao morreu, um admin agiu.
+                // (4.5.0) <jogador> aceita NOME offline, lista com vírgula e @a/@p/@s
                 .then(Commands.literal("vida")
-                        .then(Commands.argument("jogador", net.minecraft.commands.arguments.EntityArgument.player())
-                                .then(Commands.literal("tirar")
-                                        .executes(ctx -> vidaTirar(ctx,
-                                                net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"), 1))
-                                        .then(Commands.argument("quantia",
-                                                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 5))
-                                                .executes(ctx -> vidaTirar(ctx,
-                                                        net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"),
-                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "quantia")))))
-                                .then(Commands.literal("dar")
-                                        .executes(ctx -> vidaDar(ctx,
-                                                net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"), 1))
-                                        .then(Commands.argument("quantia",
-                                                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 5))
-                                                .executes(ctx -> vidaDar(ctx,
-                                                        net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"),
-                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "quantia")))))
-                                .then(Commands.literal("definir")
-                                        .then(Commands.argument("quantia",
-                                                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 5))
-                                                .executes(ctx -> vidaDefinir(ctx,
-                                                        net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"),
-                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "quantia")))))
-                                .then(Commands.literal("ver")
-                                        .executes(ctx -> vidaVer(ctx,
-                                                net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "jogador"))))))
+                        .executes(ctx -> vidaListar(ctx))
+                        .then(verbosVida())
+                        .then(Commands.literal("lote")
+                                .then(Commands.argument("jogador", ListaAlvosArgument.alvos())
+                                        .then(Commands.literal("tirar")
+                                                .executes(ctx -> vidaLote(ctx, "tirar", 1))
+                                                .then(Commands.argument("quantia",
+                                                                com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 5))
+                                                        .executes(ctx -> vidaLote(ctx, "tirar",
+                                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "quantia")))))
+                                        .then(Commands.literal("dar")
+                                                .executes(ctx -> vidaLote(ctx, "dar", 1))
+                                                .then(Commands.argument("quantia",
+                                                                com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 5))
+                                                        .executes(ctx -> vidaLote(ctx, "dar",
+                                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "quantia")))))
+                                        .then(Commands.literal("definir")
+                                                .then(Commands.argument("quantia",
+                                                                com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 5))
+                                                        .executes(ctx -> vidaLote(ctx, "definir",
+                                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "quantia"))))))))
+                .then(Commands.literal("confirmar").executes(ctx -> vidaConfirmar(ctx)))
+                .then(Commands.literal("cancelar").executes(ctx -> {
+                    VidasAdmin.limpar(ctx.getSource());
+                    ctx.getSource().sendSuccess(() -> Component.literal("\u2716 Nada foi aplicado.").withStyle(ChatFormatting.GRAY), false);
+                    return Command.SINGLE_SUCCESS;
+                }))
                 // (3.64.0) /rp admin avisar <jogadores> [estilo] <texto>
                 // (3.86.0) 10 estilos: classico, pesadelo, runico, real, morte,
                 // inferno, gelo, divino, void, sangue — (3.87.0) +demoniaco
@@ -819,7 +1145,7 @@ public final class RPCommands {
                                 int i = 0;
                                 for (var id : ids) {
                                     var p = ctx.getSource().getServer().getPlayerList().getPlayer(id);
-                                    sb.append(p != null ? p.getName().getString() : id.toString().substring(0, 8));
+                                    sb.append(p != null ? (CharSequence) p.getName().getString() : (CharSequence) id.toString().substring(0, 8));
                                     if (++i < ids.size()) {
                                         sb.append(", ");
                                     }
@@ -861,6 +1187,13 @@ public final class RPCommands {
                                     "RP desativado para " + target.getName().getString() + "."), true);
                             return Command.SINGLE_SUCCESS;
                         }))));
+
+        // (4.5.0) /afk — entra/sai do AFK na mão (sai do RP sozinho)
+        event.getDispatcher().register(Commands.literal("afk").executes(ctx -> {
+            ServerPlayer p = ctx.getSource().getPlayerOrException();
+            AfkSistema.alternar(p);
+            return Command.SINGLE_SUCCESS;
+        }));
 
         event.getDispatcher().register(root);
     }
