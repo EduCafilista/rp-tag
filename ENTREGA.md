@@ -2,7 +2,7 @@
 
 Olá! Este documento é o mapa do projeto pra quem vai dar continuidade.
 
-- **Versão atual: 4.5.0** — histórico completo no `CHANGELOG.md`
+- **Versão atual: 4.6.0** — histórico completo no `CHANGELOG.md`
 - **Diário de bordo técnico: `WALKTHROUGH.md`** (decisões, receitas de build/teste, o que foi reprovado e por quê) — **leia ele depois deste**
 - Minecraft **1.21.1** + **NeoForge 21.1.x** + **Java 21**
 - Repo público: `github.com/EduCafilista/rp-tag`
@@ -50,9 +50,10 @@ Olá! Este documento é o mapa do projeto pra quem vai dar continuidade.
 Todos os FX seguem o mesmo padrão: **título "AVISO"** grande, letra por letra, com a
 **MENSAGEM embaixo do título** (`cy + 25*k`). Nenhum FX redimensiona o título.
 
-### 🎞️ Avisos em VÍDEO renderizados no Blender — 4.2.0 / 4.5.0
+### 🎞️ Avisos em VÍDEO renderizados no Blender — 4.2.0 / 4.5.0 / 4.6.0
 Os avisos estão sendo refeitos como **vídeo**: **Morte "Linha Reta"** (4.2.0),
-**Inferno "Fornalha"** e **Gelo "Geada Eterna"** (4.5.0); os outros 9 seguem procedurais.
+**Inferno "Fornalha"** e **Gelo "Geada Eterna"** (4.5.0), **Void "Queda Sem Fundo"** e
+**Divino "Ascensão Celestial"** (4.6.0); os outros 7 seguem procedurais.
 No modo reduzido o aviso fica sempre procedural (`FxVideoPolitica`). O vídeo é o fundo; o **texto e os sons continuam no
 código**. Qualquer falha (sem vídeo, quadro corrompido, PC lento) → o FX procedural
 assume **no mesmo instante**. Jogador desliga em `config/rptag/cliente.properties`
@@ -104,7 +105,7 @@ Pipeline das cenas em `arte/README.md`; spec e plano em `docs/superpowers/`.
 
 ### Opção A — Gradle (o jeito normal)
 1. Instale o **JDK 21** (Temurin).
-2. `./gradlew build` — o jar sai em `build/libs/rptag-4.5.0.jar` (roda também os testes JUnit).
+2. `./gradlew build` — o jar sai em `build/libs/rptag-4.6.0.jar` (roda também os testes JUnit).
 3. Primeiro build demora (~5–15 min, descompacta/decompila o Minecraft) e pede
    ~4 GB de RAM livres. Depois é rápido (cache).
 4. Pra testar: `./gradlew runServer` (aceite o eula em `run/eula.txt`) ou
@@ -187,7 +188,7 @@ Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
 11. **Medo/AVISO com shaders** = `registerAboveAll` (nunca `RenderGuiEvent.Post`).
 12. **`renderBackground` vazio** (blur) nos menus — **nunca remover**.
 13. **Nunca portar telemetria** de referências externas.
-14. **Testes antes de entregar**: `check.py` (337 checks) + `./gradlew test` (JUnit) + smoke do servidor por RCON.
+14. **Testes antes de entregar**: `check.py` (362 checks) + `./gradlew test` (JUnit) + smoke do servidor por RCON.
 15. **Vídeo dos avisos**: o texto **nunca** vai no vídeo; decodificar pelo **raster**
     (nunca `getRGB`, ~35 ms/quadro); JPEG com aviso do decodificador = **erro** (fallback).
 
@@ -229,4 +230,4 @@ Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
 - Repo: `github.com/EduCafilista/rp-tag` (MIT).
 - **Nunca** apagar o repositório; publicação = Release com o jar.
 
-Bom trabalho! — **RP Tag 4.5.0**
+Bom trabalho! — **RP Tag 4.6.0**

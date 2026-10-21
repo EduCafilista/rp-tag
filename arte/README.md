@@ -18,6 +18,29 @@ Cada aviso em vídeo nasce de um script Python que monta a cena **do zero**
 - O texto ("AVISO" + mensagem) **não** vai no vídeo: é desenhado pelo código.
 - `render/` e `previa/` são gerados e ficam fora do git.
 
+## Void e Divino (4.6.0, no jar)
+
+`arte/cenas/void.py` usa **perspectiva**: `comum.camera_perspectiva(20, 0.45)` troca a camera
+ortografica por uma em perspectiva cujo plano z = 0 cobre os mesmos 16 x 9 (x -8..8,
+y -4.5..4.5), com o ponto de fuga no titulo. Tunel e estrelas ficam em z < 0 e nada chega
+perto da camera. A conta (`perspectiva.parametros`/`projetar`) e Python puro e testado.
+`arte/cenas/divino.py` e ortografico como Inferno/Gelo. Titulos: Void cy = 0.45 h, Divino 0.42 h.
+Metadados (marcadores, fade, previa, qualidade do JPEG) de todos os avisos: `arte/cenas/metas.py`.
+
+```powershell
+& 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' -b --factory-startup -P arte/cenas/void.py
+& 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' -b --factory-startup -P arte/cenas/divino.py
+python arte/previa.py void --quadros 7,29,72,127 --fundo arte/referencias/gameplay_escuro.png
+python arte/previa.py divino --quadros 5,24,72,127 --fundo arte/referencias/gameplay_claro.png
+python arte/exportar.py void
+python arte/exportar.py divino
+```
+
+Tamanhos: Void 15,9 MB, Divino 25,8 MB (cor JPEG 75 via `"jpeg": {"cor": 75}` nos metadados;
+o alfa e sempre 90). `inspecionar.luminancia(png, caixa)` mede o brilho de uma regiao
+(usado para conferir a zona do texto). Licoes: o que cobre a tela toda pesa no alfa,
+nao so na cor; raio em perfil gaussiano comprime melhor que triangulo de borda dura.
+
 ## Inferno e Gelo (4.5.0, no jar)
 
 As cenas `arte/cenas/inferno.py` e `arte/cenas/gelo.py` usam so as primitivas de

@@ -15,13 +15,40 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.5.0** (2026-10-20) |
+| Versão | **4.6.0** (2026-10-20) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.5.0.jar` (~54 MB com 3 vídeos; **só na GitHub Release**) |
-| Checks | `check.py` → **353 PASS / 0 FAIL** + **JUnit 29/29** (`./gradlew test`) + `python -m unittest discover -s arte/tests` |
+| Jar | `rptag-4.6.0.jar` (~95 MB com 5 vídeos; **só na GitHub Release**) |
+| Checks | `check.py` → **362 PASS / 0 FAIL** + **JUnit 31/31** (`./gradlew test`) + `python -m unittest discover -s arte/tests` (21) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
+
+### 🕳️✨ 4.6.0 (2026-10-20): VOID e DIVINO em vídeo (mesma coreografia, em 3D)
+- **Spec e plano:** `docs/superpowers/specs/2026-10-20-void-divino-video-design.md` e
+  `docs/superpowers/plans/2026-10-20-void-divino-video.md`. Gates: 4 quadros aprovados,
+  movimento aprovado, depois exportação/integração. Feito numa worktree própria
+  (`void-divino-video`), sem mexer no `main` compartilhado.
+- **Cenas:** `arte/cenas/void.py` usa **câmera em perspectiva** (`comum.camera_perspectiva`;
+  a matemática fica em `arte/cenas/perspectiva.py`, Python puro com teste, e bate com o
+  `world_to_camera_view` do Blender). O plano z = 0 continua sendo o quadro 16×9 e o ponto
+  de fuga fica no título (cy 0,45 h). `arte/cenas/divino.py` segue ortográfica. Os metadados
+  de todos os avisos agora estão em `arte/cenas/metas.py` (sem bpy, testado; Inferno/Gelo idênticos).
+- **ACHADOS (não repetir):** (1) no desenho original o anel lavanda do horizonte do Void
+  passa **exatamente** na linha da mensagem (cy + 25k ≈ 1,05 Rh) → o arco de baixo do horizonte
+  e do disco é atenuado durante a leitura, e um "poço" escuro na frente da nebulosa segura
+  o fundo atrás do texto; (2) o Divino cobre ~93 % da tela em todo quadro: **só o alfa
+  dá 14,3 MB**, então a meta de 15 MB era impossível sem mudar a arte → o dono aceitou
+  ~26 MB com a **cor do JPEG em 75** só no Divino (`jpeg.cor` nos metadados, lido por
+  `exportar.qualidades`; o alfa fica sempre em 90); (3) raios em perfil gaussiano no
+  ângulo comprimem melhor que triângulos de borda dura; (4) no Blender, depois de mexer
+  na câmera, `view_layer.update()` antes de projetar (senão usa a matriz velha).
+- **No mod:** `VoidAvisoFx`/`DivinoAvisoFx` no padrão do Gelo (política + `abrir`,
+  CARREGANDO/FALHOU, `parar()`, contorno escuro, apoio de leitura radial). `ClientEffects`
+  e a saída do mundo encerram os cinco avisos em vídeo.
+- **Teste no jogo:** os dois em VIDEO, `/rpfx off` → procedural, troca Void→Divino→clássico,
+  3 Voids seguidos, JPEG corrompido (cópia em `build/`) → procedural no mesmo t, kick no meio.
+  Capturas em `verificacao/4_6_0_*` (feitas com `PrintWindow`, porque uma janela sempre
+  por cima cobria a captura de tela comum). Modo reduzido: só por teste (não há opção no jogo).
 
 ### 🔥❄️ 4.5.0 (2026-10-20): INFERNO e GELO em vídeo (redesign híbrido)
 - **Spec e plano:** `docs/superpowers/specs/2026-10-20-inferno-gelo-hibrido-design.md` e
