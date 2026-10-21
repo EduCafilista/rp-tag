@@ -1,7 +1,7 @@
 # WALKTHROUGH — Portais da Lore (memória do projeto)
 
-> Editado no fim de cada ciclo. O mod é SEPARADO do rp-tag (pedido explícito:
-> "faça outro mod, nao quero no mesmo mod").
+>Editado no fim de cada ciclo. O mod é SEPARADO do rp-tag (pedido explícito:
+>"faça outro mod, nao quero no mesmo mod").
 
 ## Estado atual
 - **v1.3.2** — SOM NOVO MISTICO/INSANO (user: "nao gostei do som atual,
@@ -198,7 +198,7 @@
   "§5Portais da Lore"), PortalCoreBlock (BE), PortalFrameBlock, PortalData
   (SavedData `loreportals_data` no overworld), PortalBlockEntity (anel 11,
   4 orientações), PortalWorldTick (tick 20 = valida anéis; todo tick =
-  teleporte após 10 ticks dentro do disco, cooldown 3 s; partículas), 
+  teleporte após 10 ticks dentro do disco, cooldown 3 s; partículas),
   CristalVinculoItem (marca → conecta; shift = desvincula), PortalCommands
   (/portal ajuda|info|listar|ir|desvincular|apagar|contar),
   client/PortalRenderer (disco procedural aditivo) + client/ClientInit.

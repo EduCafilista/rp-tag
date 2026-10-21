@@ -1,130 +1,46 @@
-# ENTREGA — Guia pra continuar o RP Tag
+# Guia de manutenção do RP Tag
 
-Olá! Este documento é o mapa do projeto pra quem vai dar continuidade.
+Este documento apresenta o estado do código, a arquitetura e as convenções
+necessárias para dar continuidade ao projeto.
 
-- **Versão atual: 4.5.0** — histórico completo no `CHANGELOG.md`
-- **Diário de bordo técnico: `WALKTHROUGH.md`** (decisões, receitas de build/teste, o que foi reprovado e por quê) — **leia ele depois deste**
-- Minecraft **1.21.1** + **NeoForge 21.1.x** + **Java 21**
-- Repo público: `github.com/EduCafilista/rp-tag`
+## Estado do código
 
-> ⚠️ **Regra de publicação**: só a **versão mais recente** fica no GitHub.
-> A cada ciclo, publique a release nova e **apague a release + tag anteriores**
-> (o histórico de código continua na branch `main`). Detalhes no `PUBLICAR.md`.
+| Item | Referência |
+| --- | --- |
+| Versão do RP Tag | 4.5.0 |
+| Minecraft | 1.21.1 |
+| NeoForge de desenvolvimento | 21.1.249 |
+| Java | 21 |
+| Artefato de build | `build/libs/rptag-4.5.0.jar` |
+| Portais da Lore | 1.3.2; desenvolvimento suspenso |
 
----
+A versão publicada deve ser confirmada na página de releases. Planos em
+`docs/superpowers/` podem descrever trabalhos futuros; não são evidência de
+funcionalidade implementada.
 
-## 1. O que o mod faz hoje
+## Organização da documentação
 
-### 🏷️ Identidade RP
-- **Tag RP**: `ʀᴘ` (ciano) / `ᴏꜰꜰ ʀᴘ` (cinza) em small caps no **chat**, **nametag**
-  e **TAB** (o TAB atualiza na hora ao ligar/desligar).
-- **Persona**: `/persona criar <nome>`, `/persona idade <n>`, `/persona desc <texto>`,
-  `/persona ver [jogador]`, `/persona off` — ficha RP ao passar o mouse no nome.
-- **Dados**: `/roll` (rolagem de dados no chat).
+- [README.md](README.md): instalação e recursos para usuários e administradores.
+- [COMO-EDITAR.md](COMO-EDITAR.md): ambiente, build e testes.
+- [PUBLICAR.md](PUBLICAR.md): preparação e publicação de versões.
+- [CHANGELOG.md](CHANGELOG.md): alterações por versão.
+- [WALKTHROUGH.md](WALKTHROUGH.md): histórico técnico detalhado.
+- [arte/README.md](arte/README.md): produção de assets e prévias.
 
-### 💬 Chat e balões
-- **Canais RP**: `/g` (global), `/s` (grito), `/w` (sussurro), `/me` e `/do`
-  (ações — só no chat RP, **nunca** viram balão; quem está OFF RP na região não vê).
-- **Balão de fala** acima da cabeça: 6 molduras (Clássica, Cartum, Dupla, Costura,
-  Brilho, Gibi), cor/borda/letra/duração na tela `/balao`, 80 emojis como **emblema
-  na borda**, pilha de até 3 sem sobreposição, billboard, legível de longe,
-  quebra de linha equilibrada, **typewriter opcional por jogador**.
-- **Balão é privilégio de admin** (default: ninguém tem; `/rp admin balao <jogador> on|off`).
+## Funcionalidades e persistência
 
-### 🎭 Medo
-- `/rp admin medo <jogador> [segundos]` — efeito `rptag:medo`: véu azul-noite que
-  **esconde** a tela, tremida de câmera, ícone no HUD. Teto de 30 s.
+O servidor controla estado RP, personas, canais de chat, permissões, zonas de
+lore e vidas canônicas. Os dados persistentes são mantidos no mundo. O cliente
+renderiza nomes, balões, efeitos de tela, animações e visualização administrativa
+das zonas.
 
-### 🎬 Avisos cinematográficos (a parte mais visível do mod)
-`/rp admin avisar <jogador|@a> <estilo> <mensagem>` — 12 estilos:
+A identidade de personagem é administrada por `/persona`; a ajuda principal está
+em `/rp ajuda`. O sistema de balões depende da liberação administrativa. As zonas
+suportam faixa vertical, avisos, som e música. O modo canônico começa com cinco
+vidas por jogador e inclui proteção de cinco minutos contra perdas sucessivas.
+Mortes causadas por um jogador em OFF RP não descontam vidas canônicas.
 
-| # | Estilo | # | Estilo |
-|---|---|---|---|
-| 0 | Clássico (texto) | 6 | Gelo — "Geada Eterna" |
-| 1 | Pesadelo — minimalista | 7 | Divino — celestial |
-| 2 | Rúnico — "Tradução Arcana" | 8 | Void — "Queda Sem Fundo" |
-| 3 | Real (texto) | 9 | Sangue — "Sangria" |
-| 4 | Morte — "Linha Reta" | 10 | Demoníaco — "Chamado do Abismo" |
-| 5 | Inferno — "Fornalha" | 11 | Pesadelo 2 — "Sono Sem Descanso" |
-
-Todos os FX seguem o mesmo padrão: **título "AVISO"** grande, letra por letra, com a
-**MENSAGEM embaixo do título** (`cy + 25*k`). Nenhum FX redimensiona o título.
-
-### 🎞️ Avisos em VÍDEO renderizados no Blender — 4.2.0 / 4.5.0
-Os avisos estão sendo refeitos como **vídeo**: **Morte "Linha Reta"** (4.2.0),
-**Inferno "Fornalha"** e **Gelo "Geada Eterna"** (4.5.0); os outros 9 seguem procedurais.
-No modo reduzido o aviso fica sempre procedural (`FxVideoPolitica`). O vídeo é o fundo; o **texto e os sons continuam no
-código**. Qualquer falha (sem vídeo, quadro corrompido, PC lento) → o FX procedural
-assume **no mesmo instante**. Jogador desliga em `config/rptag/cliente.properties`
-(`fxVideo=false`) ou com o comando do cliente `/rpfx status|on|off`.
-Pipeline das cenas em `arte/README.md`; spec e plano em `docs/superpowers/`.
-
-### 🧭 Lore zones
-- `/lorezone criar <id> <raio>` — cria uma zona esférica no lugar onde você está.
-- `/lorezone texto <id> <mensagem>` e `/lorezone aviso <id> <estilo>`
-  — o aviso que dispara pra quem entra.
-- `/lorezone som <id> <preset|som>` e `/lorezone musica <id> <arquivo|intervalo|unica>`
-  — trilha da zona (loop com **tempo máximo**; `unica` = só na primeira entrada).
-- **Aviso único por jogador**: cada um vê o aviso **uma vez** (persistente);
-  `/lorezone avisos reset <jogador>` reexibe.
-- `/lorezone listar`, `/lorezone remover <id>`.
-
-### 🧱 Barreira da lorezone (só admin) — 4.0.0
-- `/lorezone mostrar <id> [segundos]` — desenha **na sua tela**: arame ciano da
-  esfera + **paredes amarelas** da faixa vertical + linha central laranja.
-- `/lorezone esconder` — some.
-- `/lorezone varinha` — item `rptag:lorezone_wand`: **clique direito** mostra a
-  barreira da zona mais próxima (≤256 blocos); **shift + clique** esconde.
-- O pacote vai **só pra quem executou**: jogador comum nunca vê.
-
-### ⛏️ Faixa vertical (o caso da caverna) — 4.0.0
-- `/lorezone vertical <id> <minY> <maxY>` — a zona **só dispara entre esses Y**.
-  Evento na caverna: quem está no topo **não recebe** o aviso; só ao descer.
-- `/lorezone vertical <id> auto` — volta a valer a esfera inteira.
-- Zonas criadas antes continuam funcionando (esfera completa).
-
-### ❤️ Vidas canônicas
-- `/rp admin canon on|off` — liga o modo no **servidor todo** (banner na tela, sem chat).
-- Cada jogador começa com **5 vidas**. Quem morrer em modo canon passa pelo ritual:
-  **strondo → congelado 5 s → aviso de morte (estilo 4) → áudio `canon_death`**.
-- **Anti-chain**: depois de perder uma vida, 5 min de proteção (morrer seguido não acumula).
-- **Última vida**: "TOME CUIDADO" + **medo absurdo** de 30 s.
-- **Morte fora do RP não conta (4.1.0)**: se quem matou estava **OFF RP**, a vítima
-  **não perde vida** — sem ritual, sem aviso, sem som. Vale só quando há matador
-  jogador; mob/queda/lava/fogo/`/kill` continuam contando.
-- **Coração Canônico 3D**: bloco/item decorativo (só admin dá com `/give`,
-  `shift + clique direito` = +1 vida), animação de batida + flutuação.
-
-### 🛠️ Utilidade
-- `/balao teste <frase>`, `/rp status` (diagnóstico), `/rp ajuda`, `/rp admin ajuda`.
-
----
-
-## 2. Como buildar
-
-### Opção A — Gradle (o jeito normal)
-1. Instale o **JDK 21** (Temurin).
-2. `./gradlew build` — o jar sai em `build/libs/rptag-4.5.0.jar` (roda também os testes JUnit).
-3. Primeiro build demora (~5–15 min, descompacta/decompila o Minecraft) e pede
-   ~4 GB de RAM livres. Depois é rápido (cache).
-4. Pra testar: `./gradlew runServer` (aceite o eula em `run/eula.txt`) ou
-   `./gradlew runClient`.
-
-### Opção B — compilar só com javac (usado no ambiente de entrega)
-Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
-1. JDK 21 do Adoptium;
-2. installer do NeoForge → `--installServer` e `--installClient`;
-   ⚠️ no cliente é preciso um **`launcher_profiles.json` falso** antes;
-3. classpath = neoforge-client + client-srg + neoforge-universal + server-srg +
-   libs das duas árvores + **lwjgl-openal/lwjgl do Maven Central**;
-4. `javac --release 21 -encoding UTF-8 -proc:none -cp "$(cat cp.txt)" -d build/classes @sources.txt`.
-
-> ⚠️ **Sempre apague o jar antigo** da pasta `mods` — no **servidor e no cliente**.
-> Jar duplicado é a causa nº 1 de "o mod não mudou nada".
-
----
-
-## 3. Arquitetura (mapa rápido)
+## Arquitetura
 
 ### Raiz (`dev/rptag/`)
 | Arquivo | Papel |
@@ -142,7 +58,7 @@ Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
 | `LoreZones.java` | Zonas (esfera + **faixa vertical minY/maxY**), aviso único, som/música, aviso na entrada |
 | `LoreZoneCommands.java` | `/lorezone ...` (criar, vertical, mostrar, esconder, varinha, avisos, som, musica, listar) |
 | `LorezoneWand.java` | Item da varinha (permissão 2, clique direito, dedupe 250 ms) |
-| `MusicSync.java` | Envio de arquivos de música pro cliente em pedaços |
+| `MusicSync.java` | Envio de arquivos de música ao cliente em partes |
 | `RPEffects.java` | Efeito `rptag:medo` |
 | `Stickers.java` | 80 emojis Noto (atlas POT, codepoints 0xE000+) |
 | `*Payload.java` | Rede: `ScreenTextPayload`, `FearPayload`, `ChatBubblePayload`, `ZoneShowPayload`, `LorezoneMusicPayload`, `MusicFile*Payload`, `CanonBannerPayload`, `PersonaSyncPayload`, `SyncRPStatePayload`, `TypewriterPayload`, etc. |
@@ -150,14 +66,14 @@ Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
 ### `client/`
 | Arquivo | Papel |
 |---|---|
-| `AvisoFxUtil.java` | **Motor compartilhado** dos FX: `Buf` (tri/quad/rect/seg/circ/anel/vinheta/brilho), `preparar/normal/aditivo`, `tocar`, helpers de cor e easing |
+| `AvisoFxUtil.java` | **Motor compartilhado** dos FX: `Buf` (tri/quad/rect/seg/circ/anel/vinheta/brilho), `preparar/normal/aditivo`, `tocar`, utilitários de cor e easing |
 | `*AvisoFx.java` (9) | `Divino`, `Demoniaco`, `Sangue`, `Void`, `Pesadelo`, `PesadeloAntigo`, `Inferno`, `Gelo`, `Runico` |
 | `MorteAvisoFx.java` | FX "Linha Reta" (estilo 4) — desde a 4.2.0 compõe cinza → **vídeo** → texto/sons, com fallback procedural |
 | `VideoFx.java` / `VideoFrameLoader.java` | **Player dos avisos em vídeo** (4.2.0): quadro pelo relógio, uma textura 1280x720, thread `rptag-fx-loader` |
 | `VideoEstado` / `FxTimeline` / `FxCor` / `FxJpeg` / `MorteTempos` | Java puro com JUnit: estados do player, `fx.json`, cor+alfa, leitura estrita do JPEG, tempos do MORTE |
 | `FxVideoPolitica.java` | Vídeo só com `fxVideo` ligado e fora do modo reduzido (4.5.0) |
 | `FxConfig.java` / `FxComando.java` | `config/rptag/cliente.properties` (`fxVideo`) + `/rpfx status\|on\|off` |
-| `ClientEffects.java` | **Central dos avisos**: roteia o estilo pro FX, véu do canon, banner, áudio da lore |
+| `ClientEffects.java` | **Central dos avisos**: encaminha cada estilo ao efeito correspondente, véu do canon, banner, áudio da lore |
 | `ClientGuiLayers.java` | Registra as camadas com `registerAboveAll` (com shaders, por cima de tudo) |
 | `BubbleRenderer.java` | Coração visual do balão (pílula = tamanho exato do texto; âncora na base) |
 | `BubbleStyleScreen.java` | Tela `/balao` (menu cartoon, preview igual ao mundo, emoji picker) |
@@ -168,65 +84,63 @@ Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
 | `ClientPayloadHandler.java` | Handlers de todos os pacotes no cliente |
 | `NameplateRenderer.java` / `ClientRenderers.java` / `ClientEvents.java` | Nametag, renderers, eventos |
 
----
+## Renderização e animações
 
-## 4. REGRAS DE OURO (aprovadas/reprovadas em batalha — **não reverter!**)
+O código 4.5.0 integra vídeos de Morte, Inferno e Gelo. O player utiliza uma
+textura dinâmica e decodificação em segundo plano. A classe de cada aviso mantém
+texto, sons e o efeito procedural alternativo. O fallback deve continuar no mesmo
+instante da animação, sem repetir sons nem reiniciar a mensagem.
 
-1. **Emoji nunca via fonte na fala** = blocos pretos. Só via quads do atlas.
-2. **Pílula do balão = tamanho EXATO do texto.** Nunca criar faixa/linha pro emoji.
-3. **Âncora do balão**: base em `yP1 = 0`, cresce pra cima (eixo Y invertido).
-4. **Adesivo/emote = emblema na BORDA**, metade pra fora — nunca sobre letras.
-5. **Sticker no mundo = bitmap COLORIDO**, nunca tintado.
-6. **Balão é privilégio de admin**; `/balao modo off` some na hora.
-7. **Render nunca crasha**: `catch (Throwable)` com auto-desliga da sessão.
-8. **Texturas POT sempre** (potência de 2); `dashed.png` não esticar.
-9. **`/me` e `/do` são ação no chat** — não viram balão.
-10. **Avisos**: título "AVISO" **letra por letra**, **sem auto-ajuste no título**;
-    a mensagem **sempre embaixo**, `translate(cx - w*S2/2, cy + 25*k)`.
-    `ty - 12*k` (mensagem acima) é **proibido**.
-11. **Medo/AVISO com shaders** = `registerAboveAll` (nunca `RenderGuiEvent.Post`).
-12. **`renderBackground` vazio** (blur) nos menus — **nunca remover**.
-13. **Nunca portar telemetria** de referências externas.
-14. **Testes antes de entregar**: `check.py` (337 checks) + `./gradlew test` (JUnit) + smoke do servidor por RCON.
-15. **Vídeo dos avisos**: o texto **nunca** vai no vídeo; decodificar pelo **raster**
-    (nunca `getRGB`, ~35 ms/quadro); JPEG com aviso do decodificador = **erro** (fallback).
+`config/rptag/cliente.properties` controla `fxVideo`; os comandos do cliente são
+`/rpfx status`, `/rpfx on` e `/rpfx off`. O modo reduzido deve respeitar a política
+de seleção de efeitos definida no código.
 
----
+As propostas visuais e os conceitos em `arte/` não devem ser tratados como
+aprovação para substituir efeitos existentes. Mudanças artísticas exigem uma
+referência visual aprovada pelo responsável.
 
-## 5. Ciclo de entrega (o que fazer em toda versão)
+## Convenções de implementação
 
-1. Bump da versão em **3 lugares**: `RPTagMod.VERSION`, `build.gradle`, `neoforge.mods.toml`
-   (e o log de boot no `ClientEffects`).
-2. Atualizar **`CHANGELOG.md`** e **`WALKTHROUGH.md`** (o walkthrough é a memória do projeto:
-   anote o que foi feito, o que falhou e as receitas novas).
-3. `python3 check.py` → tem que terminar **0 FAIL**; `./gradlew test` verde.
-4. Compilar → jar em `rptag-<versão>.jar`; conferir `unzip -l | grep -c .class`.
-5. Smoke: subir o servidor, testar os comandos por RCON, `grep -c "ERROR\|FATAL"` = 0.
-6. Commit + push (ver `PUBLICAR.md`; o PAT vai **inline** na URL, nunca em arquivo).
-7. Release com o jar + `make_latest` + **apagar release/tag anteriores**.
-8. **Nenhum jar no repositório** (desde a 4.2.0; o `.gitignore` já ignora `*.jar`):
-   com os vídeos o jar passa de 100 MB, o limite do GitHub no git. Jar **só na Release**.
+1. Não incluir telemetria ou coleta de dados.
+2. Preservar o comportamento aprovado ao trabalhar em componentes relacionados.
+3. Manter o tamanho do balão associado ao texto e a âncora na base; adesivos
+   permanecem na borda e não devem sobrepor as letras.
+4. Renderizar adesivos com o atlas colorido, sem aplicar tintura indevida.
+5. Manter balões sujeitos às permissões administrativas; o modo desativado deve
+   produzir efeito imediato.
+6. Tratar falhas de renderização sem encerrar o jogo e liberar recursos de
+   animação quando o aviso termina ou o jogador sai do mundo.
+7. Manter o título do aviso e a mensagem separados. A mensagem fica abaixo do
+   título, conforme o layout existente em cada efeito.
+8. Registrar efeitos de tela nas camadas oficiais do cliente, preservando a
+   compatibilidade com shaders e o comportamento do modo reduzido.
+9. `/me` e `/do` são ações de chat; não devem criar balões de fala.
+10. Preservar as restrições conhecidas de texturas, atlas e telas de configuração
+    registradas no histórico técnico. Mudanças nessas áreas exigem teste visual.
+11. Utilizar decodificação pelo raster para os quadros JPEG. Tratar quadros
+    corrompidos como erro de vídeo e acionar o fallback.
+12. Não versionar arquivos JAR de distribuição, senhas ou configurações do ambiente local.
 
----
+## Verificação e entrega
 
-## 6. Roadmap / ideias em aberto
+Utilize `gradlew.bat` no Windows e `./gradlew` em Linux ou macOS.
 
-- **FX ignoram a duração configurada**: todos têm `DUR = 6.0f` fixo, mas a lorezone
-  aceita 1–60 s — avisos longos ficam com tela vazia no fim (**correção pendente**).
-- **Altura do título varia por estilo** (`cy` = 0.42h / 0.45h / 0.5h) — padronizar.
-- **Flag `reduzido`** existe em todos os FX (modo sem flicker) mas **nunca é ligada**:
-  virar opção por jogador.
-- Estilos 0 (clássico) e 3 (real) são só texto — o "real" pede um tratamento
-  cinematográfico (grão/VHS), mas isso é **design novo** (não fazer sem pedido).
-- Barreira da lorezone é estática (fade-in, pulso nas paredes, rótulo com a faixa Y).
-- Portais da Lore (segundo mod do repo) está **EM PAUSA** — não mexer sem pedido.
+```powershell
+.\gradlew.bat clean build
+python check.py
+python -m unittest discover -s arte/tests -v
+```
 
----
+Confirme o resultado das execuções e teste no jogo as alterações de comportamento
+ou renderização. Registre limitações e verificações pendentes de forma explícita.
+As contagens históricas de testes não substituem um resultado atual.
 
-## 7. Créditos e licenças
+O servidor de desenvolvimento utiliza `run-server/`; o cliente utiliza `run/`.
+O aceite do EULA, quando necessário, pertence ao responsável pelo ambiente.
+A receita de compilação manual registrada no walkthrough é uma referência
+histórica; o Gradle Wrapper é o procedimento de desenvolvimento recomendado.
 
-- Emojis: **Noto Emoji** (googlefonts/noto-emoji) — Apache 2.0 / OFL 1.1.
-- Repo: `github.com/EduCafilista/rp-tag` (MIT).
-- **Nunca** apagar o repositório; publicação = Release com o jar.
-
-Bom trabalho! — **RP Tag 4.5.0**
+Antes de uma entrega, revise o diff, mantenha a versão coerente nos metadados,
+atualize os documentos afetados e inclua no commit apenas os arquivos pertinentes.
+As mensagens de commit não devem conter trailers de ferramentas. A distribuição
+segue o procedimento de [PUBLICAR.md](PUBLICAR.md).

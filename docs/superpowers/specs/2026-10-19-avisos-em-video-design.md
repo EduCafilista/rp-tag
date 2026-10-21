@@ -35,17 +35,17 @@ Decisões do dono:
 
 ## 2. Arquitetura
 
-> **Revisão (plano):** em vez de uma camada de GUI própria + `FxTexto`, o
-> `VideoFx` é só o **player** (sem camada). Quem compõe a tela é a classe
-> do aviso que já existe (ex.: `MorteAvisoFx`): no **modo vídeo** ela
-> desenha a camada cinza → `VideoFx.desenhar(g, t)` → o texto e os sons
-> de sempre, e **pula** o desenho procedural (ECG, crânio, vinheta, cinzas).
-> Se o player falhar, ela volta ao procedural **no mesmo instante t** (o
-> fallback não reinicia o aviso). Isso reaproveita o texto/sons atuais sem
-> duplicar código. Os **tempos** (batidas, linha reta, duração) ficam numa
-> classe Java pura (`MorteTempos`) que é a fonte única: a cena do Blender
-> usa os mesmos números e um teste JUnit confere que os marcadores do
-> `fx.json` batem com ela. A tabela abaixo é a versão original.
+>**Revisão (plano):** em vez de uma camada de GUI própria + `FxTexto`, o
+>`VideoFx` é só o **player** (sem camada). Quem compõe a tela é a classe
+>do aviso que já existe (ex.: `MorteAvisoFx`): no **modo vídeo** ela
+>desenha a camada cinza → `VideoFx.desenhar(g, t)` → o texto e os sons
+>de sempre, e **pula** o desenho procedural (ECG, crânio, vinheta, cinzas).
+>Se o player falhar, ela volta ao procedural **no mesmo instante t** (o
+>fallback não reinicia o aviso). Isso reaproveita o texto/sons atuais sem
+>duplicar código. Os **tempos** (batidas, linha reta, duração) ficam numa
+>classe Java pura (`MorteTempos`) que é a fonte única: a cena do Blender
+>usa os mesmos números e um teste JUnit confere que os marcadores do
+>`fx.json` batem com ela. A tabela abaixo é a versão original.
 
 
 ### Peças novas (todas em `src/main/java/dev/rptag/client/`)

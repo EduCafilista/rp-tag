@@ -1,7 +1,9 @@
 # Inferno e Gelo — redesign híbrido dos avisos
 
+> Planejamento arquivado. Após avaliar as propostas, o responsável solicitou preservar os efeitos originais. Este documento registra o trabalho discutido e não autoriza novas alterações visuais. Consulte o código e os guias atuais para identificar o estado implementado.
+
 Data: 2026-10-20
-Estado: design aprovado na conversa; especificação escrita para revisão final.
+Estado: proposta arquivada após revisão da direção visual.
 
 ## Objetivo e contexto
 

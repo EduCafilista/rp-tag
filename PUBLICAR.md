@@ -1,195 +1,109 @@
-# Como publicar no GitHub (rotina atual — 4.2.0)
+# Publicação de releases
 
-Passo a passo do que **realmente** é feito a cada versão nova.
-O repo é `github.com/EduCafilista/rp-tag` (público).
+Procedimento de preparação, publicação e verificação de uma versão do RP Tag.
+Execute os comandos na raiz do repositório. A publicação exige permissão de
+escrita no projeto e uma versão de código previamente validada.
 
-> 🧹 **Regra número 1: só a versão mais recente fica publicada.**
-> A cada ciclo, publique a release nova e **apague a release + a tag anteriores**.
-> O histórico de código **não se perde** — todos os commits continuam na `main`.
-> Cuidado extra: **nenhum jar** fica commitado no repo (desde a 4.2.0 o jar
-> vai só na Release — ver a seção 5).
+## Autenticação e estado do repositório
 
----
-
-## 1. Antes de commitar: confira o `.git`
-
-O ambiente de trabalho já perdeu o `.git` várias vezes. **Sempre** olhe o HEAD
-antes de commitar:
+Utilize a autenticação do GitHub CLI ou um gerenciador de credenciais. Não inclua
+tokens em URLs de remotes, comandos versionados ou documentação.
 
 ```bash
-git log --oneline -1
+gh auth status
+git status --short
+git log -5 --oneline
+git fetch origin
+git remote -v
 ```
 
-Se **não** for o commit do ciclo anterior, **não commite por cima** — busque o
-remoto primeiro:
+O remote esperado é `https://github.com/EduCafilista/rp-tag.git`. Revise as
+diferenças entre o branch local e o remoto antes de publicar. Não utilize reset
+ou force push como parte automática do processo de entrega.
+
+## Versão e validação
+
+Atualize a versão em:
+
+| Arquivo | Campo |
+| --- | --- |
+| `build.gradle` | `version` |
+| `src/main/java/dev/rptag/RPTagMod.java` | `VERSION` |
+| `src/main/resources/META-INF/neoforge.mods.toml` | `version` |
+| `src/main/java/dev/rptag/client/ClientEffects.java` | Log de inicialização |
+
+Atualize também o README, o changelog e os documentos afetados. Exemplos abaixo
+utilizam a versão de código 4.5.0; substitua o número pela versão da entrega.
+
+```powershell
+.\gradlew.bat clean build
+python check.py
+python -m unittest discover -s arte/tests -v
+git diff --check
+```
+
+Em Linux e macOS, utilize `./gradlew` e o executável Python correspondente ao
+ambiente. Confira o JAR em `build/libs/`, os testes e o comportamento no jogo.
+Mudanças visuais exigem verificação no cliente; o funcionamento do servidor
+isoladamente não comprova a renderização correta.
+
+## Commit e envio do código
+
+Revise o diff e adicione os caminhos explícitos do trabalho concluído.
 
 ```bash
-git fetch --tags origin main
-git reset --mixed origin/main     # NÃO toca nos arquivos do disco
-git status --porcelain            # o diff deve ser só o do ciclo atual
+git diff --stat
+git diff --cached
+git commit -m "Descrição objetiva da alteração"
+git push origin main
 ```
 
----
+O exemplo de commit pressupõe que os arquivos já foram adicionados ao índice.
+Não inclua trailers de ferramentas nas mensagens de commit.
 
-## 2. Bump da versão (3 lugares + log)
+## Distribuição dos binários
 
-| Arquivo | O que muda |
-|---|---|
-| `src/main/java/dev/rptag/RPTagMod.java` | `VERSION = "4.2.0"` |
-| `build.gradle` | `version = '4.2.0'` |
-| `src/main/resources/META-INF/neoforge.mods.toml` | `version="4.2.0"` |
-| `src/main/java/dev/rptag/client/ClientEffects.java` | log de boot `"RP Tag 4.2.0: ..."` |
-| `check.py` | a verificação de versão também muda |
+Os JARs são distribuídos como assets de release. Não adicione o JAR do mod à
+raiz do repositório. A exceção versionada é o Gradle Wrapper.
 
-⚠️ No `.toml`, a faixa do Minecraft é `[1.21.1,1.22)` — colocar `[1.21.1]` **mata o boot**.
-
----
-
-## 3. Testar (obrigatório antes de publicar)
-
-```bash
-python3 check.py          # tem que dar 0 FAIL
-```
-
-Depois compile e faça o smoke do servidor:
-
-1. coloque **apenas** o jar novo em `run/mods/` (apague o antigo!);
-2. suba o servidor, espere `RCON running`;
-3. rode alguns comandos por RCON (`rp admin avisar @a 4 teste`, `lorezone listar`…);
-4. `grep -ac "ERROR\|FATAL" logs/latest.log` → **0**;
-5. pare o servidor.
-
----
-
-## 4. Commit e push
-
-```bash
-git add <arquivos do ciclo>       # deixe o jar FORA deste add
-git commit -m "4.2.0: <resumo do ciclo>"
-
-git push "https://<TOKEN>@github.com/EduCafilista/rp-tag.git" HEAD:main
-```
-
-- O **token (PAT) vai inline na URL** do push. **Nunca** salvar em arquivo,
-  no `.git/config` ou em script versionado.
-- Se o `git remote` apontar pra URL com token, **volte** pra URL limpa depois:
-  `git remote set-url origin https://github.com/EduCafilista/rp-tag.git`.
-
----
-
-## 5. Jars: NENHUM no repositório (desde a 4.2.0)
-
-Com os avisos em vídeo o jar cresce a cada ciclo e passa de 100 MB, que é o
-limite do GitHub para arquivos no git. Por isso o jar **não vai mais pro repo**:
-ele fica **só na Release**. O `.gitignore` tem:
-
-```
+```gitignore
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
 ```
 
-**Confira sempre** (o `git status` esconde esse tipo de coisa):
+Verifique os arquivos rastreados com `git ls-files '*.jar'`.
+
+## Criação da release
+
+Prepare notas em um arquivo Markdown com os recursos alterados, compatibilidade,
+instruções de atualização e limitações conhecidas. Crie uma release em rascunho
+para revisar o arquivo e o commit de destino antes da publicação.
 
 ```bash
-git ls-tree HEAD --name-only | grep jar     # deve listar NADA na raiz
+gh release create v4.5.0 build/libs/rptag-4.5.0.jar --repo EduCafilista/rp-tag --target main --title "RP Tag 4.5.0" --notes-file notas-da-release.md --draft
 ```
 
----
+Confirme que o nome da tag está disponível antes de executar. Caso a tag já
+exista, verifique a versão publicada; não substitua um artefato existente sem
+avaliar a necessidade de uma nova versão.
 
-## 6. Criar a release pela API
-
-Sem `target_commitish`: **crie a tag pelo git e publique a release sem esse campo**
-(com SHA curto o GitHub responde `422 tag_name is not a valid tag`).
+Depois da revisão e da autorização para publicar:
 
 ```bash
-PAT="<token>"
-git tag -f v4.2.0 HEAD
-git push "https://$PAT@github.com/EduCafilista/rp-tag.git" refs/tags/v4.2.0
-
-# 1) cria a release
-curl -X POST -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/EduCafilista/rp-tag/releases -d @release.json
-#    release.json = { "tag_name": "v4.2.0", "name": "...", "body": "..." }
-
-# 2) sobe o jar
-curl -X POST -H "Authorization: Bearer $PAT" -H "Content-Type: application/java-archive" \
-  "https://uploads.github.com/repos/EduCafilista/rp-tag/releases/<ID>/assets?name=rptag-4.2.0.jar" \
-  --data-binary @rptag-4.2.0.jar
-
-# 3) marca como latest
-curl -X PATCH -H "Authorization: Bearer $PAT" -H "Content-Type: application/json" \
-  https://api.github.com/repos/EduCafilista/rp-tag/releases/<ID> \
-  -d '{"make_latest":"true"}'
+gh release edit v4.5.0 --repo EduCafilista/rp-tag --draft=false --latest
 ```
 
-**Notas da release (PT-BR)**: título com emoji + 3 blocos — *o que mudou* (em
-tópicos curtos), *como instalar* (baixar o asset, jogar em `mods` no cliente **e**
-servidor, **apagar o jar antigo**), e o aviso de que o **Portais da Lore segue em
-pausa**. No fim, a linha de testes (`check.py` + smoke).
+## Verificação após publicação
 
----
+1. Confirme o commit associado à tag e o conteúdo das notas.
+2. Confira o nome e o tamanho do asset publicado.
+3. Baixe o JAR e compare seu SHA-256 com o arquivo validado localmente.
+4. Verifique se os links de download da documentação apontam para a versão correta.
 
-## 7. Limpar as versões antigas
+A política registrada do projeto mantém a versão mais recente do RP Tag
+publicada. A remoção de releases ou tags anteriores deve ocorrer somente após
+a nova versão ser verificada e com autorização do responsável. Preserve os
+artefatos do projeto Portais da Lore quando a entrega envolver apenas o RP Tag.
 
-```bash
-# lista as releases
-curl -s -H "Authorization: Bearer $PAT" \
-  "https://api.github.com/repos/EduCafilista/rp-tag/releases?per_page=100"
-
-# apaga a release antiga (mantém o commit!)
-curl -X DELETE -H "Authorization: Bearer $PAT" \
-  https://api.github.com/repos/EduCafilista/rp-tag/releases/<ID_ANTIGA>
-
-# apaga a tag antiga
-curl -X DELETE -H "Authorization: Bearer $PAT" \
-  https://api.github.com/repos/EduCafilista/rp-tag/git/refs/tags/v<versao_antiga>
-```
-
-**Exceção permanente**: `portais-v1.3.2` **não** é apagada — é a única release do
-segundo mod do repo (que está em pausa) e o aviso de pausa nunca sai.
-
----
-
-## 8. Conferir tudo (nunca confie, verifique)
-
-```bash
-# 1) só devem sobrar v4.2.0 e portais-v1.3.2
-curl -s -H "Authorization: Bearer $PAT" \
-  "https://api.github.com/repos/EduCafilista/rp-tag/releases?per_page=100"
-
-# 2) o download precisa responder e ser idêntico ao jar local
-curl -sL -o /tmp/dl.jar -w "HTTP %{http_code} bytes=%{size_download}\n" \
-  https://github.com/EduCafilista/rp-tag/releases/download/v4.2.0/rptag-4.2.0.jar
-cmp /tmp/dl.jar rptag-4.2.0.jar && echo "JAR OK"
-
-# 3) a tag tem que apontar pro commit publicado
-curl -s -H "Authorization: Bearer $PAT" \
-  https://api.github.com/repos/EduCafilista/rp-tag/git/ref/tags/v4.2.0
-
-# 4) nenhum jar antigo na raiz
-curl -s "https://api.github.com/repos/EduCafilista/rp-tag/contents/?ref=main" \
-  | grep -o '"name": "rptag-[^"]*\.jar"'
-```
-
-Se o **seu navegador** ainda mostrar versão antiga depois de tudo isso, é cache:
-**Ctrl+Shift+R** (ou aba anônima).
-
----
-
-## 9. Backup local do histórico
-
-O `.git` deste ambiente já regrediu várias vezes. Pra não depender da rede:
-
-```bash
-git bundle create /home/user/rp-tag-git.bundle --all
-# restaurar: git clone /home/user/rp-tag-git.bundle
-```
-
----
-
-## 10. Portais da Lore (segundo mod do repo)
-
-- Está **EM PAUSA** — **não mexer** sem pedido explícito.
-- O aviso de pausa existe no `README.md` da raiz, no README da pasta e na release
-  `portais-v1.3.2`. **Não remover.**
-- Os READMEs mencionam a pausa; a release dele fica fixa como está.
+Não trate a conclusão de um build ou de um push como comprovação de que uma
+release foi criada e disponibilizada para download.

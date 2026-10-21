@@ -1,8 +1,8 @@
 # Changelog
 
-## 4.5.0 — INFERNO E GELO EM VÍDEO (BLENDER) 🔥❄️ (2026-10-20)
+## 4.5.0 — INFERNO E GELO EM VÍDEO (BLENDER)  (2026-10-20)
 
-### 🔥 "Fornalha" refeita no Blender
+### "Fornalha" refeita no Blender
 - Uma **fissura incandescente** se abre atrás do título com clarão e onda de calor,
   e se desfaz em fragmentos carbonizados
 - **Fogo de verdade** subindo pelo rodapé e pelos cantos (línguas irregulares,
@@ -10,25 +10,25 @@
   **meteoros** com rastro e um **redemoinho de brasas** discreto atrás do texto
 - O centro fica livre para ler a mensagem
 
-### ❄️ "Geada Eterna" refeita no Blender
+### "Geada Eterna" refeita no Blender
 - O impacto **estilhaça a tela como vidro** (trincas e anéis quebrados)
 - A **geada cresce das bordas** com veios cristalinos e "samambaias" de gelo,
   **cristais translúcidos** em aglomerados nos cantos, neve em profundidade
   e um floco discreto girando atrás do título; no fim, fragmentos se soltam
 
-### 📖 Leitura
+### Leitura
 - No modo vídeo o texto ganha **contorno escuro**, legível até sobre céu claro
 
-### 🛟 Igual ao MORTE
+### Igual ao MORTE
 - Sem vídeo, quadro corrompido ou PC lento → o FX antigo assume **no mesmo instante**
 - `fxVideo=false` ou **modo reduzido** → sempre o FX antigo
 - Um aviso novo (de qualquer estilo) encerra o aviso em vídeo anterior
 
-### 📦 Jar
+### Jar
 - ~54 MB com os três vídeos (Morte 9,6 MB, Inferno 14,1 MB, Gelo 32,4 MB),
   continua **só nas Releases**
 
-## 4.4.0 — 2026-10-20 — 💗 Coração 3D de verdade + `/rp admin vida`
+## 4.4.0 — 2026-10-20 —  Coração 3D de verdade + `/rp admin vida`
 
 - **`/rp admin vida <jogador> tirar|dar [n] | definir <n> | ver`** — mexe nas vidas
   canônicas NA HORA, sem esperar morte. É o mesmo estoque do ritual (`getCanonLives`),
@@ -49,7 +49,7 @@
   `_giro.gif`. `check.py` 337, JUnit 26/26.
 
 
-## 4.3.0 — 2026-10-20 — 🩸 SANGUE novo: "HEMORRAGIA"
+## 4.3.0 — 2026-10-20 —  SANGUE novo: "HEMORRAGIA"
 
 - **`avisar` estilo 9 (sangue) refeito do zero.** O antigo ("Sangria") lembrava desenho animado:
   gotas redondas com brilho branco. Agora a tela é um corpo que **se rasga**.
@@ -65,9 +65,9 @@
 
 
 
-## 4.2.0 — AVISO DE MORTE EM VÍDEO (BLENDER) 🎬 (2026-10-19)
+## 4.2.0 — AVISO DE MORTE EM VÍDEO (BLENDER)  (2026-10-19)
 
-### ☠️ "Linha Reta" agora é um vídeo renderizado no Blender
+### "Linha Reta" agora é um vídeo renderizado no Blender
 - O aviso de **morte** (`/rp admin avisar <alvo> morte <msg>` e o ritual da vida
   canônica) toca um **vídeo de 6 s a 24 fps** feito no Blender: crânio de
   **voxels 3D com luz de verdade** que se forma do pó e vira cinzas, olhos em
@@ -78,23 +78,23 @@
   comando aparece normal
 - O véu avermelhado e o áudio da lore (`canon_death`) continuam iguais
 
-### 🛟 Nunca fica sem aviso
+### Nunca fica sem aviso
 - Sem vídeo, quadro corrompido ou PC lento demais → o aviso segue no **FX
   antigo (procedural) no mesmo instante**, sem reiniciar e sem crash
 - PC lento mostra o quadro mais novo pronto (pula quadros) em vez de travar
 
-### ⚙️ Opção do jogador
+### Opção do jogador
 - `config/rptag/cliente.properties` → `fxVideo=false` desliga os vídeos
   (sempre o FX antigo)
 - Comando do cliente **`/rpfx status|on|off`**
 
-### 📦 Jar
+### Jar
 - O jar ficou com **~10 MB** (o vídeo do MORTE tem 9,6 MB) e agora fica **só nas
   Releases** — não vai mais pro repositório
 
-## 4.1.0 — MORTE FORA DO RP NÃO CONTA + FX DE MORTE + NOVO PESADELO ☠️ (2026-10-19)
+## 4.1.0 — MORTE FORA DO RP NÃO CONTA + FX DE MORTE + NOVO PESADELO  (2026-10-19)
 
-### ⚖️ Vida canônica: matador OFF RP não tira vida
+### Vida canônica: matador OFF RP não tira vida
 - Se quem **matou** estava **OFF RP**, a morte é considerada **fora do RP**:
   a vítima **NÃO perde vida canônica** — sem ritual, sem aviso, sem som
 - Continua contando normal: morte por **mob, queda, lava, fogo ou /kill**
@@ -104,7 +104,7 @@
 - O log do servidor registra:
   `RP Tag: <vitima> morreu para <matador> (OFF RP) — VIDA CANONICA PRESERVADA`
 
-### ☠️ Novo aviso de MORTE — "Linha Reta"
+### Novo aviso de MORTE — "Linha Reta"
 - Monitor cardíaco batendo cada vez mais devagar… até virar **linha reta**
 - **Crânio em pixel art** que se forma do pó, olhos em brasa que se apagam,
   e no fim vira cinzas subindo
@@ -116,7 +116,7 @@
 - Vale para `/rp admin avisar @a 4 <msg>` **e** para o ritual da vida
   canônica (o véu avermelhado e o áudio `canon_death` continuam)
 
-### 😴 Novo PESADELO (estilo 1) — minimalista, "Seguido"
+### Novo PESADELO (estilo 1) — minimalista, "Seguido"
 - Tela quase apaga; moldura vermelha fina + 2 linhas dividindo em terços
   que piscam e falham
 - Mensagem **digitada** letra por letra, às vezes **corrompendo** (`#%&?/*`)
@@ -125,9 +125,9 @@
 - **O pesadelo antigo ("Seguido" com a figura pálida) saiu do lugar** —
   o código dele está salvo em `backup/` no workspace
 
-## 4.0.0 — BARREIRA DA LOREZONE (só admin) + FAIXA VERTICAL + VARINHA 🧱 (2026-10-19)
+## 4.0.0 — BARREIRA DA LOREZONE (só admin) + FAIXA VERTICAL + VARINHA  (2026-10-19)
 
-### 🧱 "Barreira" visível só para admins
+### "Barreira" visível só para admins
 - `/lorezone mostrar <id> [segundos]` → desenha na SUA tela:
   - **ciano** = arame da esfera da zona (meridianos + paralelos)
   - **amarelo** = as duas paredes da **faixa vertical** = onde o aviso dispara
@@ -136,35 +136,35 @@
 - **Só quem pediu vê**: o servidor manda o pacote só pro admin que executou
   (players comuns nunca recebem nada)
 
-### 🪄 Varinha de Lorezone (item de admin)
+### Varinha de Lorezone (item de admin)
 - `/lorezone varinha` → item na mão
 - **Clique direito** perto de uma zona (até 256 blocos) → mostra a barreira
 - **Shift + clique direito** → esconde
 - Se um player comum pegar, **não funciona** (permissão 2 obrigatória)
 
-### ⛏️ Faixa vertical: aviso só no nível certo (o caso da CAVERNA)
+### Faixa vertical: aviso só no nível certo (o caso da CAVERNA)
 - `/lorezone vertical <id> <minY> <maxY>` → a zona só dispara entre esses Y
   - Ex.: evento na caverna em Y=-30..20 → quem estiver no topo do mundo
     (Y=120) **não recebe** o aviso; só quando descer até a caverna
 - `/lorezone vertical <id> auto` → volta a valer a esfera inteira
 - O `/lorezone listar` mostra `Y -30..20` nas zonas limitadas
 
-## 3.99.0 — LOREZONE: aviso ÚNICO + música/som com TEMPO MÁXIMO 🔁 (2026-10-19)
+## 3.99.0 — LOREZONE: aviso ÚNICO + música/som com TEMPO MÁXIMO  (2026-10-19)
 
 O problema: entrando e saindo da lorezone, **toda vez** aparecia o aviso e a
 música voltava a tocar sem fim. Agora:
 
-### 📖 Aviso: UMA VEZ POR JOGADOR, PARA SEMPRE
+### Aviso: UMA VEZ POR JOGADOR, PARA SEMPRE
 - Entrou a primeira vez → viu o aviso → **nunca mais** (nem saindo/voltando,
   nem relogando, nem reiniciando o servidor)
 - Fica gravado no mundo (`AvisosVistos` no `rptag_lorezones.dat`)
 - Admin pode liberar de novo: `/lorezone avisos reset <jogador>`
 
-### 🔊 Som: toca a CADA entrada — mas com LIMITE
+### Som: toca a CADA entrada — mas com LIMITE
 - O som pontual da zona toca toda vez que o jogador entra
 - Para sozinho em **30 s** (nunca vira ambiência eterna), e também ao sair
 
-### 🎵 Música: TEMPO MÁXIMO sempre (nem na primeira vez é infinita)
+### Música: TEMPO MÁXIMO sempre (nem na primeira vez é infinita)
 - Toca ao entrar e **para no tempo máximo** — não recomeça enquanto o jogador
   estiver dentro
 - O número do `/lorezone musica <id> intervalo <seg> <som>` agora é o
@@ -176,12 +176,12 @@ música voltava a tocar sem fim. Agora:
   manda o `maxSeg` no pacote e o **cliente para sozinho** (vigia de prazo no
   `MusicaCustom`, teto de segurança de 10 min) — mesmo se o STOP se perder
 
-### 🧪 Verificação
+### Verificação
 - Simulação da máquina de estados (3 cenários) em
   `verificacao/simula_lorezone.py`: aviso 1x, som/silêncio por limite,
   música parando no tempo máximo e voltando só na próxima entrada
 
-## 3.98.0 — AS DUAS OPÇÕES DE PESADELO 😴😱 (2026-10-19)
+## 3.98.0 — AS DUAS OPÇÕES DE PESADELO  (2026-10-19)
 
 Agora existem **dois estilos de pesadelo** — escolha o que combinar com a cena:
 
@@ -190,13 +190,13 @@ Agora existem **dois estilos de pesadelo** — escolha o que combinar com a cena
 | `/rp admin avisar @a pesadelo <msg>` | 1 | **"Seguido"** | found-footage: figura pálida se aproximando em cortes |
 | `/rp admin avisar @a pesadelo2 <msg>` | 11 | **"Sono Sem Descanso"** | o modelo ANTIGO (3.96.4): túnel que respira, tentáculos com garras, 16 olhos que seguem o título, olho gigante, estática |
 
-- 🧩 Classe nova `PesadeloAntigoAvisoFx` (camada `rptag:aviso_pesadelo2`)
-- 📐 O antigo veio do 3.96.4 **já com a mensagem embaixo** (`cy + 25k`) — padrão mantido
-- 🌑 Ambos continuam com a **Escuridão de 5s** (susto extra)
-- ⌨️ Também funciona no `/lorezone ... aviso pesadelo2 ...` (mapa + clamp até 11)
-- 📖 Ajuda do `/rp` lista `pesadelo, pesadelo2, runico, ...`
+-  Classe nova `PesadeloAntigoAvisoFx` (camada `rptag:aviso_pesadelo2`)
+-  O antigo veio do 3.96.4 **já com a mensagem embaixo** (`cy + 25k`) — padrão mantido
+-  Ambos continuam com a **Escuridão de 5s** (susto extra)
+-  Também funciona no `/lorezone ... aviso pesadelo2 ...` (mapa + clamp até 11)
+-  Ajuda do `/rp` lista `pesadelo, pesadelo2, runico, ...`
 
-## 3.97.0 — 8 FX CINEMATOGRÁFICOS: inferno, gelo, rúnico + pesadelo novo 🎬 (2026-10-19)
+## 3.97.0 — 8 FX CINEMATOGRÁFICOS: inferno, gelo, rúnico + pesadelo novo  (2026-10-19)
 
 Arquivos do user integrados (catbox 0ncp46/qbupf3/xe44nh/oj68ax/nb9qgd),
 adaptados ao padrão do mod: **título "AVISO" grande + mensagem EMBAIXO**
@@ -204,118 +204,118 @@ adaptados ao padrão do mod: **título "AVISO" grande + mensagem EMBAIXO**
 
 | Estilo | FX | O que tem |
 |---|---|---|
-| 1 😴 pesadelo | **"Seguido"** (found-footage) | tela quase apaga, moldura vermelha tremendo, **figura pálida que se aproxima em cortes**, mensagem digitada, coração acelerando + passos + olhar do Enderman |
-| 2 🔮 rúnico | **"Tradução Arcana"** | círculo de invocação em perspectiva (3 anéis + octagrama + 16 runas), pilar de luz, chuva rúnica, texto em língua encantada que se traduz |
-| 5 🔥 inferno | **"Fornalha"** | muralha de fogo, redemoinho, meteoros, ~100 brasas, fumaça, texto de metal derretido |
-| 6 ❄️ gelo | **"Geada Eterna"** | tela congelando em dendritos, trinca de vidro, cristais, floco geométrico, nevasca, texto congelando |
+| 1  pesadelo | **"Seguido"** (found-footage) | tela quase apaga, moldura vermelha tremendo, **figura pálida que se aproxima em cortes**, mensagem digitada, coração acelerando + passos + olhar do Enderman |
+| 2  rúnico | **"Tradução Arcana"** | círculo de invocação em perspectiva (3 anéis + octagrama + 16 runas), pilar de luz, chuva rúnica, texto em língua encantada que se traduz |
+| 5  inferno | **"Fornalha"** | muralha de fogo, redemoinho, meteoros, ~100 brasas, fumaça, texto de metal derretido |
+| 6  gelo | **"Geada Eterna"** | tela congelando em dendritos, trinca de vidro, cristais, floco geométrico, nevasca, texto congelando |
 
-- 🧩 Nova classe compartilhada `AvisoFxUtil` (Buf/vinheta/anel/brilho/tocar)
-- 🔊 2/5/6 agora têm **trilha própria no cliente** (não tocam mais o som do servidor — sem áudio duplicado)
-- 🌀 partículas no servidor: `particulasRunico` (ENCHANT+WITCH+anel END_ROD), `particulasInferno` (tornado de chamas), `particulasGelo` (nevasca+estilhaços)
-- ⚠️ O 4º arquivo enviado (rotulado "inferno") é na verdade um **PesadeloAvisoFx "Seguido"** — foi aplicado como o **novo pesadelo** (substitui o "Sono Sem Descanso")
-- 🌑 Escuridão 5s do pesadelo continua LIGADA (susto extra pedido no 3.96.3)
+-  Nova classe compartilhada `AvisoFxUtil` (Buf/vinheta/anel/brilho/tocar)
+-  2/5/6 agora têm **trilha própria no cliente** (não tocam mais o som do servidor — sem áudio duplicado)
+-  partículas no servidor: `particulasRunico` (ENCHANT+WITCH+anel END_ROD), `particulasInferno` (tornado de chamas), `particulasGelo` (nevasca+estilhaços)
+-  O 4º arquivo enviado (rotulado "inferno") é na verdade um **PesadeloAvisoFx "Seguido"** — foi aplicado como o **novo pesadelo** (substitui o "Sono Sem Descanso")
+-  Escuridão 5s do pesadelo continua LIGADA (susto extra pedido no 3.96.3)
 
-## 3.96.4 — MENSAGEM NA MESMA LINHA NOS 5 FX (correção de verdade) 📐 (2026-10-19)
+## 3.96.4 — MENSAGEM NA MESMA LINHA NOS 5 FX (correção de verdade)  (2026-10-19)
 
-- 🎯 **Achei o defeito real**: a mensagem estava embaixo em todos, mas em
+-  **Achei o defeito real**: a mensagem estava embaixo em todos, mas em
   **linhas diferentes** (divino 72px, demoniaco 81px, sangue 47px,
   pesadelo 30px, void 73px abaixo do título) — daí a sensação de
   "desconexo" entre os estilos
-- ✅ **Agora os 5 usam a MESMA linha**: `cy + 25 * k` (mesma posição
+-  **Agora os 5 usam a MESMA linha**: `cy + 25 * k` (mesma posição
   relativa ao centro da tela em todos os FX)
-- 🕳️ `void`: reflexo invertido puxado de 16S → 15S pra abrir espaço,
+-  `void`: reflexo invertido puxado de 16S → 15S pra abrir espaço,
   mensagem entra logo abaixo do reflexo
-- 🔍 **Verificação visual** em 1080p gerada: `verificacao/avisos_verificacao_1080p.png`
+-  **Verificação visual** em 1080p gerada: `verificacao/avisos_verificacao_1080p.png`
   (5 painéis com as linhas medidas) + conferência no **bytecode** do jar
   (constante `25.0f` presente nas 5 classes)
-- 🐞 **BUG DO PRÓPRIO check.py corrigido**: as seções anexadas desde a
+-  **BUG DO PRÓPRIO check.py corrigido**: as seções anexadas desde a
   3.95 estavam DEPOIS do `print` do resumo e **nunca executavam** — o
   placar era congelado em 259. Movidas pra antes do resumo: agora
   **273 checks rodando de verdade**
 
-## 3.96.3 — SUSTO EXTRA no pesadelo: ESCURIDÃO 5s 🌑 (2026-10-19)
+## 3.96.3 — SUSTO EXTRA no pesadelo: ESCURIDÃO 5s  (2026-10-19)
 
-- 😴 `pesadelo` agora aplica **Escuridão por 5 segundos** (efeito real:
+-  `pesadelo` agora aplica **Escuridão por 5 segundos** (efeito real:
   o player fica sem ver nada ao redor enquanto o aviso roda) — a pedido
   do user, **para teste**
-- 🔧 Fácil de reverter: é o parâmetro `escuridao` de
+-  Fácil de reverter: é o parâmetro `escuridao` de
   `particulasPesadelo(alvo, true)` (voltar para `false` desliga)
-- ⚠️ O user avisou que **prefere o modelo antigo** do pesadelo (véu +
+-  O user avisou que **prefere o modelo antigo** do pesadelo (véu +
   coração do Warden) — se o teste não agradar, o pesadelo volta ao
   estilo antigo no 3.96.4
 
-## 3.96.2 — PADRÃO ÚNICO: MENSAGEM EMBAIXO DO AVISO ⬇️ (2026-10-19)
+## 3.96.2 — PADRÃO ÚNICO: MENSAGEM EMBAIXO DO AVISO ⬇ (2026-10-19)
 
-- 📏 **Os 5 FX agora seguem EXATAMENTE o mesmo padrão** (igual divino e
+-  **Os 5 FX agora seguem EXATAMENTE o mesmo padrão** (igual divino e
   demoniaco): título **"AVISO" grande** + **mensagem do comando logo
   abaixo** (ou nada, se não digitar mensagem)
-- 🕳️ `void`: a mensagem subiu de muito abaixo do reflexo para **logo
+-  `void`: a mensagem subiu de muito abaixo do reflexo para **logo
   abaixo dele**, na mesma faixa visual dos outros FX
-- 🩸 `sangue` e 😴 `pesadelo`: já estavam embaixo no 3.96.1 — **se ainda
+-  `sangue` e  `pesadelo`: já estavam embaixo no 3.96.1 — **se ainda
   viu mensagem em cima, o jar antigo (3.96.0) ainda estava na pasta
   `mods` do cliente!** (o print do void mostrava exatamente o desenho
   antigo)
 
-## 3.96.1 — MENSAGEM EMBAIXO DO AVISO ⬇️ (2026-10-19)
+## 3.96.1 — MENSAGEM EMBAIXO DO AVISO ⬇ (2026-10-19)
 
-- 🐞 **Correção reportada com print**: em `sangue` (e também em `void` e
+-  **Correção reportada com print**: em `sangue` (e também em `void` e
   `pesadelo`, que tinham o mesmo defeito nos protótipos) a **mensagem
   aparecia EM CIMA do título "AVISO"**
-- ⬇️ Agora a mensagem fica **EMBAIXO do AVISO**, igual ao `divino` e ao
+- ⬇ Agora a mensagem fica **EMBAIXO do AVISO**, igual ao `divino` e ao
   `demoniaco`:
   - `sangue` e `pesadelo`: logo abaixo do título
   - `void`: abaixo também do **reflexo invertido** do título (para não
     sobrepor o espelho)
 
-## 3.96.0 — QUEDA SEM FUNDO + SONO SEM DESCANSO 🕳️😴 (2026-10-19)
+## 3.96.0 — QUEDA SEM FUNDO + SONO SEM DESCANSO  (2026-10-19)
 
-- 🕳️ **`void` ganhou o FX "Queda Sem Fundo"** (arquivo do autor, visual
+-  **`void` ganhou o FX "Queda Sem Fundo"** (arquivo do autor, visual
   idêntico):
-  - 🌌 Onda de choque lavanda abre a tela e o centro vira um
+  -  Onda de choque lavanda abre a tela e o centro vira um
     **BURACO NEGRO com anel de acreção inclinado**
-  - 🌀 **Túnel infinito de anéis ondulantes** (você CAI pra dentro!)
-  - ⭐ **Estrelas esticadas em listras** sugadas pro centro
-  - 🖤 **Estilhaços da realidade** à deriva rumo ao buraco
-  - 🪞 Título em **órbita lenta com aberração cromática** + REFLEXO
+  -  **Túnel infinito de anéis ondulantes** (você CAI pra dentro!)
+  -  **Estrelas esticadas em listras** sugadas pro centro
+  -  **Estilhaços da realidade** à deriva rumo ao buraco
+  -  Título em **órbita lenta com aberração cromática** + REFLEXO
     invertido embaixo
-  - 🌍 No mundo: **portais sendo sugados** ao redor do alvo
-- 😴 **`pesadelo` ganhou o FX "Sono Sem Descanso"** (arquivo do autor):
-  - 🫁 A visão **fecha e abre como uma respiração** (túnel que respira)
-  - 🖐️ **Tentáculos/mãos de sombra** rastejam das bordas COM GARRAS
-  - 👁️ **16 OLHOS** abrem em tempos diferentes, piscam e **SEGUIEM o
+  -  No mundo: **portais sendo sugados** ao redor do alvo
+-  **`pesadelo` ganhou o FX "Sono Sem Descanso"** (arquivo do autor):
+  -  A visão **fecha e abre como uma respiração** (túnel que respira)
+  -  **Tentáculos/mãos de sombra** rastejam das bordas COM GARRAS
+  -  **16 OLHOS** abrem em tempos diferentes, piscam e **SEGUIEM o
     título** (e um olho GIGANTE vigia por cima!)
-  - 📺 **Chuvisco de estática** (barras que piscam)
-  - 🎼 Título trêmulo e torto com **visão dupla** + falhas de sumiço
-  - 🔊 **Caixinha de música desafinada + coração lento + grito distante**
-  - 🌍 No mundo: sculk + tinta de lula + fumaça rasteira
-- 🔊 Agora **5 estilos têm FX com trilha própria** (pesadelo, divino,
+  -  **Chuvisco de estática** (barras que piscam)
+  -  Título trêmulo e torto com **visão dupla** + falhas de sumiço
+  -  **Caixinha de música desafinada + coração lento + grito distante**
+  -  No mundo: sculk + tinta de lula + fumaça rasteira
+-  Agora **5 estilos têm FX com trilha própria** (pesadelo, divino,
   void, sangue, demoniaco); sons no servidor só em morte/inferno/gelo +
   clássicos
-- ℹ️ A Escuridão opcional do pesadelo (afetaria o gameplay) ficou
+- ℹ A Escuridão opcional do pesadelo (afetaria o gameplay) ficou
   DESLIGADA no comando
 
-## 3.95.0 — SANGRIA + SEM LEGENDA + SEM ESTILO NOVO 🩸 (2026-10-19)
+## 3.95.0 — SANGRIA + SEM LEGENDA + SEM ESTILO NOVO  (2026-10-19)
 
-- 🩸 **`sangue` ganhou o FX "Sangria"** (arquivo do autor, visual idêntico):
-  - 💥 **IMPACTO em 0,15s**: o sangue espirra do centro (gotas esticadas
+-  **`sangue` ganhou o FX "Sangria"** (arquivo do autor, visual idêntico):
+  -  **IMPACTO em 0,15s**: o sangue espirra do centro (gotas esticadas
     que escorrem pela tela)
-  - 🩹 **Crosta pingando do teto**: ~22 filetes com cabeça de gota,
+  -  **Crosta pingando do teto**: ~22 filetes com cabeça de gota,
     brilho e gravidade (com som de pingo!)
-  - 🌊 **Poça de sangue** sobe do rodapé com ondas e drena no fim
-  - 🧬 **Veias/capilares** crescem das 4 bordas, pulsando (vinheta viva)
-  - 📢 O texto **bate na tela, treme e PINGA**: cada letra solta filetes!
-  - 🌍 **No mundo**: espirro de bloco de redstone + poeira vermelha caindo
-- 🕊️ **`divino` AGORA É O FX CELESTIAL** (pilar de luz, asas, hexagrama,
+  -  **Poça de sangue** sobe do rodapé com ondas e drena no fim
+  -  **Veias/capilares** crescem das 4 bordas, pulsando (vinheta viva)
+  -  O texto **bate na tela, treme e PINGA**: cada letra solta filetes!
+  -  **No mundo**: espirro de bloco de redstone + poeira vermelha caindo
+-  **`divino` AGORA É O FX CELESTIAL** (pilar de luz, asas, hexagrama,
   letras caindo) — o estilo extra "ascensao" **foi removido** (sem estilos
   novos: melhorando os que temos!)
-- 🚫 **SEM LEGENDA FIXA embaixo** — nem "AVISO DIVINO", nem "CHAMADO DO
+-  **SEM LEGENDA FIXA embaixo** — nem "AVISO DIVINO", nem "CHAMADO DO
   ABISMO": embaixo só aparece **se você digitar uma mensagem** no comando
-- 🔊 Sons no servidor só onde ainda não há FX (divino/sangue têm trilha
+-  Sons no servidor só onde ainda não há FX (divino/sangue têm trilha
   própria no cliente agora); partículas de mundo server-side
 
-## 3.94.0 — FIDELIDADE TOTAL AOS PROTÓTIPOS 🎯 (2026-10-19)
+## 3.94.0 — FIDELIDADE TOTAL AOS PROTÓTIPOS  (2026-10-19)
 
-- 🐞 **CORREÇÃO de fidelidade**: os FX `ascensao` e `demoniaco` agora rodam
+-  **CORREÇÃO de fidelidade**: os FX `ascensao` e `demoniaco` agora rodam
   **exatamente como os arquivos originais** enviados pelo autor do mod:
   - O **título grande fixo é "AVISO"** (cai/sobe letra a letra, do tamanho
     do protótipo) — antes eu estava colocando a mensagem no lugar do título
@@ -325,146 +325,146 @@ adaptados ao padrão do mod: **título "AVISO" grande + mensagem EMBAIXO**
     sempre foi no modelo);
   - Código de render **byte a byte igual ao protótipo** (só package/registro
     adaptados) — comparação `diff` limpa contra os arquivos originais.
-- 🧪 check.py reescrito para auditar a fidelidade (escala fixa `k·1.9`,
+-  check.py reescrito para auditar a fidelidade (escala fixa `k·1.9`,
   título nunca encolhe, chamada `iniciar("AVISO", mensagem)`) → **259/0**.
 
-## 3.93.0 — DEMONÍACO = CHAMADO DO ABISMO 😈 (2026-10-19)
+## 3.93.0 — DEMONÍACO = CHAMADO DO ABISMO  (2026-10-19)
 
 - O estilo `demoniaco` agora é o **FX cinematográfico completo** (com a
   **mensagem que você quiser**, auto-ajustável):
-  - 🫀 A tela escurece em **vinho e PULSA no ritmo de um coração** (som e
+  -  A tela escurece em **vinho e PULSA no ritmo de um coração** (som e
     visual sincronizados!)
-  - 🦷 **DENTES/GARRAS negros** fecham das bordas, como mandíbulas
-  - 🌋 **Fissuras de lava** racham a tela a partir do centro
+  -  **DENTES/GARRAS negros** fecham das bordas, como mandíbulas
+  -  **Fissuras de lava** racham a tela a partir do centro
   - ⬡ **Pentagrama invertido rúnico girando em brasa** coroado por
     **2 chifres incandescentes**
-  - 👁️ Um **OLHO DE FENDA** se abre sob o título
-  - 🩸 O texto **sobe das trevas**, treme e **glitcha** com sombras
+  -  Um **OLHO DE FENDA** se abre sob o título
+  -  O texto **sobe das trevas**, treme e **glitcha** com sombras
     vermelha/laranja
-- 🔊 **Trilha própria**: crescendo do dragão + batidas sincronizadas
-- 🌍 **Partículas no mundo**: **PENTAGRAMA de fogo de alma** desenhado no
+-  **Trilha própria**: crescendo do dragão + batidas sincronizadas
+-  **Partículas no mundo**: **PENTAGRAMA de fogo de alma** desenhado no
   chão + círculo de chamas + coluna de fumaça + respingos de lava!
 - Funciona em `/rp admin avisar @a demoniaco <texto>` e `/lorezone
   aviso <id> demoniaco <seg> <texto>`
 
-## 3.92.0 — ASCENSÃO CELESTIAL 🕊️ (2026-10-19)
+## 3.92.0 — ASCENSÃO CELESTIAL  (2026-10-19)
 
 - **NOVO ESTILO: `ascensao`** — o FX cinematográfico completo, com a
   **mensagem que VOCÊ quiser** (ela cai letra por letra, com auto-ajuste
   pra nunca vazar da tela!):
-  - ⚡ **Clarão de abertura** + vinheta escura
-  - 🏛️ **Pilar de luz descendo do céu**
-  - ⭕ **Halo rúnico**: 3 anéis + tiques + **hexagrama girando**
-  - 🪽 **ASAS DE LUZ** (2×9 penas) que se abrem e batem devagar
-  - ✨ Faíscas em estrela subindo o tempo todo
-  - 🔔 **Trilha própria**: beacon + acorde de 5 sinos + dissolução
-  - 🌍 **Partículas no mundo**: coroa de varetas END que se expande e
+  -  **Clarão de abertura** + vinheta escura
+  -  **Pilar de luz descendo do céu**
+  -  **Halo rúnico**: 3 anéis + tiques + **hexagrama girando**
+  -  **ASAS DE LUZ** (2×9 penas) que se abrem e batem devagar
+  -  Faíscas em estrela subindo o tempo todo
+  -  **Trilha própria**: beacon + acorde de 5 sinos + dissolução
+  -  **Partículas no mundo**: coroa de varetas END que se expande e
     sobe + espiral ao redor de quem recebe!
 - Funciona em `/rp admin avisar @a ascensao <texto>` **e** `/lorezone
   aviso <id> ascensao <seg> <texto>` — **12 estilos no total!**
-- O divino (sol + orbes) que você amou **continua igual** 😄
+- O efeito Divino (sol e orbes) foi preservado
 
-## 3.91.0 — Orbes de energia + Sol Sagrado ✨🔥😈 (2026-10-19)
+## 3.91.0 — Orbes de energia + Sol Sagrado  (2026-10-19)
 
-- 🌀 **ORBES DE ENERGIA ORBITANDO** (a assinatura dos rituais de
+-  **ORBES DE ENERGIA ORBITANDO** (a assinatura dos rituais de
   despertar estilo Tensura, feita com técnica própria): 6 orbes girando
   ao redor do texto no **divino** (dourados), **inferno** (brasas) e
   **demoníaco** (sangue)
-- ❌ **Feixes girando REMOVIDOS** do inferno e do demoníaco — agora só o
+-  **Feixes girando REMOVIDOS** do inferno e do demoníaco — agora só o
   divino tem (como pedido!)
-- ⭕ **FIM DEFINITIVO dos anéis "oval de pontinhos"**: anéis agora são
+-  **FIM DEFINITIVO dos anéis "oval de pontinhos"**: anéis agora são
   desenhados por varredura angular — arco liso perfeito em qualquer
   proporção
-- 😈 **demoníaco = CÍRCULO DE INVOCAÇÃO REDONDO** (centrado na tela,
+-  **demoníaco = CÍRCULO DE INVOCAÇÃO REDONDO** (centrado na tela,
   perfeitamente circular) com 3 anéis + 12 runas radiais + aura negra +
   veias + orbes de sangue
-- ✨ **divino = SOL SAGRADO**: disco radiante com degradê, anel fino e 8
+-  **divino = SOL SAGRADO**: disco radiante com degradê, anel fino e 8
   raios afilados (4 longos + 4 curtos) no lugar da "coroa" — icônico,
   limpo, bonito de se ver; o brilho da tela agora **respira** suavinho
 
-## 3.90.0 — Refinamento geral dos avisos 🔧 (2026-10-19)
+## 3.90.0 — Refinamento geral dos avisos  (2026-10-19)
 
-- ⭕ **FIM do anel oval de pontinhos**: os anéis agora são **linhas
+-  **FIM do anel oval de pontinhos**: os anéis agora são **linhas
   contínuas e lisas** (2px) — no demoníaco, no divino e no inferno
-- 😈 **demoniaco virou AURA NEGRA**: brilho radial vermelho-escuro +
+-  **demoniaco virou AURA NEGRA**: brilho radial vermelho-escuro +
   **leque de raios negros girando** + veias + **círculo macabro duplo e
   liso** em volta do texto + som do **Wither em camadas** (invocação +
   gemido)
-- ✨ **coroa de anjos redesenhada**: glow suave + anel núcleo brilhante +
+-  **coroa de anjos redesenhada**: glow suave + anel núcleo brilhante +
   acento interno — halo de verdade, sem "monte de pixels"
-- 🔥 **círculo de fogo do inferno redesenhado** (mesma técnica, paleta de
+-  **círculo de fogo do inferno redesenhado** (mesma técnica, paleta de
   brasa) + **SOM NOVO PRÓPRIO**: riser sombrio com boom grave, rumble e
   estalos de fogo (~9s) *(o link do catbox enviado deu 404 — quando
   reenviar o áudio, eu corto a parte boa e troco a faixa!)*
-- 🩸 **sangue BIZARRO**: um **CORAÇÃO GIGANTE translúcido batendo** atrás
+-  **sangue BIZARRO**: um **CORAÇÃO GIGANTE translúcido batendo** atrás
   do texto (pulsando junto com a batida do Warden) + **veias rastejando**
   dos cantos + gotas
-- 🌌 **void cósmico** (temática espacial estilo Tensura): **nebulosa**
+-  **void cósmico** (temática espacial estilo Tensura): **nebulosa**
   roxa/azul com profundidade + anel cósmico liso + estrelas
 
-## 3.89.0 — Inferno = AURA ARDENTE 🔥 (2026-10-19)
+## 3.89.0 — Inferno = AURA ARDENTE  (2026-10-19)
 
 - O inferno agora é o **par maligno do divino**: mesma técnica bonita,
   paleta de fogo
-- ✅ **Brilho radial ardente** — degradê quente (laranja → brasa) nascendo
+-  **Brilho radial ardente** — degradê quente (laranja → brasa) nascendo
   do centro da tela
-- ✅ **Leque de fogo girando** — 14 raios afilados de brasa girando NO
+-  **Leque de fogo girando** — 14 raios afilados de brasa girando NO
   SENTIDO CONTRÁRIO do divino (os dois juntos formam um sol de dois
   hemisférios: luz e fogo)
-- ✅ **Halo triplo de brasa** — 3 anéis de fogo sobre o texto
-- ❌ Fora a muralha de dentes de fogo e os pontinhos de brasa
+-  **Halo triplo de brasa** — 3 anéis de fogo sobre o texto
+-  Fora a muralha de dentes de fogo e os pontinhos de brasa
 - Som mantido (grito de ghast + fogo rugindo)
 
-## 3.88.0 — Divino = AURA SAGRADA ✨ (2026-10-19)
+## 3.88.0 — Divino = AURA SAGRADA  (2026-10-19)
 
-- ❌ Fora as **faixas verticais** e os **pontinhos** (pedido do dono!)
-- ✅ **Brilho radial contínuo**: degradê quente dourado nascendo do centro
+-  Fora as **faixas verticais** e os **pontinhos** (pedido do dono!)
+-  **Brilho radial contínuo**: degradê quente dourado nascendo do centro
   da tela e morrendo suavemente nas bordas (26 camadas acumuladas)
-- ✅ **Leque de luz celestial**: 14 raios afilados que **giram devagar**
+-  **Leque de luz celestial**: 14 raios afilados que **giram devagar**
   em volta do texto, cada um esvaindo do centro pra fora (estilo aura
   sagrada / mandala — a qualidade das animações dos mods famosos)
-- ✅ **Halo triplo**: 3 anéis dourados concêntricos sobre o texto, do mais
+-  **Halo triplo**: 3 anéis dourados concêntricos sobre o texto, do mais
   suave ao mais brilhante
 - Som celestial (coro de anjos + sino) mantido — o texto dourado agora
   flutua numa aura de verdade
 
-## 3.87.0 — Terror refinado + 😈 DEMONÍACO (2026-10-19)
+## 3.87.0 — Terror refinado +  DEMONÍACO (2026-10-19)
 
-- 🔥 **inferno** ficou BIZARRO: a tela **respira**, uma **muralha de fogo**
+-  **inferno** ficou BIZARRO: a tela **respira**, uma **muralha de fogo**
   cresce no rodapé e **brasas sobem** pela tela; o aviso vem com **grito de
   ghast** torcido + fogo rugindo
-- ✨ **divino** ficou CELESTIAL/ANGELICAL: **halo duplo dourado** sobre o
+-  **divino** ficou CELESTIAL/ANGELICAL: **halo duplo dourado** sobre o
   texto, raios de luz brancos, **faíscas que sobem** (ascensão) e o **coro
   de anjos** (allay) + sino ressoando agudo
-- 🌌 **void** ganhou o som mais FUNDO: portal em pitch 0.3 (grave demais)
+-  **void** ganhou o som mais FUNDO: portal em pitch 0.3 (grave demais)
   + **gemido sepulcral de wither** — o abismo responde
-- 🩸 **sangue** agora PULSA: véu e gotas batem em **ritmo cardíaco duplo**
+-  **sangue** agora PULSA: véu e gotas batem em **ritmo cardíaco duplo**
   (bate forte, bate fraco) com o **pulso mais profundo** (coração do Warden
   em pitch 0.4, mais alto)
-- 😈 **NOVO: demoniaco** — o mais macabro do mod: véu quase preto que
+-  **NOVO: demoniaco** — o mais macabro do mod: véu quase preto que
   **respira**, **veias de sangue** crescendo dos 4 cantos da tela, um
   **anel macabro** fechando em volta do texto e as **letras vermelhas
   ondulando** (corrompidas). Som: **invocação de wither** afinada pro fundo
 - Funciona em `/rp admin avisar` E `/lorezone aviso` — 11 estilos no total!
 
-## 3.86.0 — 10 estilos de aviso + Coração 3D bonito 🎨 (2026-10-19)
+## 3.86.0 — 10 estilos de aviso + Coração 3D bonito  (2026-10-19)
 
 - **6 estilos de aviso NOVOS** (além dos 4 existentes — agora são 10!):
-  - ⚰️ **morte** — as letras retas de sangue do ritual canônico, agora
+  -  **morte** — as letras retas de sangue do ritual canônico, agora
     também no comando (com som de âncora de respawn)
-  - 🔥 **inferno** — brasas flutuando na tela + letras laranja-fogo
-  - ❄️ **gelo** — véu glacial com cristais + letras brancas-gelo
-  - ✨ **divino** — feixes de luz dourada descendo + sino de igreja
-  - 🌌 **void** — céu estrelado do End + letras lilás
-  - 🩸 **sangue** — gotas escorrendo do topo da tela + pulso do Warden
+  -  **inferno** — brasas flutuando na tela + letras laranja-fogo
+  -  **gelo** — véu glacial com cristais + letras brancas-gelo
+  -  **divino** — feixes de luz dourada descendo + sino de igreja
+  -  **void** — céu estrelado do End + letras lilás
+  -  **sangue** — gotas escorrendo do topo da tela + pulso do Warden
 - Funcionam em `/rp admin avisar` **E** em `/lorezone aviso` (todos os 10!)
 - **Coração Canônico REDESENHADO**: máscara pixel-art de verdade (dois
   lóbulos com vale + ponta em V), extrudado com profundidade, gradiente
   de cor (rosa claro no topo → vinho na ponta), paredes escuras de
   volume e reflexo brilhante no lóbulo — mais um balanço sutil no giro.
-  Adeus pirâmide listrada! 🫀
+  Adeus pirâmide listrada!
 
-## 3.85.0 — Avisos cinematográficos na LORE ZONE 🎬 (2026-10-18)
+## 3.85.0 — Avisos cinematográficos na LORE ZONE  (2026-10-18)
 
 - **`/lorezone aviso <id> <estilo> <segundos> <texto>`** — a zona agora
   pode disparar um **AVISO de tela** quando alguém entra, com os mesmos
@@ -472,7 +472,7 @@ adaptados ao padrão do mod: **título "AVISO" grande + mensagem EMBAIXO**
   **pesadelo** (véu preto + sangue), **runico** (véu arcano + runas),
   **real** (azul-noite + dourado) e **morte** (letras retas de cima).
 - O aviso **substitui o título clássico** da zona (o som continua!) —
-  `/lorezone aviso <id> off` volta ao `✦ título ✦` de sempre.
+  `/lorezone aviso <id> off` volta ao `título formatado` de sempre.
 - Quem **já está dentro** da zona vê o aviso novo **na hora** (teste
   imediato, sem precisar sair e voltar).
 - Duração de 1 a 60 segundos por zona; o `/lorezone listar` marca as
@@ -480,7 +480,7 @@ adaptados ao padrão do mod: **título "AVISO" grande + mensagem EMBAIXO**
 - Exemplo: `/lorezone aviso floresta pesadelo 8 &4ALGO TE OBSERVA ENTRE
   AS ÁRVORES`
 
-## 3.84.0 — O CORAÇÃO CANÔNICO 3D 🫀 (2026-10-18)
+## 3.84.0 — O CORAÇÃO CANÔNICO 3D  (2026-10-18)
 
 - **Item novo**: `Coração da Vida Canônica` — só admin obtém
   (`/give <player> rptag:coracao_canon`); NUNCA spawna no mundo.
@@ -526,10 +526,10 @@ adaptados ao padrão do mod: **título "AVISO" grande + mensagem EMBAIXO**
 - **Todos os players JÁ têm vidas canônicas** — não é efeito individual.
 - **`/rp admin canon on|off`** (sem jogador): liga/desliga o MODO onde
   quem morrer PERDE UMA VIDA. Persiste no mundo.
-- **Nada no chat**: o único aviso é o BANNER "❀ LORE ON/OFF ❀" que o
+- **Nada no chat**: o único aviso é o BANNER " LORE ON/OFF " que o
   SERVIDOR INTEIRO vê (verde/vermelho, texturizado, com faixa escura).
-- Ao morrer com o modo ligado: ⚡strondo → tela avermelhada → "VOCÊ
-  PERDEU UMA VIDA" (reto, texturizado) → 🎵 o audio da lore.
+- Ao morrer com o modo ligado: strondo → tela avermelhada → "VOCÊ
+  PERDEU UMA VIDA" (reto, texturizado) →  o audio da lore.
 
 ## 3.79.0 — Sem tremido + banner legível (2026-10-17)
 
@@ -542,19 +542,19 @@ adaptados ao padrão do mod: **título "AVISO" grande + mensagem EMBAIXO**
 ## 3.78.0 — Ritual completo: STRONDO + tela vermelha + audio (2026-10-17)
 
 - Quando o portador de vida canônica morre, ao renascer:
-  1. ⚡ **STRONDO** — um trovão rasga o momento;
-  2. 🔴 **A tela fica MEIO AVERMELHADA** (véu de sangue pulsando,
+  1.  **STRONDO** — um trovão rasga o momento;
+  2.  **A tela fica MEIO AVERMELHADA** (véu de sangue pulsando,
      "respirando", com fade in/out) enquanto ele fica congelado;
-  3. 🔊 **O AUDIO da lore entra** ~1,5 s depois do trovão — só ele ouve;
-  4. 🩸 "VOCÊ PERDEU UMA VIDA" texturizado por cima de tudo.
+  3.  **O AUDIO da lore entra** ~1,5 s depois do trovão — só ele ouve;
+  4.  "VOCÊ PERDEU UMA VIDA" texturizado por cima de tudo.
 - Funciona com shaders (tudo na camada oficial de HUD).
 
 ## 3.77.0 — Banner LORE ON/OFF + canon mira players (2026-10-17)
 
 - **Dois avisos novos** (como nos exemplos): ao CONCEDER a vida
-  canônica, o jogador vê o banner verde **"❀ LORE ON ❀ / ❀ HARD-RP ON |
-  VIDAS CANNON ON ❀"**; ao TIRAR, o vermelho **"❀ LORE OFF ❀ / ❀
-  HARD-RP ON | VIDAS CANNON OFF ❀"** — texto texturizado estático (não
+  canônica, o jogador vê o banner verde **" LORE ON  /  HARD-RP ON |
+  VIDAS CANNON ON "**; ao TIRAR, o vermelho **" LORE OFF  /
+  HARD-RP ON | VIDAS CANNON OFF "** — texto texturizado estático (não
   se mexe), na camada oficial (funciona com shaders).
 - **`/rp admin canon <jogador> on|off`**: agora funciona como o efeito
   de MEDO — o admin aplica em quem quiser (persiste até outro admin
@@ -600,7 +600,7 @@ adaptados ao padrão do mod: **título "AVISO" grande + mensagem EMBAIXO**
 - Véu, bordas, faixas e som do pesadelo INTACTOS; rúnico/real/clássico
   não mudaram.
 
-## 3.73.0 — EDIÇÃO REAL 👑 (2026-10-16)
+## 3.73.0 — EDIÇÃO REAL  (2026-10-16)
 
 - **Coroas de verdade**: duas coroas douradas com joias (rubi e
   safiras) ladeiam o título "Balão de Fala".
@@ -860,7 +860,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   negrito é "fake bold" (2ª passada 0,75px, mesmo avanço).
 - Estudo do mod Fabric: balão = entidade Text Display vanilla com cooldown,
   sanitização e expiração — o rp-tag JÁ tinha equivalentes (flood-gate 250ms,
-  truncamento 96 chars, raio 64 blocos). ⚠️ O mod Fabric embute telemetria
+  truncamento 96 chars, raio 64 blocos).  O mod Fabric embute telemetria
   (`creativemode-telemetry`) — NADA disso foi copiado.
 
 ## [3.56.1] - 2026-10-08
@@ -896,12 +896,12 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
 
 ### Corrigido — X vermelho e a tooltip "tirar Morango" travada
 - O X dos emojis ficou **GRANDE (10px) e sempre visível**, e a tooltip
-  "✖ tirar Morango" **não flutua mais na frente de tudo** — o nome agora
+  " tirar Morango" **não flutua mais na frente de tudo** — o nome agora
   aparece na própria linha do título, à direita (some quando tira o mouse).
 
 ### Novo — DOWNLOAD de música pra pasta do SERVIDOR (todo mundo ouve!)
 - `/lorezone baixar <link direto .ogg/.wav>` — "⤵ Download iniciado..." /
-  "✔ Download concluído (N KB)!" e o arquivo vai pra
+  " Download concluído (N KB)!" e o arquivo vai pra
   `config/rptag/musicas/` do SERVIDOR.
 - **SYNC AUTOMÁTICO**: quando um jogador entra na zona, o servidor pergunta
   se o cliente já tem o arquivo; quem não tem **recebe os bytes do
@@ -1550,7 +1550,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   dá pra LER exatamente o que vai pro mundo antes de testar.
 - O balão da prévia cresceu pra dar bolso pro texto grande (e segue com a
   faixa de 18px quando tem adesivo — texto nunca encosta na faixa).
-- Etiqueta "👀 Prévia" movida pro pé do card (não briga mais com o balão).
+- Etiqueta " Prévia" movida pro pé do card (não briga mais com o balão).
 - Se você encher 6 emojis e não couber, o zoom cai pra 1.5x sozinho —
   nada estoura o card.
 
@@ -1574,7 +1574,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
 - **MENU BLINDADO**: o balão da prévia agora é desenhado com RECORTE dentro
   do card — impossível vazar pra fora e invadir as outras linhas, por mais
   gordo que seja o balão (nuvem + faixa + rabicho).
-- Etiqueta "👀 Prévia" em chavinha própria com filete dourado, card com
+- Etiqueta " Prévia" em chavinha própria com filete dourado, card com
   moldura dupla, vinheta suave no fundo da tela, bolinhas do pensamento
   mais juntas.
 
@@ -1605,7 +1605,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   **rabinho de bolinhas que diminuem descendo em direção à cabeça** (no lugar
   do rabicho comum). No mundo E na prévia do menu.
 - **CARTÃO DE PRÉVIA no menu**: a prévia agora fica dentro de um quadro
-  próprio com etiqueta "👀 Prévia:" — o jogador sabe EXATAMENTE onde olhar
+  próprio com etiqueta " Prévia:" — o jogador sabe EXATAMENTE onde olhar
   para ver como o balão vai ficar. Prévia maior (120px de largura mínima).
 - **PILHA CONTA AS BOLINHAS**: balões de pensamento reservam o espaço do
   rabinho na pilha — nada de um balão invadir as bolinhas do outro.
@@ -1662,10 +1662,10 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   que o fundo (era quase invisível na escuridão do painel), cada emoji agora
   senta num **CHIP da própria cor** (fundo colorido — mesmo que a arte não
   apareça num cliente estranho, o seletor continua utilizável e bonito).
-- **[✖] DE REMOVER SEMPRE VISÍVEL**: o adesivo livre da prévia agora tem uma
-  caixinha vermelha [✖] grudada nele — clicou, tirou (não precisa mais caçar
+- **[] DE REMOVER SEMPRE VISÍVEL**: o adesivo livre da prévia agora tem uma
+  caixinha vermelha [] grudada nele — clicou, tirou (não precisa mais caçar
   o hover).
-- Contador honesto: "✨ Emojis (2/6 na fala · 1 no balão)".
+- Contador honesto: " Emojis (2/6 na fala · 1 no balão)".
 
 ### Diagnóstico
 - A página de adesivos ganhou um **cartão de teste com 3 quadradinhos
@@ -1678,7 +1678,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
 
 ### Corrigido
 - **MODO BALÃO AGORA DESLIGA DE VERDADE**: desligou (`/balao modo off` ou o
-  botão ☾)? Suas falas vão SÓ pro chat e o balão que estava na cabeça SOME
+  botão )? Suas falas vão SÓ pro chat e o balão que estava na cabeça SOME
   na hora (antes ele continuava aparecendo).
 - **SÓ QUEM O ADMIN LIBERAR USA BALÃO**: o padrão do servidor agora é
   NINGUÉM — o admin libera com `/rp admin balao <jogador> on` (que também já
@@ -1707,7 +1707,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   contorno anti-aliased — visual caprichado estilo QSMP.
 
 ### Técnico
-- `OpenBubbleStylePayload` agora carrega o modo balão (o botão ☾ abre
+- `OpenBubbleStylePayload` agora carrega o modo balão (o botão  abre
   refletindo o estado real do servidor). Adesivos do menu gerados em código
   (`StickerArt`, runs da spritesheet — 64 emojis embutidos).
 
@@ -1759,7 +1759,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   na posição real.
 - Dica do topo agora explica: "Prévia REAL: é assim que seu balão aparece no
   jogo".
-- Etiqueta da placa "🖼 Moldura" não é mais cortada pelos botões; fileiras
+- Etiqueta da placa " Moldura" não é mais cortada pelos botões; fileiras
   respiram (botoes de moldura 143/161/179, adesivos 198, emojis 221, salvar
   244).
 
@@ -1786,8 +1786,8 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
 
 ### Mudado
 - **MENU REDESENHADO EM PLACAS DE QUADRINHOS**: painel com moldura de tinta
-  grossa, sombra dura e brilho (cartoon de verdade), **placas "🎨 Cores" e
-  "🖼 Moldura"** com etiquetas douradas, faixa de título com sublinhado e
+  grossa, sombra dura e brilho (cartoon de verdade), **placas " Cores" e
+  " Moldura"** com etiquetas douradas, faixa de título com sublinhado e
   slots de emoji com caixinha própria. O tema TODO do menu fica em 10
   constantes (TINTA/FUNDO/OURO/...) — fácil de alterar.
 - Fileira do resumo hex removida (as paletas já mostram a seleção) — menu
@@ -1835,13 +1835,13 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   simulação para acrescentar ele à fala — um clique por emoji, **até 6**. Os
   emojis extra aparecem DENTRO do balão acompanhando o texto (arte colorida
   de verdade), e a simulação do `/balao` mostra o resultado exato. Fileira
-  nova "✨ Emojis (n/6)" com slots: **✖/clique tira**, **+ abre o teclado**.
+  nova " Emojis (n/6)" com slots: **/clique tira**, **+ abre o teclado**.
 - **PÁGINA FOFA no teclado de adesivos**: 16 emojis novos desenhados à mão no
   mesmo estilo pixel-art — **Laço, Dinossauro, Planeta, Galáxia, Foguete,
   Arco-íris, Patinha, Borboleta, Chapéu de mago, Unicórnio, Raposa, Pinguim,
   Cogumelo, Fantasma, Rex e Varinha mágica** — pra fala carregar história e
   personalidade (fofo pra criançada!). O teclado agora tem **2 páginas**
-  (Clássicos 48 + Fofos 16 = **64 adesivos**) com botão "✨ Fofos ▶ /
+  (Clássicos 48 + Fofos 16 = **64 adesivos**) com botão " Fofos ▶ /
   ◀ Clássicos".
 - Spritesheet ampliada para 64x80 e fonte de bitmap com 64 glifos
   (U+E000–U+E03F).
@@ -1929,7 +1929,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
 - **COR DA LETRA**: modo **Auto** (branco/preto conforme o fundo, contraste
   perfeito) ou 8 cores de chat à 1 clique. Salva no mundo, viaja pra todos e
   aparece na mensagem de confirmação ("· Letra #RRGGBB / auto").
-- Rodapé da simulação com o resumo `#fundo · ▣ borda · ✎ letra`.
+- Rodapé da simulação com o resumo `fundo · borda · letra`.
 
 ## [3.4.0] - 2026-09-10
 
@@ -1939,7 +1939,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   não estava funcionando). Arrastar continua disponível pra cor custom.
 - **Diagnóstico de jar embutido**: a tela mostra a versão do CLIENTE (canto
   superior direito) e a mensagem de salvar mostra a versão do SERVIDOR
-  ("💾 Salvo no servidor vX.Y.Z!"). Se diferirem, o jar do lado antigo precisa
+  (" Salvo no servidor vX.Y.Z!"). Se diferirem, o jar do lado antigo precisa
   ser trocado — essa era a causa real de "nada muda".
 - Teclado de adesivos com **imagens grandes (20px)** e ponto de cor de
   identidade em cada célula.
@@ -1952,7 +1952,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
 ## [3.3.0] - 2026-09-10
 
 ### Adicionado
-- **2 seletores INDEPENDENTES**: "✦ Dentro" pinta o recheio e "▣ Borda" pinta
+- **2 seletores INDEPENDENTES**: " Dentro" pinta o recheio e "▣ Borda" pinta
   a moldura — cada um com seu próprio quadrado e faixa de cores (fim de
   alternar alvo). Mexeu no da borda? Já vira PERSONALIZADA.
 - **6 botões explícitos**: cor da borda (**▣ Auto / ▣ Minha cor / ▢ Sem
@@ -1994,7 +1994,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   **migram sozinhos** para o adesivo livre único — 1 adesivo por balão.
 - **Cor "não salvava"**: o botão Salvar ficava na ESQUERDA e o Cancelar na
   DIREITA (ao contrário do hábito do Minecraft) — era fácil cancelar tudo sem
-  querer. Agora **✔ Salvar fica na direita** e o **ESC também salva**.
+  querer. Agora ** Salvar fica na direita** e o **ESC também salva**.
 
 ### Adicionado
 - Botão **↺ Padrão** para restaurar o estilo original na hora.
@@ -2175,7 +2175,7 @@ Todas as mudanças notáveis deste mod são documentadas aqui.
   - `/rp admin bolha <jogador> on|off` — admin ativa/desativa para outro jogador
 - **Tela de personalizacao** (`/balao`) — abre uma GUI com preview ao vivo:
   - Sliders Vermelho/Verde/Azul + 12 cores rapidas
-  - Emojis decorativos antes/depois do texto (botoes rapidos: ** ✦ ★ ♥ ⚔ ☾ ✿ ♪ ⚡** —
+  - Emojis decorativos antes/depois do texto (botoes rapidos: **        ** —
     ou digite os seus na caixa)
   - 7 fundos: Translucido, Escuro, Claro, Gradiente, **Papel**, **Noite** e
     **Madeira** (texturas exclusivas empacotadas no mod)

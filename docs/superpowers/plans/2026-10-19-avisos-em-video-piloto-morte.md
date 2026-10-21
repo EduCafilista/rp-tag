@@ -1,6 +1,6 @@
 # Avisos em vídeo — piloto MORTE (4.2.0) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>**For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** O aviso MORTE "Linha Reta" (estilo 4) passa a tocar um vídeo renderizado no Blender (pares JPEG cor+alfa, 1280×720, 24 fps) com o texto e os sons de sempre por cima, e volta sozinho ao FX procedural em qualquer falha.
 

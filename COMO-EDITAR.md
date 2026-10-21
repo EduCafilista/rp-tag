@@ -1,87 +1,104 @@
-# 🛠️ COMO EDITAR E COMPILAR o RP Tag
+# Desenvolvimento e compilação
 
-> Guia pra quem vai **mexer no código** do mod. O diário de bordo completo do
-> projeto (arquitetura, decisões, receitas de build/teste) está no
-> **`WALKTHROUGH.md`** — lê ele depois deste.
+Este guia descreve o ambiente de desenvolvimento do RP Tag. Consulte
+[ENTREGA.md](ENTREGA.md) para arquitetura e convenções e
+[WALKTHROUGH.md](WALKTHROUGH.md) para o registro técnico histórico.
 
----
+## Requisitos
 
-## 1. O que instalar (uma vez só)
+| Ferramenta | Uso |
+| --- | --- |
+| JDK 21 | Compilação e execução |
+| Git | Controle de versão |
+| Python 3 | Execução de `check.py` e ferramentas de arte |
+| Pillow | Validação e composição dos arquivos de imagem |
+| Blender 5.2 | Produção das cenas de animação, quando necessário |
+| Editor ou IDE com suporte a Java | Edição e navegação no código |
 
-| Programa | Onde | Pra quê |
-|---|---|---|
-| **JDK 21** | https://adoptium.net (Temurin 21) | compilar |
-| **IntelliJ IDEA Community** | https://www.jetbrains.com/idea/download (opcional, mas recomendo) | editar com autocomplete |
-| Git | https://git-scm.com (opcional) | versionar suas mudanças |
+Utilize o Gradle Wrapper do repositório; uma instalação global de Gradle não é
+necessária. O primeiro build baixa dependências e prepara o ambiente Minecraft.
+O tempo e o consumo de memória dependem da máquina e do estado do cache.
 
-> Windows: ao instalar o JDK, marque "Set JAVA_HOME" se a opção existir.
+## Compilação
 
-## 2. Compilar (a prova de tudo)
+Execute os comandos na raiz do repositório.
 
-Abra o terminal **na pasta extraída** e rode:
+```powershell
+# Windows
+.\gradlew.bat build
+python check.py
+```
 
-- **Windows:** `gradlew.bat build`
-- **Linux/Mac:** `./gradlew build`
+```bash
+# Linux e macOS
+./gradlew build
+python3 check.py
+```
 
-O **primeiro build demora** (baixa o Gradle, o Minecraft e o NeoForge —
-uns 5~15 min conforme a internet) e **precisa de ~4 GB de RAM livres**
-(é o build padrão de mods NeoForge: ele descompila o Minecraft uma vez e
-guarda no cache; das outras vezes é rapidinho).
+Na versão atual do código, o resultado é `build/libs/rptag-4.5.0.jar`.
+Remova o JAR anterior de `mods/` antes de testar uma atualização.
 
-✅ O jar pronto aparece em **`build/libs/rptag-4.2.0.jar`** — é esse que
-vai na pasta `mods` do jogo/servidor (sempre APAGUE o jar antigo antes de
-pôr o novo, no SERVIDOR e no CLIENTE!).
+## Testes
 
-## 3. Testar direto no jogo (sem servidor de verdade)
+| Verificação | Comando no Windows |
+| --- | --- |
+| Testes Java | `.\gradlew.bat test` |
+| Build completo | `.\gradlew.bat clean build` |
+| Verificações do projeto | `python check.py` |
+| Ferramentas de arte | `python -m unittest discover -s arte/tests -v` |
+| Integridade dos assets de vídeo | `python arte/validar.py` |
 
-- `gradlew.bat runClient` — abre um Minecraft 1.21.1 com o mod carregado
-  (cria a pasta `run/` com o mundo de teste)
-- `gradlew.bat runServer` — sobe um servidor de teste (aceite o eula em
-  `run/eula.txt` na primeira vez)
+As contagens de testes variam entre versões. Consulte a saída da execução e os
+relatórios em `build/reports/tests/`; não utilize contagens históricas como
+critério de sucesso. Testes automatizados não substituem a verificação no jogo
+de alterações visuais ou de comportamento.
 
-## 4. Onde mexer (mapa rápido)
+## Ambiente de teste no jogo
 
-| Quero mudar... | Arquivo |
-|---|---|
-| Visual do balão no mundo | `src/main/java/dev/rptag/client/BubbleRenderer.java` |
-| **Forma/estilo do balão (geometria)** | `src/main/java/dev/rptag/client/BubbleGeometry.java` (Java puro — testa com `tools/teste-geometria.sh`) |
-| Tela de personalização `/balao` | `src/main/java/dev/rptag/client/BubbleStyleScreen.java` |
-| Comandos de chat (`/g /s /w /pensar /me /do`) | `src/main/java/dev/rptag/ChatCommands.java` |
-| Comando `/rp` e ajuda | `src/main/java/dev/rptag/RPCommands.java` |
-| Molduras/cores/adesivos (dados) | `src/main/java/dev/rptag/BubbleStyle.java` |
-| Efeito do MEDO | `src/main/java/dev/rptag/RPEffects.java` + `client/ClientEffects.java` |
-| Zonas de lore | `src/main/java/dev/rptag/LoreZones.java` + `LoreZoneCommands.java` |
-| **Barreira/varinha da zone** | `client/ZoneVisualizer.java` + `LorezoneWand.java` + `ZoneShowPayload.java` |
-| **Vidas canônicas (ritual)** | `CanonLife.java` (+ `CanonCoracaoBlock.java`, `client/CanonCoracaoRenderer.java`) |
-| **Um aviso cinematográfico (FX)** | `src/main/java/dev/rptag/client/<Estilo>AvisoFx.java` |
-| **Qual FX toca em cada estilo** | `client/ClientEffects.java` (`startScreenText`) |
-| **Motor compartilhado dos FX** | `src/main/java/dev/rptag/client/AvisoFxUtil.java` |
-| **Registrar uma camada nova de tela** | `client/ClientGuiLayers.java` (`registerAboveAll`) |
-| **Música custom da zone** | `MusicSync.java` + `client/MusicaCustom.java` |
-| Texturas (balão, molduras, rabicho...) | `src/main/resources/assets/rptag/textures/gui/` |
-| Textos no jogo (PT/EN) | `src/main/resources/assets/rptag/lang/pt_br.json` e `en_us.json` |
+- `.\gradlew.bat runClient`: inicia o cliente de desenvolvimento; utiliza `run/`.
+- `.\gradlew.bat runServer`: inicia o servidor de desenvolvimento; utiliza `run-server/`.
+- `.\gradlew.bat runClient -PrptagTeste`: conecta ao servidor local de teste
+  em `127.0.0.1:25565`, quando disponível.
 
-⚠️ **A versão do mod fica em 3 lugares** (mude os 3 juntos):
-`build.gradle` (`version = '...'`), `RPTagMod.java` (`VERSION = "..."`) e
-`src/main/resources/META-INF/neoforge.mods.toml` (`version="..."`).
+A primeira execução do servidor exige a leitura e aceitação do EULA do
+Minecraft em `run-server/eula.txt`. O usuário responsável pelo ambiente deve
+realizar essa aceitação.
 
-## 5. Checklist antes de entregar
+Se o RCON estiver habilitado no ambiente local, `tools/rcon.py` lê a configuração
+de `run-server/server.properties`. Não versione senhas, dados de mundo ou arquivos
+de configuração do ambiente de execução.
 
-1. `gradlew build` sem erro
-2. `python3 check.py` → **337 checks, 0 FAIL** (no Windows: `py check.py`) e `./gradlew test` → **26 testes JUnit**
-3. Testou no jogo (runClient) o que você mexeu
-4. Atualizou `CHANGELOG.md` e o `WALKTHROUGH.md`
-5. Comita (`git add -A && git commit -m "o que mudou"`)
+## Mapa do código
 
-## 6. Regras do projeto (resumo — detalhes no WALKTHROUGH.md §6)
+| Área | Arquivos principais |
+| --- | --- |
+| Inicialização e versão | `src/main/java/dev/rptag/RPTagMod.java` |
+| Comandos e ajuda | `src/main/java/dev/rptag/RPCommands.java` |
+| Chat | `src/main/java/dev/rptag/ChatCommands.java` |
+| Personas | `src/main/java/dev/rptag/PersonaCommands.java` |
+| Dados persistentes | `src/main/java/dev/rptag/RPWorldData.java` |
+| Zonas de lore | `LoreZones.java` e `LoreZoneCommands.java` |
+| Vidas canônicas | `CanonLife.java` e `CanonCoracaoBlock.java` |
+| Balões no mundo | `client/BubbleRenderer.java` e `client/BubbleGeometry.java` |
+| Personalização de balões | `client/BubbleStyleScreen.java` |
+| Roteamento dos avisos | `client/ClientEffects.java` |
+| Efeitos de cada estilo | `client/*AvisoFx.java` |
+| Player de vídeo | `client/VideoFx.java` e `client/VideoFrameLoader.java` |
+| Camadas de interface | `client/ClientGuiLayers.java` |
+| Cenas e exportação | `arte/` |
+| Traduções | `src/main/resources/assets/rptag/lang/` |
 
-- Nada de telemetria/coleta de dados. NUNCA.
-- Ícone do medo = foto inteira (não recortar/redesenhar).
-- O rabicho do balão é pequeno e de tamanho FIXO (nunca escala).
-- Medo usa camada oficial de HUD (`registerAboveAll`) — funciona com shaders.
-- **Avisos**: título "AVISO" letra por letra, **sem auto-ajuste no título**; a mensagem
-  **sempre embaixo** (`translate(cx - w*S2/2, cy + 25*k)`). Nunca `ty - 12*k`.
-- **Não redesenhar** o que já foi aprovado sem o dono pedir (vale pra balão, canon, FX).
-- Publicação: só a versão atual fica no GitHub (`PUBLICAR.md`).
+Os caminhos abreviados da tabela pertencem a `src/main/java/dev/rptag/`.
 
-Bom código! 🎈
+## Convenções e entrega
+
+1. Consulte o estado do Git antes de editar e preserve alterações de outros trabalhos.
+2. Mantenha a versão coerente em `build.gradle`, `RPTagMod.VERSION`,
+   `META-INF/neoforge.mods.toml` e no log de inicialização de `ClientEffects`.
+3. Execute as verificações relacionadas à alteração e confira o resultado no jogo.
+4. Atualize o changelog e o registro técnico com resultados efetivamente observados.
+5. Revise o diff e inclua no commit apenas os arquivos do trabalho concluído.
+6. Siga [PUBLICAR.md](PUBLICAR.md) para distribuição.
+
+Não inclua telemetria, dependências ou mudanças visuais fora do escopo aprovado.
+As mensagens de commit devem descrever a alteração sem trailers de ferramentas.

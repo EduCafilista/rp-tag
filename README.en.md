@@ -1,162 +1,148 @@
 # RP Tag
 
-![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62a552) ![NeoForge](https://img.shields.io/badge/NeoForge-21.1.x-orange) ![License](https://img.shields.io/badge/License-MIT-blue)
+Roleplay mod for Minecraft 1.21.1 and NeoForge. Features include character
+identities, proximity chat, speech bubbles, screen notifications, lore zones,
+and canonical lives.
 
-**A NeoForge 1.21.1 mod** — the essential RP kit for lore servers: **personas** (become someone else), **local chat** with channels, **dice rolls**, **lore zones**, **speech bubbles** above heads and the **● ʀᴘ / ○ ᴏꜰꜰ ʀᴘ** tag on players' names and in the TAB list.
+[Documentação em português](README.md)
 
-> 🌎 **Idioma / Language:** [Português (BR)](README.md) | **English**
->
-> 📥 **Download:** grab `rptag-4.2.0.jar` (~10 MB) from the [Releases page](https://github.com/EduCafilista/rp-tag/releases/latest).
->
-> 🧹 **Only the newest version stays published** — old releases are removed every cycle. The jar does **not** live in the repository (only in Releases).
+## Projects and versions
 
-## ✨ Features
+| Project | Source version | Maintenance | Location |
+| --- | --- | --- | --- |
+| RP Tag | 4.5.0 | Active development | Repository root |
+| Portais da Lore | 1.3.2 | Development suspended | [portais-da-lore](portais-da-lore/) |
 
-### 🎭 Persona — be whoever you want
-- `/persona create "Lord Aldric"` — the **character name replaces the nick** on the nametag, chat and TAB (also turns RP on)
-- `/persona age 24` · `/persona desc "A knight seeking redemption"` — hover tooltip on the name
-- `/persona show [player]` — full card · `/persona off` — back to your nick
+JAR files are distributed through [GitHub releases](https://github.com/EduCafilista/rp-tag/releases).
+The published version may differ from the source version while a release is
+being prepared. Binary distributions are not committed to Git.
 
-### 💬 Local RP chat
-- Plain chat is **local** (40 blocks) — far players can't hear you
-- `/s <msg>` **shout** (100 blocks, CAPS) · `/w <msg>` **whisper** (5 blocks)
-- `/me <action>` → `✦ Lord Aldric walks through the forest` · `/do <scene>` *(admin only)* → `✦ the door creaks open`
-- `/g <msg>` global chat · admins: `/rp admin chatlocal on|off`
+## Requirements and installation
 
-### 🗨️ Speech bubbles
-- What you type shows in a **rounded bubble above your head** — perfect for **eggs, kids and mic-less players** (QSMP style)
-- Automatic line wrap; display time scales with message length
-- **Bubble mode** — speech becomes **bubble-only** (no chat text!): `/balao modo on` for yourself · `/rp admin bolha <player> on` set by admins
-- **MENU with LIVE CHAT SIMULATION**: a `<Você> speech` line + the full bubble
-  reacting instantly to EVERYTHING — fill, border, frame, TEXT color and sticker
-- **Comic-style bubble, real smooth texture**: true rounded pill (anti-aliased),
-  full outline and tail — **everything picked on the COMIC-BOOK PLATES menu** (ink frames, gold
-  labels, guide zones that light up when you grab a sticker) (`/balao`)
-  · the menu preview uses the REAL in-world pill (same rounded texture, tail
-  and all 6 frames drawn for real — see the cloud, dashes and comic style
-  before saving) · **6 frames with their
-  own buttons**: Classic, Cartoon (thick), Double, **Dashed (straight little
-  strokes), Thought** — fluffy cloud with a **trail of descending dots, classic
-  Monica's Gang thought-bubble style!** — **and Comic** — the big classic comic
-  balloon, puffy with thick ink and a gelatinous shine · **2 independent
-  pickers** + **one-click palettes** (8 ready colors each — no dragging!) ·
-  **border color in 3 buttons**: Auto / My color / None · **TEXT color**:
-  Auto (auto-contrast) + 8 colors
-- **FREE STICKER with the mouse**: 64 stickers with their REAL ART on the
-  keyboard, in **high resolution (16px with outline, shine and shading — the
-  polish of famous emoji mods)**, in **2 pages** — Classics (48) and **Cute** (16: bow,
-  dinosaur, planet, galaxy, rocket, rainbow, paw, unicorn, fox, penguin,
-  ghost, mushroom...) — pick by sight, then **click ANY point of the bubble**
-  to place it; **crosshair + % on screen** show exactly where it is ·
-  right-click removes · **ESC or ✔ Save** stores everything ·
-  **duration slider** (2–20s)
-- **MULTIPLE EMOJIS in the speech**: grab a sticker and **click outside the
-  bubble** to add it to the speech (one per click, **up to 6**) — the emojis
-  show INSIDE the bubble, exactly like they will in the world · every kid
-  builds their own combo · ✨ slots on the screen ("✖" removes, "+" opens
-  the keyboard)
-- **FAMOUS-MOD-STYLE ANIMATION**: bubbles are born with a **bouncy pop-in**,
-  gently float upward while you talk and leave with a smooth **fade-out** ·
-  **STACK of up to 3 bubbles** per player — newest near the head, older ones
-  rise (just like Chat Bubbles/TalkBubbles)
-  · **ADMIN-GRANTED bubbles** (default: nobody): `/rp admin balao <player> on`
-  grants + turns their bubble mode on · `off` revokes · `/rp admin balaolist`
-  lists granted players · **mode OFF hides the bubble instantly**
-  · menu rebuilt: big font, 12-color one-click palettes, compact layout
-  · **`/rp admin bolhas on|off`** — global toggle
+- Minecraft 1.21.1.
+- NeoForge 21.1.x; the development environment uses 21.1.249.
+- Java 21.
 
-### 🎲 Dice rolls
-- `/roll` (d20) · `/roll d100` · `/roll 2d6+1 <reason>` — announced nearby, with dice breakdown
+1. Install NeoForge on the server and on clients that will use visual features.
+2. Download the required RP Tag version from the releases page.
+3. Remove the previous RP Tag JAR from `mods/` before adding the new file.
+4. Install the same version on clients for speech bubbles, animations, screens,
+   and other rendering features.
 
-### 📜 Lore zones
-- Admins: `/lorezone criar <id> <radius> [title]` — regions that show an **epic screen title**, sound or a full
-  **cinematic warning** (`/lorezone aviso <id> <style> <seconds> <text>`) when a player walks in
-- **Warning shown ONCE per player** (saved forever) · `/lorezone avisos reset <player>` shows it again
-- **Loop soundtrack** with a **maximum time**: `/lorezone musica <id> <sound>`,
-  `... intervalo <10-600> <sound>`, `... unica <sound>` (first entry only). 27 built-in presets
-  (`/lorezone musicas`), custom `.ogg` from your client or a direct link
-- **Admin-only barrier view** — `/lorezone mostrar <id> [seconds]` draws the zone sphere (cyan) and the
-  vertical walls (yellow) **only on the admin's screen**; `/lorezone esconder` hides it.
-  `/lorezone varinha` gives the `rptag:lorezone_wand` item: right-click shows, shift-right-click hides
-- **Vertical band (the cave case)** — `/lorezone vertical <id> <minY> <maxY>` makes the warning fire **only
-  between those Y levels**, so someone at the surface is NOT warned until they reach the cave.
-  `... auto` restores the full sphere (old zones keep working unchanged)
+Server chat and identity features differ from client rendering features. Install
+the mod on both sides for the complete experience.
 
-### 🏷️ RP/OFF RP tag
-- **● ʀᴘ** (cyan dot) or **○ ᴏꜰꜰ ʀᴘ** (gray dot) on the name and **also in the TAB list** — small caps, only the tag is colored
-- Nametag, chat and TAB · `/rp` toggles, `/rp on|off|status`, `/rp set <player> on|off` (admin)
+## Features
 
-### 🫀 Canon lives
-- `/rp admin canon on|off` — every player gets **5 canon lives**; dying costs one, with the full ritual
-  (thunder, red veil, lore audio, "VOCÊ PERDEU UMA VIDA — RESTAM N")
-- **Last life**: "TOME CUIDADO" warning + 30 s of extreme fear · 5-minute anti-chain protection
-- **Deaths outside RP don't count**: if the **killer was OFF RP**, the victim **loses no canon life**
-  (no ritual, no warning, no sound). Mobs, falls, lava, fire and `/kill` still count
-- **🫀 Canon Heart** item (`/give <player> rptag:coracao_canon`) — shift + right-click gives 1 life back
+### Character identity
 
-- **Everything saved to the world** — survives relog, death and restarts. Everyone starts in **OFF RP**.
-- **No dependencies** — only NeoForge.
+RP and OFF RP status appears in chat, the player list, and nameplates. The game
+uses the labels `● ʀᴘ` and `○ ᴏꜰꜰ ʀᴘ`.
 
-## 📥 Installation
+Commands retain their Portuguese names, including in an English client.
 
-**Requirements:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
+| Command | Purpose |
+| --- | --- |
+| `/rp on` and `/rp off` | Change roleplay status |
+| `/rp status` | Inspect status and diagnostic information |
+| `/persona criar <name>` | Create a character identity |
+| `/persona idade <number>` | Set age |
+| `/persona desc <text>` | Set description |
+| `/persona ver [player]` | View a character profile |
+| `/persona off` | Remove the character identity |
+| `/roll` | Roll dice |
 
-1. Install **NeoForge 1.21.1** on your server.
-2. Drop `rptag-4.2.0.jar` into the **server's** `mods/` folder.
-3. *(Recommended)* Players drop the same jar into the **client's** `mods/` folder — that enables speech bubbles and the name tag above heads.
+### Chat and speech bubbles
 
-## 🔧 Building from source
+Proximity chat includes shout, whisper, and global channels. Speech bubbles
+support configurable frames, colors, duration, and stickers, with up to three
+stacked bubbles per player. Administrators control access to bubbles.
 
-Requirements: **JDK 21** and internet access.
+| Command | Purpose |
+| --- | --- |
+| `/g <message>` | Global chat |
+| `/s <message>` | Shout |
+| `/w <message>` | Whisper |
+| `/me <action>` | Character action |
+| `/do <text>` | Environment description, subject to administrative permission |
+| `/balao` | Open customization |
+| `/balao teste <text>` | Preview a speech bubble |
+| `/balao modo on` and `/balao modo off` | Change speech display mode |
+
+### Screen notifications
+
+Administrators use `/rp admin avisar <player|@a> <style> <message>` to display a
+title and message. Available style identifiers are `classico`, `pesadelo`,
+`runico`, `real`, `morte`, `inferno`, `gelo`, `divino`, `void`, `sangue`,
+`demoniaco`, and `pesadelo2`.
+
+In source version 4.5.0, Morte, Inferno, and Gelo can use animations rendered in
+Blender. Procedural effects remain available when video is disabled, unavailable,
+or fails. Message text is rendered by the client separately from the video.
+
+Use `/rpfx status`, `/rpfx on`, or `/rpfx off` on the client. Settings are stored
+in `config/rptag/cliente.properties`.
+
+### Lore zones
+
+Zones associate notifications, sound effects, and music with regions of the world.
+Features include vertical limits, administrator-only boundary visualization, and
+an inspection wand.
+
+- `/lorezone listar`: list configured zones.
+- `/lorezone vertical <id> <minY> <maxY>`: restrict the height range.
+- `/lorezone vertical <id> auto`: restore the complete spherical region.
+- `/lorezone mostrar <id> [seconds]`: display boundaries to the administrator.
+- `/lorezone esconder`: stop boundary visualization.
+- `/lorezone varinha`: obtain the inspection tool.
+- `/lorezone musicas`: list sound presets.
+
+Music options include presets, custom files, and supported URLs. Refer to the
+in-game command help for individual arguments.
+
+### Canonical lives
+
+Administrators enable the system with `/rp admin canon on`. Each player starts
+with five lives. Features include loss and recovery notifications, protection
+against repeated losses, and a canonical heart that restores a life.
+
+Kills by an OFF RP player do not deduct canonical lives. Other causes follow the
+system rules. Since version 4.4.0, `/rp admin vida` can inspect and administer lives.
+
+## Development
+
+Use the included Gradle Wrapper.
+
+```powershell
+# Windows
+.\gradlew.bat build
+python check.py
+```
 
 ```bash
+# Linux and macOS
 ./gradlew build
+python3 check.py
 ```
 
-The jar ends up at `build/libs/rptag-4.2.0.jar`.
+The build runs Java tests and produces `build/libs/rptag-4.5.0.jar`. Initial
+builds require additional time to download dependencies and prepare Minecraft.
 
-## 🎨 Customizing
+## Documentation
 
-- **Tag text/colors**: `RPTags.java` (`TAG_ON`, `TAG_OFF`, `ChatFormatting.AQUA`/`GRAY`)
-- **Bubble colors default**: `RPWorldData.DEFAULT_COLOR`; players customize with `/cor`
-- **Chat ranges**: `RPWorldData` (`LOCAL_RANGE`, `SHOUT_RANGE`, `WHISPER_RANGE`)
-- **Pill nametag style**: `NameplateRenderer.java` → `BADGE_ENABLED = true`
-- **Command messages**: `RPCommands.java`, `ChatCommands.java`
+| Document | Contents |
+| --- | --- |
+| [COMO-EDITAR.md](COMO-EDITAR.md) | Development setup, builds, and tests (Portuguese) |
+| [ENTREGA.md](ENTREGA.md) | Architecture and project conventions (Portuguese) |
+| [PUBLICAR.md](PUBLICAR.md) | Release preparation and publication (Portuguese) |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+| [WALKTHROUGH.en.md](WALKTHROUGH.en.md) | Historical technical notes in English |
+| [WALKTHROUGH.md](WALKTHROUGH.md) | Detailed technical record in Portuguese |
+| [arte/README.md](arte/README.md) | Animation production and validation (Portuguese) |
 
-## 🗂 Structure
+Files under `docs/superpowers/` record designs and implementation plans. Their
+presence does not establish that a feature has been implemented or released.
 
-```
-src/main/java/dev/rptag/
-  RPTagMod.java            # main class (@Mod)
-  RPTags.java              # ● ʀᴘ / ○ ᴏꜰꜰ ʀᴘ tag builder
-  Persona.java             # character identity (record)
-  RPWorldData.java         # world-saved state (SavedData)
-  SyncRPStatePayload.java  # server -> client sync packets
-  PersonaSyncPayload.java
-  ChatBubblePayload.java   # speech bubble packet
-  ModNetworking.java       # packet registration
-  ServerEvents.java        # state, personas, names, local chat
-  RPChat.java              # channel formatting + bubble spawner
-  RPCommands.java          # /rp
-  PersonaCommands.java     # /persona
-  ChatCommands.java        # /g /s /w /me /do (admin)
-  RollCommands.java        # /roll
-  LoreZones.java           # lore zones (sphere + vertical band), one-shot warning, music
-  LoreZoneCommands.java    # /lorezone (criar, vertical, mostrar, esconder, varinha, avisos, som, musica)
-  LorezoneWand.java        # admin wand item
-  ZoneShowPayload.java     # admin-only barrier packet
-  CanonLife.java           # canon lives ritual (OFF-RP killer doesn't count)
-  MusicSync.java           # streams custom music to the client
-  client/
-    AvisoFxUtil.java       # shared FX engine (Buf/vinheta/aditivo/tocar)
-    *AvisoFx.java          # 9 cinematic warnings (divino, demoniaco, sangue, void,
-                           #   pesadelo, pesadelo2, inferno, gelo, runico)
-    MorteAvisoFx.java      # "Linha Reta" death warning (style 4)
-    ZoneVisualizer.java    # admin-only lore zone barrier
-    ClientEffects.java     # routes each style to its FX + canon veil/banner
-    (bubbles renderer, nametag, caches)
-```
+## License
 
-## 📄 License
-
-[MIT](LICENSE)
+Distributed under the [MIT license](LICENSE).

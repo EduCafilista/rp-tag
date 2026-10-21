@@ -1,13 +1,15 @@
-# 🧭 WALKTHROUGH — Memória de trabalho do RP Tag
+# WALKTHROUGH — Memória de trabalho do RP Tag
 
-> **Este documento é o diário de bordo do projeto.** Ele existe para que qualquer
-> pessoa (ou assistente) que continuar este trabalho saiba **o que já foi feito,
-> como as coisas funcionam, o que NÃO fazer e como construir/testar/entregar** —
-> sem se perder e sem refazer o que já passou por testes.
+> Registro técnico histórico. As entradas preservam o contexto de cada versão e podem conter procedimentos substituídos. Consulte os guias atuais para instruções operacionais.
+
+>**Este documento é o diário de bordo do projeto.** Ele existe para que qualquer
+>pessoa (ou assistente) que continuar este trabalho saiba **o que já foi feito,
+>como as coisas funcionam, o que NÃO fazer e como construir/testar/entregar** —
+>sem se perder e sem refazer o que já passou por testes.
 >
-> 📌 **Regra: atualizar este documento NO FIM DE CADA CICLO** (junto com o
-> CHANGELOG). O guia de *jogador* fica no `README.md` e no `COMO-USAR.md`;
-> o registro detalhado por versão fica no `CHANGELOG.md`.
+> **Regra: atualizar este documento NO FIM DE CADA CICLO** (junto com o
+>CHANGELOG). O guia de *jogador* fica no `README.md` e no `COMO-USAR.md`;
+>o registro detalhado por versão fica no `CHANGELOG.md`.
 
 ---
 
@@ -23,7 +25,7 @@
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
 
-### 🔥❄️ 4.5.0 (2026-10-20): INFERNO e GELO em vídeo (redesign híbrido)
+### 4.5.0 (2026-10-20): INFERNO e GELO em vídeo (redesign híbrido)
 - **Spec e plano:** `docs/superpowers/specs/2026-10-20-inferno-gelo-hibrido-design.md` e
   `docs/superpowers/plans/2026-10-20-inferno-gelo-hibrido.md`. Gates cumpridos: 4 quadros
   aprovados, movimento aprovado, depois exportação/integração.
@@ -38,7 +40,7 @@
 - **Pendente:** smoke com o jar numa instalação NeoForge separada (precisa do launcher logado).
 - A captura de tela dos testes só grava se o Minecraft estiver NA FRENTE (guarda de foreground).
 
-### ✅ ENTREGA 4.2.0 (2026-10-19) — o que EU verifiquei e publiquei
+### ENTREGA 4.2.0 (2026-10-19) — o que EU verifiquei e publiquei
 O amigo empurrou 17 commits (merge `86990bd`) com o aviso MORTE em VÍDEO; o codigo
 ja estava no GitHub, mas **sem tag e sem Release**. Verificado aqui do zero:
 toolchain reconstruida (JDK 21 + installer client/server + launcher_profiles falso +
@@ -53,7 +55,7 @@ download `-L` 200 + `cmp` identico, tag em `d84ec85`); **v4.1.0 apagada** (relea
 REGRA NOVA do amigo: **nenhum jar no git** — o `.gitignore` virou `*.jar` com excecao do
 `gradle-wrapper.jar`; o jar vive so na Release (com video, cada ciclo adiciona ~10 MB).
 
-### 🎬 4.2.0 (2026-10-19): avisos em VÍDEO renderizados no Blender (piloto: MORTE)
+### 4.2.0 (2026-10-19): avisos em VÍDEO renderizados no Blender (piloto: MORTE)
 - **Spec e plano:** `docs/superpowers/specs/2026-10-19-avisos-em-video-design.md` e
   `docs/superpowers/plans/2026-10-19-avisos-em-video-piloto-morte.md`.
 - **Pipeline:** `arte/cenas/<id>.py` monta a cena do zero → `blender -b --factory-startup -P`
@@ -76,7 +78,7 @@ REGRA NOVA do amigo: **nenhum jar no git** — o `.gitignore` virou `*.jar` com 
   o `rptag-4.1.0.jar` saiu do repositório. Jar só na Release.
 - **Próximos ciclos:** 1–2 avisos por vez (4.3.0, 4.4.0…), mesma rotina com prévia aprovada.
 
-### 🔍 ACHADO IMPORTANTE (2026-10-19): "versoes antigas no GitHub" NAO eram as Releases
+### ACHADO IMPORTANTE (2026-10-19): "versoes antigas no GitHub" NAO eram as Releases
 User reclamou que a pagina do GitHub ainda mostrava da 3.85 ate a 3.99. NAO era cache nem
 a API: os **19 jars estavam COMMITADOS na raiz do repo** (entraram no commit `8de56f6`,
 o do 3.99.0). O GitHub lista os arquivos da raiz na home e o visitante ve tudo. Diagnostico
@@ -89,7 +91,7 @@ e fazer o `git add -f` do atual — a home do repositorio nunca deve acumular ja
 CUIDADO: `git status` pode ESCONDER isso (o `.gitignore` nao lista `*.jar`, mas o caminho
 `git rm` + re-add pode passar batido); sempre confira com `git ls-tree HEAD --name-only | grep jar`.
 
-### 🧹 Rotina nova (2026-10-19): só a release ATUAL fica no GitHub
+### Rotina nova (2026-10-19): só a release ATUAL fica no GitHub
 User pediu: "no github remova as versões anteriores, pode deixar somente a mais atual,
 se não vai ficar muita informação nele". FEITO: apagadas 20 releases (v3.84.0→v3.99.0) e
 as 20 tags correspondentes; sobraram **v4.0.0** (`62d63af`, jar 2188446 B) e
@@ -104,7 +106,7 @@ Alem do ritual `fetch --tags` + `reset --mixed origin/main`, foi criado o backup
 `/home/user/rp-tag-git.bundle` (`git bundle create ... --all`): se o remoto falhar, da pra
 restaurar com `git clone /home/user/rp-tag-git.bundle`.
 
-### 🧰 TOOLCHAIN (recriada 2026-10-19, /var/tmp e volátil — some entre turnos)
+### TOOLCHAIN (recriada 2026-10-19, /var/tmp e volátil — some entre turnos)
 Reconstrução completa em ~1 min: (1) JDK 21 do Adoptium em `/var/tmp/java-21`;
 (2) `installer.jar` do neoforge 21.1.249; (3) **`launcher_profiles.json` falso**
 (`{"profiles":{},"settings":{},"version":3}`) ANTES do `--installClient /var/tmp/mcdir`
@@ -283,7 +285,7 @@ sangue/pesadelo `ty - 12*k` → `ty + 14.5 * S` (logo abaixo do título,
 ~cy + 20k = mesma altura visual de divino/demoniaco); void →
 `ty + 27.5 * S` (abaixo do REFLEXO invertido que ocupa ty+16S..~ty+25S).
 check.py: âncora nova "mensagem EMBAIXO nos 5 FX" (ty - 12 * k ausente
-dos 5). ⚠️ LIÇÃO: NEM TUDO nos protótipos é o desejado — posição do sub
+dos 5).  LIÇÃO: NEM TUDO nos protótipos é o desejado — posição do sub
 nos protótipos sangue/void/pesadelo era acima; decisão do user: sub
 SEMPRE abaixo do AVISO.
 
@@ -323,7 +325,7 @@ limpo9)`, somAviso case 9 saiu (WARDEN_HEARTBEAT) → `particulasSangue`
 (port do particulasMundo: BLOCK redstone 60 + FALLING_DUST 24, server-safe
 FQN). somAviso agora só tem sons nos estilos SEM FX (4,5,6,8 + clássicos);
 7/9/10 = partículas server-safe. check.py: seção 3.95 (+6) e 7 âncoras
-reescritas p/ comportamento novo → 259/0. ⚠️ BUG PEGO NO CHECK: replace
+reescritas p/ comportamento novo → 259/0.  BUG PEGO NO CHECK: replace
 removiu `case 10 -> "demoniaco"` do nomeEstilo do LoreZoneCommands junto
 com o 11 — restaurado; conferir switches inteiros ao remover cases.
 
@@ -332,13 +334,13 @@ parecido [com o modelo], quero parecido com o modelo que enviei". CAUSA
 RAIZ (diff contra os originais): eu tinha INVERTIDO a ordem dos argumentos
 de `iniciar` — os protótipos são `iniciar("AVISO", mensagem)` (título
 grande FIXO "AVISO" + mensagem configurável no SUBTÍTULO), mas eu chamava
-`iniciar(msg, "❀ ... ❀")` e ainda injetara auto-ajuste `S=min(S,w·0.86/tot)`
+uma chamada de `iniciar` com símbolos decorativos na mensagem e ainda injetara auto-ajuste `S=min(S,w·0.86/tot)`
 que ENCOLHIA o título. FIX: chamadas corrigidas no ClientEffects
 (`iniciar("AVISO", limpo)` / `iniciar("AVISO", limpoD)`) + linhas de
 auto-ajuste REMOVIDAS dos 2 FX (diff vs catbox = só package/docs;
 particulasMundo segue portada server-safe no RPCommands). check.py: 4
 âncoras reescritas para ancorar FIDELIDADE (escala `k·1.9` presente,
-`w * 0.86f` AUSENTE, ordem da chamada) → 259/0. ⚠️ LIÇÃO: quando adaptar
+`w * 0.86f` AUSENTE, ordem da chamada) → 259/0.  LIÇÃO: quando adaptar
 protótipo do user, a assinatura/documentação do protótipo DEFINE a ordem
 dos parâmetros — conferir o doc comment antes de integrar.
 
@@ -348,8 +350,8 @@ aviso demoniaco". ADAPTAÇÃO IDÊNTICA ao 3.92: package dev.rptag.client
 + camada própria "aviso_demoniaco" no ClientGuiLayers + AUTO-AJUSTE da
 mensagem (S = min(S, w·0.86/tot) + ty = cy−4·S antes de x0 — o
 protótipo tinha S fixo) + ClientEffects.startScreenText intercepta
-style 10 → DemoniacoAvisoFx.iniciar(texto sem §, "❀ CHAMADO DO ABISMO
-❀") + RETURN (o desenho 3.91 do demoníaco virou código morto — fica
+style 10 → DemoniacoAvisoFx.iniciar(texto sem §, " CHAMADO DO ABISMO
+") + RETURN (o desenho 3.91 do demoníaco virou código morto — fica
 arquivado no arquivo, um if a menos por frame). O FX: tela em vinho
 PULSANDO no ritmo cardíaco (som+visual sincronizados, beat()), DENTES/
 mandíbulas negros fechando das bordas, fissuras de lava do centro,
@@ -377,7 +379,7 @@ que ficou" = o 3.91 foi APROVADO. ADAPTAÇÃO: package dev.rptag.client
 no ClientGuiLayers (registerAboveAll "aviso_divino"), Título = MENSAGEM
 do comando com AUTO-AJUSTE (S = min(k·1.9, w·0.86/tot) — mensagens
 longas encolhem, NUNCA vazam; o protótipo não tinha fit!), sub fixo
-"❀ AVISO DIVINO ❀". VIRA O ESTILO 12º "ascensao" (11) — NÃO substitui
+" AVISO DIVINO ". VIRA O ESTILO 12º "ascensao" (11) — NÃO substitui
 o divino (user amou o atual): RPCommands case "ascensao"->11 +
 nomeEstilo + literal + somAviso case 11 = SÓ partículas (o FX tem
 trilha própria no cliente — beacon+acorde+deactivate; e SOM do servidor
@@ -414,7 +416,7 @@ ESTÁTICAS + orbes de sangue + letras corrompidas. (4) DIVINO: coroa
 FORA → SOL SAGRADO (desenhaSol: disco degradê 8 camadas + anel + 8
 raios desenhaRaio — 4 cardeais 3.1r/0.42r + 4 diagonais 2.2r/0.26r) +
 radial RESPIRANDO (resp7 = 0.90+0.10·sin·0.0021) + orbes dourados;
-feixes SÓ no divino ✓. BUGS: float→long (elapsed é float no método —
+feixes SÓ no divino . BUGS: float→long (elapsed é float no método —
 assinatura de desenhaOrbes era long); 1 patch rodou com cwd ERRADO
 (/home/user) e o jar saiu SEM classes → CONFERIR ClientEffects.class no
 jar antes de entregar (novo passo do ritual: unzip -l | grep Client
@@ -732,8 +734,8 @@ Sequência ouvida pela vítima: TRONCO! … 1,5s … a musica sombria
 Import SoundEvents tinha SAÍDO do CanonLife na 3.76 (javac pegou na
 hora; recolocado).
 
-**3.77.0 (2026-10-17)** — 2 prints de referência ("❀ LORE OFF ❀ /
-❀ HARD-RP ON | VIDAS CANNON OFF ❀" vermelho e "❀ LORE ON ❀ / ...ON ❀"
+**3.77.0 (2026-10-17)** — 2 prints de referência (" LORE OFF  /
+ HARD-RP ON | VIDAS CANNON OFF " vermelho e " LORE ON  / ...ON "
 verde, texto texturizado no mundo) + "o rp admin canon deve ser como o
 efeito de medo, para os admin usar em players". REVERSÃO do modelo
 server-wide → POR JOGADOR (como o medo): /rp admin canon <jogador>
@@ -751,8 +753,8 @@ e desenhaBannerCanon() = 2 linhas centradas (cyT=h*0.34, cyS abaixo),
 escala título ≤2.6 / sub ≤1.1 (fit w-30), fade in 250ms/out 400ms,
 a prova de crash (try/catch limpa bannerTitle). PALETAS: ON verde
 sombra 0x0E2A14/base 0x2F6A38/topo 0x549E5C; OFF vermelho
-0x2A0505/0x8B1616/0xC23030. TEXTOS LITERAIS dos exemplos: "❀ LORE
-ON ❀"/"❀ HARD-RP ON | VIDAS CANNON ON ❀" (\u2740) e OFF. Death ritual
+0x2A0505/0x8B1616/0xC23030. TEXTOS LITERAIS dos exemplos: " LORE
+ON "/" HARD-RP ON | VIDAS CANNON ON " (\u2740) e OFF. Death ritual
 INTACTO (freeze 5s + "VOCÊ PERDEU UMA VIDA" estilo 4 + som ogg).
 Status: "Vida canônica: ATIVA (ao morrer, perde uma vida)/não tem".
 Ah — bug meu na 1ª linhaTexturizada: sombra com "cy * 0.0F + dy"
@@ -840,7 +842,7 @@ cp.txt, rcon.py) → toolchain.sh + installer + rcon.py recriados.
 mais realeza algo bonito" → EDIÇÃO REAL (só vestimenta, layout ZERO):
 (1) desenhaCoroa(g,x,y) = coroa 11x7 OURO com 3 pontas, joias (rubi
 0xFFE04858 + 2 safiras 0xFF5878F0) e faísca no topo — DUAS coroas
-ladeiam o título (tx0-16 e tx0+w+5, py+7); o "✦ ... ✦" do título saiu
+ladeiam o título (tx0-16 e tx0+w+5, py+7); o " ... " do título saiu
 (as coroas substituem). (2) desenhaDiamante(g,cx,cy) = losango ouro
 7x7 c/ miolo claro — 4 diamantes nos cantos do painel (era cantinho
 reto). (3) painel VELUDO: gradiente 0xF23A2566→0xF21E1140 (roxo real),
@@ -857,13 +859,13 @@ defeitos latentes, todos corrigidos: (1) DICA VAZANDO pra fora do painel
 (a direita, no ceu) — a dica da digitacao tinha ~360px num painel de
 248px; criado helper corta(s, maxW) (reticencias U+2026) e TODAS as
 linhas de 1 linha truncam agora: dica corta(hint, PANEL_W-20) e a
-dica ENCURTADA p/ "✎ Digitacao LIGADA — /balao typewriter off";
+dica ENCURTADA p/ " Digitacao LIGADA — /balao typewriter off";
 (2) FALA do chat agora trunca com "…" (falaMostrada = corta(fala,
 PANEL_W-24-width("<Você> ")-width(sufixo))) — antes falas compridas
 vazavam; (3) X vermelho dos slots de extras DENTRO da caixinha
 (12..20, 1..9 — o antigo 10..20/-2..8 vazava 2px acima do slot e
 cobria o emoji; checks 122/157 mudaram pro marcador "X DENTRO do
-slot"); (4) tag "✦ Previa no mundo" SUBIU (cardH-21..-11) pra sair de
+slot"); (4) tag " Previa no mundo" SUBIU (cardH-21..-11) pra sair de
 cima da grama (parecia barra verde quebrada); (5) chip preto do ICONE
 da moldura ativa ganhou outline 0xFF4A5480 (sem borda parecia glitch).
 NAO-bugs confirmados na print: os "▼" brancos = indicadores de cor
@@ -994,7 +996,7 @@ clique-testado ANTES da branch que adiciona emoji) + bônus: a coluna
 direita SUMIA inteira quando não havia adesivo (reestruturada pra
 sempre desenhar). (5) menu: fundo opaco GARANTIDO dentro do render()
 (além do renderBackground), céu de estrelas frufu, filete dourado
-interno + cantinhos no painel, título centralizado "✦ Balão de Fala ✦".
+interno + cantinhos no painel, título centralizado " Balão de Fala ".
 check 138/138; smoke 0 erros.
 
 **3.65.0 (2026-10-15)** — user: "os 3 avisos NENHUM aparece na tela" +
@@ -1094,7 +1096,7 @@ parseiam (sem players o @a responde "No player was found" = vanilla OK),
 
 ## 5. Histórico (o que aconteceu até aqui)
 
-> Texto completo por versão: `CHANGELOG.md`. Resumo com foco em decisão:
+>Texto completo por versão: `CHANGELOG.md`. Resumo com foco em decisão:
 
 | Versão | O que marcou |
 |---|---|
@@ -1109,7 +1111,7 @@ parseiam (sem players o @a responde "No player was found" = vanilla OK),
 | 3.55.0 | X vermelho na prévia sem tooltip; `/lorezone baixar` REAL + sync v5 (chunks 30 kB); `/lorezone musica <id> 1x <som>`; `/roll +3`; `/balao teste` **removido** (prévia usa a última fala real); ícone do medo com borda dissolvendo; lorezone explicada como ESFERA |
 | 3.56.0 | **balões reescritos**: wrap 130 (cresce pra cima), rabicho pixel em degraus p/ todas as molduras, prévia multi-linha, textura `bubble_tail.png` removida |
 | 3.56.1 | rabicho na cor **exata** do balão (texel 248); `/rp ajuda` sem a linha amarela do WALKTHROUGH |
-| 3.57.0 | **tons de fala** (estudo do mod Fabric "roleplay-speech-bubbles"): `/pensar` novo (itálico + parênteses), `/s` agora vira balão MAIÚSCULO+negrito, `/w` itálico que não funcionava CORRIGIDO; pacote `ChatBubblePayload` ganhou campo `tone`. ⚠️ O mod Fabric embute telemetria (`creativemode-telemetry`) — jamais replicar |
+| 3.57.0 | **tons de fala** (estudo do mod Fabric "roleplay-speech-bubbles"): `/pensar` novo (itálico + parênteses), `/s` agora vira balão MAIÚSCULO+negrito, `/w` itálico que não funcionava CORRIGIDO; pacote `ChatBubblePayload` ganhou campo `tone`.  O mod Fabric embute telemetria (`creativemode-telemetry`) — jamais replicar |
 | 3.58.0 | **rabicho = recorte na silhueta** (dono escolheu a opção B na prévia de 4 designs): textura `tail.png` texel branco + escala 248, contorno único sem emenda, prévia idêntica ao mundo |
 | 3.58.1 | rabicho 26×18 saiu GIGANTE na print → **13×9 FIXO (padrão)**, nunca escala com o balão; pilha +12 |
 | 3.60.0 | **balão PROCEDURAL**: silhueta única (corpo + rabicho) por geometria (`BubbleGeometry`), sem texturas; contorno exato, sombra macia, gloss, AA; prévia usa a MESMA função; `/rpformato novo\|antigo` |
@@ -1130,9 +1132,9 @@ Commits recentes: `0e93318` (3.56.1) ← `69a211b` (3.56.0) ← `0d3f76e` (3.55.
 - Qualidade visual nível mods famosos; telas 1.21 usam `renderBackground` com fill opaco.
 
 ### Visual do balão
-- ❌ Faixa/banda no balão; ❌ emoji via fonte na fala; ❌ emoji-tint no mundo; ❌ bandas de fonte; ❌ dashed antigo; ❌ balão-nuvem; ❌ contadores "emojis x/6"; ❌ botões Auto/"Minha cor"; ❌ ordem antiga dos botões; ❌ card escuro na prévia; ❌ editor baú.
-- ❌ **Rabicho triângulo antigo** (`bubble_tail.png` com texels quebrados — reprovado na 3.56) e ❌ quadrado-conector; ❌ degraus pixel-art (3.56–3.57); ❌ **rabicho GRANDE** (26×18 da 3.58.0, reprovado na print). ✅ Rabicho atual = **recorte na silhueta PEQUENO e FIXO** (`tail.png` texel branco, 13×9, contorno único, cor exata).
-- ✅ Balão cresce **pra cima** com o texto (linhas equilibradas, nunca tirinha deitada); ✅ recheio cobre o encaixe do rabicho (costura invisível).
+-  Faixa/banda no balão;  emoji via fonte na fala;  emoji-tint no mundo;  bandas de fonte;  dashed antigo;  balão-nuvem;  contadores "emojis x/6";  botões Auto/"Minha cor";  ordem antiga dos botões;  card escuro na prévia;  editor baú.
+-  **Rabicho triângulo antigo** (`bubble_tail.png` com texels quebrados — reprovado na 3.56) e  quadrado-conector;  degraus pixel-art (3.56–3.57);  **rabicho GRANDE** (26×18 da 3.58.0, reprovado na print).  Rabicho atual = **recorte na silhueta PEQUENO e FIXO** (`tail.png` texel branco, 13×9, contorno único, cor exata).
+-  Balão cresce **pra cima** com o texto (linhas equilibradas, nunca tirinha deitada);  recheio cobre o encaixe do rabicho (costura invisível).
 - Quadrada = quadrada AO TODO; Sem borda por último em 2 fileiras de 3; tela `/balao` à prova de crash.
 
 ### Medo
@@ -1141,8 +1143,8 @@ Commits recentes: `0e93318` (3.56.1) ← `69a211b` (3.56.0) ← `0d3f76e` (3.55.
 - Mensagem só pra admin; paleta azul-noite; véu que ESCONDE a tela.
 
 ### Outros
-- ❌ Nuvem no balão (removida a pedido no 3.50 — manter fora).
-- ❌ **TELEMETRIA/coleta de dados JAMAIS** (o mod Fabric estudado no 3.57.0 embute `creativemode-telemetry` — jar-in-jar que rastreia sessões/mods; serviu só de referência de mecânica).
+-  Nuvem no balão (removida a pedido no 3.50 — manter fora).
+-  **TELEMETRIA/coleta de dados JAMAIS** (o mod Fabric estudado no 3.57.0 embute `creativemode-telemetry` — jar-in-jar que rastreia sessões/mods; serviu só de referência de mecânica).
 - Tons de fala (3.57.0): `tone` 0/1/2 no `ChatBubblePayload`; pensar/sussurro = itálico (fonte vanilla mantém a largura → medida intacta), grito = fake bold (2ª passada 0,75px).
 - `/balao teste` **não existe mais** — testar é escrever no chat (a prévia usa a última fala).
 - Música baixada fica no **SERVIDOR** e sincroniza pros clientes ("iniciado/concluído"); todo mundo ouve.
@@ -1155,7 +1157,7 @@ Commits recentes: `0e93318` (3.56.1) ← `69a211b` (3.56.0) ← `0d3f76e` (3.55.
 ### Build pelo GRADLE (caminho dos humanos — o que o amigo usa)
 - O projeto é um **ModDevGradle 2.0.146** padrão (Gradle 9.2.1 via wrapper, NF 21.1.249, foojay-resolver).
 - `./gradlew build` → jar em `build/libs/rptag-<v>.jar`; `runClient`/`runServer` pra testar.
-- **Testado no sandbox até a etapa de descompilação do Minecraft** (wrapper ✓, plugin ✓, downloads ✓, 6 etapas do pipeline ✓) — a descompilação em si precisa de ~4 GB de RAM e o sandbox tem 2 GB (morre ali, KILL do cgroup, sem log de OOM). Em PC normal passa. NÃO mandar patch de memória pro repo (cache local do sandbox só).
+- **Testado no sandbox até a etapa de descompilação do Minecraft** (wrapper , plugin , downloads , 6 etapas do pipeline ) — a descompilação em si precisa de ~4 GB de RAM e o sandbox tem 2 GB (morre ali, KILL do cgroup, sem log de OOM). Em PC normal passa. NÃO mandar patch de memória pro repo (cache local do sandbox só).
 - Guia do dev externo: `COMO-EDITAR.md` (raiz do repo).
 
 ### Toolchain do sandbox (o `/var/tmp`some entre sessões!)

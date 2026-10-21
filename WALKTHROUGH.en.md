@@ -1,8 +1,10 @@
-# 🎮 Walkthrough — RP Tag from zero to RP active
+# Walkthrough — RP Tag from zero to RP active
+
+> Historical technical record. Entries retain their original version context and may describe superseded procedures. Refer to the current guides for operational instructions.
 
 Step-by-step guide, from download to the tag showing in game.
 
-> 🌎 **Idioma / Language:** [Português (BR)](WALKTHROUGH.md) | **English**
+> **Idioma / Language:** [Português (BR)](WALKTHROUGH.md) | **English**
 
 ---
 
@@ -15,7 +17,7 @@ Step-by-step guide, from download to the tag showing in game.
 | **Java 21** | https://adoptium.net/ (Temurin 21) |
 | `rptag-4.2.0.jar` | this repository's *Releases* tab |
 
-> ⚠️ The mod version matches the game version: `rptag-4.2.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
+> The mod version matches the game version: `rptag-4.2.0.jar` is for **1.21.1**. Another Minecraft version requires recompiling.
 
 ---
 
@@ -127,7 +129,7 @@ After any change: `./gradlew build` and replace the jar in `mods/`.
 
 ---
 
-## 🩺 Troubleshooting
+## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
@@ -150,11 +152,11 @@ RPWorldData.java  → saves NBT     ClientEvents.java         → local name
 SyncRPStatePayload.java ──────────> (server → client packet)
 ```
 
-Happy RP! 🎭
+Happy RP!
 
 ---
 
-## 🗨️ Speech bubbles (new in v2.3.0)
+## Speech bubbles (new in v2.3.0)
 
 What you type (local chat, `/g`, `/s`, `/w`, `/me`) shows up in a **rounded bubble
 above your head** — perfect for eggs, kids and mic-less players.
@@ -166,7 +168,7 @@ above your head** — perfect for eggs, kids and mic-less players.
 
 ---
 
-## 🥚 Bubble mode and the customization SCREEN (v2.5.0)
+## Bubble mode and the customization SCREEN (v2.5.0)
 
 **For eggs, kids and mic-less characters:** speech becomes **bubble-only** — nothing in chat.
 
@@ -184,15 +186,15 @@ above your head** — perfect for eggs, kids and mic-less players.
 - **LIVE CHAT SIMULATION** — the top panel shows the line
   `<Você> sua fala assim` (name in bubble color, speech in text color) and the
   full bubble. Change ANYTHING (fill, border, frame, text color, sticker)? The
-  simulation reacts INSTANTLY. Footer: `#fill · ▣ border · ✎ text`
-- **Sticker with the MOUSE**: `✦ Adesivos` → each sticker is a **color dot +
+  simulation reacts INSTANTLY. Footer: `fill · border · text`
+- **Sticker with the MOUSE**: `Adesivos` → each sticker is a **color dot +
   number** (hover shows the NAME) → click an emoji (it sticks to the
   cursor) → **click anywhere on the bubble** to place it. Click the placed
   sticker to **pick it back** and reposition; **right-click** the bubble
   **removes** it. **One sticker per bubble** — the old Before/Middle/After
   slots migrated into it automatically. Click outside the bubble or
   right-click to **cancel** without placing
-- **Paint** — TWO independent pickers: **✦ Dentro** (left) paints the fill
+- **Paint** — TWO independent pickers: ** Dentro** (left) paints the fill
   and **▣ Borda** (right) paints the frame. Under each one there is a
   **ONE-CLICK PALETTE** (8 ready colors) — click, painted, no dragging! Or
   drag the squares for any custom color (live hex on the label)
@@ -201,23 +203,23 @@ above your head** — perfect for eggs, kids and mic-less players.
   a green frame
 - **Frame** — 3 STYLE buttons: **▤ Clássica** (thin) · **▤ Cartum** (thick
   comic cover) · **▤ Dupla** (double line)
-- **✎ Letra (text)** — **Auto** (white or black depending on the fill, always
+- ** Letra (text)** — **Auto** (white or black depending on the fill, always
   perfect contrast) or 8 chat colors at 1 click — the bubble text updates instantly
-- **⏱ Duration** — DRAG the slider for 2 to 20 seconds of display time
-- **☾ Bubble mode** — toggle right there
-- **✔ Save** (RIGHT-side button, Minecraft-style) or **ESC** stores
+- ** Duration** — DRAG the slider for 2 to 20 seconds of display time
+- ** Bubble mode** — toggle right there
+- ** Save** (RIGHT-side button, Minecraft-style) or **ESC** stores
   everything — no more losing your setup · **↺ Padrão** restores defaults
 - **Saved FOREVER**: leave and rejoin the server — colors, sticker, frame and
   duration are stored in the world file
 - **JAR DIAGNOSTIC**: the top-right of the screen shows the CLIENT version
-  (e.g. "v4.2.0") and the save message shows the SERVER version ("💾 Salvo no
+  (e.g. "v4.2.0") and the save message shows the SERVER version (" Salvo no
   servidor v4.2.0!"). Both must MATCH — otherwise replace the old side's jar
   (always update client AND server together)
-- Then just **say something in chat** to see your bubble ✨
+- Then just **say something in chat** to see your bubble
 
 ---
 
-## 📜 Lore Zones (story regions)
+## Lore Zones (story regions)
 
 Admins mark map regions that react when a player walks in: epic on-screen
 title, subtitle, sound — and now even **looping music**.
@@ -237,7 +239,7 @@ Spooky sounds that work well: `minecraft:ambient.cave`,
 
 ---
 
-## 😱 RP effects: FEAR and warnings
+## RP effects: FEAR and warnings
 
 | Command | Effect |
 |---|---|
@@ -255,7 +257,7 @@ letter, never auto-shrunk) with the **message always BELOW it**.
 
 ---
 
-## 🎵 CUSTOM music in Lore Zones (3.50.0)
+## CUSTOM music in Lore Zones (3.50.0)
 
 Any music you own can play inside a zone — even audio from a YouTube video.
 
@@ -281,7 +283,7 @@ admin section).
 
 ---
 
-## 🧱 Lore zone barrier + the CAVE case (4.0.0)
+## Lore zone barrier + the CAVE case (4.0.0)
 
 - `/lorezone mostrar <id> [seconds]` — draws the zone **only on the admin's screen**:
   cyan wireframe sphere, **yellow walls** of the vertical band and an orange center line
@@ -292,7 +294,7 @@ admin section).
   an event inside a cave at Y=-30..20 will NOT warn someone standing on the surface;
   `... auto` restores the full sphere (older zones keep working unchanged)
 
-## 🫀 Canon lives (5 per player)
+## Canon lives (5 per player)
 
 - `/rp admin canon on|off` — turns the mode on for the **whole server** (banner, no chat spam)
 - Dying costs 1 life, with the full ritual: thunder → frozen 5 s → death warning → lore audio
@@ -303,7 +305,7 @@ admin section).
 
 ---
 
-## 🎞️ Video warnings rendered in Blender (4.2.0)
+## Video warnings rendered in Blender (4.2.0)
 
 The **death** warning ("Linha Reta") is now a **6-second, 24 fps video** rendered in
 Blender (288 JPEG frames: 144 color + 144 alpha, 1280x720, ~9.6 MB) packed inside the jar.

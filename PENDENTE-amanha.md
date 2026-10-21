@@ -1,7 +1,8 @@
-# 📌 Pendente pra amanhã — aviso SANGUE (vtjau7)
+# Registro histórico de pendência: aviso Sangue
 
+> Documento arquivado. Descreve uma pendência e um ambiente anteriores; consulte o changelog e os guias atuais antes de reutilizar as instruções.
 ## O que ficou parado
-O user mandou o protótipo do novo aviso **SANGUE** em:
+Foi fornecido o protótipo do novo aviso **SANGUE** em:
 `https://files.catbox.moe/vtjau7.java`
 
 **O arquivo está VAZIO no catbox** — o servidor responde
@@ -12,7 +13,7 @@ então **não é bloqueio daqui**: o upload não completou.
 
 ## Como resolver quando voltar
 1. Subir de novo no catbox (conferir que o arquivo tem conteúdo antes), **ou**
-2. **Colar o código direto no chat** — jeito à prova de falha, **ou**
+2. **Colar o código direto no chat** — alternativa de envio, **ou**
 3. Se for grande (>100 KB), mandar em 2 partes.
 
 ## Decisão em aberto (perguntei, não respondeu)
@@ -33,26 +34,26 @@ Opções: **(a)** substituir o atual (guardar backup do Sangria),
 - [ ] rota em `ClientEffects.startScreenText` (estilo 9)
 - [ ] partículas + som no SERVIDOR (`RPCommands.somAviso`, caso 9)
 - [ ] `check.py` antes do `print(PASS/FAIL)` e **337 → sobe** (nunca diminui)
-- [ ] verificação visual em `verificacao/` (o user cobra a cada ciclo)
+- [ ] verificação visual em `verificacao/` (exigida em alterações visuais)
 - [ ] CHANGELOG + WALKTHROUGH no fim do ciclo
 - [ ] jar → Release nova + **apagar release/tag anterior**
-- [ ] **nenhum** jar no git (regra do amigo, 4.2.0)
+- [ ] **nenhum** jar no git (convenção do projeto, 4.2.0)
 
-## Estado do projeto (verificado agora)
+## Estado registrado na ocasião
 - Versão **4.2.0**, `check.py` **337 PASS / 0 FAIL**
 - HEAD `cdd4fe9` = remoto, `git status` limpo
 - 288 frames do vídeo do MORTE presentes
 - Release **v4.2.0** (id 417947996) = latest, jar 10.298.836 B
 - Backups em `/home/user/backup/` (4.1.0 src+jar+bundle) e
-  `/home/user/rp-tag-git.bundle` (19 MB)
+ `/home/user/rp-tag-git.bundle` (19 MB)
 
-## ⚠️ Aviso recorrente do ambiente
+## Aviso recorrente do ambiente
 O workspace **perdeu arquivos 5x** nesta sessão (o `.git` local volta pro
 commit 3.84 e centenas de arquivos somem do disco). **Nada se perde de verdade**
 — tudo está no GitHub. Ao abrir o turno, se algo parecer estranho:
 ```bash
 cd /home/user/rp-tag
-git remote add origin "https://<PAT>@github.com/EduCafilista/rp-tag.git"
+git remote add origin "https://github.com/EduCafilista/rp-tag.git"
 git fetch --tags origin && git reset --hard origin/main
 git remote set-url origin https://github.com/EduCafilista/rp-tag.git
 ```

@@ -1,6 +1,8 @@
 # Inferno e Gelo híbridos — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans (modo nativo escolhido pelo usuário) to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Planejamento arquivado. Após avaliar as propostas, o responsável solicitou preservar os efeitos originais. Este documento registra o trabalho discutido e não autoriza novas alterações visuais. Consulte o código e os guias atuais para identificar o estado implementado.
+
+>**For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans (modo nativo escolhido pelo usuário) to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Entregar Inferno e Gelo com impacto central, acabamento híbrido e leitura preservada, integrados ao player de vídeo após aprovação das prévias.
 

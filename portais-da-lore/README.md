@@ -1,11 +1,21 @@
-# 🌀 Portais da Lore — ⏸️ EM PAUSA TEMPORÁRIA
+# Portais da Lore
 
-> **Este mod está temporariamente descontinuado** — não estou mexendo nele
-> por agora. A versão **1.3.2** continua funcionando normalmente
-> (NeoForge 1.21.1, Java 21).
+Mod de portais para Minecraft 1.21.1 e NeoForge. O sistema utiliza um par de
+portais, uma região de molde identificada por flood-fill, efeitos visuais de
+galáxia, som de travessia e painel de estado.
 
-Portais **redondos e grandes** com a galáxia dos dois lados, feitos com
-PAR + MOLDE (flood-fill), som próprio de travessia e painel de status.
-Documentação: [LORE.md](LORE.md) · [WALKTHROUGH.md](WALKTHROUGH.md)
+## Estado do projeto
 
-**Jar pronto:** aba [Releases](../../releases) → `portais-da-lore-1.3.2.jar`
+- Versão do código: 1.3.2.
+- Desenvolvimento temporariamente suspenso.
+- Ambiente: Minecraft 1.21.1, NeoForge e Java 21.
+
+O código permanece disponível neste diretório. Consulte a
+[página de releases](https://github.com/EduCafilista/rp-tag/releases) para verificar
+a disponibilidade do arquivo `portais-da-lore-1.3.2.jar`.
+
+## Documentação
+
+- [LORE.md](LORE.md): regras e funcionamento dos portais.
+- [WALKTHROUGH.md](WALKTHROUGH.md): registro técnico e decisões de implementação.
+- [README do repositório](../README.md): visão geral dos projetos.

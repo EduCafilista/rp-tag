@@ -1,196 +1,162 @@
 # RP Tag
 
-![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62a552) ![NeoForge](https://img.shields.io/badge/NeoForge-21.1.x-orange) ![License](https://img.shields.io/badge/Licen%C3%A7a-MIT-blue)
+Mod de roleplay para Minecraft 1.21.1 e NeoForge. Inclui identidade de personagem,
+chat por proximidade, balões de fala, avisos de tela, zonas de lore e vidas canônicas.
 
-**Mod para NeoForge 1.21.1** — o kit essencial de RP para servidores de lore: **persona** (vire outro personagem), **chat local** por proximidade com canais, **dados** para eventos, **lore zones** e a tag **● ʀᴘ / ○ ᴏꜰꜰ ʀᴘ** no nome e no TAB dos jogadores.
+[English documentation](README.en.md)
 
-> 🌎 **Idioma / Language:** **Português (BR)** | [English](README.en.md)
->
-> 📥 **Download:** baixe o `rptag-4.5.0.jar` na [aba de Releases](https://github.com/EduCafilista/rp-tag/releases/latest).
->
-> 🧹 **O jar fica só nas Releases** (desde a 4.2.0, com os avisos em vídeo, ele não vai mais pro repositório). Só a versão mais recente fica publicada.
->
-> 🎮 **Novo por aqui?** Siga o [WALKTHROUGH.md](WALKTHROUGH.md) — guia passo a passo com tudo (instalação, comandos, customização e solução de problemas).
+## Projetos e versões
 
-## 📦 Este repositório tem 2 mods
+| Projeto | Versão do código | Manutenção | Diretório |
+| --- | --- | --- | --- |
+| RP Tag | 4.5.0 | Em desenvolvimento | Raiz do repositório |
+| Portais da Lore | 1.3.2 | Desenvolvimento suspenso | [portais-da-lore](portais-da-lore/) |
 
-| Mod | Onde | Status | Jar pronto |
-|---|---|---|---|
-| 🏷️ **RP Tag** | na raiz (este) | ✅ em desenvolvimento ativo — v4.5.0 | [Releases](../../releases/latest) → `rptag-4.5.0.jar` |
-| 🌀 **Portais da Lore** | [pasta `portais-da-lore/`](portais-da-lore/) | ⏸️ **EM PAUSA TEMPORÁRIA** — v1.3.2 | [Releases](../../releases) → `portais-da-lore-1.3.2.jar` |
+Os arquivos JAR são distribuídos pela [página de releases](https://github.com/EduCafilista/rp-tag/releases).
+A versão disponível para download pode diferir da versão do código enquanto uma
+publicação estiver em preparação. Os binários não são versionados no Git.
 
-> ⚠️ **O Portais da Lore está temporariamente descontinuado** — não estou mexendo
-> nele por agora (o foco tá todo no RP Tag 😄). Ele **continua funcionando
-> perfeitamente**: o código da versão 1.3.2 está na pasta
-> [`portais-da-lore/`](portais-da-lore/) e o jar pronto fica nas
-> [Releases](../../releases). Quando eu voltar a mexer, este aviso muda!
+## Requisitos e instalação
 
-## ✨ O que ele faz
+- Minecraft 1.21.1.
+- NeoForge 21.1.x; o ambiente de desenvolvimento utiliza 21.1.249.
+- Java 21.
 
-### 🎭 Persona — seja quem você quiser
-- `/persona criar "Lord Aldric"` — o **nome do personagem substitui o nick** no nametag, chat e TAB
-- `/persona idade 24` · `/persona desc "Ex-cavaleiro em busca de redenção"` — tooltip no nome (passe o mouse!)
-- `/persona ver` — ficha completa · `/persona off` — volta ao nick
-- Criar a persona **liga o RP automaticamente**
+1. Instale o NeoForge no servidor e nos clientes que utilizarão os recursos visuais.
+2. Baixe a versão desejada na página de releases.
+3. Remova a versão anterior do RP Tag da pasta `mods/` antes de instalar o novo JAR.
+4. Instale a mesma versão nos clientes para balões, animações, telas e demais
+   recursos de renderização.
 
-### 💬 Chat RP por proximidade
-- O chat comum é **local** (40 blocos) — quem está longe não ouve
-- `/s <msg>` **gritar** (100 blocos, CAIXA ALTA) · `/w <msg>` **sussurrar** (5 blocos)
-- `/me <ação>` → `✦ Lord Aldric caminha pela floresta` · `/do <ambiente>` *(só admin)* → `✦ a porta range ao abrir`
-- `/g <msg>` chat global · admins ligam/desligam o modo local com `/rp admin chatlocal on|off`
+Os recursos de chat e identificação no servidor têm comportamento distinto dos
+recursos visuais do cliente. Para uma experiência completa, instale o mod nos dois.
 
-### 🗨️ Balões de fala (chat bubbles)
-- O que você digita aparece num **balão arredondado com rabicho sobre a sua cabeça** —
-  perfeito para **ovos, crianças e quem não usa microfone** (estilo QSMP)
-- **Modo balão** — a fala vira **só o balão** (nada no chat!):
-  `/balao modo on` para si · `/rp admin bolha <jogador> on` para o admin setar
-- **MENU com SIMULAÇÃO DE CHAT AO VIVO**: linha `<Você> fala` + balão completo
-  reagindo na hora a TUDO — fundo, borda, molde, cor da LETRA e adesivo ·
-  **paletas de 12 cores à 1 clique em glifos de texto (funcionam em qualquer
-  cliente)** · letra do balão limpa e 20% maior no mundo
-- **Balão estilo QUADRINHOS com textura suave**: pílula arredondada de verdade
-  (anti-aliased), contorno em toda a volta e rabicho — **tudo escolhido no
-  MENU CARTOON de placas de quadrinhos** (molduras de tinta, etiquetas
-  douradas, zonas-guia que acendem quando você pega um adesivo) (`/balao`)
-  · **a prévia do menu é a PILULA REAL do mundo** (mesma textura arredondada,
-  rabicho e as 6 molduras desenhadas de verdade — você VÊ a nuvem, os
-  tracinhos e o gibi antes de salvar) ·
-  **6 molduras com botões próprios**: Clássica, Cartum (grossa), Dupla,
-  Tracejada (tracinhos retos), **Brilho** (halo suave ao redor do balão)
-  **e Gibi** — o balãozão de HQ clássico, inflado com tinta grossa e brilho
-  gelatinoso · *(a moldura de nuvem/pensamento com rabinho de bolinhas foi
-  substituída pelo Brilho na 3.29.0 — a arte da nuvem continua no mod e dá
-  pra voltar como uma 7ª moldura se quiser)* ·
-  **2 seletores independentes** + **paletas de 1 clique** (8 cores prontas
-  pra Dentro e 8 pra Borda — sem arrastar!) ·
-  **cor da borda em 3 botões**: Auto / Minha cor / Sem · **cor da LETRA**:
-  Auto (contraste sozinho) + 8 cores
-- **ADESIVO LIVRE com o mouse**: 64 adesivos com a ARTE DE VERDADE no
-  teclado, em **alta resolução (16px com contorno, brilho e sombra — o
-  acabamento dos emojis dos mods famosos)**, em **2 páginas** — Clássicos
-  (48) e **Fofos** (16: laço, dinossauro, planeta, galáxia, foguete,
-  arco-íris, patinha, unicórnio, raposa, pinguim, fantasma, cogumelo...) —
-  escolha vendo o emoji, **clique em QUALQUER ponto
-  do balão** pra colar; **mira + % na tela** mostram exatamente onde ficou ·
-  clique direito tira · **ESC ou ✔ Salvar** gravam tudo · **barra de duração**
-  (2–20s)
-- **VÁRIOS EMOJIS na fala**: com um adesivo na mão, **clique fora do balão**
-  pra acrescentar ele à fala (um clique por emoji, **até 6**) — os emojis
-  aparecem DENTRO do balão, do jeitinho que vão ficar no mundo · cada criança
-  monta a combinação com a cara dela · slots ✨ na tela ("✖" tira, "+"
-  abre o teclado)
-- **ANIMAÇÃO estilo mods famosos**: o balão nasce com **pop-in com
-  ressalto**, flutua suavemente pra cima enquanto você fala e some com
-  **fade-out** suave · **PILHA de até 3 balões** por jogador — o mais novo
-  perto da cabeça, os antigos sobem (igual Chat Bubbles/TalkBubbles)
-- **ADMIN LIBERA QUEM USA** (padrão do servidor: ninguém): `/rp admin balao
-  <jogador> on` libera + já liga o modo balão da pessoa · `off` revoga ·
-  `/rp admin balaolist` lista os liberados · `/rp admin bolhas on|off` global
-- **MODO BALÃO com controle real**: desligou (`/balao modo off` ou o botão ☾)?
-  As falas voltam SÓ ao chat e o balão some NA HORA
+## Funcionalidades
 
-### 🎲 Dados para eventos
-- `/roll` (d20) · `/roll d100` · `/roll 2d6+1` — resultado anunciado por perto, com decomposição dos dados e motivo opcional
+### Identidade e personagem
 
-### 📜 Lore Zones
-- Admins criam regiões com `/lorezone criar <id> <raio> <título>` que mostram **título épico na tela**, subtítulo e som quando um jogador entra (1x por sessão)
-- **Trilha em LOOP**: `/lorezone musica <id> <som>` (ou `<id> intervalo <segundos> <som>`) toca uma música enquanto o jogador está na zona (para sozinha ao sair) — perfeita pra clima tenso
-- **27 presets de som que tocam de verdade** (`/lorezone musicas`): caverna, coração do Warden, portal, trovão, vento das almas, dragão, discos… um som **substitui o outro** (nunca empilha) e som inválido é barrado na hora
-- **Música CUSTOM**: `/lorezone musica <id> @<nome>` toca o seu `.ogg` (pasta `config/rptag/musicas/` do cliente) em loop — converta qualquer música com `yt-dlp -x --audio-format vorbis`
-- **Música por LINK**: `/lorezone musica <id> https://site.com/tema.ogg` — os players baixam e tocam em loop sem fazer nada (`.ogg`/`.wav`; YouTube vira `.ogg` com yt-dlp)
-- **Volume no lado do jogador**: som pontual = slider *Ambiente* · música = slider *Música* (Opções → Música e Sons)
-- **AVISO CINEMATOGRÁFICO ao entrar**: `/lorezone aviso <id> <classico|pesadelo|runico|real|morte|inferno|gelo|divino|void|sangue|demoniaco|pesadelo2> <segundos> <texto>`
-  dispara os avisos de tela do `/rp admin avisar` na entrada da zona (no lugar do título clássico; som continua;
-  `off` volta) — ex.: `/lorezone aviso floresta pesadelo 8 &4ALGO TE OBSERVA`
-- A história do servidor contada no próprio mapa
+O estado RP ou OFF RP aparece no chat, na lista de jogadores e no nome sobre o
+personagem. As tags exibidas pelo jogo são `● ʀᴘ` e `○ ᴏꜰꜰ ʀᴘ`.
 
-### 🧱 Barreira da zone + varinha (só admin vê)
-- `/lorezone mostrar <id> [segundos]` — desenha **na SUA tela**: o arame ciano da
-  esfera (até onde a zona pega), as **paredes amarelas** da faixa vertical e a linha
-  central laranja · `/lorezone esconder` tira
-- O pacote vai **só pra quem executou** — jogador comum nunca vê nada
-- `/lorezone varinha` — item `rptag:lorezone_wand`: **clique direito** perto de uma
-  zona (até 256 blocos) mostra a barreira dela; **shift + clique** esconde
+| Comando | Finalidade |
+| --- | --- |
+| `/rp on` e `/rp off` | Alterar o estado de roleplay |
+| `/rp status` | Consultar o estado e informações de diagnóstico |
+| `/persona criar <nome>` | Criar a identidade do personagem |
+| `/persona idade <n>` | Definir a idade |
+| `/persona desc <texto>` | Definir a descrição |
+| `/persona ver [jogador]` | Consultar a ficha |
+| `/persona off` | Remover a identidade de personagem |
+| `/roll` | Realizar uma rolagem de dados |
 
-### ⛏️ Aviso só no nível certo (o caso da CAVERNA)
-- `/lorezone vertical <id> <minY> <maxY>` — a zona **só dispara entre esses Y**:
-  evento na caverna em Y=-30..20 e o cara está no topo (Y=120)? **não recebe nada**;
-  o aviso aparece quando ele desce até o nível da caverna
-- `/lorezone vertical <id> auto` — volta a valer a esfera inteira
-- Zonas antigas continuam funcionando (esfera completa) e o `/lorezone listar` mostra `Y -30..20`
+### Chat e balões
 
-### 🏷️ Tag RP/OFF RP
-- **● ʀᴘ** (ponto ciano) ou **○ ᴏꜰꜰ ʀᴘ** (ponto cinza) no nome e **também no TAB** — small capitals, colorindo só a tag
-- Aparece no nametag, no chat e na TAB · `/rp` alterna, `/rp on|off|status`, `/rp set <jogador> on|off` (admin)
-- **`/rp ajuda` lista TODOS os comandos com a função de cada um** — admins veem também a seção de comandos de admin
+O chat local utiliza proximidade. Os canais de grito, sussurro e global atendem
+contextos diferentes; ações de personagem são enviadas por `/me` e `/do`.
 
-### 🫀 Vidas Canônicas (modo canon)
-- `/rp admin canon on` — cada player tem **5 vidas canônicas**; morrer custa 1,
-  com ritual completo: strondo, véu vermelho, áudio de lore e o aviso
-  **"VOCÊ PERDEU UMA VIDA — RESTAM N"**
-- Na **última vida** o aviso muda pra **"TOME CUIDADO"** + **medo absurdo** por 30s
-- **🫀 Coração da Vida Canônica** — item que só admin dá
-  (`/give <player> rptag:coracao_canon`), nunca spawna sozinho: no chão vira um
-  **coração 3D girando, batendo e flutuando**; quem achar usa
-  **SHIFT + clique direito** e recupera 1 vida — **"VOCÊ GANHOU UMA NOVA CHANCE"**
-  (vidas cheias 5/5? o coração fica lá, não se desperdiça)
-- **Morte fora do RP não conta**: se quem **matou** estava **OFF RP**, a vítima
-  **não perde vida** (sem ritual, sem aviso, sem som). Mob, queda, lava, fogo e
-  `/kill` continuam contando normalmente
-- Limite anti-mortes-seguidas de 5 minutos — relogar não burla
+| Comando | Finalidade |
+| --- | --- |
+| `/g <mensagem>` | Chat global |
+| `/s <mensagem>` | Grito |
+| `/w <mensagem>` | Sussurro |
+| `/me <ação>` | Ação do personagem |
+| `/do <texto>` | Descrição de ambiente, conforme permissão administrativa |
+| `/balao` | Personalizar moldura, cores, duração e adesivos |
+| `/balao teste <frase>` | Visualizar um exemplo de balão |
+| `/balao modo on` e `/balao modo off` | Alterar o modo de exibição da fala |
 
-- **Tudo salvo no mundo** — sobrevive a relog, morte e reinício do servidor.
-  Por padrão, todo mundo começa em **OFF RP**.
-- **Sem dependências** — só precisa do NeoForge.
+A administração controla a disponibilidade dos balões por jogador. O sistema
+suporta empilhamento de até três balões, animação de entrada e saída e exibição
+orientada para a câmera de cada observador.
 
-## 📥 Instalação
+### Avisos e efeitos
 
-**Requisitos:** Minecraft 1.21.1 + NeoForge 21.1.x + Java 21
+O comando administrativo `/rp admin avisar <jogador|@a> <estilo> <mensagem>` exibe
+um título e uma mensagem na tela dos destinatários.
 
-1. Instale o **NeoForge 1.21.1** no servidor.
-2. Copie `rptag-4.5.0.jar` para a pasta `mods/` do **servidor** (e **apague o jar antigo** de lá!).
-   → a tag no **chat** e na **TAB** já funciona pra todo mundo.
-3. *(Opcional)* Jogadores que quiserem ver a tag **em cima da cabeça** colocam o
-   jar também na pasta `mods/` do **cliente**.
+| Estilo | Identificador |
+| --- | --- |
+| Clássico | `classico` |
+| Pesadelo | `pesadelo` |
+| Rúnico | `runico` |
+| Real | `real` |
+| Morte | `morte` |
+| Inferno | `inferno` |
+| Gelo | `gelo` |
+| Divino | `divino` |
+| Void | `void` |
+| Sangue | `sangue` |
+| Demoníaco | `demoniaco` |
+| Pesadelo alternativo | `pesadelo2` |
 
-## 🔧 Compilando do zero
+Na versão do código 4.5.0, Morte, Inferno e Gelo podem utilizar animações
+renderizadas no Blender. Os efeitos procedurais permanecem disponíveis como
+alternativa quando o vídeo está desativado, indisponível ou apresenta falha.
+O texto da mensagem é desenhado pelo cliente e não faz parte dos quadros de vídeo.
 
-Requisitos: **JDK 21** e internet.
+Use `/rpfx status`, `/rpfx on` ou `/rpfx off` para consultar ou alterar essa opção
+no cliente. A configuração é persistida em `config/rptag/cliente.properties`.
+
+### Zonas de lore
+
+As zonas permitem associar avisos, efeitos sonoros e música a regiões do mundo.
+O sistema inclui delimitação vertical e ferramentas administrativas de visualização.
+
+- `/lorezone listar`: consultar as zonas cadastradas.
+- `/lorezone vertical <id> <minY> <maxY>`: limitar a faixa de altura.
+- `/lorezone vertical <id> auto`: restabelecer a delimitação esférica completa.
+- `/lorezone mostrar <id> [segundos]`: visualizar os limites na tela do administrador.
+- `/lorezone esconder`: encerrar a visualização.
+- `/lorezone varinha`: obter a ferramenta de inspeção.
+- `/lorezone musicas`: consultar os presets de som.
+
+As opções de som e música incluem presets, arquivos personalizados e URLs
+compatíveis. Consulte a ajuda do jogo para os argumentos de cada subcomando.
+
+### Vidas canônicas
+
+O modo canônico é ativado pela administração com `/rp admin canon on`. Cada
+jogador começa com cinco vidas. O sistema inclui avisos de perda e recuperação,
+proteção contra perdas sucessivas e um coração canônico para restaurar uma vida.
+
+Mortes causadas por um jogador em OFF RP não descontam vidas canônicas. Mortes
+por outras causas seguem as regras do sistema. Desde a versão 4.4.0, o comando
+`/rp admin vida` permite consultar e administrar o saldo de vidas.
+
+## Desenvolvimento
+
+Utilize o Gradle Wrapper incluído no repositório.
+
+```powershell
+# Windows
+.\gradlew.bat build
+python check.py
+```
 
 ```bash
+# Linux e macOS
 ./gradlew build
+python3 check.py
 ```
 
-O jar sai em `build/libs/rptag-4.5.0.jar`.
+O build executa os testes Java e produz `build/libs/rptag-4.5.0.jar`. O primeiro
+build pode levar mais tempo devido ao download de dependências e à preparação
+do ambiente Minecraft.
 
-## 🎨 Personalizar
+## Documentação
 
-- **Texto e cores da tag**: `src/main/java/dev/rptag/RPTags.java`
-  - `TAG_ON` / `TAG_OFF` — o texto (parênteses e small caps são aplicados automaticamente)
-  - `ChatFormatting.AQUA` (ciano do RP) e `ChatFormatting.GRAY` — troque pelas 16 cores do Minecraft
-- **Estilo do nametag**: `src/main/java/dev/rptag/client/NameplateRenderer.java`
-  - `BADGE_ENABLED = true` desenha a tag como pastilha arredondada ("bolinho") em vez de texto
-- **Mensagens do comando**: `RPCommands.java` e `ServerEvents.java`
-- **Versão do NeoForge**: `build.gradle`
+| Documento | Conteúdo |
+| --- | --- |
+| [COMO-EDITAR.md](COMO-EDITAR.md) | Ambiente de desenvolvimento, build e testes |
+| [ENTREGA.md](ENTREGA.md) | Arquitetura, convenções e continuidade do projeto |
+| [PUBLICAR.md](PUBLICAR.md) | Preparação e publicação de releases |
+| [CHANGELOG.md](CHANGELOG.md) | Histórico de versões |
+| [WALKTHROUGH.md](WALKTHROUGH.md) | Registro técnico e decisões históricas |
+| [arte/README.md](arte/README.md) | Produção e validação das animações |
 
-## 🗂 Estrutura
+A documentação de design em `docs/superpowers/` registra propostas e planos.
+Sua presença não significa que a funcionalidade foi implementada ou publicada.
 
-```
-src/main/java/dev/rptag/
-  RPTagMod.java            # classe principal (@Mod)
-  RPTags.java              # monta a tag ● ʀᴘ / ○ ᴏꜰꜰ ʀᴘ
-  RPWorldData.java         # estado salvo no mundo (SavedData)
-  SyncRPStatePayload.java  # pacote de sincronização servidor -> cliente
-  ModNetworking.java       # registro do pacote
-  ServerEvents.java        # chat, TAB, login, sincronização
-  RPCommands.java          # comando /rp
-  client/                  # nametag no cliente + cache de estados
-```
+## Licença
 
-> *(acima está só o núcleo original — o mod cresceu muito: canon, coração
-> canônico, balões, avisos, medo... O mapa completo dos arquivos está no
-> [WALKTHROUGH.md](WALKTHROUGH.md) e no [COMO-EDITAR.md](COMO-EDITAR.md).)*
-
-## 📄 Licença
-
-[MIT](LICENSE)
+Distribuído sob a [licença MIT](LICENSE).
