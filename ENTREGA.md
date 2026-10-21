@@ -188,7 +188,7 @@ Receita completa e testada no `WALKTHROUGH.md` (seção **TOOLCHAIN**). Resumo:
 11. **Medo/AVISO com shaders** = `registerAboveAll` (nunca `RenderGuiEvent.Post`).
 12. **`renderBackground` vazio** (blur) nos menus — **nunca remover**.
 13. **Nunca portar telemetria** de referências externas.
-14. **Testes antes de entregar**: `check.py` (362 checks) + `./gradlew test` (JUnit) + smoke do servidor por RCON.
+14. **Testes antes de entregar**: `check.py` (369 checks) + `./gradlew test` (JUnit) + smoke do servidor por RCON.
 15. **Vídeo dos avisos**: o texto **nunca** vai no vídeo; decodificar pelo **raster**
     (nunca `getRGB`, ~35 ms/quadro); JPEG com aviso do decodificador = **erro** (fallback).
 
