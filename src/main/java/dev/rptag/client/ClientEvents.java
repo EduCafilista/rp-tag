@@ -67,5 +67,9 @@ public final class ClientEvents {
         ClientPersonaCache.clear();
         ClientBubbleCache.clear();
         VideoFx.fechar(); // (4.2.0) nada de video sobrando no proximo mundo
+        // (4.3.0) e nenhum aviso em video "volta" se o jogador reentrar em menos de 6 s
+        MorteAvisoFx.parar();
+        InfernoAvisoFx.parar();
+        GeloAvisoFx.parar();
     }
 }

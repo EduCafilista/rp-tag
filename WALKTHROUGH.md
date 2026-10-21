@@ -18,7 +18,7 @@
 | Versão | **4.3.0** (2026-10-20) |
 | Commit | (ver `git log`) |
 | Jar | `rptag-4.3.0.jar` (~54 MB com 3 vídeos; **só na GitHub Release**) |
-| Checks | `check.py` → **341 PASS / 0 FAIL** + **JUnit 25/25** (`./gradlew test`) + `python -m unittest discover -s arte/tests` |
+| Checks | `check.py` → **343 PASS / 0 FAIL** + **JUnit 25/25** (`./gradlew test`) + `python -m unittest discover -s arte/tests` |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |

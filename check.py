@@ -738,6 +738,10 @@ for _id, _cls in (('inferno', 'InfernoAvisoFx'), ('gelo', 'GeloAvisoFx')):
     check('4.3: assets do video %s no jar' % _id, os.path.exists(A + '/fx/%s/fx.json' % _id))
 check('4.3: aviso novo encerra os avisos em video anteriores (ClientEffects)',
       all(('%s.parar()' % k) in rd(C + '/ClientEffects.java') for k in ('MorteAvisoFx', 'InfernoAvisoFx', 'GeloAvisoFx')))
+check('4.3: sair do mundo encerra os avisos em video (nada volta ao reentrar)',
+      all(('%s.parar()' % k) in rd(C + '/ClientEvents.java') for k in ('MorteAvisoFx', 'InfernoAvisoFx', 'GeloAvisoFx')))
+check('4.3: MORTE tambem respeita a politica (reduzido = procedural)',
+      'FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("morte")' in rd(C + '/MorteAvisoFx.java'))
 check('4.3: politica do video (reduzido = procedural) em Java puro',
       'return habilitado && !reduzido;' in rd(C + '/FxVideoPolitica.java'))
 import subprocess
