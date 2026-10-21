@@ -86,6 +86,8 @@ public final class ClientEffects {
         MorteAvisoFx.parar();
         InfernoAvisoFx.parar();
         GeloAvisoFx.parar();
+        VoidAvisoFx.parar();
+        DivinoAvisoFx.parar();
         // (3.94.0) estilo 10 = DEMONIACO: o FX proprio (Chamado do Abismo:
         // mandibulas, fissuras, pentagrama, olho de fenda) assume. Codigos
         // & sao ignorados.
@@ -202,7 +204,7 @@ public final class ClientEffects {
     }
 
     static {
-        RPTagMod.LOGGER.info("RP Tag 4.5.0: camada de avisos carregada");
+        RPTagMod.LOGGER.info("RP Tag 4.6.0: camada de avisos carregada");
     }
 
     /** (3.78.0) VÉU da vida perdida: tela MEIO AVERMELHADA durante o

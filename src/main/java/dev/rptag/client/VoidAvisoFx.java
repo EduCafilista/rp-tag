@@ -16,7 +16,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import dev.rptag.RPTagMod;
 import org.joml.Matrix4f;
+
+import static dev.rptag.client.AvisoFxUtil.contornoEscuro;
 
 /**
  * AVISO VOID — "Queda Sem Fundo" (~6 s)
@@ -38,6 +41,8 @@ public final class VoidAvisoFx {
     private static final float DUR = 6.0f, TAU = 6.2831853f;
     private static final int VIO = 0x7828C8, CYAN = 0x78E6FF, LAV = 0xDCD2FF, NIGHT = 0x06000F, DEEPB = 0x140A40, WHITE = 0xFFFFFF;
     private static final float[] RES = {1.5f, 2.7f, 3.9f};
+    /** (4.6.0) contorno escuro do texto no modo video (noite do End). */
+    private static final int CONTORNO_VIDEO = 0x06000F;
 
     /** true = menos anéis/estrelas. */
     public static boolean reduzido = false;
@@ -46,6 +51,8 @@ public final class VoidAvisoFx {
     private static String titulo = "AVISO", sub = "";
     private static int resIdx;
     private static boolean fimTocado;
+    /** (4.6.0) true = fundo vem do video do Blender (VideoFx). */
+    private static boolean video;
 
     private VoidAvisoFx() {}
 
@@ -60,6 +67,17 @@ public final class VoidAvisoFx {
         resIdx = 0;
         fimTocado = false;
         tocar(SoundEvents.END_PORTAL_SPAWN, 0.6f, 0.6f);
+        // (4.6.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
+        FxComando.garantirConfig();
+        video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("void");
+        RPTagMod.LOGGER.info("RP Tag: QUEDA SEM FUNDO em {}", video ? "VIDEO" : "procedural");
+    }
+
+    /** (4.6.0) Encerra o aviso na hora (um aviso novo substitui este). */
+    public static void parar() {
+        if (video) VideoFx.fechar();
+        video = false;
+        inicio = -1;
     }
 
     /** SERVIDOR: partículas de portal sendo sugadas ao redor do jogador. */
@@ -73,7 +91,12 @@ public final class VoidAvisoFx {
     private static void render(GuiGraphics g, DeltaTracker dt) {
         if (inicio < 0) return;
         float t = (System.nanoTime() - inicio) / 1e9f;
-        if (t >= DUR) { inicio = -1; return; }
+        if (t >= DUR) {
+            inicio = -1;
+            if (video) VideoFx.fechar();
+            video = false;
+            return;
+        }
 
         Minecraft mc = Minecraft.getInstance();
         int w = g.guiWidth(), h = g.guiHeight();
@@ -81,6 +104,20 @@ public final class VoidAvisoFx {
         float env = ss(0, 0.5f, t) * (1 - ss(DUR - 1.2f, DUR, t));
         float rev = eo(cl((t - 0.1f) / 1.2f));
         float Rmax = diag * 0.6f, Rh = 24 * k * rev;
+        if (video) {
+            // (4.6.0) fundo = VIDEO; titulo (orbita, aberracao, reflexo), mensagem e sons no codigo
+            AvisoFxUtil.preparar(g);
+            VideoEstado ve = VideoFx.desenhar(g, t);
+            if (ve == VideoEstado.CARREGANDO) {
+                inicio = System.nanoTime(); // relogio parado ate ter quadros
+                RenderSystem.enableDepthTest();
+                return;
+            }
+            if (ve == VideoEstado.FALHOU) {
+                video = false; // segue procedural NESTE MESMO t
+                RPTagMod.LOGGER.warn("RP Tag: video do aviso falhou — seguindo procedural");
+            }
+        }
         sons(t);
 
         g.flush();
@@ -92,26 +129,31 @@ public final class VoidAvisoFx {
 
         // 1) escuridão, vinheta, estilhaços e o buraco (blend normal)
         RenderSystem.defaultBlendFunc();
+        int NSH = reduzido ? 6 : 12;
         Buf b = new Buf(m);
+        if (video) {
+            // (4.6.0) apoio de leitura: sombra radial escura atras do titulo
+            brilho(b, cx, cy, 85 * k, NIGHT, 0.35f * env);
+        } else {
         b.quad(0, 0, col(NIGHT, 0.55f * env), w, 0, col(NIGHT, 0.55f * env), w, h, col(NIGHT, 0.55f * env), 0, h, col(NIGHT, 0.55f * env));
         float d = Math.min(w, h) * 0.42f, va = 0.92f * env;
         b.quad(0, 0, col(NIGHT, va), w, 0, col(NIGHT, va), w, d, col(NIGHT, 0), 0, d, col(NIGHT, 0));
         b.quad(0, h, col(NIGHT, va), w, h, col(NIGHT, va), w, h - d, col(NIGHT, 0), 0, h - d, col(NIGHT, 0));
         b.quad(0, 0, col(NIGHT, va), 0, h, col(NIGHT, va), d, h, col(NIGHT, 0), d, 0, col(NIGHT, 0));
         b.quad(w, 0, col(NIGHT, va), w, h, col(NIGHT, va), w - d, h, col(NIGHT, 0), w - d, 0, col(NIGHT, 0));
-        int NSH = reduzido ? 6 : 12;
         for (int i = 0; i < NSH; i++) {
             float[] s = estilhaco(i, t, cx, cy, Rmax, k);
             int c = col(0x080014, 0.9f * env * s[6]);
             b.tri(s[0], s[1], c, s[2], s[3], c, s[4], s[5], c);
         }
         buraco(b, cx, cy, Rh, Rh * 1.3f, 0.98f * env);
+        } // (4.6.0) fim do fundo procedural (camada 1)
         b.flush();
 
         // 2) tudo que brilha (aditivo)
         RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
         b = new Buf(m);
-
+        if (!video) {
         if (t < 0.55f) {                                              // onda de choque
             float u = eo(t / 0.55f);
             anel(b, cx, cy, diag * 0.55f * u, 96, 6 * k * (1 - u) + 1, 0, LAV, (1 - u) * 0.8f);
@@ -148,6 +190,7 @@ public final class VoidAvisoFx {
         float rot = -0.3f + 0.05f * sin(t);                           // disco de acreção inclinado
         anelEl(b, cx, cy, Rh * 2.6f, Rh * 0.55f, rot, 96, 1.6f * k * 0.6f, LAV, 0.75f * env);
         anelEl(b, cx, cy, Rh * 3.4f, Rh * 0.80f, rot, 96, 1.2f * k * 0.5f, CYAN, 0.35f * env);
+        } // (4.6.0) fim do fundo procedural (camada 2)
         b.flush();
 
         // 3) textos (normal)
@@ -169,6 +212,7 @@ public final class VoidAvisoFx {
                 g.pose().translate(px, ty + bob, 0);
                 g.pose().scale(S, S, 1);
                 int glow = ((int) (a8 * 0.35f) << 24) | 0x7828C8;
+                if (video) contornoEscuro(g, f, ch, 0, 0, a8, CONTORNO_VIDEO);
                 g.drawString(f, ch, -1, 0, glow, false); g.drawString(f, ch, 1, 0, glow, false);
                 g.drawString(f, ch, 0, -1, glow, false); g.drawString(f, ch, 0, 1, glow, false);
                 g.drawString(f, ch, -2, 0, ((int) (a8 * 0.35f) << 24) | 0x78E6FF, false);
@@ -188,6 +232,7 @@ public final class VoidAvisoFx {
             g.pose().pushPose();
             g.pose().translate(cx - f.width(sub) * S2 / 2, cy + 25 * k, 0);
             g.pose().scale(S2, S2, 1);
+            if (video) contornoEscuro(g, f, sub, 0, 0, sa, CONTORNO_VIDEO);
             g.drawString(f, sub, 0, 0, (sa << 24) | 0xB4A0FF, true);
             g.pose().popPose();
         }
@@ -216,6 +261,14 @@ public final class VoidAvisoFx {
             b.tri(cx, cy, col(0x000000, a), cx + cos(a0) * rIn, cy + sin(a0) * rIn, col(0x000000, a), cx + cos(a1) * rIn, cy + sin(a1) * rIn, col(0x000000, a));
             b.quad(cx + cos(a0) * rIn, cy + sin(a0) * rIn, col(0x000000, a), cx + cos(a1) * rIn, cy + sin(a1) * rIn, col(0x000000, a),
                     cx + cos(a1) * rOut, cy + sin(a1) * rOut, col(0x000000, 0), cx + cos(a0) * rOut, cy + sin(a0) * rOut, col(0x000000, 0));
+        }
+    }
+
+    /** (4.6.0) disco radial: cor A no centro -> transparente na borda (apoio de leitura). */
+    private static void brilho(Buf b, float cx, float cy, float r, int rgb, float a) {
+        for (int j = 0; j < 48; j++) {
+            float a0 = j * TAU / 48, a1 = (j + 1) * TAU / 48;
+            b.tri(cx, cy, col(rgb, a), cx + cos(a0) * r, cy + sin(a0) * r, col(rgb, 0), cx + cos(a1) * r, cy + sin(a1) * r, col(rgb, 0));
         }
     }
 

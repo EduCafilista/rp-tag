@@ -1,5 +1,31 @@
 # Changelog
 
+## 4.6.0 — VOID E DIVINO EM VÍDEO (BLENDER) (2026-10-20)
+
+### "Queda Sem Fundo" refeita no Blender
+- Mesma coreografia do efeito anterior, renderizada em **3D**: a onda de choque abre
+  a tela, o **buraco negro** cresce atrás do título e o **disco de acreção inclinado**
+  passa por trás dele
+- **Túnel** de anéis em profundidade, **estrelas riscadas** sugadas para o centro e
+  estilhaços escuros girando à deriva
+- **Imersão quase total**: o jogo fica pouco visível durante o aviso e volta no fim
+- O arco inferior do horizonte e do disco é atenuado enquanto a mensagem está na tela
+
+### "Ascensão Celestial" refeita no Blender
+- **Pilar de luz** até o título, **halo** com tiques, hexagrama e losangos, **duas
+  coroas de raios** em sentidos opostos, **asas** de 9 penas com movimento independente,
+  ornamento e faíscas
+- O centro do halo fica apagado atrás das letras para manter a leitura sobre céu claro
+
+### Comportamento
+- Sem vídeo, quadro corrompido ou PC lento: o FX procedural assume **no mesmo instante**
+- `fxVideo=false` ou **modo reduzido**: sempre o FX procedural
+- Um aviso novo (de qualquer estilo) ou a saída do mundo encerra o vídeo anterior
+
+### Jar
+- ~95 MB com cinco vídeos (Void 15,9 MB; Divino 25,8 MB, com cor JPEG em qualidade 75
+  porque o efeito cobre quase toda a tela); distribuído **só nas Releases**
+
 ## 4.5.0 — INFERNO E GELO EM VÍDEO (BLENDER)  (2026-10-20)
 
 ### "Fornalha" refeita no Blender

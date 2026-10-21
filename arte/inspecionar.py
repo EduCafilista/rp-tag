@@ -31,6 +31,16 @@ def validar(id: str, quadros: list[int], raiz=None) -> list[str]:
         except (OSError,ValueError,SyntaxError) as e:erros.append(f'quadro {q} ilegivel/ausente: {e}')
     return erros
 
+def luminancia(caminho_png: str, caixa) -> float:
+    """Media de max(R,G,B)/255 * A/255 na caixa (x0,y0,x1,y1 em fracao 0-1, y de cima)."""
+    with Image.open(caminho_png) as im:
+        im=im.convert('RGBA');w,h=im.size
+        x0,y0,x1,y1=caixa
+        reg=im.crop((round(x0*w),round(y0*h),round(x1*w),round(y1*h)))
+        px=list(reg.getdata())
+    if not px:return 0.0
+    return sum(max(r,g,b)*a for r,g,b,a in px)/(255*255*len(px))
+
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('id');ap.add_argument('--quadros',default='12,36,72,127')
     a=ap.parse_args();qs=[int(q) for q in a.quadros.split(',')]

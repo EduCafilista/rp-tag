@@ -28,3 +28,15 @@ class InspecaoTest(unittest.TestCase):
             (pasta/'inspecao.json').write_text(json.dumps({'text_in_scene':False,'rendered_frames':[12]}))
             Image.new('RGBA',(1280,720)).save(pasta/'0012.png')
             self.assertEqual(inspecionar.validar('teste',[12],raiz=pasta),[])
+
+    def test_luminancia_caixa(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[2]/'.superpowers') as tmp:
+            arq=Path(tmp)/'q.png'
+            im=Image.new('RGBA',(100,100),(0,0,0,0))
+            for x in range(50):
+                for y in range(100):im.putpixel((x,y),(255,255,255,255))
+            im.save(arq)
+            self.assertAlmostEqual(inspecionar.luminancia(str(arq),(0,0,.5,1)),1.0,places=3)
+            self.assertAlmostEqual(inspecionar.luminancia(str(arq),(.5,0,1,1)),0.0,places=3)
+            meio=Path(tmp)/'m.png';Image.new('RGBA',(100,100),(255,255,255,128)).save(meio)
+            self.assertAlmostEqual(inspecionar.luminancia(str(meio),(0,0,1,1)),128/255,places=3)

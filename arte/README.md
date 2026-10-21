@@ -11,7 +11,12 @@ cliente Minecraft e não deve ser incorporado aos quadros renderizados.
 | `cenas/morte.py` | Cena do aviso Morte |
 | `cenas/inferno.py` | Cena do aviso Inferno |
 | `cenas/gelo.py` | Cena do aviso Gelo |
+| `cenas/void.py` | Cena do aviso Void (câmera em perspectiva) |
+| `cenas/divino.py` | Cena do aviso Divino |
 | `cenas/comum.py` | Primitivas compartilhadas pelas cenas que a utilizam |
+| `cenas/perspectiva.py` | Parâmetros e projeção da câmera em perspectiva, sem dependência do Blender |
+| `cenas/metas.py` | Marcadores, fade, prévia e qualidade JPEG de cada aviso, sem dependência do Blender |
+| `cenas/suave.py` | Pesos de atenuação sem degrau (zona do texto, período de leitura) |
 | `exportar.py` | Conversão de PNG RGBA em pares JPEG de cor e alfa |
 | `validar.py` | Validação dos assets destinados ao JAR |
 | `inspecionar.py` | Inspeção dos quadros e metadados de renderização |
@@ -49,8 +54,8 @@ python arte/previa.py gelo --gif --fundo arte/referencias/gameplay_escuro.png
 ```
 
 O formato de saída utilizado é 1280 × 720, 24 quadros por segundo, duração de
-seis segundos e fundo transparente. As cenas Inferno e Gelo utilizam título em
-`cy = 0.45 h`; a posição do texto deve ser conferida com o efeito Java
+seis segundos e fundo transparente. As cenas Inferno, Gelo e Void utilizam título em
+`cy = 0.45 h`; Divino utiliza `cy = 0.42 h`. A posição do texto deve ser conferida com o efeito Java
 correspondente. O enquadramento de uma cena não deve ser copiado de outro aviso
 sem verificar essas diferenças.
 
@@ -71,6 +76,20 @@ ao compor os JPEGs exportados.
 
 O tamanho dos assets depende da textura e da compressão. Registre o tamanho real
 da exportação, em vez de utilizar estimativas de versões anteriores.
+
+A qualidade padrão é 85 para a cor e 90 para o alfa. Uma cena pode reduzir a qualidade
+da cor declarando `"jpeg": {"cor": N}` em `metas.py`; o alfa permanece em 90. O Divino usa
+cor 75 porque o efeito cobre quase toda a tela (aprovado pelo responsável).
+
+## Câmera em perspectiva
+
+`comum.camera_perspectiva(distancia, centro_y)` substitui a câmera ortográfica por uma
+em perspectiva cujo plano z = 0 cobre o mesmo quadro de 16 × 9 unidades, com o ponto de
+fuga em `(0, centro_y)`. Objetos em z negativo ficam atrás desse plano e convergem para
+o título. Use `perspectiva.projetar` para converter posições do mundo em frações da tela.
+
+Atenuações por região ou por tempo devem usar as funções de `suave.py`. Condições
+secas (`if` dentro/fora) fazem objetos sumirem ou reaparecerem por degrau.
 
 ## Critérios de avaliação
 

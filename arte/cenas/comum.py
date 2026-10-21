@@ -7,6 +7,9 @@ FPS, N = 24, 144
 DUR = 6.
 TEMPOS = [q/FPS for q in range(N)]
 RAIZ = Path(__file__).resolve().parents[2]
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent))
+import metas, perspectiva
 
 def cl(x): return min(1., max(0.,x))
 def ss(a,b,x):
@@ -213,14 +216,17 @@ def material_solido(nome,cor,emissao=.05,metal=.2):
     return mat
 
 def metadata(fx,seed):
-    eventos=[('impacto',0 if fx=='inferno' else .12),('texto_entra',.3 if fx=='inferno' else .4),('texto_sai',4.8)]
-    eventos += [('crepitar',.5+.45*i) for i in range(11)] if fx=='inferno' else [('sino',t) for t in (.5,1.2,2.,3.)]
-    eventos += [('fim',5.1)]
-    return {'id':fx,'seed':seed,'markers':[{'name':n,'frame':round(t*FPS)} for n,t in eventos],
-        'fade':{'in':[0,.35 if fx=='inferno' else .4],'out':[4.8,6.]},
-        'preview':{'color':[255,173,65] if fx=='inferno' else [210,240,255],
-        'message':'A FORNALHA DESPERTOU' if fx=='inferno' else 'O FRIO TOMOU CONTA',
-        'title_y':.45,'message_y':.45+25/240}}
+    return metas.metadata(fx,seed)
+
+def camera_perspectiva(distancia=20.0,centro_y=0.0):
+    """Troca a camera da cena por perspectiva; o plano z=0 continua cobrindo 16x9."""
+    p=perspectiva.parametros(distancia,centro_y)
+    co=bpy.context.scene.camera;cam=co.data
+    cam.type='PERSP';cam.sensor_fit='HORIZONTAL';cam.sensor_width=p['sensor_width'];cam.lens=p['lens']
+    cam.shift_x,cam.shift_y=p['shift_x'],p['shift_y'];cam.clip_start,cam.clip_end=.1,200
+    co.location=p['location'];co.rotation_euler=(0,0,0)
+    bpy.context.view_layer.update()
+    return co
 
 def renderizar(id,meta,quadros=None):
     sc=bpy.context.scene;out=RAIZ/'arte'/'render'/id;out.mkdir(parents=True,exist_ok=True)
