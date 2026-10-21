@@ -2,6 +2,34 @@
 
 
 
+## 4.3.0 — INFERNO E GELO EM VÍDEO (BLENDER) 🔥❄️ (2026-10-20)
+
+### 🔥 "Fornalha" refeita no Blender
+- Uma **fissura incandescente** se abre atrás do título com clarão e onda de calor,
+  e se desfaz em fragmentos carbonizados
+- **Fogo de verdade** subindo pelo rodapé e pelos cantos (línguas irregulares,
+  núcleo amarelo, pontas vinho), **fumaça** iluminada por baixo no teto,
+  **meteoros** com rastro e um **redemoinho de brasas** discreto atrás do texto
+- O centro fica livre para ler a mensagem
+
+### ❄️ "Geada Eterna" refeita no Blender
+- O impacto **estilhaça a tela como vidro** (trincas e anéis quebrados)
+- A **geada cresce das bordas** com veios cristalinos e "samambaias" de gelo,
+  **cristais translúcidos** em aglomerados nos cantos, neve em profundidade
+  e um floco discreto girando atrás do título; no fim, fragmentos se soltam
+
+### 📖 Leitura
+- No modo vídeo o texto ganha **contorno escuro**, legível até sobre céu claro
+
+### 🛟 Igual ao MORTE
+- Sem vídeo, quadro corrompido ou PC lento → o FX antigo assume **no mesmo instante**
+- `fxVideo=false` ou **modo reduzido** → sempre o FX antigo
+- Um aviso novo (de qualquer estilo) encerra o aviso em vídeo anterior
+
+### 📦 Jar
+- ~54 MB com os três vídeos (Morte 9,6 MB, Inferno 14,1 MB, Gelo 32,4 MB),
+  continua **só nas Releases**
+
 ## 4.2.0 — AVISO DE MORTE EM VÍDEO (BLENDER) 🎬 (2026-10-19)
 
 ### ☠️ "Linha Reta" agora é um vídeo renderizado no Blender

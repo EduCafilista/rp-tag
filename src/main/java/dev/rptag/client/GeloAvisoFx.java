@@ -1,5 +1,7 @@
 package dev.rptag.client;
 
+import dev.rptag.RPTagMod;
+
 import static dev.rptag.client.AvisoFxUtil.*;
 
 import net.minecraft.client.DeltaTracker;
@@ -31,6 +33,8 @@ public final class GeloAvisoFx {
     private static final float DUR = 6.0f;
     private static final int ICE = 0xD2F0FF, LIGHT = 0xBEEBFF, MID = 0x5AA0DC, DEEP = 0x0A2850, GLOW = 0x50A0FF, WHITE = 0xFFFFFF;
     private static final float[] CH = {0.5f, 1.2f, 2.0f, 3.0f};
+    /** (4.3.0) contorno escuro do texto no modo video (azul-noite). */
+    private static final int CONTORNO_VIDEO = 0x0A1C38;
     private static final float[] CP = {1.5f, 1.9f, 2.0f, 1.7f};
 
     /** true = sem clarão, menos neve e dendritos. */
@@ -41,6 +45,8 @@ public final class GeloAvisoFx {
     private static String sub = "";
     private static int chIdx;
     private static boolean impacto, fim;
+    /** (4.3.0) true = fundo vem do video do Blender (VideoFx). */
+    private static boolean video;
 
     private GeloAvisoFx() {}
 
@@ -53,6 +59,17 @@ public final class GeloAvisoFx {
         sub = (mensagem == null) ? "" : mensagem;
         inicio = System.nanoTime();
         chIdx = 0; impacto = false; fim = false;
+        // (4.3.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
+        FxComando.garantirConfig();
+        video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("gelo");
+        RPTagMod.LOGGER.info("RP Tag: GEADA ETERNA em {}", video ? "VIDEO" : "procedural");
+    }
+
+    /** (4.3.0) Encerra o aviso na hora (um aviso novo substitui este). */
+    public static void parar() {
+        if (video) VideoFx.fechar();
+        video = false;
+        inicio = -1;
     }
 
     /** SERVIDOR: nevasca + estilhaços de gelo. congelar=true usa o congelamento vanilla (afeta o jogo!). */
@@ -69,14 +86,18 @@ public final class GeloAvisoFx {
     private static void render(GuiGraphics g, DeltaTracker dt) {
         if (inicio < 0) return;
         float t = (System.nanoTime() - inicio) / 1e9f;
-        if (t >= DUR) { inicio = -1; return; }
+        if (t >= DUR) {
+            inicio = -1;
+            if (video) VideoFx.fechar();
+            video = false;
+            return;
+        }
 
         Minecraft mc = Minecraft.getInstance();
         int w = g.guiWidth(), h = g.guiHeight();
         float cx = w / 2f, cy = h * 0.45f, k = Math.min(w, h) / 240f;
         float env = ss(0, 0.4f, t) * (1 - ss(DUR - 1.2f, DUR, t));
         float rev = eo(cl((t - 0.1f) / 1.0f));
-        sons(t);
 
         Font f = mc.font;
         int len = msg.length();
@@ -87,11 +108,29 @@ public final class GeloAvisoFx {
         for (int i = 0; i < len; i++) { xs[i] = x0 + acc * S; acc += cw[i] + sp; }
 
         preparar(g);
+        if (video) {
+            // (4.3.0) fundo = VIDEO; texto, efeitos das letras e sons continuam no codigo
+            VideoEstado ve = VideoFx.desenhar(g, t);
+            if (ve == VideoEstado.CARREGANDO) {
+                inicio = System.nanoTime(); // relogio parado ate ter quadros
+                com.mojang.blaze3d.systems.RenderSystem.enableDepthTest();
+                return;
+            }
+            if (ve == VideoEstado.FALHOU) {
+                video = false; // segue procedural NESTE MESMO t
+                RPTagMod.LOGGER.warn("RP Tag: video do aviso falhou — seguindo procedural");
+            }
+            preparar(g);
+        }
+        sons(t);
         // 1) frio, geada, cristais (normal)
         Buf b = new Buf(g.pose().last().pose());
+        if (!video) {
         b.rect(0, 0, w, h, col(MID, 0.12f * env));
         b.vinheta(w, h, Math.min(w, h) * 0.30f, ICE, 0.50f * env);
-        b.brilho(cx, cy, 85 * k, DEEP, 0.30f * env);                   // apoio de leitura
+        }
+        b.brilho(cx, cy, 85 * k, DEEP, (video ? 0.5f : 0.30f) * env);  // apoio de leitura (mais forte sem o fundo procedural)
+        if (!video) {
         float gg = eo(cl((t - 0.2f) / 1.4f)), gl = Math.min(w, h) * 0.30f, ga = 0.75f * env;
         int[] per = reduzido ? new int[]{1, 3} : new int[]{0, 1, 2, 3};
         for (int e = 0; e < 4; e++) {
@@ -135,6 +174,7 @@ public final class GeloAvisoFx {
                 b.seg(x - bw, y0, x, ty2, 1.0f, col(WHITE, 0.6f * env), col(WHITE, 0.9f * env));
             }
         }
+        } // (4.3.0) fim do fundo procedural (camada 1)
         float ra = 0.8f * env;                                           // pingentes sob as letras
         for (int i = 0; i < len; i++) {
             float age = t - 0.9f - 0.1f * i;
@@ -147,6 +187,7 @@ public final class GeloAvisoFx {
         // 2) brilho (aditivo)
         aditivo();
         b = new Buf(g.pose().last().pose());
+        if (!video) {
         if (!reduzido && t > 0.12f && t < 0.3f) b.rect(0, 0, w, h, col(LIGHT, (1 - (t - 0.12f) / 0.18f) * 0.4f));
         b.brilho(cx, cy, 80 * k * rev, GLOW, 0.30f * env);               // floco de neve
         float R = 62 * k * rev, rot = t * 10 * DEG;
@@ -181,6 +222,7 @@ public final class GeloAvisoFx {
             float px = w * (0.1f + 0.8f * rnd(i, 101)), py = h * (0.1f + 0.8f * rnd(i, 102)), s = (6 + 6 * rnd(i, 103)) * k * tw;
             b.diamante(px, py, s * 0.12f, s, col(WHITE, env * tw)); b.diamante(px, py, s, s * 0.12f, col(WHITE, env * tw));
         }
+        } // (4.3.0) fim do fundo procedural (camada 2)
         b.flush();
 
         // 3) texto: congela letra a letra, reflexo varrendo
@@ -197,6 +239,7 @@ public final class GeloAvisoFx {
             g.pose().translate(xs[i], ty, 0);
             g.pose().scale(S, S, 1);
             int glow = ((int) (a8 * 0.35f) << 24) | 0x50A0FF;
+            if (video) contornoEscuro(g, f, ch, 0, 0, a8, CONTORNO_VIDEO);
             g.drawString(f, ch, -1, 0, glow, false); g.drawString(f, ch, 1, 0, glow, false);
             g.drawString(f, ch, 0, -1, glow, false); g.drawString(f, ch, 0, 1, glow, false);
             g.drawString(f, ch, -1.5f, 0, ((int) (a8 * 0.35f) << 24) | 0x78E6FF, false);
@@ -212,6 +255,7 @@ public final class GeloAvisoFx {
                 g.pose().pushPose();
                 g.pose().translate(cx - f.width(sub) * S2 / 2, cy + 25 * k, 0);
                 g.pose().scale(S2, S2, 1);
+                if (video) contornoEscuro(g, f, sub, 0, 0, a8s, CONTORNO_VIDEO);
                 g.drawString(f, sub, 0, 0, (a8s << 24) | 0xD2F0FF, true);
                 g.pose().popPose();
             }

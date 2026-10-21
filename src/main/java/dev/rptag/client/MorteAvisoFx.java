@@ -71,8 +71,16 @@ public final class MorteAvisoFx {
         inicio = System.nanoTime();
         evIdx = 0; apitoIdx = 0; sino1 = sino2 = false;
         // (4.2.0) tenta o VIDEO renderizado no Blender; sem video -> procedural
-        video = VideoFx.abrir("morte");
+        FxComando.garantirConfig();
+        video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("morte");
         RPTagMod.LOGGER.info("RP Tag: LINHA RETA em {}", video ? "VIDEO" : "procedural");
+    }
+
+    /** (4.3.0) Encerra o aviso na hora (um aviso novo substitui este). */
+    public static void parar() {
+        if (video) VideoFx.fechar();
+        video = false;
+        inicio = -1;
     }
 
     /** SERVIDOR: almas subindo, cinzas e um anel de fogo-de-alma. */

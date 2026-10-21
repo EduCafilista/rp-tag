@@ -1,5 +1,7 @@
 package dev.rptag.client;
 
+import dev.rptag.RPTagMod;
+
 import static dev.rptag.client.AvisoFxUtil.*;
 
 import net.minecraft.client.DeltaTracker;
@@ -26,6 +28,8 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
  */
 public final class InfernoAvisoFx {
     private static final float DUR = 6.0f;
+    /** (4.3.0) contorno escuro do texto no modo video (marrom-carvao). */
+    private static final int CONTORNO_VIDEO = 0x200800;
     private static final int RED = 0xFF4600, ORG = 0xFF8C1E, YEL = 0xFFD23C, HOTW = 0xFFFAD2, SMOKE = 0x140804;
 
     /** true = sem clarão, menos meteoros/brasas. */
@@ -36,6 +40,8 @@ public final class InfernoAvisoFx {
     private static String sub = "";
     private static int crackIdx;
     private static boolean fimTocado, impacto;
+    /** (4.3.0) true = fundo vem do video do Blender (VideoFx). */
+    private static boolean video;
 
     private InfernoAvisoFx() {}
 
@@ -48,6 +54,17 @@ public final class InfernoAvisoFx {
         sub = (mensagem == null) ? "" : mensagem;
         inicio = System.nanoTime();
         crackIdx = 0; fimTocado = false; impacto = false;
+        // (4.3.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
+        FxComando.garantirConfig();
+        video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("inferno");
+        RPTagMod.LOGGER.info("RP Tag: FORNALHA em {}", video ? "VIDEO" : "procedural");
+    }
+
+    /** (4.3.0) Encerra o aviso na hora (um aviso novo substitui este). */
+    public static void parar() {
+        if (video) VideoFx.fechar();
+        video = false;
+        inicio = -1;
     }
 
     /** SERVIDOR: tornado de chamas subindo em espiral + respingos de lava + fumaça. */
@@ -66,7 +83,12 @@ public final class InfernoAvisoFx {
     private static void render(GuiGraphics g, DeltaTracker dt) {
         if (inicio < 0) return;
         float t = (System.nanoTime() - inicio) / 1e9f;
-        if (t >= DUR) { inicio = -1; return; }
+        if (t >= DUR) {
+            inicio = -1;
+            if (video) VideoFx.fechar();
+            video = false;
+            return;
+        }
 
         Minecraft mc = Minecraft.getInstance();
         int w = g.guiWidth(), h = g.guiHeight();
@@ -74,7 +96,6 @@ public final class InfernoAvisoFx {
         float env = ss(0, 0.35f, t) * (1 - ss(DUR - 1.2f, DUR, t));
         float rev = eo(cl((t - 0.05f) / 0.9f));
         float flick = 0.8f + 0.2f * sin(t * 13f) * sin(t * 7.3f);
-        sons(t);
 
         // layout do texto (precisa antes: as chamas das letras dependem das posições)
         Font f = mc.font;
@@ -86,20 +107,38 @@ public final class InfernoAvisoFx {
         for (int i = 0; i < len; i++) { xs[i] = x0 + acc * S; acc += cw[i] + sp; }
 
         preparar(g);
+        if (video) {
+            // (4.3.0) fundo = VIDEO; texto, efeitos das letras e sons continuam no codigo
+            VideoEstado ve = VideoFx.desenhar(g, t);
+            if (ve == VideoEstado.CARREGANDO) {
+                inicio = System.nanoTime(); // relogio parado ate ter quadros
+                com.mojang.blaze3d.systems.RenderSystem.enableDepthTest();
+                return;
+            }
+            if (ve == VideoEstado.FALHOU) {
+                video = false; // segue procedural NESTE MESMO t
+                RPTagMod.LOGGER.warn("RP Tag: video do aviso falhou — seguindo procedural");
+            }
+            preparar(g);
+        }
+        sons(t);
         // 1) fumaça + calor (normal)
         Buf b = new Buf(g.pose().last().pose());
+        if (!video) {
         b.rect(0, 0, w, h, col(RED, 0.16f * env * flick));
         b.vinheta(w, h, Math.min(w, h) * 0.25f, SMOKE, 0.55f * env);
         for (int i = 0; i < 7; i++) {
             float sx = w * rnd(i, 71) + sin(t * 0.3f + i) * 60 * k, sy = h * 0.14f * rnd(i, 72) + sin(t * 0.5f + i * 2) * 10 * k;
             b.brilho(sx, sy, (60 + 50 * rnd(i, 73)) * k, SMOKE, 0.30f * env);
         }
-        b.brilho(cx, cy, 85 * k, 0x000000, 0.30f * env);               // apoio de leitura do texto
+        } // (4.3.0) fim do fundo procedural (camada 1)
+        b.brilho(cx, cy, 85 * k, 0x000000, (video ? 0.45f : 0.30f) * env); // apoio de leitura do texto
         b.flush();
 
         // 2) fogo (aditivo)
         aditivo();
         b = new Buf(g.pose().last().pose());
+        if (!video) {
         if (!reduzido && t < 0.2f) b.rect(0, 0, w, h, col(HOTW, (1 - t / 0.2f) * 0.5f));
         if (t < 0.7f) {                                                 // onda de choque
             float u = eo(t / 0.7f);
@@ -148,6 +187,7 @@ public final class InfernoAvisoFx {
             float sz = (0.8f + 1.8f * rnd(i, 4)) * k * 0.8f, al = env * (1 - p) * (0.6f + 0.4f * sin(t * 12 + i));
             b.diamante(px, py, sz * 0.5f, sz * 1.3f, col(mix(YEL, ORG, p), al));
         }
+        } // (4.3.0) fim do fundo procedural (camada 2)
 
         for (int i = 0; i < len; i++) {                                 // chamas lambendo cada letra
             float age = t - 0.3f - 0.06f * i;
@@ -187,6 +227,7 @@ public final class InfernoAvisoFx {
                 g.pose().pushPose();
                 g.pose().translate(cx - f.width(sub) * S2 / 2, cy + 25 * k, 0);
                 g.pose().scale(S2, S2, 1);
+                if (video) contornoEscuro(g, f, sub, 0, 0, a8s, CONTORNO_VIDEO);
                 g.drawString(f, sub, 0, 0, (a8s << 24) | 0xFFD23C, true);
                 g.pose().popPose();
             }

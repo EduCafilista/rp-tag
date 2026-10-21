@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.2.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.3.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.2.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.3.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -357,7 +357,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.2.0', 'RP Tag 4.2.0' in ce)
+check('4.0: boot log 4.3.0', 'RP Tag 4.3.0' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -723,6 +723,27 @@ check('4.2: render do player protegido (catch Throwable)', 'catch (Throwable' in
 check('4.2: fecha o video ao sair do mundo', 'VideoFx.fechar()' in rd(C + '/ClientEvents.java'))
 check('4.2: fxVideo em cliente.properties + /rpfx',
       'cliente.properties' in cfg and 'fxVideo' in cfg and 'literal("rpfx")' in cfg)
+# ---- 4.3.0: Inferno e Gelo em VIDEO (Blender), mesmo player do MORTE
+for _id, _cls in (('inferno', 'InfernoAvisoFx'), ('gelo', 'GeloAvisoFx')):
+    _src = rd(C + '/%s.java' % _cls)
+    check('4.3: %s tenta video (politica + abrir) antes do procedural' % _cls,
+          ('FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("%s")' % _id) in _src)
+    check('4.3: %s cai pro procedural no mesmo t (FALHOU)' % _cls,
+          'VideoEstado.FALHOU' in _src and 'video = false' in _src)
+    check('4.3: %s toca os sons so depois de resolver a carga' % _cls,
+          'VideoEstado.CARREGANDO' in _src and _src.index('VideoEstado.CARREGANDO') < _src.index('        sons(t);'))
+    check('4.3: %s tem parar() (aviso novo encerra o anterior)' % _cls, 'public static void parar()' in _src)
+    check('4.3: %s com contorno escuro na mensagem no modo video (legivel no ceu claro)' % _cls,
+          'CONTORNO_VIDEO' in _src and 'if (video) contornoEscuro(' in _src)
+    check('4.3: assets do video %s no jar' % _id, os.path.exists(A + '/fx/%s/fx.json' % _id))
+check('4.3: aviso novo encerra os avisos em video anteriores (ClientEffects)',
+      all(('%s.parar()' % k) in rd(C + '/ClientEffects.java') for k in ('MorteAvisoFx', 'InfernoAvisoFx', 'GeloAvisoFx')))
+check('4.3: sair do mundo encerra os avisos em video (nada volta ao reentrar)',
+      all(('%s.parar()' % k) in rd(C + '/ClientEvents.java') for k in ('MorteAvisoFx', 'InfernoAvisoFx', 'GeloAvisoFx')))
+check('4.3: MORTE tambem respeita a politica (reduzido = procedural)',
+      'FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("morte")' in rd(C + '/MorteAvisoFx.java'))
+check('4.3: politica do video (reduzido = procedural) em Java puro',
+      'return habilitado && !reduzido;' in rd(C + '/FxVideoPolitica.java'))
 import subprocess
 check('4.2: assets de video validos (arte/validar.py)',
       subprocess.run([sys.executable, '-I', 'arte/validar.py'], capture_output=True).returncode == 0)

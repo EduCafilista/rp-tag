@@ -1,0 +1,42 @@
+{
+  "id": "gelo",
+  "fps": 24,
+  "frames": 144,
+  "width": 1280,
+  "height": 720,
+  "blend": "normal",
+  "markers": [
+    {
+      "name": "impacto",
+      "frame": 3
+    },
+    {
+      "name": "texto_entra",
+      "frame": 10
+    },
+    {
+      "name": "texto_sai",
+      "frame": 115
+    },
+    {
+      "name": "sino",
+      "frame": 12
+    },
+    {
+      "name": "sino",
+      "frame": 29
+    },
+    {
+      "name": "sino",
+      "frame": 48
+    },
+    {
+      "name": "sino",
+      "frame": 72
+    },
+    {
+      "name": "fim",
+      "frame": 122
+    }
+  ]
+}
