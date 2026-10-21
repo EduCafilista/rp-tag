@@ -786,6 +786,21 @@ check('4.4: coracao mantem o pickup SHIFT (+1 vida) e o teto 5/5',
 # ---- 4.6.0: Void e Divino em VIDEO (Blender) — tamanho dos videos no jar
 def _tam_pasta(p):
     return sum(os.path.getsize(os.path.join(r, f)) for r, _, fs in os.walk(p) for f in fs)
+for _id, _cls in (('void', 'VoidAvisoFx'), ('divino', 'DivinoAvisoFx')):
+    _src = rd(C + '/%s.java' % _cls)
+    check('4.6: %s tenta video (politica + abrir) antes do procedural' % _cls,
+          ('FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("%s")' % _id) in _src)
+    check('4.6: %s cai pro procedural no mesmo t (FALHOU)' % _cls,
+          'VideoEstado.FALHOU' in _src and 'video = false' in _src)
+    check('4.6: %s toca os sons so depois de resolver a carga' % _cls,
+          'VideoEstado.CARREGANDO' in _src and _src.index('VideoEstado.CARREGANDO') < _src.index('        sons(t);'))
+    check('4.6: %s tem parar() (aviso novo encerra o anterior)' % _cls, 'public static void parar()' in _src)
+    check('4.6: %s com contorno escuro na mensagem no modo video' % _cls,
+          'CONTORNO_VIDEO' in _src and 'if (video) contornoEscuro(' in _src)
+check('4.6: aviso novo encerra tambem Void e Divino (ClientEffects)',
+      all(('%s.parar()' % k) in rd(C + '/ClientEffects.java') for k in ('VoidAvisoFx', 'DivinoAvisoFx')))
+check('4.6: sair do mundo encerra tambem Void e Divino',
+      all(('%s.parar()' % k) in rd(C + '/ClientEvents.java') for k in ('VoidAvisoFx', 'DivinoAvisoFx')))
 # meta ~15 MB; o Divino cobre a tela toda e o dono aprovou ~27 MB (cor em qualidade 75)
 for _id, _teto in (('void', 16), ('divino', 27)):
     check('4.6: assets do video %s no jar' % _id, os.path.exists(A + '/fx/%s/fx.json' % _id))

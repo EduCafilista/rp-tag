@@ -86,6 +86,8 @@ public final class ClientEffects {
         MorteAvisoFx.parar();
         InfernoAvisoFx.parar();
         GeloAvisoFx.parar();
+        VoidAvisoFx.parar();
+        DivinoAvisoFx.parar();
         // (3.94.0) estilo 10 = DEMONIACO: o FX proprio (Chamado do Abismo:
         // mandibulas, fissuras, pentagrama, olho de fenda) assume. Codigos
         // & sao ignorados.

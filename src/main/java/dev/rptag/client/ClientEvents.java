@@ -71,5 +71,7 @@ public final class ClientEvents {
         MorteAvisoFx.parar();
         InfernoAvisoFx.parar();
         GeloAvisoFx.parar();
+        VoidAvisoFx.parar();
+        DivinoAvisoFx.parar();
     }
 }

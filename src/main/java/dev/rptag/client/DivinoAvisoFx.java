@@ -13,7 +13,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import dev.rptag.RPTagMod;
 import org.joml.Matrix4f;
+
+import static dev.rptag.client.AvisoFxUtil.contornoEscuro;
 
 /**
  * AVISO "ASCENSÃO" — "Ascensão Celestial" (~6 s), adaptado do protótipo
@@ -40,6 +43,8 @@ public final class DivinoAvisoFx {
     private static final int GOLD = 0xFFCD60, CREAM = 0xFFF0BE, WHITE = 0xFFFFFF, DARK = 0x0A0600;
     private static final float[] CT = {0.05f, 0.30f, 0.55f, 0.80f, 1.10f};   // tempos dos sinos
     private static final float[] CP = {0.79f, 1.00f, 1.19f, 1.50f, 2.00f};   // tons (acorde)
+    /** (4.6.0) contorno escuro do texto no modo video (marrom quase preto). */
+    private static final int CONTORNO_VIDEO = 0x0A0600;
 
     /** true = sem clarão e menos partículas (acessibilidade / fotossensibilidade). */
     public static boolean reduzido = false;
@@ -48,6 +53,8 @@ public final class DivinoAvisoFx {
     private static String titulo = "AVISO", sub = "";
     private static int somIdx;
     private static boolean fimTocado;
+    /** (4.6.0) true = fundo vem do video do Blender (VideoFx). */
+    private static boolean video;
 
     private DivinoAvisoFx() {}
 
@@ -64,19 +71,49 @@ public final class DivinoAvisoFx {
         somIdx = 0;
         fimTocado = false;
         tocar(SoundEvents.BEACON_ACTIVATE, 1.7f, 0.7f);
+        // (4.6.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
+        FxComando.garantirConfig();
+        video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("divino");
+        RPTagMod.LOGGER.info("RP Tag: ASCENSAO CELESTIAL em {}", video ? "VIDEO" : "procedural");
+    }
+
+    /** (4.6.0) Encerra o aviso na hora (um aviso novo substitui este). */
+    public static void parar() {
+        if (video) VideoFx.fechar();
+        video = false;
+        inicio = -1;
     }
 
     // ------------------------------------------------------------------ render
     private static void render(GuiGraphics g, DeltaTracker dt) {
         if (inicio < 0) return;
         float t = (System.nanoTime() - inicio) / 1e9f;
-        if (t >= DUR) { inicio = -1; return; }
+        if (t >= DUR) {
+            inicio = -1;
+            if (video) VideoFx.fechar();
+            video = false;
+            return;
+        }
 
         Minecraft mc = Minecraft.getInstance();
         int w = g.guiWidth(), h = g.guiHeight();
         float cx = w / 2f, cy = h * 0.42f, k = Math.min(w, h) / 240f;
         float env = ss(0, 0.5f, t) * (1 - ss(DUR - 1.2f, DUR, t));
         float rev = eo(cl((t - 0.1f) / 1.1f));
+        if (video) {
+            // (4.6.0) fundo = VIDEO; letras caindo, brilho dourado, mensagem e sinos no codigo
+            AvisoFxUtil.preparar(g);
+            VideoEstado ve = VideoFx.desenhar(g, t);
+            if (ve == VideoEstado.CARREGANDO) {
+                inicio = System.nanoTime(); // relogio parado ate ter quadros
+                RenderSystem.enableDepthTest();
+                return;
+            }
+            if (ve == VideoEstado.FALHOU) {
+                video = false; // segue procedural NESTE MESMO t
+                RPTagMod.LOGGER.warn("RP Tag: video do aviso falhou — seguindo procedural");
+            }
+        }
         sons(t);
 
         g.flush();
@@ -89,18 +126,24 @@ public final class DivinoAvisoFx {
         // 1) vinheta escura (blend normal)
         RenderSystem.defaultBlendFunc();
         Buf b = new Buf(m);
+        if (video) {
+            // (4.6.0) apoio de leitura: sombra radial escura atras do titulo (ceu claro)
+            disco(b, cx, cy, 85 * k, 0.45f * env, DARK);
+        } else {
         float d = Math.min(w, h) * 0.30f, va = 0.55f * env;
         b.quad(0, 0, col(DARK, va), w, 0, col(DARK, va), w, d, col(DARK, 0), 0, d, col(DARK, 0));
         b.quad(0, h, col(DARK, va), w, h, col(DARK, va), w, h - d, col(DARK, 0), 0, h - d, col(DARK, 0));
         b.quad(0, 0, col(DARK, va), 0, h, col(DARK, va), d, h, col(DARK, 0), d, 0, col(DARK, 0));
         b.quad(w, 0, col(DARK, va), w, h, col(DARK, va), w - d, h, col(DARK, 0), w - d, 0, col(DARK, 0));
+        } // (4.6.0) fim da vinheta procedural
         b.flush();
 
         // 2) tudo que brilha (blend aditivo)
         RenderSystem.blendFunc(com.mojang.blaze3d.platform.GlStateManager.SourceFactor.SRC_ALPHA,
                 com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE);
+        float S = k * 1.9f, ty = cy - 4 * S;                          // escala/topo do titulo
         b = new Buf(m);
-
+        if (!video) {
         if (!reduzido && t < 0.3f)                                   // clarão de abertura
             b.quad(0, 0, col(WHITE, (1 - t / 0.3f) * 0.45f), w, 0, col(WHITE, (1 - t / 0.3f) * 0.45f),
                     w, h, col(WHITE, (1 - t / 0.3f) * 0.45f), 0, h, col(WHITE, (1 - t / 0.3f) * 0.45f));
@@ -151,11 +194,11 @@ public final class DivinoAvisoFx {
             b.diamante(px, py, sz, sz * 0.28f, col(CREAM, al));
         }
 
-        float S = k * 1.9f, ty = cy - 4 * S;                          // ornamento sob o título
         float oy = cy + 5.5f * S + 6 * k, ol = 70 * k * rev;
         b.seg(cx, oy, cx - ol, oy, 1.2f, col(GOLD, 0.9f * env * ss(0.8f, 1.4f, t)), col(GOLD, 0));
         b.seg(cx, oy, cx + ol, oy, 1.2f, col(GOLD, 0.9f * env * ss(0.8f, 1.4f, t)), col(GOLD, 0));
         b.diamante(cx, oy, 4 * k, 4 * k, col(WHITE, 0.95f * env * ss(0.8f, 1.4f, t)));
+        } // (4.6.0) fim do fundo procedural (camada 2)
         b.flush();
 
         // 3) textos (normal)
@@ -178,6 +221,7 @@ public final class DivinoAvisoFx {
                 g.pose().translate(x0 + acc * S, ty - (1 - e) * 10 * S, 0);
                 g.pose().scale(sc, sc, 1);
                 int glow = ((int) (al * 0.35f) << 24) | 0xFFBE3C;
+                if (video) contornoEscuro(g, f, ch, 0, 0, al, CONTORNO_VIDEO);
                 g.drawString(f, ch, -1, 0, glow, false);
                 g.drawString(f, ch, 1, 0, glow, false);
                 g.drawString(f, ch, 0, -1, glow, false);
@@ -193,6 +237,7 @@ public final class DivinoAvisoFx {
             g.pose().pushPose();
             g.pose().translate(cx - f.width(sub) * S2 / 2, cy + 25 * k, 0);
             g.pose().scale(S2, S2, 1);
+            if (video) contornoEscuro(g, f, sub, 0, 0, sa, CONTORNO_VIDEO);
             g.drawString(f, sub, 0, 0, (sa << 24) | CREAM, true);
             g.pose().popPose();
         }
