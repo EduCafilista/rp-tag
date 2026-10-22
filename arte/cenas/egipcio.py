@@ -415,71 +415,76 @@ def hieroglifos():
 
 
 def olho():
-    """O OLHO DE HÓRUS: desenhado traço por traço entre 1.15 e 2.45 s (igual ao Java)."""
+    """O OLHO DE HÓRUS: desenhado traço por traço entre 1.15 e 2.45 s (igual ao Java).
+
+    IMPORTANTE: o Java usa y para BAIXO; aqui y cresce para CIMA. Tudo que no Java
+    e "cy - d" vira "oy + d" e tudo que e "cy + d" vira "oy - d" (a espiral era o
+    unico ponto em que isso tinha sido esquecido).
+    """
     ox, oy, R = 0.0, OLHO_Y, OLHO_R
     m = c.mat_emissao('Olho', c.lin(OURO))
-    forcar = c.mat_emissao('OlhoForte', c.lin(OURO_B))
+    mf = c.mat_emissao('OlhoForte', c.lin(OURO_B))
 
-    # poço escuro atrás (o mesmo 38k do Java) + halo que pulsa depois de abrir
-    brilho_anim('OlhoPoco', 0x0A0703, 38 * KK, (0, oy, Z_OLHO - .25),
-                lambda t: .74 * em(t, .55, 1.5))
-    brilho_anim('OlhoHalo', OURO, 2.9, (0, oy, Z_OLHO - .1),
-                lambda t: .16 * em(t, 2.2, 2.8) * (.85 + .15 * math.sin(t * 2.6)))
-
-    tracos = []          # (objeto, t_entra)
-
-    def traco(nome, pts, esp, t0, mat=None):
-        ob = c.curva(nome, [(px, py, 0) for px, py in pts], mat or m, espessura=esp, z=Z_OLHO)
-        tracos.append((ob, t0))
+    def revelar(nome, pts, esp, t0, t1, mat=None):
+        """Curva UNICA revelada por bevel_factor_end (sem os 'dentes' de segmentos soltos)."""
+        ob = c.curva(nome, [(x, y, 0) for x, y in pts], mat or m, espessura=esp, z=Z_OLHO + .04)
+        ob.data.bevel_factor_end = 0.0
+        c.assar(ob.data, 'bevel_factor_end', [c.ss(t0, t1, t) for t in c.TEMPOS])
         return ob
 
     # 1) sobrancelha (1.15 - 1.45)
-    n = 9
-    xA, xB = ox - R * 1.05, ox + R * 0.95
-    for i in range(n):
-        u1, u2 = i / n, (i + 1) / n
-        p1 = (xA + (xB - xA) * u1, oy + R * .92 + R * .34 * math.sin(u1 * 2.1) * (1 - u1 * .35))
-        p2 = (xA + (xB - xA) * u2, oy + R * .92 + R * .34 * math.sin(u2 * 2.1) * (1 - u2 * .35))
-        traco('Sobr%02d' % i, [p1, p2], R * .075, 1.15 + .30 * u2)
-    # 2) amêndoa (1.45 - 1.85): cima e baixo
-    n = 14
-    for i in range(n):
-        u1, u2 = i / n, (i + 1) / n
-        x1, x2 = ox - R + 2 * R * u1, ox - R + 2 * R * u2
-        traco('AmaC%02d' % i, [(x1, oy + R * .52 * math.sin(u1 * math.pi)),
-                               (x2, oy + R * .52 * math.sin(u2 * math.pi))], R * .085, 1.42 + .34 * u2)
-        traco('AmaB%02d' % i, [(x1, oy - R * .46 * math.sin(u1 * math.pi)),
-                               (x2, oy - R * .46 * math.sin(u2 * math.pi))], R * .085, 1.55 + .30 * u2)
-    # 3) íris + pupila (1.85 - 2.10): círculo que CRESCE
-    iris = c.curva('Iris', [(ox + math.cos(i * TAU / 40) * R * .34, oy + math.sin(i * TAU / 40) * R * .34, 0)
-                            for i in range(41)], forcar, espessura=R * .075, z=Z_OLHO)
-    iris.data.bevel_factor_end = 0.0
-    c.assar(iris.data, 'bevel_factor_end', [eo(c.cl((t - 1.85) / .25)) for t in c.TEMPOS])
-    tracos.append((iris, 1.85))
-    pup = c.plano('Pupila', 2, 2, c.mat_emissao('PupilaMat', c.lin(0x140E02)), Z_OLHO - .01)
+    n = 18
+    sob = [(ox - R * 1.05 + 2 * R * (i / n),
+            oy + R * .92 + R * .34 * math.sin((i / n) * 2.1) * (1 - (i / n) * .35)) for i in range(n + 1)]
+    revelar('Sobrancelha', sob, R * .075, 1.15, 1.45)
+
+    # 2) amêndoa (1.45 - 1.85): borda de cima e de baixo
+    n = 24
+    cima = [(ox - R + 2 * R * (i / n), oy + R * .52 * math.sin(math.pi * i / n)) for i in range(n + 1)]
+    baixo = [(ox - R + 2 * R * (i / n), oy - R * .46 * math.sin(math.pi * i / n)) for i in range(n + 1)]
+    revelar('AmendoaCima', cima, R * .085, 1.45, 1.72)
+    revelar('AmendoaBaixo', baixo, R * .085, 1.58, 1.85)
+
+    # 3) íris (1.85 - 2.05) e pupila (1.95 - 2.15) — no Java b.circ e DISCO cheio,
+    # nao anel: a espiral passa por cima dela e precisa de ouro cheio embaixo
+    ir = R * .34
+    mi = mat_disco('IrisMat', [(0.0, OURO_B), (0.82, OURO_B), (1.0, 0xD8B45A)], alfa=1.0, corte=.90)
+    disco = c.plano('Iris', 2, 2, mi, Z_OLHO)
+    disco.location.y = oy
+    for eixo in (0, 1):
+        c.animar(disco, 'scale', lambda t: ir * eo(c.cl((t - 1.85) / .20)), eixo)
+    # pupila CIRCULAR (o Java usa circ; um plano quadrado aparecia como um quadrado preto)
+    mp = mat_disco('PupilaMat', [(0.0, 0x140E02), (1.0, 0x0B0700)], alfa=1.0, corte=.985)
+    pup = c.plano('Pupila', 2, 2, mp, Z_OLHO + .02)
     pup.location.y = oy
-    c.animar(pup, 'scale', lambda t: R * .20 * eo(c.cl((t - 1.95) / .20)), 0)
-    c.animar(pup, 'scale', lambda t: R * .20 * eo(c.cl((t - 1.95) / .20)), 1)
-    tracos.append((pup, 1.95))
-    # brilho interno que pulsa depois de pronto
-    brilho_anim('PupilaBrilho', OURO, R * .9, (ox - R * .07, oy - R * .08, Z_OLHO - .02),
-                lambda t: .10 * em(t, 2.45, 3.0) * (.6 + .4 * math.sin(t * 3.1)))
-    # 4) lágrima (2.10 - 2.28)
-    traco('Lagrima', [(ox - R * .16, oy - R * .42), (ox - R * .16, oy - R * 1.27)], R * .10, 2.05)
+    for eixo in (0, 1):
+        c.animar(pup, 'scale', lambda t: ir * .58 * eo(c.cl((t - 1.95) / .20)), eixo)
+    # reflexo de luz no canto alto-esquerdo da íris (como o circ do Java)
+    refl = mat_disco('ReflexoMat', [(0.0, OURO_B), (1.0, OURO_B)], alfa=1.0, corte=.55)
+    rf = c.plano('Reflexo', 2, 2, refl, Z_OLHO + .03)
+    rf.location.x, rf.location.y = ox - ir * .18, oy + ir * .20
+    for eixo in (0, 1):
+        c.animar(rf, 'scale', lambda t: ir * .16 * eo(c.cl((t - 2.02) / .15)), eixo)
+
+    # 4) lágrima (2.10 - 2.28): desce a partir da borda de baixo
+    revelar('Lagrima', [(ox - R * .16, oy - R * .42), (ox - R * .16, oy - R * 1.27)], R * .10, 2.10, 2.28)
+
     # 5) espiral (2.28 - 2.45)
     xa, ya = ox + R * .28, oy - R * .46
-    for i in range(10):
-        u1, u2 = i / 10, (i + 1) / 10
-        a1, a2 = u1 * 5.2, u2 * 5.2
-        r1, r2 = R * .16 + u1 * R * .42, R * .16 + u2 * R * .42
-        traco('Esp%02d' % i, [(xa + math.cos(a1 + 1.2) * r1, ya + math.sin(a1 + 1.2) * r1),
-                              (xa + math.cos(a2 + 1.2) * r2, ya + math.sin(a2 + 1.2) * r2)],
-              R * .085, 2.26 + .19 * u2)
+    n = 24
+    esp = []
+    for i in range(n + 1):
+        u = i / n
+        an, rr = u * 5.2, R * .16 + u * R * .42
+        esp.append((xa + math.cos(an + 1.2) * rr, ya - math.sin(an + 1.2) * rr))
+    revelar('Espiral', esp, R * .085, 2.26, 2.45)
 
-    for ob, t0 in tracos:
-        c.visibilidade(ob, lambda t, a=t0: em(t, a, a + .10))
+    # poço escuro atrás (38k, como o Java) e halo que pulsa depois de abrir
+    brilho_anim('OlhoPoco', 0x0A0703, 38 * KK, (0, oy, Z_OLHO - .25), lambda t: .74 * em(t, .55, 1.5))
+    brilho_anim('OlhoHalo', OURO, 2.9, (0, oy, Z_OLHO - .1),
+                lambda t: .16 * em(t, 2.2, 2.8) * (.85 + .15 * math.sin(t * 2.6)))
 
-    # CLARÃO de ouro quando o olho abre (aditivo na camada normal: branco quente)
+    # CLARÃO de ouro quando o olho abre
     brilho_anim('Clarao', OURO_B, 6.2, (0, oy, Z_OLHO + .5),
                 lambda t: .20 * max(0.0, 1 - (t - ABRE) / .40) if t >= ABRE else 0.0)
 

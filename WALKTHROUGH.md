@@ -19,7 +19,7 @@
 |---|---|
 | Versão | **4.7.0** (2026-10-22) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.7.0.jar` (**103.066.489 B** com 6 vídeos; **só na GitHub Release** — Release `v4.7.0` id 420261927, asset 664496425) |
+| Jar | `rptag-4.7.0.jar` (**103.027.951 B** com 6 vídeos; **só na GitHub Release** — Release `v4.7.0` id 420261927, asset 664597238) |
 | Checks | `check.py` → **410 PASS / 0 FAIL** + **JUnit 43/43** (`./gradlew test`) + `python -m unittest discover -s arte/tests` (23 ok; 3 dependem da fonte Consolas do Windows) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
@@ -48,6 +48,16 @@
 - **Ordem de montagem da cena importa:** definir o engine (`CYCLES`) ANTES de
   `camera_perspectiva`; `c.brilho` usa material próprio por nome (`bpy.data.materials[nome]`)
   e é animado por `c.assar_no(mat, 'A', ...)`.
+- **PEGADINHAS do olho (custaram 1 render inteiro, 45 min):**
+  1. o Java usa **y para baixo** — `cy + X` vira `oy - X`. A espiral estava com
+     sinal trocado e desenhava um "P" por cima da íris;
+  2. `b.circ` do Java é **disco cheio**, não anel: a íris é `plano` + `mat_disco`;
+  3. segmentos soltos (`b.seg` em laço) viram **"dentes"** na curva do Blender —
+     usar UMA curva + `bevel_factor_end` animado (`c.ss`), que desenha de verdade;
+  4. **ordem em z**: traços do olho em `Z_OLHO + .04`, íris em `Z_OLHO`,
+     pupila `.02`, reflexo `.03` (antes a íris tapava os traços e o reflexo);
+  5. pupila redonda = `mat_disco(corte=.985)`, nunca plano puro (saía quadrada).
+- **Custo:** ~20 s/quadro (144 quadros ≈ **40 min**); `bpy` + toolchain juntos = OOM.
 
 ### 4.6.0 (2026-10-20): VOID e DIVINO em vídeo (mesma coreografia, em 3D)
 - **Spec e plano:** `docs/superpowers/specs/2026-10-20-void-divino-video-design.md` e
