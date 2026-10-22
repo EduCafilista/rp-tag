@@ -19,12 +19,12 @@
 |---|---|
 | Versão | **4.7.1** (2026-10-22) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.7.1.jar` (**103.027.951 B** com 6 vídeos; **só na GitHub Release** — Release `v4.7.0` id 420261927, asset 664597238) |
-| Checks | `check.py` → **410 PASS / 0 FAIL** + **JUnit 43/43** (`./gradlew test`) + `python -m unittest discover -s arte/tests` (23 ok; 3 dependem da fonte Consolas do Windows) |
+| Jar | `rptag-4.7.1.jar` (**104.562.228 B** com 6 vídeos; **só na GitHub Release** — Release `v4.7.1` id 420651626, asset 665690225) |
+| Checks | `check.py` → **413 PASS / 0 FAIL** + **JUnit 43/43** (`./gradlew test`) + `python -m unittest discover -s arte/tests` (23 ok; 3 dependem da fonte Consolas do Windows) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — `main` = `e20a9a7`, tag `v4.7.0` |
-| Releases vivas | **v4.7.0** (jar) + `portais-v1.3.2` (só essa é mantida em paralelo) |
+| Releases vivas | **v4.7.1** (jar) + `portais-v1.3.2` (só essa é mantida em paralelo) |
 | Bundle | **NÃO gerar**: com os 6 vídeos ele passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` foi apagado nesta limpeza: reinstalar com o installer 21.1.249 quando precisar de smoke test |
 
