@@ -1,5 +1,43 @@
 # Changelog
 
+## 4.7.1 — EGÍPCIO NO ESTILO DA REFERÊNCIA + REAL NOVO + VOID/GELO DE VOLTA AO ANTIGO (2026-10-22)
+
+### "O Faraó observa" — o aviso egípcio refeito na arte do dono
+A cena do Blender foi **desenhada de novo** seguindo a imagem de referência:
+- fundo **azul-noite** com faixas de céu, **friso de hieróglifos** no topo e no rodapé
+- **olho de Hórus grande e dourado**, sobrancelha em arco, íris em anéis
+  (turquesa, azul, amarelo) com pupila preta e brilho, lágrima em curva e espiral
+- **leque de raios coloridos** atrás do olho (vermelho, laranja, amarelo, turquesa,
+  azul) + raios brancos finos, **círculos concêntricos** dourados e feixes de luz
+- **pirâmides escuras** no rodapé, glifos caindo e brilhos de 4 pontas
+- **placa do faraó** (desenhada pelo cliente, porque acompanha o tamanho da
+  mensagem): retângulo de cantos arredondados, moldura dupla de ouro, cantos em
+  losango, **selo quadrado à direita** e o nó embaixo — como na referência
+
+### "A Corte do Faraó" — o aviso REAL deixou de ser um véu
+O estilo 3 (`real`) era o mais simples do mod (véu azul + 2 filetes). Agora tem FX próprio:
+- **friso duplo de hieróglifos** (topo e rodapé) entre filetes de ouro
+- **disco solar alado** (behedeti): disco de ouro com asas em leque e as duas
+  **uraeus** coroando o disco, pulsando no alto
+- **colunas de papiro** com capitel trapezoidal, folhas e base nas laterais
+- **areia** subindo na diagonal e **placa central** dourada com o título em letras
+  de osso, contorno de lápis-lazúli e filete de ouro
+- a mensagem do comando continua **abaixo do título** (regra do dono)
+
+### Void e Gelo: o vídeo do Blender saiu do caminho
+O dono preferiu **os efeitos antigos** (procedurais) desses dois avisos.
+- `VoidAvisoFx` e `GeloAvisoFx` agora têm `VIDEO_PADRAO = false`: o vídeo do
+  Blender **não abre mais**; o desenho procedural (idêntico ao antigo) é o que aparece
+- **os assets continuam no jar**: para voltar ao vídeo basta trocar a constante
+  para `true` (ou desligar com `/rpfx`… não: `/rpfx` só controla o cliente inteiro)
+
+### Por que o egípcio "não apareceu" para o dono
+O aviso **era** disparado, mas naquela máquina o vídeo não passou do carregamento
+(1 s de espera) e o aviso caiu no **FX procedural escuro** — que parecia "nada".
+Nesta versão o vídeo é o mesmo caminho, mas com a arte nova e quadros menores
+(9,2 MB → mesma faixa), que carregam bem mais rápido; e o fallback continua
+funcionando no mesmo instante.
+
 ## 4.7.0 — O OLHO DE HÓRUS EM VÍDEO (BLENDER) (2026-10-22)
 
 ### O aviso egípcio deixou de ser só procedural

@@ -74,5 +74,6 @@ public final class ClientEvents {
         VoidAvisoFx.parar();
         DivinoAvisoFx.parar();
         EgipcioAvisoFx.parar();
+        RealAvisoFx.parar();
     }
 }

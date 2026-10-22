@@ -45,7 +45,9 @@ public final class GeloAvisoFx {
     private static String sub = "";
     private static int chIdx;
     private static boolean impacto, fim;
-    /** (4.5.0) true = fundo vem do video do Blender (VideoFx). */
+    /** (4.7.1) O DONO ESCOLHEU O FX ANTIGO: false = nunca usa o video do Blender. */
+    private static final boolean VIDEO_PADRAO = false;
+    /** true = fundo vem do video do Blender (VideoFx). */
     private static boolean video;
 
     private GeloAvisoFx() {}
@@ -59,9 +61,11 @@ public final class GeloAvisoFx {
         sub = (mensagem == null) ? "" : mensagem;
         inicio = System.nanoTime();
         chIdx = 0; impacto = false; fim = false;
-        // (4.5.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
+        // (4.7.1) DONO PREFERE O FX PROCEDURAL: o video do Blender nao abre mais aqui
+        // (o asset continua no jar; basta trocar VIDEO_PADRAO para true para voltar)
         FxComando.garantirConfig();
-        video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("gelo");
+        video = VIDEO_PADRAO && FxVideoPolitica.permitir(FxConfig.video(), reduzido)
+                && VideoFx.abrir("gelo");
         RPTagMod.LOGGER.info("RP Tag: GEADA ETERNA em {}", video ? "VIDEO" : "procedural");
     }
 

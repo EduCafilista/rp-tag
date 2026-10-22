@@ -51,6 +51,8 @@ public final class ClientGuiLayers {
         MorteAvisoFx.registrar(event);
         // (4.5.0) estilo 12 = EGIPICIO "O Olho de Horus" (cartucho + hieroglifos + areia)
         EgipcioAvisoFx.registrar(event);
+        // (4.7.1) estilo 3 = REAL "A Corte do Farao"
+        RealAvisoFx.registrar(event);
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "medo_veu"),
                 (g, delta) -> ClientEffects.desenharMedoCamada(g));

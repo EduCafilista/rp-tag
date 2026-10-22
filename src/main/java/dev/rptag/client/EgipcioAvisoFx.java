@@ -53,7 +53,7 @@ public final class EgipcioAvisoFx {
 
     // ---- paleta egípcia: ouro, areia, lápis-lazúli, turquesa, ocre ----
     private static final int NOITE = 0x160F06, PAPIRO = 0x3A2A11, AREIA = 0xC8A24A,
-            AREIA_D = 0x6E5320, OURO = 0xE8C766, OURO_B = 0xFFEBAA, LAPIS = 0x1F4E9C,
+            AREIA_D = 0x6E5320, OURO = 0xE8C766, OURO_D = 0xB8862A, OURO_B = 0xFFEBAA, LAPIS = 0x1F4E9C,
             TURQ = 0x2E9E8F, OCRE = 0xA8321E, OSSO = 0xF2E6C8;
 
     /** true = sem o clarão e com metade dos grãos de areia. */
@@ -464,40 +464,53 @@ public final class EgipcioAvisoFx {
         }
     }
 
-    /** CARTUCHO: a moldura oval egípcia em volta do título (com o nó embaixo). */
+    /**
+     * (4.7.1) PLACA DO FARAÓ: retângulo de cantos arredondados, azul-noite, com
+     * moldura dupla de ouro, cantos em losango, o "selo" quadrado à direita e o
+     * nó embaixo — é a placa da referência do dono ("O Faraó observa").
+     */
     private static void cartucho(Buf b, float cx, float cy, float larg, float S, float k,
                                  float t, float env) {
         float al = ss(TEXTO - 0.25f, TEXTO + 0.55f, t) * env;
         if (al <= 0.01f) return;
-        float hw = larg * 0.5f + 26 * k;
-        float hh = 5.2f * S + 10 * k;
-        int c = col(OURO, 0.55f * al);
-        int c2 = col(OURO, 0.22f * al);
-        // barra de cima e de baixo (retas)
-        b.seg(cx - hw + 8 * k, cy - hh, cx + hw - 8 * k, cy - hh, 1.8f * k, c, c);
-        b.seg(cx - hw + 8 * k, cy + hh, cx + hw - 8 * k, cy + hh, 1.8f * k, c, c);
-        // laterais (curvas com 5 pontos)
+        float hw = larg * 0.5f + 34 * k;
+        float hh = 5.4f * S + 11 * k;
+        float r = 8 * k;
+        int fundo = col(0x0A1330, 0.80f * al);
+        int o1 = col(OURO, 0.85f * al);
+        int o2 = col(OURO_D, 0.45f * al);
+
+        // fundo: retângulo cruzado com cantos cortados (sem precisar de arco)
+        b.rect(cx - hw + r, cy - hh, hw * 2 - 2 * r, hh * 2, fundo);
+        b.rect(cx - hw, cy - hh + r, hw * 2, hh * 2 - 2 * r, fundo);
+        // moldura externa
         for (int lado = -1; lado <= 1; lado += 2) {
-            float px = cx + lado * (hw - 8 * k), py = cy - hh;
-            int n = 6;
-            for (int i = 1; i <= n; i++) {
-                float u = i / (float) n;
-                float nx = cx + lado * (hw - 8 * k) * (1 + 0.10f * sin(u * 3.14159f));
-                float ny = cy - hh + 2 * hh * u;
-                b.seg(px, py, nx, ny, 1.8f * k, c2, c);
-                px = nx; py = ny;
+            b.seg(cx - hw + r, cy + lado * hh, cx + hw - r, cy + lado * hh, 2.0f * k, o1, o1);
+            b.seg(cx + lado * hw, cy - hh + r, cx + lado * hw, cy + hh - r, 2.0f * k, o1, o1);
+            // filete interno
+            b.seg(cx - hw + r, cy + lado * (hh - 3.2f * k), cx + hw - r, cy + lado * (hh - 3.2f * k),
+                    0.8f * k, o2, o2);
+            b.seg(cx + lado * (hw - 3.2f * k), cy - hh + r, cx + lado * (hw - 3.2f * k), cy + hh - r,
+                    0.8f * k, o2, o2);
+        }
+        // cantos em losango (fecham visualmente o canto cortado)
+        for (int sx = -1; sx <= 1; sx += 2) {
+            for (int sy = -1; sy <= 1; sy += 2) {
+                b.diamante(cx + sx * hw, cy + sy * hh, 3.4f * k, 3.4f * k, o1);
             }
         }
-        // NÓ do cartucho (o laço embaixo)
-        float ny = cy + hh + 7 * k;
-        b.seg(cx - hw * 0.42f, cy + hh, cx - hw * 0.30f, ny, 1.6f * k, c, c);
-        b.seg(cx + hw * 0.42f, cy + hh, cx + hw * 0.30f, ny, 1.6f * k, c, c);
-        b.rect(cx - hw * 0.34f, ny, hw * 0.68f, 2.0f * k, c);
-        // detalhe de lápis-lazúli nos cantos (a faixa azul dos cartuchos reais)
-        b.rect(cx - hw + 8 * k, cy - hh - 2.6f * k, hw * 2 - 16 * k, 1.3f * k, col(LAPIS, 0.30f * al));
+        // SELO: quadradinho de ouro à direita (o detalhe da referência)
+        float sx0 = cx + hw + 4 * k;
+        b.rect(sx0, cy - 4.5f * k, 9 * k, 9 * k, col(OURO_B, 0.80f * al));
+        b.rect(sx0 + 1.7f * k, cy - 2.8f * k, 5.6f * k, 5.6f * k, col(0x0A1330, 0.85f * al));
+        // faixa de lápis-lazúli no topo
+        b.rect(cx - hw + r, cy - hh - 2.8f * k, hw * 2 - 2 * r, 1.2f * k, col(LAPIS, 0.38f * al));
+        // nó embaixo (o laço do cartucho)
+        b.seg(cx - hw * 0.30f, cy + hh, cx - hw * 0.20f, cy + hh + 6 * k, 1.5f * k, o1, o1);
+        b.seg(cx + hw * 0.30f, cy + hh, cx + hw * 0.20f, cy + hh + 6 * k, 1.5f * k, o1, o1);
+        b.rect(cx - hw * 0.24f, cy + hh + 6 * k, hw * 0.48f, 1.8f * k, o1);
     }
 
-    /** grãos de areia voando na diagonal (o vento do deserto). */
     private static void graos(Buf b, int w, int h, float k, float t, float env, int frame) {
         int n = reduzido ? 35 : NGR;
         for (int i = 0; i < n; i++) {

@@ -17,9 +17,9 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.7.0** (2026-10-22) |
+| Versão | **4.7.1** (2026-10-22) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.7.0.jar` (**103.027.951 B** com 6 vídeos; **só na GitHub Release** — Release `v4.7.0` id 420261927, asset 664597238) |
+| Jar | `rptag-4.7.1.jar` (**103.027.951 B** com 6 vídeos; **só na GitHub Release** — Release `v4.7.0` id 420261927, asset 664597238) |
 | Checks | `check.py` → **410 PASS / 0 FAIL** + **JUnit 43/43** (`./gradlew test`) + `python -m unittest discover -s arte/tests` (23 ok; 3 dependem da fonte Consolas do Windows) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
@@ -27,6 +27,27 @@
 | Releases vivas | **v4.7.0** (jar) + `portais-v1.3.2` (só essa é mantida em paralelo) |
 | Bundle | **NÃO gerar**: com os 6 vídeos ele passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` foi apagado nesta limpeza: reinstalar com o installer 21.1.249 quando precisar de smoke test |
+
+### 4.7.1 (2026-10-22): egípcio v2 (referência do dono) + REAL novo + void/gelo antigos
+- **Pedido literal do dono:** "o avisar void eu ainda prefiro o estilo antigo, prefiro o
+  antigo aviso de gelo; melhore o avisar real, tá muito simples; e o avisar egipicio
+  nao apareceu no mods, eu quero um com animação igual os outros avisar, quero o
+  olho de orus e todo o resto, algo nesse estilo da imagem".
+- **VOID e GELO:** `VIDEO_PADRAO = false` nas duas classes — o vídeo não abre mais.
+  O desenho procedural é **idêntico ao antigo** (comparei byte a byte com os .java do
+  catbox: hvl6ev=void, f53nwn=gelo; só mudaram os campos `sub`/`video`).
+- **REAL (estilo 3)** ganhou `RealAvisoFx`: friso duplo de hieróglifos, disco solar
+  alado (behedeti com asas em leque + 2 uraeus), colunas de papiro, areia e placa
+  central. Antes era só véu + 2 filetes no desenho genérico do ClientEffects.
+- **EGÍPCIO v2** (`arte/cenas/egipcio.py` reescrito, paleta da imagem do dono):
+  azul-noite, friso topo/rodapé, olho grande com íris em anéis (turquesa/azul/amarelo),
+  leque de raios coloridos + brancos, círculos concêntricos, pirâmides, glifos caindo.
+  O olho subiu para `EYE_Y = 2.52` e encolheu (`EYE_HW = 1.55`) para a placa caber.
+- **PLACA** (`EgipcioAvisoFx.cartucho`): retângulo de cantos arredondados, moldura
+  dupla de ouro, cantos em losango, **selo quadrado à direita** e nó embaixo.
+- **Por que "não apareceu":** o vídeo não passou do carregamento (1 s) naquela máquina
+  e caiu no procedural escuro. Ver `VideoEstado.MAX_SEM_QUADRO` e `MIN_PRONTOS`.
+- `check.py` **413 PASS / 0 FAIL**.
 
 ### 4.7.0 (2026-10-22): EGÍPCIO em vídeo — o último procedural virou Blender
 - **Cena:** `arte/cenas/egipcio.py` (1280×720, 24 fps, 144 quadros, RGBA), câmera em

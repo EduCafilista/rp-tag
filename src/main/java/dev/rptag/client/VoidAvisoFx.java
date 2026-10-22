@@ -51,7 +51,9 @@ public final class VoidAvisoFx {
     private static String titulo = "AVISO", sub = "";
     private static int resIdx;
     private static boolean fimTocado;
-    /** (4.6.0) true = fundo vem do video do Blender (VideoFx). */
+    /** (4.7.1) O DONO ESCOLHEU O FX ANTIGO: false = nunca usa o video do Blender. */
+    private static final boolean VIDEO_PADRAO = false;
+    /** true = fundo vem do video do Blender (VideoFx). */
     private static boolean video;
 
     private VoidAvisoFx() {}
@@ -67,9 +69,11 @@ public final class VoidAvisoFx {
         resIdx = 0;
         fimTocado = false;
         tocar(SoundEvents.END_PORTAL_SPAWN, 0.6f, 0.6f);
-        // (4.6.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
+        // (4.7.1) DONO PREFERE O FX PROCEDURAL: o video do Blender nao abre mais aqui
+        // (o asset continua no jar; basta trocar VIDEO_PADRAO para true para voltar)
         FxComando.garantirConfig();
-        video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("void");
+        video = VIDEO_PADRAO && FxVideoPolitica.permitir(FxConfig.video(), reduzido)
+                && VideoFx.abrir("void");
         RPTagMod.LOGGER.info("RP Tag: QUEDA SEM FUNDO em {}", video ? "VIDEO" : "procedural");
     }
 

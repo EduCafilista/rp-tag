@@ -13,7 +13,7 @@ cliente Minecraft e não deve ser incorporado aos quadros renderizados.
 | `cenas/gelo.py` | Cena do aviso Gelo |
 | `cenas/void.py` | Cena do aviso Void (câmera em perspectiva) |
 | `cenas/divino.py` | Cena do aviso Divino |
-| `cenas/egipcio.py` | Cena do aviso Egípcio (câmera em perspectiva) |
+| `cenas/egipcio.py` | Cena do aviso Egípcio v2 — "O Faraó observa" (câmera em perspectiva) |
 | `cenas/comum.py` | Primitivas compartilhadas pelas cenas que a utilizam |
 | `cenas/perspectiva.py` | Parâmetros e projeção da câmera em perspectiva, sem dependência do Blender |
 | `cenas/metas.py` | Marcadores, fade, prévia e qualidade JPEG de cada aviso, sem dependência do Blender |

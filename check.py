@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.7.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.7.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.7.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.7.1 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.7.0', 'RP Tag 4.7.0' in ce)
+check('4.0: boot log 4.7.1', 'RP Tag 4.7.1' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -729,8 +729,8 @@ check('4.2: fxVideo em cliente.properties + /rpfx',
 # ---- 4.5.0: Inferno e Gelo em VIDEO (Blender), mesmo player do MORTE
 for _id, _cls in (('inferno', 'InfernoAvisoFx'), ('gelo', 'GeloAvisoFx')):
     _src = rd(C + '/%s.java' % _cls)
-    check('4.5: %s tenta video (politica + abrir) antes do procedural' % _cls,
-          ('FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("%s")' % _id) in _src)
+    check('4.5: %s tem o caminho de video (respeita fxVideo/reduzido)' % _cls,
+          ('VideoFx.abrir("%s")' % _id) in _src and 'FxVideoPolitica.permitir' in _src)
     check('4.5: %s cai pro procedural no mesmo t (FALHOU)' % _cls,
           'VideoEstado.FALHOU' in _src and 'video = false' in _src)
     check('4.5: %s toca os sons so depois de resolver a carga' % _cls,
@@ -788,8 +788,8 @@ def _tam_pasta(p):
     return sum(os.path.getsize(os.path.join(r, f)) for r, _, fs in os.walk(p) for f in fs)
 for _id, _cls in (('void', 'VoidAvisoFx'), ('divino', 'DivinoAvisoFx')):
     _src = rd(C + '/%s.java' % _cls)
-    check('4.6: %s tenta video (politica + abrir) antes do procedural' % _cls,
-          ('FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("%s")' % _id) in _src)
+    check('4.6: %s tem o caminho de video (desligado por VIDEO_PADRAO=false)' % _cls,
+          ('VideoFx.abrir("%s")' % _id) in _src)
     check('4.6: %s cai pro procedural no mesmo t (FALHOU)' % _cls,
           'VideoEstado.FALHOU' in _src and 'video = false' in _src)
     check('4.6: %s toca os sons so depois de resolver a carga' % _cls,
@@ -917,6 +917,27 @@ check('4.7: video egipcio <= 24 MiB', os.path.isdir(_fx_eg) and _tam_pasta(_fx_e
 _cena_eg = os.path.exists('arte/cenas/egipcio.py') and 'def montar' in rd('arte/cenas/egipcio.py')
 check('4.7: cena arte/cenas/egipcio.py + metas.py registra o id',
       _cena_eg and "'egipcio'" in rd('arte/cenas/metas.py'))
+
+# ================= 4.7.1: o dono escolheu o FX antigo em VOID e GELO + REAL novo =================
+for _cls, _id in (('VoidAvisoFx', 'void'), ('GeloAvisoFx', 'gelo')):
+    _s = rd(C + '/%s.java' % _cls)
+    check('4.7.1: %s NAO usa video por padrao (dono prefere o FX antigo)' % _cls,
+          'private static final boolean VIDEO_PADRAO = false;' in _s and 'VIDEO_PADRAO &&' in _s)
+real = rd(C + '/RealAvisoFx.java')
+check('4.7.1: estilo 3 (real) tem FX proprio (antes era so veu + 2 filetes)',
+      "if (style == 3)" in rd(C + '/ClientEffects.java') and 'RealAvisoFx.iniciar' in rd(C + '/ClientEffects.java'))
+check('4.7.1: REAL usa registerAboveAll (nunca RenderGuiEvent.Post)',
+      'registerAboveAll' in real and 'RenderGuiEvent.Post' not in real)
+check('4.7.1: REAL tem disco solar alado + friso de hieroglifos + colunas + placa',
+      'discoSolar' in real and 'friso(' in real and 'colunas(' in real and 'placa(' in real)
+check('4.7.1: REAL desenha a mensagem EMBAIXO do titulo (cy + 27k)',
+      'cy + 27 * k' in real)
+check('4.7.1: REAL e encerrado por aviso novo e pela saida do mundo',
+      'RealAvisoFx.parar()' in rd(C + '/ClientEffects.java') and 'RealAvisoFx.parar()' in rd(C + '/ClientEvents.java'))
+check('4.7.1: REAL registrado na camada (ClientGuiLayers)', 'RealAvisoFx.registrar' in rd(C + '/ClientGuiLayers.java'))
+check('4.7.1: EGIPCIO usa a PLACA retangular dourada (nao o cartucho oval)',
+      'PLACA DO FARA' in egi and 'diamante(' in egi)
+check('4.7.1: EGIPCIO tem selo de ouro a direita da placa', 'SELO' in egi)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

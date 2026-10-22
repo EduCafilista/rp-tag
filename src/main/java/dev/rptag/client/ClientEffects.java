@@ -89,6 +89,7 @@ public final class ClientEffects {
         VoidAvisoFx.parar();
         DivinoAvisoFx.parar();
         EgipcioAvisoFx.parar();
+        RealAvisoFx.parar();
         // (3.94.0) estilo 10 = DEMONIACO: o FX proprio (Chamado do Abismo:
         // mandibulas, fissuras, pentagrama, olho de fenda) assume. Codigos
         // & sao ignorados.
@@ -105,6 +106,14 @@ public final class ClientEffects {
             String limpo7 = text.replaceAll("\\u00a7.", "");
             DivinoAvisoFx.iniciar("AVISO", limpo7);
             RPTagMod.LOGGER.info("RP Tag: AVISO DIVINO iniciado (FX proprio)");
+            return;
+        }
+        // (4.7.1) estilo 3 = REAL: o FX proprio (A Corte do Farao: friso de
+        // hieroglifos, disco solar alado, obelisco, colunas, placa dourada)
+        if (style == 3) {
+            String limpo3 = text.replaceAll("\u00a7.", "");
+            RealAvisoFx.iniciar("AVISO", limpo3);
+            RPTagMod.LOGGER.info("RP Tag: A CORTE DO FARAO iniciada (FX proprio)");
             return;
         }
         // (3.95.0) estilo 9 = SANGUE: o FX proprio (Sangria: impacto de
@@ -212,7 +221,7 @@ public final class ClientEffects {
     }
 
     static {
-        RPTagMod.LOGGER.info("RP Tag 4.7.0: camada de avisos carregada");
+        RPTagMod.LOGGER.info("RP Tag 4.7.1: camada de avisos carregada");
     }
 
     /** (3.78.0) VÉU da vida perdida: tela MEIO AVERMELHADA durante o
