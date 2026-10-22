@@ -9,3 +9,6 @@ installer.jar.log
 # (limite do GitHub no git). Jars so nas Releases.
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
+
+# (4.7.0) log local que algum teste/servidor cria na raiz
+logs/

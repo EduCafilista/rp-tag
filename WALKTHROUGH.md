@@ -17,13 +17,34 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.6.0** (2026-10-20) |
+| Versão | **4.7.0** (2026-10-22) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.6.0.jar` (~95 MB com 5 vídeos; **só na GitHub Release**) |
-| Checks | `check.py` → **401 PASS / 0 FAIL** + **JUnit 43/43** (`./gradlew test`) + `python -m unittest discover -s arte/tests` (26) |
+| Jar | `rptag-4.7.0.jar` (~120 MB com 6 vídeos; **só na GitHub Release**) |
+| Checks | `check.py` → **410 PASS / 0 FAIL** + **JUnit 43/43** (`./gradlew test`) + `python -m unittest discover -s arte/tests` (23 ok; 3 dependem da fonte Consolas do Windows) |
 | Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` (commit local por ciclo; sem credenciais de push) |
+
+### 4.7.0 (2026-10-22): EGÍPCIO em vídeo — o último procedural virou Blender
+- **Cena:** `arte/cenas/egipcio.py` (1280×720, 24 fps, 144 quadros, RGBA), câmera em
+  perspectiva (`k = 9/240`, `cy = 0.45`), tudo em **emissão chapada** (estilo do FX do Java).
+  Templo à noite, colunas de capitel de papiro, arquitrave, Rá nascendo **no horizonte**
+  (`h*0.71`) atrás das 3 pirâmides, dunas com crista dourada, 2 colunas de hieróglifos
+  rolando nas laterais (param em `ABRE = 2.45`), olho desenhado traço por traço com a
+  **mesma geometria do Java** (`R = 22k`, centro `cy - 46k`), areia + poeira, clarão no ABRE.
+- **Textura:** `CYCLES` CPU, 24 spp + denoise, `transparent_max_bounces=16`, ~20 s/quadro
+  (EEVEE não roda no ambiente: `EGL_BAD_MATCH`; `xvfb` morre por OOM).
+- **O cartucho NÃO entra no vídeo** — ele acompanha a largura da mensagem, então quem
+  desenha continua sendo o `EgipcioAvisoFx`; a área do texto é atenuada nos grãos.
+- **Metadados:** `metas.py` ganhou o branch `egipcio` (sem ele o render nem grava
+  `marcadores.json`): `ra_nasce .25`, `texto_entra 1.55`, `olho_abre 2.45`, `texto_sai 4.8`.
+- **Java:** `EgipcioAvisoFx` ganhou `video` + `parar()`, `VideoFx.abrir("egipcio")`,
+  `preparar`/`CARREGANDO` (relógio parado)/`FALHOU` (cai pro procedural no MESMO t),
+  `sons(t)` movido para DEPOIS da carga, cartucho + texto nos dois modos.
+  `ClientEffects` e `ClientEvents` encerram também o Egípcio.
+- **Ordem de montagem da cena importa:** definir o engine (`CYCLES`) ANTES de
+  `camera_perspectiva`; `c.brilho` usa material próprio por nome (`bpy.data.materials[nome]`)
+  e é animado por `c.assar_no(mat, 'A', ...)`.
 
 ### 4.6.0 (2026-10-20): VOID e DIVINO em vídeo (mesma coreografia, em 3D)
 - **Spec e plano:** `docs/superpowers/specs/2026-10-20-void-divino-video-design.md` e

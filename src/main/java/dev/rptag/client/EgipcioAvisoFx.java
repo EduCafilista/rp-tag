@@ -2,6 +2,7 @@ package dev.rptag.client;
 
 import static dev.rptag.client.AvisoFxUtil.*;
 
+import dev.rptag.RPTagMod;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -58,6 +59,9 @@ public final class EgipcioAvisoFx {
     /** true = sem o clarão e com metade dos grãos de areia. */
     public static boolean reduzido = false;
 
+    /** (4.7.0) true = o fundo vem do VIDEO do Blender (VideoFx); o texto/cartucho seguem no codigo. */
+    private static boolean video;
+
     private static long inicio = -1;
     private static String msg = "AVISO";
     private static String sub = "";
@@ -99,6 +103,16 @@ public final class EgipcioAvisoFx {
         harpIdx = 0;
         sandIdx = 0;
         abriu = false;
+        // (4.7.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
+        video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("egipcio");
+        RPTagMod.LOGGER.info("RP Tag: O OLHO DE HORUS em {}", video ? "VIDEO" : "procedural");
+    }
+
+    /** (4.7.0) Encerra o aviso na hora (um aviso novo substitui este). */
+    public static void parar() {
+        if (video) VideoFx.fechar();
+        video = false;
+        inicio = -1;
     }
 
     /** SERVIDOR: o deserto responde — grãos de areia caindo e incenso subindo. */
@@ -121,14 +135,18 @@ public final class EgipcioAvisoFx {
     private static void render(GuiGraphics g, DeltaTracker dt) {
         if (inicio < 0) return;
         float t = (System.nanoTime() - inicio) / 1e9f;
-        if (t >= DUR) { inicio = -1; return; }
+        if (t >= DUR) {
+            inicio = -1;
+            if (video) VideoFx.fechar();
+            video = false;
+            return;
+        }
 
         Minecraft mc = Minecraft.getInstance();
         int w = g.guiWidth(), h = g.guiHeight();
         float cx = w / 2f, cy = h * 0.45f, k = Math.min(w, h) / 240f;
         float env = ss(0, 0.45f, t) * (1 - ss(DUR - 0.85f, DUR, t));
         int frame = (int) (t * 30);
-        sons(t);
 
         // ---- layout: escala FIXA (regra do dono: o título nunca encolhe)
         Font f = mc.font;
@@ -143,32 +161,54 @@ public final class EgipcioAvisoFx {
         float x0 = cx - tot * S / 2, acc = 0;
         for (int i = 0; i < len; i++) { xs[i] = x0 + acc * S; acc += cw[i] + sp; }
 
+        if (video) {
+            AvisoFxUtil.preparar(g);
+            VideoEstado ve = VideoFx.desenhar(g, t);
+            if (ve == VideoEstado.CARREGANDO) {
+                inicio = System.nanoTime(); // relogio parado ate ter quadros
+                com.mojang.blaze3d.systems.RenderSystem.enableDepthTest();
+                return;
+            }
+            if (ve == VideoEstado.FALHOU) {
+                video = false; // segue procedural NESTE MESMO t
+                RPTagMod.LOGGER.warn("RP Tag: video do aviso falhou — seguindo procedural");
+            }
+        }
+        // (4.7.0) os sons so tocam depois de resolver a carga do video (relogio pode parar)
+        sons(t);
         preparar(g);
 
         // ============================== CAMADA 1 (normal): o templo
         Buf b = new Buf(g.pose().last().pose());
-        noite(b, w, h, k, t, env);
-        // (4.5.0) Rá nasce no HORIZONTE, atrás das pirâmides: o disco não
-        // pode competir com o olho (na 1ª tentativa ele engolia o emblema)
-        ra(b, cx, h * 0.71f, h * 0.16f, k, t, env);
-        piramides(b, w, h, k, t, env);
-        areiaChao(b, w, h, k, t, env);
-        hieroglifos(b, w, h, k, t, env);
-        // (4.5.0) o OLHO é o emblema do templo, ACIMA do título: um poço
-        // escuro atrás dele dá contraste com o ouro (sem isso o olho sumia)
-        b.brilho(cx, cy - 46 * k, 38 * k, 0x0A0703, 0.72f * env);
-        olho(b, cx, cy - 46 * k, 22 * k, k, t, env);
+        if (video) {
+            // (4.7.0) o templo, o olho e a areia vem do VIDEO; aqui so o apoio de leitura
+            b.brilho(cx, cy + 4 * k, 88 * k, NOITE, 0.30f * env);
+        } else {
+            noite(b, w, h, k, t, env);
+            // (4.5.0) Rá nasce no HORIZONTE, atrás das pirâmides: o disco não
+            // pode competir com o olho (na 1ª tentativa ele engolia o emblema)
+            ra(b, cx, h * 0.71f, h * 0.16f, k, t, env);
+            piramides(b, w, h, k, t, env);
+            areiaChao(b, w, h, k, t, env);
+            hieroglifos(b, w, h, k, t, env);
+            // (4.5.0) o OLHO é o emblema do templo, ACIMA do título: um poço
+            // escuro atrás dele dá contraste com o ouro (sem isso o olho sumia)
+            b.brilho(cx, cy - 46 * k, 38 * k, 0x0A0703, 0.72f * env);
+            olho(b, cx, cy - 46 * k, 22 * k, k, t, env);
+            graos(b, w, h, k, t, env, frame);
+        } // (4.7.0) fim do fundo procedural
         cartucho(b, cx, cy, tot * S, S, k, t, env);
-        graos(b, w, h, k, t, env, frame);
         b.flush();
 
         // ============================== CAMADA 2 (aditivo): ouro
-        aditivo();
-        b = new Buf(g.pose().last().pose());
-        float flash = (t > ABRE && !reduzido) ? Math.max(0f, 1 - (t - ABRE) / 0.45f) : 0f;
-        if (flash > 0.01f) b.rect(0, 0, w, h, col(OURO_B, 0.32f * flash * flash));
-        brilhoOlho(b, cx, cy - 46 * k, 22 * k, k, t, env);
-        b.flush();
+        if (!video) {
+            aditivo();
+            b = new Buf(g.pose().last().pose());
+            float flash = (t > ABRE && !reduzido) ? Math.max(0f, 1 - (t - ABRE) / 0.45f) : 0f;
+            if (flash > 0.01f) b.rect(0, 0, w, h, col(OURO_B, 0.32f * flash * flash));
+            brilhoOlho(b, cx, cy - 46 * k, 22 * k, k, t, env);
+            b.flush();
+        } // (4.7.0) fim do brilho aditivo (no video o clarão ja vem nos quadros)
 
         // ============================== TEXTO
         normal();

@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.6.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.7.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.6.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.7.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.6.0', 'RP Tag 4.6.0' in ce)
+check('4.0: boot log 4.7.0', 'RP Tag 4.7.0' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -894,6 +894,29 @@ check('4.5.1: rede de seguranca nao toca em RPTagMod (logger proprio)',
       'RPTagMod.LOGGER' not in _codigo)
 check('4.5.1: teste JUnit reproduz o unpack do ClientboundCommandsPacket',
       'ArgumentTypeInfos.unpack' in rd('src/test/java/dev/rptag/ArgumentoSerializavelTest.java'))
+
+# ================= 4.7.0: EGIPCIO em VIDEO (o ultimo aviso procedural virou Blender) =================
+check('4.7: EgipcioAvisoFx tenta video (politica + abrir) antes do procedural',
+      'FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("egipcio")' in egi)
+check('4.7: EgipcioAvisoFx cai pro procedural no mesmo t (FALHOU)',
+      'VideoEstado.FALHOU' in egi and 'video = false' in egi)
+check('4.7: EgipcioAvisoFx toca os sons so depois de resolver a carga',
+      'VideoEstado.CARREGANDO' in egi and egi.index('VideoEstado.CARREGANDO') < egi.index('        sons(t);'))
+check('4.7: EgipcioAvisoFx tem parar() (aviso novo / sair do mundo encerra)',
+      'public static void parar()' in egi and 'if (video) VideoFx.fechar();' in egi)
+check('4.7: aviso novo encerra tambem o Egipcio (ClientEffects)',
+      'EgipcioAvisoFx.parar()' in rd(C + '/ClientEffects.java'))
+check('4.7: sair do mundo encerra tambem o Egipcio (ClientEvents)',
+      'EgipcioAvisoFx.parar()' in rd(C + '/ClientEvents.java'))
+_fx_eg = A + '/fx/egipcio'
+check('4.7: assets do video egipcio no jar (fx.json + 144 quadros)',
+      os.path.exists(_fx_eg + '/fx.json')
+      and len([f for f in os.listdir(_fx_eg + '/frames') if f.endswith('_c.jpg')]) == 144
+      and len([f for f in os.listdir(_fx_eg + '/frames') if f.endswith('_a.jpg')]) == 144)
+check('4.7: video egipcio <= 24 MiB', os.path.isdir(_fx_eg) and _tam_pasta(_fx_eg) <= 24 * 1024 * 1024)
+_cena_eg = os.path.exists('arte/cenas/egipcio.py') and 'def montar' in rd('arte/cenas/egipcio.py')
+check('4.7: cena arte/cenas/egipcio.py + metas.py registra o id',
+      _cena_eg and "'egipcio'" in rd('arte/cenas/metas.py'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

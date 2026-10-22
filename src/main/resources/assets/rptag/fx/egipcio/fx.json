@@ -1,0 +1,30 @@
+{
+  "id": "egipcio",
+  "fps": 24,
+  "frames": 144,
+  "width": 1280,
+  "height": 720,
+  "blend": "normal",
+  "markers": [
+    {
+      "name": "ra_nasce",
+      "frame": 6
+    },
+    {
+      "name": "texto_entra",
+      "frame": 37
+    },
+    {
+      "name": "olho_abre",
+      "frame": 59
+    },
+    {
+      "name": "texto_sai",
+      "frame": 115
+    },
+    {
+      "name": "fim",
+      "frame": 122
+    }
+  ]
+}

@@ -1,5 +1,36 @@
 # Changelog
 
+## 4.7.0 — O OLHO DE HÓRUS EM VÍDEO (BLENDER) (2026-10-22)
+
+### O aviso egípcio deixou de ser só procedural
+O `EgipcioAvisoFx` era o **último** aviso que ainda não tinha animação renderizada.
+Agora ele abre no **templo à noite**, em 3D de verdade (câmera em perspectiva):
+
+- **Templo** com colunas de capitel de papiro, filetes de ouro e arquitrave nas laterais
+- **Rá nascendo no horizonte**, atrás das pirâmides, com disco suave e raios que giram
+- **Três pirâmides** em silhueta com as arestas iluminadas, **dunas** com crista dourada
+- **Duas colunas de hieróglifos** (ankh, olho, água, sol, junco) rolando nas laterais —
+  elas **param** quando o olho abre
+- **O Olho de Hórus** é desenhado traço por traço: sobrancelha → amêndoa → íris →
+  pupila → lágrima → espiral, com a **mesma geometria do código Java**, e recebe um
+  clarão de ouro no instante em que fecha (2,45 s)
+- **Areia** soprando na diagonal e poeira dourada subindo; a área da mensagem é
+  atenuada durante a leitura para o texto não brigar com a arte
+
+### O que continua no cliente
+- O **cartucho** (a moldura oval com o nó embaixo) acompanha a largura da mensagem
+  digitada, então continua sendo desenhado pelo mod
+- Título dourado, mensagem **sempre abaixo do título** e a trilha de alaúde não mudam
+
+### Comportamento
+- Sem vídeo, quadro corrompido ou PC lento: o FX procedural assume **no mesmo instante**
+- `fxVideo=false` ou **modo reduzido**: sempre o FX procedural
+- Um aviso novo (de qualquer estilo) ou a sair do mundo encerra o vídeo anterior
+
+### Nota
+- Cinco avisos já usavam vídeo (Morte, Inferno, Gelo, Void, Divino); com o Egípcio,
+  **todos os avisos com vídeo do mod** passam pelo mesmo caminho (`VideoFx`)
+
 ## 4.6.0 — VOID E DIVINO EM VÍDEO (BLENDER) (2026-10-20)
 
 ### "Queda Sem Fundo" refeita no Blender

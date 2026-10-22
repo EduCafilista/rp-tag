@@ -35,4 +35,9 @@ def metadata(fx, seed):
                      + [('sino', t) for t in (.05, .30, .55, .80, 1.10)] + [('fim', 5.1)], .5,
                      {'color': [255, 240, 190], 'message': 'OS CEUS SE ABRIRAM',
                       'title_y': .42, 'message_y': .42 + 25/240}, jpeg={'cor': 75})
+    if fx == 'egipcio':  # EgipcioAvisoFx: olho desenhado em 1,15-2,45 s; texto entra em 1,55
+        return _meta(fx, seed, [('ra_nasce', .25), ('texto_entra', 1.55), ('olho_abre', 2.45),
+                                ('texto_sai', 4.8), ('fim', 5.1)], .35,
+                     {'color': [232, 199, 102], 'message': 'O OLHO DE HORUS ABRIU',
+                      'title_y': .45, 'message_y': .45 + 25 / 240})
     raise ValueError('aviso sem metadados: %r' % fx)

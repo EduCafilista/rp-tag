@@ -9,7 +9,7 @@ chat por proximidade, balões de fala, avisos de tela, zonas de lore e vidas can
 
 | Projeto | Versão do código | Manutenção | Diretório |
 | --- | --- | --- | --- |
-| RP Tag | 4.6.0 | Em desenvolvimento | Raiz do repositório |
+| RP Tag | 4.7.0 | Em desenvolvimento | Raiz do repositório |
 | Portais da Lore | 1.3.2 | Desenvolvimento suspenso | [portais-da-lore](portais-da-lore/) |
 
 Os arquivos JAR são distribuídos pela [página de releases](https://github.com/EduCafilista/rp-tag/releases).
@@ -89,7 +89,7 @@ um título e uma mensagem na tela dos destinatários.
 | Demoníaco | `demoniaco` |
 | Pesadelo alternativo | `pesadelo2` |
 
-Na versão do código 4.6.0, Morte, Inferno, Gelo, Void e Divino podem utilizar animações
+Na versão do código 4.7.0, Morte, Inferno, Gelo, Void, Divino e Egípcio podem utilizar animações
 renderizadas no Blender. Os efeitos procedurais permanecem disponíveis como
 alternativa quando o vídeo está desativado, indisponível ou apresenta falha.
 O texto da mensagem é desenhado pelo cliente e não faz parte dos quadros de vídeo.
@@ -139,7 +139,7 @@ python check.py
 python3 check.py
 ```
 
-O build executa os testes Java e produz `build/libs/rptag-4.6.0.jar`. O primeiro
+O build executa os testes Java e produz `build/libs/rptag-4.7.0.jar`. O primeiro
 build pode levar mais tempo devido ao download de dependências e à preparação
 do ambiente Minecraft.
 
