@@ -1053,6 +1053,25 @@ public final class RPCommands {
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                                     avisar(ctx, alvos, "real", texto);
                                                     return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (4.7.2) EGIPICIO: o literal FALTAVA no comando (o switch ja
+                                // conhecia o estilo, mas o Brigadier nunca chegava nele).
+                                // Aceita as duas grafias: egipicio (do dono) e egipcio.
+                                .then(Commands.literal("egipicio")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "egipicio", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                .then(Commands.literal("egipcio")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "egipicio", texto);
+                                                    return Command.SINGLE_SUCCESS;
                                                 })))))
                 // (3.61.0) /rp admin avisozona <id> <texto> — aviso na tela
                 // de TODOS que estiverem dentro da esfera da lorezone

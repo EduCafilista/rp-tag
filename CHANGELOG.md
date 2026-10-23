@@ -1,5 +1,37 @@
 # Changelog
 
+## 4.7.2 — O AVISO EGÍPCIO AGORA FUNCIONA NO COMANDO (2026-10-23)
+
+### O bug
+O estilo 12 (`egipício`) existia no mod — arte, vídeo, som, render — mas **não
+estava na árvore de comandos**. Faltava o literal `egipicio` dentro de
+`/rp admin avisar`. Resultado: o Brigadier consumia a palavra "egipicio" como se
+fosse o **texto** da mensagem, e o aviso saía na caixa **clássica** (ou dizia
+"Unknown or incomplete command"). Não era falha de registro nem de render:
+era o parser de comandos.
+
+### A correção
+- `Commands.literal("egipicio")` e `Commands.literal("egipcio")` adicionados em
+  `/rp admin avisar`, logo depois do bloco do `real`, ambos chamando
+  `avisar(ctx, alvos, "egipicio", texto)` — as duas grafias funcionam.
+- `check.py` ganhou a checagem **4.7.2** (415 checks no total): varre o corpo de
+  `avisar()` e exige um literal de comando para **todo** estilo do `switch`
+  (exceto o clássico). Esse bug não passa mais despercebido.
+
+### Como usar
+```
+/rp admin avisar @s egipicio O Faraó observa.
+/rp admin avisar @a egipcio A maldição caiu sobre vocês.
+```
+
+### Verificação em servidor de verdade
+Servidor NeoForge 21.1.249 limpo, jar 4.7.2 em `mods/`, RCON:
+```
+/rp admin avisar <jogadores> (<texto>|pesadelo|pesadelo2|morte|inferno|gelo|
+divino|void|sangue|demoniaco|runico|real|egipicio|egipcio)
+```
+`415 PASS / 0 FAIL` · `javac --release 21` limpo.
+
 ## 4.7.1 — EGÍPCIO NO ESTILO DA REFERÊNCIA + REAL NOVO + VOID/GELO DE VOLTA AO ANTIGO (2026-10-22)
 
 ### "O Faraó observa" — o aviso egípcio refeito na arte do dono

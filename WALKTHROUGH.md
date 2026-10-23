@@ -1439,6 +1439,22 @@ quem congela é a morte, não o admin.
   `Axis.ZP` 5°, `Axis.XP` 6°. `RenderType.lightning()` desenhado frente+verso.
 - Verificação: `verificacao/simula_4_4_0_coracao.py` lê a `MASCARA` do próprio Java.
 
+
+### 4.7.2 — o literal que faltava (bug do `egipicio`)
+
+`avisar()` tinha `case "egipicio"`, o `VideoFx` existia, os 144 quadros estavam no
+jar — e mesmo assim `/rp admin avisar @s egipicio oi` saía **clássico**. Motivo:
+a árvore do Brigadier não tinha `Commands.literal("egipicio")`, então a palavra
+era consumida como `texto` do comando clássico (ou "Unknown or incomplete command").
+Corrigido com **dois** literais (`egipicio` e `egipcio`) após o bloco do `real`.
+**Regra nova:** todo estilo do `switch` de `avisar()` precisa de literal — o check
+`4.7.2` do `check.py` varre só o corpo de `avisar()` (fatia até o próximo
+`    private static `, senão pega `case "pvp"` de outro método) e falha se faltar.
+Prova de runtime: servidor NeoForge 21.1.249 limpo + RCON →
+`/rp admin avisar <jogadores> (<texto>|pesadelo|...|real|egipicio|egipcio)`.
+`egipicio` sem texto dá "Unknown or incomplete command" igual ao `real`
+(antes seria aceito como texto). 415 checks · 43 testes · javac limpo.
+
 ---
 
-*Última atualização: ciclo 4.4.0 (2026-10-20) — coração voxel + /rp admin vida.*
+*Última atualização: ciclo 4.7.2 (2026-10-23) — bug do literal `egipicio` corrigido.*

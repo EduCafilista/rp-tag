@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.7.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.7.2' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.7.1 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.7.2 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.7.1', 'RP Tag 4.7.1' in ce)
+check('4.0: boot log 4.7.2', 'RP Tag 4.7.2' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -938,6 +938,20 @@ check('4.7.1: REAL registrado na camada (ClientGuiLayers)', 'RealAvisoFx.registr
 check('4.7.1: EGIPCIO usa a PLACA retangular dourada (nao o cartucho oval)',
       'PLACA DO FARA' in egi and 'diamante(' in egi)
 check('4.7.1: EGIPCIO tem selo de ouro a direita da placa', 'SELO' in egi)
+
+# ================= 4.7.2: o BUG do avisar egipicio (literal faltando no comando) =================
+import re as _re
+_rp = rd(R + '/RPCommands.java')
+_comando = _rp[_rp.index('.then(Commands.literal("avisar")'):_rp.index('.then(Commands.literal("avisozona")')]
+_literais = set(_re.findall(r'Commands\.literal\("([a-z0-9_]+)"\)', _comando))
+_k = _rp.index('private static void avisar(')
+_metodo = _rp[_k:_rp.index('    private static ', _k + 10)]      # so o corpo do avisar()
+_estilos = set(_re.findall(r'case "([a-z0-9_]+)"', _metodo))
+_estilos.discard('classico')          # classico e o argumento "texto" direto, sem literal
+_sem_literal = sorted(e for e in _estilos if e not in _literais)
+check('4.7.2: TODO estilo do avisar tem literal no comando (egipicio inclusive)', not _sem_literal)
+check('4.7.2: avisar aceita as duas grafias (egipicio e egipcio)',
+      'Commands.literal("egipicio")' in _comando and 'Commands.literal("egipcio")' in _comando)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
