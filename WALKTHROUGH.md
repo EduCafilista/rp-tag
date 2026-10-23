@@ -1472,6 +1472,12 @@ primeira palavra do texto for `egipcio`, vira estilo 12 e o resto é mensagem.
 Check 4.7.3 garante: nenhum literal repetido, `egipcio` fora da árvore, fallback
 presente. 418 checks · 43 testes.
 
+**Publicado 4.7.3:** release **421410429**, asset **667804155**
+`rptag-4.7.3.jar` = **104.562.425 B**, sha256
+`e07e5331b74fb0656f03b83025e7fb6d67d31fef144b5b5bddb578e172d56438`
+(download + `cmp` idêntico). Commit `88054d4`. Apagados: release 421386479 e tag
+`v4.7.2`. Vivas: `v4.7.3` e `portais-v1.3.2`.
+
 ---
 
 *Última atualização: ciclo 4.7.3 (2026-10-23) — uma entrada só para o egípcio.*
