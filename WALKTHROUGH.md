@@ -1455,6 +1455,12 @@ Prova de runtime: servidor NeoForge 21.1.249 limpo + RCON →
 `egipicio` sem texto dá "Unknown or incomplete command" igual ao `real`
 (antes seria aceito como texto). 415 checks · 43 testes · javac limpo.
 
+**Publicado:** release **421386479** (v4.7.2), asset **667716743**
+`rptag-4.7.2.jar` = **104.562.338 B**, sha256
+`a380cc5e18429a02205a6a2bd26298fc717340d7d20966747637f548e3393a6e`
+(download + `cmp` idêntico). Commit `546ee75`. Apagados: release 420651626 e tag
+`v4.7.1`. Vivas: `v4.7.2` e `portais-v1.3.2`.
+
 ---
 
 *Última atualização: ciclo 4.7.2 (2026-10-23) — bug do literal `egipicio` corrigido.*
