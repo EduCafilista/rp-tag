@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.7.2' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.7.3' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.7.2 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.7.3 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.7.2', 'RP Tag 4.7.2' in ce)
+check('4.0: boot log 4.7.3', 'RP Tag 4.7.3' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -950,8 +950,15 @@ _estilos = set(_re.findall(r'case "([a-z0-9_]+)"', _metodo))
 _estilos.discard('classico')          # classico e o argumento "texto" direto, sem literal
 _sem_literal = sorted(e for e in _estilos if e not in _literais)
 check('4.7.2: TODO estilo do avisar tem literal no comando (egipicio inclusive)', not _sem_literal)
-check('4.7.2: avisar aceita as duas grafias (egipicio e egipcio)',
-      'Commands.literal("egipicio")' in _comando and 'Commands.literal("egipcio")' in _comando)
+check('4.7.2: egipicio tem literal proprio no avisar', 'Commands.literal("egipicio")' in _comando)
+# 4.7.3: so UM literal por estilo — "egipcio" junto de "egipicio" duplicava a
+# entrada no tab-complete do jogo (o dono viu "egipcio" e "egipicio" na lista).
+_dup = sorted({e for e in _literais if list(_re.findall(r'Commands\.literal\("([a-z0-9_]+)"\)', _comando)).count(e) > 1})
+check('4.7.3: nenhum estilo aparece 2x no comando (sem sugestao duplicada)', not _dup)
+check('4.7.3: "egipcio" NAO e literal (uma entrada so na lista)',
+      'Commands.literal("egipcio")' not in _comando)
+check('4.7.3: a grafia "egipcio" funciona pelo fallback do avisar()',
+      'equals("egipcio")' in _metodo and 'style = 12' in _metodo)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

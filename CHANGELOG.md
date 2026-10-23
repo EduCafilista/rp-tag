@@ -1,5 +1,29 @@
 # Changelog
 
+## 4.7.3 — UMA ENTRADA SÓ PARA O EGÍPCIO (2026-10-23)
+
+### O que o dono viu
+No tab-complete do jogo apareciam **duas** sugestões quase iguais:
+`egipcio` e `egipicio` — porque na 4.7.2 eu registrei os dois literais.
+
+### A correção
+- Fica **um literal só**: `egipicio`. A lista do comando mostra uma entrada.
+- A grafia `egipcio` **continua funcionando**, mas por *fallback* dentro de
+  `avisar()`: se a primeira palavra da mensagem for `egipcio`, o aviso vira o
+  estilo 12 e o resto é o texto.
+  ```
+  /rp admin avisar @a egipcio O Faraó observa.   <- funciona igual
+  /rp admin avisar @a egipicio O Faraó observa.  <- oficial
+  ```
+- Check novo no `check.py` (**418 checks**): nenhum estilo pode aparecer 2x no
+  comando, `egipcio` **não** pode ser literal e o fallback tem de existir.
+- Bug de compilação pego no caminho: `style` deixa de ser *effectively final*
+  quando o fallback reescreve a variável → o log do admin usa `estiloFinal`.
+
+### Verificação em servidor
+`/rp admin avisar <jogadores> (<texto>|...|real|egipicio)` — **uma** entrada de
+egípcio na árvore; `egipicio ola` e `egipcio ola` ambos parseiam.
+
 ## 4.7.2 — O AVISO EGÍPCIO AGORA FUNCIONA NO COMANDO (2026-10-23)
 
 ### O bug

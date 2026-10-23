@@ -405,6 +405,18 @@ public final class RPCommands {
             case "egipicio", "egipcio" -> 12;   // (4.5.0) O Olho de Horus
             default -> 0;
         };
+        // (4.7.3) Grafia "egipcio" (sem o "i"): nao tem literal proprio, para nao
+        // aparecer duas vezes no tab-complete — mas se a primeira palavra do texto
+        // for "egipcio", o aviso vira egipicio e o resto e a mensagem.
+        if (style == 0 && texto != null) {
+            String t = texto.trim();
+            int sp = t.indexOf(' ');
+            if (sp > 0 && t.substring(0, sp).toLowerCase(java.util.Locale.ROOT).equals("egipcio")) {
+                style = 12;
+                texto = t.substring(sp + 1).trim();
+            }
+        }
+        final int estiloFinal = style;   // lambda do sendSuccess exige effectively final
         String traduzido = translateAmp(texto);
         if (style == 0 && traduzido.indexOf('\u00a7') < 0) {
             traduzido = "\u00a7c" + traduzido; // sem cor? VERMELHO (o classic "voce esta sendo observado")
@@ -416,7 +428,7 @@ public final class RPCommands {
         }
         final int n = alvos.size();
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "Aviso (" + nomeEstilo(style) + ") na tela de " + n + " jogador(es)!")
+                "Aviso (" + nomeEstilo(estiloFinal) + ") na tela de " + n + " jogador(es)!")
                 .withStyle(ChatFormatting.YELLOW), false); // (3.47.0) SO O ADMIN ve
     }
 
@@ -1054,9 +1066,10 @@ public final class RPCommands {
                                                     avisar(ctx, alvos, "real", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))
-                                // (4.7.2) EGIPICIO: o literal FALTAVA no comando (o switch ja
-                                // conhecia o estilo, mas o Brigadier nunca chegava nele).
-                                // Aceita as duas grafias: egipicio (do dono) e egipcio.
+                                // (4.7.3) EGIPICIO: UM literal so (egipicio) — antes eu tinha
+                                // posto "egipcio" tambem e o tab-complete mostrava DUAS
+                                // entradas quase iguais. A grafia "egipcio" continua
+                                // funcionando pelo fallback dentro de avisar().
                                 .then(Commands.literal("egipicio")
                                         .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                                                 .executes(ctx -> {
@@ -1064,18 +1077,8 @@ public final class RPCommands {
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                                     avisar(ctx, alvos, "egipicio", texto);
                                                     return Command.SINGLE_SUCCESS;
-                                                })))
-                                .then(Commands.literal("egipcio")
-                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
-                                                .executes(ctx -> {
-                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
-                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
-                                                    avisar(ctx, alvos, "egipicio", texto);
-                                                    return Command.SINGLE_SUCCESS;
                                                 })))))
-                // (3.61.0) /rp admin avisozona <id> <texto> — aviso na tela
-                // de TODOS que estiverem dentro da esfera da lorezone
-                .then(Commands.literal("avisozona")
+.then(Commands.literal("avisozona")
                         .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
                                 .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                                         .executes(ctx -> {

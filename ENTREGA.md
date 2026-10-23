@@ -7,11 +7,11 @@ necessárias para dar continuidade ao projeto.
 
 | Item | Referência |
 | --- | --- |
-| Versão do RP Tag | 4.7.1 |
+| Versão do RP Tag | 4.7.3 |
 | Minecraft | 1.21.1 |
 | NeoForge de desenvolvimento | 21.1.249 |
 | Java | 21 |
-| Artefato de build | `build/libs/rptag-4.7.1.jar` |
+| Artefato de build | `build/libs/rptag-4.7.3.jar` |
 | Portais da Lore | 1.3.2; desenvolvimento suspenso |
 
 A versão publicada deve ser confirmada na página de releases. Planos em
@@ -86,7 +86,7 @@ Mortes causadas por um jogador em OFF RP não descontam vidas canônicas.
 
 ## Renderização e animações
 
-O código 4.7.1 integra vídeos de Morte, Inferno, Divino e Egípcio (Void e Gelo voltaram aos procedurais, por escolha do dono). O player utiliza uma
+O código 4.7.3 integra vídeos de Morte, Inferno, Divino e Egípcio (Void e Gelo voltaram aos procedurais, por escolha do dono). O player utiliza uma
 textura dinâmica e decodificação em segundo plano. A classe de cada aviso mantém
 texto, sons e o efeito procedural alternativo. O fallback deve continuar no mesmo
 instante da animação, sem repetir sons nem reiniciar a mensagem.

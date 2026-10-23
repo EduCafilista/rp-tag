@@ -1461,6 +1461,17 @@ Prova de runtime: servidor NeoForge 21.1.249 limpo + RCON →
 (download + `cmp` idêntico). Commit `546ee75`. Apagados: release 420651626 e tag
 `v4.7.1`. Vivas: `v4.7.2` e `portais-v1.3.2`.
 
+### 4.7.3 — tab-complete duplicado
+
+Registrar `egipicio` **e** `egipcio` como literais fazia o jogo listar as duas
+sugestões. Regra: **um literal por estilo**. A grafia alternativa do dono
+(`egipcio`) é tratada por *fallback* dentro de `avisar()`: se `style == 0` e a
+primeira palavra do texto for `egipcio`, vira estilo 12 e o resto é mensagem.
+⚠️ Ao reescrever `style` dentro do método, o lambda do `sendSuccess` quebra
+("must be final or effectively final") → guardar `final int estiloFinal = style;`.
+Check 4.7.3 garante: nenhum literal repetido, `egipcio` fora da árvore, fallback
+presente. 418 checks · 43 testes.
+
 ---
 
-*Última atualização: ciclo 4.7.2 (2026-10-23) — bug do literal `egipicio` corrigido.*
+*Última atualização: ciclo 4.7.3 (2026-10-23) — uma entrada só para o egípcio.*
