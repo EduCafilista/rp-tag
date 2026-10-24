@@ -1,6 +1,7 @@
 {
   "effect.rptag.medo": "Medo",
   "block.rptag.coracao_canon": "Coração da Vida Canônica",
+  "item.rptag.tablet": "Tablet da Lore",
   "item.rptag.lorezone_wand": "Varinha de Lorezone",
   "item.rptag.lorezone_wand.desc": "Clique direito perto de uma lorezone para ver a barreira (so admin)"
 }

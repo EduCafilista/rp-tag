@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.7.8' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.8.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.7.8 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.8.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -36,7 +36,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal v5', 'LorezoneMusicPayload' in mn and 'registrar("5")' in mn)
+check('payloads registrados no canal v5', 'LorezoneMusicPayload' in mn and 'registrar("6")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -163,7 +163,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo v5 (3 payloads de musica)', 'registrar("5")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo v5 (3 payloads de musica)', 'registrar("6")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.7.8', 'RP Tag 4.7.8' in ce)
+check('4.0: boot log 4.8.0', 'RP Tag 4.8.0' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -1008,6 +1008,57 @@ check('4.7.8: analisador de audio no repo (acha o melhor trecho)',
       os.path.exists('arte/analisa_audio.py') and 'melhores trechos' in rd('arte/analisa_audio.py'))
 check('4.7.8: a trilha toca no primeiro quadro e para no parar()',
       'tentouTrilha' in _egi2 and 'pararTrilha()' in _egi2)
+
+# ============ 4.8.0: TABLET DA FICHA (tudo dentro do rp-tag) ============
+_ficha = rd(R + '/FichaRp.java')
+check('4.8.0: 8 capitulos, sem pergunta de RACA', 'CAPS = 8' in _ficha and 'raca' not in _ficha.lower())
+check('4.8.0: capitulos nome/idade/origem/oficio/habilidades/historia/personalidade/resumo',
+      all(k in _ficha for k in ['CAP_NOME', 'CAP_IDADE', 'CAP_ORIGEM', 'CAP_OFICIO',
+                                'CAP_HABILIDADES', 'CAP_HISTORIA', 'CAP_PERSONALIDADE', 'CAP_RESUMO']))
+check('4.8.0: 6 eixos de personalidade 0..100 com os rotulos do print',
+      'Prudente' in _ficha and 'Corajoso' in _ficha and 'Pragmático' in _ficha
+      and 'Empático' in _ficha and 'Espontâneo' in _ficha and 'Disciplinado' in _ficha
+      and 'Tradicional' in _ficha and 'Curioso' in _ficha and 'Reservado' in _ficha
+      and 'Sociável' in _ficha and 'Contente' in _ficha and 'Ambicioso' in _ficha)
+check('4.8.0: ficha salva/carrega em NBT', 'putString("Nome"' in _ficha and 'getString("Nome")' in _ficha)
+check('4.8.0: a ficha alimenta a Persona (nome/idade/descricao)',
+      'new Persona(atual.nome, atual.idadeNumero(), atual.descricaoCurta())' in rd(R + '/FichaServer.java'))
+
+_wd = rd(R + '/RPWorldData.java')
+check('4.8.0: fichas guardadas no mundo (mapa + NBT "Fichas")',
+      'getFicha(' in _wd and 'setFicha(' in _wd and 'put("Fichas"' in _wd and 'getList("Fichas"' in _wd)
+check('4.8.0: item rptag:tablet registrado', 'ITEMS.register("tablet"' in rd(R + '/RPTagMod.java'))
+check('4.8.0: tablet e um item (modelo + textura no jar)',
+      os.path.exists(A + '/models/item/tablet.json') and os.path.exists(A + '/textures/item/tablet.png'))
+check('4.8.0: nome do item traduzido pt_br/en_us',
+      'item.rptag.tablet' in rd(A + '/lang/pt_br.json') and 'item.rptag.tablet' in rd(A + '/lang/en_us.json'))
+check('4.8.0: clique direito abre, shift+direito mostra no chat',
+      'FichaServer.abrir(sp)' in rd(R + '/TabletItem.java') and 'FichaLivro.mostrar' in rd(R + '/TabletItem.java'))
+check('4.8.0: todo jogador recebe o tablet no login (sem duplicar)',
+      'FichaServer.garantirTablet(joined)' in rd(R + '/ServerEvents.java')
+      and 'if (jaTemTablet(sp))' in rd(R + '/FichaServer.java'))
+check('4.8.0: canais ficha_abrir (S2C) e ficha_salvar (C2S) no protocolo v6',
+      'registrar("6")' in mn and 'FichaOpenPayload' in mn and 'FichaSavePayload' in mn)
+_fs = rd(C + '/FichaScreen.java')
+check('4.8.0: tela da ficha existe com os 8 capitulos por pergunta',
+      'class FichaScreen extends Screen' in _fs and 'CAP_PERSONALIDADE' in _fs)
+check('4.8.0: rodape ESC · Sair / ENTER · Continuar', 'ESC · Sair' in _fs and 'ENTER · Continuar' in _fs)
+check('4.8.0: quadradinhos de progresso + Voltar/Continuar',
+      'renderProgresso' in _fs and '"Voltar"' in _fs and '"Continuar"' in _fs)
+check('4.8.0: pagina final tem o botao Confirmar Personagem',
+      'Confirmar Personagem' in _fs and 'confirmar()' in _fs)
+check('4.8.0: personagem do proprio jogador na tela (modelo do player)',
+      'renderEntityInInventoryFollowsAngle' in _fs and 'minecraft.player' in _fs)
+_fundo = rd(C + '/FichaFundo.java')
+check('4.8.0: fundo galaxia + buraco negro atras do personagem + disco no chao',
+      'static void fundo(' in _fundo and 'buracoNegro' in _fundo and 'discoMagico' in _fundo)
+check('4.8.0: animacao de transicao entre capitulos', 'tTroca' in _fs and 'suave(' in _fs)
+check('4.8.0: personagem se mexe a cada pergunta (swing)',
+      'p.swing(InteractionHand.MAIN_HAND)' in _fs and 'InteractionHand.OFF_HAND' in _fs)
+check('4.8.0: campo de texto longo (historia quebra linha)',
+      'class TextoLivre extends AbstractWidget' in rd(C + '/FichaWidgets.java'))
+check('4.8.0: salva a cada capitulo (fechar no meio nao perde nada)',
+      'salvar(false)' in _fs and 'FichaSavePayload' in _fs)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

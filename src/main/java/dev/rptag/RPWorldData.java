@@ -36,6 +36,8 @@ public final class RPWorldData extends SavedData {
 
     private final Map<UUID, Boolean> states = new HashMap<>();
     private final Map<UUID, Persona> personas = new HashMap<>();
+    /** (4.8.0) fichas completas criadas no TABLET (o Persona vira o resumo). */
+    private final Map<UUID, FichaRp> fichas = new HashMap<>();
     private final Map<UUID, Integer> colors = new HashMap<>();
     private final Map<UUID, Boolean> bubbleOptOut = new HashMap<>();
     /** jogadores PROIBIDOS de usar balao por um admin (ausente = permitido). */
@@ -96,6 +98,27 @@ public final class RPWorldData extends SavedData {
             personas.put(id, persona);
         }
         setDirty();
+    }
+
+    // ==== ficha do tablet (4.8.0) ====
+
+    /** @return a ficha do jogador (cria vazia se ele nunca abriu o tablet). */
+    public FichaRp getFicha(UUID id) {
+        return fichas.computeIfAbsent(id, k -> new FichaRp());
+    }
+
+    /** @return a ficha SEM criar (null se o jogador nao tem). */
+    public FichaRp fichaOuNula(UUID id) {
+        return fichas.get(id);
+    }
+
+    public void setFicha(UUID id, FichaRp ficha) {
+        fichas.put(id, ficha);
+        setDirty();
+    }
+
+    public Map<UUID, FichaRp> getFichas() {
+        return fichas;
     }
 
     // ==== cor pessoal (chat + balao) ====
@@ -323,6 +346,15 @@ public final class RPWorldData extends SavedData {
         });
         tag.put("Personas", personas);
 
+        ListTag fichasTag = new ListTag();
+        this.fichas.forEach((id, ficha) -> {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", id);
+            e.put("Ficha", ficha.save());
+            fichasTag.add(e);
+        });
+        tag.put("Fichas", fichasTag);
+
         ListTag colors = new ListTag();
         this.colors.forEach((id, rgb) -> {
             CompoundTag e = new CompoundTag();
@@ -424,6 +456,12 @@ public final class RPWorldData extends SavedData {
         for (int i = 0; i < personas.size(); i++) {
             CompoundTag e = personas.getCompound(i);
             data.personas.put(e.getUUID("Id"), Persona.load(e.getCompound("Persona")));
+        }
+
+        ListTag fichasTag = tag.getList("Fichas", Tag.TAG_COMPOUND);
+        for (int i = 0; i < fichasTag.size(); i++) {
+            CompoundTag e = fichasTag.getCompound(i);
+            data.fichas.put(e.getUUID("Id"), FichaRp.load(e.getCompound("Ficha")));
         }
 
         ListTag colors = tag.getList("Colors", Tag.TAG_COMPOUND);

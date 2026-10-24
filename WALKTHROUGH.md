@@ -1571,6 +1571,48 @@ No caso do egipcio: fonte de 60 s, drop em 35,0 s -> corte 33,95..41,45.
 `v4.7.7`. Vivas: `v4.7.8` e `portais-v1.3.2`. Fonte: `arte/fontes/egipcio_origem.mp3`
 (60 s) -> corte 33,95..41,45 s -> ogg 75.581 B.
 
+### 4.8.0 — TABLET DA FICHA (tudo dentro do rp-tag)
+
+Regra do dono: **nada de mod separado** — a ficha mora no `rp-tag`.
+
+**Mapa dos arquivos**
+- `dev/rptag/FichaRp.java` — dados + NBT + os 8 capítulos e os 6 eixos
+- `dev/rptag/FichaCodec.java` — como a ficha viaja pela rede (texto com limite,
+  persona em 6 bytes)
+- `dev/rptag/FichaOpenPayload.java` (`rptag:ficha_abrir`, S2C) e
+  `FichaSavePayload.java` (`rptag:ficha_salvar`, C2S)
+- `dev/rptag/FichaServer.java` — abrir/ver/salvar/entregar/resetar; ao salvar,
+  nome+idade+(ofício · origem) viram `Persona` e o jogador entra em RP
+- `dev/rptag/TabletItem.java` — direito abre, shift+direito mostra no chat
+- `dev/rptag/FichaLivro.java` — a ficha no chat (sem `╔══`)
+- `dev/rptag/FichaCommands.java` — `/ficha [ver|livro|dar|reset|lista|editar]`
+- `client/FichaScreen.java` — a tela (8 capítulos, animação, personagem)
+- `client/FichaWidgets.java` — botão, barra de personalidade, campo multi-linha
+- `client/FichaFundo.java` — galáxia + **buraco negro** + **disco mágico**
+- `RPWorldData` — `Map<UUID,FichaRp> fichas` e NBT `"Fichas"`
+
+**Decisões que não voltam atrás**
+- **sem pergunta de RAÇA**; "de onde você veio" (ORIGEM) ocupa o lugar
+- PERSONALIDADE = 6 barras **bipolares 0..100** com ímã no centro (50)
+- o personagem na tela é o **próprio jogador** (`minecraft.player`), não um NPC
+- animação por pergunta = `p.swing(MAIN_HAND/OFF_HAND)` + giro da cabeça
+  (`renderEntityInInventoryFollowsAngle`); **não depende do Emotecraft** — se ele
+  estiver no servidor, as emotes normais continuam funcionando por fora
+- salva **a cada capítulo** (`salvar(false)`), então fechar no meio não perde nada
+- `registrar("6")` — o protocolo subiu por causa dos dois canais novos
+- textura do item 16×16 (`textures/item/tablet.png`), modelo `item/generated`
+
+**Layout (referência = prints do dono)**
+`CAPÍTULO n / TÍTULO` à esquerda + "Sua história começa aqui" à direita; pergunta
+centralizada; personagem à esquerda sobre o disco; conteúdo à direita; botões
+Voltar/Continuar; quadradinhos de progresso; `ESC · Sair` / `ENTER · Continuar`.
+Clicar num quadradinho pula para o capítulo.
+
+⚠️ Regressão de snapshot: já aconteceu **10×**. Antes de qualquer `reset`, copiar
+o trabalho novo para `/home/user/wNNN/`; depois `git remote add origin
+https://<PAT>@github.com/...` (o `.git/config` NÃO sobrevive ao snapshot),
+`git fetch origin main`, `git reset --hard FETCH_HEAD` e copiar de volta.
+
 ---
 
-*Última atualização: ciclo 4.7.8 (2026-10-24) — trilha = áudio do dono (corte de 7,5 s).*
+*Última atualização: ciclo 4.8.0 (2026-10-24) — Tablet da Ficha dentro do rp-tag.*

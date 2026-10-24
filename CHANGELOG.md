@@ -1,5 +1,51 @@
 # Changelog
 
+## 4.8.0 — O TABLET DA FICHA (2026-10-24)
+
+### O que entrou
+O **Tablet da Lore** (`rptag:tablet`) — todo jogador recebe um ao entrar. Clique
+com o **direito** abre a ficha; o tablet **fica com ele**, então dá para reabrir
+e editar quando quiser. Shift + direito mostra a ficha no chat.
+
+A criação é **por partes**, uma pergunta por tela, no visual das referências do
+dono (galáxia + buraco negro de Netuno atrás do personagem):
+
+| # | capítulo | pergunta |
+|---|----------|----------|
+| 1 | NOME | Como o mundo vai te chamar? |
+| 2 | IDADE | Quantas primaveras viveu? |
+| 3 | ORIGEM | De onde você veio? |
+| 4 | OCUPAÇÃO | O que você fazia antes de chegar aqui? |
+| 5 | HABILIDADES | O que você sabe fazer bem? |
+| 6 | HISTÓRIA | Conte um pouco da sua história |
+| 7 | PERSONALIDADE | O que move a sua alma? (6 barras) |
+| 8 | RESUMO | Está tudo correto? → **Confirmar Personagem** |
+
+- **não existe pergunta de raça** — a de "de onde veio" ocupa esse lugar
+- barras bipolares 0–100: Prudente↔Corajoso, Pragmático↔Empático,
+  Espontâneo↔Disciplinado, Tradicional↔Curioso, Reservado↔Sociável,
+  Contente↔Ambicioso (com ímã no centro)
+- quadradinhos de progresso (dá para clicar), `ESC · Sair` / `ENTER · Continuar`
+- transição animada entre capítulos e o **boneco do próprio jogador** girando no
+  pedestal, com o buraco negro atrás e um disco mágico no chão
+- o personagem reage **a cada pergunta** (aceno de braço + giro da cabeça)
+- **salva a cada capítulo**: fechar no meio não perde nada
+
+### Integra com o que já existia
+Ao confirmar, **nome + idade + (ocupação · origem)** viram a `Persona` — então o
+nome do personagem aparece no nametag, no chat e na TAB sem comando nenhum, e o
+jogador entra em RP automaticamente.
+
+### Comandos
+`/ficha` (abre) · `ver <jogador>` · `livro` · `dar <jogador>` · `reset` ·
+`lista` · `editar` (só admin quando é de outro).
+
+### Técnico
+- fichas guardadas no mundo (`RPWorldData`, NBT `Fichas`), uma por UUID
+- protocolo sobe para **v6** com `rptag:ficha_abrir` (S2C) e `rptag:ficha_salvar` (C2S)
+- fundo, buraco negro, disco e botões são **procedurais** (quads) — nada de
+  textura pesada; o jar só ganhou a textura 16×16 do item
+
 ## 4.7.8 — A TRILHA AGORA É O ÁUDIO QUE O DONO MANDOU (2026-10-24)
 
 ### O que entrou

@@ -83,6 +83,11 @@ public final class RPTagMod {
                             .stacksTo(1)
                             .rarity(net.minecraft.world.item.Rarity.EPIC)));
 
+    /** (4.8.0) TABLET DA LORE: o item que abre a criacao da ficha. */
+    public static final net.neoforged.neoforge.registries.DeferredHolder<Item, TabletItem> TABLET =
+            ITEMS.register("tablet", () -> new TabletItem(new Item.Properties().stacksTo(1)
+                    .rarity(net.minecraft.world.item.Rarity.RARE)));
+
     public RPTagMod(IEventBus modEventBus, ModContainer modContainer) {
         // (3.45.0) o efeito MEDO usa DeferredRegister (registro oficial,
         // aparece no /effect give e no HUD como efeito de verdade).

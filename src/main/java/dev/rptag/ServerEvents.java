@@ -111,6 +111,9 @@ public final class ServerEvents {
                     net.minecraft.sounds.SoundSource.WEATHER, 1.2F, 0.8F);
         }
 
+        // (4.8.0) todo mundo ganha o TABLET (uma vez — se já tem, não duplica)
+        FichaServer.garantirTablet(joined);
+
         // Estado e persona de todos os online para o novo jogador.
         for (ServerPlayer other : server.getPlayerList().getPlayers()) {
             PacketDistributor.sendToPlayer(joined, new SyncRPStatePayload(other.getUUID(), data.isInRp(other.getUUID())));

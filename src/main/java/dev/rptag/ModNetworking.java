@@ -25,7 +25,8 @@ public final class ModNetworking {
         // arquivo .ogg no cliente).
         // (3.55.0) v5: GANHOU music_query/music_chunk/music_answer (a musica
         // DO SERVIDOR vai pro cliente em pedaços — todo mundo ouve).
-        PayloadRegistrar registrar = event.registrar("5");
+        // (4.8.0) v6: GANHOU ficha_abrir (S2C) e ficha_salvar (C2S) — o TABLET.
+        PayloadRegistrar registrar = event.registrar("6");
         registrar.playToClient(SyncRPStatePayload.TYPE, SyncRPStatePayload.STREAM_CODEC,
                 ClientPayloadHandler::handleSync);
         registrar.playToClient(PersonaSyncPayload.TYPE, PersonaSyncPayload.STREAM_CODEC,
@@ -70,5 +71,11 @@ public final class ModNetworking {
                 });
         registrar.playToServer(SetBubbleModePayload.TYPE, SetBubbleModePayload.STREAM_CODEC,
                 ServerEvents::handleSetBubbleMode);
+        // (4.8.0) TABLET: o servidor manda a ficha -> a tela abre; o cliente
+        // manda de volta o que foi escrito (a cada capítulo).
+        registrar.playToClient(dev.rptag.FichaOpenPayload.TYPE, dev.rptag.FichaOpenPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleFichaAbrir);
+        registrar.playToServer(dev.rptag.FichaSavePayload.TYPE, dev.rptag.FichaSavePayload.STREAM_CODEC,
+                dev.rptag.FichaServer::receberSalvar);
     }
 }
