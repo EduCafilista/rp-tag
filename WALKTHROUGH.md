@@ -1531,6 +1531,21 @@ Previa sem abrir o jogo: `python3 arte/prever_egipcio.py "msg"`.
 (download + `cmp` idêntico). Commit `7884933`. Apagados: release 422496016 e tag
 `v4.7.4`. Vivas: `v4.7.6` e `portais-v1.3.2`.
 
+### 4.7.7 — trilha do egipcio (sintetizada, sincronizada)
+
+`arte/audio_egipcio.py` gera `assets/rptag/sounds/egipcio_aviso.ogg` (7,6 s) e
+uma previa em `/home/user/previa/egipcio_som.mp3`. Tudo sintetizado em numpy:
+ney (seno+3o harmonico+sopro), qanun (Karplus-Strong), tambor doum/tek, sistro
+(FM), coro (3 vozes + formantes), impacto (sub+ruido+metal). Escala HIJAZ em Re.
+A linha do tempo casa com a animacao: riser -> **impacto no clarao (1,0 s)** ->
+whoosh das asas (1,5) -> tambor nas batidas (1,6/2,8/4,0/5,2/6,4) -> 2o golpe no
+cartucho (2,45) -> sino (3,4) -> golpe final (5,62).
+No Java: `SOM_EGIPCIO` em RPTagMod + `sounds.json`; `sons()` dispara uma vez
+(`tentouTrilha`/`trilhaTocou`) e cai nos note blocks so como reserva (reduzido).
+`pararTrilha()` usa `SoundManager.stop(ResourceLocation, SoundSource.MASTER)`.
+⚠️ `SoundManager` tem `stop(SoundInstance)`, `stop(ResourceLocation, SoundSource)`
+e `stop()` — o de ResourceLocation e o que funciona para cortar `forUI`.
+
 ---
 
-*Última atualização: ciclo 4.7.6 (2026-10-24) — aviso egípcio = animação de canvas do dono.*
+*Última atualização: ciclo 4.7.7 (2026-10-24) — trilha própria do egípcio.*

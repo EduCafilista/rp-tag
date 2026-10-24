@@ -14,5 +14,13 @@
         "stream": false
       }
     ]
+  },
+  "egipcio_aviso": {
+    "sounds": [
+      {
+        "name": "rptag:egipcio_aviso",
+        "stream": false
+      }
+    ]
   }
 }

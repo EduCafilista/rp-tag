@@ -1,5 +1,35 @@
 # Changelog
 
+## 4.7.7 — TRILHA NOVA DO EGÍPCIO (alaúde, ney e tambor) (2026-10-24)
+
+### O problema
+O som do aviso egípcio era um **arpejo de note block** + som de **areia
+quebrando** (SAND_BREAK) — parecia caixinha de música e não combinava com a
+animação nova de 7,5 s.
+
+### A trilha (feita do zero, sincronizada com a imagem)
+`arte/audio_egipcio.py` sintetiza a faixa — sem sample de fora, tudo em código:
+
+| instrumento | como | onde entra |
+|---|---|---|
+| **ney** (flauta de cana) | seno + 3º harmônico + ruído de sopro, vibrato | a melodia inteira |
+| **qanun/alaúde** | Karplus-Strong (corda pulsada) | acordes no cartucho e no final |
+| **tambor de moldura** | "doum" (grave) + "tek" (borda) | **nas batidas da animação** (1,6 / 2,8 / 4,0 / 5,2 / 6,4) |
+| **sistro** | FM metálico | nos anéis de hieróglifos girando |
+| **coro** | 3 vozes com formante de "o" | do cartucho até o fim |
+| **impacto** | sub + estrondo + metal | **no clarão (1,0 s)** e no 2º golpe (2,45 s) |
+
+- Escala **HIJAZ em Ré** (2ª menor + 3ª maior) — o "som de Egito" de verdade.
+- Reverb por família de instrumento (o templo tem cauda, a percussão fica seca).
+- Pico −0,9 dBFS, RMS −17 dBFS, 7,6 s, ogg Vorbis 104 KB.
+
+### No mod
+- `SoundEvent` `rptag:egipcio_aviso` + `sounds.json`.
+- `EgipcioAvisoFx.sons()` dispara **a trilha** uma vez; os note blocks antigos
+  ficam só como **reserva** (modo reduzido / se o ogg não tocar).
+- `pararTrilha()` corta o som na hora quando um aviso novo interrompe ou o
+  jogador sai do mundo — nada de trilha tocando por cima do próximo aviso.
+
 ## 4.7.6 — O AVISO EGÍPCIO AGORA É A *SUA* ANIMAÇÃO (2026-10-24)
 
 ### O que mudou

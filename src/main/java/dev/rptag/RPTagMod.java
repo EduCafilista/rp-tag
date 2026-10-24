@@ -32,7 +32,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "4.7.6";
+    public static final String VERSION = "4.7.7";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -48,6 +48,13 @@ public final class RPTagMod {
     public static final Supplier<SoundEvent> SOM_INFERNO =
             SOUNDS.register("inferno_aviso", () -> SoundEvent.createVariableRangeEvent(
                     ResourceLocation.fromNamespaceAndPath(MODID, "inferno_aviso")));
+
+    /** (4.7.7) TRILHA do aviso EGIPCIO: alaúde, ney e tambor de moldura,
+     *  sintetizados em arte/audio_egipcio.py e SINCRONIZADOS com a animação
+     *  (riser -> clarão -> asas -> cartucho -> sino). 7,6 s. */
+    public static final Supplier<SoundEvent> SOM_EGIPCIO =
+            SOUNDS.register("egipcio_aviso", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "egipcio_aviso")));
 
     /** (3.84.0) BLOCO/ITEM/BE do Coração Canônico (só adm obtém via /give;
      * nunca spawna naturalmente). */

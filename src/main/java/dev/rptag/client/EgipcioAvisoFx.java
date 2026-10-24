@@ -67,6 +67,10 @@ public final class EgipcioAvisoFx {
     private static String msg = "AVISO";
     private static String sub = "";
     private static int harpIdx, sandIdx;
+    /** (4.7.7) a trilha própria já começou? */
+    private static boolean trilhaTocou;
+    /** (4.7.7) já tentou disparar a trilha? (evita pedir de novo a cada quadro) */
+    private static boolean tentouTrilha;
     private static boolean abriu;
 
     /** linhas dos hieróglifos: 0 vazio · 1 ankh · 2 olho · 3 água · 4 sol · 5 junco. */
@@ -103,6 +107,8 @@ public final class EgipcioAvisoFx {
         inicio = System.nanoTime();
         harpIdx = 0;
         sandIdx = 0;
+        trilhaTocou = false;
+        tentouTrilha = false;
         abriu = false;
         // (4.7.0) tenta o VIDEO renderizado no Blender; reduzido/fxVideo off/sem video -> procedural
         video = FxVideoPolitica.permitir(FxConfig.video(), reduzido) && VideoFx.abrir("egipcio");
@@ -114,6 +120,23 @@ public final class EgipcioAvisoFx {
         if (video) VideoFx.fechar();
         video = false;
         inicio = -1;
+        pararTrilha();
+    }
+
+    /**
+     * (4.7.7) corta a trilha na hora — um aviso novo (ou sair do mundo) não pode
+     * deixar o aviso anterior tocando por cima.
+     */
+    public static void pararTrilha() {
+        if (!trilhaTocou) return;
+        trilhaTocou = false;
+        try {
+            Minecraft.getInstance().getSoundManager().stop(
+                    dev.rptag.RPTagMod.SOM_EGIPCIO.get().getLocation(),
+                    net.minecraft.sounds.SoundSource.MASTER);
+        } catch (Throwable th) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui parar a trilha do egipcio", th);
+        }
     }
 
     /** SERVIDOR: o deserto responde — grãos de areia caindo e incenso subindo. */
@@ -140,6 +163,7 @@ public final class EgipcioAvisoFx {
             inicio = -1;
             if (video) VideoFx.fechar();
             video = false;
+            trilhaTocou = false;
             return;
         }
 
@@ -584,27 +608,59 @@ public final class EgipcioAvisoFx {
     /** quando cada nota do arpejo entra. */
     private static final float[] NOTAS = {0.30f, 0.62f, 0.94f, 1.26f, 1.58f, 1.90f, 2.30f};
 
+    /**
+     * (4.7.7) TRILHA PRÓPRIA, sincronizada com a animação de canvas.
+     *
+     * <p>Antes eram "note blocks" soltos e som de areia quebrando — parecia
+     * caixinha de música. Agora é uma faixa sintetizada (arte/audio_egipcio.py):
+     * alaúde/qanun, ney (flauta de cana) em escala HIJAZ, tambor de moldura,
+     * sistro e coro, com a MESMA linha do tempo da imagem:
+     *
+     * <pre>
+     * 0,0  vento do deserto (baixo)
+     * 0,02 riser subindo
+     * 1,0  CLARÃO (impacto grave + metal)      = o olho abre
+     * 1,5  asas abrindo (whoosh)
+     * 1,6  primeira batida do tambor
+     * 2,45 cartucho fecha: segundo impacto
+     * 3,4  sino do templo
+     * 5,62 golpe final (tambor + cordas)
+     * 7,5  sai
+     * </pre>
+     *
+     * <p>Se o arquivo não tocar (jar antigo, som desligado), cai no arpejo
+     * antigo — o aviso nunca fica mudo.
+     */
     private static void sons(float t) {
-        // areia soprando durante toda a cena
+        // ---- a trilha (dispara uma vez, no primeiro quadro)
+        if (!tentouTrilha) {
+            tentouTrilha = true;
+            var som = dev.rptag.RPTagMod.SOM_EGIPCIO.get();
+            if (som != null && !reduzido) {
+                tocar(som, 1.0f, 0.85f);
+                trilhaTocou = true;
+                RPTagMod.LOGGER.info("RP Tag: trilha do EGIPCIO tocando ({}s)", DUR);
+            }
+        }
+        if (trilhaTocou) return;   // a trilha cobre tudo; o resto é reserva
+
+        // ---- reserva (modo reduzido / sem o ogg): arpejo + areia, como antes
         while (sandIdx < 9 && t >= 0.15f + sandIdx * 0.68f) {
             tocar(SoundEvents.SAND_BREAK, 0.30f + 0.07f * (sandIdx % 3), 0.42f);
             sandIdx++;
         }
-        // arpejo do alaúde (as notas sobem antes do olho abrir)
         while (harpIdx < NOTAS.length && t >= NOTAS[harpIdx]) {
             float p = ESCALA[harpIdx % ESCALA.length];
             tocar(SoundEvents.NOTE_BLOCK_HARP.value(), p, 0.55f);
             if (harpIdx % 2 == 1) tocar(SoundEvents.NOTE_BLOCK_FLUTE.value(), p * 2f, 0.22f);
             harpIdx++;
         }
-        // O OLHO ABRE: clarão + coro grave
         if (!abriu && t >= ABRE) {
             abriu = true;
             tocar(SoundEvents.ENDER_EYE_LAUNCH, 0.55f, 1.20f);
             tocar(SoundEvents.AMETHYST_BLOCK_CHIME, 0.75f, 1.00f);
             tocar(SoundEvents.BEACON_ACTIVATE, 0.45f, 1.30f);
         }
-        // depois do clarão: sino do templo + alaúde final
         if (t >= 3.4f && t < 3.45f) tocar(SoundEvents.NOTE_BLOCK_BELL.value(), 0.55f, 0.55f);
         if (t >= 4.6f && t < 4.65f) tocar(SoundEvents.NOTE_BLOCK_BASS.value(), 0.42f, 0.60f);
         if (t >= 5.6f && t < 5.65f) {

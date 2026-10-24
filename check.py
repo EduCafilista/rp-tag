@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.7.6' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.7.7' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.7.6 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.7.7 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.7.6', 'RP Tag 4.7.6' in ce)
+check('4.0: boot log 4.7.7', 'RP Tag 4.7.7' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -980,6 +980,20 @@ check('4.7.6: no modo video a placa fica no lugar do cartucho do canvas (0.783)'
       'tela[3] * 0.783f' in _egi2)
 check('4.7.6: renderizador da animacao de canvas existe (arte/render_canvas.js)',
       os.path.exists('arte/render_canvas.js') and '__render' in rd('arte/render_canvas.js'))
+
+# ============ 4.7.7: TRILHA PROPRIA do aviso egipcio (sincronizada) ============
+_rm = rd(R + '/RPTagMod.java')
+check('4.7.7: som egipcio_aviso registrado (SoundEvent)', 'SOM_EGIPCIO' in _rm and 'egipcio_aviso' in _rm)
+check('4.7.7: sounds.json tem egipcio_aviso',
+      'egipcio_aviso' in rd('src/main/resources/assets/rptag/sounds.json'))
+check('4.7.7: ogg da trilha no jar', os.path.exists(A + '/sounds/egipcio_aviso.ogg')
+      and os.path.getsize(A + '/sounds/egipcio_aviso.ogg') > 20000)
+check('4.7.7: EgipcioAvisoFx toca a trilha e tem reserva (note blocks)',
+      'SOM_EGIPCIO.get()' in _egi2 and 'NOTE_BLOCK_HARP' in _egi2)
+check('4.7.7: trilha para quando o aviso e interrompido (pararTrilha)',
+      'public static void pararTrilha()' in _egi2 and 'pararTrilha();' in _egi2)
+check('4.7.7: gerador da trilha no repo (arte/audio_egipcio.py)',
+      os.path.exists('arte/audio_egipcio.py') and 'escala HIJAZ' in rd('arte/audio_egipcio.py'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
