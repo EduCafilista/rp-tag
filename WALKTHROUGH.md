@@ -1546,6 +1546,12 @@ No Java: `SOM_EGIPCIO` em RPTagMod + `sounds.json`; `sons()` dispara uma vez
 ⚠️ `SoundManager` tem `stop(SoundInstance)`, `stop(ResourceLocation, SoundSource)`
 e `stop()` — o de ResourceLocation e o que funciona para cortar `forUI`.
 
+**Publicado 4.7.7:** release **422842215**, asset **672728963**
+`rptag-4.7.7.jar` = **115.842.924 B**, sha256
+`35f3e90a35039c94b8ea1de407e8391961286b32ebd523946b3554bd8972b30d`
+(download + `cmp` idêntico). Commit `ec56358`. Apagados: release 422690644 e tag
+`v4.7.6`. Vivas: `v4.7.7` e `portais-v1.3.2`.
+
 ---
 
 *Última atualização: ciclo 4.7.7 (2026-10-24) — trilha própria do egípcio.*
