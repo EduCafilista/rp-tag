@@ -1642,6 +1642,13 @@ Todas têm **borda_fade** (alfa → 0 nas margens) para nunca aparecer o quadrad
 ⚠️ `suave(a, b, x)` do gerador: o denominador NÃO pode ser `max(1e-6, b-a)` —
 com `b < a` isso inverte a máscara (foi o bug que deixou a esfera branca).
 
+**Publicado 4.8.1:** release **423046836**, asset **673602056**
+`rptag-4.8.1.jar` = **116.599.118 B**, sha256
+`3c7253afdf472061ff9d6f7a2b65b142c108eb1ff8b844299e72be5194222907`
+(download + `cmp` idêntico). Commit `b153358`. Apagados: release 423042370 e tag
+`v4.8.0`. Vivas: `v4.8.1` e `portais-v1.3.2`. 465 checks PASS / 43 JUnit /
+boot `Done (0.884s)` no NeoForge 21.1.249.
+
 ---
 
 *Última atualização: ciclo 4.8.1 (2026-10-24) — fundo do tablet em textura (fim dos pixels quebrados).*
