@@ -45,11 +45,12 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
  */
 public final class EgipcioAvisoFx {
 
-    private static final float DUR = 6.5f;
+    /** (4.7.6) 7,5 s: a duracao da animacao de canvas do dono. */
+    private static final float DUR = 7.5f;
     /** quando o olho termina de ser desenhado (o clarão). */
     private static final float ABRE = 2.45f;
-    /** quando o texto entra. */
-    private static final float TEXTO = 1.55f;
+    /** quando o texto entra (a placa aparece junto com o cartucho do video). */
+    private static final float TEXTO = 1.60f;
 
     // ---- paleta egípcia: ouro, areia, lápis-lazúli, turquesa, ocre ----
     private static final int NOITE = 0x160F06, PAPIRO = 0x3A2A11, AREIA = 0xC8A24A,
@@ -144,7 +145,13 @@ public final class EgipcioAvisoFx {
 
         Minecraft mc = Minecraft.getInstance();
         int w = g.guiWidth(), h = g.guiHeight();
-        float cx = w / 2f, cy = h * 0.45f, k = Math.min(w, h) / 240f;
+        // (4.7.6) o video do canvas cobre a tela em 16:9 (FxTimeline.cobrir):
+        // a placa tem de cair no MESMO lugar nas duas telas — por isso k sai da
+        // AREA DESENHADA, nao do tamanho da janela.
+        int[] tela = FxTimeline.cobrir(w, h);
+        float cx = tela[0] + tela[2] / 2f, cy = tela[1] + tela[3] * 0.885f;
+        float k = Math.min(tela[2], tela[3]) / 240f;
+        if (video) cy = tela[1] + tela[3] * 0.783f;   // no video a placa cai no lugar do cartucho do canvas
         float env = ss(0, 0.45f, t) * (1 - ss(DUR - 0.85f, DUR, t));
         int frame = (int) (t * 30);
 
@@ -474,7 +481,9 @@ public final class EgipcioAvisoFx {
         float al = ss(TEXTO - 0.25f, TEXTO + 0.55f, t) * env;
         if (al <= 0.01f) return;
         float hw = larg * 0.5f + 34 * k;
-        float hh = 5.4f * S + 11 * k;
+        // (4.7.6) com o video do canvas o cartucho ja vem nos quadros: a placa
+        // do Java vira so o FUNDO escuro do texto (mais baixa, sem moldura dupla)
+        float hh = (video ? 4.6f : 5.4f) * S + (video ? 9f : 11f) * k;
         float r = 8 * k;
         int fundo = col(0x0A1330, 0.80f * al);
         int o1 = col(OURO, 0.85f * al);

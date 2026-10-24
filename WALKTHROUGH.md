@@ -1508,6 +1508,23 @@ Fluxo: `python3 arte/importar_video.py <id> <arquivo> [--inicio --fim --fps --ma
 `exportar.py` agora le `fps` do marcadores.json (antes cravava 24 e a duracao
 saia errada). Testado com `previa/egipcio.gif` (36-38 quadros, 1,8 MB).
 
+### 4.7.6 — o egipcio virou a animacao de CANVAS do dono
+
+O dono manda o aviso como HTML de canvas (`<canvas id="c" width="960" height="540">`
++ `draw(t,msg,red)` deterministico, `DUR=7.5`, `k=Math.min(W,H)/240`).
+Receita: `node arte/render_canvas.js <html> arte/render/egipcio_novo --fps 24`
+— puppeteer + Chrome (precisa `sudo apt-get install libnspr4 libnss3 libatk1.0-0
+libatk-bridge2.0-0 libcups2 libxkbcommon0 libasound2 libxdamage1 libatspi2.0-0`;
+node_modules fica em /var/tmp/chrome). O script troca `W=960,H=540` por
+1280x720 e `k=2.25` por `k=3`, desliga a placa do canvas (`__SEM_PLACA`) e
+expoe `window.__render(t)`.
+Depois: `marcadores.json` com fps/quadros/fade -> `python3 arte/exportar.py
+egipcio` -> **180 quadros, 22,9 MB**. `check.py`: o check 4.7 agora exige **180**.
+No Java (`EgipcioAvisoFx`): `DUR = 7.5f`, placa/texto posicionados pela area
+16:9 desenhada (`FxTimeline.cobrir`) e, no modo video, `cy = h*0.783` (o lugar
+do cartucho do canvas) com placa mais baixa (`4.6*S + 9*k`).
+Previa sem abrir o jogo: `python3 arte/prever_egipcio.py "msg"`.
+
 ---
 
-*Última atualização: ciclo 4.7.5 (2026-10-24) — importador de vídeo para trocar o aviso.*
+*Última atualização: ciclo 4.7.6 (2026-10-24) — aviso egípcio = animação de canvas do dono.*

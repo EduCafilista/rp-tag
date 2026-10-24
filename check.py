@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.7.4' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.7.6' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.7.4 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.7.6 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.7.4', 'RP Tag 4.7.4' in ce)
+check('4.0: boot log 4.7.6', 'RP Tag 4.7.6' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -909,10 +909,12 @@ check('4.7: aviso novo encerra tambem o Egipcio (ClientEffects)',
 check('4.7: sair do mundo encerra tambem o Egipcio (ClientEvents)',
       'EgipcioAvisoFx.parar()' in rd(C + '/ClientEvents.java'))
 _fx_eg = A + '/fx/egipcio'
-check('4.7: assets do video egipcio no jar (fx.json + 144 quadros)',
-      os.path.exists(_fx_eg + '/fx.json')
-      and len([f for f in os.listdir(_fx_eg + '/frames') if f.endswith('_c.jpg')]) == 144
-      and len([f for f in os.listdir(_fx_eg + '/frames') if f.endswith('_a.jpg')]) == 144)
+# (4.7.6) os quadros do egipcio agora vem da ANIMACAO DE CANVAS do dono:
+# sao 180 (7,5 s a 24 fps), nao mais os 144 do Blender.
+_n_c = len([f for f in os.listdir(_fx_eg + '/frames') if f.endswith('_c.jpg')])
+_n_a = len([f for f in os.listdir(_fx_eg + '/frames') if f.endswith('_a.jpg')])
+check('4.7: assets do video egipcio no jar (fx.json + 180 quadros do canvas)',
+      os.path.exists(_fx_eg + '/fx.json') and _n_c == 180 and _n_a == _n_c)
 check('4.7: video egipcio <= 24 MiB', os.path.isdir(_fx_eg) and _tam_pasta(_fx_eg) <= 24 * 1024 * 1024)
 _cena_eg = os.path.exists('arte/cenas/egipcio.py') and 'def montar' in rd('arte/cenas/egipcio.py')
 check('4.7: cena arte/cenas/egipcio.py + metas.py registra o id',
@@ -968,6 +970,16 @@ check('4.7.4: /rpfx teste aceita os estilos do avisar (egipicio inclusive)',
       'case "egipicio", "egipcio" -> 12;' in _fx)
 check('4.7.4: texto opcional no /rpfx teste (greedyString)',
       'greedyString()' in _fx and 'TESTE ' in _fx)
+
+# ============ 4.7.6: o aviso egipcio virou A ANIMACAO DO DONO (canvas) ============
+_egi2 = rd(C + '/EgipcioAvisoFx.java')
+check('4.7.6: egipcio tem 7,5 s (duracao da animacao do dono)', 'DUR = 7.5f' in _egi2)
+check('4.7.6: placa/texto usam a area 16:9 desenhada (FxTimeline.cobrir)',
+      'FxTimeline.cobrir(w, h)' in _egi2 and 'tela[0] + tela[2] / 2f' in _egi2)
+check('4.7.6: no modo video a placa fica no lugar do cartucho do canvas (0.783)',
+      'tela[3] * 0.783f' in _egi2)
+check('4.7.6: renderizador da animacao de canvas existe (arte/render_canvas.js)',
+      os.path.exists('arte/render_canvas.js') and '__render' in rd('arte/render_canvas.js'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -1,5 +1,31 @@
 # Changelog
 
+## 4.7.6 — O AVISO EGÍPCIO AGORA É A *SUA* ANIMAÇÃO (2026-10-24)
+
+### O que mudou
+O dono mandou a animação do aviso egípcio num HTML de canvas (`draw(t, msg, red)`,
+7,5 s). Ela **substituiu** os 144 quadros do Blender.
+
+- **180 quadros** (7,5 s a 24 fps), 1280x720, com alfa (fade de entrada e saída).
+- Renderizada **quadro a quadro** fora do jogo (`arte/render_canvas.js`, Chrome
+  headless) chamando a mesma função `draw()` da animação — sem redesenhar nada.
+- O que veio: pirâmides, olho de Hórus com asas coloridas, disco de Rá com
+  raios, anéis de hieróglifos girando, areia, estrelas e o cartucho dourado.
+- A **placa** continua sendo desenhada pelo Java (ela acompanha o tamanho da
+  mensagem) — agora caindo exatamente no lugar do cartucho do vídeo: comparação
+  entre `FxTimeline.cobrir()` e a área desenhada, em `cy = h * 0.783` com
+  `k = min(w,h)/240`, então **a placa não desalinha em outra resolução**.
+- O texto segue o padrão do mod: dourado com contorno, typewriter, entrada
+  crescendo, brilho passando — e a mensagem **embaixo do título**.
+
+### Ferramentas novas
+- `arte/render_canvas.js` — roda uma animação de canvas em PNG quadro a quadro
+  (troca o `k` para manter a escala, tira a placa feita no canvas e o brilho
+  dela, porque quem desenha isso é o Java).
+- `arte/importar_video.py` (4.7.5) — para MP4/GIF/WEBM, quando não houver canvas.
+- `arte/prever_egipcio.py` — prévia do resultado final (vídeo + placa + texto)
+  sem abrir o jogo.
+
 ## 4.7.5 — IMPORTADOR DE VÍDEO (qualquer animação vira aviso) (2026-10-24)
 
 ### Para o dono mandar a animação dele
