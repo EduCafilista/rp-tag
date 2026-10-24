@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.7.3' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.7.4' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.7.3 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.7.4 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.7.3', 'RP Tag 4.7.3' in ce)
+check('4.0: boot log 4.7.4', 'RP Tag 4.7.4' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -959,6 +959,15 @@ check('4.7.3: "egipcio" NAO e literal (uma entrada so na lista)',
       'Commands.literal("egipcio")' not in _comando)
 check('4.7.3: a grafia "egipcio" funciona pelo fallback do avisar()',
       'equals("egipcio")' in _metodo and 'style = 12' in _metodo)
+
+# ============ 4.7.4: /rpfx teste (isola FX quebrado x comando que nao chega) ============
+_fx = rd(C + '/FxComando.java')
+check('4.7.4: /rpfx teste registrado no comando de cliente',
+      'literal("teste")' in _fx and 'startScreenText' in _fx)
+check('4.7.4: /rpfx teste aceita os estilos do avisar (egipicio inclusive)',
+      'case "egipicio", "egipcio" -> 12;' in _fx)
+check('4.7.4: texto opcional no /rpfx teste (greedyString)',
+      'greedyString()' in _fx and 'TESTE ' in _fx)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -1,5 +1,33 @@
 # Changelog
 
+## 4.7.4 — /rpfx teste: descobrir onde o aviso trava (2026-10-24)
+
+### O que apareceu no chat do dono
+```
+[Server: Showing new subtitle for EduJogaRP]
+[Server: killed 2 entities]
+```
+Essas **duas linhas não são do RP Tag**. A primeira é o feedback do comando
+vanilla `/title <jogador> subtitle <texto>` (rodado por console/command block);
+a segunda é o feedback do `/kill`. O mod só usa título/legenda vanilla num
+lugar: entrada de **lorezone sem aviso configurado** (`LoreZones.show`). O
+`/rp admin avisar` **nunca** manda subtitle — ele manda o FX próprio.
+
+### A novidade
+Faltava um jeito de separar "o desenho não funciona" de "o comando não chega".
+Agora existe o comando **de cliente** (não precisa de admin nem de servidor):
+```
+/rpfx teste egipicio
+/rpfx teste egipicio O Faraó observa.
+/rpfx teste divino / morte / real / gelo / void / ...
+```
+Ele toca o aviso **direto no seu jogo**, pelo mesmo caminho de desenho do
+`/rp admin avisar`. Se aparecer aqui e não aparecer no comando, o problema é
+no comando/rede; se não aparecer em nenhum, o problema é no cliente (config,
+vídeo, driver).
+- `check.py`: **421 checks** (o `/rpfx teste` e a lista de estilos entram na conta).
+- Testes: 43/43 · `javac --release 21` limpo.
+
 ## 4.7.3 — UMA ENTRADA SÓ PARA O EGÍPCIO (2026-10-23)
 
 ### O que o dono viu

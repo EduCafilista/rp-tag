@@ -1478,6 +1478,19 @@ presente. 418 checks · 43 testes.
 (download + `cmp` idêntico). Commit `88054d4`. Apagados: release 421386479 e tag
 `v4.7.2`. Vivas: `v4.7.3` e `portais-v1.3.2`.
 
+### 4.7.4 — separar FX quebrado de comando que nao chega
+
+O dono mandou um print com `[Server: Showing new subtitle for X]` e
+`[Server: killed 2 entities]`: **as duas linhas sao VANILLA** (feedback de
+`/title ... subtitle` e de `/kill`), nao do mod. `avisar()` nunca manda
+subtitle — o unico lugar do mod que manda title/subtitle vanilla e
+`LoreZones.show()` (zona SEM aviso configurado).
+Para diagnosticar sem depender de servidor: **`/rpfx teste <estilo> [texto]`**
+(comando de CLIENTE em `FxComando`), que chama `ClientEffects.startScreenText`
+direto. Se aparece no teste e nao no `/rp admin avisar` → problema no
+comando/rede; se nao aparece em nenhum → cliente (config/video).
+421 checks · 43 testes.
+
 ---
 
-*Última atualização: ciclo 4.7.3 (2026-10-23) — uma entrada só para o egípcio.*
+*Última atualização: ciclo 4.7.4 (2026-10-24) — /rpfx teste para diagnóstico.*
