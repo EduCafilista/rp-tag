@@ -1564,6 +1564,13 @@ O dono manda um MP3 longo e quer ele como som do aviso. Receita:
 No caso do egipcio: fonte de 60 s, drop em 35,0 s -> corte 33,95..41,45.
 ⚠️ `wave` do Python nao le `pcm_f32le` -> o importador usa **pcm_s16le**.
 
+**Publicado 4.7.8:** release **422998464**, asset **673386045**
+`rptag-4.7.8.jar` = **115.814.423 B**, sha256
+`1ac04652c99338da3ecf9c406642cd9f28d1cf330adf3c37e76630210236870b`
+(download + `cmp` idêntico). Commit `aa1e00b`. Apagados: release 422842215 e tag
+`v4.7.7`. Vivas: `v4.7.8` e `portais-v1.3.2`. Fonte: `arte/fontes/egipcio_origem.mp3`
+(60 s) -> corte 33,95..41,45 s -> ogg 75.581 B.
+
 ---
 
 *Última atualização: ciclo 4.7.8 (2026-10-24) — trilha = áudio do dono (corte de 7,5 s).*
