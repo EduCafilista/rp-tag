@@ -1525,6 +1525,12 @@ No Java (`EgipcioAvisoFx`): `DUR = 7.5f`, placa/texto posicionados pela area
 do cartucho do canvas) com placa mais baixa (`4.6*S + 9*k`).
 Previa sem abrir o jogo: `python3 arte/prever_egipcio.py "msg"`.
 
+**Publicado 4.7.6:** release **422690644**, asset **672092843**
+`rptag-4.7.6.jar` = **115.739.417 B**, sha256
+`49be53e8af295ef05e352a4ad8e7f74492899188bb1a674301960231a8e111f2`
+(download + `cmp` idêntico). Commit `7884933`. Apagados: release 422496016 e tag
+`v4.7.4`. Vivas: `v4.7.6` e `portais-v1.3.2`.
+
 ---
 
 *Última atualização: ciclo 4.7.6 (2026-10-24) — aviso egípcio = animação de canvas do dono.*
