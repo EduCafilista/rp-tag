@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.7.7' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.7.8' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.7.7 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.7.8 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.7.7', 'RP Tag 4.7.7' in ce)
+check('4.0: boot log 4.7.8', 'RP Tag 4.7.8' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -994,6 +994,20 @@ check('4.7.7: trilha para quando o aviso e interrompido (pararTrilha)',
       'public static void pararTrilha()' in _egi2 and 'pararTrilha();' in _egi2)
 check('4.7.7: gerador da trilha no repo (arte/audio_egipcio.py)',
       os.path.exists('arte/audio_egipcio.py') and 'escala HIJAZ' in rd('arte/audio_egipcio.py'))
+
+# ============ 4.7.8: a trilha agora e o audio DO DONO (corte de 7,5 s) ============
+_ogg = A + '/sounds/egipcio_aviso.ogg'
+check('4.7.8: trilha do dono no jar (ogg 7,5 s, ~74 KB)',
+      os.path.exists(_ogg) and 50_000 < os.path.getsize(_ogg) < 120_000)
+check('4.7.8: fonte do dono guardada em arte/fontes (reproduzivel)',
+      os.path.exists('arte/fontes/egipcio_origem.mp3')
+      and os.path.getsize('arte/fontes/egipcio_origem.mp3') > 1_000_000)
+check('4.7.8: importador de audio no repo (corte + fade + normalizacao)',
+      os.path.exists('arte/importar_audio.py') and 'libvorbis' in rd('arte/importar_audio.py'))
+check('4.7.8: analisador de audio no repo (acha o melhor trecho)',
+      os.path.exists('arte/analisa_audio.py') and 'melhores trechos' in rd('arte/analisa_audio.py'))
+check('4.7.8: a trilha toca no primeiro quadro e para no parar()',
+      'tentouTrilha' in _egi2 and 'pararTrilha()' in _egi2)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

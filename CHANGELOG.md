@@ -1,5 +1,30 @@
 # Changelog
 
+## 4.7.8 — A TRILHA AGORA É O ÁUDIO QUE O DONO MANDOU (2026-10-24)
+
+### O que entrou
+O dono mandou um MP3 de **60 s** (`ff7211.mp3`, 256 kbps) e pediu para ser
+**o** som do aviso egípcio. O aviso dura 7,5 s, então foi preciso achar o
+trecho certo:
+
+- análise de energia (`arte/analisa_audio.py`): a faixa tem build-ups em
+  33,5 s e o **drop mais forte em 35,0 s** (RMS salta de −16,8 para −12,8 dB)
+- corte **33,95 s → 41,45 s** (7,5 s), com o **impacto caindo em 1,05 s** —
+  exatamente no clarão da animação, quando o olho abre
+- fade de entrada 0,12 s (sem estalo), fade de saída 0,6 s (o aviso termina
+  limpo), normalizado a **−1,2 dBFS** de pico
+- resultado: `assets/rptag/sounds/egipcio_aviso.ogg`, 74 KB, mono 44,1 kHz
+
+### Reproduzível
+- `arte/fontes/egipcio_origem.mp3` — o MP3 original guardado no repo
+- `arte/importar_audio.py` — corta qualquer áudio para qualquer aviso
+  (`--inicio --dur --id --pico --fade-in --fade-out`)
+- `arte/analisa_audio.py` — mostra a energia por 0,5 s, os drops e o **melhor
+  trecho** de N segundos (já casando um impacto no 1º segundo)
+
+> A trilha sintetizada da 4.7.7 (`arte/audio_egipcio.py`) continua no repo como
+> alternativa: é só rodar de novo para voltar a ela.
+
 ## 4.7.7 — TRILHA NOVA DO EGÍPCIO (alaúde, ney e tambor) (2026-10-24)
 
 ### O problema

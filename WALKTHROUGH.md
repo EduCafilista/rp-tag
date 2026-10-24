@@ -1552,6 +1552,18 @@ e `stop()` — o de ResourceLocation e o que funciona para cortar `forUI`.
 (download + `cmp` idêntico). Commit `ec56358`. Apagados: release 422690644 e tag
 `v4.7.6`. Vivas: `v4.7.7` e `portais-v1.3.2`.
 
+### 4.7.8 — trilha = audio do dono (corte de 7,5 s)
+
+O dono manda um MP3 longo e quer ele como som do aviso. Receita:
+1. `python3 arte/analisa_audio.py <mp3> --janela 7.5` -> mostra RMS por 0,5 s,
+   os drops e **sugere o inicio do melhor trecho** (energia + impacto no 1o s).
+2. `python3 arte/importar_audio.py <mp3> --inicio S --dur 7.5 --id egipcio_aviso
+   --pico -1.2 --previa` -> `assets/rptag/sounds/<id>.ogg` (fades + normalizacao).
+   O corte tem de por o **impacto em ~1,0 s** (o clarao da animacao).
+3. Guardar a fonte em `arte/fontes/` para poder recortar depois.
+No caso do egipcio: fonte de 60 s, drop em 35,0 s -> corte 33,95..41,45.
+⚠️ `wave` do Python nao le `pcm_f32le` -> o importador usa **pcm_s16le**.
+
 ---
 
-*Última atualização: ciclo 4.7.7 (2026-10-24) — trilha própria do egípcio.*
+*Última atualização: ciclo 4.7.8 (2026-10-24) — trilha = áudio do dono (corte de 7,5 s).*
