@@ -51,6 +51,7 @@ def main():
     frames_dir = os.path.join(dst, "frames")
     with open(os.path.join(src, "marcadores.json"), encoding="utf-8") as fp:
         meta = json.load(fp)
+    fps = float(meta.get("fps", FPS))   # (4.7.5) video importado pode vir em outro fps
     pngs = sorted(glob.glob(os.path.join(src, "[0-9][0-9][0-9][0-9].png")))
     if not pngs:
         sys.exit("nenhum quadro em " + src)
@@ -68,7 +69,7 @@ def main():
         if img.size != (LARG, ALT):
             sys.exit("%s nao e %dx%d" % (p, LARG, ALT))
         r, g, b, a = img.split()
-        env = fade(meta, q / FPS)
+        env = fade(meta, q / fps)
         if env < 1.0:
             a = a.point(lambda v, e=env: int(round(v * e)))
         c_path = os.path.join(frames_dir, "%04d_c.jpg" % q)
@@ -79,7 +80,7 @@ def main():
 
     fxjson = {
         "id": fx,
-        "fps": FPS,
+        "fps": round(fps, 3) if fps != int(fps) else int(fps),
         "frames": len(pngs),
         "width": LARG,
         "height": ALT,

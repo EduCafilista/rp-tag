@@ -1,5 +1,26 @@
 # Changelog
 
+## 4.7.5 — IMPORTADOR DE VÍDEO (qualquer animação vira aviso) (2026-10-24)
+
+### Para o dono mandar a animação dele
+O aviso egípcio atual é um vídeo de 144 quadros gerado no Blender. Para trocar
+por **uma animação sua** (MP4, GIF, WEBM, MOV, MKV ou uma pasta de PNGs) não é
+preciso redesenhar nada: `arte/importar_video.py` faz o caminho inteiro.
+
+```
+python3 arte/importar_video.py egipcio caminho/da/animacao.mp4
+```
+
+- extrai os quadros em **1280x720 / 16:9** (corte central, sem distorcer)
+- respeita o fps do vídeo (padrão 24, teto configurável de quadros)
+- aplica **fade de entrada e de saída** no alfa (o "entrar/sair" suave na tela)
+- chama o `arte/exportar.py`, que gera `frames/NNNN_c.jpg` + `NNNN_a.jpg` + `fx.json`
+- `--inicio`, `--fim`, `--fps`, `--max`, `--ajuste cover|contain|stretch`
+
+### Correção de base
+`arte/exportar.py` gravava sempre `fps: 24`; agora respeita o fps do
+`marcadores.json` (vídeo importado em outro fps ficava com a duração errada).
+
 ## 4.7.4 — /rpfx teste: descobrir onde o aviso trava (2026-10-24)
 
 ### O que apareceu no chat do dono

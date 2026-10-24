@@ -1497,6 +1497,17 @@ comando/rede; se nao aparece em nenhum → cliente (config/video).
 (download + `cmp` idêntico). Commit `6726530`. Apagados: release 421410429 e tag
 `v4.7.3`. Vivas: `v4.7.4` e `portais-v1.3.2`.
 
+### 4.7.5 — trocar o video de um aviso por uma animacao do dono
+
+Pedido recorrente: "quero que a animacao que eu mandei seja a nova do avisar X".
+Fluxo: `python3 arte/importar_video.py <id> <arquivo> [--inicio --fim --fps --max
+--ajuste cover|contain|stretch]`. Usa **ffmpeg do imageio-ffmpeg**
+(`pip install imageio-ffmpeg`; nao ha ffmpeg no PATH do sandbox), extrai
+1280x720 cover, renumera 0000..N-1 (o ffmpeg comeca em 0001!), escreve
+`arte/render/<id>/marcadores.json` com `fps` + `fade` e chama o exportar.py.
+`exportar.py` agora le `fps` do marcadores.json (antes cravava 24 e a duracao
+saia errada). Testado com `previa/egipcio.gif` (36-38 quadros, 1,8 MB).
+
 ---
 
-*Última atualização: ciclo 4.7.4 (2026-10-24) — /rpfx teste para diagnóstico.*
+*Última atualização: ciclo 4.7.5 (2026-10-24) — importador de vídeo para trocar o aviso.*
