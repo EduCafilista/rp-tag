@@ -128,13 +128,13 @@ public class FichaScreen extends Screen {
         colW = (int) (pw * 0.44f);
 
         if (cap <= FichaRp.CAP_OFICIO) {
-            campoAtual = FichaWidgets.campo(font, colX, py + 78, colW, limiteDoCampo(cap),
+            campoAtual = FichaWidgets.campo(font, colX, py + 86, colW, limiteDoCampo(cap),
                     valorDoCampo(cap), s -> setCampo(cap, s));
             campoAtual.setEditable(dono);
             add(campoAtual);
         } else if (cap == FichaRp.CAP_HABILIDADES || cap == FichaRp.CAP_HISTORIA) {
             boolean hist = cap == FichaRp.CAP_HISTORIA;
-            campoLongo = new FichaWidgets.TextoLivre(colX, py + 78, colW, hist ? 92 : 52,
+            campoLongo = new FichaWidgets.TextoLivre(colX, py + 86, colW, hist ? 92 : 52,
                     hist ? 400 : 160, DICA_CAMPO[cap], hist ? ficha.historia : ficha.habilidades,
                     s -> {
                         if (hist) {
@@ -147,7 +147,7 @@ public class FichaScreen extends Screen {
             add(campoLongo);
         } else if (cap == FichaRp.CAP_PERSONALIDADE) {
             int passo = Math.min(26, Math.max(19, (ph - 122) / 6));
-            int y0 = py + 64;
+            int y0 = py + 70;
             for (int i = 0; i < 6; i++) {
                 FichaWidgets.Barra b = new FichaWidgets.Barra(colX, y0 + i * passo, colW, 16, i,
                         ficha.persona, () -> {
@@ -475,14 +475,14 @@ public class FichaScreen extends Screen {
         desenharQuebrado(g, DICA[cap], x, y, colW, FichaFundo.corComAlfa(0xB9AEDC, a));
         // apoio embaixo do campo
         int hCampo = (cap == FichaRp.CAP_HISTORIA) ? 92 : (cap == FichaRp.CAP_HABILIDADES ? 52 : ALTURA_CAMPO);
-        desenharQuebrado(g, APOIO[cap], x, py + 84 + hCampo, colW, FichaFundo.corComAlfa(0x7E6FA8, a));
+        desenharQuebrado(g, APOIO[cap], x, py + 92 + hCampo, colW, FichaFundo.corComAlfa(0x7E6FA8, a));
         if (cap == FichaRp.CAP_HISTORIA) {
             int n = ficha.historia == null ? 0 : ficha.historia.length();
             String c = n + "/400";
-            g.drawString(font, c, x + colW - font.width(c), py + 78 + hCampo + 2,
+            g.drawString(font, c, x + colW - font.width(c), py + 86 + hCampo + 2,
                     FichaFundo.corComAlfa(0x6E5F98, a), false);
         }
-        g.drawString(font, "▚ " + alfaTexto(), x, py + 78 - 10, FichaFundo.corComAlfa(0x8FD8FF, a * 0.6f), false);
+        g.drawString(font, "▚ " + alfaTexto(), x, py + 74, FichaFundo.corComAlfa(0x8FD8FF, a * 0.6f), false);
     }
 
     private String alfaTexto() {
