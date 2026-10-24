@@ -1613,6 +1613,14 @@ o trabalho novo para `/home/user/wNNN/`; depois `git remote add origin
 https://<PAT>@github.com/...` (o `.git/config` NÃO sobrevive ao snapshot),
 `git fetch origin main`, `git reset --hard FETCH_HEAD` e copiar de volta.
 
+**Publicado 4.8.0:** release **423042370**, asset **673579870**
+`rptag-4.8.0.jar` = **115.856.097 B**, sha256
+`b32e824f3f27cd366943fbeec44f1cbbb33f118b0a36c66402828de22e369754`
+(download + `cmp` idêntico). Commit `b72d141`. Apagados: release 422998464 e tag
+`v4.7.8`. Vivas: `v4.8.0` e `portais-v1.3.2`.
+Testes: 458 PASS / 0 FAIL · 43/43 JUnit · boot limpo no NeoForge 21.1.249
+(`Done (0.642s)`, `/ficha lista` responde).
+
 ---
 
 *Última atualização: ciclo 4.8.0 (2026-10-24) — Tablet da Ficha dentro do rp-tag.*
