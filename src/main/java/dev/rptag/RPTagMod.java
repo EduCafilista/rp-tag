@@ -83,7 +83,8 @@ public final class RPTagMod {
                             .stacksTo(1)
                             .rarity(net.minecraft.world.item.Rarity.EPIC)));
 
-    /** (4.8.0) TABLET DA LORE: o item que abre a criacao da ficha. */
+    /** (4.8.0) TABLET DA LORE: o item que abre a criacao da ficha.
+     *  (4.8.1) fundo/buraco negro em TEXTURA (fim dos pixels quebrados). */
     public static final net.neoforged.neoforge.registries.DeferredHolder<Item, TabletItem> TABLET =
             ITEMS.register("tablet", () -> new TabletItem(new Item.Properties().stacksTo(1)
                     .rarity(net.minecraft.world.item.Rarity.RARE)));

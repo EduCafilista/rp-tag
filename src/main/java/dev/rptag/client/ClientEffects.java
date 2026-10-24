@@ -221,7 +221,7 @@ public final class ClientEffects {
     }
 
     static {
-        RPTagMod.LOGGER.info("RP Tag 4.8.0: camada de avisos carregada");
+        RPTagMod.LOGGER.info("RP Tag 4.8.1: camada de avisos carregada");
     }
 
     /** (3.78.0) VÉU da vida perdida: tela MEIO AVERMELHADA durante o

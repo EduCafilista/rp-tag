@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.8.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.8.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.8.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.8.1 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.8.0', 'RP Tag 4.8.0' in ce)
+check('4.0: boot log 4.8.1', 'RP Tag 4.8.1' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -1059,6 +1059,26 @@ check('4.8.0: campo de texto longo (historia quebra linha)',
       'class TextoLivre extends AbstractWidget' in rd(C + '/FichaWidgets.java'))
 check('4.8.0: salva a cada capitulo (fechar no meio nao perde nada)',
       'salvar(false)' in _fs and 'FichaSavePayload' in _fs)
+
+# ============ 4.8.1: FUNDO EM TEXTURA (fim dos pixels quebrados) ============
+_gui = A + '/textures/gui'
+check('4.8.1: texturas do fundo no jar (nebulosa, buraco negro, anel)',
+      all(os.path.exists(f'{_gui}/{n}.png') and os.path.getsize(f'{_gui}/{n}.png') > 8000
+          for n in ('ficha_nebulosa', 'ficha_buraco', 'ficha_anel')))
+_fd = rd(C + '/FichaFundo.java')
+check('4.8.1: buraco negro e disco do chao desenhados com blit (nao mais quads)',
+      'g.blit(tex' in _fd and 'buracoNegro' in _fd and 'discoMagico' in _fd)
+check('4.8.1: filtro LINEAR nas texturas (borda suave ao reduzir)',
+      'setFilter(true, false)' in _fd and 'getTextureManager()' in _fd)
+check('4.8.1: a tela prepara as texturas ao abrir',
+      'FichaFundo.preparar()' in rd(C + '/FichaScreen.java'))
+check('4.8.1: gerador das texturas no repo (reproduzivel)',
+      os.path.exists('arte/gerar_texturas_ficha.py')
+      and 'borda_fade' in rd('arte/gerar_texturas_ficha.py'))
+check('4.8.1: nebulosa esticada na tela toda com parallax',
+      'NEBULOSA, -14 + dx' in _fd and '0.55f' in _fd)
+check('4.8.1: vinheta fecha as bordas do fundo',
+      'fillGradient(0, 0, w, (int) (h * 0.16f)' in _fd)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -119,6 +119,7 @@ public class FichaScreen extends Screen {
         animaveis.clear();
         campoAtual = null;
         campoLongo = null;
+        FichaFundo.preparar();
 
         pw = Math.min(width - 20, 470);
         ph = Math.min(height - 34, 276);
@@ -451,7 +452,7 @@ public class FichaScreen extends Screen {
         int cxm = px + (int) (pw * 0.27f);
         int escala = Math.round(44f * (0.70f + 0.30f * entrada));
 
-        FichaFundo.buracoNegro(g, cxm, base - 54, 46, t);
+        FichaFundo.buracoNegro(g, cxm, base - 72, 44, t);
         FichaFundo.discoMagico(g, cxm, base - 2, 42, t);
 
         float yaw = (float) Math.sin(t * 0.55f) * 0.34f;

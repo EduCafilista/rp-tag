@@ -1,5 +1,33 @@
 # Changelog
 
+## 4.8.1 — FUNDO DO TABLET EM TEXTURA (fim dos pixels quebrados) — 2026-10-24
+
+### O problema
+Na 4.8.0 o fundo, o buraco negro e o disco do chão eram desenhados **na hora**
+com retângulos de 1–2 px (`GuiGraphics.fill`). De perto aquilo virava um
+mosaico: **pixels quebrados atrás do personagem** — o dono viu e mandou corrigir.
+
+### O que mudou
+- **texturas de verdade**, com gradiente e anti-aliasing:
+  - `textures/gui/ficha_nebulosa.png` (1024×576) — galáxia roxa/azul com nuvens e estrelas
+  - `textures/gui/ficha_buraco.png` (640×640) — buraco negro com **disco de
+    acreção laranja** atravessando, halo difuso e borda quente
+  - `textures/gui/ficha_anel.png` (512×256) — o anel mágico do pedestal
+- desenhadas com **`blit` + filtro LINEAR** (`setFilter(true, false)`) — a borda
+  fica suave em qualquer resolução/escala de GUI
+- as texturas têm **desbotamento nas bordas**, então nunca aparece o "quadrado"
+  da imagem na tela
+- nebulosa com **parallax lento** (duas camadas) e vinheta fechando as bordas
+- o personagem continua no pedestal, agora com o disco laranja passando atrás
+
+### Reproduzível
+`arte/gerar_texturas_ficha.py` gera as três texturas (numpy + PIL): quem quiser
+mudar cor, brilho ou inclinação do disco mexe nos parâmetros e roda de novo.
+
+### Números
+458 → **465 checks** no `check.py` (0 FAIL) · 43/43 JUnit · boot limpo no
+NeoForge 21.1.249 (`Done (0.884s)!`).
+
 ## 4.8.0 — O TABLET DA FICHA (2026-10-24)
 
 ### O que entrou
