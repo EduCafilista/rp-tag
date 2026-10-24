@@ -1491,6 +1491,12 @@ direto. Se aparece no teste e nao no `/rp admin avisar` → problema no
 comando/rede; se nao aparece em nenhum → cliente (config/video).
 421 checks · 43 testes.
 
+**Publicado 4.7.4:** release **422496016**, asset **671176457**
+`rptag-4.7.4.jar` = **104.563.839 B**, sha256
+`e0de85cc9288ec86f8fd7961cd9c452807b795dc5be125a44a4941896e5e846b`
+(download + `cmp` idêntico). Commit `6726530`. Apagados: release 421410429 e tag
+`v4.7.3`. Vivas: `v4.7.4` e `portais-v1.3.2`.
+
 ---
 
 *Última atualização: ciclo 4.7.4 (2026-10-24) — /rpfx teste para diagnóstico.*
