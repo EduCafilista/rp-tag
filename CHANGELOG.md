@@ -1,5 +1,38 @@
 # Changelog
 
+## 4.8.5 — LAYOUT DA REFERÊNCIA (fundo galáxia + painel à direita) — 2026-10-25
+
+O dono mandou um `CharacterSheetScreen.java` de referência e disse *"tente
+assim talvez"*. Refeito o layout inteiro seguindo ele — **sem** copiar o que a
+gente já tinha decidido contra (roxo pesado, blocos de 1 px).
+
+### O que veio da referência
+- **painel alto à direita** (42% da largura), do topo do capítulo até o rodapé,
+  em vez do cartão centralizado.
+- **cabeçalho corrido na tela toda**: marca à esquerda, sussurro à direita, fio
+  desbotado, e `CAPÍTULO n / TÍTULO` + pergunta **centralizados**.
+- **rótulo em cima, valor embaixo**, com fio fino entre as linhas do resumo
+  (é a leitura da referência — bem mais fácil de bater o olho).
+- **botão em gradiente** violeta → magenta, com fio de luz no topo.
+- **sliders finos** com marcas 0/25/50/75/100 e botão branco.
+- **pontinhos de progresso** no rodapé, clicáveis (pulam de capítulo).
+- **personagem grande** com o Netuno atrás, proporção da tela
+  (`min(w,h) * 0.22`), e o **anel do pedestal** embaixo.
+
+### O que ficou nosso (e melhor)
+- a "galáxia" da referência eram **discos desenhados com `fill`** (aquilo vira
+  pixel quebrado). Aqui virou uma **textura de névoa** (`ficha_nevoa.png`)
+  tingida em 3 camadas com **alfa baixo** (10% / 7% / 9%) — brilho de galáxia
+  suave, e **pouco roxo**, como você pediu.
+- o **buraco negro continua em textura** com filtro LINEAR (nada de anel
+  serrilhado).
+- o resumo **rola** quando não cabe (scissor + roda do mouse), e a **ALMA**
+  aparece em **barrinhas** dentro do resumo.
+
+### Números
+490 → **497 checks** no `check.py` (0 FAIL) · 43/43 JUnit · boot limpo no
+NeoForge 21.1.249 (`Done (1.075s)`).
+
 ## 4.8.4 — RESUMO EM CARTÕES (linguagem nova) — 2026-10-25
 
 O dono pediu para **trocar a linguagem** e melhorar. A página de linhas saiu; o

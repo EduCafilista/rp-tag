@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import dev.rptag.FichaRp;
 import dev.rptag.FichaSavePayload;
 import dev.rptag.FichaOpenPayload;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
@@ -19,21 +18,20 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * (4.8.0) O TABLET — a ficha do personagem, capítulo por capítulo.
+ * (4.8.5) O TABLET — ficha do personagem, capítulo por capítulo.
  *
- * <p>Uma pergunta por tela, um pedaço de cada vez: nome, idade, de onde veio,
- * ocupação, habilidades, história e personalidade (6 barras). No fim, o resumo
- * com o botão "Confirmar Personagem" — e o nome vira de verdade o nome do
- * personagem (nametag/chat/TAB), porque a ficha alimenta a {@code Persona}.
+ * <p>Layout novo, na linguagem da referência do dono: <b>painel alto à
+ * direita</b>, cabeçalho corrido na largura da tela (capítulo + pergunta),
+ * <b>rótulo em cima e valor embaixo</b> com fios finos entre as linhas, botões
+ * em gradiente violeta/magenta e os pontinhos de progresso no rodapé.
  *
- * <p>Visual: galáxia de fundo, um buraco negro de Netuno atrás do personagem,
- * botões de vidro e o boneco do próprio jogador girando no pedestal.
+ * <p>O fundo continua nosso: blur do mundo + estrelas e <b>névoa de galáxia em
+ * textura suave</b> (violeta/magenta em alfa baixo) — sem pixels quebrados.
  */
 public class FichaScreen extends Screen {
 
@@ -48,11 +46,11 @@ public class FichaScreen extends Screen {
             "O que você sabe fazer bem?",
             "Conte um pouco da sua história",
             "O que move a sua alma?",
-            "Está tudo correto?"
+            "É assim que você será lembrado?"
     };
 
     private static final String[] DICA = {
-            "O nome que os outros vão ler no seu nametag, no chat e na TAB.",
+            "O nome que os outros vão ler no nametag, no chat e na TAB.",
             "Cada ano deixa uma marca. Qual é a sua idade?",
             "Uma cidade, um reino, um porto esquecido — de onde vêm suas lembranças?",
             "Ofício dá forma ao personagem: ferreiro, curandeira, ladrão, capitão…",
@@ -84,8 +82,16 @@ public class FichaScreen extends Screen {
             ""
     };
 
-    private static final int ALTURA_BOTAO = 20;
-    private static final int ALTURA_CAMPO = 20;
+    // ---------------- cores da linguagem nova (referência)
+    private static final int TXT = 0xF2ECFF;
+    private static final int TXT_FRACO = 0x8F88AD;
+    private static final int ROSA = 0xE07BFF;
+    private static final int VIOLETA = 0xB04BFF;
+    private static final int PAINEL = 0xC8140B2E;
+    private static final int BORDA = 0x66A24BFF;
+
+    private static final int ALTURA_BOTAO = 22;
+
 
     private final FichaRp ficha;
     private final String nomeDono;
@@ -98,11 +104,11 @@ public class FichaScreen extends Screen {
     private float tConfirmado = -1f;
     private boolean gesto1, gesto2;
     private boolean fecharPedido;
-    private double resumoRolagem;      // 0..resumoMax — o resumo rola em vez de cortar
+    private double resumoRolagem;
     private double resumoMax;
 
     // layout (recalculado no init)
-    private int px, py, pw, ph, colX, colW;
+    private int px, py, pw, ph;
 
     private final Map<AbstractWidget, Integer> animaveis = new LinkedHashMap<>();
     private EditBox campoAtual;
@@ -116,7 +122,7 @@ public class FichaScreen extends Screen {
         this.cap = Mth.clamp(p.ficha().pagina, 0, FichaRp.CAP_RESUMO);
     }
 
-    // ================================================================ ciclo
+    // ================================================================ layout
     @Override
     protected void init() {
         animaveis.clear();
@@ -124,22 +130,24 @@ public class FichaScreen extends Screen {
         campoLongo = null;
         FichaFundo.preparar();
 
-        // (4.8.3) no resumo o painel abre mais: cabe mais texto por linha
-        pw = Math.min(width - 20, cap == FichaRp.CAP_RESUMO ? 540 : 470);
-        ph = Math.min(height - 34, 276);
-        px = (width - pw) / 2;
-        py = (height - ph) / 2;
-        colX = px + (int) (pw * 0.46f);   // (4.8.4) um pouco mais à esquerda: sobra largura para o texto
-        colW = (int) (pw * 0.44f);
+        // painel alto à direita, como na referência
+        pw = Mth.clamp((int) (width * 0.42f), 286, Math.max(300, width - 60));
+        px = width - 18 - pw;
+        py = Math.max(58, (int) (height * 0.19f));
+        ph = height - 40 - py;
+
+        int ix = px + 14;                  // margem interna
+        int iw = pw - 28;
+        int topo = py + 44;                // abaixo de "dica + fio"
 
         if (cap <= FichaRp.CAP_OFICIO) {
-            campoAtual = FichaWidgets.campo(font, colX, py + 86, colW, limiteDoCampo(cap),
+            campoAtual = FichaWidgets.campo(font, ix, topo + 10, iw, limiteDoCampo(cap),
                     valorDoCampo(cap), s -> setCampo(cap, s));
             campoAtual.setEditable(dono);
             add(campoAtual);
         } else if (cap == FichaRp.CAP_HABILIDADES || cap == FichaRp.CAP_HISTORIA) {
             boolean hist = cap == FichaRp.CAP_HISTORIA;
-            campoLongo = new FichaWidgets.TextoLivre(colX, py + 86, colW, hist ? 92 : 52,
+            campoLongo = new FichaWidgets.TextoLivre(ix, topo + 10, iw, hist ? 92 : 56,
                     hist ? 400 : 160, DICA_CAMPO[cap], hist ? ficha.historia : ficha.habilidades,
                     s -> {
                         if (hist) {
@@ -151,10 +159,9 @@ public class FichaScreen extends Screen {
             campoLongo.setEditavel(dono);
             add(campoLongo);
         } else if (cap == FichaRp.CAP_PERSONALIDADE) {
-            int passo = Math.min(26, Math.max(19, (ph - 122) / 6));
-            int y0 = py + 70;
+            int passo = Mth.clamp((ph - 96) / 6, 18, 30);
             for (int i = 0; i < 6; i++) {
-                FichaWidgets.Barra b = new FichaWidgets.Barra(colX, y0 + i * passo, colW, 16, i,
+                FichaWidgets.Barra b = new FichaWidgets.Barra(ix, topo + 16 + i * passo, iw, 14, i,
                         ficha.persona, () -> {
                         });
                 b.active = dono;
@@ -162,24 +169,29 @@ public class FichaScreen extends Screen {
             }
         }
 
-        // (4.8.2) X de fechar, sempre no canto do painel
-        add(new FichaWidgets.BotaoX(px + pw - 22, py + 6, this::onClose));
+        // X de fechar no canto do painel
+        add(new FichaWidgets.BotaoX(px + pw - 20, py + 6, this::onClose));
 
-        int by = py + ph - 40;
+        // botões no pé do painel
+        int by = py + ph - ALTURA_BOTAO - 10;
+        int metade = (iw - 8) / 2;
         if (cap == FichaRp.CAP_RESUMO) {
             if (dono) {
-                botao(colX, by, colW, "Confirmar Personagem", true, this::confirmar);
+                botao(ix, by, iw, "Confirmar personagem", true, this::confirmar);
+            } else {
+                botao(ix, by, iw, "Fechar", false, this::onClose);
             }
         } else {
+            int bx = ix;
             if (cap > 0) {
-                botao(colX, by, 84, "Voltar", false, () -> irPara(cap - 1));
+                botao(bx, by, metade, "Voltar", false, () -> irPara(cap - 1));
+                bx += metade + 8;
             }
             if (dono) {
-                botao(colX + colW - 96, by, 96, "Continuar", true, () -> irPara(cap + 1));
+                botao(bx, by, cap > 0 ? metade : iw, "Continuar", true, () -> irPara(cap + 1));
+            } else {
+                botao(bx, by, iw - (bx - ix), "Fechar", false, this::onClose);
             }
-        }
-        if (!dono) {
-            botao(colX, by, colW, "Fechar", false, this::onClose);
         }
     }
 
@@ -220,7 +232,6 @@ public class FichaScreen extends Screen {
     }
 
     // ============================================================ navegação
-    /** lê o que está na tela para a ficha (antes de trocar de capítulo). */
     private void coletar() {
         if (campoAtual != null) {
             setCampo(cap, campoAtual.getValue());
@@ -248,7 +259,7 @@ public class FichaScreen extends Screen {
         tTroca = 0f;
         gesto1 = false;
         gesto2 = false;
-        resumoRolagem = 0;   // cada visita ao resumo começa do topo
+        resumoRolagem = 0;
         rebuildWidgets();
     }
 
@@ -318,14 +329,13 @@ public class FichaScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int botao) {
-        // clicar num quadradinho de progresso pula para o capítulo
-        if (dono && botao == 0 && my >= py + ph - 20 && my <= py + ph - 4) {
-            int n = FichaRp.CAPS;
-            int larg = n * 9;
-            int ini = px + pw / 2 - larg / 2;
-            if (mx >= ini && mx <= ini + larg) {
-                int alvo = (int) ((mx - ini) / 9);
-                if (alvo >= 0 && alvo < n && alvo != cap) {
+        // pontinhos de progresso (rodapé): pulam de capítulo
+        if (dono && botao == 0) {
+            int ini = width / 2 - FichaRp.CAPS * 10;
+            int y = height - 28;
+            if (my >= y - 2 && my <= y + 9 && mx >= ini && mx <= ini + FichaRp.CAPS * 20) {
+                int alvo = (int) ((mx - ini) / 20);
+                if (alvo >= 0 && alvo < FichaRp.CAPS && alvo != cap) {
                     irPara(alvo);
                     som(SoundEvents.UI_BUTTON_CLICK.value(), 0.4f, 1.6f);
                     return true;
@@ -365,7 +375,7 @@ public class FichaScreen extends Screen {
     // ================================================================ render
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float dt) {
-        // o fundo é desenhado no render (galáxia + buraco negro)
+        // intencionalmente vazio: o fundo é desenhado no render (galáxia)
     }
 
     @Override
@@ -374,84 +384,40 @@ public class FichaScreen extends Screen {
         tTroca += dt;
         float entrada = suave(Mth.clamp(tTroca / 0.28f, 0f, 1f));
 
-        // (4.8.2) FUNDO IGUAL AO BALAO: blur do mundo + veu + estrelas
         boolean blurOk = false;
         if (minecraft != null && minecraft.level != null) {
             try {
                 renderBlurredBackground(dt);
                 blurOk = true;
             } catch (Throwable ignored) {
-                // sem blur (menu/ shader exotico): cai no ceu solido
+                // sem blur: cai no céu sólido
             }
         }
         FichaFundo.ceu(g, width, height, t, blurOk);
 
-        // ---------------- painel
-        // (4.8.2) painel mais fechado: antes era 0x8C (55%) e o HUD/mundo
-        // apareciam por cima do texto. Agora 0xE8 (91%) com leve degradê.
-        g.fill(px - 3, py - 3, px + pw + 3, py + ph + 3, 0x30000000);   // sombra
-        g.fill(px, py, px + pw, py + ph, 0xE80B0718);
-        g.fillGradient(px + 1, py + 1, px + pw - 1, py + ph - 1, 0x14000000, 0x3A000000);
-        g.fill(px, py, px + pw, py + 1, FichaFundo.corComAlfa(0x8FD8FF, 0.30f));
-        g.fill(px, py + ph - 1, px + pw, py + ph, FichaFundo.corComAlfa(0x8FD8FF, 0.22f));
-        g.fill(px, py, px + 1, py + ph, FichaFundo.corComAlfa(0x8FD8FF, 0.22f));
-        g.fill(px + pw - 1, py, px + pw, py + ph, FichaFundo.corComAlfa(0x8FD8FF, 0.22f));
-        g.fillGradient(px + 1, py + 1, px + pw - 1, py + 60, 0x14FFFFFF, 0x00FFFFFF);
-        // cantos
-        for (int[] c : new int[][]{{px, py}, {px + pw, py}, {px, py + ph}, {px + pw, py + ph}}) {
-            FichaWidgets.losango(g, c[0], c[1], 4f, 0xFFD98A, 0.7f);
-        }
+        cabecalho(g);
 
-        // ---------------- cabeçalho
-        String c1 = "CAPÍTULO " + (cap + 1);
-        String c2 = "· " + TITULO[cap];
-        g.drawString(font, c1, px + 14, py + 11, 0xFFD98A, false);
-        g.drawString(font, c2, px + 14 + font.width(c1) + 5, py + 11, 0xF4EEFF, false);
-        String sussurro = (cap == FichaRp.CAP_RESUMO && resumoMax > 0)
-                ? "role a roda para ver tudo" : "Sua história começa aqui";
-        g.drawString(font, sussurro, px + pw - 30 - font.width(sussurro), py + 11, 0x7E6FA8, false);
-        regua(g, px + 14, px + pw - 14, py + 24, 0x8FD8FF, 0.22f);
-
-        // ---------------- pergunta
-        float aTxt = entrada;
-        String perg = PERGUNTA[cap];
-        g.drawCenteredString(font, perg, px + pw / 2, py + 33, FichaFundo.corComAlfa(0xFFFFFF, 0.55f + 0.45f * aTxt));
-
-        // ---------------- personagem
+        // ---------------- personagem à esquerda
         renderPersonagem(g, entrada);
 
-        // ---------------- conteúdo (desliza com a transição)
-        PoseStack pose = g.pose();
-        pose.pushPose();
-        pose.translate(0f, (1f - entrada) * 10f, 0f);
-        renderConteudo(g, entrada);
-        pose.popPose();
+        // ---------------- painel
+        painel(g);
 
-        // véu da transição (não cobre os botões)
-        if (entrada < 1f) {
-            g.fill(px + 1, py + 1, px + pw - 1, py + ph - 1, FichaFundo.corComAlfa(0x0A0616, 0.55f * (1f - entrada)));
-        }
-
-        // ---------------- widgets animados
+        // ---------------- conteúdo do capítulo
         float off = (1f - entrada) * 8f;
         for (Map.Entry<AbstractWidget, Integer> e : animaveis.entrySet()) {
             e.getKey().setY(Math.round(e.getValue() + off));
         }
+        conteudoTexto(g, entrada);
         super.render(g, mx, my, dt);
 
-        // ---------------- progresso + rodapé
-        renderProgresso(g);
-        int rodape = py + ph + 9;
-        tecla(g, px + 12, rodape, "ESC", "sair");
-        String ent = cap == FichaRp.CAP_RESUMO ? "confirmar" : "continuar";
-        int wEnt = font.width(ent) + 6 + font.width("ENTER") + 8;
-        tecla(g, px + pw - 12 - wEnt, rodape, "ENTER", ent);
+        // ---------------- rodapé (pontinhos + teclas)
+        rodape(g);
 
-        // ---------------- confirmação (brilho dourado e fecha)
         if (tConfirmado >= 0f) {
             tConfirmado += dt;
             float k = Mth.clamp(tConfirmado / 0.65f, 0f, 1f);
-            g.fill(0, 0, width, height, FichaFundo.corComAlfa(0xFFD98A, 0.35f * (1f - k)));
+            g.fill(0, 0, width, height, FichaFundo.corComAlfa(0xFFD98A, 0.30f * (1f - k)));
             g.drawCenteredString(font, "✦ Ficha registrada ✦", width / 2, height / 2 + 40,
                     FichaFundo.corComAlfa(0xFFFFFF, 1f - k * 0.4f));
             if (tConfirmado > 0.75f) {
@@ -461,304 +427,250 @@ public class FichaScreen extends Screen {
         }
     }
 
-    /** (4.8.3) tecla desenhada como um "keycap" e o rótulo do lado. */
-    private int tecla(GuiGraphics g, int x, int y, String tecla, String rotulo) {
-        int w = font.width(tecla) + 8;
-        g.fill(x, y - 2, x + w, y + 9, 0x24FFFFFF);
-        g.fill(x, y - 2, x + w, y - 1, 0x3AFFFFFF);
-        g.fill(x, y + 9, x + w, y + 10, 0x1AFFFFFF);
-        g.drawString(font, tecla, x + 4, y, 0xD8CFF0, false);
-        g.drawString(font, rotulo, x + w + 4, y, 0x8A7CB0, false);
-        return x + w + 4 + font.width(rotulo);
+    /** cabeçalho corrido: marca, sussurro, fio, capítulo e pergunta (centralizados). */
+    private void cabecalho(GuiGraphics g) {
+        g.drawString(font, "RP TAG · LORE", 20, 10, TXT_FRACO, false);
+        String dir = "Sua história começa aqui";
+        g.drawString(font, dir, width - 20 - font.width(dir), 10, TXT_FRACO, false);
+        fio(g, 20, width - 20, 22, 0x22FFFFFF);
+
+        String c = "CAPÍTULO " + (cap + 1) + " / " + TITULO[cap];
+        g.drawCenteredString(font, c, width / 2, 28, 0xD9C7FF);
+        g.drawCenteredString(font, PERGUNTA[cap], width / 2, 44, 0xFFFFFF);
     }
 
-    private void renderProgresso(GuiGraphics g) {
-        int n = FichaRp.CAPS;
-        int larg = n * 9;
-        int ini = px + pw / 2 - larg / 2;
-        int y = py + ph - 15;
-        for (int i = 0; i < n; i++) {
-            int x = ini + i * 9;
-            boolean feito = i < cap || (i == cap);
-            if (i == cap) {
-                FichaWidgets.losango(g, x + 2.5f, y + 2.5f, 3.5f, 0xFFD98A, 0.95f);
-                FichaWidgets.losango(g, x + 2.5f, y + 2.5f, 1.5f, 0xFFF6DE, 0.95f);
-            } else {
-                int cor = feito ? 0x8FD8FF : 0x4A6FA8;
-                g.fill(x, y, x + 5, y + 5, FichaFundo.corComAlfa(cor, feito ? 0.75f : 0.40f));
-            }
-        }
-    }
-
-    private void renderPersonagem(GuiGraphics g, float entrada) {
-        Player p = minecraft == null ? null : minecraft.player;
-        if (p == null) {
-            return;
-        }
-        int base = py + ph - 46;
-        int cxm = px + (int) (pw * 0.27f);
-        // (4.8.3) o boneco acompanha o tamanho do painel (em tela pequena, menor)
-        float k = Mth.clamp(ph / 276f, 0.60f, 1f);
-        int escala = Math.round(50f * k * (0.70f + 0.30f * entrada));
-        int raio = Math.round(49f * k);
-
-        FichaFundo.buracoNegro(g, cxm, base - Math.round(76 * k), raio, t);
-        FichaFundo.discoMagico(g, cxm, base - 2, Math.round(46 * k), t);
-
-        float yaw = (float) Math.sin(t * 0.55f) * 0.34f;
-        float pitch = (float) Math.sin(t * 0.41f) * 0.10f - 0.06f;
-        int meia = Math.round(74 * k);
-        InventoryScreen.renderEntityInInventoryFollowsAngle(g, cxm - meia, base - Math.round(132 * k),
-                cxm + meia, base, escala, 0f, yaw, pitch, p);
-    }
-
-    private void renderConteudo(GuiGraphics g, float a) {
-        int x = colX;
-        int y = py + 52;   // a dica fica acima do campo (2 linhas cabem)
-        int alfa = FichaFundo.corComAlfa(0xFFFFFF, a);
-        if (cap == FichaRp.CAP_PERSONALIDADE) {
-            desenharQuebrado(g, DICA[cap], x, py + 52, colW, FichaFundo.corComAlfa(0xB9AEDC, a));
-            return;
-        }
-        if (cap == FichaRp.CAP_RESUMO) {
-            renderResumo(g, x, py + 48, a); // resumo começa mais alto: ganha 1 linha
-            return;
-        }
-        desenharQuebrado(g, DICA[cap], x, y, colW, FichaFundo.corComAlfa(0xB9AEDC, a));
-        // apoio embaixo do campo
-        int hCampo = (cap == FichaRp.CAP_HISTORIA) ? 92 : (cap == FichaRp.CAP_HABILIDADES ? 52 : ALTURA_CAMPO);
-        desenharQuebrado(g, APOIO[cap], x, py + 100 + hCampo, colW, FichaFundo.corComAlfa(0x7E6FA8, a));
-        if (cap == FichaRp.CAP_HISTORIA) {
-            int n = ficha.historia == null ? 0 : ficha.historia.length();
-            String c = n + "/400";
-            g.drawString(font, c, x + colW - font.width(c), py + 94 + hCampo + 2,
-                    FichaFundo.corComAlfa(0x6E5F98, a), false);
-        }
-        g.drawString(font, "▚ " + alfaTexto(), x, py + 76, FichaFundo.corComAlfa(0x8FD8FF, a * 0.6f), false);
-    }
-
-    private String alfaTexto() {
-        return switch (cap) {
-            case 0 -> "seu nome";
-            case 1 -> "sua idade";
-            case 2 -> "sua origem";
-            case 3 -> "seu ofício";
-            case 4 -> "suas habilidades";
-            default -> "sua história";
-        };
-    }
-
-    /**
-     * (4.8.2) O RESUMO. Antes era uma linha por campo e a "Alma" (6 eixos) saía
-     * voando pra fora do painel. Agora TODO valor quebra dentro da coluna e o
-     * que não cabe vira "…" — nada passa do painel.
-     */
-    // ============ 4.8.4: O RESUMO EM CARTÕES (linguagem nova) ============
-    // Nome grande no topo, linha de apoio com idade/origem e o resto em
-    // cartões de vidro com o título em dourado. Quem não couber, rola.
-
-    private void renderResumo(GuiGraphics g, int x, int y, float a) {
-        int larg = px + pw - 14 - x;
-        int limite = py + ph - 50;
-
-        // ---- nome grande (2x quando cabe) + idade/origem
-        String nome = ficha.ou(ficha.nome);
-        int esc = font.width(nome) * 2 <= larg ? 2 : 1;
-        PoseStack pose = g.pose();
-        pose.pushPose();
-        pose.translate(x, y, 0f);
-        pose.scale(esc, esc, 1f);
-        g.drawString(font, nome, 0, 0, FichaFundo.corComAlfa(0xFFF3DA, a), false);
-        pose.popPose();
-
-        int yApoio = y + 10 * esc + 2;
-        String apoio = umaLinha(juntar(ficha.ou(ficha.idade), ficha.ou(ficha.origem)), larg - 4);
-        g.drawString(font, apoio, x, yApoio, FichaFundo.corComAlfa(0xB9AEDC, a * 0.95f), false);
-        regua(g, x, x + larg - 8, yApoio + 12, 0xFFD98A, a * 0.30f);
-
-        // ---- cartões (rolam se não couberem)
-        int topo = yApoio + 18;
-        int total = alturaCartoes(larg);
-        resumoMax = Math.max(0, total - (limite - topo));
-        resumoRolagem = Mth.clamp(resumoRolagem, 0, resumoMax);
-
-        g.enableScissor(x - 2, topo - 2, x + larg + 2, limite);
-        int ly = topo - (int) Math.round(resumoRolagem);
-        ly = cartaoTexto(g, x, ly, larg, "OCUPAÇÃO", ficha.ou(ficha.oficio), a);
-        ly = cartaoTexto(g, x, ly, larg, "HABILIDADES", ficha.ou(ficha.habilidades), a);
-        ly = cartaoAlma(g, x, ly, larg, a);
-        cartaoTexto(g, x, ly, larg, "HISTÓRIA", ficha.ou(ficha.historia), a);
-        g.disableScissor();
-
-        if (resumoMax > 0) {
-            desenhaRolagem(g, x, larg, topo, limite);
-        }
-    }
-
-    /** junta duas informações numa linha só ("27 anos · Uberlândia…"). */
-    private static String juntar(String a, String b) {
-        if (a == null || a.isBlank()) {
-            return b == null ? "—" : b;
-        }
-        if (b == null || b.isBlank()) {
-            return a;
-        }
-        return a + "  ·  " + b;
-    }
-
-    /** corta uma linha com "…" quando passa da largura. */
-    private String umaLinha(String s, int larg) {
-        if (s == null) {
-            return "—";
-        }
-        if (font.width(s) <= larg) {
-            return s;
-        }
-        StringBuilder sb = new StringBuilder();
-        for (char c : s.toCharArray()) {
-            if (font.width(sb.toString() + c) > larg - 6) {
-                break;
-            }
-            sb.append(c);
-        }
-        return sb.toString().trim() + "…";
-    }
-
-    /** fundo de vidro do cartão com o fio dourado em cima. */
-    private void fundoCartao(GuiGraphics g, int x, int y, int larg, int h, float a) {
-        g.fill(x, y, x + larg, y + h, FichaFundo.corComAlfa(0xFFFFFF, a * 0.055f));
-        g.fill(x, y, x + larg, y + 1, FichaFundo.corComAlfa(0xFFD98A, a * 0.42f));
-        g.fill(x, y + h - 1, x + larg, y + h, FichaFundo.corComAlfa(0x8FD8FF, a * 0.10f));
-        g.fill(x, y, x + 1, y + h, FichaFundo.corComAlfa(0x8FD8FF, a * 0.10f));
-        g.fill(x + larg - 1, y, x + larg, y + h, FichaFundo.corComAlfa(0x8FD8FF, a * 0.10f));
-        // brilho no canto de cima
-        FichaWidgets.losango(g, x + 4f, y + 4f, 1.8f, 0xFFD98A, a * 0.75f);
-    }
-
-    private int cartaoTexto(GuiGraphics g, int x, int y, int larg, String titulo, String valor, float a) {
-        int rw = larg - 16;
-        List<FormattedCharSequence> linhas = font.split(Component.literal(
-                valor == null || valor.isBlank() ? "—" : valor), Math.max(40, rw));
-        int h = 19 + Math.max(1, linhas.size()) * 10 + 5;
-        fundoCartao(g, x, y, larg, h, a);
-        g.drawString(font, titulo, x + 9, y + 7, FichaFundo.corComAlfa(0xFFD98A, a * 0.85f), false);
-        int ly = y + 19;
-        for (FormattedCharSequence l : linhas) {
-            g.drawString(font, l, x + 9, ly, FichaFundo.corComAlfa(0xF6F0FF, a), false);
-            ly += 10;
-        }
-        return y + h + 6;
-    }
-
-    /** cartão da ALMA: as três forças em barrinhas. */
-    private int cartaoAlma(GuiGraphics g, int x, int y, int larg, float a) {
-        int[] idx = ficha.personaTopo();
-        int h = 19 + Math.max(1, idx.length) * 13 + 5;
-        fundoCartao(g, x, y, larg, h, a);
-        g.drawString(font, "ALMA", x + 9, y + 7, FichaFundo.corComAlfa(0xFFD98A, a * 0.85f), false);
-
-        if (idx.length == 0) {
-            g.drawString(font, "equilibrado — nenhum lado puxa mais forte", x + 9, y + 19,
-                    FichaFundo.corComAlfa(0xF6F0FF, a), false);
-            return y + h + 6;
-        }
-        int lb = 56;
-        int x1 = x + 9 + lb;
-        int x2 = x + larg - 9 - lb;
-        int cx = (x1 + x2) / 2;
-        int ly = y + 19;
-        for (int i : idx) {
-            int v = ficha.persona[i];
-            boolean dir = v > 50;
-            String esq = dev.rptag.FichaRp.EIXOS[i][0];
-            String dta = dev.rptag.FichaRp.EIXOS[i][1];
-            int cAtivo = dir ? 0xFFD98A : 0x8FD8FF;
-            int cFraco = 0x6E5F98;
-            g.drawString(font, esq, x + 9, ly, FichaFundo.corComAlfa(dir ? cFraco : cAtivo, a), false);
-            g.drawString(font, dta, x + larg - 9 - font.width(dta), ly,
-                    FichaFundo.corComAlfa(dir ? cAtivo : cFraco, a), false);
-            int by = ly + 9;
-            g.fill(x1, by, x2, by + 1, FichaFundo.corComAlfa(0x4A6FA8, a * 0.85f));
-            int pxv = x1 + Math.round((x2 - x1) * v / 100f);
-            int ai = Math.min(cx, pxv);
-            int af = Math.max(cx, pxv);
-            if (af > ai) {
-                g.fill(ai, by - 1, af, by + 2, FichaFundo.corComAlfa(cAtivo, a * 0.85f));
-            }
-            g.fill(cx, by - 2, cx + 1, by + 3, FichaFundo.corComAlfa(0xFFFFFF, a * 0.26f));
-            g.fill(pxv - 1, by - 2, pxv + 2, by + 3, FichaFundo.corComAlfa(0xFFFFFF, a * 0.92f));
-            ly += 13;
-        }
-        return y + h + 6;
-    }
-
-    /** régua que acende no meio e some nas pontas (nada de linha serrilhada). */
-    private void regua(GuiGraphics g, int x1, int x2, int y, int cor, float alpha) {
-        int n = Math.min(30, Math.max(6, (x2 - x1) / 5));
-        if (n <= 0 || x2 <= x1) {
-            return;
-        }
+    /** fio que acende no meio e desbota nas pontas. */
+    private void fio(GuiGraphics g, int x1, int x2, int y, int argb) {
+        int a0 = (argb >>> 24) & 0xFF;
+        int n = Math.min(40, Math.max(6, (x2 - x1) / 6));
         for (int i = 0; i < n; i++) {
             float k = (i + 0.5f) / n;
-            float f = (float) Math.sin(Math.PI * k);
-            int al = Math.round(alpha * f * 255f);
+            int al = Math.round(a0 * (float) Math.sin(Math.PI * k));
             if (al <= 2) {
                 continue;
             }
             int xa = x1 + (x2 - x1) * i / n;
             int xb = x1 + (x2 - x1) * (i + 1) / n;
-            g.fill(xa, y, xb, y + 1, (al << 24) | (cor & 0xFFFFFF));
+            g.fill(xa, y, xb, y + 1, (al << 24) | (argb & 0xFFFFFF));
         }
     }
 
-    /** barra de rolagem discreta + esfumaçado nas bordas. */
-    private void desenhaRolagem(GuiGraphics g, int x, int larg, int y, int limite) {
-        int alt = limite - y;
-        float frac = (float) (alt / (alt + resumoMax));
-        int hb = Math.max(14, Math.round(alt * frac));
-        int yb = y + Math.round((alt - hb) * (float) (resumoRolagem / resumoMax));
-        int bx = x + larg + 3;
-        g.fill(bx, y, bx + 2, y + alt, 0x1FFFFFFF);
-        g.fill(bx - 1, yb, bx + 3, yb + hb, FichaFundo.corComAlfa(0x8FD8FF, 0.55f));
-        g.fill(bx, yb + 1, bx + 2, yb + hb - 1, FichaFundo.corComAlfa(0xBFE6FF, 0.85f));
+    private void painel(GuiGraphics g) {
+        g.fill(px - 3, py - 3, px + pw + 3, py + ph + 3, 0x30000000);
+        g.fill(px, py, px + pw, py + ph, PAINEL);
+        g.fillGradient(px + 1, py + 1, px + pw - 1, py + 44, 0x18FFFFFF, 0x00FFFFFF);
+        // contorno
+        int b = BORDA;
+        g.fill(px, py, px + pw, py + 1, b);
+        g.fill(px, py + ph - 1, px + pw, py + ph, b);
+        g.fill(px, py, px + 1, py + ph, b);
+        g.fill(px + pw - 1, py, px + pw, py + ph, b);
+        // cantos acesos
+        for (int[] c : new int[][]{{px, py}, {px + pw, py}, {px, py + ph}, {px + pw, py + ph}}) {
+            FichaWidgets.losango(g, c[0], c[1], 3.5f, ROSA, 0.85f);
+        }
+        // fio embaixo do título do capítulo
+        fio(g, px + 14, px + pw - 14, py + 40, 0x55E07BFF);
+    }
 
-        g.fillGradient(x - 2, limite - 14, x + larg, limite, 0x000B0718, 0xFF0B0718);
-        if (resumoRolagem > 0.5) {
-            g.fillGradient(x - 2, y - 2, x + larg, y + 8, 0xFF0B0718, 0x000B0718);
+    /** dica + conteúdo textual do capítulo (fora dos widgets). */
+    private void conteudoTexto(GuiGraphics g, float a) {
+        int ix = px + 14;
+        int iw = pw - 28;
+        int alfa = FichaFundo.corComAlfa(0xFFFFFF, a);
+
+        // dica do capítulo, sempre no alto do painel
+        quebrado(g, DICA[cap], ix, py + 14, iw, FichaFundo.corComAlfa(TXT_FRACO, a));
+
+        if (cap == FichaRp.CAP_RESUMO) {
+            resumo(g, a);
+            return;
+        }
+        if (cap == FichaRp.CAP_PERSONALIDADE) {
+            return;   // as barras se desenham sozinhas
+        }
+
+        // linha do campo + apoio
+        int topo = py + 44;
+        int hCampo = cap == FichaRp.CAP_HISTORIA ? 92 : (cap == FichaRp.CAP_HABILIDADES ? 56 : 18);
+        g.fill(ix, topo + 10 + hCampo + 3, ix + iw, topo + 11 + hCampo + 3,
+                FichaFundo.corComAlfa(ROSA, a * 0.75f));
+        quebrado(g, APOIO[cap], ix, topo + 18 + hCampo, iw, FichaFundo.corComAlfa(TXT_FRACO, a));
+        if (cap == FichaRp.CAP_HISTORIA) {
+            int n = ficha.historia == null ? 0 : ficha.historia.length();
+            String c = n + "/400";
+            g.drawString(font, c, ix + iw - font.width(c), topo + 12 + hCampo,
+                    FichaFundo.corComAlfa(0x6E5F98, a), false);
         }
     }
 
-    /** altura dos cartões (para saber se precisa rolar). */
-    private int alturaCartoes(int larg) {
-        int rw = Math.max(40, larg - 16);
-        int h = 0;
-        for (String v : new String[]{ficha.ou(ficha.oficio), ficha.ou(ficha.habilidades)}) {
-            h += 19 + Math.max(1, font.split(Component.literal(v == null || v.isBlank() ? "—" : v), rw).size()) * 10 + 5 + 6;
+    // ================================================================ resumo
+    private void resumo(GuiGraphics g, float a) {
+        int ix = px + 14;
+        int iw = pw - 28;
+        int topo = py + 48;
+        int limite = py + ph - ALTURA_BOTAO - 22;
+
+        int total = alturaResumo(iw);
+        resumoMax = Math.max(0, total - (limite - topo));
+        resumoRolagem = Mth.clamp(resumoRolagem, 0, resumoMax);
+
+        g.enableScissor(ix - 2, topo - 2, ix + iw + 2, limite);
+        int y = topo - (int) Math.round(resumoRolagem);
+
+        y = linha(g, ix, iw, y, "NOME", ficha.ou(ficha.nome), a, 2);
+        y = linha(g, ix, iw, y, "IDADE", ficha.ou(ficha.idade), a, 1);
+        y = linha(g, ix, iw, y, "VEIO DE", ficha.ou(ficha.origem), a, 2);
+        y = linha(g, ix, iw, y, "OCUPAÇÃO", ficha.ou(ficha.oficio), a, 2);
+        y = linha(g, ix, iw, y, "HABILIDADES", ficha.ou(ficha.habilidades), a, 2);
+        y = linhaAlma(g, ix, iw, y, a);
+        linha(g, ix, iw, y, "HISTÓRIA", ficha.ou(ficha.historia), a, 3);
+
+        g.disableScissor();
+
+        if (resumoMax > 0) {
+            int alt = limite - topo;
+            float frac = (float) (alt / (alt + resumoMax));
+            int hb = Math.max(14, Math.round(alt * frac));
+            int yb = topo + Math.round((alt - hb) * (float) (resumoRolagem / resumoMax));
+            g.fill(ix + iw + 1, topo, ix + iw + 3, topo + alt, 0x22FFFFFF);
+            g.fill(ix + iw, yb, ix + iw + 4, yb + hb, FichaFundo.corComAlfa(ROSA, 0.35f));
+            g.fill(ix + iw + 1, yb + 1, ix + iw + 3, yb + hb - 1, FichaFundo.corComAlfa(ROSA, 0.85f));
+            g.fillGradient(ix - 2, limite - 12, ix + iw, limite, 0x00140B2E, 0xF0140B2E);
+            if (resumoRolagem > 0.5) {
+                g.fillGradient(ix - 2, topo - 2, ix + iw, topo + 7, 0xF0140B2E, 0x00140B2E);
+            }
         }
+    }
+
+    /** uma linha do resumo: rótulo em cima, valor embaixo, fio no fim (referência). */
+    private int linha(GuiGraphics g, int x, int w, int y, String rotulo, String valor, float a, int maxLinhas) {
+        g.drawString(font, rotulo, x, y, FichaFundo.corComAlfa(TXT_FRACO, a), false);
+
+        String v = valor == null || valor.isBlank() ? "—" : valor;
+        List<FormattedCharSequence> partes = font.split(Component.literal(v), w);
+        int linhas = Math.min(partes.size(), Math.max(1, maxLinhas));
+        boolean truncou = partes.size() > linhas;
+        int ly = y + 11;
+        for (int i = 0; i < linhas; i++) {
+            g.drawString(font, partes.get(i), x, ly, FichaFundo.corComAlfa(TXT, a), false);
+            if (truncou && i == linhas - 1) {
+                g.drawString(font, "…", x + font.width(partes.get(i)) + 1, ly,
+                        FichaFundo.corComAlfa(TXT_FRACO, a), false);
+            }
+            ly += 10;
+        }
+        fio(g, x, x + w, ly + 2, 0x33FFFFFF);
+        return ly + 8;
+    }
+
+    /** o rótulo ALMA + três barrinhas (o mesmo desenho dos sliders, só leitura). */
+    private int linhaAlma(GuiGraphics g, int x, int w, int y, float a) {
+        g.drawString(font, "ALMA", x, y, FichaFundo.corComAlfa(TXT_FRACO, a), false);
         int[] idx = ficha.personaTopo();
-        h += 19 + Math.max(1, idx.length) * 13 + 5 + 6;
-        String hist = ficha.ou(ficha.historia);
-        h += 19 + Math.max(1, font.split(Component.literal(hist == null || hist.isBlank() ? "—" : hist), rw).size()) * 10 + 5;
+        int ly = y + 12;
+        if (idx.length == 0) {
+            g.drawString(font, "equilibrado", x, ly, FichaFundo.corComAlfa(TXT, a), false);
+            fio(g, x, x + w, ly + 12, 0x33FFFFFF);
+            return ly + 18;
+        }
+        int lb = 56;
+        int x1 = x + lb;
+        int x2 = x + w - lb;
+        int cx = (x1 + x2) / 2;
+        for (int i : idx) {
+            int v = ficha.persona[i];
+            boolean dir = v > 50;
+            String esq = FichaRp.EIXOS[i][0];
+            String dta = FichaRp.EIXOS[i][1];
+            g.drawString(font, esq, x, ly, FichaFundo.corComAlfa(dir ? TXT_FRACO : TXT, a * 0.85f), false);
+            g.drawString(font, dta, x + w - font.width(dta), ly,
+                    FichaFundo.corComAlfa(dir ? TXT : TXT_FRACO, a * 0.85f), false);
+            int by = ly + 8;
+            g.fill(x1, by, x2, by + 1, FichaFundo.corComAlfa(0x3A3268, a));
+            int pxv = x1 + Math.round((x2 - x1) * v / 100f);
+            int ai = Math.min(cx, pxv);
+            int af = Math.max(cx, pxv);
+            if (af > ai) {
+                g.fill(ai, by, af, by + 1, FichaFundo.corComAlfa(ROSA, a * 0.9f));
+            }
+            for (int k = 0; k <= 4; k++) {
+                int mark = x1 + k * (x2 - x1) / 4;
+                g.fill(mark, by - 2, mark + 1, by + 3, FichaFundo.corComAlfa(0x4A3F86, a));
+            }
+            g.fill(pxv - 2, by - 4, pxv + 3, by + 5, FichaFundo.corComAlfa(0xCBBFFF, a));
+            ly += 14;
+        }
+        fio(g, x, x + w, ly + 2, 0x33FFFFFF);
+        return ly + 8;
+    }
+
+    private int alturaResumo(int iw) {
+        int h = 0;
+        int[] maxs = {2, 1, 2, 2, 2, 3};
+        String[] vals = {ficha.ou(ficha.nome), ficha.ou(ficha.idade), ficha.ou(ficha.origem),
+                ficha.ou(ficha.oficio), ficha.ou(ficha.habilidades), ficha.ou(ficha.historia)};
+        for (int i = 0; i < vals.length; i++) {
+            List<FormattedCharSequence> p = font.split(Component.literal(
+                    vals[i] == null || vals[i].isBlank() ? "—" : vals[i]), iw);
+            h += 11 + Math.min(p.size(), Math.max(1, maxs[i])) * 10 + 10;
+        }
+        h += 12 + Math.max(1, ficha.personaTopo().length) * 14 + 8;   // as barras
         return h;
     }
 
-    private void desenharQuebrado(GuiGraphics g, String texto, int x, int y, int larg, int cor) {
+    // ================================================================ rodapé
+    private void rodape(GuiGraphics g) {
+        int ini = width / 2 - FichaRp.CAPS * 10;
+        int y = height - 28;
+        for (int i = 0; i < FichaRp.CAPS; i++) {
+            int x = ini + i * 20;
+            int cor = i == cap ? ROSA : (i < cap ? VIOLETA : 0x3A1A6E);
+            g.fill(x, y, x + 6, y + 5, FichaFundo.corComAlfa(cor, i <= cap ? 0.95f : 0.8f));
+            if (i == cap) {
+                g.fill(x, y - 2, x + 6, y - 1, FichaFundo.corComAlfa(0xFFD6FF, 0.9f));
+            }
+        }
+        fio(g, 20, width - 20, height - 18, 0x22FFFFFF);
+        g.drawString(font, "ESC · Sair", 20, height - 12, TXT_FRACO, false);
+        String en = cap == FichaRp.CAP_RESUMO ? "ENTER · Confirmar" : "ENTER · Continuar";
+        g.drawString(font, en, width - 20 - font.width(en), height - 12, TXT_FRACO, false);
+    }
+
+    // ============================================================ personagem
+    private void renderPersonagem(GuiGraphics g, float entrada) {
+        Player p = minecraft == null ? null : minecraft.player;
+        if (p == null) {
+            return;
+        }
+        // proporções da referência: Netuno ~22% do menor lado, boneco no pedestal
+        int cx = (int) (px * 0.50f);
+        int chao = (int) (height * 0.80f);
+        int raio = Math.round(Math.min(width, height) * 0.22f);
+        int escala = Math.round(height * 0.135f * (0.74f + 0.26f * entrada));
+
+        FichaFundo.buracoNegro(g, cx, chao - raio * 1.05f, raio, t);
+        FichaFundo.discoMagico(g, cx, chao + 4, raio * 0.95f, t);
+
+        float yaw = (float) Math.sin(t * 0.55f) * 0.34f;
+        float pitch = (float) Math.sin(t * 0.41f) * 0.10f - 0.06f;
+        int meia = Math.round(height * 0.16f);
+        InventoryScreen.renderEntityInInventoryFollowsAngle(g, cx - meia,
+                chao - Math.round(height * 0.46f), cx + meia, chao,
+                escala, 0f, yaw, pitch, p);
+    }
+
+    // ================================================================ util
+    private void quebrado(GuiGraphics g, String texto, int x, int y, int larg, int cor) {
         if (texto == null || texto.isEmpty()) {
             return;
         }
         List<FormattedCharSequence> linhas = font.split(Component.literal(texto), Math.max(20, larg));
         int ly = y;
-        for (FormattedCharSequence linha : linhas) {
-            g.drawString(font, linha, x, ly, cor, false);
+        for (FormattedCharSequence l : linhas) {
+            g.drawString(font, l, x, ly, cor, false);
             ly += 10;
         }
-    }
-
-    private static String encurta(String s, int max) {
-        if (s == null) {
-            return "—";
-        }
-        return s.length() <= max ? s : s.substring(0, Math.max(1, max - 1)) + "…";
     }
 
     private static float suave(float k) {
@@ -767,12 +679,11 @@ public class FichaScreen extends Screen {
 
     /** abre a tela (chamado pelo pacote do servidor). */
     public static void abrir(FichaOpenPayload p) {
-        Minecraft.getInstance().setScreen(new FichaScreen(p));
+        net.minecraft.client.Minecraft.getInstance().setScreen(new FichaScreen(p));
     }
 
     @Override
     public void removed() {
-        // garante que nada fique preso no player (swing/foco dos campos)
         if (campoAtual != null) {
             campoAtual.setFocused(false);
         }

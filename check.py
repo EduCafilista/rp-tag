@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.8.4' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.8.5' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.8.4 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.8.5 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.8.4', 'RP Tag 4.8.4' in ce)
+check('4.0: boot log 4.8.5', 'RP Tag 4.8.5' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -1042,11 +1042,11 @@ check('4.8.0: canais ficha_abrir (S2C) e ficha_salvar (C2S) no protocolo v6',
 _fs = rd(C + '/FichaScreen.java')
 check('4.8.0: tela da ficha existe com os 8 capitulos por pergunta',
       'class FichaScreen extends Screen' in _fs and 'CAP_PERSONALIDADE' in _fs)
-check('4.8.0: rodape com ESC e ENTER', '"ESC"' in _fs and '"ENTER"' in _fs and 'tecla(' in _fs)
-check('4.8.0: quadradinhos de progresso + Voltar/Continuar',
-      'renderProgresso' in _fs and '"Voltar"' in _fs and '"Continuar"' in _fs)
-check('4.8.0: pagina final tem o botao Confirmar Personagem',
-      'Confirmar Personagem' in _fs and 'confirmar()' in _fs)
+check('4.8.0: rodape com ESC e ENTER', '"ESC · Sair"' in _fs and '"ENTER ·' in _fs)
+check('4.8.0: pontinhos de progresso + Voltar/Continuar',
+      'private void rodape(' in _fs and '"Voltar"' in _fs and '"Continuar"' in _fs)
+check('4.8.0: pagina final tem o botao Confirmar personagem',
+      'Confirmar personagem' in _fs and 'confirmar()' in _fs)
 check('4.8.0: personagem do proprio jogador na tela (modelo do player)',
       'renderEntityInInventoryFollowsAngle' in _fs and 'minecraft.player' in _fs)
 _fundo = rd(C + '/FichaFundo.java')
@@ -1091,7 +1091,7 @@ check('4.8.2: estrelas cintilando + cometa no ceu',
 check('4.8.2: texturas carregadas em DynamicTexture com filtro LINEAR',
       'new DynamicTexture(' in _fd and 'tex.upload()' in _fd and 'tex.setFilter(true, false)' in _fd)
 check('4.8.2: resumo quebra o texto dentro da coluna (nada vaza do painel)',
-      'font.split(' in _fs2 and 'enableScissor' in _fs2 and 'cartaoTexto(' in _fs2)
+      'font.split(' in _fs2 and 'enableScissor' in _fs2 and 'linha(g, ix' in _fs2)
 check('4.8.2: personaResumo mostra so os 3 eixos mais fortes',
       'for (int k = 0; k < 3; k++)' in rd(R + '/FichaRp.java'))
 check('4.8.2: dono sempre pode editar (Confirmar Personagem nao desaparece)',
@@ -1106,9 +1106,9 @@ check('4.8.2: resetar ja reabre a tela do zero (resetarEabrir)',
 
 _fw = rd(C + '/FichaWidgets.java')
 check('4.8.2: botao X de fechar no canto do painel',
-      'class BotaoX' in _fw and 'new FichaWidgets.BotaoX(px + pw - 22, py + 6' in _fs2)
+      'class BotaoX' in _fw and 'new FichaWidgets.BotaoX(px + pw - 20, py + 6' in _fs2)
 check('4.8.2: painel opaco (o HUD/mundo nao vaza por cima do texto)',
-      '0xE80B0718' in _fs2 and '0x8C0B0718' not in _fs2)
+      'PAINEL = 0xC8140B2E' in _fs2 and '0x8C0B0718' not in _fs2)
 check('4.8.2: resumo ROLA em vez de cortar (scissor + mouseScrolled)',
       'resumoRolagem' in _fs2 and 'enableScissor' in _fs2 and 'mouseScrolled' in _fs2)
 check('4.8.2: gerador das texturas sem a nebulosa roxa',
@@ -1116,30 +1116,47 @@ check('4.8.2: gerador das texturas sem a nebulosa roxa',
 
 _fs3 = rd(C + '/FichaScreen.java')
 # ============ 4.8.3: RESUMO VIRou PAGINA (visual) ============
-check('4.8.3: resumo com titulos em dourado',
-      '"ALMA"' in _fs3 and '"HISTÓRIA"' in _fs3 and 'corComAlfa(0xFFD98A' in _fs3)
-check('4.8.3: cartoes de vidro (fundo + fio dourado em cima)',
-      'fundoCartao(' in _fs3 and 'cartaoTexto(' in _fs3)
-check('4.8.3: reguas que desbotam nas pontas (sem linha serrilhada)',
-      'private void regua(' in _fs3 and 'Math.sin(Math.PI * k)' in _fs3)
+check('4.8.3: resumo com rotulos das linhas',
+      '"ALMA"' in _fs3 and '"HISTÓRIA"' in _fs3 and 'TXF' not in _fs3)
+check('4.8.3: linhas do resumo com fio desbotado embaixo',
+      'private int linha(' in _fs3 and 'fio(g, x, x + w' in _fs3)
+check('4.8.3: fios que desbotam nas pontas (sem linha serrilhada)',
+      'private void fio(' in _fs3 and 'Math.sin(Math.PI * k)' in _fs3)
 check('4.8.3: alma virou BARRINHAS (personaTopo)',
-      'cartaoAlma(' in _fs3 and 'personaTopo' in rd(R + '/FichaRp.java'))
-check('4.8.3: rodape com teclas desenhadas (keycap)',
-      'private int tecla(' in _fs3 and '"ESC", "sair"' in _fs3)
-check('4.8.3: painel abre mais largo no resumo',
-      'CAP_RESUMO ? 540 : 470' in _fs3)
-check('4.8.3: sombra do painel + brilho de topo nos botoes',
-      '0x30000000' in _fs3 and 'luz de cima' in _fw)
+      'linhaAlma(' in _fs3 and 'personaTopo' in rd(R + '/FichaRp.java'))
+check('4.8.3: rodape com as teclas escritas',
+      'ESC · Sair' in _fs3 and 'ENTER · Continuar' in _fs3)
+check('4.8.3: painel dimensionado pela tela (sem numero magico)',
+      'width * 0.42f' in _fs3 and 'height * 0.19f' in _fs3)
+check('4.8.3: sombra do painel + gradiente nos botoes',
+      '0x30000000' in _fs3 and 'fillGradient(getX(), getY()' in _fw)
 
 # ============ 4.8.4: RESUMO EM CARTOES ============
-check('4.8.4: nome em destaque (2x) + idade/origem numa linha',
-      'pose.scale(esc, esc, 1f)' in _fs3 and 'umaLinha(juntar(' in _fs3)
-check('4.8.4: cartoes OCUPACAO / HABILIDADES / ALMA / HISTORIA',
-      '"OCUPAÇÃO"' in _fs3 and '"HABILIDADES"' in _fs3 and '"ALMA"' in _fs3 and '"HISTÓRIA"' in _fs3)
-check('4.8.4: texto mais largo (coluna em 46% do painel)',
-      'pw * 0.46f' in _fs3)
-check('4.8.4: altura dos cartoes medida para a rolagem',
-      'alturaCartoes(' in _fs3)
+check('4.8.4: resumo com rotulo em cima e valor embaixo (referencia)',
+      'g.drawString(font, rotulo, x, y' in _fs3 and 'int ly = y + 11;' in _fs3)
+check('4.8.4: campos do resumo completos',
+      '"VEIO DE"' in _fs3 and '"OCUPAÇÃO"' in _fs3 and '"HABILIDADES"' in _fs3 and '"ALMA"' in _fs3 and '"HISTÓRIA"' in _fs3)
+check('4.8.4: painel alto a direita (layout da referencia)',
+      'px = width - 18 - pw' in _fs3 and 'ph = height - 40 - py' in _fs3)
+check('4.8.4: altura do resumo medida para a rolagem',
+      'alturaResumo(iw)' in _fs3)
+
+# ============ 4.8.5: LAYOUT DA REFERENCIA ============
+_fd5 = rd(C + '/FichaFundo.java')
+check('4.8.5: nevoa de galaxia em TEXTURA (suave, sem quads de 1px)',
+      'NEVOA' in _fd5 and 'static void nevoa(' in _fd5 and os.path.exists(_gui + '/ficha_nevoa.png'))
+check('4.8.5: nevoa tingida em violeta/magenta com alfa baixo (pouco roxo)',
+      'g.setColor(0.52f, 0.42f, 1f, 0.10f)' in _fd5 and '0.86f, 0.44f, 1f, 0.07f' in _fd5)
+check('4.8.5: cabecalho corrido com capitulo e pergunta centralizados',
+      'private void cabecalho(' in _fs3 and 'g.drawCenteredString(font, c, width / 2, 28' in _fs3)
+check('4.8.5: botao com gradiente violeta/magenta (referencia)',
+      '0xFF7A1FD6' in _fw and '0xFFFF3FD0' in _fw)
+check('4.8.5: slider fino com marcas 0/25/50/75/100',
+      'int ly = getY() + height / 2;' in _fw and '0xFF3A3268' in _fw)
+check('4.8.5: personagem grande com Netuno atras (proporcao da tela)',
+      'min(width, height) * 0.22f' in _fs3 and 'height * 0.135f' in _fs3)
+check('4.8.5: pontinhos do rodape pulam de capitulo',
+      'FichaRp.CAPS * 20' in _fs3)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -87,7 +87,8 @@ public final class RPTagMod {
      *  (4.8.1) fundo/buraco negro em TEXTURA (fim dos pixels quebrados).
      *  (4.8.2) fundo = blur do mundo + estrelas (receita do balao).
      *  (4.8.3) resumo do tablet virou pagina: secoes, zebra e barras de alma.
-     *  (4.8.4) resumo em CARTOES: nome grande, cartoes de vidro e barras da alma. */
+     *  (4.8.4) resumo em CARTOES: nome grande, cartoes de vidro e barras da alma.
+     *  (4.8.5) layout da referencia: painel alto a direita + rotulo em cima do valor. */
     public static final net.neoforged.neoforge.registries.DeferredHolder<Item, TabletItem> TABLET =
             ITEMS.register("tablet", () -> new TabletItem(new Item.Properties().stacksTo(1)
                     .rarity(net.minecraft.world.item.Rarity.RARE)));

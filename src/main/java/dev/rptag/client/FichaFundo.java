@@ -29,6 +29,9 @@ final class FichaFundo {
 
     private static final ResourceLocation BURACO = tex("ficha_buraco");
     private static final ResourceLocation ANEL = tex("ficha_anel");
+    /** (4.8.5) névoa suave, tingida no código: dá o brilho de galáxia da referência. */
+    private static final ResourceLocation NEVOA = tex("ficha_nevoa");
+    private static final int NEV_W = 1024, NEV_H = 640;
 
     private static final int BUR_W = 640, BUR_H = 640;
     /** raio da esfera preta dentro do sprite (px da textura). */
@@ -55,6 +58,7 @@ final class FichaFundo {
         pronto = true;
         carregar(BURACO);
         carregar(ANEL);
+        carregar(NEVOA);
     }
 
     private static void carregar(ResourceLocation rl) {
@@ -100,8 +104,32 @@ final class FichaFundo {
             g.fill(-10, y + 4, w + 10, y + 5, 0x08D8E8FF);
         }
 
+        nevoa(g, w, h, t);
         estrelas(g, w, h, t);
         vinheta(g, w, h);
+    }
+
+    /**
+     * (4.8.5) Duas névoas da galáxia (violeta em cima à esquerda, magenta à
+     * direita), em textura suave e com deriva lenta. Alfa baixo: colore sem
+     * tampar o blur do mundo.
+     */
+    static void nevoa(GuiGraphics g, int w, int h, float t) {
+        float dx = (float) Math.sin(t * 0.10f) * 10f;
+        float dy = (float) Math.cos(t * 0.08f) * 6f;
+        int lw = (int) (w * 0.85f);
+        int lh = (int) (h * 0.95f);
+
+        g.setColor(0.52f, 0.42f, 1f, 0.10f);            // azul-violeta (bem de leve)
+        g.blit(NEVOA, (int) (-w * 0.30f + dx), (int) (-h * 0.25f + dy), 0, 0, lw, lh, lw, lh);
+
+        g.setColor(0.86f, 0.44f, 1f, 0.07f);            // lilás (quase nada de rosa)
+        g.blit(NEVOA, (int) (w * 0.45f - dx * 1.4f), (int) (-h * 0.10f + dy), 0, 0,
+                (int) (lw * 0.85f), lh, (int) (lw * 0.85f), lh);
+
+        g.setColor(0.36f, 0.56f, 1f, 0.09f);            // azul frio, embaixo
+        g.blit(NEVOA, (int) (w * 0.05f), (int) (h * 0.42f - dy), 0, 0, lw, lh, lw, lh);
+        g.setColor(1f, 1f, 1f, 1f);
     }
 
     private static void estrelas(GuiGraphics g, int w, int h, float t) {

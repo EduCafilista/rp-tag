@@ -104,6 +104,46 @@ def buraco():
     return out
 
 
+# ------------------------------------------------------------------------ nevoa
+def ruido(N, octaves=5, seed=3):
+    """ruído fractal suave (valor 0..1) — base das nuvens."""
+    rng = np.random.default_rng(seed)
+    acc = np.zeros(N, dtype=float)
+    amp, tot = 1.0, 0.0
+    for o in range(octaves):
+        h = max(2, N[0] >> (octaves - 1 - o))
+        w = max(2, N[1] >> (octaves - 1 - o))
+        base = rng.normal(0, 1, (h, w))
+        img = Image.fromarray(((base - base.min()) / (np.ptp(base) + 1e-6) * 255).astype(np.uint8))
+        img = img.resize((N[1], N[0]), Image.BICUBIC)
+        acc += np.array(img, dtype=float) / 255.0 * amp
+        tot += amp
+        amp *= 0.55
+    return acc / tot
+
+
+def nevoa():
+    """Névoa suave (branca, com alfa) para ser TINGIDA no jogo.
+
+    O fundo do tablet pinta ela 2x com cores diferentes (violeta e magenta) e
+    alfa baixo — dá o "brilho de galáxia" da referência sem usar discos de 1 px.
+    """
+    W, H = 1024, 640
+    n1 = ruido((H, W), 6, 91)
+    n2 = ruido((H, W), 5, 137)
+    nuvem = np.clip((n1 * 0.62 + n2 * 0.38 - 0.30) / 0.50, 0, 1) ** 1.35
+    yy, xx = np.mgrid[0:H, 0:W].astype(float)
+    # desbota para as bordas (nunca aparece o quadrado da textura)
+    bx = suave(0, 190, xx) * suave(0, 190, W - 1 - xx)
+    by = suave(0, 130, yy) * suave(0, 130, H - 1 - yy)
+    alfa = np.clip(nuvem * 1.15, 0, 1) * bx * by
+    rgba = np.dstack([np.full((H, W), 255.0), np.full((H, W), 255.0),
+                      np.full((H, W), 255.0), alfa * 255]).astype(np.uint8)
+    out = Image.fromarray(rgba, "RGBA").filter(ImageFilter.GaussianBlur(3.0))
+    out.save(OUT + "ficha_nevoa.png")
+    return out
+
+
 # ------------------------------------------------------------------------- anel
 def anel():
     W, H = 512, 256
@@ -133,7 +173,8 @@ def anel():
 
 if __name__ == "__main__":
     b = buraco()
+    n = nevoa()
     a = anel()
     b.resize((256, 256), Image.LANCZOS).save("/tmp/buraco_previa.png")
     a.resize((512, 256), Image.LANCZOS).save("/tmp/anel_previa.png")
-    print("buraco", b.size, "anel", a.size)
+    print("buraco", b.size, "nevoa", n.size, "anel", a.size)

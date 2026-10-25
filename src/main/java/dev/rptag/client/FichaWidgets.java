@@ -46,38 +46,22 @@ final class FichaWidgets {
             float alvo = isHovered ? 1f : 0f;
             brilho += (alvo - brilho) * Mth.clamp(dt * 0.35f, 0f, 1f);
 
-            int fundo = destaque ? 0xD62E2058 : 0xD6161030;
-            int fundoHover = destaque ? 0xF0463080 : 0xF0221A46;
-            int base = misturar(fundo, fundoHover, brilho);
-            g.fill(getX(), getY(), getX() + width, getY() + height, base);
-            // luz de cima (1 linha) + sombra embaixo: volume sem lavar o botão
+            // (4.8.5) gradiente da referência: violeta em cima, magenta embaixo
+            int topo = misturar(destaque ? 0xFF7A1FD6 : 0xCC1E0A4A, 0xFFB03BFF, brilho);
+            int base = misturar(destaque ? 0xFF4A12A0 : 0xCC10052E, 0xFFFF3FD0, brilho * 0.9f);
+            g.fillGradient(getX(), getY(), getX() + width, getY() + height, topo, base);
+
+            // fio de luz no topo + sombra no pé (volume)
             g.fill(getX() + 1, getY() + 1, getX() + width - 1, getY() + 2,
-                    FichaFundo.corComAlfa(0xFFFFFF, 0.10f + 0.16f * brilho));
-            g.fillGradient(getX() + 1, getY() + height - 6, getX() + width - 1, getY() + height - 1,
+                    FichaFundo.corComAlfa(0xFFFFFF, destaque ? 0.22f + 0.2f * brilho : 0.10f));
+            g.fillGradient(getX() + 1, getY() + height - 4, getX() + width - 1, getY() + height - 1,
                     0x00000000, 0x33000000);
 
-            int borda = (destaque || brilho > 0.02f) ? LINHA_FORTE : LINHA;
-            contorno(g, getX(), getY(), width, height, FichaFundo.corComAlfa(borda, 0.55f + 0.45f * brilho));
-            g.fill(getX() + 2, getY() + 2, getX() + width - 2, getY() + 3,
-                    FichaFundo.corComAlfa(0xBFE6FF, 0.10f + 0.25f * brilho));
-            if (destaque) {
-                // fio dourado embaixo, como um selo
-                g.fill(getX() + width / 2 - 18, getY() + height - 3, getX() + width / 2 + 18,
-                        getY() + height - 2, FichaFundo.corComAlfa(0xFFD98A, 0.45f + 0.4f * brilho));
-            }
+            int borda = destaque ? 0xE07BFF : 0x9B3BFF;
+            contorno(g, getX(), getY(), width, height,
+                    misturar(0xFF000000 | borda, 0xFFFFB0FF, brilho));
 
-            // cantos em losango (o detalhe do estilo)
-            for (int[] c : new int[][]{{getX(), getY()}, {getX() + width, getY()},
-                    {getX(), getY() + height}, {getX() + width, getY() + height}}) {
-                losango(g, c[0], c[1], 2.5f + brilho, OURO, 0.35f + 0.5f * brilho);
-            }
-
-            int tc = brilho > 0.4f ? 0xFFFFFF : (destaque ? 0xF6E6C0 : TEXTO);
-            g.drawCenteredString(f, getMessage(), getX() + width / 2, getY() + (height - 8) / 2, tc);
-            if (brilho > 0.05f) {
-                g.fill(getX() + 6, getY() + height - 4, getX() + width - 6, getY() + height - 3,
-                        FichaFundo.corComAlfa(0x9FE0FF, 0.25f * brilho));
-            }
+            g.drawCenteredString(f, getMessage(), getX() + width / 2, getY() + (height - 8) / 2, 0xFFFFFF);
         }
 
         @Override
@@ -153,28 +137,27 @@ final class FichaWidgets {
             int v = valores[eixo];
             String esq = dev.rptag.FichaRp.EIXOS[eixo][0];
             String dir = dev.rptag.FichaRp.EIXOS[eixo][1];
+            boolean ativo = isHovered || isFocused();
 
-            g.drawString(f, esq, getX(), getY() - 2, v < 50 ? TEXTO : TEXTO_FRACO, false);
+            // nomes dos dois lados, com o número em destaque no meio
+            g.drawString(f, esq, getX(), getY() - 9, v < 50 ? 0xFFFFFF : TEXTO_FRACO, false);
             String num = String.valueOf(v);
-            g.drawString(f, num, getX() + width / 2 - f.width(num) / 2, getY() - 2, OURO, false);
-            g.drawString(f, dir, getX() + width - f.width(dir), getY() - 2, v > 50 ? TEXTO : TEXTO_FRACO, false);
+            g.drawString(f, num, getX() + width / 2 - f.width(num) / 2, getY() - 9, 0xEADFB8, false);
+            g.drawString(f, dir, getX() + width - f.width(dir), getY() - 9,
+                    v > 50 ? 0xFFFFFF : TEXTO_FRACO, false);
 
-            int y = getY() + 12;
-            g.fill(getX(), y, getX() + width, y + 1, FichaFundo.corComAlfa(LINHA, 0.9f));
-            for (int i = 0; i <= 4; i++) {
-                int x = getX() + width * i / 4;
-                g.fill(x, y - 3, x + 1, y + 4, FichaFundo.corComAlfa(LINHA, 0.9f));
+            // trilho fino + parte acesa (referência)
+            int ly = getY() + height / 2;
+            g.fill(getX(), ly, getX() + width, ly + 1, 0xFF3A3268);
+            int hx = getX() + Math.round(width * v / 100f);
+            if (hx > getX()) {
+                g.fill(getX(), ly, hx, ly + 1, 0xFFE07BFF);
             }
-
-            int cx = getX() + width / 2;
-            int px = getX() + Math.round(width * v / 100f);
-            g.fill(Math.min(cx, px), y - 1, Math.max(cx, px), y + 2,
-                    FichaFundo.corComAlfa(v > 50 ? 0x8FD8FF : 0xC9A6FF, 0.55f));
-
-            int lado = isHovered || isFocused() ? 4 : 3;
-            g.fill(px - lado, y - lado, px + lado, y + lado + 1, 0xFFF4F8FF);
-            g.fill(px - lado + 1, y - lado + 1, px + lado - 1, y + lado, 0xFFFFFFFF);
-            losango(g, px, y, 1.2f, OURO, 0.9f);
+            for (int i = 0; i <= 4; i++) {
+                int mx2 = getX() + i * (width - 1) / 4;
+                g.fill(mx2, ly - 3, mx2 + 1, ly + 4, 0xFF4A3F86);
+            }
+            g.fill(hx - 3, ly - 6, hx + 4, ly + 7, ativo ? 0xFFFFFFFF : 0xFFCBBFFF);
         }
 
         @Override
