@@ -124,7 +124,8 @@ public class FichaScreen extends Screen {
         campoLongo = null;
         FichaFundo.preparar();
 
-        pw = Math.min(width - 20, 470);
+        // (4.8.3) no resumo o painel abre mais: cabe mais texto por linha
+        pw = Math.min(width - 20, cap == FichaRp.CAP_RESUMO ? 540 : 470);
         ph = Math.min(height - 34, 276);
         px = (width - pw) / 2;
         py = (height - ph) / 2;
@@ -388,6 +389,7 @@ public class FichaScreen extends Screen {
         // ---------------- painel
         // (4.8.2) painel mais fechado: antes era 0x8C (55%) e o HUD/mundo
         // apareciam por cima do texto. Agora 0xE8 (91%) com leve degradê.
+        g.fill(px - 3, py - 3, px + pw + 3, py + ph + 3, 0x30000000);   // sombra
         g.fill(px, py, px + pw, py + ph, 0xE80B0718);
         g.fillGradient(px + 1, py + 1, px + pw - 1, py + ph - 1, 0x14000000, 0x3A000000);
         g.fill(px, py, px + pw, py + 1, FichaFundo.corComAlfa(0x8FD8FF, 0.30f));
@@ -401,17 +403,19 @@ public class FichaScreen extends Screen {
         }
 
         // ---------------- cabeçalho
-        String titulo = "CAPÍTULO " + (cap + 1) + " / " + TITULO[cap];
-        g.drawString(font, titulo, px + 14, py + 11, 0xFFE6D8FF, false);
+        String c1 = "CAPÍTULO " + (cap + 1);
+        String c2 = "· " + TITULO[cap];
+        g.drawString(font, c1, px + 14, py + 11, 0xFFD98A, false);
+        g.drawString(font, c2, px + 14 + font.width(c1) + 5, py + 11, 0xF4EEFF, false);
         String sussurro = (cap == FichaRp.CAP_RESUMO && resumoMax > 0)
                 ? "role a roda para ver tudo" : "Sua história começa aqui";
         g.drawString(font, sussurro, px + pw - 30 - font.width(sussurro), py + 11, 0x7E6FA8, false);
-        g.fill(px + 14, py + 24, px + pw - 14, py + 25, 0x2A8FD8FF);
+        regua(g, px + 14, px + pw - 14, py + 24, 0x8FD8FF, 0.22f);
 
         // ---------------- pergunta
         float aTxt = entrada;
         String perg = PERGUNTA[cap];
-        g.drawCenteredString(font, perg, width / 2, py + 34, FichaFundo.corComAlfa(0xFFFFFF, 0.55f + 0.45f * aTxt));
+        g.drawCenteredString(font, perg, px + pw / 2, py + 33, FichaFundo.corComAlfa(0xFFFFFF, 0.55f + 0.45f * aTxt));
 
         // ---------------- personagem
         renderPersonagem(g, entrada);
@@ -437,9 +441,11 @@ public class FichaScreen extends Screen {
 
         // ---------------- progresso + rodapé
         renderProgresso(g);
-        g.drawString(font, "ESC · Sair", px + 12, py + ph + 8, 0x9E93C4, false);
-        String ent = cap == FichaRp.CAP_RESUMO ? "ENTER · Confirmar" : "ENTER · Continuar";
-        g.drawString(font, ent, px + pw - 12 - font.width(ent), py + ph + 8, 0x9E93C4, false);
+        int rodape = py + ph + 9;
+        tecla(g, px + 12, rodape, "ESC", "sair");
+        String ent = cap == FichaRp.CAP_RESUMO ? "confirmar" : "continuar";
+        int wEnt = font.width(ent) + 6 + font.width("ENTER") + 8;
+        tecla(g, px + pw - 12 - wEnt, rodape, "ENTER", ent);
 
         // ---------------- confirmação (brilho dourado e fecha)
         if (tConfirmado >= 0f) {
@@ -453,6 +459,17 @@ public class FichaScreen extends Screen {
                 fecharPedido = true;
             }
         }
+    }
+
+    /** (4.8.3) tecla desenhada como um "keycap" e o rótulo do lado. */
+    private int tecla(GuiGraphics g, int x, int y, String tecla, String rotulo) {
+        int w = font.width(tecla) + 8;
+        g.fill(x, y - 2, x + w, y + 9, 0x24FFFFFF);
+        g.fill(x, y - 2, x + w, y - 1, 0x3AFFFFFF);
+        g.fill(x, y + 9, x + w, y + 10, 0x1AFFFFFF);
+        g.drawString(font, tecla, x + 4, y, 0xD8CFF0, false);
+        g.drawString(font, rotulo, x + w + 4, y, 0x8A7CB0, false);
+        return x + w + 4 + font.width(rotulo);
     }
 
     private void renderProgresso(GuiGraphics g) {
@@ -478,25 +495,29 @@ public class FichaScreen extends Screen {
         if (p == null) {
             return;
         }
-        int base = py + ph - 48;
+        int base = py + ph - 46;
         int cxm = px + (int) (pw * 0.27f);
-        int escala = Math.round(44f * (0.70f + 0.30f * entrada));
+        // (4.8.3) o boneco acompanha o tamanho do painel (em tela pequena, menor)
+        float k = Mth.clamp(ph / 276f, 0.60f, 1f);
+        int escala = Math.round(50f * k * (0.70f + 0.30f * entrada));
+        int raio = Math.round(49f * k);
 
-        FichaFundo.buracoNegro(g, cxm, base - 72, 44, t);
-        FichaFundo.discoMagico(g, cxm, base - 2, 42, t);
+        FichaFundo.buracoNegro(g, cxm, base - Math.round(76 * k), raio, t);
+        FichaFundo.discoMagico(g, cxm, base - 2, Math.round(46 * k), t);
 
         float yaw = (float) Math.sin(t * 0.55f) * 0.34f;
         float pitch = (float) Math.sin(t * 0.41f) * 0.10f - 0.06f;
-        InventoryScreen.renderEntityInInventoryFollowsAngle(g, cxm - 74, base - 132, cxm + 74, base,
-                escala, 0f, yaw, pitch, p);
+        int meia = Math.round(74 * k);
+        InventoryScreen.renderEntityInInventoryFollowsAngle(g, cxm - meia, base - Math.round(132 * k),
+                cxm + meia, base, escala, 0f, yaw, pitch, p);
     }
 
     private void renderConteudo(GuiGraphics g, float a) {
         int x = colX;
-        int y = py + 52;
+        int y = py + 52;   // a dica fica acima do campo (2 linhas cabem)
         int alfa = FichaFundo.corComAlfa(0xFFFFFF, a);
         if (cap == FichaRp.CAP_PERSONALIDADE) {
-            desenharQuebrado(g, DICA[cap], x, py + 46, colW, FichaFundo.corComAlfa(0xB9AEDC, a));
+            desenharQuebrado(g, DICA[cap], x, py + 52, colW, FichaFundo.corComAlfa(0xB9AEDC, a));
             return;
         }
         if (cap == FichaRp.CAP_RESUMO) {
@@ -506,14 +527,14 @@ public class FichaScreen extends Screen {
         desenharQuebrado(g, DICA[cap], x, y, colW, FichaFundo.corComAlfa(0xB9AEDC, a));
         // apoio embaixo do campo
         int hCampo = (cap == FichaRp.CAP_HISTORIA) ? 92 : (cap == FichaRp.CAP_HABILIDADES ? 52 : ALTURA_CAMPO);
-        desenharQuebrado(g, APOIO[cap], x, py + 92 + hCampo, colW, FichaFundo.corComAlfa(0x7E6FA8, a));
+        desenharQuebrado(g, APOIO[cap], x, py + 100 + hCampo, colW, FichaFundo.corComAlfa(0x7E6FA8, a));
         if (cap == FichaRp.CAP_HISTORIA) {
             int n = ficha.historia == null ? 0 : ficha.historia.length();
             String c = n + "/400";
-            g.drawString(font, c, x + colW - font.width(c), py + 86 + hCampo + 2,
+            g.drawString(font, c, x + colW - font.width(c), py + 94 + hCampo + 2,
                     FichaFundo.corComAlfa(0x6E5F98, a), false);
         }
-        g.drawString(font, "▚ " + alfaTexto(), x, py + 74, FichaFundo.corComAlfa(0x8FD8FF, a * 0.6f), false);
+        g.drawString(font, "▚ " + alfaTexto(), x, py + 76, FichaFundo.corComAlfa(0x8FD8FF, a * 0.6f), false);
     }
 
     private String alfaTexto() {
@@ -532,45 +553,167 @@ public class FichaScreen extends Screen {
      * voando pra fora do painel. Agora TODO valor quebra dentro da coluna e o
      * que não cabe vira "…" — nada passa do painel.
      */
-    private void renderResumo(GuiGraphics g, int x, int y, float a) {
-        int rx = x + 62;                 // os rótulos maiores ("Habilidades") cabem
-        int rw = Math.max(60, colW - 62);
-        int limite = py + ph - 50;
-        int gap = 4;
+    // ===================== 4.8.3: o RESUMO como uma PÁGINA =====================
+    // Antes era uma lista de linhas com réguas azuis de ponta a ponta. Agora é
+    // um documento: seções com título dourado, linhas zebradas e, na "Alma",
+    // três barrinhas de personalidade. Se não couber, ROLA (roda do mouse).
 
-        // (4.8.2) o resumo NUNCA corta o texto: se não couber na altura do painel,
-        // ele ROLA com a roda do mouse (e a barrinha/dica aparece à direita).
-        List<String[]> campos = resumoCampos();
-        int total = alturaResumo(campos, rw, gap);
+    private void renderResumo(GuiGraphics g, int x, int y, float a) {
+        int larg = px + pw - 14 - x;
+        int limite = py + ph - 50;
+
+        int total = alturaResumo(larg);
         resumoMax = Math.max(0, total - (limite - y));
         resumoRolagem = Mth.clamp(resumoRolagem, 0, resumoMax);
-        int off = (int) Math.round(resumoRolagem);
 
-        g.enableScissor(x, y - 1, x + colW + 2, limite);
-        int ly = y - off;
-        for (String[] c : campos) {
-            ly = campoResumo(g, c[0], c[1], x, rx, rw, ly, limite + off, a);
-        }
+        g.enableScissor(x - 8, y - 1, x + larg + 2, limite);
+        int ly = y - (int) Math.round(resumoRolagem);
+
+        ly = secao(g, "QUEM VOCÊ É", x, larg, ly, a);
+        ly = linha(g, "Nome", ficha.ou(ficha.nome), x, larg, ly, a, 0);
+        ly = linha(g, "Idade", ficha.ou(ficha.idade), x, larg, ly, a, 1);
+        ly = linha(g, "Veio de", ficha.ou(ficha.origem), x, larg, ly, a, 0);
+        ly = linha(g, "Ocupação", ficha.ou(ficha.oficio), x, larg, ly, a, 1);
+        ly = linha(g, "Habilidades", ficha.ou(ficha.habilidades), x, larg, ly, a, 0);
+
+        ly = secao(g, "SUA ALMA", x, larg, ly + 4, a);
+        ly = barrasAlma(g, x, larg, ly, a);
+
+        ly = secao(g, "SUA HISTÓRIA", x, larg, ly + 4, a);
+        linha(g, "", ficha.ou(ficha.historia), x, larg, ly, a, 0);
+
         g.disableScissor();
 
         if (resumoMax > 0) {
-            // esfuma as bordas da área que rola (o corte não fica "serrado")
-            g.fillGradient(x, limite - 9, x + colW, limite, 0x000B0718, 0xE80B0718);
-            if (resumoRolagem > 0.5) {
-                g.fillGradient(x, y - 1, x + colW, y + 8, 0xE80B0718, 0x000B0718);
-            }
-            // barrinha de rolagem
-            int topo = y, alt = limite - y;
-            float frac = (float) (alt / (alt + resumoMax));
-            int hBarra = Math.max(12, Math.round(alt * frac));
-            int yBarra = topo + Math.round((alt - hBarra) * (float) (resumoRolagem / resumoMax));
-            g.fill(x + colW + 3, topo, x + colW + 5, topo + alt, 0x33FFFFFF);
-            g.fill(x + colW + 3, yBarra, x + colW + 5, yBarra + hBarra,
-                    FichaFundo.corComAlfa(0x8FD8FF, 0.75f));
+            desenhaRolagem(g, x, larg, y, limite);
         }
     }
 
-    /** os 7 campos do resumo, já resolvidos. */
+    /** título de seção: diamante dourado + nome + régua que desbota nas pontas. */
+    private int secao(GuiGraphics g, String titulo, int x, int larg, int y, float a) {
+        FichaWidgets.losango(g, x + 2.5f, y + 4f, 2.8f, 0xFFD98A, a * 0.95f);
+        g.drawString(font, titulo, x + 9, y, FichaFundo.corComAlfa(0xFFD98A, a * 0.92f), false);
+        regua(g, x + 14 + font.width(titulo), x + larg - 8, y + 4, 0xFFD98A, a * 0.35f);
+        return y + 14;
+    }
+
+    /** uma régua que acende no meio e some nas pontas (nada de linha serrilhada). */
+    private void regua(GuiGraphics g, int x1, int x2, int y, int cor, float alpha) {
+        int n = Math.min(30, Math.max(6, (x2 - x1) / 5));
+        if (n <= 0 || x2 <= x1) {
+            return;
+        }
+        for (int i = 0; i < n; i++) {
+            float k = (i + 0.5f) / n;
+            float f = (float) Math.sin(Math.PI * k);
+            int al = Math.round(alpha * f * 255f);
+            if (al <= 2) {
+                continue;
+            }
+            int xa = x1 + (x2 - x1) * i / n;
+            int xb = x1 + (x2 - x1) * (i + 1) / n;
+            g.fill(xa, y, xb, y + 1, (al << 24) | (cor & 0xFFFFFF));
+        }
+    }
+
+    /** rótulo fraco à esquerda + valor creme que quebra na coluna, com zebra. */
+    private int linha(GuiGraphics g, String rotulo, String valor, int x, int larg, int y, float a, int zebra) {
+        int rx = x + 68;
+        int rw = Math.max(40, larg - 68);
+        List<FormattedCharSequence> partes = font.split(Component.literal(
+                valor == null || valor.isBlank() ? "—" : valor), rw);
+        int h = Math.max(1, partes.size()) * 10;
+
+        if (zebra == 1) {
+            g.fill(x - 7, y - 3, x + larg, y + h + 1, 0x0DFFFFFF);
+        }
+        if (!rotulo.isEmpty()) {
+            g.drawString(font, rotulo, x, y, FichaFundo.corComAlfa(0x8FD8FF, a * 0.80f), false);
+        }
+        int ly = y;
+        for (FormattedCharSequence parte : partes) {
+            g.drawString(font, parte, rx, ly, FichaFundo.corComAlfa(0xF4EEFF, a), false);
+            ly += 10;
+        }
+        return y + h + 5;
+    }
+
+    /** as três barrinhas de personalidade (a "Alma" virou gráfico, não texto). */
+    private int barrasAlma(GuiGraphics g, int x, int larg, int y, float a) {
+        int[] idx = ficha.personaTopo();
+        if (idx.length == 0) {
+            g.drawString(font, "equilibrado — nenhum lado puxa mais forte",
+                    x + 4, y, FichaFundo.corComAlfa(0xF4EEFF, a), false);
+            return y + 15;
+        }
+        int lb = 58;
+        int x1 = x + lb;
+        int x2 = x + larg - lb;
+        int cx = (x1 + x2) / 2;
+        int ly = y;
+        for (int i : idx) {
+            int v = ficha.persona[i];
+            boolean dir = v > 50;
+            String esq = dev.rptag.FichaRp.EIXOS[i][0];
+            String dta = dev.rptag.FichaRp.EIXOS[i][1];
+            int cAtivo = dir ? 0xFFD98A : 0x8FD8FF;
+            int cFraco = 0x6E5F98;
+
+            g.drawString(font, esq, x, ly, FichaFundo.corComAlfa(dir ? cFraco : cAtivo, a), false);
+            g.drawString(font, dta, x + larg - font.width(dta), ly,
+                    FichaFundo.corComAlfa(dir ? cAtivo : cFraco, a), false);
+
+            int by = ly + 9;
+            g.fill(x1, by, x2, by + 1, FichaFundo.corComAlfa(0x4A6FA8, a * 0.85f));
+            int pxv = x1 + Math.round((x2 - x1) * v / 100f);
+            int ai = Math.min(cx, pxv);
+            int af = Math.max(cx, pxv);
+            if (af > ai) {
+                g.fill(ai, by - 1, af, by + 2, FichaFundo.corComAlfa(cAtivo, a * 0.85f));
+            }
+            g.fill(cx, by - 3, cx + 1, by + 4, FichaFundo.corComAlfa(0xFFFFFF, a * 0.30f));
+            g.fill(pxv - 1, by - 2, pxv + 2, by + 3, FichaFundo.corComAlfa(0xFFFFFF, a * 0.92f));
+
+            ly += 15;
+        }
+        return ly + 2;
+    }
+
+    /** barra de rolagem discreta + esfumaçado nas bordas + dica no rodapé. */
+    private void desenhaRolagem(GuiGraphics g, int x, int larg, int y, int limite) {
+        int alt = limite - y;
+        float frac = (float) (alt / (alt + resumoMax));
+        int hb = Math.max(14, Math.round(alt * frac));
+        int yb = y + Math.round((alt - hb) * (float) (resumoRolagem / resumoMax));
+        int bx = x + larg + 4;
+        g.fill(bx, y, bx + 2, y + alt, 0x1FFFFFFF);
+        g.fill(bx - 1, yb, bx + 3, yb + hb, FichaFundo.corComAlfa(0x8FD8FF, 0.55f));
+        g.fill(bx, yb + 1, bx + 2, yb + hb - 1, FichaFundo.corComAlfa(0xBFE6FF, 0.85f));
+
+        g.fillGradient(x - 8, limite - 16, x + larg, limite, 0x000B0718, 0xFF0B0718);
+        if (resumoRolagem > 0.5) {
+            g.fillGradient(x - 8, y - 1, x + larg, y + 9, 0xE00B0718, 0x000B0718);
+        }
+    }
+
+    /** altura total do resumo (para saber se precisa rolar). */
+    private int alturaResumo(int larg) {
+        int rw = Math.max(40, larg - 68);
+        int h = 13 + 13 + 4;                       // primeira seção
+        for (String[] c : resumoCampos()) {
+            h += Math.max(1, font.split(Component.literal(
+                    c[1] == null || c[1].isBlank() ? "—" : c[1]), rw).size()) * 10 + 5;
+        }
+        int eixos = ficha.personaTopo().length;
+        h += 3 * 15 + 2;                            // barras (sempre cabem 3)
+        if (eixos == 0) {
+            h = h - 3 * 15 - 2 + 15;
+        }
+        h += 2 * (14 + 4);                          // as outras duas seções
+        return h;
+    }
+
+    /** os 5 campos de texto do resumo, em ordem. */
     private List<String[]> resumoCampos() {
         List<String[]> c = new ArrayList<>();
         c.add(new String[]{"Nome", ficha.ou(ficha.nome)});
@@ -578,37 +721,8 @@ public class FichaScreen extends Screen {
         c.add(new String[]{"Veio de", ficha.ou(ficha.origem)});
         c.add(new String[]{"Ocupação", ficha.ou(ficha.oficio)});
         c.add(new String[]{"Habilidades", ficha.ou(ficha.habilidades)});
-        c.add(new String[]{"Alma", ficha.personaResumo()});
-        c.add(new String[]{"História", ficha.ou(ficha.historia)});
+        c.add(new String[]{"", ficha.ou(ficha.historia)});
         return c;
-    }
-
-    /** quanto de altura o resumo inteiro precisa (sem cortar nada). */
-    private int alturaResumo(List<String[]> campos, int rw, int gap) {
-        int h = 0;
-        for (String[] c : campos) {
-            int linhas = Math.max(1, font.split(Component.literal(
-                    c[1] == null || c[1].isBlank() ? "—" : c[1]), Math.max(24, rw)).size());
-            h += linhas * 10 + 1 + gap;
-        }
-        return h;
-    }
-
-    /** desenha rótulo + valor quebrado dentro da coluna e devolve o próximo y. */
-    private int campoResumo(GuiGraphics g, String rotulo, String valor, int x, int rx, int rw,
-            int y, int limite, float a) {
-        g.drawString(font, rotulo, x, y, FichaFundo.corComAlfa(0x8FD8FF, a * 0.85f), false);
-
-        List<FormattedCharSequence> partes = font.split(Component.literal(
-                valor == null || valor.isBlank() ? "—" : valor), Math.max(24, rw));
-        int ly = y;
-        for (FormattedCharSequence parte : partes) {
-            g.drawString(font, parte, rx, ly, FichaFundo.corComAlfa(0xF2ECFF, a), false);
-            ly += 10;
-        }
-        int fim = Math.min(ly + 1, limite);
-        g.fill(x, fim, x + colW, fim + 1, FichaFundo.corComAlfa(0x2A8FD8FF, a));
-        return fim + 5;
     }
 
     private void desenharQuebrado(GuiGraphics g, String texto, int x, int y, int larg, int cor) {

@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.8.2' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.8.3' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.8.2 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.8.3 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.8.2', 'RP Tag 4.8.2' in ce)
+check('4.0: boot log 4.8.3', 'RP Tag 4.8.3' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -1042,7 +1042,7 @@ check('4.8.0: canais ficha_abrir (S2C) e ficha_salvar (C2S) no protocolo v6',
 _fs = rd(C + '/FichaScreen.java')
 check('4.8.0: tela da ficha existe com os 8 capitulos por pergunta',
       'class FichaScreen extends Screen' in _fs and 'CAP_PERSONALIDADE' in _fs)
-check('4.8.0: rodape ESC · Sair / ENTER · Continuar', 'ESC · Sair' in _fs and 'ENTER · Continuar' in _fs)
+check('4.8.0: rodape com ESC e ENTER', '"ESC"' in _fs and '"ENTER"' in _fs and 'tecla(' in _fs)
 check('4.8.0: quadradinhos de progresso + Voltar/Continuar',
       'renderProgresso' in _fs and '"Voltar"' in _fs and '"Continuar"' in _fs)
 check('4.8.0: pagina final tem o botao Confirmar Personagem',
@@ -1091,7 +1091,7 @@ check('4.8.2: estrelas cintilando + cometa no ceu',
 check('4.8.2: texturas carregadas em DynamicTexture com filtro LINEAR',
       'new DynamicTexture(' in _fd and 'tex.upload()' in _fd and 'tex.setFilter(true, false)' in _fd)
 check('4.8.2: resumo quebra o texto dentro da coluna (nada vaza do painel)',
-      'campoResumo(' in _fs2 and 'font.split(' in _fs2 and 'limite' in _fs2)
+      'font.split(' in _fs2 and 'enableScissor' in _fs2 and 'linha(g' in _fs2)
 check('4.8.2: personaResumo mostra so os 3 eixos mais fortes',
       'for (int k = 0; k < 3; k++)' in rd(R + '/FichaRp.java'))
 check('4.8.2: dono sempre pode editar (Confirmar Personagem nao desaparece)',
@@ -1113,6 +1113,23 @@ check('4.8.2: resumo ROLA em vez de cortar (scissor + mouseScrolled)',
       'resumoRolagem' in _fs2 and 'enableScissor' in _fs2 and 'mouseScrolled' in _fs2)
 check('4.8.2: gerador das texturas sem a nebulosa roxa',
       'def nebulosa' not in rd('arte/gerar_texturas_ficha.py'))
+
+_fs3 = rd(C + '/FichaScreen.java')
+# ============ 4.8.3: RESUMO VIRou PAGINA (visual) ============
+check('4.8.3: resumo com secoes (QUEM VOCE E / SUA ALMA / SUA HISTORIA)',
+      '"QUEM VOCÊ É"' in _fs3 and '"SUA ALMA"' in _fs3 and '"SUA HISTÓRIA"' in _fs3)
+check('4.8.3: linhas zebradas (leitura mais facil)',
+      'zebra' in _fs3 and '0x0DFFFFFF' in _fs3)
+check('4.8.3: reguas que desbotam nas pontas (sem linha serrilhada)',
+      'private void regua(' in _fs3 and 'Math.sin(Math.PI * k)' in _fs3)
+check('4.8.3: alma virou BARRINHAS (personaTopo)',
+      'barrasAlma(' in _fs3 and 'personaTopo' in rd(R + '/FichaRp.java'))
+check('4.8.3: rodape com teclas desenhadas (keycap)',
+      'private int tecla(' in _fs3 and '"ESC", "sair"' in _fs3)
+check('4.8.3: painel abre mais largo no resumo',
+      'CAP_RESUMO ? 540 : 470' in _fs3)
+check('4.8.3: sombra do painel + brilho de topo nos botoes',
+      '0x30000000' in _fs3 and 'luz de cima' in _fw)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

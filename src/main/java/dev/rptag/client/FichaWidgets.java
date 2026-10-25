@@ -46,14 +46,25 @@ final class FichaWidgets {
             float alvo = isHovered ? 1f : 0f;
             brilho += (alvo - brilho) * Mth.clamp(dt * 0.35f, 0f, 1f);
 
-            int fundo = destaque ? 0xCC241A44 : 0xCC120E24;
-            int fundoHover = destaque ? 0xEE3A2A6E : 0xEE1E1840;
-            g.fill(getX(), getY(), getX() + width, getY() + height, misturar(fundo, fundoHover, brilho));
+            int fundo = destaque ? 0xD62E2058 : 0xD6161030;
+            int fundoHover = destaque ? 0xF0463080 : 0xF0221A46;
+            int base = misturar(fundo, fundoHover, brilho);
+            g.fill(getX(), getY(), getX() + width, getY() + height, base);
+            // luz de cima (1 linha) + sombra embaixo: volume sem lavar o botão
+            g.fill(getX() + 1, getY() + 1, getX() + width - 1, getY() + 2,
+                    FichaFundo.corComAlfa(0xFFFFFF, 0.10f + 0.16f * brilho));
+            g.fillGradient(getX() + 1, getY() + height - 6, getX() + width - 1, getY() + height - 1,
+                    0x00000000, 0x33000000);
 
             int borda = (destaque || brilho > 0.02f) ? LINHA_FORTE : LINHA;
             contorno(g, getX(), getY(), width, height, FichaFundo.corComAlfa(borda, 0.55f + 0.45f * brilho));
             g.fill(getX() + 2, getY() + 2, getX() + width - 2, getY() + 3,
                     FichaFundo.corComAlfa(0xBFE6FF, 0.10f + 0.25f * brilho));
+            if (destaque) {
+                // fio dourado embaixo, como um selo
+                g.fill(getX() + width / 2 - 18, getY() + height - 3, getX() + width / 2 + 18,
+                        getY() + height - 2, FichaFundo.corComAlfa(0xFFD98A, 0.45f + 0.4f * brilho));
+            }
 
             // cantos em losango (o detalhe do estilo)
             for (int[] c : new int[][]{{getX(), getY()}, {getX() + width, getY()},

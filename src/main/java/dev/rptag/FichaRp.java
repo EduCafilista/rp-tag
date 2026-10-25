@@ -121,6 +121,31 @@ public final class FichaRp {
         return sb.length() == 0 ? "equilibrado" : sb.toString();
     }
 
+    /**
+     * (4.8.3) Os eixos que mais marcam a persona, do mais forte para o mais
+     * fraco — só os que passam de 8 pontos de distância do meio. O resumo do
+     * tablet desenha isso como BARRINHAS (fica melhor que uma linha de texto).
+     */
+    public int[] personaTopo() {
+        int[] idx = {0, 1, 2, 3, 4, 5};
+        for (int i = 0; i < 6; i++) {
+            for (int j = i + 1; j < 6; j++) {
+                if (Math.abs(persona[idx[j]] - 50) > Math.abs(persona[idx[i]] - 50)) {
+                    int tmp = idx[i];
+                    idx[i] = idx[j];
+                    idx[j] = tmp;
+                }
+            }
+        }
+        int n = 0;
+        while (n < 3 && Math.abs(persona[idx[n]] - 50) >= 8) {
+            n++;
+        }
+        int[] out = new int[n];
+        System.arraycopy(idx, 0, out, 0, n);
+        return out;
+    }
+
     /** idade em número (0 se o jogador escreveu algo que não é número). */
     public int idadeNumero() {
         try {

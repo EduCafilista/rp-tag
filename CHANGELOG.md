@@ -1,5 +1,32 @@
 # Changelog
 
+## 4.8.3 — O RESUMO VIROU PÁGINA (visual) — 2026-10-24
+
+O dono olhou a 4.8.2 e disse: *"melhore a qualidade, tá horrível"*. Ele tinha
+razão — o resumo era uma lista de linhas com réguas azuis de ponta a ponta.
+
+### O que mudou
+- **seções**: `QUEM VOCÊ É` · `SUA ALMA` · `SUA HISTÓRIA`, cada uma com um
+  diamante dourado e uma régua que **acende no meio e desbota nas pontas**
+  (nada de linha serrilhada de ponta a ponta).
+- **linhas zebradas**: cada campo alterna um fundo levíssimo, então o olho
+  acompanha o nome → valor sem se perder.
+- **a "Alma" virou gráfico**: as três forças da persona agora são **barrinhas**
+  com o lado dominante em dourado (antes era uma linha de texto).
+- **rolagem charmosa**: barra fina à direita, esfumaçado em cima e embaixo —
+  o texto não é mais cortado com "…".
+- **painel abre mais largo** no resumo (540 px) para caber mais texto por linha.
+- **sombra atrás do painel** e **brilho de topo nos botões** (profundidade, sem
+  exagero).
+- **rodapé com teclas desenhadas**: `[ESC] sair` e `[ENTER] confirmar`.
+- o boneco agora **acompanha o tamanho da janela** (em tela pequena ele encolhe
+  junto, em vez de estourar o painel).
+- nos capítulos com campo, a dica desceu um pouco e o campo ganhou respiro —
+  nada fica colado.
+
+### Números
+479 → **486 checks** no `check.py` (0 FAIL) · 43/43 JUnit.
+
 ## 4.8.2 — FUNDO DO JEITO DO BALÃO, RESUMO LEGÍVEL E RESET — 2026-10-24
 
 ### Fundo: menos roxo, mais galáxia (receita do balão)
