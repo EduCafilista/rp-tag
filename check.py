@@ -1109,8 +1109,8 @@ check('4.8.2: botao X de fechar no canto do painel',
       'class BotaoX' in _fw and 'new FichaWidgets.BotaoX(px + pw - 22, py + 6' in _fs2)
 check('4.8.2: painel opaco (o HUD/mundo nao vaza por cima do texto)',
       '0xE80B0718' in _fs2 and '0x8C0B0718' not in _fs2)
-check('4.8.2: resumo se adapta a janela pequena (max2/gap)',
-      'int max2 = altura' in _fs2 and 'int gap = altura' in _fs2)
+check('4.8.2: resumo ROLA em vez de cortar (scissor + mouseScrolled)',
+      'resumoRolagem' in _fs2 and 'enableScissor' in _fs2 and 'mouseScrolled' in _fs2)
 check('4.8.2: gerador das texturas sem a nebulosa roxa',
       'def nebulosa' not in rd('arte/gerar_texturas_ficha.py'))
 

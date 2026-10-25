@@ -15,9 +15,10 @@
 ### Tela final (RESUMO) consertada
 - antes: uma linha por campo, `Alma` (6 eixos) e `História` **vazavam para fora
   do painel**.
-- agora: cada campo é **rótulo + valor que quebra dentro da coluna** (até 2
-  linhas), corta com **"…"** quando não cabe e **nunca passa do limite** do
-  painel. Em janela pequena os campos caem para 1 linha automaticamente.
+- agora: cada campo é **rótulo + valor que quebra dentro da coluna**, e o
+  resumo **rola com a roda do mouse** quando é mais alto que o painel — **nada
+  mais é cortado com "…"**, nada passa da borda. A barra de rolagem aparece à
+  direita e o cabeçalho avisa "role a roda para ver tudo".
 - `Alma` mostra só os **3 eixos mais fortes** (ex.: *Curioso · Empático ·
   Reservado*) em vez da lista inteira.
 

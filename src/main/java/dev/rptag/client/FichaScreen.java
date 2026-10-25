@@ -19,6 +19,7 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +98,8 @@ public class FichaScreen extends Screen {
     private float tConfirmado = -1f;
     private boolean gesto1, gesto2;
     private boolean fecharPedido;
+    private double resumoRolagem;      // 0..resumoMax — o resumo rola em vez de cortar
+    private double resumoMax;
 
     // layout (recalculado no init)
     private int px, py, pw, ph, colX, colW;
@@ -244,6 +247,7 @@ public class FichaScreen extends Screen {
         tTroca = 0f;
         gesto1 = false;
         gesto2 = false;
+        resumoRolagem = 0;   // cada visita ao resumo começa do topo
         rebuildWidgets();
     }
 
@@ -300,6 +304,15 @@ public class FichaScreen extends Screen {
             return true;
         }
         return super.keyPressed(key, scan, mods);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        if (cap == FichaRp.CAP_RESUMO && resumoMax > 0) {
+            resumoRolagem = Mth.clamp(resumoRolagem - dy * 12, 0, resumoMax);
+            return true;
+        }
+        return super.mouseScrolled(mx, my, dx, dy);
     }
 
     @Override
@@ -390,7 +403,8 @@ public class FichaScreen extends Screen {
         // ---------------- cabeçalho
         String titulo = "CAPÍTULO " + (cap + 1) + " / " + TITULO[cap];
         g.drawString(font, titulo, px + 14, py + 11, 0xFFE6D8FF, false);
-        String sussurro = "Sua história começa aqui";
+        String sussurro = (cap == FichaRp.CAP_RESUMO && resumoMax > 0)
+                ? "role a roda para ver tudo" : "Sua história começa aqui";
         g.drawString(font, sussurro, px + pw - 30 - font.width(sussurro), py + 11, 0x7E6FA8, false);
         g.fill(px + 14, py + 24, px + pw - 14, py + 25, 0x2A8FD8FF);
 
@@ -519,52 +533,82 @@ public class FichaScreen extends Screen {
      * que não cabe vira "…" — nada passa do painel.
      */
     private void renderResumo(GuiGraphics g, int x, int y, float a) {
-        int rx = x + 62;                 // os rotulos maiores ("Habilidades") cabem
+        int rx = x + 62;                 // os rótulos maiores ("Habilidades") cabem
         int rw = Math.max(60, colW - 62);
         int limite = py + ph - 50;
+        int gap = 4;
 
-        // (4.8.2) adapta ao tamanho da janela: em tela pequena os campos ficam
-        // de 1 linha e colados; em tela grande cabem 2 linhas com folga.
-        int altura = limite - y;
-        int gap = altura >= 156 ? 4 : 2;
-        int max2 = altura >= 138 ? 2 : 1;
+        // (4.8.2) o resumo NUNCA corta o texto: se não couber na altura do painel,
+        // ele ROLA com a roda do mouse (e a barrinha/dica aparece à direita).
+        List<String[]> campos = resumoCampos();
+        int total = alturaResumo(campos, rw, gap);
+        resumoMax = Math.max(0, total - (limite - y));
+        resumoRolagem = Mth.clamp(resumoRolagem, 0, resumoMax);
+        int off = (int) Math.round(resumoRolagem);
 
-        int ly = y;
-        ly = campoResumo(g, "Nome", ficha.ou(ficha.nome), x, rx, rw, ly, limite, a, 1, gap);
-        ly = campoResumo(g, "Idade", ficha.ou(ficha.idade), x, rx, rw, ly, limite, a, 1, gap);
-        ly = campoResumo(g, "Veio de", ficha.ou(ficha.origem), x, rx, rw, ly, limite, a, 1, gap);
-        ly = campoResumo(g, "Ocupação", ficha.ou(ficha.oficio), x, rx, rw, ly, limite, a, 1, gap);
-        ly = campoResumo(g, "Habilidades", ficha.ou(ficha.habilidades), x, rx, rw, ly, limite, a, max2, gap);
-        ly = campoResumo(g, "Alma", ficha.personaResumo(), x, rx, rw, ly, limite, a, max2, gap);
-        campoResumo(g, "História", ficha.ou(ficha.historia), x, rx, rw, ly, limite, a, max2, gap);
+        g.enableScissor(x, y - 1, x + colW + 2, limite);
+        int ly = y - off;
+        for (String[] c : campos) {
+            ly = campoResumo(g, c[0], c[1], x, rx, rw, ly, limite + off, a);
+        }
+        g.disableScissor();
+
+        if (resumoMax > 0) {
+            // esfuma as bordas da área que rola (o corte não fica "serrado")
+            g.fillGradient(x, limite - 9, x + colW, limite, 0x000B0718, 0xE80B0718);
+            if (resumoRolagem > 0.5) {
+                g.fillGradient(x, y - 1, x + colW, y + 8, 0xE80B0718, 0x000B0718);
+            }
+            // barrinha de rolagem
+            int topo = y, alt = limite - y;
+            float frac = (float) (alt / (alt + resumoMax));
+            int hBarra = Math.max(12, Math.round(alt * frac));
+            int yBarra = topo + Math.round((alt - hBarra) * (float) (resumoRolagem / resumoMax));
+            g.fill(x + colW + 3, topo, x + colW + 5, topo + alt, 0x33FFFFFF);
+            g.fill(x + colW + 3, yBarra, x + colW + 5, yBarra + hBarra,
+                    FichaFundo.corComAlfa(0x8FD8FF, 0.75f));
+        }
     }
 
-    /** desenha rótulo + valor (quebrado em no máximo {@code maxLinhas}) e devolve o próximo y. */
-    private int campoResumo(GuiGraphics g, String rotulo, String valor, int x, int rx, int rw,
-            int y, int limite, float a, int maxLinhas, int gap) {
-        if (y > limite - 9) {
-            return y; // não sobra nem uma linha: melhor não desenhar nada torto
+    /** os 7 campos do resumo, já resolvidos. */
+    private List<String[]> resumoCampos() {
+        List<String[]> c = new ArrayList<>();
+        c.add(new String[]{"Nome", ficha.ou(ficha.nome)});
+        c.add(new String[]{"Idade", ficha.ou(ficha.idade)});
+        c.add(new String[]{"Veio de", ficha.ou(ficha.origem)});
+        c.add(new String[]{"Ocupação", ficha.ou(ficha.oficio)});
+        c.add(new String[]{"Habilidades", ficha.ou(ficha.habilidades)});
+        c.add(new String[]{"Alma", ficha.personaResumo()});
+        c.add(new String[]{"História", ficha.ou(ficha.historia)});
+        return c;
+    }
+
+    /** quanto de altura o resumo inteiro precisa (sem cortar nada). */
+    private int alturaResumo(List<String[]> campos, int rw, int gap) {
+        int h = 0;
+        for (String[] c : campos) {
+            int linhas = Math.max(1, font.split(Component.literal(
+                    c[1] == null || c[1].isBlank() ? "—" : c[1]), Math.max(24, rw)).size());
+            h += linhas * 10 + 1 + gap;
         }
+        return h;
+    }
+
+    /** desenha rótulo + valor quebrado dentro da coluna e devolve o próximo y. */
+    private int campoResumo(GuiGraphics g, String rotulo, String valor, int x, int rx, int rw,
+            int y, int limite, float a) {
         g.drawString(font, rotulo, x, y, FichaFundo.corComAlfa(0x8FD8FF, a * 0.85f), false);
 
-        List<FormattedCharSequence> partes = font.split(Component.literal(valor == null || valor.isBlank() ? "—" : valor),
-                Math.max(24, rw));
-        int cabem = Math.max(1, (limite - y) / 10);
-        int quer = Math.min(partes.size(), Math.max(1, maxLinhas));
-        int linhas = Math.min(quer, cabem);
-        boolean truncou = partes.size() > linhas;
+        List<FormattedCharSequence> partes = font.split(Component.literal(
+                valor == null || valor.isBlank() ? "—" : valor), Math.max(24, rw));
         int ly = y;
-        for (int i = 0; i < linhas; i++) {
-            g.drawString(font, partes.get(i), rx, ly, FichaFundo.corComAlfa(0xF2ECFF, a), false);
-            if (truncou && i == linhas - 1) {
-                g.drawString(font, "…", rx + font.width(partes.get(i)) + 1, ly,
-                        FichaFundo.corComAlfa(0x9E93C4, a), false);
-            }
+        for (FormattedCharSequence parte : partes) {
+            g.drawString(font, parte, rx, ly, FichaFundo.corComAlfa(0xF2ECFF, a), false);
             ly += 10;
         }
         int fim = Math.min(ly + 1, limite);
         g.fill(x, fim, x + colW, fim + 1, FichaFundo.corComAlfa(0x2A8FD8FF, a));
-        return fim + 1 + gap;
+        return fim + 5;
     }
 
     private void desenharQuebrado(GuiGraphics g, String texto, int x, int y, int larg, int cor) {
