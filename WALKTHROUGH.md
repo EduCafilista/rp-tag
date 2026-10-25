@@ -1645,21 +1645,23 @@ Todas têm **borda_fade** (alfa → 0 nas margens) para nunca aparecer o quadrad
 ⚠️ `suave(a, b, x)` do gerador: o denominador NÃO pode ser `max(1e-6, b-a)` —
 com `b < a` isso inverte a máscara (foi o bug que deixou a esfera branca).
 
-**Publicado 4.8.2:** release **423054016**, asset **673638957**
-`rptag-4.8.2.jar` = **115.974.757 B**, sha256
-`d442514bafd931de7c6ffa383ebee14b9edca0b67daa1966054674b33052d974`
-(download + `cmp` idêntico). Commit `a636b0f`. Apagados: release 423053109
-(primeira tentativa, resumo cortando com "…") e 423046836 + tag `v4.8.1`.
-Vivas: `v4.8.2` e `portais-v1.3.2`. 479 checks PASS / 43 JUnit / boot limpo no
-NeoForge 21.1.249 (`/tablet` e `/ficha resetar` respondendo no RCON).
+**Publicado 4.8.3:** release **423058662**, asset **673661987**
+`rptag-4.8.3.jar` = **115.976.450 B**, sha256
+`b8c8737face2d5adfd1f51f99a7b11080eb53304ed2e5ebe5306eddd8c24e782`
+(download + `cmp` idêntico). Commit `2cef89a`. Apagados: releases 423054016
+(4.8.2), 423053109 (1ª tentativa da 4.8.2) e 423046836 (4.8.1) + tags
+`v4.8.2`/`v4.8.1`. Vivas: `v4.8.3` e `portais-v1.3.2`. **486 checks PASS** /
+43 JUnit / boot `Done (0.857s)` no NeoForge 21.1.249.
 
-**Lição da 4.8.2:** resumo em coluna única **sempre** trunca com textos longos
-(400 chars de história). Solução final: `enableScissor` + `mouseScrolled` —
-o resumo **rola** e mostra tudo, com fade nas bordas e barra à direita.
+**Receita do resumo (4.8.3)** — `FichaScreen`: `renderResumo` → `secao()` (diamante
+dourado + `regua()` com `sin(πk)` desbotando nas pontas), `linha()` (rótulo fraco +
+valor creme, zebra `0x0DFFFFFF`), `barrasAlma()` (`FichaRp.personaTopo()`), e
+`enableScissor` + `mouseScrolled` + `desenhaRolagem()` quando não cabe. Rodapé com
+`tecla()` (keycap). O boneco escala com `Mth.clamp(ph/276f, 0.60f, 1f)`.
 
 ---
 
-*Última atualização: ciclo 4.8.2 (2026-10-24) — fundo blur+estrelas, resumo
-legível, botão X e `/ficha resetar`.*
+*Última atualização: ciclo 4.8.3 (2026-10-24) — resumo virou página (seções,
+zebra, barras da alma, teclas) e boneco proporcional.*
 
-*Ciclo anterior: 4.8.1 (2026-10-24) — fundo do tablet em textura (fim dos pixels quebrados).*
+*Ciclo anterior: 4.8.2 (2026-10-24) — fundo blur+estrelas, resumo legível, X e reset.*
