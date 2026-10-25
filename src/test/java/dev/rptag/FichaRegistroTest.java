@@ -75,4 +75,32 @@ class FichaRegistroTest {
         old.put("TabletSheets", list);
         assertDoesNotThrow(() -> RPWorldData.load(old, null));
     }
+
+    @Test void limitesDeTodasAsPerguntasEIdadeSaoRespeitados() {
+        FichaPersonagem maximum = new FichaPersonagem("N".repeat(32), "999", "O".repeat(240), "H".repeat(600), "S".repeat(3000));
+        assertEquals("", maximum.validationError(true));
+        for (int field : new int[]{0,2,3,4}) {
+            assertFalse(maximum.comCampo(field, maximum.campo(field)+"x").validationError(false).isEmpty());
+        }
+        for (String age : new String[]{"", "0", "1000", "-1", "2.5", "abc", "100000"})
+            assertFalse(ARI.comCampo(1,age).validationError(true).isEmpty(), age);
+    }
+
+    @Test void salvarReabrirCadaPerguntaENormalizarConfirmacaoPreservaConteudo() {
+        FichaRegistro registro = FichaRegistro.inicial(Persona.EMPTY);
+        FichaPersonagem draft = FichaPersonagem.EMPTY;
+        String[] answers = {"  João da Névoa  ", "0024", "São Tomé\nPorto antigo", "Navegação, mapas e cura", "Primeiro capítulo.\nSegundo capítulo: memória e ação."};
+        for (int step=0;step<5;step++) {
+            draft=draft.comCampo(step,answers[step]);
+            registro=registro.atualizar(draft,step,registro.revisao(),false);
+            registro=FichaRegistro.load(registro.save());
+            assertEquals(draft,registro.rascunho());
+            assertEquals(step,registro.etapa());
+        }
+        registro=registro.atualizar(draft,5,registro.revisao(),true);
+        assertEquals("João da Névoa",registro.confirmada().nome());
+        assertEquals("24",registro.confirmada().idade());
+        assertEquals(answers[4],registro.confirmada().historia());
+        assertFalse(registro.podeEditar());
+    }
 }

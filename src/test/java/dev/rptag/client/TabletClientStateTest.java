@@ -68,4 +68,65 @@ class TabletClientStateTest {
         clock.set(250); state.tick(); assertEquals(2, sent.size());
         assertEquals("Texto novo", sent.get(1).respostas().nome());
     }
+
+    @Test void confirmacaoAceitaExibeVersaoNormalizadaEBloqueiaEscrita() {
+        FichaRegistro initial = FichaRegistro.inicial(Persona.EMPTY);
+        TabletClientState state = new TabletClientState(snapshot(initial,-1,""),sent::add,clock::get);
+        state.edit(new FichaPersonagem("  João  ","0024","Porto","Mapas","História"),5);
+        state.flush(true);
+        TabletUpdatePayload request=sent.getFirst();
+        FichaRegistro confirmed=initial.atualizar(request.respostas(),5,0,true);
+        state.accept(snapshot(confirmed,request.requestId(),""));
+        assertTrue(state.readOnly());
+        assertFalse(state.pending());
+        assertFalse(state.confirming());
+        assertFalse(state.dirty());
+        assertEquals("João",state.respostas().nome());
+        state.edit(FichaPersonagem.EMPTY,0);
+        state.flush(false);
+        assertEquals("João",state.respostas().nome());
+        assertEquals(1,sent.size());
+    }
+
+    @Test void retornoRapidoEntreEtapasNaoPerdeAUltimaPergunta() {
+        FichaRegistro initial=FichaRegistro.inicial(Persona.EMPTY);
+        TabletClientState state=new TabletClientState(snapshot(initial,-1,""),sent::add,clock::get);
+        state.edit(FichaPersonagem.EMPTY.comCampo(0,"Ari"),0);
+        state.flush(false);
+        state.edit(state.respostas(),4);
+        state.flush(false);
+        state.edit(state.respostas(),2);
+        state.flush(false);
+        TabletUpdatePayload first=sent.getFirst();
+        state.accept(snapshot(initial.atualizar(first.respostas(),0,0,false),first.requestId(),""));
+        assertEquals(2,state.etapa());
+        assertEquals(2,sent.get(1).etapa());
+        assertEquals("Ari",state.respostas().nome());
+    }
+
+    @Test void respostaDeOutraFichaOuDuplicadaNaoTrocaOsDados() {
+        FichaRegistro initial=FichaRegistro.inicial(Persona.EMPTY);
+        TabletClientState state=new TabletClientState(snapshot(initial,-1,""),sent::add,clock::get);
+        state.edit(FichaPersonagem.EMPTY.comCampo(0,"Meu nome"),0);
+        state.flush(false);
+        TabletUpdatePayload request=sent.getFirst();
+        FichaRegistro accepted=initial.atualizar(request.respostas(),0,0,false);
+        state.accept(new TabletSyncPayload(UUID.randomUUID(),request.requestId(),accepted,false,false,false,""));
+        assertTrue(state.pending());
+        state.accept(snapshot(accepted,request.requestId(),""));
+        assertFalse(state.pending());
+        state.accept(snapshot(accepted,request.requestId(),""));
+        assertEquals("Meu nome",state.respostas().nome());
+        assertEquals(1,sent.size());
+    }
+
+    @Test void fecharSemEditarNaoIgnoraDebounceNaProximaAbertura() {
+        FichaRegistro initial=FichaRegistro.inicial(Persona.EMPTY);
+        TabletClientState state=new TabletClientState(snapshot(initial,-1,""),sent::add,clock::get);
+        state.flush(false);
+        state.edit(FichaPersonagem.EMPTY.comCampo(0,"Ari"),0);
+        clock.set(100); state.tick(); assertTrue(sent.isEmpty());
+        clock.set(749); state.tick(); assertTrue(sent.isEmpty());
+        clock.set(750); state.tick(); assertEquals(1,sent.size());
+    }
 }

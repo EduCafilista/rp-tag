@@ -52,6 +52,7 @@ public final class TabletClientState {
 
     public void flush(boolean confirmar) {
         if (readOnly || blocked) return;
+        if (!dirty() && !confirm && !confirmar) { force = false; return; }
         String invalid = local.validationError(confirmar);
         if (!invalid.isEmpty()) { error = invalid; return; }
         confirm |= confirmar;
