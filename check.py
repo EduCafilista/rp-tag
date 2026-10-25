@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.8.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.8.2' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.8.1 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.8.2 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.8.1', 'RP Tag 4.8.1' in ce)
+check('4.0: boot log 4.8.2', 'RP Tag 4.8.2' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -1051,7 +1051,7 @@ check('4.8.0: personagem do proprio jogador na tela (modelo do player)',
       'renderEntityInInventoryFollowsAngle' in _fs and 'minecraft.player' in _fs)
 _fundo = rd(C + '/FichaFundo.java')
 check('4.8.0: fundo galaxia + buraco negro atras do personagem + disco no chao',
-      'static void fundo(' in _fundo and 'buracoNegro' in _fundo and 'discoMagico' in _fundo)
+      'static void ceu(' in _fundo and 'buracoNegro' in _fundo and 'discoMagico' in _fundo)
 check('4.8.0: animacao de transicao entre capitulos', 'tTroca' in _fs and 'suave(' in _fs)
 check('4.8.0: personagem se mexe a cada pergunta (swing)',
       'p.swing(InteractionHand.MAIN_HAND)' in _fs and 'InteractionHand.OFF_HAND' in _fs)
@@ -1062,9 +1062,9 @@ check('4.8.0: salva a cada capitulo (fechar no meio nao perde nada)',
 
 # ============ 4.8.1: FUNDO EM TEXTURA (fim dos pixels quebrados) ============
 _gui = A + '/textures/gui'
-check('4.8.1: texturas do fundo no jar (nebulosa, buraco negro, anel)',
+check('4.8.1: texturas do fundo no jar (buraco negro e anel)',
       all(os.path.exists(f'{_gui}/{n}.png') and os.path.getsize(f'{_gui}/{n}.png') > 8000
-          for n in ('ficha_nebulosa', 'ficha_buraco', 'ficha_anel')))
+          for n in ('ficha_buraco', 'ficha_anel')))
 _fd = rd(C + '/FichaFundo.java')
 check('4.8.1: buraco negro e disco do chao desenhados com blit (nao mais quads)',
       'g.blit(tex' in _fd and 'buracoNegro' in _fd and 'discoMagico' in _fd)
@@ -1075,10 +1075,44 @@ check('4.8.1: a tela prepara as texturas ao abrir',
 check('4.8.1: gerador das texturas no repo (reproduzivel)',
       os.path.exists('arte/gerar_texturas_ficha.py')
       and 'borda_fade' in rd('arte/gerar_texturas_ficha.py'))
-check('4.8.1: nebulosa esticada na tela toda com parallax',
-      'NEBULOSA, -14 + dx' in _fd and '0.55f' in _fd)
+check('4.8.1: buraco negro escalado pelo raio da esfera',
+      'BUR_RAIO_TEX' in _fd and 'buracoNegro' in _fd)
 check('4.8.1: vinheta fecha as bordas do fundo',
-      'fillGradient(0, 0, w, (int) (h * 0.16f)' in _fd)
+      'private static void vinheta(' in _fd and 'vinheta(g, w, h)' in _fd)
+
+# ============ 4.8.2: FUNDO = BLUR + ESTRELAS / RESUMO / RESET ============
+_fs2 = rd(C + '/FichaScreen.java')
+check('4.8.2: fundo usa o blur do mundo (a mesma receita do balao)',
+      'renderBlurredBackground(dt)' in _fs2 and 'FichaFundo.ceu(' in _fs2)
+check('4.8.2: nebulosa roxa saiu (menos roxo, ceu mais simples)',
+      not os.path.exists(_gui + '/ficha_nebulosa.png') and 'NEBULOSA' not in _fd)
+check('4.8.2: estrelas cintilando + cometa no ceu',
+      'estrelas(' in _fd and 'ciclo' in _fd and 'cometa' in _fd.lower())
+check('4.8.2: texturas carregadas em DynamicTexture com filtro LINEAR',
+      'new DynamicTexture(' in _fd and 'tex.upload()' in _fd and 'tex.setFilter(true, false)' in _fd)
+check('4.8.2: resumo quebra o texto dentro da coluna (nada vaza do painel)',
+      'campoResumo(' in _fs2 and 'font.split(' in _fs2 and 'limite' in _fs2)
+check('4.8.2: personaResumo mostra so os 3 eixos mais fortes',
+      'for (int k = 0; k < 3; k++)' in rd(R + '/FichaRp.java'))
+check('4.8.2: dono sempre pode editar (Confirmar Personagem nao desaparece)',
+      'FichaOpenPayload.enviar(sp, f, sp.getGameProfile().getName(), true)' in rd(R + '/FichaServer.java'))
+_fc = rd(R + '/FichaCommands.java')
+check('4.8.2: /ficha resetar|reset|limpar (a propria ficha)',
+      'for (String nome : new String[]{"reset", "resetar", "limpar"})' in _fc)
+check('4.8.2: comando /tablet com abrir/resetar/dar',
+      'literal("tablet")' in _fc and 'literal("resetar")' in _fc and 'literal("abrir")' in _fc)
+check('4.8.2: resetar ja reabre a tela do zero (resetarEabrir)',
+      'resetarEabrir' in _fc and 'public static void resetarEabrir' in rd(R + '/FichaServer.java'))
+
+_fw = rd(C + '/FichaWidgets.java')
+check('4.8.2: botao X de fechar no canto do painel',
+      'class BotaoX' in _fw and 'new FichaWidgets.BotaoX(px + pw - 22, py + 6' in _fs2)
+check('4.8.2: painel opaco (o HUD/mundo nao vaza por cima do texto)',
+      '0xE80B0718' in _fs2 and '0x8C0B0718' not in _fs2)
+check('4.8.2: resumo se adapta a janela pequena (max2/gap)',
+      'int max2 = altura' in _fs2 and 'int gap = altura' in _fs2)
+check('4.8.2: gerador das texturas sem a nebulosa roxa',
+      'def nebulosa' not in rd('arte/gerar_texturas_ficha.py'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

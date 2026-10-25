@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gera as texturas do TABLET da Ficha (4.8.1): buraco negro, nebulosa, anel.
+"""Gera as texturas do TABLET da Ficha (4.8.2): buraco negro e anel.
 
 Tudo procedural e com anti-aliasing de verdade (gradientes em float), porque o
 dono reclamou dos "pixels quebrados" que apareciam atras do personagem quando o
@@ -104,72 +104,6 @@ def buraco():
     return out
 
 
-# --------------------------------------------------------------------- nebulosa
-def ruido(N, octaves=5, seed=3):
-    rng = np.random.default_rng(seed)
-    acc = np.zeros(N, dtype=float)
-    amp, tot = 1.0, 0.0
-    for o in range(octaves):
-        h = max(2, N[0] >> (octaves - 1 - o))
-        w = max(2, N[1] >> (octaves - 1 - o))
-        base = rng.normal(0, 1, (h, w))
-        img = Image.fromarray(((base - base.min()) / (np.ptp(base) + 1e-6) * 255).astype(np.uint8))
-        img = img.resize((N[1], N[0]), Image.BICUBIC)
-        acc += np.array(img, dtype=float) / 255.0 * amp
-        tot += amp
-        amp *= 0.55
-    return acc / tot
-
-
-def nebulosa():
-    W, H = 1024, 576
-    n1 = ruido((H, W), 7, 11)
-    n2 = ruido((H, W), 6, 27)
-    n3 = ruido((H, W), 5, 41)
-    nuvem = np.clip((n1 * 0.50 + n2 * 0.32 + n3 * 0.18 - 0.38) / 0.44, 0, 1) ** 1.25
-
-    # paleta da referencia: roxo/violeta com nucleo claro e bordas azul-escuras
-    cor = lerp_cor((16, 9, 34), (86, 40, 132), np.clip(n2 * 1.7, 0, 1))
-    cor = cor * (1 - np.clip(n1 * 1.3, 0, 1)[..., None]) + \
-        np.array((132, 62, 178)) * np.clip(n1 * 1.3, 0, 1)[..., None]
-    cor = cor + np.array((70, 30, 110)) * (nuvem ** 1.5)[..., None]
-    # brilho suave em duas regioes (como as luzes da arte do dono)
-    yy, xx = np.mgrid[0:H, 0:W].astype(float)
-    for (bx, by, br, forca, tom) in ((0.30, 0.34, 0.42, 0.55, (150, 110, 210)),
-                                     (0.74, 0.62, 0.36, 0.35, (90, 90, 180)),
-                                     (0.52, 0.20, 0.26, 0.28, (170, 120, 220))):
-        d = np.hypot((xx / W - bx) * (W / H), (yy / H - by)) / br
-        g = np.exp(-d ** 2 * 2.2)[..., None]
-        cor = cor + np.array(tom) * g * forca
-
-    alfa = np.clip(nuvem * 0.95 + 0.30, 0, 1)
-    bx1 = suave(0, 70, xx) * suave(0, 70, W - 1 - xx)
-    by1 = suave(0, 55, yy) * suave(0, 55, H - 1 - yy)
-    alfa = alfa * bx1 * by1
-
-    cor = np.clip(cor * 0.60, 0, 255)
-    img = Image.fromarray(np.dstack([cor, alfa * 255]).astype(np.uint8), "RGBA")
-
-    est = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    px = est.load()
-    rng = np.random.default_rng(7)
-    for _ in range(520):
-        sx, sy = int(rng.integers(3, W - 3)), int(rng.integers(3, H - 3))
-        b = rng.uniform(0.30, 1.0)
-        cor_e = [(255, 255, 255), (205, 226, 255), (255, 232, 196), (222, 198, 255)][int(rng.integers(0, 4))]
-        al = int(255 * b)
-        px[sx, sy] = (*cor_e, al)
-        if b > 0.86 and rng.random() < 0.55:
-            for d, k in ((1, 0.38), (2, 0.16)):
-                a2 = int(al * k)
-                for ox, oy in ((d, 0), (-d, 0), (0, d), (0, -d)):
-                    px[sx + ox, sy + oy] = (*cor_e, a2)
-    est = est.filter(ImageFilter.GaussianBlur(0.6))
-    out = Image.alpha_composite(img, est)
-    out.save(OUT + "ficha_nebulosa.png")
-    return out
-
-
 # ------------------------------------------------------------------------- anel
 def anel():
     W, H = 512, 256
@@ -199,9 +133,7 @@ def anel():
 
 if __name__ == "__main__":
     b = buraco()
-    n = nebulosa()
     a = anel()
     b.resize((256, 256), Image.LANCZOS).save("/tmp/buraco_previa.png")
-    n.resize((768, 432), Image.LANCZOS).save("/tmp/nebulosa_previa.png")
     a.resize((512, 256), Image.LANCZOS).save("/tmp/anel_previa.png")
-    print("buraco", b.size, "nebulosa", n.size, "anel", a.size)
+    print("buraco", b.size, "anel", a.size)

@@ -1,5 +1,44 @@
 # Changelog
 
+## 4.8.2 — FUNDO DO JEITO DO BALÃO, RESUMO LEGÍVEL E RESET — 2026-10-24
+
+### Fundo: menos roxo, mais galáxia (receita do balão)
+- sai a **nebulosa roxa** inteira; entra o mesmo truque do balão: **blur do
+  mundo** (`renderBlurredBackground`, quando há mundo) + um véu escuro e
+  **estrelas de verdade** — 84 de poeira cintilando, 18 "vivas" com cruz no
+  pico e um **cometa** atravessando de vez em quando.
+- o buraco negro e o disco do pedestal continuam em **textura** (4.8.1), agora
+  registrados em `DynamicTexture` com filtro **LINEAR** — nada de anel
+  pontilhado nem arco serrilhado.
+- vinheta fecha as bordas só quando **não** deu para usar o blur.
+
+### Tela final (RESUMO) consertada
+- antes: uma linha por campo, `Alma` (6 eixos) e `História` **vazavam para fora
+  do painel**.
+- agora: cada campo é **rótulo + valor que quebra dentro da coluna** (até 2
+  linhas), corta com **"…"** quando não cabe e **nunca passa do limite** do
+  painel. Em janela pequena os campos caem para 1 linha automaticamente.
+- `Alma` mostra só os **3 eixos mais fortes** (ex.: *Curioso · Empático ·
+  Reservado*) em vez da lista inteira.
+
+### Fechar e painel
+- **X no canto** do painel (aparece em todos os capítulos, com hover vermelho).
+- painel de 55% → **91% de opacidade**: o HUD/mundo não aparece mais por cima
+  do texto.
+
+### Resetar o tablet
+- `/ficha resetar` · `/ficha reset` · `/ficha limpar` — **qualquer jogador**
+  apaga a própria ficha e a tela **reabre limpa**, do zero.
+- `/ficha resetar <jogador>` (admin) apaga a de outra pessoa.
+- atalho novo: **`/tablet abrir`**, **`/tablet resetar`** e
+  **`/tablet dar <jogador>`**.
+- o dono reabre a ficha concluída **editando** (o "Confirmar Personagem" não
+  desaparece mais).
+
+### Números
+465 → **479 checks** no `check.py` (0 FAIL) · 43/43 JUnit · boot limpo no
+NeoForge 21.1.249.
+
 ## 4.8.1 — FUNDO DO TABLET EM TEXTURA (fim dos pixels quebrados) — 2026-10-24
 
 ### O problema

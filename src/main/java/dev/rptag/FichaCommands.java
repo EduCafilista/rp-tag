@@ -23,7 +23,9 @@ import java.util.UUID;
  * /ficha ver &lt;jogador&gt;      ficha de outra pessoa (tela, só leitura)
  * /ficha livro &lt;jogador&gt;    ficha de outra pessoa no chat
  * /ficha dar &lt;jogador&gt;      (admin) entrega o tablet
- * /ficha reset &lt;jogador&gt;    (admin) apaga a ficha para refazer
+ * /ficha resetar            apaga a SUA ficha e reabre a tela do zero
+ * /ficha resetar &lt;jogador&gt;  (admin) apaga a ficha de outra pessoa
+ * /tablet resetar           o mesmo atalho, do jeito mais fácil de achar
  * /ficha lista              (admin) quem já tem ficha
  * </pre>
  */
@@ -107,6 +109,28 @@ public final class FichaCommands {
                     return Command.SINGLE_SUCCESS;
                 }));
 
+        // (4.8.2) RESETAR: sem alvo = a própria ficha (todo mundo pode);
+        // com alvo = admin. Aceita "reset", "resetar" e "limpar".
+        for (String nome : new String[]{"reset", "resetar", "limpar"}) {
+            root.then(Commands.literal(nome)
+                    .executes(ctx -> {
+                        ServerPlayer sp = ctx.getSource().getPlayerOrException();
+                        FichaServer.resetarEabrir(sp);
+                        return Command.SINGLE_SUCCESS;
+                    })
+                    .then(Commands.argument("jogador", EntityArgument.player())
+                            .requires(src -> src.hasPermission(2))
+                            .executes(ctx -> {
+                                ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                                FichaServer.resetar(alvo);
+                                FichaServer.garantirTablet(alvo);
+                                ctx.getSource().sendSuccess(() -> Component.literal(
+                                                "Ficha de " + alvo.getGameProfile().getName() + " apagada.")
+                                        .withStyle(ChatFormatting.GREEN), false);
+                                return Command.SINGLE_SUCCESS;
+                            })));
+        }
+
         // atalho para quem já usou /persona antes
         root.then(Commands.literal("editar").executes(ctx -> {
             ServerPlayer sp = ctx.getSource().getPlayerOrException();
@@ -115,5 +139,30 @@ public final class FichaCommands {
         }));
 
         event.getDispatcher().register(root);
+
+        // (4.8.2) /tablet — o mesmo, com nome que a pessoa lembra na hora
+        var tablet = Commands.literal("tablet");
+        tablet.then(Commands.literal("abrir").executes(ctx -> {
+            FichaServer.abrir(ctx.getSource().getPlayerOrException());
+            return Command.SINGLE_SUCCESS;
+        }));
+        tablet.then(Commands.literal("resetar").executes(ctx -> {
+            FichaServer.resetarEabrir(ctx.getSource().getPlayerOrException());
+            return Command.SINGLE_SUCCESS;
+        }));
+        tablet.then(Commands.literal("reset").executes(ctx -> {
+            FichaServer.resetarEabrir(ctx.getSource().getPlayerOrException());
+            return Command.SINGLE_SUCCESS;
+        }));
+        tablet.then(Commands.literal("dar")
+                .requires(src -> src.hasPermission(2))
+                .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
+                    ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                    FichaServer.dar(alvo, true);
+                    ctx.getSource().sendSuccess(() -> Component.literal("Tablet entregue para "
+                            + alvo.getGameProfile().getName()).withStyle(ChatFormatting.GREEN), false);
+                    return Command.SINGLE_SUCCESS;
+                })));
+        event.getDispatcher().register(tablet);
     }
 }

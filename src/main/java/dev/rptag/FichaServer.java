@@ -22,8 +22,9 @@ public final class FichaServer {
     /** abre o tablet (manda a ficha e o cliente abre a tela). */
     public static void abrir(ServerPlayer sp) {
         FichaRp f = RPWorldData.get(sp.server).getFicha(sp.getUUID());
-        boolean editar = !f.concluida;
-        FichaOpenPayload.enviar(sp, f, sp.getGameProfile().getName(), editar);
+        // (4.8.2) o DONO sempre pode editar — antes, ficha concluída reabria em
+        // modo leitura e o botão "Confirmar Personagem" desaparecia.
+        FichaOpenPayload.enviar(sp, f, sp.getGameProfile().getName(), true);
     }
 
     /** abre a ficha de OUTRA pessoa (só leitura). */
@@ -129,8 +130,15 @@ public final class FichaServer {
         RPWorldData wd = RPWorldData.get(alvo.server);
         wd.setFicha(alvo.getUUID(), new FichaRp());
         ServerEvents.setPersona(alvo, Persona.EMPTY);
-        alvo.sendSystemMessage(Component.literal("Sua ficha foi apagada — abra o tablet para criar outra.")
+        alvo.sendSystemMessage(Component.literal("\u2726 Sua ficha foi apagada — o tablet continua com você.")
                 .withStyle(ChatFormatting.YELLOW));
+    }
+
+    /** (4.8.2) /tablet resetar e /ficha resetar: apaga e já abre a tela limpa. */
+    public static void resetarEabrir(ServerPlayer alvo) {
+        resetar(alvo);
+        garantirTablet(alvo);
+        abrir(alvo);
     }
 
     private static String corta(String s, int max) {

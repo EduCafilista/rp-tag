@@ -158,6 +158,9 @@ public class FichaScreen extends Screen {
             }
         }
 
+        // (4.8.2) X de fechar, sempre no canto do painel
+        add(new FichaWidgets.BotaoX(px + pw - 22, py + 6, this::onClose));
+
         int by = py + ph - 40;
         if (cap == FichaRp.CAP_RESUMO) {
             if (dono) {
@@ -357,10 +360,23 @@ public class FichaScreen extends Screen {
         tTroca += dt;
         float entrada = suave(Mth.clamp(tTroca / 0.28f, 0f, 1f));
 
-        FichaFundo.fundo(g, width, height, t);
+        // (4.8.2) FUNDO IGUAL AO BALAO: blur do mundo + veu + estrelas
+        boolean blurOk = false;
+        if (minecraft != null && minecraft.level != null) {
+            try {
+                renderBlurredBackground(dt);
+                blurOk = true;
+            } catch (Throwable ignored) {
+                // sem blur (menu/ shader exotico): cai no ceu solido
+            }
+        }
+        FichaFundo.ceu(g, width, height, t, blurOk);
 
         // ---------------- painel
-        g.fill(px, py, px + pw, py + ph, 0x8C0B0718);
+        // (4.8.2) painel mais fechado: antes era 0x8C (55%) e o HUD/mundo
+        // apareciam por cima do texto. Agora 0xE8 (91%) com leve degradê.
+        g.fill(px, py, px + pw, py + ph, 0xE80B0718);
+        g.fillGradient(px + 1, py + 1, px + pw - 1, py + ph - 1, 0x14000000, 0x3A000000);
         g.fill(px, py, px + pw, py + 1, FichaFundo.corComAlfa(0x8FD8FF, 0.30f));
         g.fill(px, py + ph - 1, px + pw, py + ph, FichaFundo.corComAlfa(0x8FD8FF, 0.22f));
         g.fill(px, py, px + 1, py + ph, FichaFundo.corComAlfa(0x8FD8FF, 0.22f));
@@ -375,7 +391,7 @@ public class FichaScreen extends Screen {
         String titulo = "CAPÍTULO " + (cap + 1) + " / " + TITULO[cap];
         g.drawString(font, titulo, px + 14, py + 11, 0xFFE6D8FF, false);
         String sussurro = "Sua história começa aqui";
-        g.drawString(font, sussurro, px + pw - 14 - font.width(sussurro), py + 11, 0x7E6FA8, false);
+        g.drawString(font, sussurro, px + pw - 30 - font.width(sussurro), py + 11, 0x7E6FA8, false);
         g.fill(px + 14, py + 24, px + pw - 14, py + 25, 0x2A8FD8FF);
 
         // ---------------- pergunta
@@ -470,7 +486,7 @@ public class FichaScreen extends Screen {
             return;
         }
         if (cap == FichaRp.CAP_RESUMO) {
-            renderResumo(g, x, y, a);
+            renderResumo(g, x, py + 48, a); // resumo começa mais alto: ganha 1 linha
             return;
         }
         desenharQuebrado(g, DICA[cap], x, y, colW, FichaFundo.corComAlfa(0xB9AEDC, a));
@@ -497,26 +513,58 @@ public class FichaScreen extends Screen {
         };
     }
 
+    /**
+     * (4.8.2) O RESUMO. Antes era uma linha por campo e a "Alma" (6 eixos) saía
+     * voando pra fora do painel. Agora TODO valor quebra dentro da coluna e o
+     * que não cabe vira "…" — nada passa do painel.
+     */
     private void renderResumo(GuiGraphics g, int x, int y, float a) {
-        String[][] linhas = {
-                {"Nome", ficha.ou(ficha.nome)},
-                {"Idade", ficha.ou(ficha.idade)},
-                {"Veio de", ficha.ou(ficha.origem)},
-                {"Ocupação", ficha.ou(ficha.oficio)},
-                {"Habilidades", encurta(ficha.ou(ficha.habilidades), colW / 5)},
-                {"Alma", ficha.personaResumo()},
-        };
-        int ly = y + 2;
-        for (String[] l : linhas) {
-            g.drawString(font, l[0], x, ly, FichaFundo.corComAlfa(0x8FD8FF, a * 0.85f), false);
-            g.drawString(font, l[1], x + 62, ly, FichaFundo.corComAlfa(0xF2ECFF, a), false);
-            g.fill(x, ly + 11, x + colW, ly + 12, FichaFundo.corComAlfa(0x2A8FD8FF, a));
-            ly += 16;
+        int rx = x + 62;                 // os rotulos maiores ("Habilidades") cabem
+        int rw = Math.max(60, colW - 62);
+        int limite = py + ph - 50;
+
+        // (4.8.2) adapta ao tamanho da janela: em tela pequena os campos ficam
+        // de 1 linha e colados; em tela grande cabem 2 linhas com folga.
+        int altura = limite - y;
+        int gap = altura >= 156 ? 4 : 2;
+        int max2 = altura >= 138 ? 2 : 1;
+
+        int ly = y;
+        ly = campoResumo(g, "Nome", ficha.ou(ficha.nome), x, rx, rw, ly, limite, a, 1, gap);
+        ly = campoResumo(g, "Idade", ficha.ou(ficha.idade), x, rx, rw, ly, limite, a, 1, gap);
+        ly = campoResumo(g, "Veio de", ficha.ou(ficha.origem), x, rx, rw, ly, limite, a, 1, gap);
+        ly = campoResumo(g, "Ocupação", ficha.ou(ficha.oficio), x, rx, rw, ly, limite, a, 1, gap);
+        ly = campoResumo(g, "Habilidades", ficha.ou(ficha.habilidades), x, rx, rw, ly, limite, a, max2, gap);
+        ly = campoResumo(g, "Alma", ficha.personaResumo(), x, rx, rw, ly, limite, a, max2, gap);
+        campoResumo(g, "História", ficha.ou(ficha.historia), x, rx, rw, ly, limite, a, max2, gap);
+    }
+
+    /** desenha rótulo + valor (quebrado em no máximo {@code maxLinhas}) e devolve o próximo y. */
+    private int campoResumo(GuiGraphics g, String rotulo, String valor, int x, int rx, int rw,
+            int y, int limite, float a, int maxLinhas, int gap) {
+        if (y > limite - 9) {
+            return y; // não sobra nem uma linha: melhor não desenhar nada torto
         }
-        // história em duas linhas
-        String hist = encurta(ficha.ou(ficha.historia), (colW / 5) * 2);
-        g.drawString(font, "História", x, ly, FichaFundo.corComAlfa(0x8FD8FF, a * 0.85f), false);
-        desenharQuebrado(g, hist, x + 62, ly, colW - 62, FichaFundo.corComAlfa(0xCFC6EA, a));
+        g.drawString(font, rotulo, x, y, FichaFundo.corComAlfa(0x8FD8FF, a * 0.85f), false);
+
+        List<FormattedCharSequence> partes = font.split(Component.literal(valor == null || valor.isBlank() ? "—" : valor),
+                Math.max(24, rw));
+        int cabem = Math.max(1, (limite - y) / 10);
+        int quer = Math.min(partes.size(), Math.max(1, maxLinhas));
+        int linhas = Math.min(quer, cabem);
+        boolean truncou = partes.size() > linhas;
+        int ly = y;
+        for (int i = 0; i < linhas; i++) {
+            g.drawString(font, partes.get(i), rx, ly, FichaFundo.corComAlfa(0xF2ECFF, a), false);
+            if (truncou && i == linhas - 1) {
+                g.drawString(font, "…", rx + font.width(partes.get(i)) + 1, ly,
+                        FichaFundo.corComAlfa(0x9E93C4, a), false);
+            }
+            ly += 10;
+        }
+        int fim = Math.min(ly + 1, limite);
+        g.fill(x, fim, x + colW, fim + 1, FichaFundo.corComAlfa(0x2A8FD8FF, a));
+        return fim + 1 + gap;
     }
 
     private void desenharQuebrado(GuiGraphics g, String texto, int x, int y, int larg, int cor) {

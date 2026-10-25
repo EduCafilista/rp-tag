@@ -79,6 +79,50 @@ final class FichaWidgets {
         }
     }
 
+    /**
+     * (4.8.2) O "X" de fechar, no canto do painel. Antes só existia o botão
+     * escrito "Fechar" lá embaixo (e sumia no resumo quando a pessoa acertava a
+     * ficha). Agora tem um X sempre no mesmo lugar, do jeito de janela.
+     */
+    static final class BotaoX extends AbstractWidget {
+        private final Runnable acao;
+        private float brilho;
+
+        BotaoX(int x, int y, Runnable acao) {
+            super(x, y, 18, 18, Component.literal("Fechar"));
+            this.acao = acao;
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics g, int mx, int my, float dt) {
+            float alvo = isHovered ? 1f : 0f;
+            brilho += (alvo - brilho) * Mth.clamp(dt * 0.35f, 0f, 1f);
+
+            g.fill(getX(), getY(), getX() + width, getY() + height,
+                    misturar(0xB0120E24, 0xE04A1A22, brilho));
+            contorno(g, getX(), getY(), width, height,
+                    FichaFundo.corComAlfa(brilho > 0.35f ? 0xFF9A8A : LINHA, 0.55f + 0.45f * brilho));
+
+            int cor = misturar(0xC9BCE6, 0xFFEDE6, brilho);
+            int n = 9;
+            for (int i = 0; i < n; i++) {
+                int a = 4 + i;
+                int b = 4 + (n - 1 - i);
+                g.fill(getX() + a, getY() + a, getX() + a + 2, getY() + a + 2, cor);
+                g.fill(getX() + b, getY() + a, getX() + b + 2, getY() + a + 2, cor);
+            }
+        }
+
+        @Override
+        public void onClick(double mx, double my) {
+            acao.run();
+        }
+
+        @Override
+        protected void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput out) {
+        }
+    }
+
     /** uma barra de personalidade (0..100). */
     static final class Barra extends AbstractWidget {
         final int eixo;

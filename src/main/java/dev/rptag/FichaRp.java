@@ -87,15 +87,32 @@ public final class FichaRp {
         return load(save());
     }
 
-    /** "Corajoso 75 · Empático 25" — resumo curto dos eixos mexidos. */
+    /**
+     * (4.8.2) "Corajoso 75 · Empático 25" — só os TRÊS eixos mais marcados.
+     *
+     * <p>Antes listava os seis, e no resumo do tablet a linha virava um texto
+     * gigante que saía do painel. Três cabem em duas linhas com folga.
+     */
     public String personaResumo() {
-        StringBuilder sb = new StringBuilder();
+        int[] idx = {0, 1, 2, 3, 4, 5};
         for (int i = 0; i < 6; i++) {
-            if (persona[i] == 50) {
-                continue;
+            for (int j = i + 1; j < 6; j++) {
+                if (Math.abs(persona[idx[j]] - 50) > Math.abs(persona[idx[i]] - 50)) {
+                    int tmp = idx[i];
+                    idx[i] = idx[j];
+                    idx[j] = tmp;
+                }
             }
-            String lado = persona[i] > 50 ? EIXOS[i][1] : EIXOS[i][0];
-            int forca = persona[i] > 50 ? persona[i] : 100 - persona[i];
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int k = 0; k < 3; k++) {
+            int i = idx[k];
+            int v = persona[i];
+            if (Math.abs(v - 50) < 8) {
+                break;
+            }
+            String lado = v > 50 ? EIXOS[i][1] : EIXOS[i][0];
+            int forca = v > 50 ? v : 100 - v;
             if (sb.length() > 0) {
                 sb.append(" · ");
             }

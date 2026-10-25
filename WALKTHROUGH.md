@@ -1627,8 +1627,10 @@ Testes: 458 PASS / 0 FAIL · 43/43 JUnit · boot limpo no NeoForge 21.1.249
 Regra nova que fica: **nada de fundo com `fill` de 1–2 px**. Em GUI, qualquer
 forma grande desenhada com quads aparece serrilhada/quebrada de perto.
 
-O que existe agora (`client/FichaFundo.java`):
-- `fundo()` — nebulosa esticada em 2 camadas (parallax) + estrelas + vinheta
+O que existe agora (`client/FichaFundo.java`, versão **4.8.2**):
+- `ceu()` — véu do blur (`0x42070C18`) **ou** degradê frio quando não há blur;
+  estrelas (84 poeira + 18 vivas + cometa) e vinheta. É a receita do balão.
+- `fundo()` **não existe mais** (a nebulosa roxa foi aposentada na 4.8.2)
 - `buracoNegro()` — sprite com disco de acreção laranja; `raioEsfera` é o raio
   da esfera preta **na tela**, o sprite escala sozinho (640 px de textura / 118 de raio)
 - `discoMagico()` — anel elíptico do pedestal, com pulso
@@ -1636,7 +1638,8 @@ O que existe agora (`client/FichaFundo.java`):
   (o padrão do jogo é NEAREST, que serrilha ao reduzir). Roda uma vez, no `init()`
 
 Texturas (geradas por `arte/gerar_texturas_ficha.py`):
-`ficha_nebulosa.png` 1024×576 · `ficha_buraco.png` 640×640 · `ficha_anel.png` 512×256.
+`ficha_buraco.png` 640×640 · `ficha_anel.png` 512×256 (`ficha_nebulosa.png` foi
+apagada na 4.8.2).
 Todas têm **borda_fade** (alfa → 0 nas margens) para nunca aparecer o quadrado.
 
 ⚠️ `suave(a, b, x)` do gerador: o denominador NÃO pode ser `max(1e-6, b-a)` —
@@ -1651,6 +1654,7 @@ boot `Done (0.884s)` no NeoForge 21.1.249.
 
 ---
 
-*Última atualização: ciclo 4.8.1 (2026-10-24) — fundo do tablet em textura (fim dos pixels quebrados).*
+*Última atualização: ciclo 4.8.2 (2026-10-24) — fundo blur+estrelas, resumo
+legível, botão X e `/ficha resetar`.*
 
 *Ciclo anterior: 4.8.0 (2026-10-24) — Tablet da Ficha dentro do rp-tag.*
