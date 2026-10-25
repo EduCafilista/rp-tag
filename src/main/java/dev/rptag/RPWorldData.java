@@ -36,8 +36,6 @@ public final class RPWorldData extends SavedData {
 
     private final Map<UUID, Boolean> states = new HashMap<>();
     private final Map<UUID, Persona> personas = new HashMap<>();
-    /** (4.8.0) fichas completas criadas no TABLET (o Persona vira o resumo). */
-    private final Map<UUID, FichaRp> fichas = new HashMap<>();
     private final Map<UUID, Integer> colors = new HashMap<>();
     private final Map<UUID, Boolean> bubbleOptOut = new HashMap<>();
     /** jogadores PROIBIDOS de usar balao por um admin (ausente = permitido). */
@@ -57,11 +55,8 @@ public final class RPWorldData extends SavedData {
 
     // ==== (4.5.0) REGRAS EM RP (padrao: tudo LIBERADO) ====
     /** PvP permitido em RP (false = bloqueia; vale se qualquer lado estiver em RP). */
-    private boolean regraPvp = true;
     /** Quebrar bloco permitido em RP. */
-    private boolean regraQuebrar = true;
     /** Colocar bloco (e balde) permitido em RP. */
-    private boolean regraColocar = true;
     /** (4.5.0) segundos parado ate virar AFK sozinho (0 = desligado). */
     private int afkTimeout = 300;
     /** (4.5.0) recado de vida pra quem estava OFFLINE quando o admin mexeu. */
@@ -98,27 +93,6 @@ public final class RPWorldData extends SavedData {
             personas.put(id, persona);
         }
         setDirty();
-    }
-
-    // ==== ficha do tablet (4.8.0) ====
-
-    /** @return a ficha do jogador (cria vazia se ele nunca abriu o tablet). */
-    public FichaRp getFicha(UUID id) {
-        return fichas.computeIfAbsent(id, k -> new FichaRp());
-    }
-
-    /** @return a ficha SEM criar (null se o jogador nao tem). */
-    public FichaRp fichaOuNula(UUID id) {
-        return fichas.get(id);
-    }
-
-    public void setFicha(UUID id, FichaRp ficha) {
-        fichas.put(id, ficha);
-        setDirty();
-    }
-
-    public Map<UUID, FichaRp> getFichas() {
-        return fichas;
     }
 
     // ==== cor pessoal (chat + balao) ====
@@ -263,34 +237,6 @@ public final class RPWorldData extends SavedData {
         setDirty();
     }
 
-    // ==== (4.5.0) regras em RP ====
-
-    public boolean isRegraPvp() {
-        return regraPvp;
-    }
-
-    public boolean isRegraQuebrar() {
-        return regraQuebrar;
-    }
-
-    public boolean isRegraColocar() {
-        return regraColocar;
-    }
-
-    public void setRegraPvp(boolean permitido) {
-        this.regraPvp = permitido;
-        setDirty();
-    }
-
-    public void setRegraQuebrar(boolean permitido) {
-        this.regraQuebrar = permitido;
-        setDirty();
-    }
-
-    public void setRegraColocar(boolean permitido) {
-        this.regraColocar = permitido;
-        setDirty();
-    }
 
     /** (4.5.0) UUIDs com vida gravada (pra /rp admin vida sem argumento). */
     public java.util.Set<UUID> canonLivesIds() {
@@ -345,15 +291,6 @@ public final class RPWorldData extends SavedData {
             personas.add(e);
         });
         tag.put("Personas", personas);
-
-        ListTag fichasTag = new ListTag();
-        this.fichas.forEach((id, ficha) -> {
-            CompoundTag e = new CompoundTag();
-            e.putUUID("Id", id);
-            e.put("Ficha", ficha.save());
-            fichasTag.add(e);
-        });
-        tag.put("Fichas", fichasTag);
 
         ListTag colors = new ListTag();
         this.colors.forEach((id, rgb) -> {
@@ -426,10 +363,7 @@ public final class RPWorldData extends SavedData {
 
         tag.putBoolean("ChatLocal", chatLocal);
         tag.putBoolean("BubblesOn", bubblesOn);
-        // (4.5.0) regras + AFK
-        tag.putBoolean("RegraPvp", regraPvp);
-        tag.putBoolean("RegraQuebrar", regraQuebrar);
-        tag.putBoolean("RegraColocar", regraColocar);
+        // (4.9.0) as 3 flags de "regra em RP" sairam junto com o /rp admin regra
         tag.putInt("AfkTimeout", afkTimeout);
         // (4.5.0) recados de vida de quem estava offline
         ListTag recados = new ListTag();
@@ -456,12 +390,6 @@ public final class RPWorldData extends SavedData {
         for (int i = 0; i < personas.size(); i++) {
             CompoundTag e = personas.getCompound(i);
             data.personas.put(e.getUUID("Id"), Persona.load(e.getCompound("Persona")));
-        }
-
-        ListTag fichasTag = tag.getList("Fichas", Tag.TAG_COMPOUND);
-        for (int i = 0; i < fichasTag.size(); i++) {
-            CompoundTag e = fichasTag.getCompound(i);
-            data.fichas.put(e.getUUID("Id"), FichaRp.load(e.getCompound("Ficha")));
         }
 
         ListTag colors = tag.getList("Colors", Tag.TAG_COMPOUND);
@@ -512,9 +440,6 @@ public final class RPWorldData extends SavedData {
         data.bubblesOn = !tag.contains("BubblesOn") || tag.getBoolean("BubblesOn");
 
         // (4.5.0) mesmo cuidado: save antigo nao tem as chaves -> padrao LIBERADO
-        data.regraPvp = !tag.contains("RegraPvp") || tag.getBoolean("RegraPvp");
-        data.regraQuebrar = !tag.contains("RegraQuebrar") || tag.getBoolean("RegraQuebrar");
-        data.regraColocar = !tag.contains("RegraColocar") || tag.getBoolean("RegraColocar");
         data.afkTimeout = tag.contains("AfkTimeout") ? tag.getInt("AfkTimeout") : AfkSistema.TIMEOUT_PADRAO_S;
         ListTag recados = tag.getList("RecadosVida", Tag.TAG_COMPOUND);
         for (int i = 0; i < recados.size(); i++) {

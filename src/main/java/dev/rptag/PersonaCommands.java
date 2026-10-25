@@ -125,7 +125,7 @@ public final class PersonaCommands {
 
     private static void showCard(ServerPlayer viewer, ServerPlayer target) {
         Persona persona = ServerEvents.getPersona(target);
-        viewer.sendSystemMessage(Component.literal("───── Ficha RP ─────").withStyle(ChatFormatting.DARK_GRAY));
+        viewer.sendSystemMessage(Component.literal("───── PERSONAGEM ─────").withStyle(ChatFormatting.DARK_GRAY));
         if (persona.isEmpty()) {
             viewer.sendSystemMessage(Component.literal(target.getName().getString() + " nao tem persona criada.")
                     .withStyle(ChatFormatting.GRAY));

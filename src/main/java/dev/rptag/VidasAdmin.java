@@ -31,17 +31,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * falta é só avisar a pessoa quando ela voltar: fica um <b>recado</b> pendente no
  * world data, entregue no login.
  *
- * <p>O lote ({@code /rp admin vida lote A,B,C tirar 1}) NÃO aplica na hora: guarda
- * os UUIDs e espera {@code /rp admin confirmar} (30 s). Assim um {@code @a} digitado
- * por engano não zera as vidas de meia dúzia de personagens.
+ * <p>(4.9.0) O lote ({@code /rp admin vida lote A,B,C tirar 1}) aplica NA HORA:
+ * o {@code /rp admin confirmar} e o {@code /rp admin cancelar} saíram, então
+ * não existe mais passo intermediário. {@link Alvo} continua resolvendo
+ * nome/seletor (online ou pelo cache de perfis).
  */
 public final class VidasAdmin {
 
     private static final SimpleCommandExceptionType NAO_ACHEI =
             new SimpleCommandExceptionType(Component.literal("Jogador nao encontrado (nunca entrou neste servidor?)"));
-    private static final SimpleCommandExceptionType SEM_PENDENTE =
-            new SimpleCommandExceptionType(Component.literal("Nao ha nada esperando confirmacao."));
-
     /** (4.5.0) erros do /rp admin vida — usados pelos resolvers do comando. */
     public static CommandSyntaxException naoAchei() {
         return NAO_ACHEI.create();
@@ -56,11 +54,6 @@ public final class VidasAdmin {
         return new SimpleCommandExceptionType(Component.literal(
                 "Este seletor precisa de um jogador executando o comando.")).create();
     }
-
-    /** Tempo (ms) que uma operacao em lote fica esperando o /rp admin confirmar. */
-    public static final long VALIDADE_MS = 30_000L;
-
-    private static final Map<String, Pendente> PENDENTES = new ConcurrentHashMap<>();
 
     private VidasAdmin() {
     }
@@ -106,43 +99,7 @@ public final class VidasAdmin {
         return server.getProfileCache().get(id).map(GameProfile::getName).orElse(id.toString().substring(0, 8));
     }
 
-    // ============================================================ lote + confirmacao
-
-    /** Uma operação em lote esperando confirmação. */
-    public record Pendente(List<UUID> ids, List<String> nomes, String acao, int qtd, long quando) {
-    }
-
-    public static String chave(CommandSourceStack src) {
-        return src.getTextName().toLowerCase(Locale.ROOT);
-    }
-
-    public static void guardar(CommandSourceStack src, List<Alvo> alvos, String acao, int qtd) {
-        List<UUID> ids = new ArrayList<>();
-        List<String> nomes = new ArrayList<>();
-        for (Alvo a : alvos) {
-            ids.add(a.id());
-            nomes.add(a.nome());
-        }
-        PENDENTES.put(chave(src), new Pendente(ids, nomes, acao, qtd, System.currentTimeMillis()));
-    }
-
-    /** Devolve o pendente válido ou lança o erro padrão (expirado/inexistente). */
-    public static Pendente pegar(CommandSourceStack src) throws CommandSyntaxException {
-        Pendente p = PENDENTES.get(chave(src));
-        if (p == null || System.currentTimeMillis() - p.quando() > VALIDADE_MS) {
-            PENDENTES.remove(chave(src));
-            throw SEM_PENDENTE.create();
-        }
-        return p;
-    }
-
-    public static void limpar(CommandSourceStack src) {
-        PENDENTES.remove(chave(src));
-    }
-
-    public static void limparTudo() {
-        PENDENTES.clear();
-    }
+    // ============================================================ lote
 
     /**
      * (4.5.0) Divide a lista do lote ("Ana,Beto,Caio") em nomes limpos, na ordem.

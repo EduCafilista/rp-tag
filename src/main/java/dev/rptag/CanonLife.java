@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -150,8 +151,42 @@ public final class CanonLife {
         // depois, tocado pelo PROPRIO CLIENTE ao ver o véu — CanonLife.java)
         player.playNotifySound(SoundEvents.LIGHTNING_BOLT_THUNDER,
                 SoundSource.WEATHER, 3.0F, 0.8F);
+        // (4.9.0) QUEM ESTÁ POR PERTO FICA SABENDO: a perda de vida não é
+        // segredo — quem viu (ou ouviu o trovão) recebe o recado no chat.
+        avisarPorPerto(player);
         RPTagMod.LOGGER.info("RP Tag: VIDA CANÔNICA — {} perdeu uma vida (congelado 5s + som)",
                 player.getName().getString());
+    }
+
+    /** (4.9.0) Raio (blocos) do aviso "perdeu uma vida" para os outros jogadores. */
+    public static final double RAIO_AVISO_VIDA = 32.0D;
+
+    /**
+     * (4.9.0) "Fulano perdeu uma vida - tome cuidado" para todo mundo num raio de
+     * {@link #RAIO_AVISO_VIDA} blocos (mesmo mundo), MENOS quem perdeu — ele já
+     * recebe o aviso grande na tela. Regra do dono: a perda de vida canônica
+     * tem testemunhas.
+     */
+    private static void avisarPorPerto(ServerPlayer perdedor) {
+        if (perdedor.getServer() == null) {
+            return;
+        }
+        Component recado = Component.literal(
+                        perdedor.getName().getString() + " perdeu uma vida - tome cuidado")
+                .withStyle(ChatFormatting.RED);
+        double limite = RAIO_AVISO_VIDA * RAIO_AVISO_VIDA;
+        for (ServerPlayer outro : perdedor.getServer().getPlayerList().getPlayers()) {
+            if (outro == perdedor) {
+                continue;
+            }
+            if (outro.level() != perdedor.level()) {
+                continue;                      // outro mundo: não viu nada
+            }
+            if (outro.distanceToSqr(perdedor) > limite) {
+                continue;
+            }
+            outro.sendSystemMessage(recado);
+        }
     }
 
     @SubscribeEvent

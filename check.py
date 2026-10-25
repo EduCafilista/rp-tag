@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.8.5' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.9.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.8.5 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.9.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -36,7 +36,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal v5', 'LorezoneMusicPayload' in mn and 'registrar("6")' in mn)
+check('payloads registrados no canal v7', 'LorezoneMusicPayload' in mn and 'registrar("7")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -163,7 +163,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo v5 (3 payloads de musica)', 'registrar("6")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo v7 (3 payloads de musica)', 'registrar("7")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -828,34 +828,34 @@ check('4.5: nao fica preso no AFK depois de relogar',
 check('4.5: timeout do AFK persiste no mundo (AfkTimeout)',
       'afkTimeout' in wdd and 'tag.putInt("AfkTimeout"' in wdd and 'getAfkTimeout' in wdd)
 
-check('4.5: regra PvP barra golpe corpo a corpo (AttackEntityEvent)',
-      'AttackEntityEvent' in reg and 'isRegraPvp' in reg)
+check('4.9.0: regra PvP barra golpe corpo a corpo (AttackEntityEvent)',
+      'AttackEntityEvent' in reg and 'PvP bloqueado' in reg)
 check('4.5: regra PvP barra dano indireto (flecha/pocao/TNT)',
       'LivingIncomingDamageEvent' in reg and 'getSource().getEntity()' in reg)
-check('4.5: regra quebrar (BlockEvent.BreakEvent) e colocar (EntityPlaceEvent)',
+check('4.9.0: quebrar (BlockEvent.BreakEvent) e colocar (EntityPlaceEvent) em RP',
       'BlockEvent.BreakEvent' in reg and 'EntityPlaceEvent' in reg
-      and 'isRegraQuebrar' in reg and 'isRegraColocar' in reg)
+      and 'isInRp' in reg)
 check('4.5: balde tambem conta como colocar (TriState.FALSE)',
       'TriState.FALSE' in reg and 'BucketItem' in reg)
 check('4.5: staff (permissao 2) passa pelas regras',
       reg.count('hasPermissions(2)') >= 4)
-check('4.5: regras persistem no mundo (RegraPvp/Quebrar/Colocar)',
-      'tag.putBoolean("RegraPvp"' in wdd and 'tag.putBoolean("RegraQuebrar"' in wdd
-      and 'tag.putBoolean("RegraColocar"' in wdd)
-check('4.5: /rp admin regra [pvp|quebrar|colocar] on|off + tudo bloquear|liberar',
-      '.then(Commands.literal("regra")' in rp and 'mostrarRegras' in rp and 'liberar' in rp)
+check('4.9.0: as 3 flags de regra nao existem mais no mundo',
+      'RegraPvp' not in wdd and 'RegraQuebrar' not in wdd and 'RegraColocar' not in wdd)
+check('4.9.0: /rp admin regra nao existe (nada de on|off nem bloquear|liberar)',
+      'literal("regra")' not in rp and 'mostrarRegras' not in rp)
 
 check('4.5: vida do admin acha jogador OFFLINE (cache de perfis)',
       'getProfileCache()' in vad and 'record Alvo' in vad)
 check('4.5: vida offline guarda recado pro proximo login',
       'setRecadoVida' in rp and 'consumirRecadoVida' in rd(R + '/ServerEvents.java')
       and 'RecadosVida' in wdd)
-check('4.5: vida em LOTE pede confirmacao (sem aplicar direto)',
-      'guardar(' in rp and 'vidaConfirmar' in rp and 'VALIDADE_MS' in vad)
+check('4.9.0: vida em LOTE aplica direto (sem confirmar)',
+      'case "tirar" -> vidaTirar(ctx, a, qtd);' in rp and 'vidaConfirmar' not in rp
+      and 'Pendente' not in vad)
 check('4.5: /rp admin vida sem argumento lista quem esta abaixo de 5/5',
       'vidaListar' in rp and 'canonLivesIds' in wdd)
-check('4.5: ajuda lista regra + afk + lote', 'admin regra [pvp|quebrar|colocar]' in rp
-      and 'admin afk tempo' in rp and 'vida lote A,B,C' in rp)
+check('4.9.0: ajuda lista afk + lote e NAO lista mais regra', 'admin afk tempo' in rp
+      and 'vida lote A,B,C' in rp and 'admin regra' not in rp)
 
 check('4.5: EGIPICIO e o estilo 12 (parse + nome + ajuda)',
       'case "egipicio", "egipcio" -> 12' in rp and 'case 12 -> "EGIPICIO"' in rp
@@ -1009,154 +1009,89 @@ check('4.7.8: analisador de audio no repo (acha o melhor trecho)',
 check('4.7.8: a trilha toca no primeiro quadro e para no parar()',
       'tentouTrilha' in _egi2 and 'pararTrilha()' in _egi2)
 
-# ============ 4.8.0: TABLET DA FICHA (tudo dentro do rp-tag) ============
-_ficha = rd(R + '/FichaRp.java')
-check('4.8.0: 8 capitulos, sem pergunta de RACA', 'CAPS = 8' in _ficha and 'raca' not in _ficha.lower())
-check('4.8.0: capitulos nome/idade/origem/oficio/habilidades/historia/personalidade/resumo',
-      all(k in _ficha for k in ['CAP_NOME', 'CAP_IDADE', 'CAP_ORIGEM', 'CAP_OFICIO',
-                                'CAP_HABILIDADES', 'CAP_HISTORIA', 'CAP_PERSONALIDADE', 'CAP_RESUMO']))
-check('4.8.0: 6 eixos de personalidade 0..100 com os rotulos do print',
-      'Prudente' in _ficha and 'Corajoso' in _ficha and 'Pragmático' in _ficha
-      and 'Empático' in _ficha and 'Espontâneo' in _ficha and 'Disciplinado' in _ficha
-      and 'Tradicional' in _ficha and 'Curioso' in _ficha and 'Reservado' in _ficha
-      and 'Sociável' in _ficha and 'Contente' in _ficha and 'Ambicioso' in _ficha)
-check('4.8.0: ficha salva/carrega em NBT', 'putString("Nome"' in _ficha and 'getString("Nome")' in _ficha)
-check('4.8.0: a ficha alimenta a Persona (nome/idade/descricao)',
-      'new Persona(atual.nome, atual.idadeNumero(), atual.descricaoCurta())' in rd(R + '/FichaServer.java'))
+# ============ 4.9.0: O TABLET SAIU (pedido do dono: "remover tudo do tablet") ============
+_java = []
+for _base, _dirs, _files in os.walk('src/main/java'):
+    _java += [f for f in _files if f.endswith('.java')]
+_junto = '\n'.join(rd(os.path.join(_base2, f)) for _base2, _d, _fs in os.walk('src/main/java') for f in _fs if f.endswith('.java'))
+check('4.9.0: nenhum arquivo do tablet/ficha sobrou no mod',
+      not [f for f in _java if f.startswith(('Ficha', 'Tablet'))])
+check('4.9.0: nenhuma classe Ficha*/Tablet* no cliente',
+      not [f for f in os.listdir(C) if f.startswith(('Ficha', 'Tablet'))])
+check('4.9.0: nenhuma classe do tablet/ficha e citada no codigo',
+      not any(n in _junto for n in ('FichaRp', 'FichaServer', 'FichaScreen', 'FichaWidgets',
+                                    'FichaFundo', 'FichaCommands', 'FichaCodec', 'FichaLivro',
+                                    'FichaOpenPayload', 'FichaSavePayload', 'TabletItem')))
+check('4.9.0: item rptag:tablet nao existe mais',
+      'ITEMS.register("tablet"' not in rd(R + '/RPTagMod.java')
+      and not os.path.exists(A + '/models/item/tablet.json')
+      and not os.path.exists(A + '/textures/item/tablet.png'))
+check('4.9.0: texturas da ficha fora do jar',
+      not any(os.path.exists(A + '/textures/gui/' + n) for n in
+              ('ficha_anel.png', 'ficha_buraco.png', 'ficha_nevoa.png')))
+check('4.9.0: nada mais cita o tablet no lang',
+      'rptag.tablet' not in rd(A + '/lang/pt_br.json')
+      and 'rptag.tablet' not in rd(A + '/lang/en_us.json'))
+_mn9 = rd(R + '/ModNetworking.java')
+check('4.9.0: canais ficha_abrir/ficha_salvar sairam do protocolo',
+      'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9)
+check('4.9.0: protocolo subiu para v7 (cliente v6 e recusado)',
+      'registrar("7")' in _mn9 and 'registrar("6")' not in _mn9)
+check('4.9.0: o tablet nao e mais dado no login',
+      'garantirTablet' not in rd(R + '/ServerEvents.java'))
+check('4.9.0: comandos /tablet e /ficha nao existem',
+      'literal("tablet")' not in _junto and 'literal("ficha")' not in _junto)
+check('4.9.0: fichas nao ficam mais salvas no mundo',
+      'Fichas' not in rd(R + '/RPWorldData.java') and 'getFicha(' not in rd(R + '/RPWorldData.java'))
+check('4.9.0: mocks/geradores do tablet fora do repo',
+      not any(os.path.exists('arte/' + n) for n in
+              ('gerar_texturas_ficha.py', 'mock_tablet.py', 'mock_resumo.py', 'tablet_960.png', 'tablet_634.png')))
 
-_wd = rd(R + '/RPWorldData.java')
-check('4.8.0: fichas guardadas no mundo (mapa + NBT "Fichas")',
-      'getFicha(' in _wd and 'setFicha(' in _wd and 'put("Fichas"' in _wd and 'getList("Fichas"' in _wd)
-check('4.8.0: item rptag:tablet registrado', 'ITEMS.register("tablet"' in rd(R + '/RPTagMod.java'))
-check('4.8.0: tablet e um item (modelo + textura no jar)',
-      os.path.exists(A + '/models/item/tablet.json') and os.path.exists(A + '/textures/item/tablet.png'))
-check('4.8.0: nome do item traduzido pt_br/en_us',
-      'item.rptag.tablet' in rd(A + '/lang/pt_br.json') and 'item.rptag.tablet' in rd(A + '/lang/en_us.json'))
-check('4.8.0: clique direito abre, shift+direito mostra no chat',
-      'FichaServer.abrir(sp)' in rd(R + '/TabletItem.java') and 'FichaLivro.mostrar' in rd(R + '/TabletItem.java'))
-check('4.8.0: todo jogador recebe o tablet no login (sem duplicar)',
-      'FichaServer.garantirTablet(joined)' in rd(R + '/ServerEvents.java')
-      and 'if (jaTemTablet(sp))' in rd(R + '/FichaServer.java'))
-check('4.8.0: canais ficha_abrir (S2C) e ficha_salvar (C2S) no protocolo v6',
-      'registrar("6")' in mn and 'FichaOpenPayload' in mn and 'FichaSavePayload' in mn)
-_fs = rd(C + '/FichaScreen.java')
-check('4.8.0: tela da ficha existe com os 8 capitulos por pergunta',
-      'class FichaScreen extends Screen' in _fs and 'CAP_PERSONALIDADE' in _fs)
-check('4.8.0: rodape com ESC e ENTER', '"ESC · Sair"' in _fs and '"ENTER ·' in _fs)
-check('4.8.0: pontinhos de progresso + Voltar/Continuar',
-      'private void rodape(' in _fs and '"Voltar"' in _fs and '"Continuar"' in _fs)
-check('4.8.0: pagina final tem o botao Confirmar personagem',
-      'Confirmar personagem' in _fs and 'confirmar()' in _fs)
-check('4.8.0: personagem do proprio jogador na tela (modelo do player)',
-      'renderEntityInInventoryFollowsAngle' in _fs and 'minecraft.player' in _fs)
-_fundo = rd(C + '/FichaFundo.java')
-check('4.8.0: fundo galaxia + buraco negro atras do personagem + disco no chao',
-      'static void ceu(' in _fundo and 'buracoNegro' in _fundo and 'discoMagico' in _fundo)
-check('4.8.0: animacao de transicao entre capitulos', 'tTroca' in _fs and 'suave(' in _fs)
-check('4.8.0: personagem se mexe a cada pergunta (swing)',
-      'p.swing(InteractionHand.MAIN_HAND)' in _fs and 'InteractionHand.OFF_HAND' in _fs)
-check('4.8.0: campo de texto longo (historia quebra linha)',
-      'class TextoLivre extends AbstractWidget' in rd(C + '/FichaWidgets.java'))
-check('4.8.0: salva a cada capitulo (fechar no meio nao perde nada)',
-      'salvar(false)' in _fs and 'FichaSavePayload' in _fs)
+# ============ 4.9.0: /rp admin regra SAIU (regra agora e automatica) ============
+_rc = rd(R + '/RPCommands.java')
+_wd9 = rd(R + '/RPWorldData.java')
+check('4.9.0: /rp admin regra nao existe mais',
+      'literal("regra")' not in _rc and 'mostrarRegras' not in _rc and 'private static int regra(' not in _rc)
+check('4.9.0: as 3 flags de regra sairam do world data',
+      'RegraPvp' not in _wd9 and 'RegraQuebrar' not in _wd9 and 'RegraColocar' not in _wd9
+      and 'setRegra' not in _wd9)
+check('4.9.0: RegrasRp nao le mais flag nenhuma (vale sempre para quem esta em RP)',
+      'isRegra' not in rd(R + '/RegrasRp.java'))
+_rrp = rd(R + '/RegrasRp.java')
+check('4.9.0: PvP bloqueado em RP sem configurar nada',
+      'wd.isInRp(atacante.getUUID()) || wd.isInRp(vitima.getUUID())' in _rrp
+      and 'PvP bloqueado' in _rrp)
+check('4.9.0: quebrar/colocar bloqueados em RP sem configurar nada',
+      'bloqueado em RP' in _rrp and 'wd.isInRp(p.getUUID())' in _rrp
+      and 'isRegra' not in _rrp)
 
-# ============ 4.8.1: FUNDO EM TEXTURA (fim dos pixels quebrados) ============
-_gui = A + '/textures/gui'
-check('4.8.1: texturas do fundo no jar (buraco negro e anel)',
-      all(os.path.exists(f'{_gui}/{n}.png') and os.path.getsize(f'{_gui}/{n}.png') > 8000
-          for n in ('ficha_buraco', 'ficha_anel')))
-_fd = rd(C + '/FichaFundo.java')
-check('4.8.1: buraco negro e disco do chao desenhados com blit (nao mais quads)',
-      'g.blit(tex' in _fd and 'buracoNegro' in _fd and 'discoMagico' in _fd)
-check('4.8.1: filtro LINEAR nas texturas (borda suave ao reduzir)',
-      'setFilter(true, false)' in _fd and 'getTextureManager()' in _fd)
-check('4.8.1: a tela prepara as texturas ao abrir',
-      'FichaFundo.preparar()' in rd(C + '/FichaScreen.java'))
-check('4.8.1: gerador das texturas no repo (reproduzivel)',
-      os.path.exists('arte/gerar_texturas_ficha.py')
-      and 'borda_fade' in rd('arte/gerar_texturas_ficha.py'))
-check('4.8.1: buraco negro escalado pelo raio da esfera',
-      'BUR_RAIO_TEX' in _fd and 'buracoNegro' in _fd)
-check('4.8.1: vinheta fecha as bordas do fundo',
-      'private static void vinheta(' in _fd and 'vinheta(g, w, h)' in _fd)
+# ============ 4.9.0: confirmar/cancelar sairam; lote aplica na hora ============
+_va9 = rd(R + '/VidasAdmin.java')
+check('4.9.0: /rp admin confirmar e /rp admin cancelar nao existem',
+      'literal("confirmar")' not in _rc and 'literal("cancelar")' not in _rc)
+check('4.9.0: o lote guardado (Pendente/guardar/pegar/limpar) saiu do VidasAdmin',
+      'Pendente' not in _va9 and 'guardar(' not in _va9 and 'PENDENTES' not in _va9)
+check('4.9.0: vida lote aplica na hora (chama vidaTirar/vidaDar/vidaDefinir)',
+      'case "tirar" -> vidaTirar(ctx, a, qtd);' in _rc
+      and 'case "dar" -> vidaDar(ctx, a, qtd);' in _rc
+      and 'default -> vidaDefinir(ctx, a, qtd);' in _rc)
+check('4.9.0: vidaLote nao pede mais confirmacao no chat',
+      'CONFIRMAR' not in _rc and 'vidaConfirmar' not in _rc)
 
-# ============ 4.8.2: FUNDO = BLUR + ESTRELAS / RESUMO / RESET ============
-_fs2 = rd(C + '/FichaScreen.java')
-check('4.8.2: fundo usa o blur do mundo (a mesma receita do balao)',
-      'renderBlurredBackground(dt)' in _fs2 and 'FichaFundo.ceu(' in _fs2)
-check('4.8.2: nebulosa roxa saiu (menos roxo, ceu mais simples)',
-      not os.path.exists(_gui + '/ficha_nebulosa.png') and 'NEBULOSA' not in _fd)
-check('4.8.2: estrelas cintilando + cometa no ceu',
-      'estrelas(' in _fd and 'ciclo' in _fd and 'cometa' in _fd.lower())
-check('4.8.2: texturas carregadas em DynamicTexture com filtro LINEAR',
-      'new DynamicTexture(' in _fd and 'tex.upload()' in _fd and 'tex.setFilter(true, false)' in _fd)
-check('4.8.2: resumo quebra o texto dentro da coluna (nada vaza do painel)',
-      'font.split(' in _fs2 and 'enableScissor' in _fs2 and 'linha(g, ix' in _fs2)
-check('4.8.2: personaResumo mostra so os 3 eixos mais fortes',
-      'for (int k = 0; k < 3; k++)' in rd(R + '/FichaRp.java'))
-check('4.8.2: dono sempre pode editar (Confirmar Personagem nao desaparece)',
-      'FichaOpenPayload.enviar(sp, f, sp.getGameProfile().getName(), true)' in rd(R + '/FichaServer.java'))
-_fc = rd(R + '/FichaCommands.java')
-check('4.8.2: /ficha resetar|reset|limpar (a propria ficha)',
-      'for (String nome : new String[]{"reset", "resetar", "limpar"})' in _fc)
-check('4.8.2: comando /tablet com abrir/resetar/dar',
-      'literal("tablet")' in _fc and 'literal("resetar")' in _fc and 'literal("abrir")' in _fc)
-check('4.8.2: resetar ja reabre a tela do zero (resetarEabrir)',
-      'resetarEabrir' in _fc and 'public static void resetarEabrir' in rd(R + '/FichaServer.java'))
-
-_fw = rd(C + '/FichaWidgets.java')
-check('4.8.2: botao X de fechar no canto do painel',
-      'class BotaoX' in _fw and 'new FichaWidgets.BotaoX(px + pw - 20, py + 6' in _fs2)
-check('4.8.2: painel opaco (o HUD/mundo nao vaza por cima do texto)',
-      'PAINEL = 0xC8140B2E' in _fs2 and '0x8C0B0718' not in _fs2)
-check('4.8.2: resumo ROLA em vez de cortar (scissor + mouseScrolled)',
-      'resumoRolagem' in _fs2 and 'enableScissor' in _fs2 and 'mouseScrolled' in _fs2)
-check('4.8.2: gerador das texturas sem a nebulosa roxa',
-      'def nebulosa' not in rd('arte/gerar_texturas_ficha.py'))
-
-_fs3 = rd(C + '/FichaScreen.java')
-# ============ 4.8.3: RESUMO VIRou PAGINA (visual) ============
-check('4.8.3: resumo com rotulos das linhas',
-      '"ALMA"' in _fs3 and '"HISTÓRIA"' in _fs3 and 'TXF' not in _fs3)
-check('4.8.3: linhas do resumo com fio desbotado embaixo',
-      'private int linha(' in _fs3 and 'fio(g, x, x + w' in _fs3)
-check('4.8.3: fios que desbotam nas pontas (sem linha serrilhada)',
-      'private void fio(' in _fs3 and 'Math.sin(Math.PI * k)' in _fs3)
-check('4.8.3: alma virou BARRINHAS (personaTopo)',
-      'linhaAlma(' in _fs3 and 'personaTopo' in rd(R + '/FichaRp.java'))
-check('4.8.3: rodape com as teclas escritas',
-      'ESC · Sair' in _fs3 and 'ENTER · Continuar' in _fs3)
-check('4.8.3: painel dimensionado pela tela (sem numero magico)',
-      'width * 0.42f' in _fs3 and 'height * 0.19f' in _fs3)
-check('4.8.3: sombra do painel + gradiente nos botoes',
-      '0x30000000' in _fs3 and 'fillGradient(getX(), getY()' in _fw)
-
-# ============ 4.8.4: RESUMO EM CARTOES ============
-check('4.8.4: resumo com rotulo em cima e valor embaixo (referencia)',
-      'g.drawString(font, rotulo, x, y' in _fs3 and 'int ly = y + 11;' in _fs3)
-check('4.8.4: campos do resumo completos',
-      '"VEIO DE"' in _fs3 and '"OCUPAÇÃO"' in _fs3 and '"HABILIDADES"' in _fs3 and '"ALMA"' in _fs3 and '"HISTÓRIA"' in _fs3)
-check('4.8.4: painel alto a direita (layout da referencia)',
-      'px = width - 18 - pw' in _fs3 and 'ph = height - 40 - py' in _fs3)
-check('4.8.4: altura do resumo medida para a rolagem',
-      'alturaResumo(iw)' in _fs3)
-
-# ============ 4.8.5: LAYOUT DA REFERENCIA ============
-_fd5 = rd(C + '/FichaFundo.java')
-check('4.8.5: nevoa de galaxia em TEXTURA (suave, sem quads de 1px)',
-      'NEVOA' in _fd5 and 'static void nevoa(' in _fd5 and os.path.exists(_gui + '/ficha_nevoa.png'))
-check('4.8.5: nevoa tingida em violeta/magenta com alfa baixo (pouco roxo)',
-      'g.setColor(0.52f, 0.42f, 1f, 0.10f)' in _fd5 and '0.86f, 0.44f, 1f, 0.07f' in _fd5)
-check('4.8.5: cabecalho corrido com capitulo e pergunta centralizados',
-      'private void cabecalho(' in _fs3 and 'g.drawCenteredString(font, c, width / 2, 28' in _fs3)
-check('4.8.5: botao com gradiente violeta/magenta (referencia)',
-      '0xFF7A1FD6' in _fw and '0xFFFF3FD0' in _fw)
-check('4.8.5: slider fino com marcas 0/25/50/75/100',
-      'int ly = getY() + height / 2;' in _fw and '0xFF3A3268' in _fw)
-check('4.8.5: personagem grande com Netuno atras (proporcao da tela)',
-      'min(width, height) * 0.22f' in _fs3 and 'height * 0.135f' in _fs3)
-check('4.8.5: pontinhos do rodape pulam de capitulo',
-      'FichaRp.CAPS * 20' in _fs3)
+# ============ 4.9.0: aviso de vida perdida para quem esta por perto ============
+_cl9 = rd(R + '/CanonLife.java')
+check('4.9.0: quem perde vida avisa os jogadores num raio de 32 blocos',
+      'RAIO_AVISO_VIDA = 32.0D' in _cl9 and 'avisarPorPerto(' in _cl9)
+check('4.9.0: texto exato do aviso ("<nome> perdeu uma vida - tome cuidado")',
+      '" perdeu uma vida - tome cuidado"' in _cl9)
+check('4.9.0: o aviso vai no chat de cada um (sendSystemMessage) e pula quem perdeu',
+      'outro.sendSystemMessage(recado)' in _cl9 and 'if (outro == perdedor)' in _cl9)
+check('4.9.0: so avisa quem esta no MESMO mundo',
+      'outro.level() != perdedor.level()' in _cl9)
+check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
+      'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
+check('4.9.0: versao 4.9.0 no build.gradle',
+      "version = '4.9.0'" in rd('build.gradle') or 'version = "4.9.0"' in rd('build.gradle'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

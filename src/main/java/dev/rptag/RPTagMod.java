@@ -27,6 +27,14 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  *   <li>{@code dev.rptag.client.ClientEvents} — eventos do lado do cliente (nametag)</li>
  *   <li>{@code dev.rptag.client.BubbleStyleScreen} — tela com seletor de cor</li>
  * </ul>
+ *
+ * <p><b>4.9.0</b> — O TABLET DA FICHA SAIU: o dono recusou a tela ("isso ficou
+ * horrivel") e mandou remover do mod e do GitHub. Nao existe mais o item
+ * {@code rptag:tablet}, nem as classes Ficha*, nem os comandos /tablet e /ficha.
+ * O que sobrou do personagem e o {@link Persona} (resumo em texto), criado no
+ * proprio /rp. Tambem saiu o {@code /rp admin regra} (as regras de RP agora
+ * valem sozinhas) e o par {@code /rp admin confirmar|cancelar} (o lote de vida
+ * aplica na hora).
  */
 @Mod(RPTagMod.MODID)
 public final class RPTagMod {
@@ -82,16 +90,6 @@ public final class RPTagMod {
                     () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()
                             .stacksTo(1)
                             .rarity(net.minecraft.world.item.Rarity.EPIC)));
-
-    /** (4.8.0) TABLET DA LORE: o item que abre a criacao da ficha.
-     *  (4.8.1) fundo/buraco negro em TEXTURA (fim dos pixels quebrados).
-     *  (4.8.2) fundo = blur do mundo + estrelas (receita do balao).
-     *  (4.8.3) resumo do tablet virou pagina: secoes, zebra e barras de alma.
-     *  (4.8.4) resumo em CARTOES: nome grande, cartoes de vidro e barras da alma.
-     *  (4.8.5) layout da referencia: painel alto a direita + rotulo em cima do valor. */
-    public static final net.neoforged.neoforge.registries.DeferredHolder<Item, TabletItem> TABLET =
-            ITEMS.register("tablet", () -> new TabletItem(new Item.Properties().stacksTo(1)
-                    .rarity(net.minecraft.world.item.Rarity.RARE)));
 
     public RPTagMod(IEventBus modEventBus, ModContainer modContainer) {
         // (3.45.0) o efeito MEDO usa DeferredRegister (registro oficial,

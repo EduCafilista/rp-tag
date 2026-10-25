@@ -56,12 +56,6 @@ public final class ClientPayloadHandler {
                         payload.durationMs(), payload.tone()));
     }
 
-    /** (4.8.0) TABLET: o servidor mandou a ficha — abre a tela. */
-    public static void handleFichaAbrir(final dev.rptag.FichaOpenPayload payload,
-            final IPayloadContext context) {
-        context.enqueueWork(() -> FichaScreen.abrir(payload));
-    }
-
     public static void handleOpenBubbleStyle(final dev.rptag.OpenBubbleStylePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> BubbleStyleScreen.open(payload));
     }

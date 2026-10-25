@@ -305,7 +305,8 @@ public final class RPCommands {
         return Command.SINGLE_SUCCESS;
     }
 
-    /** (4.5.0) LOTE: "/rp admin vida lote A,B,C tirar 1" -> guarda e pede confirmacao. */
+    /** (4.9.0) LOTE: "/rp admin vida lote A,B,C tirar 1" -> aplica NA HORA, sem confirmar.
+     *  (antes guardava e pedia /rp admin confirmar; o passo extra saiu a pedido do dono). */
     private static int vidaLote(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
             String acao, int qtd) {
         String cru = ListaAlvosArgument.get(ctx, "jogador");
@@ -322,52 +323,20 @@ public final class RPCommands {
             ctx.getSource().sendFailure(Component.literal("Nenhum nome valido na lista."));
             return 0;
         }
-        VidasAdmin.guardar(ctx.getSource(), alvos, acao, qtd);
-        StringBuilder sb = new StringBuilder();
         for (VidasAdmin.Alvo a : alvos) {
-            if (!sb.isEmpty()) sb.append(", ");
-            sb.append(a.nome());
-        }
-        String lista = sb.toString();
-        String acaoTxt = acao.equals("definir") ? "definir " + qtd : acao + " " + qtd;
-        ctx.getSource().sendSuccess(() -> Component.literal("\u26a0 CONFIRMAR: " + acaoTxt + " em " + alvos.size()
-                        + " jogador(es): " + lista
-                        + (falhas.isEmpty() ? "" : "  [ignorados: " + String.join(",", falhas) + "]"))
-                .withStyle(ChatFormatting.GOLD), false);
-        ctx.getSource().sendSuccess(() -> Component.literal("Digite /rp admin confirmar em ate 30s (ou /rp admin cancelar).")
-                .withStyle(ChatFormatting.GRAY), false);
-        return Command.SINGLE_SUCCESS;
-    }
-
-    /** (4.5.0) aplica o lote guardado. */
-    private static int vidaConfirmar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
-        VidasAdmin.Pendente pend;
-        try {
-            pend = VidasAdmin.pegar(ctx.getSource());
-        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException ex) {
-            ctx.getSource().sendFailure(Component.literal(ex.getMessage()));
-            return 0;
-        }
-        VidasAdmin.limpar(ctx.getSource());
-        int ok = 0;
-        for (int i = 0; i < pend.ids().size(); i++) {
-            java.util.UUID id = pend.ids().get(i);
-            String nome = pend.nomes().get(i);
-            ServerPlayer online = ctx.getSource().getServer().getPlayerList().getPlayer(id);
-            VidasAdmin.Alvo alvo = new VidasAdmin.Alvo(id, nome, online);
-            switch (pend.acao()) {
-                case "tirar" -> vidaTirar(ctx, alvo, pend.qtd());
-                case "dar" -> vidaDar(ctx, alvo, pend.qtd());
-                default -> vidaDefinir(ctx, alvo, pend.qtd());
+            switch (acao) {
+                case "tirar" -> vidaTirar(ctx, a, qtd);
+                case "dar" -> vidaDar(ctx, a, qtd);
+                default -> vidaDefinir(ctx, a, qtd);
             }
-            ok++;
         }
-        int total = ok;
-        ctx.getSource().sendSuccess(() -> Component.literal("\u2714 Lote aplicado em " + total + " jogador(es).")
-                .withStyle(ChatFormatting.GREEN), true);
+        String acaoTxt = acao.equals("definir") ? "definir " + qtd : acao + " " + qtd;
+        int total = alvos.size();
+        ctx.getSource().sendSuccess(() -> Component.literal("\u2714 " + acaoTxt + " em " + total
+                        + " jogador(es)" + (falhas.isEmpty() ? "" : "  [ignorados: " + String.join(",", falhas) + "]"))
+                .withStyle(ChatFormatting.GREEN), false);
         return Command.SINGLE_SUCCESS;
     }
-
 
     private static void medar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
             ServerPlayer alvo, int seg) {
@@ -433,45 +402,6 @@ public final class RPCommands {
     }
 
     /** (4.5.0) liga/desliga UMA regra e responde colorido. */
-    private static int regra(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
-            String nome, boolean permitido) {
-        RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
-        switch (nome) {
-            case "pvp" -> wd.setRegraPvp(permitido);
-            case "quebrar" -> wd.setRegraQuebrar(permitido);
-            default -> wd.setRegraColocar(permitido);
-        }
-        String estado = permitido ? "LIBERADO" : "BLOQUEADO em RP";
-        ctx.getSource().sendSuccess(() -> Component.literal(
-                        "\u2696 " + nome.toUpperCase() + ": " + estado)
-                .withStyle(permitido ? ChatFormatting.GREEN : ChatFormatting.RED), true);
-        return Command.SINGLE_SUCCESS;
-    }
-
-    /** (4.5.0) estado das 3 regras (+ AFK) num lugar só. */
-    private static int mostrarRegras(
-            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
-        RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
-        int seg = wd.getAfkTimeout();
-        ctx.getSource().sendSuccess(() -> Component.literal("\u2696 REGRAS EM RP")
-                .withStyle(ChatFormatting.GOLD), false);
-        regraLinha(ctx, "pvp", wd.isRegraPvp());
-        regraLinha(ctx, "quebrar", wd.isRegraQuebrar());
-        regraLinha(ctx, "colocar", wd.isRegraColocar());
-        ctx.getSource().sendSuccess(() -> Component.literal("AFK: "
-                        + (seg <= 0 ? "automatico desligado" : seg + "s parado"))
-                .withStyle(ChatFormatting.GRAY), false);
-        return Command.SINGLE_SUCCESS;
-    }
-
-    private static void regraLinha(
-            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
-            String nome, boolean liberado) {
-        ctx.getSource().sendSuccess(() -> Component.literal("  " + nome + ": "
-                        + (liberado ? "liberado" : "BLOQUEADO em RP"))
-                .withStyle(liberado ? ChatFormatting.GREEN : ChatFormatting.RED), false);
-    }
-
     /** (3.64.0) nome bonito do estilo pro feedback do admin. */
     private static String nomeEstilo(int style) {
         return switch (style) {
@@ -781,8 +711,7 @@ public final class RPCommands {
                     + "/rp admin vida <jogador> tirar|dar [n] \u00a77\u2014 tira/devolve vida can\u00f4nica na hora (0..5)\u00a7c\n"
                     + "/rp admin vida <jogador> definir <n> \u00a77\u2014 define o total\u00a7c\n"
                     + "/rp admin vida <jogador> ver \u00a77\u2014 mostra quantas restam (nome vale OFFLINE)\u00a7c\n"
-                    + "/rp admin vida lote A,B,C tirar 1 \u00a77\u2014 em lote, pede /rp admin confirmar\u00a7c\n"
-                    + "/rp admin regra [pvp|quebrar|colocar] on|off \u00a77\u2014 regras do RP (tudo bloquear|liberar)\u00a7c\n"
+                    + "/rp admin vida lote A,B,C tirar 1 \u00a77\u2014 em lote, aplica na hora\u00a7c\n"
                     + "/rp admin afk tempo <s>|status \u00a77\u2014 tempo parado at\u00e9 virar AFK\u00a7c\n"
                     + "/rp admin bolhas on|off \u00a77\u2014 baloes do servidor inteiro\u00a7c\n"
                     + "/do <texto> \u00a77\u2014 narracao de ambiente\u00a7c\n"
@@ -880,39 +809,6 @@ public final class RPCommands {
                                             medar(ctx, alvo, seg);
                                             return Command.SINGLE_SUCCESS;
                                         }))))
-                // (4.5.0) /rp admin regra [pvp|quebrar|colocar] on|off | tudo bloquear|liberar
-                .then(Commands.literal("regra")
-                        .executes(ctx -> mostrarRegras(ctx))
-                        .then(Commands.literal("tudo")
-                                .then(Commands.literal("bloquear").executes(ctx -> {
-                                    RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
-                                    wd.setRegraPvp(false);
-                                    wd.setRegraQuebrar(false);
-                                    wd.setRegraColocar(false);
-                                    ctx.getSource().sendSuccess(() -> Component.literal(
-                                            "Regras em RP: PvP, QUEBRAR e COLOCAR agora estao BLOQUEADOS.")
-                                            .withStyle(ChatFormatting.RED), true);
-                                    return Command.SINGLE_SUCCESS;
-                                }))
-                                .then(Commands.literal("liberar").executes(ctx -> {
-                                    RPWorldData wd = RPWorldData.get(ctx.getSource().getServer());
-                                    wd.setRegraPvp(true);
-                                    wd.setRegraQuebrar(true);
-                                    wd.setRegraColocar(true);
-                                    ctx.getSource().sendSuccess(() -> Component.literal(
-                                            "Regras em RP: PvP, QUEBRAR e COLOCAR agora estao LIBERADOS.")
-                                            .withStyle(ChatFormatting.GREEN), true);
-                                    return Command.SINGLE_SUCCESS;
-                                })))
-                        .then(Commands.literal("pvp")
-                                .then(Commands.literal("on").executes(ctx -> regra(ctx, "pvp", true)))
-                                .then(Commands.literal("off").executes(ctx -> regra(ctx, "pvp", false))))
-                        .then(Commands.literal("quebrar")
-                                .then(Commands.literal("on").executes(ctx -> regra(ctx, "quebrar", true)))
-                                .then(Commands.literal("off").executes(ctx -> regra(ctx, "quebrar", false))))
-                        .then(Commands.literal("colocar")
-                                .then(Commands.literal("on").executes(ctx -> regra(ctx, "colocar", true)))
-                                .then(Commands.literal("off").executes(ctx -> regra(ctx, "colocar", false)))))
                 // (4.5.0) /rp admin afk tempo <segundos> | status
                 .then(Commands.literal("afk")
                         .then(Commands.literal("status").executes(ctx -> {
@@ -960,12 +856,6 @@ public final class RPCommands {
                                                                 com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 5))
                                                         .executes(ctx -> vidaLote(ctx, "definir",
                                                                 com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "quantia"))))))))
-                .then(Commands.literal("confirmar").executes(ctx -> vidaConfirmar(ctx)))
-                .then(Commands.literal("cancelar").executes(ctx -> {
-                    VidasAdmin.limpar(ctx.getSource());
-                    ctx.getSource().sendSuccess(() -> Component.literal("\u2716 Nada foi aplicado.").withStyle(ChatFormatting.GRAY), false);
-                    return Command.SINGLE_SUCCESS;
-                }))
                 // (3.64.0) /rp admin avisar <jogadores> [estilo] <texto>
                 // (3.86.0) 10 estilos: classico, pesadelo, runico, real, morte,
                 // inferno, gelo, divino, void, sangue — (3.87.0) +demoniaco
