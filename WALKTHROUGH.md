@@ -1645,26 +1645,29 @@ Todas têm **borda_fade** (alfa → 0 nas margens) para nunca aparecer o quadrad
 ⚠️ `suave(a, b, x)` do gerador: o denominador NÃO pode ser `max(1e-6, b-a)` —
 com `b < a` isso inverte a máscara (foi o bug que deixou a esfera branca).
 
-**Publicado 4.8.4:** release **423061310**, asset **673674864**
-`rptag-4.8.4.jar` = **115.976.825 B**, sha256
-`8ffb1e362da0c709ae4613170c1bd18d692afdee70ec398b3ae785c6f75a98f6`
-(download + `cmp` idêntico). Commit `88e5d6f`. Apagados: releases 423058662
-(4.8.3), 423054016, 423053109, 423046836 + tags `v4.8.3`/`v4.8.2`/`v4.8.1`.
-Vivas: `v4.8.4` e `portais-v1.3.2`. **490 checks PASS** / 43 JUnit / boot
-`Done (0.793s)` no NeoForge 21.1.249.
+**Publicado 4.8.5:** release **423072073**, asset **673729998**
+`rptag-4.8.5.jar` = **116.197.736 B**, sha256
+`b1a5ba02ba9854525c19c213d4e3361caffc5dd08aef31e141c20ea6aa81d162`
+(download + `cmp` idêntico). Commit `7fbcfa5`. Apagados: releases 423061310
+(4.8.4), 423058662, 423054016, 423053109, 423046836 + tags `v4.8.4`→`v4.8.1`.
+Vivas: `v4.8.5` e `portais-v1.3.2`. **497 checks PASS** / 43 JUnit / boot
+`Done (1.075s)` no NeoForge 21.1.249.
 
-**Linguagem do resumo (4.8.4)** — `renderResumo`: nome em `pose.scale(2,2,1)`,
-linha `idade · origem` com `umaLinha()`, e cartões via `fundoCartao()` +
-`cartaoTexto()` + `cartaoAlma()` (título dourado `0xFFD98A`, fio de luz em cima,
-vidro `0.055`). Coluna em `pw * 0.46f`. Rolagem = `enableScissor` +
-`mouseScrolled` + `desenhaRolagem`, com `alturaCartoes()` medindo antes.
+**Layout da referência (4.8.5)** — `FichaScreen`: `pw = clamp(w*0.42, 286, w-60)`,
+`px = width - 18 - pw`, `py = max(58, h*0.19)`, `ph = h - 40 - py`. `cabecalho()`
++ `fio()` (seno), `painel()`, `linha()` (rótulo em cima + valor + fio), `linhaAlma()`
+(barrinhas), `rodape()` (pontinhos clicáveis). Personagem:
+`raio = min(w,h)*0.22`, `escala = h*0.135`.
+`FichaFundo.nevoa()`: 3 camadas da textura `ficha_nevoa.png` tingidas com
+`setColor` em alfa 0.10/0.07/0.09 (azul-violeta, lilás, azul frio).
 
-⚠️ **Mock de prévia**: usar `/home/user/previa/fontes/monocraft.ttf` (fonte de
-pixel). Com DejaVu o mock parece outro jogo e o dono rejeita.
+⚠️ Referência do dono: `https://files.catbox.moe/c5a48l.java` (CharacterSheetScreen).
+O que NÃO copiar dela: névoa/buraco/anel desenhados com `g.fill` (pixel quebrado,
+já rejeitado) e o roxo pesado.
 
 ---
 
-*Última atualização: ciclo 4.8.4 (2026-10-25) — resumo em cartões (nome grande,
-cartões de vidro, alma em barras).*
+*Última atualização: ciclo 4.8.5 (2026-10-25) — layout da referência (painel à
+direita, rótulo em cima, gradiente) + névoa em textura.*
 
-*Ciclo anterior: 4.8.3 (2026-10-24) — resumo virou página (seções, zebra, barras).*
+*Ciclo anterior: 4.8.4 (2026-10-25) — resumo em cartões.*
