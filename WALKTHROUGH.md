@@ -1645,23 +1645,26 @@ Todas têm **borda_fade** (alfa → 0 nas margens) para nunca aparecer o quadrad
 ⚠️ `suave(a, b, x)` do gerador: o denominador NÃO pode ser `max(1e-6, b-a)` —
 com `b < a` isso inverte a máscara (foi o bug que deixou a esfera branca).
 
-**Publicado 4.8.3:** release **423058662**, asset **673661987**
-`rptag-4.8.3.jar` = **115.976.450 B**, sha256
-`b8c8737face2d5adfd1f51f99a7b11080eb53304ed2e5ebe5306eddd8c24e782`
-(download + `cmp` idêntico). Commit `2cef89a`. Apagados: releases 423054016
-(4.8.2), 423053109 (1ª tentativa da 4.8.2) e 423046836 (4.8.1) + tags
-`v4.8.2`/`v4.8.1`. Vivas: `v4.8.3` e `portais-v1.3.2`. **486 checks PASS** /
-43 JUnit / boot `Done (0.857s)` no NeoForge 21.1.249.
+**Publicado 4.8.4:** release **423061310**, asset **673674864**
+`rptag-4.8.4.jar` = **115.976.825 B**, sha256
+`8ffb1e362da0c709ae4613170c1bd18d692afdee70ec398b3ae785c6f75a98f6`
+(download + `cmp` idêntico). Commit `88e5d6f`. Apagados: releases 423058662
+(4.8.3), 423054016, 423053109, 423046836 + tags `v4.8.3`/`v4.8.2`/`v4.8.1`.
+Vivas: `v4.8.4` e `portais-v1.3.2`. **490 checks PASS** / 43 JUnit / boot
+`Done (0.793s)` no NeoForge 21.1.249.
 
-**Receita do resumo (4.8.3)** — `FichaScreen`: `renderResumo` → `secao()` (diamante
-dourado + `regua()` com `sin(πk)` desbotando nas pontas), `linha()` (rótulo fraco +
-valor creme, zebra `0x0DFFFFFF`), `barrasAlma()` (`FichaRp.personaTopo()`), e
-`enableScissor` + `mouseScrolled` + `desenhaRolagem()` quando não cabe. Rodapé com
-`tecla()` (keycap). O boneco escala com `Mth.clamp(ph/276f, 0.60f, 1f)`.
+**Linguagem do resumo (4.8.4)** — `renderResumo`: nome em `pose.scale(2,2,1)`,
+linha `idade · origem` com `umaLinha()`, e cartões via `fundoCartao()` +
+`cartaoTexto()` + `cartaoAlma()` (título dourado `0xFFD98A`, fio de luz em cima,
+vidro `0.055`). Coluna em `pw * 0.46f`. Rolagem = `enableScissor` +
+`mouseScrolled` + `desenhaRolagem`, com `alturaCartoes()` medindo antes.
+
+⚠️ **Mock de prévia**: usar `/home/user/previa/fontes/monocraft.ttf` (fonte de
+pixel). Com DejaVu o mock parece outro jogo e o dono rejeita.
 
 ---
 
-*Última atualização: ciclo 4.8.3 (2026-10-24) — resumo virou página (seções,
-zebra, barras da alma, teclas) e boneco proporcional.*
+*Última atualização: ciclo 4.8.4 (2026-10-25) — resumo em cartões (nome grande,
+cartões de vidro, alma em barras).*
 
-*Ciclo anterior: 4.8.2 (2026-10-24) — fundo blur+estrelas, resumo legível, X e reset.*
+*Ciclo anterior: 4.8.3 (2026-10-24) — resumo virou página (seções, zebra, barras).*
