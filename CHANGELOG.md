@@ -1,5 +1,47 @@
 # Changelog
 
+## 4.9.0 — O TABLET SAIU (e o RP ficou automático) — 2026-10-25
+
+Três layouts recusados depois, o dono olhou o screenshot do jogo e disse
+*"isso ficou horrivel"* — junto com o pedido: **remover tudo do tablet**, do mod
+E do GitHub. Feito: não sobrou uma linha.
+
+### Removido (tablet)
+- `TabletItem` (o item `rptag:tablet`), `FichaRp`, `FichaCodec`, `FichaServer`,
+  `FichaCommands`, `FichaLivro`, `FichaOpenPayload`, `FichaSavePayload`.
+- No cliente: `FichaScreen`, `FichaWidgets`, `FichaFundo` (a tela inteira).
+- Texturas `gui/ficha_anel.png`, `ficha_buraco.png`, `ficha_nevoa.png`;
+  modelo e textura do item; as 2 linhas do `lang`; `/tablet` e `/ficha`.
+- Os mocks e prévias: `arte/mock_tablet.py`, `arte/mock_resumo.py`,
+  `arte/gerar_texturas_ficha.py`, `arte/tablet_*.png`, `arte/resumo_*.png`.
+- O mapa `fichas` do `RPWorldData` e o NBT `"Fichas"` (save antigo ignora a chave).
+- **Protocolo v6 → v7**: cliente antigo é recusado com a mensagem de versão.
+
+> O **`/persona` continua** — o personagem em texto (nome, idade, descrição,
+> personalidade) nunca dependeu da tela.
+
+### Removido (comandos)
+- **`/rp admin regra`** e as três flags (`RegraPvp`, `RegraQuebrar`,
+  `RegraColocar`). O dono: *"não funciona muito bem"* e *"não vai fazer sentido
+  o adm ter que usar esse comando"*. Agora **vale sozinho**: quem está em RP não
+  faz PvP (corpo a corpo e dano indireto), não quebra e não coloca bloco (balde
+  incluso). Staff com permissão 2 continua passando.
+- **`/rp admin confirmar`** e **`/rp admin cancelar`**. O lote
+  (`/rp admin vida lote A,B,C tirar 1`) **aplica na hora** — `VidasAdmin` perdeu
+  `guardar/pegar/limpar/Pendente`.
+
+### Novo
+- **Aviso de vida perdida**: quando a vida canônica cai, todo mundo num **raio de
+  32 blocos** (mesmo mundo) lê no chat **`<nome> perdeu uma vida - tome cuidado`**.
+  Quem perdeu não recebe — pra ele já aparece o aviso grande na tela.
+
+### Qualidade
+- `check.py` **463 PASS / 0 FAIL** (checks do tablet apagados; 22 novos da 4.9.0).
+- **JUnit 43/43**; `javac` limpo; jar **115.810.490 B**.
+- Servidor NeoForge 21.1.249: `Done (0.938s)`; RCON confirma que `/tablet`,
+  `/ficha`, `/rp admin regra` e `/rp admin confirmar` não existem mais e que
+  `…vida lote` devolve `✔ … em N jogador(es)` na hora.
+
 ## 4.8.5 — LAYOUT DA REFERÊNCIA (fundo galáxia + painel à direita) — 2026-10-25
 
 O dono mandou um `CharacterSheetScreen.java` de referência e disse *"tente

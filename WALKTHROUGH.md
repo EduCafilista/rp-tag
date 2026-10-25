@@ -17,16 +17,45 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.7.1** (2026-10-22) |
+| Versão | **4.9.0** (2026-10-25) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.7.1.jar` (**104.562.228 B** com 6 vídeos; **só na GitHub Release** — Release `v4.7.1` id 420651626, asset 665690225) |
-| Checks | `check.py` → **413 PASS / 0 FAIL** + **JUnit 43/43** (`./gradlew test`) + `python -m unittest discover -s arte/tests` (23 ok; 3 dependem da fonte Consolas do Windows) |
-| Smoke | Servidor NeoForge 21.1.249 real: Done ~0,5s, RCON OK, 0 erros do mod |
+| Jar | `rptag-4.9.0.jar` (**115.810.490 B** — só na GitHub Release `v4.9.0`) |
+| Checks | `check.py` → **463 PASS / 0 FAIL** + **JUnit 43/43** |
+| Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
-| Repo local | `/home/user/rp-tag` — `main` = `e20a9a7`, tag `v4.7.0` |
-| Releases vivas | **v4.7.1** (jar) + `portais-v1.3.2` (só essa é mantida em paralelo) |
-| Bundle | **NÃO gerar**: com os 6 vídeos ele passa de 155 MB (o backup é o próprio GitHub + Release) |
-| Servidor local | `run/` foi apagado nesta limpeza: reinstalar com o installer 21.1.249 quando precisar de smoke test |
+| Repo local | `/home/user/rp-tag` — `main` = `377e2aa`, tag `v4.9.0` |
+| Releases vivas | **v4.9.0** (jar) + `portais-v1.3.2` |
+| Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
+| Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 4.9.0 (2026-10-25): O TABLET SAIU — e o RP ficou automático
+- **Pedido literal do dono:** *"isso ficou horrivel"* (screenshot do jogo) + **"remover
+  tudo do tablet"**, do mod **e do GitHub**. Fim de três layouts recusados (4.8.3/4.8.4/4.8.5).
+- **REMOVIDO do mod:** `TabletItem`, `FichaRp`, `FichaCodec`, `FichaServer`,
+  `FichaCommands`, `FichaLivro`, `FichaOpenPayload`, `FichaSavePayload`,
+  `client/FichaScreen`, `client/FichaWidgets`, `client/FichaFundo`; o registro
+  `rptag:tablet` em `RPTagMod`; os canais do protocolo; `garantirTablet` no login;
+  as texturas `gui/ficha_{anel,buraco,nevoa}.png`; modelo/textura do item; as 2 linhas
+  do `lang`; os comandos `/tablet` e `/ficha`; `arte/mock_tablet.py`,
+  `arte/mock_resumo.py`, `arte/gerar_texturas_ficha.py` e os PNGs de prévia.
+  O mapa `fichas` do `RPWorldData` (e o NBT `"Fichas"`) também saiu — save antigo só
+  ignora a chave órfã. **`/persona` continua** (o personagem em texto, sem tela).
+- **Protocolo:** `registrar("6")` → **`registrar("7")`**. Cliente antigo é recusado na
+  hora (mensagem de versão) em vez de mandar pacote que não existe mais.
+- **`/rp admin regra` SAIU** e as 3 flags (`RegraPvp/Quebrar/Colocar`) saíram do
+  `RPWorldData`. Motivo: *"não funciona muito bem"* + *"não faz sentido o adm ter que
+  usar esse comando"*. **Agora é automático:** quem está em RP já não faz PvP (corpo a
+  corpo e dano indireto), não quebra e não coloca bloco (balde incluso); staff com
+  permissão 2 passa (precisa montar cenário). `RegrasRp` não lê flag nenhuma.
+- **`/rp admin confirmar` e `/rp admin cancelar` SAIRAM.** `VidasAdmin.guardar/pegar/
+  limpar/Pendente/PENDENTES` foram apagados: `…vida lote A,B,C tirar 1` **aplica na hora**
+  e mostra `✔ tirar 1 em N jogador(es)`.
+- **NOVO aviso de vida perdida** (`CanonLife.avisarPorPerto`): quando a vida canônica
+  cai, todo jogador num **raio de 32 blocos** (mesmo mundo) recebe no chat
+  **`<nome> perdeu uma vida - tome cuidado`** — quem perdeu não recebe (ele já tem o
+  aviso grande na tela).
+- `check.py`: os checks do tablet foram **apagados junto com o tablet** (exceção
+  justificada à regra "contagem só sobe") e entraram 22 checks de 4.9.0 → **463/0**.
 
 ### 4.7.1 (2026-10-22): egípcio v2 (referência do dono) + REAL novo + void/gelo antigos
 - **Pedido literal do dono:** "o avisar void eu ainda prefiro o estilo antigo, prefiro o
