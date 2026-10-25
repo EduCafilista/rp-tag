@@ -1645,12 +1645,17 @@ Todas têm **borda_fade** (alfa → 0 nas margens) para nunca aparecer o quadrad
 ⚠️ `suave(a, b, x)` do gerador: o denominador NÃO pode ser `max(1e-6, b-a)` —
 com `b < a` isso inverte a máscara (foi o bug que deixou a esfera branca).
 
-**Publicado 4.8.2:** release **423053109**, asset **673634048**
-`rptag-4.8.2.jar` = **115.974.132 B**, sha256
-`6dc72388eb5c548feb35cc25e3fcfa42b5a099a0015334c4e262bdeb08417f0a`
-(download + `cmp` idêntico). Commit `14470da`. Apagados: release 423046836 e tag
-`v4.8.1`. Vivas: `v4.8.2` e `portais-v1.3.2`. 479 checks PASS / 43 JUnit /
-boot limpo no NeoForge 21.1.249 (`/tablet` e `/ficha resetar` respondendo no RCON).
+**Publicado 4.8.2:** release **423054016**, asset **673638957**
+`rptag-4.8.2.jar` = **115.974.757 B**, sha256
+`d442514bafd931de7c6ffa383ebee14b9edca0b67daa1966054674b33052d974`
+(download + `cmp` idêntico). Commit `a636b0f`. Apagados: release 423053109
+(primeira tentativa, resumo cortando com "…") e 423046836 + tag `v4.8.1`.
+Vivas: `v4.8.2` e `portais-v1.3.2`. 479 checks PASS / 43 JUnit / boot limpo no
+NeoForge 21.1.249 (`/tablet` e `/ficha resetar` respondendo no RCON).
+
+**Lição da 4.8.2:** resumo em coluna única **sempre** trunca com textos longos
+(400 chars de história). Solução final: `enableScissor` + `mouseScrolled` —
+o resumo **rola** e mostra tudo, com fade nas bordas e barra à direita.
 
 ---
 
