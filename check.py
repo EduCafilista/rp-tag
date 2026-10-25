@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.8.3' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.8.4' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.8.3 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.8.4 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -359,7 +359,7 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.8.3', 'RP Tag 4.8.3' in ce)
+check('4.0: boot log 4.8.4', 'RP Tag 4.8.4' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -1091,7 +1091,7 @@ check('4.8.2: estrelas cintilando + cometa no ceu',
 check('4.8.2: texturas carregadas em DynamicTexture com filtro LINEAR',
       'new DynamicTexture(' in _fd and 'tex.upload()' in _fd and 'tex.setFilter(true, false)' in _fd)
 check('4.8.2: resumo quebra o texto dentro da coluna (nada vaza do painel)',
-      'font.split(' in _fs2 and 'enableScissor' in _fs2 and 'linha(g' in _fs2)
+      'font.split(' in _fs2 and 'enableScissor' in _fs2 and 'cartaoTexto(' in _fs2)
 check('4.8.2: personaResumo mostra so os 3 eixos mais fortes',
       'for (int k = 0; k < 3; k++)' in rd(R + '/FichaRp.java'))
 check('4.8.2: dono sempre pode editar (Confirmar Personagem nao desaparece)',
@@ -1116,20 +1116,30 @@ check('4.8.2: gerador das texturas sem a nebulosa roxa',
 
 _fs3 = rd(C + '/FichaScreen.java')
 # ============ 4.8.3: RESUMO VIRou PAGINA (visual) ============
-check('4.8.3: resumo com secoes (QUEM VOCE E / SUA ALMA / SUA HISTORIA)',
-      '"QUEM VOCÊ É"' in _fs3 and '"SUA ALMA"' in _fs3 and '"SUA HISTÓRIA"' in _fs3)
-check('4.8.3: linhas zebradas (leitura mais facil)',
-      'zebra' in _fs3 and '0x0DFFFFFF' in _fs3)
+check('4.8.3: resumo com titulos em dourado',
+      '"ALMA"' in _fs3 and '"HISTÓRIA"' in _fs3 and 'corComAlfa(0xFFD98A' in _fs3)
+check('4.8.3: cartoes de vidro (fundo + fio dourado em cima)',
+      'fundoCartao(' in _fs3 and 'cartaoTexto(' in _fs3)
 check('4.8.3: reguas que desbotam nas pontas (sem linha serrilhada)',
       'private void regua(' in _fs3 and 'Math.sin(Math.PI * k)' in _fs3)
 check('4.8.3: alma virou BARRINHAS (personaTopo)',
-      'barrasAlma(' in _fs3 and 'personaTopo' in rd(R + '/FichaRp.java'))
+      'cartaoAlma(' in _fs3 and 'personaTopo' in rd(R + '/FichaRp.java'))
 check('4.8.3: rodape com teclas desenhadas (keycap)',
       'private int tecla(' in _fs3 and '"ESC", "sair"' in _fs3)
 check('4.8.3: painel abre mais largo no resumo',
       'CAP_RESUMO ? 540 : 470' in _fs3)
 check('4.8.3: sombra do painel + brilho de topo nos botoes',
       '0x30000000' in _fs3 and 'luz de cima' in _fw)
+
+# ============ 4.8.4: RESUMO EM CARTOES ============
+check('4.8.4: nome em destaque (2x) + idade/origem numa linha',
+      'pose.scale(esc, esc, 1f)' in _fs3 and 'umaLinha(juntar(' in _fs3)
+check('4.8.4: cartoes OCUPACAO / HABILIDADES / ALMA / HISTORIA',
+      '"OCUPAÇÃO"' in _fs3 and '"HABILIDADES"' in _fs3 and '"ALMA"' in _fs3 and '"HISTÓRIA"' in _fs3)
+check('4.8.4: texto mais largo (coluna em 46% do painel)',
+      'pw * 0.46f' in _fs3)
+check('4.8.4: altura dos cartoes medida para a rolagem',
+      'alturaCartoes(' in _fs3)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

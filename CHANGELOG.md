@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.8.4 — RESUMO EM CARTÕES (linguagem nova) — 2026-10-25
+
+O dono pediu para **trocar a linguagem** e melhorar. A página de linhas saiu; o
+resumo agora é um **cartão de apresentação**.
+
+### O que mudou
+- **nome grande** (2× a fonte) no topo do resumo, com **idade · origem** logo
+  abaixo numa linha só — é a primeira coisa que o olho pega.
+- o resto virou **cartões de vidro**: `OCUPAÇÃO`, `HABILIDADES`, `ALMA` e
+  `HISTÓRIA`, cada um com título dourado, fio de luz em cima e cantinho aceso.
+- a coluna de texto começou **mais à esquerda** (46% do painel): cada linha
+  carrega mais texto, então quase tudo cabe sem rolar.
+- a rolagem (quando existe) é discreta: barra fina e esfumaçado nas bordas.
+- `ALMA` continua em **barrinhas**, agora dentro do cartão.
+
+### Números
+486 → **490 checks** no `check.py` (0 FAIL) · 43/43 JUnit.
+
 ## 4.8.3 — O RESUMO VIROU PÁGINA (visual) — 2026-10-24
 
 O dono olhou a 4.8.2 e disse: *"melhore a qualidade, tá horrível"*. Ele tinha
