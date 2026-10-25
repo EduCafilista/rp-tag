@@ -25,7 +25,9 @@ public final class ModNetworking {
         // arquivo .ogg no cliente).
         // (3.55.0) v5: GANHOU music_query/music_chunk/music_answer (a musica
         // DO SERVIDOR vai pro cliente em pedaços — todo mundo ouve).
-        PayloadRegistrar registrar = event.registrar("5");
+        PayloadRegistrar registrar = event.registrar("6");
+        registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC, ClientPayloadHandler::handleTablet);
+        registrar.playToServer(TabletUpdatePayload.TYPE, TabletUpdatePayload.STREAM_CODEC, TabletService::handleUpdate);
         registrar.playToClient(SyncRPStatePayload.TYPE, SyncRPStatePayload.STREAM_CODEC,
                 ClientPayloadHandler::handleSync);
         registrar.playToClient(PersonaSyncPayload.TYPE, PersonaSyncPayload.STREAM_CODEC,

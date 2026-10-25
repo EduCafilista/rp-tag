@@ -25,6 +25,16 @@ Se o inventário estiver cheio, adiar a entrega e informar o jogador; não marca
 
 O tablet abre a ficha de quem o usa. Não contém os dados privados no próprio ItemStack e não permite consultar o dono anterior quando transferido.
 
+## Modelo do tablet
+
+Produzir um modelo tridimensional próprio do item no Blockbench, disponível nesta máquina. O usuário também autorizou Blender 5.2, instalado localmente, com a exigência de geometria low-poly caso seja utilizado. Priorizar Blockbench no formato Java Block/Item para exportação direta ao Minecraft, sem acrescentar biblioteca de animação ou renderizador próprio apenas para o item.
+
+O tablet terá corpo fino e retangular, moldura escura, tela levemente recuada e poucos detalhes físicos. Usar geometria de cubos, textura pixelada e proporções coerentes com a mão do jogador. Evitar subdivisão, peças pequenas sem função visual e efeitos que dependam de materiais do Blender. A frente terá uma representação estática da tela; a interface interativa abre ao usar o item, sem exigir uma tela dinâmica renderizada no mundo.
+
+Preservar símbolo e nome QuiralOS no boot da interface e a identidade Neptune SMP na ficha. Entregar o projeto editável `.bbmodel`, a textura PNG e o modelo JSON exportado, com ajustes de apresentação em primeira pessoa, terceira pessoa, inventário e item no chão. Se o Blender for usado para estudo ou visualização, entregar também o `.blend` low-poly; o modelo final ainda deve respeitar o formato aceito pelo Minecraft.
+
+Antes de finalizar o recurso, apresentar uma prévia da frente, traseira e espessura do modelo. Validar os encaixes nas mãos direita e esquerda e a leitura do ícone no inventário dentro do jogo. O modelo do item não substitui a skin real do jogador exibida na interface.
+
 ## Fluxo da ficha
 
 1. Boot curto do QuiralOS, com progresso visual e transição para o conteúdo.

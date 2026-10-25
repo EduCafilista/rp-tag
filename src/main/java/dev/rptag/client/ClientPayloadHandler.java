@@ -19,6 +19,10 @@ public final class ClientPayloadHandler {
     private ClientPayloadHandler() {
     }
 
+    public static void handleTablet(dev.rptag.TabletSyncPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> TabletClientEvents.receive(payload));
+    }
+
     public static void handleSync(final SyncRPStatePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             ClientRPStates.set(payload.playerId(), payload.inRp());

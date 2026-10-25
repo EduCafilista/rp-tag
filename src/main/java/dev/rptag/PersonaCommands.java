@@ -47,6 +47,7 @@ public final class PersonaCommands {
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             String nome = StringArgumentType.getString(ctx, "nome");
+                            if (TabletService.personaLocked(player)) return 0;
                             if (nome.length() > 32) {
                                 player.sendSystemMessage(Component.literal("Nome muito longo (max 32).").withStyle(ChatFormatting.RED));
                                 return 0;
@@ -68,6 +69,7 @@ public final class PersonaCommands {
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             int idade = IntegerArgumentType.getInteger(ctx, "n");
+                            if (TabletService.personaLocked(player)) return 0;
                             Persona antiga = ServerEvents.getPersona(player);
                             if (antiga.isEmpty()) {
                                 player.sendSystemMessage(Component.literal("Crie uma persona primeiro: /persona criar <nome>").withStyle(ChatFormatting.RED));
@@ -84,6 +86,7 @@ public final class PersonaCommands {
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
                             String desc = StringArgumentType.getString(ctx, "texto");
+                            if (TabletService.personaLocked(player)) return 0;
                             Persona antiga = ServerEvents.getPersona(player);
                             if (antiga.isEmpty()) {
                                 player.sendSystemMessage(Component.literal("Crie uma persona primeiro: /persona criar <nome>").withStyle(ChatFormatting.RED));
@@ -112,6 +115,7 @@ public final class PersonaCommands {
         // /persona off
         root.then(Commands.literal("off").executes(ctx -> {
             ServerPlayer player = ctx.getSource().getPlayerOrException();
+            if (TabletService.personaLocked(player)) return 0;
             ServerEvents.setPersona(player, Persona.EMPTY);
             player.sendSystemMessage(Component.literal("Persona removida. Voce voltou a ser ")
                     .withStyle(ChatFormatting.GRAY)

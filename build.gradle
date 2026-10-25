@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'dev.rptag'
-version = '4.6.0'
+version = '4.7.0'
 
 base {
     archivesName = 'rptag'
@@ -18,7 +18,7 @@ java {
 
 neoForge {
     // NeoForge para Minecraft 1.21.1
-    version = '21.1.249'
+    version = '21.1.228'
 
     runs {
         client {

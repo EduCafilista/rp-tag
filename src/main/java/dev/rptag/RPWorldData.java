@@ -36,6 +36,7 @@ public final class RPWorldData extends SavedData {
 
     private final Map<UUID, Boolean> states = new HashMap<>();
     private final Map<UUID, Persona> personas = new HashMap<>();
+    private final Map<UUID, FichaRegistro> fichas = new HashMap<>();
     private final Map<UUID, Integer> colors = new HashMap<>();
     private final Map<UUID, Boolean> bubbleOptOut = new HashMap<>();
     /** jogadores PROIBIDOS de usar balao por um admin (ausente = permitido). */
@@ -99,6 +100,25 @@ public final class RPWorldData extends SavedData {
     }
 
     // ==== cor pessoal (chat + balao) ====
+    public FichaRegistro getFicha(UUID id) {
+        FichaRegistro existing = fichas.get(id);
+        if (existing != null && (existing.revisao() != 0 || existing.confirmada() != null)) return existing;
+        FichaRegistro initial = FichaRegistro.inicial(getPersona(id));
+        if (existing != null && existing.tabletEntregue()) initial = initial.comTabletEntregue();
+        fichas.put(id, initial);
+        setDirty();
+        return initial;
+    }
+
+    public void setFicha(UUID id, FichaRegistro ficha) {
+        fichas.put(id, ficha);
+        setDirty();
+    }
+
+    public boolean hasConfirmedFicha(UUID id) {
+        FichaRegistro sheet = fichas.get(id);
+        return sheet != null && sheet.confirmada() != null;
+    }
 
     public int getColor(UUID id) {
         return colors.getOrDefault(id, DEFAULT_COLOR);
@@ -322,6 +342,14 @@ public final class RPWorldData extends SavedData {
             personas.add(e);
         });
         tag.put("Personas", personas);
+        ListTag sheets = new ListTag();
+        this.fichas.forEach((id, ficha) -> {
+            CompoundTag entry = new CompoundTag();
+            entry.putUUID("Id", id);
+            entry.put("Sheet", ficha.save());
+            sheets.add(entry);
+        });
+        tag.put("TabletSheets", sheets);
 
         ListTag colors = new ListTag();
         this.colors.forEach((id, rgb) -> {
@@ -413,6 +441,16 @@ public final class RPWorldData extends SavedData {
 
     public static RPWorldData load(CompoundTag tag, HolderLookup.Provider registries) {
         RPWorldData data = new RPWorldData();
+        ListTag sheets = tag.getList("TabletSheets", Tag.TAG_COMPOUND);
+        for (int i = 0; i < sheets.size(); i++) {
+            CompoundTag entry = sheets.getCompound(i);
+            if (!entry.hasUUID("Id") || !entry.contains("Sheet", Tag.TAG_COMPOUND)) continue;
+            try {
+                data.fichas.put(entry.getUUID("Id"), FichaRegistro.load(entry.getCompound("Sheet")));
+            } catch (IllegalArgumentException exception) {
+                RPTagMod.LOGGER.warn("Ignorando uma entrada inválida de ficha: {}", exception.getMessage());
+            }
+        }
 
         ListTag states = tag.getList("States", Tag.TAG_COMPOUND);
         for (int i = 0; i < states.size(); i++) {

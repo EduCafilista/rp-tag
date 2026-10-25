@@ -32,7 +32,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "4.6.0";
+    public static final String VERSION = "4.7.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -53,6 +53,7 @@ public final class RPTagMod {
      * nunca spawna naturalmente). */
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.createItems(MODID);
+    public static final Supplier<Item> TABLET = ITEMS.register("tablet", () -> new TabletItem(new Item.Properties().stacksTo(1)));
     public static final DeferredRegister<BlockEntityType<?>> BE_TYPES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
 
