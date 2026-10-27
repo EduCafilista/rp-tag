@@ -1,7 +1,19 @@
-# RP Tag 4.9.0 — o tablet saiu
+# RP Tag 4.9.1 — o tablet saiu e o divino voltou
 
-**Jar:** https://github.com/EduCafilista/rp-tag/releases/download/v4.9.0/rptag-4.9.0.jar
-(115.810.490 B · `rptag-4.9.0.jar`)
+**Jar:** https://github.com/EduCafilista/rp-tag/releases/download/v4.9.1/rptag-4.9.1.jar
+(91.120.743 B · `rptag-4.9.1.jar`)
+
+---
+
+## 0. O aviso DIVINO voltou ao antigo (4.9.1)
+
+Na 4.6.0 o divino passou a usar um **vídeo do Blender** (fundo cinza/branco, texto
+com contorno escuro) — foi o que ficou esquisito. Agora ele voltou a ser o desenho
+procedural de sempre: fundo escuro, pilar de luz, raios em duas camadas girando,
+halo com anéis, tiques rúnicos, hexagramas, **asas de luz**, faíscas em estrela e
+o acorde de 5 sinos — dourado. A pasta do vídeo saiu do mod (jar ~25 MB menor).
+
+Prévia: `previa/divino_4_9_1.png`
 
 ---
 

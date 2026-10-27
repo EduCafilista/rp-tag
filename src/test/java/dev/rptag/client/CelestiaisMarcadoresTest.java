@@ -8,7 +8,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Os fx.json do Void e do Divino (exportados do Blender) batem com os tempos dos FX Java. */
+/** O fx.json do Void (exportado do Blender) bate com os tempos do FX Java.
+ *  (4.9.1) O video do DIVINO saiu — o aviso voltou a ser o procedural antigo. */
 class CelestiaisMarcadoresTest {
 
     private static FxTimeline carregar(String id) throws Exception {
@@ -28,16 +29,6 @@ class CelestiaisMarcadoresTest {
         assertFalse(tl.aditivo());
         assertEquals(List.of(0), tl.marcadores("impacto"));
         assertEquals(List.of(q(1.5), q(2.7), q(3.9)), tl.marcadores("ressoar")); // VoidAvisoFx.RES
-        assertEquals(List.of(q(6.0 - 0.9)), tl.marcadores("fim"));
-    }
-
-    @Test
-    void divinoSeisSegundosComSinosDoJava() throws Exception {
-        FxTimeline tl = carregar("divino");
-        assertEquals(24, tl.fps());
-        assertEquals(144, tl.frames());
-        assertFalse(tl.aditivo());
-        assertEquals(List.of(q(0.05), q(0.30), q(0.55), q(0.80), q(1.10)), tl.marcadores("sino")); // DivinoAvisoFx.CT
         assertEquals(List.of(q(6.0 - 0.9)), tl.marcadores("fim"));
     }
 }

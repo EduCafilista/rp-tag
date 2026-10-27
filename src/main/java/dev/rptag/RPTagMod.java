@@ -28,6 +28,11 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  *   <li>{@code dev.rptag.client.BubbleStyleScreen} — tela com seletor de cor</li>
  * </ul>
  *
+ * <p><b>4.9.1</b> — O aviso DIVINO voltou a ser o procedural antigo (dourado, com
+ * halo rúnico e asas desenhadas): o vídeo do Blender que o Marcello pôs na 4.6.0
+ * ficou esquisito (fundo cinza/branco) e o dono pediu o antigo de volta. A pasta
+ * {@code assets/rptag/fx/divino} saiu do mod.
+ *
  * <p><b>4.9.0</b> — O TABLET DA FICHA SAIU: o dono recusou a tela ("isso ficou
  * horrivel") e mandou remover do mod e do GitHub. Nao existe mais o item
  * {@code rptag:tablet}, nem as classes Ficha*, nem os comandos /tablet e /ficha.
@@ -40,7 +45,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "4.7.8";
+    public static final String VERSION = "4.9.1";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */

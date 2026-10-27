@@ -1,5 +1,27 @@
 # Changelog
 
+## 4.9.1 — O DIVINO VOLTOU AO ANTIGO — 2026-10-25
+
+*"consegue voltar para o antigo aviso divino? tava melhor, esse que o marcelo mexeu
+ficou esquisito, quero o antigo estava melhor"*.
+
+- **Causa:** na **4.6.0** (commit `32234fb`, do Marcello) o divino deixou de ser
+  desenhado e passou a usar um **vídeo do Blender** como fundo —
+  `assets/rptag/fx/divino/` com 288 JPEGs (26 MB), fundo cinza/branco, e o texto
+  ganhou contorno escuro pra dar leitura. Era isso que estava "esquisito".
+- **O que voltou** (`DivinoAvisoFx.java`, exatamente a versão anterior ao `32234fb`):
+  vinheta escura, clarão de abertura, pilar de luz descendo do céu, **2 camadas de
+  raios** girando em sentidos opostos, halo com anéis, **48 tiques rúnicos**,
+  **2 hexagramas**, 4 losangos orbitando, **asas de luz (2×9 penas)**, faíscas em
+  estrela, ornamento sob o título e o acorde de 5 sinos (`AMETHYST_BLOCK_CHIME`)
+  com beacon de abertura e de fecho — tudo em ouro/creme sobre escuro.
+- **A pasta `fx/divino` saiu do mod** → o jar volta ~25 MB mais leve.
+- O divino **não depende mais de `/rpfx on|off`**: como o vídeo não existe mais,
+  ele nunca cai no modo procedural "de emergência" — é sempre o desenho.
+- `parar()` continua (um aviso novo encerra o anterior).
+- `CelestiaisMarcadoresTest`: só o teste do **void** ficou (o `fx.json` do divino
+  não existe mais). JUnit **42/42**.
+
 ## 4.9.0 — O TABLET SAIU (e o RP ficou automático) — 2026-10-25
 
 Três layouts recusados depois, o dono olhou o screenshot do jogo e disse

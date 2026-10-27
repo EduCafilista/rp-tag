@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.9.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.9.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.9.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.9.1 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -786,7 +786,7 @@ check('4.4: coracao mantem o pickup SHIFT (+1 vida) e o teto 5/5',
 # ---- 4.6.0: Void e Divino em VIDEO (Blender) — tamanho dos videos no jar
 def _tam_pasta(p):
     return sum(os.path.getsize(os.path.join(r, f)) for r, _, fs in os.walk(p) for f in fs)
-for _id, _cls in (('void', 'VoidAvisoFx'), ('divino', 'DivinoAvisoFx')):
+for _id, _cls in (('void', 'VoidAvisoFx'),):
     _src = rd(C + '/%s.java' % _cls)
     check('4.6: %s tem o caminho de video (desligado por VIDEO_PADRAO=false)' % _cls,
           ('VideoFx.abrir("%s")' % _id) in _src)
@@ -801,8 +801,8 @@ check('4.6: aviso novo encerra tambem Void e Divino (ClientEffects)',
       all(('%s.parar()' % k) in rd(C + '/ClientEffects.java') for k in ('VoidAvisoFx', 'DivinoAvisoFx')))
 check('4.6: sair do mundo encerra tambem Void e Divino',
       all(('%s.parar()' % k) in rd(C + '/ClientEvents.java') for k in ('VoidAvisoFx', 'DivinoAvisoFx')))
-# meta ~15 MB; o Divino cobre a tela toda e o dono aprovou ~27 MB (cor em qualidade 75)
-for _id, _teto in (('void', 16), ('divino', 27)):
+# (4.9.1) o video do DIVINO saiu: so o VOID continua com video no jar
+for _id, _teto in (('void', 16),):
     check('4.6: assets do video %s no jar' % _id, os.path.exists(A + '/fx/%s/fx.json' % _id))
     check('4.6: video %s <= %d MiB' % (_id, _teto),
           os.path.isdir(A + '/fx/' + _id) and _tam_pasta(A + '/fx/' + _id) <= _teto * 1024 * 1024)
@@ -1090,8 +1090,30 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('4.9.0: versao 4.9.0 no build.gradle',
-      "version = '4.9.0'" in rd('build.gradle') or 'version = "4.9.0"' in rd('build.gradle'))
+check('4.9.1: versao 4.9.1 no build.gradle',
+      "version = '4.9.1'" in rd('build.gradle') or 'version = "4.9.1"' in rd('build.gradle'))
+
+# ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
+_div = rd(C + '/DivinoAvisoFx.java')
+check('4.9.1: o divino NAO usa mais video (sem VideoFx/FxConfig no arquivo)',
+      'VideoFx' not in _div and 'FxConfig' not in _div and 'private static boolean video' not in _div)
+check('4.9.1: a pasta do video do divino saiu do mod',
+      not os.path.exists(A + '/fx/divino') and not os.path.exists(A + '/fx/divino/fx.json'))
+check('4.9.1: o desenho antigo esta de volta (pilar + raios + halo runico + asas + faiscas)',
+      all(k in _div for k in ('pilar de luz descendo', 'raios(b, cx, cy', 'halo', 'asas', 'faíscas em estrela')))
+check('4.9.1: anel, tiques runicos e hexagrama (o visual de sempre)',
+      'tiques rúnicos' in _div and 'hexagrama' in _div and 'diamante' in _div)
+check('4.9.1: sem contorno escuro de video (texto com glow dourado do procedural)',
+      'contornoEscuro' not in _div and 'CONTORNO_VIDEO' not in _div)
+check('4.9.1: os 5 sinos do acorde continuam',
+      'AMETHYST_BLOCK_CHIME' in _div and 'BEACON_DEACTIVATE' in _div and 'BEACON_ACTIVATE' in _div)
+check('4.9.1: iniciar/parar continuam existindo (aviso novo encerra o anterior)',
+      'public static void iniciar(' in _div and 'public static void parar()' in _div)
+check('4.9.1: o teste dos marcadores nao exige mais o fx.json do divino',
+      'carregar("divino")' not in rd('src/test/java/dev/rptag/client/CelestiaisMarcadoresTest.java'))
+check('4.9.1: o video do divino nao e mais prometido no WALKTHROUGH',
+      '4.9.1' in rd('WALKTHROUGH.md'))
+
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

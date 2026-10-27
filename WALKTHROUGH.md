@@ -17,16 +17,32 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.9.0** (2026-10-25) |
+| Versão | **4.9.1** (2026-10-25) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.9.0.jar` (**115.810.490 B** — só na GitHub Release `v4.9.0`) |
-| Checks | `check.py` → **463 PASS / 0 FAIL** + **JUnit 43/43** |
+| Jar | `rptag-4.9.1.jar` (só na GitHub Release `v4.9.1`) |
+| Checks | `check.py` → **465 PASS / 0 FAIL** + **JUnit 42/42** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
-| Repo local | `/home/user/rp-tag` — `main` = `377e2aa`, tag `v4.9.0` |
-| Releases vivas | **v4.9.0** (jar) + `portais-v1.3.2` |
+| Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
+| Releases vivas | **v4.9.1** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 4.9.1 (2026-10-25): o DIVINO voltou ao antigo
+- **Pedido literal do dono:** *"consegue voltar para o antigo aviso divino? tava melhor,
+  esse que o marcelo mexeu ficou esquisito, quero o antigo"*.
+- **Causa:** na **4.6.0** o Marcello (`32234fb`) trocou o fundo do divino por um **vídeo
+  renderizado no Blender** (`assets/rptag/fx/divino`, 26 MB) — fundo cinza/branco, com
+  contorno escuro no texto pra dar leitura. O dono reprovou.
+- **Feito:** `DivinoAvisoFx.java` **voltou inteiro ao procedural** (`git show 32234fb^`):
+  vinheta escura, clarão, pilar de luz, 2 camadas de raios, halo com anéis, 48 tiques
+  rúnicos, 2 hexagramas, 4 losangos orbitando, asas (2×9 penas), faíscas em estrela,
+  ornamento e o acorde de 5 sinos (amethyst chime) + beacon de abertura/fecho.
+  **A pasta `fx/divino` foi apagada do mod** (volta ~26 MB pro jar). `parar()` continua
+  (aviso novo encerra o anterior). Sem `VideoFx`/`FxConfig`: o divino não depende de
+  `/rpfx on|off`.
+- `CelestiaisMarcadoresTest` perdeu o teste do `fx.json` do divino (o do **void**
+  continua, esse vídeo ficou).
 
 ### 4.9.0 (2026-10-25): O TABLET SAIU — e o RP ficou automático
 - **Pedido literal do dono:** *"isso ficou horrivel"* (screenshot do jogo) + **"remover
