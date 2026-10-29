@@ -4,14 +4,14 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TabletLayoutTest {
-    @Test void molduraMantemMargensEControlesCabemNasEscalasDoJogo() {
+    @Test void ocupaATelaCompletaEControlesCabemNasEscalasDoJogo() {
         for (int[] size : new int[][]{{640,360},{512,267},{426,240},{320,180}}) {
             TabletLayout layout = TabletLayout.of(size[0],size[1]);
-            assertTrue(layout.x() >= 10);
-            assertTrue(layout.y() >= 10);
+            assertEquals(0,layout.x());
+            assertEquals(0,layout.y());
             assertTrue(layout.formWidth() >= 150);
-            assertTrue(layout.x()+layout.width() <= size[0]-10);
-            assertTrue(layout.y()+layout.height() <= size[1]-10);
+            assertEquals(size[0],layout.width());
+            assertEquals(size[1],layout.height());
             assertTrue(layout.blackHoleRadius()*2 < layout.height()/2);
         }
     }

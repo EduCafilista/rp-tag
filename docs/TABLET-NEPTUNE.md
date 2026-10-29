@@ -25,7 +25,7 @@ O boot usa o logo original QuiralOS; a ficha usa a identidade Neptune SMP. O mod
 
 A tela é nativa do Minecraft, com a skin real no preview, campos de texto, revisão com rolagem e transições curtas. A opção de acessibilidade de efeitos de tela do jogo reduz o movimento da interface. O preview muda discretamente o olhar entre etapas. Não há integração de emotes nesta entrega: o usuário informou que Emotecraft não está instalado.
 
-O desfoque automático de fundo foi desativado nesta tela para que ele não seja aplicado novamente por cima da interface. Os campos usam a edição nativa com aparência própria. A moldura mantém margens nas escalas usuais da GUI.
+O desfoque automático de fundo foi desativado nesta tela para que ele não seja aplicado novamente por cima da interface. Os campos usam a edição nativa com aparência própria. A interface ocupa a tela inteira, sem moldura externa e sem deixar o mundo aparecer nas bordas, conforme as referências iniciais. Personagem e formulário têm espaçamento interno; o formulário fica à direita e se adapta às escalas menores da GUI.
 
 ## Validação realizada
 

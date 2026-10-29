@@ -4,7 +4,7 @@
 
 Adicionar ao RP Tag um tablet permanente para criar e consultar a ficha do personagem. O jogador recebe o item, usa o botão direito e responde às perguntas por etapas. A interface usa Minecraft nativo, sem navegador incorporado.
 
-O visual de referência é a prévia `tablet-neptune-clean-v8.html`, na sessão local `.superpowers/brainstorm/272-1792937753/content/`. O boot mostra o símbolo original e o nome QuiralOS. A ficha usa a identidade Neptune SMP, fundo espacial discreto, buraco negro atrás do personagem, poucos textos auxiliares e botões claros. A prévia é uma referência visual; seus dados de exemplo e suas abas de demonstração não fazem parte do mod.
+As imagens fornecidas no início da sessão definem a composição em tela completa: fundo espacial cobrindo toda a GUI, personagem à esquerda e perguntas/ficha à direita, sem moldura de janela nem mundo aparecendo nas bordas. O usuário reiterou esse requisito após reprovar a janela implementada. A prévia `tablet-neptune-clean-v8.html`, na sessão local `.superpowers/brainstorm/272-1792937753/content/`, serve como referência de limpeza visual, não como exigência de moldura externa. O boot mostra o símbolo original e o nome QuiralOS. A ficha usa a identidade Neptune SMP, fundo espacial discreto, buraco negro atrás do personagem, poucos textos auxiliares e botões claros. Dados de exemplo e abas de demonstração da prévia não fazem parte do mod.
 
 Esta especificação consolida as decisões da conversa. As regras de limites, recuperação e concorrência abaixo são propostas técnicas para revisão.
 

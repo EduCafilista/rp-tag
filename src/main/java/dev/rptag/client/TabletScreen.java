@@ -63,7 +63,7 @@ public final class TabletScreen extends Screen {
             return;
         }
         int step = state.etapa();
-        int titleHeight = h < 210 ? 0 : font.split(Component.literal(state.readOnly() ? "Sua ficha" : QUESTIONS[step]), formW).size() * 11 + 9;
+        int titleHeight = h < 150 ? 0 : font.split(Component.literal(state.readOnly() ? "Sua ficha" : QUESTIONS[step]), formW).size() * 11 + 9;
         fieldY = y + 49 + titleHeight;
         int fieldHeight = Math.max(22, y + h - (state.blocked() ? 90 : 61) - fieldY);
         if (state.readOnly() || step == 5) {
@@ -186,11 +186,7 @@ public final class TabletScreen extends Screen {
     }
 
     @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        g.fill(0, 0, width, height, 0xef05070c);
-        g.fill(x+2, y+2, x+w-2, y+h-2, 0xff252530);
-        g.fill(x+5, y+5, x+w-5, y+h-5, 0xff090d17);
-        g.fillGradient(x+5,y+5,formX-12,y+h-5,0xff151023,0xff0b101c);
-        g.fill(x+w/2-1,y+2,x+w/2+1,y+3,0xff69556e);
+        g.fillGradient(0,0,width,height,0xff0e0b1a,0xff070b13);
         if (boot) {
             int size = Math.min(88, h / 3);
             blitLogo(g, x + (w-size)/2, y + h/2 - size + 5, size);
@@ -209,13 +205,13 @@ public final class TabletScreen extends Screen {
         }
         g.drawString(font, "Neptune SMP", x+15, y+14, 0xffc9c2d3, false);
         int leftWidth = formX-x-18;
-        blackHole(g, x+leftWidth/2+8, y+Math.max(55,(h-20)/3), blackHoleRadius);
+        blackHole(g, x+leftWidth/2+8, y+Math.max(48,(h-20)/3)-blackHoleRadius/3, blackHoleRadius);
         TabletPlayerPreview.render(g, state.target(), x+8, y+37, leftWidth, h-65, state.etapa(), motion());
         String name = state.respostas().nome().isBlank() ? "Seu personagem" : state.respostas().nome();
         g.drawCenteredString(font, font.plainSubstrByWidth(name,leftWidth-8), x+leftWidth/2+8, y+h-21, 0xffd4cddc);
         String stage = state.readOnly() ? "CONSULTA DE FICHA" : (state.etapa()+1) + " / 6   " + LABELS[state.etapa()].toUpperCase(java.util.Locale.ROOT);
         g.drawString(font, stage, formX, y+34, 0xffb8a6c7, false);
-        if (h >= 210) {
+        if (h >= 150) {
             List<FormattedCharSequence> title = font.split(Component.literal(state.readOnly() ? "Sua ficha" : QUESTIONS[state.etapa()]),formW);
             int ty = y+50;
             for (FormattedCharSequence line:title) { g.drawString(font,line,formX,ty,0xfff0eaf5,false); ty+=11; }
@@ -276,8 +272,13 @@ public final class TabletScreen extends Screen {
             int color=primary?active?0xffefb17b:0xff655447:isHoveredOrFocused()?0xff302b3b:0xff151724;
             if (!dot) g.fill(getX(),getY(),getX()+width,getY()+height,color);
             if (isFocused()) g.renderOutline(getX()-1,getY()-1,width+2,height+2,0xffffd7ae);
-            g.drawCenteredString(Minecraft.getInstance().font,dot?"·":getMessage().getString(),getX()+width/2,getY()+(height-8)/2,
-                    dot?selected?0xffefb17b:0xff8e809e:primary?0xff241811:active?0xffded6e7:0xff746c7c);
+            if (dot) {
+                int size=selected?6:4, cx=getX()+width/2, cy=getY()+height/2;
+                g.fill(cx-size/2,cy-size/2,cx+size/2,cy+size/2,selected?0xffefb17b:isHoveredOrFocused()?0xffd2c6de:0xff8e809e);
+                return;
+            }
+            g.drawCenteredString(Minecraft.getInstance().font,getMessage().getString(),getX()+width/2,getY()+(height-8)/2,
+                    primary?0xff241811:active?0xffded6e7:0xff746c7c);
         }
         @Override protected void updateWidgetNarration(NarrationElementOutput output) { defaultButtonNarrationText(output); }
     }
