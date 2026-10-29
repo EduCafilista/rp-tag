@@ -79,6 +79,7 @@ public final class FxComando {
             case "demoniaco" -> 10;
             case "pesadelo2" -> 11;
             case "egipicio", "egipcio" -> 12;
+            case "expurgo" -> 13;
             default -> 0;
         };
     }

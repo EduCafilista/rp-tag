@@ -1,5 +1,33 @@
 # Changelog
 
+## 4.9.2 — AVISO "EXPURGO" — 2026-10-25
+
+O dono mandou o protótipo (`catbox 7l0m00.java`) e pediu para adicionar: *"adicione
+esse aviso 'expurgo' e me mande o mod para eu testar"*.
+
+- **Novo estilo 13 = EXPURGO** — `/rp admin avisar <jogadores> expurgo <texto>`
+  (também `/rpfx teste expurgo <texto>`, no cliente, sem servidor).
+- **O desenho é o do protótipo, inteiro** (~11,8 s): a TV liga com linha de luz e
+  estática, cabeçalho `● REC` + `TRANSMISSÃO DE EMERGÊNCIA` + cronômetro, o
+  anúncio digitado (`ESTE NÃO É UM TESTE.` + a sua mensagem), a contagem
+  5-4-3-2-1 com onda vermelha e bipe, o clarão com sirene, as luzes girando nos
+  cantos, o título **HORA DO EXPURGO** caindo letra por letra com separação RGB e
+  tremor, as listras de perigo, 4 máscaras sorridentes com os olhos acesos e o
+  fecho `QUE DEUS NOS ABENÇOE` antes da TV colapsar numa linha.
+- **Som:** o protótipo usa `AMETHYST_BLOCK_RESONATE` (sirene/bipes), `BELL_BLOCK`
+  (contagem), `ENDER_DRAGON_GROWL` + `LIGHTNING_BOLT_THUNDER` + sino no slam e
+  `ENDERMAN_TELEPORT` + `FIRE_EXTINGUISH` no fim — tudo no cliente, sem pacote novo.
+- **Servidor:** sangue de redstone caindo, poeira de redstone, fumaça densa e
+  chamas ao redor de cada alvo (`RPCommands.particulasExpurgo`, lado servidor).
+- **Adaptações só de encanamento:** pacote `dev.rptag.client`, `AvisoFxUtil` do mod
+  (em vez do `com.exemplo`), `parar()` para um aviso novo encerrar o anterior, e o
+  trio `glit ? 6 : 0.8f` virou `glit > 0 ?` (no protótipo `glit` é `float` 0/1 e o
+  ternário com `int` não compila).
+- Se o texto vier vazio, o padrão é **"TODOS OS CRIMES SÃO LEGAIS DURANTE 12 HORAS"**.
+- `check.py` **478 PASS / 0 FAIL** (+13 checks do expurgo, −0) · JUnit **42/42** ·
+  servidor NeoForge 21.1.249 `Done (1.107s)`; RCON confirma que `expurgo` é um nó
+  real do comando (pede o texto) e que palavra inventada cai no clássico.
+
 ## 4.9.1 — O DIVINO VOLTOU AO ANTIGO — 2026-10-25
 
 *"consegue voltar para o antigo aviso divino? tava melhor, esse que o marcelo mexeu

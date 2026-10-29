@@ -53,6 +53,9 @@ public final class ClientGuiLayers {
         EgipcioAvisoFx.registrar(event);
         // (4.7.1) estilo 3 = REAL "A Corte do Farao"
         RealAvisoFx.registrar(event);
+        // (4.9.2) estilo 13 = EXPURGO "Hora do Expurgo" (TV de emergencia:
+        // estatica, contagem 5-4-3-2-1, sirene, mascaras) — prototipo do dono
+        ExpurgoAvisoFx.registrar(event);
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "medo_veu"),
                 (g, delta) -> ClientEffects.desenharMedoCamada(g));

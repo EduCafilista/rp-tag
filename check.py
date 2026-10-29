@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.9.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.9.2' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.9.1 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.9.2 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -487,7 +487,7 @@ check('3.95/3.98: lorezone sem ascensao (case 11 = pesadelo2)',
       'entry("ascensao"' not in zc and 'ascensao' not in zc
       and 'entry("pesadelo2", 11)' in zc and 'case 11 -> "pesadelo2"' in zc)
 rp2 = rd(R + '/RPCommands.java')
-check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio (alvos' in rp2
+check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio, expurgo (alvos' in rp2
       and 'ascensao' not in rp2 and 'pesadelo, pesadelo2, runico' in rp2)
 
 # ---- 3.93.0: DEMONIACO = FX "Chamado do Abismo" (arquivo do user) ----
@@ -859,7 +859,7 @@ check('4.9.0: ajuda lista afk + lote e NAO lista mais regra', 'admin afk tempo' 
 
 check('4.5: EGIPICIO e o estilo 12 (parse + nome + ajuda)',
       'case "egipicio", "egipcio" -> 12' in rp and 'case 12 -> "EGIPICIO"' in rp
-      and 'egipicio (alvos' in rp)
+      and 'egipicio, expurgo (alvos' in rp)
 check('4.5: EGIPICIO desenha o OLHO DE HORUS (sobrancelha/amendoa/iris)',
       'EgipcioAvisoFx' in egi and 'olho' in egi.lower())
 check('4.5: EGIPICIO tem templo, areia, hieroglifos e cartucho',
@@ -1090,8 +1090,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('4.9.1: versao 4.9.1 no build.gradle',
-      "version = '4.9.1'" in rd('build.gradle') or 'version = "4.9.1"' in rd('build.gradle'))
+check('4.9.2: versao 4.9.2 no build.gradle',
+      "version = '4.9.2'" in rd('build.gradle') or 'version = "4.9.2"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1113,6 +1113,39 @@ check('4.9.1: o teste dos marcadores nao exige mais o fx.json do divino',
       'carregar("divino")' not in rd('src/test/java/dev/rptag/client/CelestiaisMarcadoresTest.java'))
 check('4.9.1: o video do divino nao e mais prometido no WALKTHROUGH',
       '4.9.1' in rd('WALKTHROUGH.md'))
+
+
+# ============ 4.9.2: aviso EXPURGO (prototipo do dono, catbox 7l0m00) ============
+_exp = rd(C + '/ExpurgoAvisoFx.java')
+check('4.9.2: ExpurgoAvisoFx existe no pacote do mod (sem com.exemplo)',
+      'package dev.rptag.client;' in _exp and 'com.exemplo' not in _exp)
+check('4.9.2: usa o AvisoFxUtil do mod (Buf/preparar/aditivo)',
+      'import static dev.rptag.client.AvisoFxUtil.*;' in _exp and 'new Buf(' in _exp)
+check('4.9.2: dura 11,8 s com as 3 viradas do prototipo',
+      'DUR = 11.8f' in _exp and 'T_CONT = 2.6f' in _exp and 'T_SLAM = 5.4f' in _exp and 'T_FIM = 9.6f' in _exp)
+check('4.9.2: as pecas do prototipo estao todas (TV, estatica, contagem, sirene, mascara)',
+      all(k in _exp for k in ('TV liga', 'neve de estática', 'CONTAGEM REGRESSIVA', 'SIRENE',
+                              'HORA DO EXPURGO', 'mascara(', 'hazard(', 'QUE DEUS NOS ABENÇOE')))
+check('4.9.2: mensagem padrao de 12 horas + modo reduzido',
+      'TODOS OS CRIMES SÃO LEGAIS DURANTE 12 HORAS' in _exp and 'public static boolean reduzido' in _exp)
+check('4.9.2: parar() existe (aviso novo encerra o anterior)',
+      'public static void parar()' in _exp)
+check('4.9.2: particulasMundo no servidor (redstone/fumaca/chama)',
+      'public static void particulasMundo(ServerPlayer p)' in _exp
+      and 'REDSTONE_BLOCK' in _exp and 'LARGE_SMOKE' in _exp)
+check('4.9.2: camada registrada (ClientGuiLayers)',
+      'ExpurgoAvisoFx.registrar(event)' in rd(C + '/ClientGuiLayers.java'))
+_ce = rd(C + '/ClientEffects.java')
+check('4.9.2: estilo 13 abre o EXPURGO e o anterior e encerrado',
+      'if (style == 13)' in _ce and 'ExpurgoAvisoFx.iniciar(' in _ce and 'ExpurgoAvisoFx.parar();' in _ce)
+_rc92 = rd(R + '/RPCommands.java')
+check('4.9.2: /rp admin avisar ... expurgo existe (literal unico)',
+      'case "expurgo" -> 13;' in _rc92 and _rc92.count('.then(Commands.literal("expurgo")') == 1)
+check('4.9.2: nome do estilo e as particulas de mundo no servidor',
+      'case 13 -> "EXPURGO";' in _rc92 and 'case 13 -> particulasExpurgo(alvo);' in _rc92 and 'particulasExpurgo(ServerPlayer p)' in _rc92)
+check('4.9.2: a ajuda lista o expurgo', 'egipicio, expurgo' in _rc92)
+check('4.9.2: /rpfx teste expurgo funciona no cliente',
+      'case "expurgo" -> 13;' in rd(C + '/FxComando.java'))
 
 
 print(f'\n{OK} PASS / {FAIL} FAIL')

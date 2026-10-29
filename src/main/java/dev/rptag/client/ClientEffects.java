@@ -69,7 +69,7 @@ public final class ClientEffects {
     private static volatile boolean bannerOn = true;
     /** (3.87.0) estilo do aviso em exibicao: 0 classico, 1 pesadelo,
      * 2 runico, 3 real, 4 morte, 5 inferno, 6 gelo, 7 divino, 8 void,
-     * 9 sangue, 10 demoniaco. */
+     * 9 sangue, 10 demoniaco, 11 pesadelo2, 12 egipicio, 13 expurgo. */
     private static volatile int textStyle = 0;
 
     /** Liga o MEDO por N segundos (servidor clampa 1..30). */
@@ -90,6 +90,7 @@ public final class ClientEffects {
         DivinoAvisoFx.parar();
         EgipcioAvisoFx.parar();
         RealAvisoFx.parar();
+        ExpurgoAvisoFx.parar();
         // (3.94.0) estilo 10 = DEMONIACO: o FX proprio (Chamado do Abismo:
         // mandibulas, fissuras, pentagrama, olho de fenda) assume. Codigos
         // & sao ignorados.
@@ -138,6 +139,14 @@ public final class ClientEffects {
             String limpo8 = text.replaceAll("\\u00a7.", "");
             VoidAvisoFx.iniciar("AVISO", limpo8);
             RPTagMod.LOGGER.info("RP Tag: QUEDA SEM FUNDO iniciada (FX proprio)");
+            return;
+        }
+        // (4.9.2) estilo 13 = EXPURGO: a TV de emergencia do prototipo do dono
+        // (estatica, digitacao, contagem regressiva, sirene, mascaras, TV desliga)
+        if (style == 13) {
+            String limpoE = text.replaceAll("\u00a7.", "");
+            ExpurgoAvisoFx.iniciar(limpoE);
+            RPTagMod.LOGGER.info("RP Tag: HORA DO EXPURGO iniciada (FX proprio)");
             return;
         }
         // (4.5.0) estilo 12 = EGIPICIO: o Olho de Horus (FX proprio)

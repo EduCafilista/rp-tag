@@ -372,6 +372,7 @@ public final class RPCommands {
             case "demoniaco" -> 10;
             case "pesadelo2" -> 11;   // (3.98.0) Sono Sem Descanso (antigo)
             case "egipicio", "egipcio" -> 12;   // (4.5.0) O Olho de Horus
+            case "expurgo" -> 13;   // (4.9.2) Hora do Expurgo (TV de emergencia)
             default -> 0;
         };
         // (4.7.3) Grafia "egipcio" (sem o "i"): nao tem literal proprio, para nao
@@ -417,6 +418,7 @@ public final class RPCommands {
             case 10 -> "DEMONIACO";
             case 11 -> "PESADELO SONO";
             case 12 -> "EGIPICIO";
+            case 13 -> "EXPURGO";
             default -> "classico";
         };
     }
@@ -510,6 +512,26 @@ public final class RPCommands {
                 x, y + 1, z, 20, 1.2, 0.3, 1.2, 0);
         lv.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
                 x, y + 2.5, z, 25, 1.0, 0.4, 1.0, 0.02);
+    }
+
+    /** (4.9.2) EXPURGO "Hora do Expurgo": o sangue (redstone) caindo, a
+     *  poeira de redstone, a fumaca densa e as chamas do prototipo do dono —
+     *  server-side puro (a TV inteira e desenhada no cliente). */
+    private static void particulasExpurgo(ServerPlayer p) {
+        net.minecraft.server.level.ServerLevel lv = p.serverLevel();
+        double x = p.getX(), y = p.getY(), z = p.getZ();
+        lv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                        net.minecraft.core.particles.ParticleTypes.BLOCK,
+                        net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState()),
+                x, y + 1.0, z, 60, 1.2, 0.8, 1.2, 0.15);
+        lv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                        net.minecraft.core.particles.ParticleTypes.FALLING_DUST,
+                        net.minecraft.world.level.block.Blocks.REDSTONE_BLOCK.defaultBlockState()),
+                x, y + 3.0, z, 40, 2.0, 0.3, 2.0, 0.0);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                x, y + 0.3, z, 40, 1.5, 0.2, 1.5, 0.02);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
+                x, y + 0.2, z, 25, 1.2, 0.1, 1.2, 0.02);
     }
 
     /** (3.97.0) GELO "Geada Eterna": nevasca + estilhacos de gelo
@@ -629,6 +651,10 @@ public final class RPCommands {
             // (3.98.0) PESADELO2 (Sono Sem Descanso): particulas do modelo
             // antigo (sculk + tinta) + Escuridao 5s (mesmo susto extra)
             case 11 -> particulasPesadelo(alvo, true);
+            // (4.9.2) EXPURGO: o FX do cliente tem a TV inteira (estatica,
+            // digitacao, contagem, sirene, mascaras) + TRILHA propria — o
+            // servidor so faz o SANGUE de redstone caindo e a fumaca
+            case 13 -> particulasExpurgo(alvo);
             default -> { }
         }
     }
@@ -701,7 +727,7 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio (alvos: nomes ou @a)\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo (alvos: nomes ou @a)\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
                     + "/rp admin bolha <jogador> on|off \u00a77\u2014 modo balao de outro\u00a7c\n"
@@ -967,8 +993,17 @@ public final class RPCommands {
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                                     avisar(ctx, alvos, "egipicio", texto);
                                                     return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (4.9.2) EXPURGO: a TV de emergencia do prototipo
+                                .then(Commands.literal("expurgo")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "expurgo", texto);
+                                                    return Command.SINGLE_SUCCESS;
                                                 })))))
-.then(Commands.literal("avisozona")
+                .then(Commands.literal("avisozona")
                         .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
                                 .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                                         .executes(ctx -> {

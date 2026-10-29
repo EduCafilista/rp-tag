@@ -17,16 +17,35 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.9.1** (2026-10-25) |
+| Versão | **4.9.2** (2026-10-25) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.9.1.jar` (só na GitHub Release `v4.9.1`) |
-| Checks | `check.py` → **465 PASS / 0 FAIL** + **JUnit 42/42** |
+| Jar | `rptag-4.9.2.jar` (**91.129.730 B** — só na GitHub Release `v4.9.2`) |
+| Checks | `check.py` → **478 PASS / 0 FAIL** + **JUnit 42/42** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v4.9.1** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v4.9.2** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 4.9.2 (2026-10-25): aviso EXPURGO (estilo 13)
+- **Pedido literal do dono:** *"adicione esse aviso 'expurgo' e me mande o mod
+  para eu testar"* + o protótipo `catbox 7l0m00.java`.
+- `client/ExpurgoAvisoFx.java` (336 linhas) é o protótipo inteiro, com o
+  encanamento do mod: package `dev.rptag.client`, `AvisoFxUtil` daqui (o protótipo
+  era `com.exemplo` + `import static ...AvisoFxUtil.*`), e `parar()` novo.
+- **Estilo 13** em três lugares: `ClientEffects.startScreenText` (abre o FX e
+  encerra o anterior), `ClientGuiLayers` (registra a camada `aviso_expurgo`) e
+  `FxComando.estilo` (`/rpfx teste expurgo`).
+- **Comando:** `.then(Commands.literal("expurgo"))` dentro de `/rp admin avisar`
+  (literal único, logo depois do egipicio) + `nomeEstilo` + linha da ajuda.
+- **Servidor:** `RPCommands.particulasExpurgo` (redstone caindo, poeira, fumaça,
+  chama). Não dá para chamar `ExpurgoAvisoFx.particulasMundo` do servidor — a
+  classe é do cliente (dist `client`), então a partícula mora no RPCommands.
+- **Pegadinha do protótipo:** `float glit = ... ? 1 : 0;` seguido de
+  `(glit ? 6 : 0.8f)` NÃO compila (ternário com float e int) → virou `glit > 0 ?`.
+- `check.py` 478/0; JUnit 42/42; servidor `Done (1.107s)`; jar 91.129.730 B.
+- Prévia (mock em PIL): `arte/previa_expurgo.py` → `previa/expurgo_4_9_2.png`.
 
 ### 4.9.1 (2026-10-25): o DIVINO voltou ao antigo
 - **Pedido literal do dono:** *"consegue voltar para o antigo aviso divino? tava melhor,
