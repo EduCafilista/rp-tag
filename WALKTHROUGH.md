@@ -17,16 +17,50 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.9.4** (2026-10-25) |
+| Versão | **4.9.5** (2026-10-30) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.9.4.jar` (**91.148.340 B** — só na GitHub Release `v4.9.4`) |
-| Checks | `check.py` → **497 PASS / 0 FAIL** + **JUnit 42/42** |
+| Jar | `rptag-4.9.5.jar` (**91.231.921 B** — só na GitHub Release `v4.9.5`) |
+| Checks | `check.py` → **505 PASS / 0 FAIL** + **JUnit 42/42** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v4.9.4** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v4.9.5** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 4.9.5 (2026-10-30): máscara consertada + coração esculpido + áudio do dono
+
+- **O BUG (ler antes de mexer em modelo na cabeça):** as constantes de altura da
+  máscara estavam **invertidas** (`Y_BASE = +0,62`, `Y_TOPO = -8,55`). Em espaço
+  de modelo depois de `head.translateAndRotate`, **+Y é para cima** e a cabeça é
+  um cubo de 8³ (`y ∈ [-4, 4]`, rosto em `z = -4`). A máscara saía virada e no
+  peito. O preview escondia o erro porque somava `+3,95` no Y do enquadramento.
+  **Regra nova:** sempre desenhar a CAIXA DA CABEÇA no preview
+  (`arte/previa_mascara3d.py::caixa_cabeca()`) e conferir `Y_BASE < 0 < Y_TOPO`.
+- **Máscara 5.0 (`CamadaMascara`):** placa de rosto (frente plana, borda que
+  enrola só em `|u| > 0,88`, `ENROLA = 1,70`) + casca externa com relevo +
+  casca interna (`ESPESSURA = 0,62`) + **aba** nos 4 lados = volume fechado.
+  Malha `COLS = 29`, `ROWS = 25`; tudo pré-computado no `static`
+  (`MAXV = 20000`); render só emite triângulos. `triangulos()` = 2896.
+- **Textura da malha:** `assets/rptag/textures/entity/mascara_pedra.png` (256×256),
+  gerada por `arte/previa_mascara3d.py::textura()` (UV = máscara inteira,
+  `u_tex = (u+1)/2`, `v_tex = 1 - v`). A textura do ITEM continua sendo
+  `textures/item/mascara_pedra.png` (64×64, `arte/gerar_mascara.py`) — são duas
+  coisas diferentes, não confundir.
+- **Coração (`CanonCoracaoRenderer`):** malha esculpida no lugar do voxel.
+  `NT = 56`, `NS = 13`, espessura `√(1−s²)` com `ESPESSURA = 0,34`;
+  `corDe()` assa a cor por vértice (gradiente + luz fixa + especular).
+  `quads()` agora devolve triângulos (2800). A mesma conta está em
+  `arte/previa_coracao3d.py`.
+- **Áudio:** `ciberpsicose_aviso.ogg` (4,05 s) em `assets/rptag/sounds/`,
+  entrada no `sounds.json`, `RPTagMod.SOM_CIBERPSICOSE`, tocado uma vez em
+  `CiberpsicoseAvisoFx.sons()` (flag `somTocou`, resetada em `iniciar()`).
+  Converter mp3 → ogg aqui: `python3 -c "import soundfile"` (libsndfile lê MP3 e
+  escreve VORBIS; o sandbox NÃO tem ffmpeg).
+- **Rodar JUnit:** o classpath precisa de `src/test/resources` (o
+  `FxJpegTest` lê `/fx/quadro_c.jpg`), senão 3 testes falham por `null`.
+- **Pasta `assets/rptag/fx/divino`:** se reaparecer (untracked), apagar —
+  `arte/validar.py` falha ("144 quadros = 0 _c = 0 _a") e derruba 2 checks.
 
 ### 4.9.4 (2026-10-25): máscara de pedra — modelo 3D refeito à mão
 - **Por quê:** os 3 painéis retos da 4.9.3 ficaram chapados ("papelão").

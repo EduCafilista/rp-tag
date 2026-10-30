@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.9.4' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.9.5' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.9.4 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.9.5 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -298,9 +298,9 @@ check('CORAÇÃO CANÔNICO: bloco+item+BE registrados', '"coracao_canon"' in rtm
 check('coracao NUNCA spawna natural (só /give, indestrutível)', 'strength(-1.0F, 3600000.0F)' in rtm and 'EntityArgument' not in rtm)
 check('SHIFT + clique direito = +1 vida (coração se consome)', 'isShiftKeyDown' in blk and 'setCanonLives' in blk and 'removeBlock' in blk and 'NOVA CHANCE' in blk)
 check('vidas cheias 5/5: não consome (coração fica)', 'vidas >= 5' in blk and 'continua aqui' in blk)
-check('coração 3D PROCEDURAL girando/batendo (BER — sólido voxel 4.4)',
+check('coração 3D PROCEDURAL girando/batendo (BER — malha esculpida 4.9.5)',
       'RenderType.lightning()' in rdr and 'rotationDegrees' in rdr and 'pulso' in rdr
-      and 'MASCARA' in rdr and 'SOLIDO' in rdr)
+      and 'contornoY(' in rdr and 'ESPESSURA' in rdr)
 check('BER registrado (ClientRenderers, camada cliente)', 'registerBlockEntityRenderer' in rd(C + '/ClientRenderers.java'))
 check('assets do coração completos (estado/modelo/item/textura)', _os.path.exists(A + '/textures/item/coracao_canon.png') and _os.path.exists(A + '/blockstates/coracao_canon.json') and '"elements": []' in rd(A + '/models/block/coracao_canon.json'))
 check('protecao NÃO some no logout (relog nao burla)', 'PROTECAO_ATE é de propósito NÃO limpa' in cl)
@@ -363,10 +363,15 @@ check('4.0: boot log 4.8.5', 'RP Tag 4.8.5' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
-check('4.4: coracao = SOLIDO voxel (mascara 15x13 + 13 fatias infladas)',
-      'MASCARA' in ccr and 'NY = 13' in ccr and 'construirSolido' in ccr and 'FATOR_PROF' in ccr)
-check('4.4: so faces expostas + sombreamento por face (volume)',
-      'construirFaces' in ccr and 'shade(' in ccr and 'tem(x, y - 1, z)' in ccr)
+check('4.9.5: coracao = MALHA esculpida (contorno classico + espessura sqrt(1-s^2))',
+      'contornoX(' in ccr and 'contornoY(' in ccr and 'sqrt(Math.max(0f, 1f - s * s))' in ccr
+      and 'SOLIDO' not in ccr and 'MASCARA' not in ccr)
+check('4.9.5: malha NT x NS x 2 faces + cor assada por vertice (volume)',
+      'NT = 56' in ccr and 'NS = 13' in ccr and 'corDe(' in ccr and 'shade(' in ccr
+      and 'diferença finita' in ccr)
+check('4.9.5: render de conferencia do coracao no repo (mesma matematica)',
+      os.path.exists('arte/previa_coracao3d.py') and 'def contorno(' in rd('arte/previa_coracao3d.py')
+      and os.path.exists('previa/coracao3d.png'))
 check('4.4: giro por relogio de parede (nao trava, nao pula) + batida tum-tum',
       'System.nanoTime()' in ccr and 'Axis.YP.rotationDegrees' in ccr
       and 'Math.exp(-bt * 18.0)' in ccr and 'getBlockPos().getX() * 37' in ccr)
@@ -1090,8 +1095,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('4.9.4: versao 4.9.4 no build.gradle',
-      "version = '4.9.4'" in rd('build.gradle') or 'version = "4.9.4"' in rd('build.gradle'))
+check('4.9.5: versao 4.9.5 no build.gradle',
+      "version = '4.9.5'" in rd('build.gradle') or 'version = "4.9.5"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1187,18 +1192,26 @@ check('4.9.3: nome do item no lang (pt_br e en_us)',
       'item.rptag.mascara_pedra' in rd(A + '/lang/pt_br.json')
       and 'item.rptag.mascara_pedra' in rd(A + '/lang/en_us.json'))
 _cm = rd(C + '/CamadaMascara.java')
-check('4.9.4: a camada 3D agora e MALHA (casca curva + relevo + normais)',
+check('4.9.5: a camada 3D e MALHA (ponto/normal/relevo/largura)',
       'class CamadaMascara extends RenderLayer' in _cm
       and 'static void ponto(' in _cm and 'static void normal(' in _cm
-      and 'static float relevo(' in _cm and 'static float angMax(' in _cm
+      and 'static float relevo(' in _cm and 'static float largura(' in _cm
       and 'painel(pose' not in _cm)
-check('4.9.4: o nariz/testa/orbitas estao esculpidos no relevo',
-      'nariz: comprido e pontudo' in _cm and 'órbitas fundas' in _cm
-      and 'maçãs do rosto' in _cm and 'boca afundada' in _cm and 'queixo recuado' in _cm)
-check('4.9.4: a malha e 19x17 com normal por diferenca finita',
-      'COLS = 19;' in _cm and 'ROWS = 17;' in _cm and 'diferença finita' in _cm)
-check('4.9.4: render de conferencia no repo (mesma matematica em Python)',
+check('4.9.5: EIXO Y CORRIGIDO (queixo embaixo, testa em cima)',
+      'Y_BASE = -4.35f' in _cm and 'Y_TOPO = 4.15f' in _cm and 'Y_TOPO = -8.55f' not in _cm)
+check('4.9.5: VOLUME FECHADO (casca externa + interna + aba) - 100% 3D',
+      'ESPESSURA = 0.62f' in _cm and 'private static void tira(' in _cm
+      and 'grade(1.0f, false)' in _cm and 'grade(0.0f, true)' in _cm
+      and 'private static float[][] borda(' in _cm)
+check('4.9.5: malha 29x25 com normal por diferenca finita',
+      'COLS = 29;' in _cm and 'ROWS = 25;' in _cm and 'diferença finita' in _cm)
+check('4.9.5: textura propria da malha (entity/mascara_pedra.png, 256x256)',
+      'textures/entity/mascara_pedra.png' in _cm
+      and os.path.getsize(A + '/textures/entity/mascara_pedra.png') > 5000
+      and 'def textura(lado=256)' in rd('arte/previa_mascara3d.py'))
+check('4.9.5: render de conferencia no repo (mesma matematica em Python)',
       os.path.exists('arte/previa_mascara3d.py') and 'def relevo(' in rd('arte/previa_mascara3d.py')
+      and 'def caixa_cabeca(' in rd('arte/previa_mascara3d.py')
       and os.path.exists('previa/mascara3d.png'))
 check('4.9.3: a camada so aparece com o item na cabeca',
       'EquipmentSlot.HEAD' in _cm and 'MascaraPedraItem' in _cm)
@@ -1207,6 +1220,22 @@ check('4.9.3: camada registrada nos dois modelos de skin (classico e slim)',
 check('4.9.3: gerador da textura no repo (64x64, rosto + pedra + vao + canto)',
       os.path.exists('arte/gerar_mascara.py') and '64, 64' in rd('arte/gerar_mascara.py')
       and os.path.getsize(A + '/textures/item/mascara_pedra.png') > 800)
+
+# ============ 4.9.5: audio do dono no CIBERPSICOSE + mascara/coracao 3D ============
+_cib = rd(C + '/CiberpsicoseAvisoFx.java')
+check('4.9.5: o .ogg do dono esta no jar (assets .../sounds/ciberpsicose_aviso.ogg)',
+      os.path.exists(A + '/sounds/ciberpsicose_aviso.ogg')
+      and os.path.getsize(A + '/sounds/ciberpsicose_aviso.ogg') > 40000)
+check('4.9.5: som registrado no sounds.json e no RPTagMod',
+      'ciberpsicose_aviso' in rd(A + '/sounds.json')
+      and 'SOM_CIBERPSICOSE' in rd(R + '/RPTagMod.java'))
+check('4.9.5: o aviso toca a trilha UMA vez (somTocou) no primeiro quadro',
+      'SOM_CIBERPSICOSE.get()' in _cib and 'private static boolean somTocou;' in _cib
+      and 'somTocou = false;' in _cib)
+check('4.9.5: o VIDRO QUEBRANDO continua no aviso (pico e colapso)',
+      'GLASS_BREAK, 1.7f, 0.30f' in _cib and 'GLASS_BREAK, 0.6f, 1.0f' in _cib)
+check('4.9.5: modo reduzido nao toca a trilha (acessibilidade)',
+      'if (!reduzido) {\n                tocar(dev.rptag.RPTagMod.SOM_CIBERPSICOSE.get()' in _cib)
 
 
 print(f'\n{OK} PASS / {FAIL} FAIL')

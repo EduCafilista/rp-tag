@@ -22,5 +22,13 @@
         "stream": false
       }
     ]
+  },
+  "ciberpsicose_aviso": {
+    "sounds": [
+      {
+        "name": "rptag:ciberpsicose_aviso",
+        "stream": false
+      }
+    ]
   }
 }

@@ -14,45 +14,67 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
-import org.joml.Matrix4f;
 
 /**
- * (4.9.4) MÁSCARA DE PEDRA NA CABEÇA — MODELO FEITO À MÃO.
+ * (4.9.5) MÁSCARA DE PEDRA — MODELO 100% 3D, FEITO À MÃO.
  *
- * <p>Antes eram 3 painéis retos colados na frente do rosto (ficava chapado,
- * "papelão"). Agora é uma <b>casca curva</b> gerada ponto a ponto:
+ * <p><b>O que estava errado na 4.9.4:</b> as constantes de altura estavam
+ * invertidas ({@code Y_BASE = +0.62} e {@code Y_TOPO = -8.55}) — em espaço de
+ * modelo o +Y é para CIMA e a cabeça vai de -4 a +4, então a máscara saía de
+ * cabeça para baixo e pendurada no peito, com a cara do player aparecendo por
+ * cima. O render de conferência "compensava" o erro com um deslocamento de
+ * +3,95 e por isso parecia certo. A regra agora: <b>Y_BASE = -4,35 (queixo)
+ * e Y_TOPO = +4,15 (testa)</b>, e o preview desenha a CAIXA DA CABEÇA junto,
+ * para nunca mais enganar.
  *
+ * <p><b>Como é o modelo (volume fechado):</b>
  * <ul>
- *   <li>a superfície é um arco de círculo em volta do rosto (centro atrás da
- *       cabeça, raio fixo) — por isso ela ABRAÇA a cara em vez de ficar plana;</li>
- *   <li>a largura do arco diminui no queixo e na testa ({@link #angMax}) — é o
- *       recorte da máscara do JoJo (largo nas maçãs, estreito embaixo);</li>
- *   <li>o <b>relevo</b> ({@link #relevo}) empurra e afunda a casca: testa
- *       saliente, órbitas fundas, nariz comprido, maçãs do rosto, boca
- *       afundada e queixo recuado — tudo em gaussianas somadas;</li>
- *   <li>malha de {@value #COLS}×{@value #ROWS} pontos ({@value #COLS} - 1) *
- *       ({@value #ROWS} - 1) * 2 triângulos, com <b>normal calculada por
- *       diferença finita</b> — é isso que faz a luz do jogo bater na pedra
- *       como se fosse volume de verdade.</li>
+ *   <li><b>placa de rosto</b> — a frente é quase plana (z = {@value #Z_FRENTE})
+ *       e só o extremo ({@code |u| > 0,88}) enrola para trás: é o formato de
+ *       uma máscara, não de um ovo;</li>
+ *   <li><b>casca externa</b> com relevo esculpido em gaussianas (nariz, dorso,
+ *       asas, órbitas, maçãs, boca, queixo);</li>
+ *   <li><b>casca interna</b> (deslocada {@value #ESPESSURA} para dentro) e
+ *       <b>aba</b> ligando as bordas — a máscara tem GROSSURA e é fechada:
+ *       não some quando se olha por trás nem some no canto da tela;</li>
+ *   <li>malha {@value #COLS}×{@value #ROWS} nas duas cascas, <b>normais por
+ *       diferença finita</b> — a luz do jogo bate na pedra como volume.</li>
  * </ul>
  *
- * <p>Coordenadas: depois de {@code head.translateAndRotate} a cabeça é um cubo
- * de 8³ com o pivô em (0,24,0) — 1 unidade = 1 pixel do modelo. A frente do
- * modelo é <b>-Z</b> (é por isso que o rosto fica no plano z = -4).
+ * <p><b>Coordenadas:</b> depois de {@code head.translateAndRotate} a cabeça é um
+ * cubo de 8³ com pivô no pescoço — 1 unidade = 1 pixel do modelo, +Y para cima,
+ * a frente do modelo é <b>-Z</b> (rosto no plano z = -4).
+ *
+ * <p>A malha é montada UMA vez ({@link #construirMalha()}); o render só percorre
+ * os triângulos já prontos. A mesma matemática existe em
+ * {@code arte/previa_mascara3d.py}, que gera {@code previa/mascara3d.png} e a
+ * textura {@code textures/entity/mascara_pedra.png}.
  */
 public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
 
     private static final ResourceLocation TEX =
-            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/item/mascara_pedra.png");
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/entity/mascara_pedra.png");
 
     // ---- malha
-    private static final int COLS = 19;          // pontos na largura
-    private static final int ROWS = 17;          // pontos na altura
-    // ---- casca (arco em volta do rosto)
-    private static final float Z_CENTRO = -0.35f;   // centro do arco (atrás do rosto)
-    private static final float RAIO = 4.55f;        // raio: frente da máscara em z ≈ -4.9
-    private static final float Y_BASE = 0.62f;      // embaixo (abaixo do queixo)
-    private static final float Y_TOPO = -8.55f;     // em cima (acima da testa)
+    private static final int COLS = 29;          // pontos na largura
+    private static final int ROWS = 25;          // pontos na altura
+    // ---- forma
+    private static final float Z_FRENTE = -4.62f;   // plano da frente (rosto em z = -4)
+    private static final float ENROLA = 1.70f;      // quanto o extremo enrola para trás
+    private static final float ESPESSURA = 0.62f;   // grossura da pedra
+    private static final float Y_BASE = -4.35f;     // EMBAIXO (abaixo do queixo)
+    private static final float Y_TOPO = 4.15f;      // EM CIMA (testa)
+
+    // ---- triângulos prontos (posição, normal, uv) — montados no static init
+    private static final int MAXV = 20000;
+    private static final float[] VPX = new float[MAXV], VPY = new float[MAXV], VPZ = new float[MAXV];
+    private static final float[] VNX = new float[MAXV], VNY = new float[MAXV], VNZ = new float[MAXV];
+    private static final float[] VTU = new float[MAXV], VTV = new float[MAXV];
+    private static int NV;
+
+    static {
+        construirMalha();
+    }
 
     public CamadaMascara(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> pai) {
         super(pai);
@@ -60,13 +82,10 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
 
     // ============================================================ superfície
 
-    /**
-     * Meia-abertura do arco na altura {@code v} (0 = queixo, 1 = testa).
-     * Largo nas maçãs (~1,34 rad ≈ 77°) e estreito nas pontas (~0,78 rad).
-     */
-    static float angMax(float v) {
-        float s = (float) Math.sin(Math.PI * Math.max(0f, Math.min(1f, v)));
-        return 0.78f + 0.56f * (float) Math.pow(Math.max(0f, s), 0.55);
+    /** Meia-largura da máscara na altura {@code v} (0 = queixo, 1 = testa). */
+    static float largura(float v) {
+        float c = Math.max(0f, Math.min(1f, v));
+        return 1.35f + 2.85f * (float) Math.pow(Math.sin(Math.PI * c), 0.75);
     }
 
     private static float gauss(float x) {
@@ -74,8 +93,7 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
     }
 
     /**
-     * Relevo da máscara, em unidades do modelo (1 = 1 pixel). Positivo empurra
-     * para FORA (na direção de quem olha), negativo afunda.
+     * Relevo da máscara, em unidades do modelo (positivo = para fora / para -Z).
      *
      * @param u de -1 (lado esquerdo) a +1 (lado direito)
      * @param v de 0 (queixo) a 1 (testa)
@@ -83,52 +101,189 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
     static float relevo(float u, float v) {
         float a = Math.abs(u);
         float r = 0f;
-        r += 0.16f * gauss(u / 0.20f);                                            // quilha central (a costura da pedra)
-        r += 0.46f * gauss(u / 0.26f) * gauss((v - 0.435f) / 0.115f);             // nariz: comprido e pontudo
-        r += 0.20f * gauss(u / 0.90f) * gauss((v - 0.665f) / 0.045f);             // testa/sobrancelha saliente
-        r -= 0.17f * gauss((a - 0.33f) / 0.15f) * gauss((v - 0.605f) / 0.055f);   // órbitas fundas
-        r += 0.13f * gauss((a - 0.55f) / 0.19f) * gauss((v - 0.375f) / 0.085f);   // maçãs do rosto
-        r -= 0.13f * gauss(u / 0.34f) * gauss((v - 0.245f) / 0.045f);             // boca afundada
-        r -= 0.19f * gauss((v - 0.02f) / 0.055f);                                 // queixo recuado
-        r -= 0.06f * gauss((v - 0.97f) / 0.04f);                                  // topo da testa vira pra trás
+        r += 0.12f * gauss(u / 0.60f);                                             // massa do rosto
+        r += 0.12f * gauss(u / 0.20f);                                             // quilha central
+        r += 0.95f * gauss(u / 0.14f) * gauss((v - 0.470f) / 0.105f);              // nariz (ponta)
+        r += 0.34f * gauss(u / 0.09f) * gauss((v - 0.585f) / 0.090f);              // dorso do nariz
+        r += 0.30f * gauss((a - 0.20f) / 0.10f) * gauss((v - 0.430f) / 0.045f);    // asas do nariz
+        r += 0.30f * gauss((a - 0.16f) / 0.24f) * gauss((v - 0.705f) / 0.035f);    // glabela/sobrancelha
+        r -= 0.52f * gauss((a - 0.34f) / 0.115f) * gauss((v - 0.615f) / 0.050f);   // órbitas fundas
+        r += 0.30f * gauss((a - 0.56f) / 0.14f) * gauss((v - 0.400f) / 0.065f);    // maçãs
+        r -= 0.20f * gauss(u / 0.24f) * gauss((v - 0.215f) / 0.032f);              // boca
+        r -= 0.24f * gauss((v - 0.030f) / 0.048f);                                 // queixo
+        r -= 0.06f * gauss((v - 0.985f) / 0.030f);                                 // topo
         return r;
     }
 
-    /** Um ponto da casca. {@code out = {x, y, z}}. */
-    static void ponto(float u, float v, float[] out) {
-        float th = u * angMax(v);
-        float re = RAIO + relevo(u, v);
-        out[0] = re * (float) Math.sin(th);
+    /**
+     * Um ponto da casca. {@code rel = 1} = casca externa; {@code rel = 0} = interna
+     * (afundada {@value #ESPESSURA} e com relevo suave, para não furar a de fora).
+     */
+    static void ponto(float u, float v, float rel, float[] out) {
+        float w = largura(v);
+        float t = Math.max(0f, (Math.abs(u) - 0.88f) / 0.12f);
+        float z = Z_FRENTE + ENROLA * (float) Math.pow(t, 1.5);
+        float rel_ = rel > 0.5f ? 1.0f : 0.35f;
+        z -= relevo(u, v) * rel_;
+        if (rel <= 0.5f) {
+            z += ESPESSURA;
+        }
+        out[0] = w * u;
         out[1] = Y_BASE + (Y_TOPO - Y_BASE) * v;
-        out[2] = Z_CENTRO - re * (float) Math.cos(th);
+        out[2] = z;
     }
 
     /** Normal (para fora) por diferença finita — é o que dá o volume na luz. */
-    static void normal(float u, float v, float[] out) {
+    static void normal(float u, float v, float rel, float[] out) {
         final float e = 0.004f;
-        float[] a = new float[3], b = new float[3], c = new float[3], d = new float[3];
         float uc = Math.max(-1f, Math.min(1f, u));
-        float vc = Math.max(0f, Math.min(1f, v));
-        ponto(Math.min(1f, uc + e), vc, a);
-        ponto(Math.max(-1f, uc - e), vc, b);
-        ponto(uc, Math.min(1f, vc + e), c);
-        ponto(uc, Math.max(0f, vc - e), d);
+        float vc = Math.max(0.001f, Math.min(0.999f, v));
+        float[] a = new float[3], b = new float[3], c = new float[3], d = new float[3];
+        ponto(Math.min(1f, uc + e), vc, rel, a);
+        ponto(Math.max(-1f, uc - e), vc, rel, b);
+        ponto(uc, Math.min(1f, vc + e), rel, c);
+        ponto(uc, Math.max(0f, vc - e), rel, d);
         float ux = a[0] - b[0], uy = a[1] - b[1], uz = a[2] - b[2];
         float vx = c[0] - d[0], vy = c[1] - d[1], vz = c[2] - d[2];
         float nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
         float len = (float) Math.sqrt(nx * nx + ny * ny + nz * nz);
-        if (len < 1e-5f) {
+        if (len < 1e-6f) {
             nx = 0f; ny = 0f; nz = -1f;
         } else {
             nx /= len; ny /= len; nz /= len;
         }
-        // a normal tem de apontar para FORA (longe do centro do arco)
-        float th = u * angMax(v);
-        float ox = (float) Math.sin(th), oz = -(float) Math.cos(th);
-        if (nx * ox + nz * oz < 0f) {
+        if (nz > 0f) {          // a frente olha para -Z
+            nx = -nx; ny = -ny; nz = -nz;
+        }
+        if (rel <= 0.5f) {      // casca interna: normal para dentro
             nx = -nx; ny = -ny; nz = -nz;
         }
         out[0] = nx; out[1] = ny; out[2] = nz;
+    }
+
+    // ============================================================ montagem
+
+    private static void vert(float[] p, float[] n, float u, float v) {
+        if (NV >= MAXV) {
+            return;
+        }
+        VPX[NV] = p[0]; VPY[NV] = p[1]; VPZ[NV] = p[2];
+        VNX[NV] = n[0]; VNY[NV] = n[1]; VNZ[NV] = n[2];
+        VTU[NV] = u; VTV[NV] = v;
+        NV++;
+    }
+
+    /** Grade de quads (2 triângulos cada) da casca externa ou interna. */
+    private static void grade(float rel, boolean inverte) {
+        float[] p = new float[3], n = new float[3];
+        float[][] pos = new float[4][3];
+        float[][] nor = new float[4][3];
+        float[] tx = new float[4], ty = new float[4];
+        int[][] idx = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
+        for (int j = 0; j < COLS - 1; j++) {
+            for (int i = 0; i < ROWS - 1; i++) {
+                for (int k = 0; k < 4; k++) {
+                    int jj = j + idx[k][0], ii = i + idx[k][1];
+                    float u = -1f + 2f * jj / (COLS - 1f);
+                    float v = ii / (ROWS - 1f);
+                    ponto(u, v, rel, p);
+                    normal(u, v, rel, n);
+                    pos[k] = new float[]{p[0], p[1], p[2]};
+                    nor[k] = new float[]{n[0], n[1], n[2]};
+                    tx[k] = 0.5f * (u + 1f);
+                    ty[k] = 1f - v;
+                }
+                int[] tri = inverte ? new int[]{0, 2, 1, 0, 3, 2} : new int[]{0, 1, 2, 0, 2, 3};
+                for (int k = 0; k < 6; k++) {
+                    int q = tri[k];
+                    vert(pos[q], nor[q], tx[q], ty[q]);
+                }
+            }
+        }
+    }
+
+    /** Aba (rim): liga a borda externa à interna — é o que fecha o volume. */
+    private static void tira(float[][] fora, float[][] dentro, float[] tu, float[] tv) {
+        float[] nrm = new float[3];
+        for (int k = 0; k < fora.length - 1; k++) {
+            for (int t = 0; t < 2; t++) {
+                float[] a = fora[k];
+                float[] b = t == 0 ? fora[k + 1] : dentro[k + 1];
+                float[] c = t == 0 ? dentro[k + 1] : dentro[k];
+                float ax = b[0] - a[0], ay = b[1] - a[1], az = b[2] - a[2];
+                float bx = c[0] - a[0], by = c[1] - a[1], bz = c[2] - a[2];
+                nrm[0] = ay * bz - az * by;
+                nrm[1] = az * bx - ax * bz;
+                nrm[2] = ax * by - ay * bx;
+                float len = (float) Math.sqrt(nrm[0] * nrm[0] + nrm[1] * nrm[1] + nrm[2] * nrm[2]);
+                if (len < 1e-6f) {
+                    nrm[0] = 0f; nrm[1] = 0f; nrm[2] = -1f;
+                } else {
+                    nrm[0] /= len; nrm[1] /= len; nrm[2] /= len;
+                }
+                float mx = (a[0] + b[0] + c[0]) / 3f;
+                float my = (a[1] + b[1] + c[1]) / 3f;
+                float mz = (a[2] + b[2] + c[2]) / 3f;
+                // a normal tem de apontar para FORA (longe de um ponto atrás da máscara)
+                float rx = 0f, ry = my, rz = Z_FRENTE + 0.9f;
+                if (nrm[0] * (mx - rx) + nrm[1] * (my - ry) + nrm[2] * (mz - rz) < 0f) {
+                    nrm[0] = -nrm[0]; nrm[1] = -nrm[1]; nrm[2] = -nrm[2];
+                }
+                float[] ta = t == 0 ? new float[]{tu[k], tv[k]} : new float[]{tu[k], tv[k]};
+                float[] tb = new float[]{tu[k + 1], tv[k + 1]};
+                float[] tc = t == 0 ? tb : new float[]{tu[k], tv[k]};
+                vert(a, nrm, ta[0], ta[1]);
+                vert(b, nrm, tb[0], tb[1]);
+                vert(c, nrm, tc[0], tc[1]);
+            }
+        }
+    }
+
+    private static float[][] borda(int lado, float rel) {
+        float[] p = new float[3];
+        int n = lado == 0 || lado == 1 ? COLS : ROWS;
+        float[][] r = new float[n][3];
+        for (int k = 0; k < n; k++) {
+            int j, i;
+            switch (lado) {
+                case 0 -> { j = k; i = 0; }                  // embaixo (esq -> dir)
+                case 1 -> { j = COLS - 1 - k; i = ROWS - 1; } // em cima (dir -> esq)
+                case 2 -> { j = 0; i = ROWS - 1 - k; }        // esquerda (cima -> baixo)
+                default -> { j = COLS - 1; i = k; }           // direita (baixo -> cima)
+            }
+            float u = -1f + 2f * j / (COLS - 1f);
+            float v = i / (ROWS - 1f);
+            ponto(u, v, rel, p);
+            r[k] = new float[]{p[0], p[1], p[2]};
+        }
+        return r;
+    }
+
+    private static void construirMalha() {
+        NV = 0;
+        grade(1.0f, false);   // casca externa
+        grade(0.0f, true);    // casca interna (normais para dentro)
+
+        for (int lado = 0; lado < 4; lado++) {
+            float[][] fora = borda(lado, 1.0f);
+            float[][] dentro = borda(lado, 0.0f);
+            int n = fora.length;
+            float[] tu = new float[n], tv = new float[n];
+            for (int k = 0; k < n; k++) {
+                int j, i;
+                switch (lado) {
+                    case 0 -> { j = k; i = 0; }
+                    case 1 -> { j = COLS - 1 - k; i = ROWS - 1; }
+                    case 2 -> { j = 0; i = ROWS - 1 - k; }
+                    default -> { j = COLS - 1; i = k; }
+                }
+                float u = -1f + 2f * j / (COLS - 1f);
+                float v = i / (ROWS - 1f);
+                tu[k] = 0.5f * (u + 1f);
+                tv[k] = 1f - v;
+            }
+            tira(fora, dentro, tu, tv);
+        }
     }
 
     // ============================================================ render
@@ -144,52 +299,19 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
 
         pose.pushPose();
         getParentModel().head.translateAndRotate(pose);
-        Matrix4f m = pose.last().pose();
         VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(TEX));
-
-        // ---- monta a malha uma vez (posições, UVs e normais por ponto)
-        float[][][] pos = new float[COLS][ROWS][];
-        float[][][] nor = new float[COLS][ROWS][];
-        float[][] tu = new float[COLS][ROWS];
-        float[][] tv = new float[COLS][ROWS];
-        float[] tmp = new float[3];
-        for (int j = 0; j < COLS; j++) {
-            float u = -1f + 2f * j / (COLS - 1f);
-            for (int i = 0; i < ROWS; i++) {
-                float v = i / (ROWS - 1f);
-                ponto(u, v, tmp);
-                pos[j][i] = new float[]{tmp[0], tmp[1], tmp[2]};
-                normal(u, v, tmp);
-                nor[j][i] = new float[]{tmp[0], tmp[1], tmp[2]};
-                // UV: a região do ROSTO na textura 64x64 (0..0.5 nos dois eixos)
-                tu[j][i] = 0.5f * j / (COLS - 1f);
-                tv[j][i] = 0.5f * (1f - v);
+        for (int k = 0; k + 2 < NV; k += 3) {
+            for (int v = 0; v < 3; v++) {
+                int q = k + v;
+                vc.addVertex(pose.last(), VPX[q], VPY[q], VPZ[q])
+                        .setColor(255, 255, 255, 255)
+                        .setUv(VTU[q], VTV[q])
+                        .setOverlay(OverlayTexture.NO_OVERLAY)
+                        .setLight(luz)
+                        .setNormal(VNX[q], VNY[q], VNZ[q]);
             }
         }
-
-        // ---- emite os triângulos
-        for (int j = 0; j < COLS - 1; j++) {
-            for (int i = 0; i < ROWS - 1; i++) {
-                vert(vc, m, luz, pos[j][i], nor[j][i], tu[j][i], tv[j][i]);
-                vert(vc, m, luz, pos[j + 1][i], nor[j + 1][i], tu[j + 1][i], tv[j + 1][i]);
-                vert(vc, m, luz, pos[j + 1][i + 1], nor[j + 1][i + 1], tu[j + 1][i + 1], tv[j + 1][i + 1]);
-
-                vert(vc, m, luz, pos[j][i], nor[j][i], tu[j][i], tv[j][i]);
-                vert(vc, m, luz, pos[j + 1][i + 1], nor[j + 1][i + 1], tu[j + 1][i + 1], tv[j + 1][i + 1]);
-                vert(vc, m, luz, pos[j][i + 1], nor[j][i + 1], tu[j][i + 1], tv[j][i + 1]);
-            }
-        }
-
         pose.popPose();
-    }
-
-    private static void vert(VertexConsumer vc, Matrix4f m, int luz, float[] p, float[] n, float u, float v) {
-        vc.addVertex(m, p[0], p[1], p[2])
-                .setColor(255, 255, 255, 255)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(luz)
-                .setNormal(n[0], n[1], n[2]);
     }
 
     // ============================================================ registro
@@ -205,5 +327,10 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
                 PlayerModel<AbstractClientPlayer>>) renderer)
                 .addLayer(new CamadaMascara((net.minecraft.client.renderer.entity.LivingEntityRenderer<
                         AbstractClientPlayer, PlayerModel<AbstractClientPlayer>>) renderer));
+    }
+
+    /** quantos triângulos a máscara tem (usado no check.py / log). */
+    public static int triangulos() {
+        return NV / 3;
     }
 }

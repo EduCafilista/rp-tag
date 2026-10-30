@@ -51,6 +51,8 @@ public final class CiberpsicoseAvisoFx {
     private static String msg = "CIBERPSICOSE DETECTADA";
     private static float dur = DUR_PADRAO, pararEm = -1;
     private static int evIdx, spikeTocado = -1;
+    /** (4.9.5) o áudio do dono toca UMA vez por aviso (o vidro quebrando continua). */
+    private static boolean somTocou;
     private static final float[] EV_T = {0.25f, 0.6f, 1.0f, 1.5f, 2.1f, 2.7f, T_CRASH, 3.6f, 4.0f, 4.35f, 4.65f, 4.95f, 5.2f, 5.45f, T_REBOOT, T_PERS};
     private static final int[] EV_K = {0, 0, 1, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 4, 5};
 
@@ -65,7 +67,7 @@ public final class CiberpsicoseAvisoFx {
     /** segundos <= 0: fica até chamar parar(). */
     public static void iniciar(String mensagem, float segundos) {
         msg = (mensagem == null || mensagem.isEmpty()) ? "CIBERPSICOSE DETECTADA" : mensagem.toUpperCase();
-        dur = segundos; pararEm = -1; evIdx = 0; spikeTocado = -1;
+        dur = segundos; pararEm = -1; evIdx = 0; spikeTocado = -1; somTocou = false;
         inicio = System.nanoTime();
     }
 
@@ -352,6 +354,14 @@ public final class CiberpsicoseAvisoFx {
     }
 
     private static void sons(float t) {
+        // ---- (4.9.5) a trilha do dono (4 s): dispara no primeiro quadro e cobre a
+        //      entrada da tela até o COLAPSO; os efeitos de vidro continuam tocando.
+        if (!somTocou) {
+            somTocou = true;
+            if (!reduzido) {
+                tocar(dev.rptag.RPTagMod.SOM_CIBERPSICOSE.get(), 1.0f, 1.0f);
+            }
+        }
         while (evIdx < EV_T.length && t >= EV_T[evIdx]) {
             int kd = EV_K[evIdx++];
             switch (kd) {

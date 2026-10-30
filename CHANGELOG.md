@@ -1,5 +1,55 @@
 # Changelog
 
+## 4.9.5 — MÁSCARA CONSERTADA (VOLUME FECHADO) + CORAÇÃO ESCULPIDO + SOM NOVO — 2026-10-30
+
+*"a mascara ficou muito bugada no rosto corrija isso ... coloque esse som no aviso
+cyberpsicose, deixe o som do vidro quebrando ainda e continue melhorando a mascara 3d
+quero que faça uma modelagem igual vez para o coraçao de lore, uma mascara 100% 3d"*
+
+### 1. O bug da máscara (a causa era boba e grave)
+As constantes de altura estavam **invertidas**: `Y_BASE = +0,62` e
+`Y_TOPO = -8,55`. Em espaço de modelo o **+Y é para cima** e a cabeça vai de -4 a
++4 — então a máscara saía **de cabeça para baixo e pendurada no peito**, com a
+cara do player aparecendo por cima. O render de conferência "compensava" o erro
+com um `+3,95` no Y e por isso **parecia** certo lá. Agora:
+`Y_BASE = -4,35` (queixo) e `Y_TOPO = +4,15` (testa), e o preview desenha a
+**caixa da cabeça (8³) junto** — esse erro não passa mais.
+
+### 2. Máscara 100% 3D (volume fechado)
+- **Placa de rosto**: a frente é quase plana e só o extremo (`|u| > 0,88`)
+  enrola para trás — formato de máscara, não de ovo.
+- **Casca externa** com relevo esculpido (nariz +0,95, dorso, asas, órbitas
+  -0,52, maçãs, boca, queixo) + **casca interna** deslocada 0,62 + **aba (rim)**
+  ligando as bordas: a máscara tem **grossura** e é fechada.
+- Malha **29×25** nas duas cascas (~2.900 triângulos), normais por diferença
+  finita; montada UMA vez no `static`.
+- **Textura própria** `textures/entity/mascara_pedra.png` (256×256) pintada no
+  espírito da referência do JoJo: pedra clara rachada, órbitas fundas com
+  esclera, nariz largo com narinas, boca escura com **duas presas**.
+  Quem gera: `arte/previa_mascara3d.py`.
+
+### 3. Coração de lore: de voxel para malha esculpida
+`CanonCoracaoRenderer` deixou de ser sólido voxel (13 fatias infladas — de lado
+virava tábua). Agora é **malha**: contorno clássico do coração
+(`x = 16 sen³t`, `y = 13cos t − 5cos2t − 2cos3t − cos4t`), cada ponto puxado ao
+centro por `s` e espessura `√(1 − s²)` → dois lóbulos, ponta em V e dobra do
+meio, **de qualquer ângulo**. 56×13 × 2 faces (~2.800 triângulos), normais por
+diferença finita, cor assada (rosa → vinho + luz + especular no lóbulo esquerdo),
+giro por relógio de parede e batida tum-tum mantidos.
+Preview: `arte/previa_coracao3d.py` → `previa/coracao3d.png`.
+
+### 4. Som do dono no aviso CIBERPSICOSE
+- `mkqz2x.mp3` (4,05 s) → `assets/rptag/sounds/ciberpsicose_aviso.ogg` (Vorbis,
+  44,1 kHz, estéreo, normalizado e com fade de 20 ms).
+- Registrado (`SOM_CIBERPSICOSE`) e tocado **uma vez** no primeiro quadro do
+  aviso (flag `somTocou`). No modo `reduzido` não toca.
+- **O vidro quebrando continua**: 1,7×0,30 nos surtos e 0,6×1,0 no colapso,
+  mais os demais efeitos — a trilha entrou *por cima*, não no lugar.
+
+**Qualidade:** `check.py` **505 PASS / 0 FAIL** · JUnit **42/42** · servidor
+NeoForge `Done (0.993s)` · armor stand com a máscara e `coracao_canon` via RCON ·
+jar **91.231.921 B**.
+
 ## 4.9.4 — MÁSCARA DE PEDRA: MODELO 3D REFEITO À MÃO — 2026-10-25
 
 *"refaça esse modelo 3d na mão para ficar mais decente"*.

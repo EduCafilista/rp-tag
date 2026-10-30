@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "4.9.4";
+    public static final String VERSION = "4.9.5";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -72,6 +72,13 @@ public final class RPTagMod {
     public static final Supplier<SoundEvent> SOM_EGIPCIO =
             SOUNDS.register("egipcio_aviso", () -> SoundEvent.createVariableRangeEvent(
                     ResourceLocation.fromNamespaceAndPath(MODID, "egipcio_aviso")));
+
+    /** (4.9.5) SOM do aviso CIBERPSICOSE: o áudio que o dono mandou (catbox
+     *  mkqz2x.mp3, 4,05 s), convertido pra .ogg/Vorbis em arte/previa_mascara3d.py.
+     *  Toca UMA vez no começo do aviso; o vidro quebrando continua por cima. */
+    public static final Supplier<SoundEvent> SOM_CIBERPSICOSE =
+            SOUNDS.register("ciberpsicose_aviso", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "ciberpsicose_aviso")));
 
     /** (3.84.0) BLOCO/ITEM/BE do Coração Canônico (só adm obtém via /give;
      * nunca spawna naturalmente). */
