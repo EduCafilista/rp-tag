@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.9.3' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.9.4' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.9.3 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.9.4 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -1090,8 +1090,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('4.9.3: versao 4.9.3 no build.gradle',
-      "version = '4.9.3'" in rd('build.gradle') or 'version = "4.9.3"' in rd('build.gradle'))
+check('4.9.4: versao 4.9.4 no build.gradle',
+      "version = '4.9.4'" in rd('build.gradle') or 'version = "4.9.4"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1187,9 +1187,19 @@ check('4.9.3: nome do item no lang (pt_br e en_us)',
       'item.rptag.mascara_pedra' in rd(A + '/lang/pt_br.json')
       and 'item.rptag.mascara_pedra' in rd(A + '/lang/en_us.json'))
 _cm = rd(C + '/CamadaMascara.java')
-check('4.9.3: camada 3D desenha os 3 paineis com a textura da mascara',
-      'class CamadaMascara extends RenderLayer' in _cm and 'painel(pose, vc' in _cm
-      and 'textures/item/mascara_pedra.png' in _cm)
+check('4.9.4: a camada 3D agora e MALHA (casca curva + relevo + normais)',
+      'class CamadaMascara extends RenderLayer' in _cm
+      and 'static void ponto(' in _cm and 'static void normal(' in _cm
+      and 'static float relevo(' in _cm and 'static float angMax(' in _cm
+      and 'painel(pose' not in _cm)
+check('4.9.4: o nariz/testa/orbitas estao esculpidos no relevo',
+      'nariz: comprido e pontudo' in _cm and 'órbitas fundas' in _cm
+      and 'maçãs do rosto' in _cm and 'boca afundada' in _cm and 'queixo recuado' in _cm)
+check('4.9.4: a malha e 19x17 com normal por diferenca finita',
+      'COLS = 19;' in _cm and 'ROWS = 17;' in _cm and 'diferença finita' in _cm)
+check('4.9.4: render de conferencia no repo (mesma matematica em Python)',
+      os.path.exists('arte/previa_mascara3d.py') and 'def relevo(' in rd('arte/previa_mascara3d.py')
+      and os.path.exists('previa/mascara3d.png'))
 check('4.9.3: a camada so aparece com o item na cabeca',
       'EquipmentSlot.HEAD' in _cm and 'MascaraPedraItem' in _cm)
 check('4.9.3: camada registrada nos dois modelos de skin (classico e slim)',

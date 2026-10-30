@@ -1,5 +1,30 @@
 # Changelog
 
+## 4.9.4 — MÁSCARA DE PEDRA: MODELO 3D REFEITO À MÃO — 2026-10-25
+
+*"refaça esse modelo 3d na mão para ficar mais decente"*.
+
+O modelo antigo eram **3 painéis retos** na frente do rosto — ficava chapado,
+cara de papelão. Agora é uma **malha esculpida**:
+
+- **Casca curva**: a superfície é um arco de círculo em volta do rosto
+  (centro em z = -0,35, raio 4,55) — ela abraça a cabeça em vez de ficar plana.
+- **Recorte da máscara**: a meia-abertura do arco muda com a altura
+  (`angMax`): larga nas maçãs (~77°) e estreita no queixo e na testa (~45°) —
+  é o formato do JoJo, não um retângulo.
+- **Relevo esculpido** (`relevo`, tudo em gaussianas somadas): quilha central da
+  pedra, **nariz comprido e pontudo** (+0,46), testa/sobrancelha saliente,
+  **órbitas fundas** (-0,17), maçãs do rosto, **boca afundada** e queixo
+  recuado. É o que dá a "cara" sem depender só da textura.
+- **Malha 19×17** (576 triângulos) com **normal calculada por diferença
+  finita** — por isso a luz do jogo bate na pedra como volume de verdade, com o
+  nariz fazendo sombra.
+- Render de conferência no repo: `arte/previa_mascara3d.py` (mesma matemática em
+  Python, 3 ângulos, z-buffer + textura + luz) → `previa/mascara3d.png`.
+
+**Qualidade:** `check.py` **497 PASS / 0 FAIL** · JUnit **42/42** · servidor
+NeoForge `Done (0.673s)` · jar **91.148.340 B**.
+
 ## 4.9.3 — CIBERPSICOSE + MÁSCARA DE PEDRA — 2026-10-25
 
 *"aviso de 'cyberpsicose'... quero fazer depois uma máscara de pedra, para o pessoal

@@ -17,16 +17,33 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.9.3** (2026-10-25) |
+| Versão | **4.9.4** (2026-10-25) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.9.3.jar` (**91.147.459 B** — só na GitHub Release `v4.9.3`) |
-| Checks | `check.py` → **494 PASS / 0 FAIL** + **JUnit 42/42** |
+| Jar | `rptag-4.9.4.jar` (**91.148.340 B** — só na GitHub Release `v4.9.4`) |
+| Checks | `check.py` → **497 PASS / 0 FAIL** + **JUnit 42/42** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v4.9.3** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v4.9.4** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 4.9.4 (2026-10-25): máscara de pedra — modelo 3D refeito à mão
+- **Por quê:** os 3 painéis retos da 4.9.3 ficaram chapados ("papelão").
+- **Como:** `CamadaMascara` agora gera uma **malha paramétrica**:
+  - `ponto(u,v)` = arco de círculo (centro z = -0,35, raio 4,55) com largura
+    variável (`angMax`: 0,78 + 0,56·sin(v)^0,55) e altura fixa
+    (y de +0,62 embaixo a -8,55 em cima);
+  - `relevo(u,v)` = soma de gaussianas: quilha, nariz, testa, órbitas, maçãs,
+    boca, queixo. **Mexer na cara = mexer nessas linhas** (e no mesmo bloco do
+    `arte/previa_mascara3d.py`, que repete a fórmula);
+  - `normal(u,v)` por diferença finita (e=0,004) + correção de sinal pelo vetor
+    "para fora" do arco — sem isso a malha ficava preta.
+  - malha 19×17, triângulos em ordem (j,i) (j+1,i) (j+1,i+1) / (j,i) (j+1,i+1) (j,i+1).
+- **UV:** a máscara amostra o quadrante do ROSTO (0..0,5) da textura 64x64.
+- **Pegadinha do preview:** o `previa_mascara3d.py` misturava fundo em 0-255 com
+  textura em 0-1 (tudo saía preto) e recortava o rosto mantendo UV 0..0,5
+  (dava o canto da testa). As duas coisas estão corrigidas lá.
 
 ### 4.9.3 (2026-10-25): CIBERPSICOSE (estilo 14) + MÁSCARA DE PEDRA
 - **Aviso:** `client/CiberpsicoseAvisoFx.java` = protótipo `catbox 57mzzd.java`
