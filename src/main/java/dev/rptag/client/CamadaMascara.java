@@ -16,39 +16,42 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * (4.9.5) MÁSCARA DE PEDRA — MODELO 100% 3D, FEITO À MÃO.
+ * (4.9.6) MÁSCARA DE PEDRA — réplica do modelo 3D do JOJO (Sketchfab "MASCARA DE
+ * PIEDRA JOJO", de guerrerogrd), feita à mão ponto a ponto.
  *
- * <p><b>O que estava errado na 4.9.4:</b> as constantes de altura estavam
- * invertidas ({@code Y_BASE = +0.62} e {@code Y_TOPO = -8.55}) — em espaço de
- * modelo o +Y é para CIMA e a cabeça vai de -4 a +4, então a máscara saía de
- * cabeça para baixo e pendurada no peito, com a cara do player aparecendo por
- * cima. O render de conferência "compensava" o erro com um deslocamento de
- * +3,95 e por isso parecia certo. A regra agora: <b>Y_BASE = -4,35 (queixo)
- * e Y_TOPO = +4,15 (testa)</b>, e o preview desenha a CAIXA DA CABEÇA junto,
- * para nunca mais enganar.
- *
- * <p><b>Como é o modelo (volume fechado):</b>
+ * <p><b>O que mudou nesta versão:</b> a silhueta deixou de ser um ovo e passou a
+ * ser a do modelo — <b>escudo</b>: ponta fina no queixo, largo e quase reto no
+ * meio do rosto, topo levemente estreitado (tabela {@link #W_LARG}). A cara
+ * ganhou os traços que a referência tem e a anterior não tinha:
  * <ul>
- *   <li><b>placa de rosto</b> — a frente é quase plana (z = {@value #Z_FRENTE})
- *       e só o extremo ({@code |u| > 0,88}) enrola para trás: é o formato de
- *       uma máscara, não de um ovo;</li>
- *   <li><b>casca externa</b> com relevo esculpido em gaussianas (nariz, dorso,
- *       asas, órbitas, maçãs, boca, queixo);</li>
- *   <li><b>casca interna</b> (deslocada {@value #ESPESSURA} para dentro) e
- *       <b>aba</b> ligando as bordas — a máscara tem GROSSURA e é fechada:
- *       não some quando se olha por trás nem some no canto da tela;</li>
+ *   <li><b>testa em Y</b> — duas cristas que descem para o meio do rosto;</li>
+ *   <li><b>sobrancelha em V</b> (brava), por cima das órbitas;</li>
+ *   <li><b>órbitas em fenda</b> — fundas, finas e inclinadas (canto de fora sobe);</li>
+ *   <li><b>nariz</b> com ponte, dorso saliente e asas;</li>
+ *   <li><b>focinho</b> saltando para frente, <b>boca funda com presas</b> e queixo
+ *       projetado com a borda de baixo recuada.</li>
+ * </ul>
+ *
+ * <p><b>Geometria (volume fechado, 100% 3D):</b>
+ * <ul>
+ *   <li><b>placa de rosto</b> — frente quase plana (z = {@value #Z_FRENTE}) e só o
+ *       extremo ({@code |u| > 0,88}) enrola para trás, abraçando a cabeça;</li>
+ *   <li><b>casca externa</b> com o relevo esculpido em gaussianas
+ *       ({@link #relevo});</li>
+ *   <li><b>casca interna</b> deslocada {@value #ESPESSURA} + <b>aba</b> ligando as
+ *       bordas — a máscara tem grossura e não some vista de lado ou por trás;</li>
  *   <li>malha {@value #COLS}×{@value #ROWS} nas duas cascas, <b>normais por
- *       diferença finita</b> — a luz do jogo bate na pedra como volume.</li>
+ *       diferença finita</b>, tudo pré-computado no {@code static}.</li>
  * </ul>
  *
  * <p><b>Coordenadas:</b> depois de {@code head.translateAndRotate} a cabeça é um
- * cubo de 8³ com pivô no pescoço — 1 unidade = 1 pixel do modelo, +Y para cima,
- * a frente do modelo é <b>-Z</b> (rosto no plano z = -4).
+ * cubo de 8³ — 1 unidade = 1 pixel do modelo, <b>+Y para cima</b> (queixo em
+ * {@code Y_BASE = -4,35}, testa em {@code Y_TOPO = +4,15}) e a frente em -Z.
+ * O render de conferência ({@code arte/previa_mascara3d.py}) desenha a CAIXA DA
+ * CABEÇA junto justamente para não repetir o erro da 4.9.4 (eixo Y invertido).
  *
- * <p>A malha é montada UMA vez ({@link #construirMalha()}); o render só percorre
- * os triângulos já prontos. A mesma matemática existe em
- * {@code arte/previa_mascara3d.py}, que gera {@code previa/mascara3d.png} e a
- * textura {@code textures/entity/mascara_pedra.png}.
+ * <p>A mesma matemática está em {@code arte/previa_mascara3d.py}, que também
+ * gera a textura {@code textures/entity/mascara_pedra.png}.
  */
 public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
 
@@ -59,7 +62,7 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
     private static final int COLS = 29;          // pontos na largura
     private static final int ROWS = 25;          // pontos na altura
     // ---- forma
-    private static final float Z_FRENTE = -4.62f;   // plano da frente (rosto em z = -4)
+    private static final float Z_FRENTE = -4.48f;   // plano da frente (rosto em z = -4)
     private static final float ENROLA = 1.70f;      // quanto o extremo enrola para trás
     private static final float ESPESSURA = 0.62f;   // grossura da pedra
     private static final float Y_BASE = -4.35f;     // EMBAIXO (abaixo do queixo)
@@ -82,10 +85,25 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
 
     // ============================================================ superfície
 
-    /** Meia-largura da máscara na altura {@code v} (0 = queixo, 1 = testa). */
+    /** alturas da tabela de largura (v = 0 queixo … 1 testa). */
+    private static final float[] V_LARG = {0.00f, 0.06f, 0.16f, 0.30f, 0.46f, 0.64f, 0.78f, 0.90f, 0.97f, 1.00f};
+    /** meia-largura em cada altura: ponta fina embaixo, largo no meio, topo arredondado. */
+    private static final float[] W_LARG = {0.70f, 1.70f, 2.45f, 2.88f, 3.02f, 3.04f, 3.02f, 2.98f, 2.86f, 2.55f};
+
+    /**
+     * Meia-largura da máscara na altura {@code v} (0 = queixo, 1 = testa).
+     * Silhueta de ESCUDO (a do modelo do Sketchfab): sobe rápido da ponta do
+     * queixo, fica larga e quase reta no meio e só afina um pouco no topo.
+     */
     static float largura(float v) {
         float c = Math.max(0f, Math.min(1f, v));
-        return 1.35f + 2.85f * (float) Math.pow(Math.sin(Math.PI * c), 0.75);
+        for (int k = 1; k < V_LARG.length; k++) {
+            if (c <= V_LARG[k]) {
+                float t = (c - V_LARG[k - 1]) / (V_LARG[k] - V_LARG[k - 1]);
+                return W_LARG[k - 1] + (W_LARG[k] - W_LARG[k - 1]) * t;
+            }
+        }
+        return W_LARG[W_LARG.length - 1];
     }
 
     private static float gauss(float x) {
@@ -101,17 +119,22 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
     static float relevo(float u, float v) {
         float a = Math.abs(u);
         float r = 0f;
-        r += 0.12f * gauss(u / 0.60f);                                             // massa do rosto
-        r += 0.12f * gauss(u / 0.20f);                                             // quilha central
-        r += 0.95f * gauss(u / 0.14f) * gauss((v - 0.470f) / 0.105f);              // nariz (ponta)
-        r += 0.34f * gauss(u / 0.09f) * gauss((v - 0.585f) / 0.090f);              // dorso do nariz
-        r += 0.30f * gauss((a - 0.20f) / 0.10f) * gauss((v - 0.430f) / 0.045f);    // asas do nariz
-        r += 0.30f * gauss((a - 0.16f) / 0.24f) * gauss((v - 0.705f) / 0.035f);    // glabela/sobrancelha
-        r -= 0.52f * gauss((a - 0.34f) / 0.115f) * gauss((v - 0.615f) / 0.050f);   // órbitas fundas
-        r += 0.30f * gauss((a - 0.56f) / 0.14f) * gauss((v - 0.400f) / 0.065f);    // maçãs
-        r -= 0.20f * gauss(u / 0.24f) * gauss((v - 0.215f) / 0.032f);              // boca
-        r -= 0.24f * gauss((v - 0.030f) / 0.048f);                                 // queixo
-        r -= 0.06f * gauss((v - 0.985f) / 0.030f);                                 // topo
+        r += 0.12f * gauss(u / 0.55f) * gauss((v - 0.80f) / 0.22f);                        // testa inchada
+        float vc = 0.735f - 0.10f * a;                                                     // TESTA em Y (cristas do JoJo)
+        r += 0.34f * gauss((a - 0.15f) / 0.070f) * gauss((v - vc) / 0.045f);
+        float vb = 0.645f + 0.055f * a;                                                    // sobrancelha em V (brava)
+        r += 0.30f * gauss((a - 0.30f) / 0.16f) * gauss((v - vb) / 0.028f);
+        float vo = 0.575f + 0.050f * a;                                                    // ÓRBITAS: fenda funda e fina
+        r -= 0.72f * gauss((a - 0.32f) / 0.080f) * gauss((v - vo) / 0.022f);
+        r += 0.30f * gauss(u / 0.10f) * gauss((v - 0.615f) / 0.060f);                      // ponte do nariz
+        r += 0.72f * gauss(u / 0.14f) * gauss((v - 0.470f) / 0.070f);                      // dorso do nariz
+        r += 0.26f * gauss((a - 0.17f) / 0.075f) * gauss((v - 0.405f) / 0.035f);           // asas do nariz
+        r += 0.30f * gauss((a - 0.55f) / 0.15f) * gauss((v - 0.435f) / 0.075f);            // maçãs
+        r += 0.34f * gauss(u / 0.42f) * gauss((v - 0.315f) / 0.085f);                      // focinho (salta pra frente)
+        r -= 0.34f * gauss(u / 0.30f) * gauss((v - 0.243f) / 0.030f);                      // boca funda
+        r += 0.16f * gauss(u / 0.34f) * gauss((v - 0.115f) / 0.06f);                       // queixo pra frente
+        r -= 0.26f * gauss((v - 0.010f) / 0.045f);                                         // borda de baixo recuada
+        r -= 0.05f * gauss((v - 0.985f) / 0.030f);                                         // topo
         return r;
     }
 

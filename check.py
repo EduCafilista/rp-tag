@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.9.5' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.9.6' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.9.5 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.9.6 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -1095,8 +1095,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('4.9.5: versao 4.9.5 no build.gradle',
-      "version = '4.9.5'" in rd('build.gradle') or 'version = "4.9.5"' in rd('build.gradle'))
+check('4.9.6: versao 4.9.6 no build.gradle',
+      "version = '4.9.6'" in rd('build.gradle') or 'version = "4.9.6"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')

@@ -17,16 +17,37 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.9.5** (2026-10-30) |
+| Versão | **4.9.6** (2026-10-30) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.9.5.jar` (**91.231.921 B** — só na GitHub Release `v4.9.5`) |
-| Checks | `check.py` → **505 PASS / 0 FAIL** + **JUnit 42/42** |
+| Jar | `rptag-4.9.6.jar` (**91.225.946 B** — só na GitHub Release `v4.9.6`) |
+| Checks | `check.py` → **512 PASS / 0 FAIL** + **JUnit 42/42** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v4.9.5** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v4.9.6** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 4.9.6 (2026-10-30): máscara = modelo do Sketchfab; coração antigo de volta
+
+- **Referência nova:** `https://sketchfab.com/3d-models/mascara-de-piedra-jojo-sblend-e53ba564dd4f4b7284efd40cff86d814`
+  (guerrerogrd). O render grande sai da API pública:
+  `curl -s https://api.sketchfab.com/v3/models/<uid> | jq .thumbnails.images`
+  → o de 1920×1080 fica em `ref/sf1920.jpg` (crop `ref/sf_crop.png`).
+- **Traços que definem o modelo** (e que faltavam): silhueta de escudo, testa em
+  Y, sobrancelha em V, órbitas em fenda inclinada, focinho saliente, boca funda
+  com presas, contorno preto na borda. Todos viraram gaussianas em `relevo()` e
+  pintura em `textura()` do `arte/previa_mascara3d.py`.
+- **Largura agora é TABELA** (`V_LARG`/`W_LARG`, interpolação linear) — mais fácil
+  de ajustar a silhueta do que fórmula fechada. Mudar o desenho = mexer em 10
+  números nos DOIS arquivos (Java e Python).
+- **Coração:** voltou o sólido voxel da 4.4 (`git show 4.9.4:caminho` serve de
+  backup); `arte/previa_coracao3d.py` foi apagado junto.
+- **`.git` regrediu de novo** (`437bb48`, sem remote e com a árvore de 4.7.8 —
+  `CamadaMascara.java` chegou a sumir). Restauro: `git remote add origin` com o
+  PAT inline → `git fetch origin main` → `git reset --hard FETCH_HEAD` (volta
+  para 4.9.5). O `/var/tmp` também sumiu → `bash toolchain.sh` (≈4 min) e
+  `java -jar /var/tmp/nf-installer.jar --installServer .` em `run/`.
 
 ### 4.9.5 (2026-10-30): máscara consertada + coração esculpido + áudio do dono
 

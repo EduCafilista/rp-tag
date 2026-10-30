@@ -1,5 +1,36 @@
 # Changelog
 
+## 4.9.6 — MÁSCARA NO ESTILO DO MODELO DO SKETCHFAB + CORAÇÃO ANTIGO DE VOLTA — 2026-10-30
+
+*"melhore algo assim [Sketchfab: MASCARA DE PIEDRA JOJO] ... quero o coraçao de lore antigo"*
+
+### Máscara: agora é a do modelo de referência
+A 4.9.5 tinha volume fechado, mas a cara ainda era "ovo com traços". Peguei o
+render em 1920×1080 do modelo do Sketchfab (guerrerogrd, 1.483 triângulos) e
+refiz os traços à mão, ponto a ponto, no mesmo esquema:
+
+- **Silhueta de ESCUDO** — tabela `V_LARG`/`W_LARG`: ponta fina no queixo
+  (meia-largura 0,70), largo e quase reto no meio do rosto (3,04) e topo ainda
+  largo (2,86→2,55). Acabou o ovo; agora é o formato de escudo do modelo.
+- **Testa em Y** — duas cristas salientes (`+0,22`) que descem para o meio.
+- **Sobrancelha em V** brava (`+0,30`), logo acima das órbitas.
+- **Órbitas em fenda** — fundas (`−0,62`), finas e inclinadas, canto de fora
+  sobe; na textura são pretas com um risco de esclera.
+- **Nariz** com ponte (`+0,30`), dorso (`+0,72`) e asas.
+- **Focinho** saltando para frente (`+0,34`), **boca funda** (`−0,34`) com as
+  **duas presas**, queixo projetado e borda de baixo recuada.
+- **Textura**: pedra mais escura e contrastada, rachaduras saindo do centro,
+  **hachuras de manga** nas laterais e **borda escura** fina na silhueta (como o
+  contorno preto do modelo). Quem gera: `arte/previa_mascara3d.py`.
+
+### Coração de lore: voltou o antigo
+`CanonCoracaoRenderer` voltou ao **sólido voxel da 4.4** (silhueta 15×13 inflada
+em 13 fatias, só faces expostas, sombreamento por face, giro por relógio e
+batida tum-tum). A malha esculpida da 4.9.5 foi removida junto com o
+`arte/previa_coracao3d.py`.
+
+**Qualidade:** `check.py` **512 PASS / 0 FAIL** · JUnit **42/42** · servidor NeoForge `Done (1.933s)` · jar **91.225.946 B**.
+
 ## 4.9.5 — MÁSCARA CONSERTADA (VOLUME FECHADO) + CORAÇÃO ESCULPIDO + SOM NOVO — 2026-10-30
 
 *"a mascara ficou muito bugada no rosto corrija isso ... coloque esse som no aviso
