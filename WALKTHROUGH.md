@@ -17,16 +17,36 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.9.2** (2026-10-25) |
+| Versão | **4.9.3** (2026-10-25) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.9.2.jar` (**91.129.730 B** — só na GitHub Release `v4.9.2`) |
-| Checks | `check.py` → **478 PASS / 0 FAIL** + **JUnit 42/42** |
+| Jar | `rptag-4.9.3.jar` (**91.147.459 B** — só na GitHub Release `v4.9.3`) |
+| Checks | `check.py` → **494 PASS / 0 FAIL** + **JUnit 42/42** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v4.9.2** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v4.9.3** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 4.9.3 (2026-10-25): CIBERPSICOSE (estilo 14) + MÁSCARA DE PEDRA
+- **Aviso:** `client/CiberpsicoseAvisoFx.java` = protótipo `catbox 57mzzd.java`
+  inteiro. Estilo **14**, literal único em `/rp admin avisar`, `/rpfx teste
+  ciberpsicose` no cliente, partículas no servidor. Dura 20 s (o protótipo
+  suporta ficar até `parar()`; aqui o tempo vem do pacote).
+- **Item:** `MascaraPedraItem` (`rptag:mascara_pedra`) — `getEquipmentSlot` =
+  `HEAD` e `canEquip` só na cabeça. Sem armadura de verdade: não dá proteção.
+- **Textura:** `arte/gerar_mascara.py` (PIL, seed 1987) desenha as 4 regiões:
+  ROSTO (0..32), PEDRA (32..64 em cima), VÃO escuro (0..32 embaixo) e CANTO.
+  **Editar a arte = editar o script** (nada de PNG "na mão").
+- **Modelo:** `client/CamadaMascara` desenha 3 painéis na frente da cabeça
+  (unidades do modelo: cabeça 8³ com pivô em (0,24,0), rosto em z = -4; máscara
+  em z = -4.55). Centro = cara inteira (UV 0..0.5), laterais = pedra
+  (UV 0.5..1) girados ±26°. Registro em `ClientEvents.aoAdicionarCamadas`
+  (`AddLayers`), nos dois skins.
+- **Pegadinhas:** `@SubscribeEvent` duas vezes na mesma função não compila
+  ("not a repeatable annotation"); `LivingEntityRenderer<?,?>.addLayer` não
+  aceita `RenderLayer` com genéricos capturados → cast explícito no
+  `registrarEm`.
 
 ### 4.9.2 (2026-10-25): aviso EXPURGO (estilo 13)
 - **Pedido literal do dono:** *"adicione esse aviso 'expurgo' e me mande o mod

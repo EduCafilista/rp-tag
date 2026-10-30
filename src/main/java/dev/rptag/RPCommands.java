@@ -373,6 +373,7 @@ public final class RPCommands {
             case "pesadelo2" -> 11;   // (3.98.0) Sono Sem Descanso (antigo)
             case "egipicio", "egipcio" -> 12;   // (4.5.0) O Olho de Horus
             case "expurgo" -> 13;   // (4.9.2) Hora do Expurgo (TV de emergencia)
+            case "ciberpsicose", "ciber" -> 14;   // (4.9.3) Alerta de Ciberpsicose (glitch)
             default -> 0;
         };
         // (4.7.3) Grafia "egipcio" (sem o "i"): nao tem literal proprio, para nao
@@ -419,6 +420,7 @@ public final class RPCommands {
             case 11 -> "PESADELO SONO";
             case 12 -> "EGIPICIO";
             case 13 -> "EXPURGO";
+            case 14 -> "CIBERPSICOSE";
             default -> "classico";
         };
     }
@@ -532,6 +534,21 @@ public final class RPCommands {
                 x, y + 0.3, z, 40, 1.5, 0.2, 1.5, 0.02);
         lv.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
                 x, y + 0.2, z, 25, 1.2, 0.1, 1.2, 0.02);
+    }
+
+    /** (4.9.3) CIBERPSICOSE "Alerta de Ciberpsicose": faiscas eletricas, fumaca
+     *  e brilhos ao redor do alvo — server-side puro (a tela e do cliente).
+     *  O prototipo tinha tambem um "aplica Nausea" opcional: NAO ligamos por
+     *  padrao (mexe no jogo, nao so na tela — quem quiser usa /effect). */
+    private static void particulasCiberpsicose(ServerPlayer p) {
+        net.minecraft.server.level.ServerLevel lv = p.serverLevel();
+        double x = p.getX(), y = p.getY(), z = p.getZ();
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
+                x, y + 1.2, z, 60, 0.7, 0.9, 0.7, 0.4);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
+                x, y + 1.0, z, 20, 0.5, 0.6, 0.5, 0.02);
+        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+                x, y + 1.0, z, 12, 0.8, 0.8, 0.8, 0.05);
     }
 
     /** (3.97.0) GELO "Geada Eterna": nevasca + estilhacos de gelo
@@ -655,6 +672,9 @@ public final class RPCommands {
             // digitacao, contagem, sirene, mascaras) + TRILHA propria — o
             // servidor so faz o SANGUE de redstone caindo e a fumaca
             case 13 -> particulasExpurgo(alvo);
+            // (4.9.3) CIBERPSICOSE: o FX do cliente tem a tela inteira (glitch,
+            // humanidade, vidro, ECG) — o servidor faz as faiscas eletricas
+            case 14 -> particulasCiberpsicose(alvo);
             default -> { }
         }
     }
@@ -727,7 +747,7 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo (alvos: nomes ou @a)\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose (alvos: nomes ou @a)\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
                     + "/rp admin bolha <jogador> on|off \u00a77\u2014 modo balao de outro\u00a7c\n"
@@ -1001,6 +1021,15 @@ public final class RPCommands {
                                                     var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                                     avisar(ctx, alvos, "expurgo", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (4.9.3) CIBERPSICOSE: o glitch cyberpunk (20 s, fica nas bordas)
+                                .then(Commands.literal("ciberpsicose")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "ciberpsicose", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))))
                 .then(Commands.literal("avisozona")

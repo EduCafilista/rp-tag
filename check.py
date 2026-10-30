@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.9.2' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.9.3' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.9.2 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.9.3 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -487,7 +487,7 @@ check('3.95/3.98: lorezone sem ascensao (case 11 = pesadelo2)',
       'entry("ascensao"' not in zc and 'ascensao' not in zc
       and 'entry("pesadelo2", 11)' in zc and 'case 11 -> "pesadelo2"' in zc)
 rp2 = rd(R + '/RPCommands.java')
-check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio, expurgo (alvos' in rp2
+check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio, expurgo, ciberpsicose (alvos' in rp2
       and 'ascensao' not in rp2 and 'pesadelo, pesadelo2, runico' in rp2)
 
 # ---- 3.93.0: DEMONIACO = FX "Chamado do Abismo" (arquivo do user) ----
@@ -859,7 +859,7 @@ check('4.9.0: ajuda lista afk + lote e NAO lista mais regra', 'admin afk tempo' 
 
 check('4.5: EGIPICIO e o estilo 12 (parse + nome + ajuda)',
       'case "egipicio", "egipcio" -> 12' in rp and 'case 12 -> "EGIPICIO"' in rp
-      and 'egipicio, expurgo (alvos' in rp)
+      and 'egipicio, expurgo, ciberpsicose (alvos' in rp)
 check('4.5: EGIPICIO desenha o OLHO DE HORUS (sobrancelha/amendoa/iris)',
       'EgipcioAvisoFx' in egi and 'olho' in egi.lower())
 check('4.5: EGIPICIO tem templo, areia, hieroglifos e cartucho',
@@ -1090,8 +1090,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('4.9.2: versao 4.9.2 no build.gradle',
-      "version = '4.9.2'" in rd('build.gradle') or 'version = "4.9.2"' in rd('build.gradle'))
+check('4.9.3: versao 4.9.3 no build.gradle',
+      "version = '4.9.3'" in rd('build.gradle') or 'version = "4.9.3"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1146,6 +1146,57 @@ check('4.9.2: nome do estilo e as particulas de mundo no servidor',
 check('4.9.2: a ajuda lista o expurgo', 'egipicio, expurgo' in _rc92)
 check('4.9.2: /rpfx teste expurgo funciona no cliente',
       'case "expurgo" -> 13;' in rd(C + '/FxComando.java'))
+
+
+# ============ 4.9.3: aviso CIBERPSICOSE (catbox 57mzzd) + MASCARA DE PEDRA ============
+_cib = rd(C + '/CiberpsicoseAvisoFx.java')
+check('4.9.3: CiberpsicoseAvisoFx no pacote do mod (sem com.exemplo)',
+      'package dev.rptag.client;' in _cib and 'com.exemplo' not in _cib)
+check('4.9.3: o glitch do prototipo esta inteiro (estatica, humanidade, vidro, ECG, surtos)',
+      all(k in _cib for k in ('ALERTA: CIBERPSICOSE', 'HUMANIDADE', 'rachaduras(', 'ecg(',
+                              'SINAIS VITAIS CRÍTICOS', 'REINICIANDO...', 'surto(')))
+check('4.9.3: dura 30 s por padrao e tem parar()',
+      'DUR_PADRAO = 30f' in _cib and 'public static void parar()' in _cib)
+check('4.9.3: modo reduzido respeitado', 'public static boolean reduzido' in _cib)
+check('4.9.3: camada registrada + estilo 14 abre e encerra o anterior',
+      'CiberpsicoseAvisoFx.registrar(event)' in rd(C + '/ClientGuiLayers.java')
+      and 'if (style == 14)' in rd(C + '/ClientEffects.java')
+      and 'CiberpsicoseAvisoFx.parar();' in rd(C + '/ClientEffects.java'))
+_rc93 = rd(R + '/RPCommands.java')
+check('4.9.3: /rp admin avisar ... ciberpsicose (literal unico) + nome + ajuda',
+      'case "ciberpsicose", "ciber" -> 14;' in _rc93
+      and _rc93.count('.then(Commands.literal("ciberpsicose")') == 1
+      and 'case 14 -> "CIBERPSICOSE";' in _rc93
+      and 'egipicio, expurgo, ciberpsicose' in _rc93)
+check('4.9.3: particulas do servidor (faisca eletrica, fumaca, end rod)',
+      'particulasCiberpsicose' in _rc93 and 'ELECTRIC_SPARK' in _rc93
+      and 'case 14 -> particulasCiberpsicose(alvo);' in _rc93)
+check('4.9.3: /rpfx teste ciberpsicose (cliente, sem servidor)',
+      '"ciberpsicose"' in rd(C + '/FxComando.java') and '-> 14;' in rd(C + '/FxComando.java'))
+
+# ---- mascara de pedra
+_mi = rd(R + '/MascaraPedraItem.java')
+check('4.9.3: MascaraPedraItem e item de CABECA (EquipmentSlot.HEAD)',
+      'class MascaraPedraItem extends Item' in _mi and 'return EquipmentSlot.HEAD;' in _mi)
+check('4.9.3: item rptag:mascara_pedra registrado',
+      'ITEMS.register("mascara_pedra"' in rd(R + '/RPTagMod.java'))
+check('4.9.3: modelo + textura do item no jar',
+      os.path.exists(A + '/models/item/mascara_pedra.json')
+      and os.path.exists(A + '/textures/item/mascara_pedra.png'))
+check('4.9.3: nome do item no lang (pt_br e en_us)',
+      'item.rptag.mascara_pedra' in rd(A + '/lang/pt_br.json')
+      and 'item.rptag.mascara_pedra' in rd(A + '/lang/en_us.json'))
+_cm = rd(C + '/CamadaMascara.java')
+check('4.9.3: camada 3D desenha os 3 paineis com a textura da mascara',
+      'class CamadaMascara extends RenderLayer' in _cm and 'painel(pose, vc' in _cm
+      and 'textures/item/mascara_pedra.png' in _cm)
+check('4.9.3: a camada so aparece com o item na cabeca',
+      'EquipmentSlot.HEAD' in _cm and 'MascaraPedraItem' in _cm)
+check('4.9.3: camada registrada nos dois modelos de skin (classico e slim)',
+      'AddLayers' in rd(C + '/ClientEvents.java') and 'event.getSkins()' in rd(C + '/ClientEvents.java'))
+check('4.9.3: gerador da textura no repo (64x64, rosto + pedra + vao + canto)',
+      os.path.exists('arte/gerar_mascara.py') and '64, 64' in rd('arte/gerar_mascara.py')
+      and os.path.getsize(A + '/textures/item/mascara_pedra.png') > 800)
 
 
 print(f'\n{OK} PASS / {FAIL} FAIL')

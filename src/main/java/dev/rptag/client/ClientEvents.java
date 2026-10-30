@@ -61,7 +61,19 @@ public final class ClientEvents {
         event.setDisplayname(base.append(RPTags.tag(ClientRPStates.isInRp(id))));
     }
 
+    /** (4.9.3) MASCARA DE PEDRA: põe a camada de desenho em TODOS os corpos de
+     *  jogador (skin clássica e slim) — só desenha quem está com o item na cabeça. */
     @SubscribeEvent
+    public static void aoAdicionarCamadas(net.neoforged.neoforge.client.event.EntityRenderersEvent.AddLayers event) {
+        for (net.minecraft.client.resources.PlayerSkin.Model skin : event.getSkins()) {
+            net.minecraft.client.renderer.entity.EntityRenderer<? extends net.minecraft.world.entity.player.Player> r =
+                    event.getSkin(skin);
+            if (r instanceof net.minecraft.client.renderer.entity.LivingEntityRenderer<?, ?> ler) {
+                CamadaMascara.registrarEm(ler);
+            }
+        }
+    }
+
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientRPStates.clear();
         ClientPersonaCache.clear();
@@ -75,5 +87,7 @@ public final class ClientEvents {
         DivinoAvisoFx.parar();
         EgipcioAvisoFx.parar();
         RealAvisoFx.parar();
+        ExpurgoAvisoFx.parar();
+        CiberpsicoseAvisoFx.parar();
     }
 }

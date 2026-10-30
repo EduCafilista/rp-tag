@@ -80,6 +80,7 @@ public final class FxComando {
             case "pesadelo2" -> 11;
             case "egipicio", "egipcio" -> 12;
             case "expurgo" -> 13;
+            case "ciberpsicose", "cyberpsicose", "ciber" -> 14;
             default -> 0;
         };
     }

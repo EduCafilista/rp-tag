@@ -56,6 +56,9 @@ public final class ClientGuiLayers {
         // (4.9.2) estilo 13 = EXPURGO "Hora do Expurgo" (TV de emergencia:
         // estatica, contagem 5-4-3-2-1, sirene, mascaras) — prototipo do dono
         ExpurgoAvisoFx.registrar(event);
+        // (4.9.3) estilo 14 = CIBERPSICOSE "Alerta de Ciberpsicose" (glitch
+        // cyberpunk: estatica, humanidade caindo, vidro estilhacando, ECG)
+        CiberpsicoseAvisoFx.registrar(event);
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "medo_veu"),
                 (g, delta) -> ClientEffects.desenharMedoCamada(g));

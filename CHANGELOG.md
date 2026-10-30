@@ -1,5 +1,44 @@
 # Changelog
 
+## 4.9.3 — CIBERPSICOSE + MÁSCARA DE PEDRA — 2026-10-25
+
+*"aviso de 'cyberpsicose'... quero fazer depois uma máscara de pedra, para o pessoal
+usar em lore, faça o modelo baseado na máscara de pedra de jojo, faça para mim"*.
+
+### Aviso CIBERPSICOSE (estilo 14)
+- `client/CiberpsicoseAvisoFx.java` — o protótipo do dono (`catbox 57mzzd.java`)
+  inteiro: religar a tela com falhas, `ALERTA: CIBERPSICOSE` corrompido
+  (separação ciano/magenta), medidor de **HUMANIDADE** despencando de 100% a 23%,
+  log de erros caindo pela esquerda, **COLAPSO** com o vidro estilhaçando, visão
+  dupla, `SINAIS VITAIS CRÍTICOS` + ECG arrítmico, `REINICIANDO...` e o **modo
+  persistente** (blocos corrompidos e rasgos nas bordas, banner amarelo com a
+  mensagem) com surtos aleatórios a cada ~3 s.
+- `/rp admin avisar <jogadores> ciberpsicose <texto>` · `/rpfx teste ciberpsicose`.
+- Dura **20 s** (ou o tempo do pacote, se maior) — é o único aviso que "fica".
+- Servidor: faíscas elétricas, fumaça e brilhos ao redor do alvo
+  (`RPCommands.particulasCiberpsicose`). O "aplica Náusea" do protótipo **não**
+  foi ligado: mexe no jogo, não só na tela.
+
+### Máscara de Pedra (JoJo)
+- **Item** `rptag:mascara_pedra` (`MascaraPedraItem`): é item de **cabeça**
+  (`EquipmentSlot.HEAD`) — clica com o botão direito pra equipar, ou
+  `/item replace entity @s armor.head with rptag:mascara_pedra`.
+- **Textura 64x64** (`textures/item/mascara_pedra.png`, gerada por
+  `arte/gerar_mascara.py`, com seed fixo): o rosto esculpido na região 0..32
+  (sobrancelha caída, olhos fundos, nariz, boca com **duas presas**, queixo),
+  pedra lascada com rachaduras em 32..64, além do vão escuro e do canto.
+- **Modelo 3D na cabeça** (`client/CamadaMascara`): 3 painéis — o do meio com a
+  cara inteira e os dois laterais com a pedra, virados ~26° pra trás (o "casco").
+  Registrado nos dois modelos de skin (clássico e slim) via
+  `EntityRenderersEvent.AddLayers`; só desenha quem está com o item na cabeça e
+  não desenha jogador invisível.
+- Prévias: `arte/previa_mascara.py` → `previa/mascara_no_rosto.png` e
+  `previa/mascara_textura.png`.
+
+**Qualidade:** `check.py` **494 PASS / 0 FAIL** · JUnit **42/42** · servidor
+NeoForge 21.1.249 `Done (1.023s)` · jar **91.147.459 B**. No servidor, o item
+entrou no slot de cabeça de um armor stand sem erro (item e NBT válidos).
+
 ## 4.9.2 — AVISO "EXPURGO" — 2026-10-25
 
 O dono mandou o protótipo (`catbox 7l0m00.java`) e pediu para adicionar: *"adicione

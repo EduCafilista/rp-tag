@@ -28,6 +28,10 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  *   <li>{@code dev.rptag.client.BubbleStyleScreen} — tela com seletor de cor</li>
  * </ul>
  *
+ * <p><b>4.9.3</b> — Chegaram o aviso CIBERPSICOSE (estilo 14) e a MASCARA DE
+ * PEDRA ({@link MascaraPedraItem}): item de cabeça, desenhado em 3D no rosto
+ * pelo cliente ({@code client/CamadaMascara}), para o pessoal usar em lore.
+ *
  * <p><b>4.9.1</b> — O aviso DIVINO voltou a ser o procedural antigo (dourado, com
  * halo rúnico e asas desenhadas): o vídeo do Blender que o Marcello pôs na 4.6.0
  * ficou esquisito (fundo cinza/branco) e o dono pediu o antigo de volta. A pasta
@@ -45,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "4.9.2";
+    public static final String VERSION = "4.9.3";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -95,6 +99,13 @@ public final class RPTagMod {
                     () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()
                             .stacksTo(1)
                             .rarity(net.minecraft.world.item.Rarity.EPIC)));
+
+    /** (4.9.3) MASCARA DE PEDRA (JoJo) — item de cabeca, para usar em lore. */
+    public static final net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.world.item.Item,
+            MascaraPedraItem> MASCARA_PEDRA = ITEMS.register("mascara_pedra",
+            () -> new MascaraPedraItem(new net.minecraft.world.item.Item.Properties()
+                    .stacksTo(1)
+                    .rarity(net.minecraft.world.item.Rarity.RARE)));
 
     public RPTagMod(IEventBus modEventBus, ModContainer modContainer) {
         // (3.45.0) o efeito MEDO usa DeferredRegister (registro oficial,
