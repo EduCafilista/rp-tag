@@ -1,5 +1,45 @@
 # Changelog
 
+## 4.9.8 — O BUG QUE DERRUBAVA O JOGO + ITEM 3D NA MÃO — 2026-10-31
+
+*"minecraft simplesmente nao carrega mais"* / *"está bugado o item no rosto, na mão,
+nao se parece com uma mascara"*
+
+### 1. A causa do jogo não carregar (achada de verdade)
+O bloco `static { construirMalha(); }` estava colocado **antes** das tabelas
+`V_LARG`/`W_LARG` no arquivo da classe. Em Java a inicialização estática segue a
+**ordem do texto**: `largura()` lia `V_LARG == null` →
+`NullPointerException` na inicialização da classe → o jogo travava no carregando.
+Na 4.9.7 a blindagem escondeu o erro (o jogo abria, mas **sem máscara**), e foi
+por isso que ela apareceu "quadrada"/sem volume.
+
+- A montagem agora é **preguiçosa**: `garantirMalha()` roda na primeira vez que a
+  máscara é desenhada, dentro de `try/catch`, e **nenhum** `static { }` chama
+  `construirMalha()`.
+- Como o erro passou batido: eu testava só no servidor dedicado, que **não
+  carrega classes de cliente**. Agora existe um harness que carrega
+  `CamadaMascara` com um stub de `RPTagMod` e despeja os vértices; o render de
+  conferência é feito **com os vértices que o Java emite**
+  (`previa/mascara_java.png`).
+
+### 2. O item virou modelo 3D (antes era sprite)
+`models/item/mascara_pedra.json` era `item/generated` — um desenho chato na mão
+e no inventário. Agora é **modelo com `elements`** (13 blocos): 7 faixas que
+formam a silhueta de escudo, nariz saltando pra frente e borda (rim). Tem
+`display` próprio pra mão, primeira pessoa, chão e GUI.
+Textura nova `textures/item/mascara_pedra_item.png` (64×64: cara + pedra +
+borda). Quem gera: `arte/gerar_item_mascara.py` → `previa/mascara_item.png`.
+
+### 3. Relevo da máscara reforçado (agora aparece)
+O relevo existia mas era fraco pro tamanho da peça. Escalado: nariz **+1,25**
+dorso / +0,45 ponte / +0,40 asas, órbitas **−1,10**, testa em Y +0,55,
+sobrancelha +0,48, maçãs +0,45, focinho +0,55, boca −0,55. No render de lado o
+nariz e as órbitas agora aparecem **na silhueta**.
+
+**Qualidade:** `check.py` **519 PASS / 0 FAIL** · servidor NeoForge
+`Done (0.750s)` · armor stand + item_display com a máscara e `coracao_canon`
+via RCON · jar **91.230.537 B**.
+
 ## 4.9.7 — BLINDADO (o mod não pode derrubar o jogo) + CORAÇÃO ANTIGO DE VERDADE — 2026-10-31
 
 *"minecraft simplesmente nao carrega mais apos eu colocar a ultima versao"*

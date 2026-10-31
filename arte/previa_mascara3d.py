@@ -66,23 +66,23 @@ def relevo(u, v):
     r += 0.12 * gauss(u / 0.55) * gauss((v - 0.80) / 0.22)                   # testa
     # ---- a TESTA em Y: duas cristas que descem para o meio (a marca do JoJo)
     vc = 0.735 - 0.10 * a
-    r += 0.34 * gauss((a - 0.15) / 0.070) * gauss((v - vc) / 0.045)
+    r += 0.55 * gauss((a - 0.15) / 0.070) * gauss((v - vc) / 0.045)
     # ---- sobrancelha em V (brava): crista grossa por cima das órbitas
     vb = 0.645 + 0.055 * a
-    r += 0.30 * gauss((a - 0.30) / 0.16) * gauss((v - vb) / 0.028)
+    r += 0.48 * gauss((a - 0.30) / 0.16) * gauss((v - vb) / 0.028)
     # ---- ÓRBITAS: fenda funda e FINA, inclinada (canto de fora sobe)
     vo = 0.575 + 0.050 * a
-    r -= 0.72 * gauss((a - 0.32) / 0.080) * gauss((v - vo) / 0.022)
+    r -= 1.10 * gauss((a - 0.32) / 0.080) * gauss((v - vo) / 0.022)
     # ---- NARIZ: crista larga embaixo, fina em cima, descendo da sobrancelha
-    r += 0.30 * gauss(u / 0.10) * gauss((v - 0.615) / 0.060)                 # ponte
-    r += 0.72 * gauss(u / 0.14) * gauss((v - 0.470) / 0.070)                 # dorso
-    r += 0.26 * gauss((a - 0.17) / 0.075) * gauss((v - 0.405) / 0.035)       # asas
+    r += 0.45 * gauss(u / 0.10) * gauss((v - 0.615) / 0.060)                 # ponte
+    r += 1.25 * gauss(u / 0.14) * gauss((v - 0.470) / 0.070)                 # dorso
+    r += 0.40 * gauss((a - 0.17) / 0.075) * gauss((v - 0.405) / 0.035)       # asas
     # ---- MAÇÃS
-    r += 0.30 * gauss((a - 0.55) / 0.15) * gauss((v - 0.435) / 0.075)
+    r += 0.45 * gauss((a - 0.55) / 0.15) * gauss((v - 0.435) / 0.075)
     # ---- FOCINHO: a parte de baixo do rosto salta pra frente (o "bico")
-    r += 0.34 * gauss(u / 0.42) * gauss((v - 0.315) / 0.085)
+    r += 0.55 * gauss(u / 0.42) * gauss((v - 0.315) / 0.085)
     # ---- BOCA: buraco fundo
-    r -= 0.34 * gauss(u / 0.30) * gauss((v - 0.243) / 0.030)
+    r -= 0.55 * gauss(u / 0.30) * gauss((v - 0.243) / 0.030)
     # ---- QUEIXO: ponta pra frente e borda de baixo recuada
     r += 0.16 * gauss(u / 0.34) * gauss((v - 0.115) / 0.06)
     r -= 0.26 * gauss((v - 0.010) / 0.045)

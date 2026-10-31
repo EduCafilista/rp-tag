@@ -17,16 +17,37 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.9.7** (2026-10-31) |
+| Versão | **4.9.8** (2026-10-31) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.9.7.jar` (**91.225.972 B** — só na GitHub Release `v4.9.7`) |
-| Checks | `check.py` → **509 PASS / 0 FAIL** |
+| Jar | `rptag-4.9.8.jar` (**91.230.537 B** — só na GitHub Release `v4.9.8`) |
+| Checks | `check.py` → **519 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v4.9.7** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v4.9.8** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 4.9.8 (2026-10-31): o NPE de ordem + item 3D
+
+- **BUG CLÁSSICO DE JAVA, gravem:** bloco `static { }` **antes** dos campos que
+  ele usa = `null`. Era isso que travava o carregamento ("fica carregando pra
+  sempre"). A montagem da malha virou **preguiçosa** (`garantirMalha()`, chamada
+  no render e em `triangulos()`), nunca no carregamento da classe.
+- **Harness de cliente** (o que faltava): `dev/rptag/client/DumpMalha` roda
+  `CamadaMascara` com um **stub** de `RPTagMod` (em `/tmp/stub`, fora do mod),
+  força `triangulos()` e despeja os 8.688 vértices em `/tmp/malha_java.txt`.
+  Depois `render_java.py` rasteriza **esses** vértices → `previa/mascara_java.png`.
+  É a única conferência que garante o que o jogo vai desenhar.
+  Comando:
+  `javac -cp "build/classes:$(cat /var/tmp/cp.txt)" -d /tmp/dump ...` e
+  `java -cp "/tmp/stub:/tmp/dump:build/classes:..." dev.rptag.client.DumpMalha`.
+- **Item:** modelo 3D com `elements` (13), UV **0..16** (não pixels!), `display`
+  por contexto. Gerador: `arte/gerar_item_mascara.py`. Cuidado: UV em pixels
+  deixa tudo com uma cor só (foi o primeiro erro do gerador).
+- **Relevo:** o que existe no código precisa ser **visível** — o nariz tinha
+  +0,72 e não aparecia na silhueta; agora 1,25. Regra: conferir a **vista de
+  lado** do `previa/mascara_java.png`; se o perfil for reto, o relevo é fraco.
 
 ### 4.9.7 (2026-10-31): blindagem + coração antigo de verdade
 

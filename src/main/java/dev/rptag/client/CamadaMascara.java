@@ -75,11 +75,25 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
     private static final float[] VTU = new float[MAXV], VTV = new float[MAXV];
     private static int NV;
 
-    static {
-        // (4.9.7) BLINDAGEM: se a montagem da malha falhar em alguma máquina, o
-        // mod NÃO pode derrubar o jogo — registra no log e segue sem a máscara.
+
+    // (4.9.8) A MALHA É MONTADA PREGUIÇOSAMENTE — NÃO NO static {}.
+    //
+    // O bug que derrubou o jogo: a montagem estava num `static { }` colocado
+    // ANTES das tabelas V_LARG/W_LARG no arquivo. Em Java a inicialização
+    // estática segue a ORDEM DO TEXTO, então `largura()` lia V_LARG == null ->
+    // NullPointerException na inicialização da classe -> o jogo não abria.
+    // Agora nada roda no carregamento da classe: `garantirMalha()` monta na
+    // primeira vez que a máscara for desenhada (e não tenta de novo se falhar).
+    private static boolean malhaTentada;
+
+    private static void garantirMalha() {
+        if (NV > 0 || malhaTentada) {
+            return;
+        }
+        malhaTentada = true;
         try {
             construirMalha();
+            RPTagMod.LOGGER.info("RP Tag: malha da mascara montada ({} triangulos)", NV / 3);
         } catch (Throwable t) {
             NV = 0;
             RPTagMod.LOGGER.error("RP Tag: falha ao montar a malha da mascara (o jogo segue)", t);
@@ -128,17 +142,17 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
         float r = 0f;
         r += 0.12f * gauss(u / 0.55f) * gauss((v - 0.80f) / 0.22f);                        // testa inchada
         float vc = 0.735f - 0.10f * a;                                                     // TESTA em Y (cristas do JoJo)
-        r += 0.34f * gauss((a - 0.15f) / 0.070f) * gauss((v - vc) / 0.045f);
+        r += 0.55f * gauss((a - 0.15f) / 0.070f) * gauss((v - vc) / 0.045f);
         float vb = 0.645f + 0.055f * a;                                                    // sobrancelha em V (brava)
-        r += 0.30f * gauss((a - 0.30f) / 0.16f) * gauss((v - vb) / 0.028f);
+        r += 0.48f * gauss((a - 0.30f) / 0.16f) * gauss((v - vb) / 0.028f);
         float vo = 0.575f + 0.050f * a;                                                    // ÓRBITAS: fenda funda e fina
-        r -= 0.72f * gauss((a - 0.32f) / 0.080f) * gauss((v - vo) / 0.022f);
-        r += 0.30f * gauss(u / 0.10f) * gauss((v - 0.615f) / 0.060f);                      // ponte do nariz
-        r += 0.72f * gauss(u / 0.14f) * gauss((v - 0.470f) / 0.070f);                      // dorso do nariz
-        r += 0.26f * gauss((a - 0.17f) / 0.075f) * gauss((v - 0.405f) / 0.035f);           // asas do nariz
-        r += 0.30f * gauss((a - 0.55f) / 0.15f) * gauss((v - 0.435f) / 0.075f);            // maçãs
-        r += 0.34f * gauss(u / 0.42f) * gauss((v - 0.315f) / 0.085f);                      // focinho (salta pra frente)
-        r -= 0.34f * gauss(u / 0.30f) * gauss((v - 0.243f) / 0.030f);                      // boca funda
+        r -= 1.10f * gauss((a - 0.32f) / 0.080f) * gauss((v - vo) / 0.022f);
+        r += 0.45f * gauss(u / 0.10f) * gauss((v - 0.615f) / 0.060f);                      // ponte do nariz
+        r += 1.25f * gauss(u / 0.14f) * gauss((v - 0.470f) / 0.070f);                      // dorso do nariz
+        r += 0.40f * gauss((a - 0.17f) / 0.075f) * gauss((v - 0.405f) / 0.035f);           // asas do nariz
+        r += 0.45f * gauss((a - 0.55f) / 0.15f) * gauss((v - 0.435f) / 0.075f);            // maçãs
+        r += 0.55f * gauss(u / 0.42f) * gauss((v - 0.315f) / 0.085f);                      // focinho (salta pra frente)
+        r -= 0.55f * gauss(u / 0.30f) * gauss((v - 0.243f) / 0.030f);                      // boca funda
         r += 0.16f * gauss(u / 0.34f) * gauss((v - 0.115f) / 0.06f);                       // queixo pra frente
         r -= 0.26f * gauss((v - 0.010f) / 0.045f);                                         // borda de baixo recuada
         r -= 0.05f * gauss((v - 0.985f) / 0.030f);                                         // topo
@@ -327,6 +341,10 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
             return;
         }
 
+        garantirMalha();
+        if (NV < 3) {
+            return;
+        }
         // (4.9.7) BLINDAGEM: erro de render não pode virar crash do jogo (o mod
         // fica sem a máscara naquele quadro e o log guarda a causa).
         try {
@@ -371,6 +389,7 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
 
     /** quantos triângulos a máscara tem (usado no check.py / log). */
     public static int triangulos() {
+        garantirMalha();
         return NV / 3;
     }
 }

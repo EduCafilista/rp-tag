@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.9.7' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.9.8' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.9.7 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.9.8 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -1091,8 +1091,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('4.9.7: versao 4.9.7 no build.gradle',
-      "version = '4.9.7'" in rd('build.gradle') or 'version = "4.9.7"' in rd('build.gradle'))
+check('4.9.8: versao 4.9.8 no build.gradle',
+      "version = '4.9.8'" in rd('build.gradle') or 'version = "4.9.8"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1181,6 +1181,14 @@ check('4.9.3: MascaraPedraItem e item de CABECA (EquipmentSlot.HEAD)',
       'class MascaraPedraItem extends Item' in _mi and 'return EquipmentSlot.HEAD;' in _mi)
 check('4.9.3: item rptag:mascara_pedra registrado',
       'ITEMS.register("mascara_pedra"' in rd(R + '/RPTagMod.java'))
+check('4.9.8: o ITEM e modelo 3D de verdade (elements), nao sprite item/generated',
+      'elements' in rd(A + '/models/item/mascara_pedra.json')
+      and 'item/generated' not in rd(A + '/models/item/mascara_pedra.json')
+      and 'display' in rd(A + '/models/item/mascara_pedra.json'))
+check('4.9.8: textura propria do item (cara + pedra + borda) no repo e no jar',
+      os.path.exists(A + '/textures/item/mascara_pedra_item.png')
+      and os.path.exists('arte/gerar_item_mascara.py')
+      and os.path.exists('previa/mascara_item.png'))
 check('4.9.3: modelo + textura do item no jar',
       os.path.exists(A + '/models/item/mascara_pedra.json')
       and os.path.exists(A + '/textures/item/mascara_pedra.png'))
@@ -1239,8 +1247,12 @@ check('4.9.5: modo reduzido nao toca a trilha (acessibilidade)',
       and 'SOM_CIBERPSICOSE.get(), 1.0f, 1.0f' in _cib)
 
 # ============ 4.9.7: o mod NAO pode derrubar o jogo (blindagem) ============
-check('4.9.7: montagem da malha protegida (try/catch — falha nao mata o jogo)',
-      'try {\n            construirMalha();' in _cm and 'o jogo segue' in _cm)
+_cm_codigo = '\n'.join(l for l in _cm.splitlines() if not l.strip().startswith(('*', '//', '/*')))
+check('4.9.8: malha montada PREGUICOSAMENTE (sem bloco static chamando construirMalha)',
+      'static {' not in _cm_codigo and _cm.count('construirMalha') == 2
+      and 'private static void garantirMalha()' in _cm and 'malhaTentada' in _cm)
+check('4.9.8: falha na montagem nao mata o jogo (try/catch no garantirMalha)',
+      'falha ao montar a malha da mascara (o jogo segue)' in _cm)
 check('4.9.7: render da mascara protegido (try/catch)',
       'erro ao desenhar a mascara (ignorado)' in _cm)
 check('4.9.7: audio do ciberpsicose protegido (try/catch)',
