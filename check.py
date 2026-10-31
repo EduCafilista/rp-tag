@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('5.0.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('5.1.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 5.0.1 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 5.1.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -1097,8 +1097,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('5.0.1: versao 5.0.1 no build.gradle',
-      "version = '5.0.1'" in rd('build.gradle') or 'version = "5.0.1"' in rd('build.gradle'))
+check('5.1.0: versao 5.1.0 no build.gradle',
+      "version = '5.1.0'" in rd('build.gradle') or 'version = "5.1.0"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1205,21 +1205,32 @@ check('4.9.3: MascaraPedraItem e item de CABECA (EquipmentSlot.HEAD)',
       'class MascaraPedraItem extends Item' in _mi and 'return EquipmentSlot.HEAD;' in _mi)
 check('4.9.3: item rptag:mascara_pedra registrado',
       'ITEMS.register("mascara_pedra"' in rd(R + '/RPTagMod.java'))
-check('4.9.8: o ITEM e modelo 3D de verdade (elements), nao sprite item/generated',
-      'elements' in rd(A + '/models/item/mascara_pedra.json')
-      and 'item/generated' not in rd(A + '/models/item/mascara_pedra.json')
-      and 'display' in rd(A + '/models/item/mascara_pedra.json'))
-check('5.0.1: textura do item = ROSTO DO MODELO (item/mascara_face.png, RGBA)',
-      os.path.exists(A + '/textures/item/mascara_face.png')
-      and _pil_size(A + '/textures/item/mascara_face.png')[0] == 128
-      and _pil_mode(A + '/textures/item/mascara_face.png') == 'RGBA'
-      and os.path.exists('arte/gerar_item_mascara.py')
-      and os.path.exists('previa/mascara_item.png'))
-check('5.0.1: item com CUTOUT (alfa do rosto recortado) e escala pequena na mao',
-      'minecraft:cutout' in rd(A + '/models/item/mascara_pedra.json')
-      and '"scale": [0.38' in rd(A + '/models/item/mascara_pedra.json'))
-check('5.0.1: mascara do ROSTO menor e afundada (ALTURA 7.3, Z_TRAS -3.75)',
-      'ALTURA = 7.3' in rd('arte/importar_glb.py') and 'Z_TRAS = -3.75' in rd('arte/importar_glb.py'))
+check('5.1.0: o ITEM e 3D pelo renderer (nenhum sprite item/generated sobrou)',
+      'item/generated' not in rd(A + '/models/item/mascara_pedra.json')
+      and 'builtin/entity' in rd(A + '/models/item/mascara_pedra.json')
+      and 'elements' not in rd(A + '/models/item/mascara_pedra.json'))
+check('5.1.0: o ITEM desenha a MALHA DO MODELO (RenderItemMascara + geo/mascara_item.bin)',
+      os.path.exists(C + '/RenderItemMascara.java')
+      and 'BlockEntityWithoutLevelRenderer' in rd(C + '/RenderItemMascara.java')
+      and 'mascara_item.bin' in rd(C + '/RenderItemMascara.java')
+      and os.path.exists(A + '/geo/mascara_item.bin')
+      and os.path.getsize(A + '/geo/mascara_item.bin') > 700000)
+check('5.1.0: renderer 3D registrado no item (initializeClient/getCustomRenderer)',
+      'getCustomRenderer' in rd(R + '/MascaraPedraItem.java')
+      and 'RenderItemMascara.get()' in rd(R + '/MascaraPedraItem.java'))
+check('5.1.0: modelos do item apontam pro renderer (builtin/entity)',
+      'builtin/entity' in rd(A + '/models/item/mascara_pedra.json'))
+check('5.1.0: leitor unico da malha binaria (MalhaBin, big-endian + planar)',
+      os.path.exists(C + '/MalhaBin.java') and "f.write" not in rd(C + '/MalhaBin.java')
+      and 'DataInputStream' in rd(C + '/MalhaBin.java'))
+check('5.1.0: eixo da cabeca CERTO (+Y pra baixo) — espelha Y e usa caixa explicita',
+      'espelha_y' in rd('arte/importar_glb.py') and 'ROSTO_Y_TOPO = -7.45' in rd('arte/importar_glb.py')
+      and 'ROSTO_Y_BASE = -0.45' in rd('arte/importar_glb.py'))
+check('5.1.0: mascara encostada no rosto (z -5.05..-3.75) e largura 5,4',
+      'ROSTO_Z_FUNDO = -3.75' in rd('arte/importar_glb.py') and 'ROSTO_X = 2.70' in rd('arte/importar_glb.py'))
+check('5.1.0: CamadaMascara desenha a malha do MalhaBin (nao mais laco com MAXV)',
+      'MalhaBin m = malhaGlb;' in rd(C + '/CamadaMascara.java')
+      and 'MalhaBin.carregar("/assets/rptag/geo/mascara_glb.bin")' in rd(C + '/CamadaMascara.java'))
 check('4.9.3: modelo + textura do item no jar',
       os.path.exists(A + '/models/item/mascara_pedra.json')
       and os.path.exists(A + '/textures/item/mascara_pedra.png'))
@@ -1248,9 +1259,9 @@ check('4.9.7: malha 29x25 com normal por diferenca finita',
 _GEO = A + '/geo/mascara_glb.bin'
 check('5.0.0: malha do MODELO do dono no jar (geo/mascara_glb.bin, 24042 vertices)',
       os.path.exists(_GEO) and os.path.getsize(_GEO) > 700000)
-check('5.0.0: CamadaMascara LE a malha do GLB (magic RPTM + DataInputStream)',
-      'RPTM' in rd(C + '/CamadaMascara.java') and 'carregarMalhaGlb' in rd(C + '/CamadaMascara.java')
-      and "getResourceAsStream(ARQ_MALHA)" in rd(C + '/CamadaMascara.java'))
+check('5.1.0: leitura do .bin centralizada no MalhaBin (magic RPTM + DataInputStream)',
+      'RPTM' in rd(C + '/MalhaBin.java') and 'DataInputStream' in rd(C + '/MalhaBin.java')
+      and 'MalhaBin.carregar' in rd(C + '/CamadaMascara.java'))
 check('5.0.0: MAXV comporta a malha do GLB (24042 vertices expandidos)',
       'MAXV = 26000' in rd(C + '/CamadaMascara.java'))
 check('5.0.0: textura do modelo (entity/mascara_glb.png) no repo',

@@ -28,6 +28,20 @@ public class MascaraPedraItem extends Item {
         super(props);
     }
 
+    /**
+     * (5.1.0) Cliente: o item é desenhado pela MALHA DO MODELO (3D de verdade)
+     * em vez do JSON achatado. Servidor nunca toca nessa classe.
+     */
+    @Override
+    public void initializeClient(java.util.function.Consumer<net.neoforged.neoforge.client.extensions.common.IClientItemExtensions> consumidor) {
+        consumidor.accept(new net.neoforged.neoforge.client.extensions.common.IClientItemExtensions() {
+            @Override
+            public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                return dev.rptag.client.RenderItemMascara.get();
+            }
+        });
+    }
+
     @Override
     public EquipmentSlot getEquipmentSlot(ItemStack stack) {
         return EquipmentSlot.HEAD;

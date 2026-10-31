@@ -67,6 +67,8 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
     private static final String ARQ_MALHA = "/assets/rptag/geo/mascara_glb.bin";
 
     // ---- malha
+    // ATENÇÃO: +Y aqui aponta para BAIXO (é o espaço da cabeça do jogo: a cabeça
+    // é addBox(-4,-8,-4, 8,8,8), queixo em y=0 e topo em y=-8).
     private static final int COLS = 29;          // pontos na largura
     private static final int ROWS = 25;          // pontos na altura
     // ---- forma
@@ -77,7 +79,7 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
     private static final float Y_TOPO = 4.15f;      // EM CIMA (testa)
 
     // ---- triângulos prontos (posição, normal, uv) — montados no static init
-    private static final int MAXV = 26000;
+    private static final int MAXV = 26000;   // só a malha procedural usa isto
     private static final float[] VPX = new float[MAXV], VPY = new float[MAXV], VPZ = new float[MAXV];
     private static final float[] VNX = new float[MAXV], VNY = new float[MAXV], VNZ = new float[MAXV];
     private static final float[] VTU = new float[MAXV], VTV = new float[MAXV];
@@ -99,67 +101,27 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
             return;
         }
         malhaTentada = true;
-        // 1) tenta a MALHA DO MODELO (GLB que o dono mandou);
-        // 2) se o arquivo faltar/estiver corrompido, cai na malha procedural.
-        try {
-            carregarMalhaGlb();
-        } catch (Throwable t) {
-            NV = 0;
-            RPTagMod.LOGGER.error("RP Tag: nao consegui ler a malha do GLB (vou gerar a procedural)", t);
-        }
-        if (NV >= 3) {
+        // 1) a MALHA DO MODELO (GLB do dono, já convertida pelo importar_glb.py);
+        // 2) se faltar, cai na malha procedural gerada aqui dentro.
+        malhaGlb = MalhaBin.carregar("/assets/rptag/geo/mascara_glb.bin");
+        if (malhaGlb != null && malhaGlb.n >= 3) {
+            NV = malhaGlb.n;
             texAtual = TEX_GLB;
             RPTagMod.LOGGER.info("RP Tag: malha da mascara = MODELO DO DONO ({} triangulos)", NV / 3);
             return;
         }
         try {
             construirMalha();
-            texAtual = TEX_PROC;   // malha procedural só combina com a textura procedural
-            RPTagMod.LOGGER.info("RP Tag: malha da mascara montada ({} triangulos)", NV / 3);
+            texAtual = TEX_PROC;
+            RPTagMod.LOGGER.info("RP Tag: malha da mascara montada em codigo ({} triangulos)", NV / 3);
         } catch (Throwable t) {
             NV = 0;
             RPTagMod.LOGGER.error("RP Tag: falha ao montar a malha da mascara (o jogo segue)", t);
         }
     }
 
-    /** true se o .bin do GLB foi lido inteiro (decide qual textura usar). */
-    private static boolean malhaGlbOk;
-
-    /**
-     * Lê {@code assets/rptag/geo/mascara_glb.bin} (formato gerado por
-     * {@code arte/importar_glb.py}: magic "RPTM", versão, nº de vértices e os
-     * arrays pos/normal/uv já expandidos em triângulos).
-     */
-    private static void carregarMalhaGlb() throws java.io.IOException {
-        java.io.InputStream cru = CamadaMascara.class.getResourceAsStream(ARQ_MALHA);
-        if (cru == null) {
-            RPTagMod.LOGGER.warn("RP Tag: {} nao esta no jar", ARQ_MALHA);
-            return;
-        }
-        try (java.io.DataInputStream d = new java.io.DataInputStream(new java.io.BufferedInputStream(cru))) {
-            byte[] magic = new byte[4];
-            d.readFully(magic);
-            if (magic[0] != 'R' || magic[1] != 'P' || magic[2] != 'T' || magic[3] != 'M') {
-                RPTagMod.LOGGER.warn("RP Tag: cabecalho estranho no {} (ignorado)", ARQ_MALHA);
-                return;
-            }
-            int versao = d.readInt(), n = d.readInt();
-            if (versao != 1 || n < 3 || n > MAXV) {
-                RPTagMod.LOGGER.warn("RP Tag: malha do GLB invalida (versao {}, {} vertices)", versao, n);
-                return;
-            }
-            for (int i = 0; i < n; i++) VPX[i] = d.readFloat();
-            for (int i = 0; i < n; i++) VPY[i] = d.readFloat();
-            for (int i = 0; i < n; i++) VPZ[i] = d.readFloat();
-            for (int i = 0; i < n; i++) VNX[i] = d.readFloat();
-            for (int i = 0; i < n; i++) VNY[i] = d.readFloat();
-            for (int i = 0; i < n; i++) VNZ[i] = d.readFloat();
-            for (int i = 0; i < n; i++) VTU[i] = d.readFloat();
-            for (int i = 0; i < n; i++) VTV[i] = d.readFloat();
-            NV = n;
-            malhaGlbOk = true;
-        }
-    }
+    /** Malha convertida do GLB (geo/mascara_glb.bin). null = usar a procedural. */
+    private static MalhaBin malhaGlb;
 
     public CamadaMascara(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> pai) {
         super(pai);
@@ -412,15 +374,27 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
             pose.pushPose();
             getParentModel().head.translateAndRotate(pose);
             VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(texAtual));
-            for (int k = 0; k + 2 < NV; k += 3) {
-                for (int v = 0; v < 3; v++) {
-                    int q = k + v;
-                    vc.addVertex(pose.last(), VPX[q], VPY[q], VPZ[q])
+            MalhaBin m = malhaGlb;
+            if (m != null) {
+                // malha do modelo: arrays planares, leitura direta
+                for (int q = 0; q < m.n; q++) {
+                    vc.addVertex(pose.last(), m.px[q], m.py[q], m.pz[q])
                             .setColor(255, 255, 255, 255)
-                            .setUv(VTU[q], VTV[q])
+                            .setUv(m.u[q], m.v[q])
                             .setOverlay(OverlayTexture.NO_OVERLAY)
                             .setLight(luz)
-                            .setNormal(VNX[q], VNY[q], VNZ[q]);
+                            .setNormal(m.nx[q], m.ny[q], m.nz[q]);
+                }
+            } else {
+                for (int k = 0; k + 2 < NV; k += 3) {
+                    for (int q = k; q < k + 3; q++) {
+                        vc.addVertex(pose.last(), VPX[q], VPY[q], VPZ[q])
+                                .setColor(255, 255, 255, 255)
+                                .setUv(VTU[q], VTV[q])
+                                .setOverlay(OverlayTexture.NO_OVERLAY)
+                                .setLight(luz)
+                                .setNormal(VNX[q], VNY[q], VNZ[q]);
+                    }
                 }
             }
             pose.popPose();

@@ -1,5 +1,58 @@
 # Changelog
 
+## 5.1.0 — MÁSCARA DE PÉ, ENCOSTADA NO ROSTO E ITEM 3D DE VERDADE — 2026-10-31
+
+*"a mascara está longe do rosto, ficando de cabeça para baixo; use o 3d que te
+enviei para ser o icone tambem"*
+
+### 1. O eixo estava invertido (a máscara de cabeça para baixo)
+O bytecode do vanilla não deixa dúvida:
+
+```
+HumanoidModel.createMesh: head -> addBox(-4, -8, -4, 8, 8, 8)  @ PartPose.offset(0,0,0)
+```
+
+Ou seja, dentro de `head.translateAndRotate(pose)`: **x −4..4, y −8..0, z −4..4**.
+**+Y aponta para BAIXO** (queixo em y = 0, topo do crânio em y = −8) e o rosto
+fica em z = −4. Minha conversão antiga assumia +Y pra cima — resultado: máscara
+de cabeça para baixo. Agora o importador **espelha Y** e mapeia a malha numa
+**caixa explícita**:
+
+| eixo | faixa | o que significa |
+|---|---|---|
+| x | −2,70 .. 2,70 | largura 5,4 (cabeça tem 8) |
+| y | **−7,45 .. −0,45** | de queixo a testa (lembre: y negativo é pra cima) |
+| z | **−5,05 .. −3,75** | fundo 0,25 **dentro** da cabeça; nariz 1,05 pra fora |
+
+### 2. Longe do rosto: era profundidade
+O modelo tem quase tanta profundidade quanto altura. Antes ele gastava 1,6 de
+bloco só entre o rosto e a parte de trás → a peça flutuava **1,25 bloco à frente**
+da cara. Agora a espessura inteira é **1,3** e o fundo fica **0,25 dentro** da
+cabeça.
+
+### 3. O item agora é o modelo 3D de verdade
+Os JSONs com blocos achatados (e as faixas que esticavam o rosto) foram embora.
+Entrou `RenderItemMascara` — um `BlockEntityWithoutLevelRenderer` registrado via
+`Item.initializeClient`/`IClientItemExtensions.getCustomRenderer()`, que desenha
+**a mesma malha do GLB** (8.014 triângulos) com transformação por contexto
+(GUI, mão, chão, moldura). `models/item/mascara_pedra.json` virou
+`builtin/entity`, que é o que autoriza o renderer próprio.
+
+### 4. Código
+- `client/MalhaBin.java` (novo): leitor único do `.bin` (big-endian, planar).
+- `client/RenderItemMascara.java` (novo): desenha o item.
+- `CamadaMascara`: passa a desenhar direto do `MalhaBin`; a malha procedural
+  continua como reserva se o `.bin` faltar.
+- `geo/mascara_item.bin` (novo): a mesma malha normalizada em cubo unitário.
+- Saíram: `textures/item/mascara_face.png`, `arte/gerar_item_mascara.py` e a
+  prévia do item achatado.
+
+**Prova:** `previa/mascara_511.png` — em cima a máscara **com a caixa da cabeça**
+do jogo em escala (4 ângulos); embaixo a malha do item (frente, 3/4, lado, atrás).
+Ambas lidas pelo `MalhaBin` do próprio mod.
+**Qualidade:** `check.py` **534 PASS / 0 FAIL** · `arte/validar.py` 40 ok ·
+servidor `Done (0.856s)`, 0 erros · jar **92.235.638 B**.
+
 ## 5.0.1 — ITEM NA MÃO E MÁSCARA NO ROSTO ACERTADOS — 2026-10-31
 
 *"muda o icone na minha mao, ta muito feia na mao do player, diminua o scale da

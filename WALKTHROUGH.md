@@ -17,16 +17,36 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **5.0.1** (2026-10-31) |
+| Versão | **5.1.0** (2026-10-31) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.0.1.jar` (**91.903.262 B** — só na GitHub Release `v5.0.1`) |
-| Checks | `check.py` → **530 PASS / 0 FAIL** |
+| Jar | `rptag-5.1.0.jar` (**92.235.638 B** — só na GitHub Release `v5.1.0`) |
+| Checks | `check.py` → **534 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v5.0.1** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v5.1.0** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 5.1.0 (2026-10-31): eixo da cabeça, profundidade e item 3D
+
+- **O EIXO DA CABEÇA, DE UMA VEZ POR TODAS.** `javap` no `HumanoidModel.createMesh`
+  mostra `head -> addBox(-4, -8, -4, 8, 8, 8)` com `PartPose.offset(0,0,0)`:
+  dentro de `head.translateAndRotate` o **+Y é PRA BAIXO** (queixo y=0, topo
+  y=−8) e o rosto está em **z=−4**. Modelo com +Y pra cima sai de cabeça pra
+  baixo. **Regra:** sempre espelhar Y na importação e mapear numa caixa
+  explícita, e conferir o render COM a caixa da cabeça desenhada.
+- **"Longe do rosto" era profundidade.** O modelo é fundo (profundidade ≈
+  altura): gastar 1,6 de bloco em Z jogava a peça 1,25 à frente da cara.
+  Espessura final: 1,3, com o fundo **dentro** da cabeça (z −3,75).
+- **Item 3D de verdade:** `BlockEntityWithoutLevelRenderer` +
+  `Item.initializeClient`/`IClientItemExtensions.getCustomRenderer()` e modelo
+  JSON `builtin/entity`. Sem o `builtin/entity` o renderer próprio é ignorado.
+- `setNormal` no `VertexConsumer` quer o `PoseStack.Pose` (não a `Matrix3f`).
+- 1,2 MB de malha extra (a do item) → o jar foi de 91,9 para 92,2 MB.
+- GitHub `releases/download` não abre pra esse usuário (rede/operadora bloqueia
+  `release-assets.githubusercontent.com`): publicar e **sempre** dar espelho
+  (filebin confirmado com `cmp`).
 
 ### 5.0.1 (2026-10-31): item na mão + encaixe no rosto
 
