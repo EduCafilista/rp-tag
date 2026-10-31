@@ -44,11 +44,14 @@ import net.minecraft.world.item.ItemStack;
  *       diferença finita</b>, tudo pré-computado no {@code static}.</li>
  * </ul>
  *
- * <p><b>Coordenadas:</b> depois de {@code head.translateAndRotate} a cabeça é um
- * cubo de 8³ — 1 unidade = 1 pixel do modelo, <b>+Y para cima</b> (queixo em
- * {@code Y_BASE = -4,35}, testa em {@code Y_TOPO = +4,15}) e a frente em -Z.
- * O render de conferência ({@code arte/previa_mascara3d.py}) desenha a CAIXA DA
- * CABEÇA junto justamente para não repetir o erro da 4.9.4 (eixo Y invertido).
+ * <p><b>Coordenadas (5.2.1 — conferidas no bytecode):</b> depois de
+ * {@code head.translateAndRotate} o espaço está em <b>BLOCOS</b>: a cabeça vai de
+ * x/y/z −0,5 a +0,5, com <b>+Y para BAIXO</b> (topo do crânio em y = −0,5 e
+ * queixo em y = 0) e o rosto em z = −0,25. A malha do {@code .bin} está em
+ * <b>pixels do modelo</b> (x ±2,7 · y −7,45..−0,45 · z −5,05..−3,75), então o
+ * render aplica {@code scale(1/16)} logo depois do translateAndRotate.
+ * O render de conferência é {@code arte/render_mascara_offline.py} (usa o MESMO
+ * .bin do jar e desenha a caixa da cabeça junto).
  *
  * <p>A mesma matemática está em {@code arte/previa_mascara3d.py}, que também
  * gera a textura {@code textures/entity/mascara_pedra.png}.
@@ -373,6 +376,15 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
         try {
             pose.pushPose();
             getParentModel().head.translateAndRotate(pose);
+            // (5.2.1) O BUG DO TAMANHO — 16x.
+            // ModelPart.translateAndRotate faz `x/16, y/16, z/16` (conferido no
+            // bytecode: ldc 16.0f / fdiv antes do pose.translate) e o ModelPart$Polygon
+            // divide os vértices do cubo por 16 na hora de desenhar. Ou seja: DEPOIS
+            // do translateAndRotate o espaço está em BLOCOS (a cabeça vai de
+            // -0,5 a 0,5), não em pixels do modelo. A malha do .bin está em PIXELS
+            // (±2,7 / -7,45..-0,45), então sem esta escala ela saía 16x maior e
+            // 7 blocos acima da cabeça — era a máscara gigante flutuando.
+            pose.scale(1f / 16f, 1f / 16f, 1f / 16f);
             VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(texAtual));
             MalhaBin m = malhaGlb;
             if (m != null) {

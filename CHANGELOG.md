@@ -1,5 +1,54 @@
 # Changelog
 
+## 5.2.1 — A MÁSCARA 16× MAIOR (agora assentada no rosto) e o ITEM NA MÃO — 2026-10-31
+
+*"a mascara ainda está bugada, e por algum motivo esta muito feia na mao, resolve isso"*
+
+### 1. A máscara gigante: o espaço do `ModelPart` é em BLOCOS, não em pixels
+Prova por bytecode (`javap` no jar do 1.21.1):
+
+```
+ModelPart.translateAndRotate:  ldc 16.0f / fdiv  (x, y e z do pivô)
+ModelPart$Polygon.<init>:      divide cada vértice por 16
+```
+
+Ou seja: **depois** de `head.translateAndRotate` o espaço está em **blocos**
+(a cabeça vai de −0,5 a +0,5). A malha do `.bin` está em **pixels do modelo**
+(x ±2,7 · y −7,45..−0,45 · z −5,05..−3,75). Sem conversão ela era desenhada
+**16× maior e 7,45 blocos acima da cabeça** — era exatamente a máscara gigante
+flutuando na captura. Correção: `pose.scale(1/16)` logo depois do
+`translateAndRotate`, nada mais.
+
+### 2. O item na mão: parei de inventar número
+Os translates/scales de cada contexto (`case GUI`, `THIRD_PERSON_…`) eram
+chutes. Agora o item usa **a transformação do crânio vanilla**, copiada do
+bytecode de `SkullBlockRenderer.renderSkull(null, 180, 0, …)`:
+
+```
+pose.translate(0.5f, 0f, 0.5f);
+pose.scale(-1f, -1f, 1f);      // aqui, com o /16 da malha
+```
+
+E o posicionamento por contexto vem do `display` do
+`minecraft:item/template_skull` (gui 30/45/0 · mão 45/45/0 escala 0.5 · chão
+escala 0.5 · quadro 0/180/0). Conferido: o modelo do crânio é
+`addBox(-4,-8,-4, 8,8,8)` — **o mesmo cubo da cabeça** — e a nossa máscara cai
+inteira dentro dele, com o nariz saindo ~1 px pra frente. Por isso a
+transformação do crânio põe a máscara exatamente onde o crânio fica.
+
+### 3. Menos 769 KB e uma malha só
+O `geo/mascara_item.bin` (a mesma máscara normalizada, só para o item) saiu:
+o item agora desenha a malha da cabeça. Jar foi de 92.334.938 para
+**91.992.489 B**.
+
+### Testes
+- `check.py`: **565 PASS / 0 FAIL** (8 checks novos para esta correção).
+- `arte/render_mascara_offline.py` (novo): rasteriza o MESMO `.bin` do jar e
+  desenha a caixa da cabeça junto — foi ele que mostrou o 16×.
+- `previa/mascara_521_vestida.png` (4 ângulos, personagem inteiro) e
+  `previa/mascara_521_item.png` (GUI, mão, 1ª pessoa, chão, quadro).
+- Servidor NeoForge 21.1.249: `Done (1.312s)`, `summon` da máscara ok, **0 erro**.
+
 ## 5.2.0 — TABLET NEPTUNE ENTRA NO MOD (A BRANCH INTEIRA) — 2026-10-31
 
 *"olhe a branche do github tablet, build ela por inteira no mod, deixe bom para os

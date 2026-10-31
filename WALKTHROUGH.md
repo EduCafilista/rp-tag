@@ -17,10 +17,10 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **5.2.0** (2026-10-31) — Tablet Neptune |
+| Versão | **5.2.1** (2026-10-31) — Tablet Neptune + máscara em escala |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.2.0.jar` (**92.334.938 B**, md5 `44cb8c3a4ee1738ec2847ed4a1322357`) |
-| Checks | `check.py` → **557 PASS / 0 FAIL** |
+| Jar | `rptag-5.2.1.jar` (**91.992.489 B**, md5 `b61aba1d445a1a57f5632fbd3710f886`) |
+| Checks | `check.py` → **565 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
@@ -28,6 +28,26 @@
 | Espelhos 5.2.0 | filebin `https://filebin.net/rptag520a553/rptag-5.2.0.jar` (cmp IDENTICO) · gofile `https://gofile.io/d/CdehqH7f` · release direto 200 |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 5.2.1 (2026-10-31): máscara em escala (16×) e item pela referência do crânio
+
+- **O ERRO DE ESCALA, DE UMA VEZ.** `ModelPart.translateAndRotate` faz
+  `x/16, y/16, z/16` e `ModelPart$Polygon` divide os vértices por 16 — então
+  **depois** de `head.translateAndRotate` o espaço é em **BLOCOS** (cabeça
+  −0,5..0,5). A malha do `.bin` está em **pixels** (±2,7 / −7,45..−0,45).
+  Sem `pose.scale(1/16)` a máscara sai 16× maior e 7,45 blocos acima da cabeça.
+  **Regra: qualquer malha em pixels do modelo precisa de `scale(1/16)` depois do
+  translateAndRotate.**
+- **Item na mão sem número inventado:** `SkullBlockRenderer.renderSkull(null,…)`
+  = `translate(0.5, 0, 0.5)` + `scale(-1,-1,1)` + modelo em pixels, e o
+  posicionamento por contexto vem do `display` do `template_skull`. O modelo do
+  crânio é o MESMO cubo da cabeça (`addBox(-4,-8,-4, 8,8,8)`), por isso serve.
+- **Render de conferência offline** (`arte/render_mascara_offline.py`) rasteriza
+  o `.bin` do jar em Python — foi ele que provou o 16× sem abrir o jogo.
+  `arte/previa_mascara_vestida.py` põe um boneco de escala junto.
+- Uma malha só: `geo/mascara_item.bin` saiu (‑769 KB).
+- O workspace pode voltar para um estado antigo entre sessões: **conferir
+  `git log`/arquivos antes de editar** e `git reset --hard origin/main`.
 
 ### 5.2.0 (2026-10-31): a branch `tablet-neptune` entra inteira
 

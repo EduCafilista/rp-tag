@@ -20,12 +20,13 @@ import org.joml.Matrix4f;
  *
  * <p>Antes o item era um JSON com blocos achatados (e pior: faixas que
  * esticavam o rosto). Agora o item desenha a MESMA malha do modelo do dono
- * ({@code geo/mascara_item.bin} — 8.014 triângulos), então na mão, no chão e no
+ * ({@code geo/mascara_glb.bin} — 8.014 triângulos), então na mão, no chão e no
  * inventário ele é a própria máscara.
  *
- * <p>As transformações de cada {@link ItemDisplayContext} são feitas aqui na mão
- * de propósito: assim o encaixe na mão não depende do JSON e é fácil de ajustar.
- * A frente da malha aponta para -Z, então tudo gira 180° em Y para olhar quem vê.
+ * <p>(5.2.1) O ITEM NA MÃO estava "enorme e feio" porque cada contexto tinha um
+ * translate/scale inventado à mão. Agora só existe UMA transformação — a mesma
+ * do crânio vanilla no bytecode — e todo o posicionamento por contexto vem do
+ * {@code display} do JSON, copiado de {@code minecraft:item/template_skull}.
  */
 public class RenderItemMascara extends BlockEntityWithoutLevelRenderer {
 
@@ -48,7 +49,7 @@ public class RenderItemMascara extends BlockEntityWithoutLevelRenderer {
 
     private MalhaBin malha() {
         if (malha == null) {
-            malha = MalhaBin.carregar("/assets/rptag/geo/mascara_item.bin");
+            malha = MalhaBin.carregar("/assets/rptag/geo/mascara_glb.bin");
         }
         return malha;
     }
@@ -62,46 +63,19 @@ public class RenderItemMascara extends BlockEntityWithoutLevelRenderer {
         }
         try {
             pose.pushPose();
-            // o modelo tem 1,0 de altura e está centrado; a frente olha para -Z
-            switch (ctx) {
-                case GUI -> {
-                    pose.translate(0.5f, 0.5f, 0.5f);
-                    pose.scale(0.62f, 0.62f, 0.62f);
-                    pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180f));
-                    pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(0f));
-                }
-                case GROUND -> {
-                    pose.translate(0.5f, 0.16f, 0.5f);
-                    pose.scale(0.34f, 0.34f, 0.34f);
-                    pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180f));
-                }
-                case FIXED -> {          // moldura de item (item frame)
-                    pose.translate(0.5f, 0.5f, 0.5f);
-                    pose.scale(0.55f, 0.55f, 0.55f);
-                    pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180f));
-                }
-                case THIRD_PERSON_RIGHT_HAND, THIRD_PERSON_LEFT_HAND -> {
-                    pose.translate(0.5f, 0.54f, 0.55f);
-                    pose.scale(0.40f, 0.40f, 0.40f);
-                    pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180f));
-                    pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(8f));
-                }
-                case FIRST_PERSON_RIGHT_HAND, FIRST_PERSON_LEFT_HAND -> {
-                    pose.translate(0.58f, 0.62f, 0.62f);
-                    pose.scale(0.36f, 0.36f, 0.36f);
-                    pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180f));
-                }
-                case HEAD -> {           // na cabeça (item frame/armor stand)
-                    pose.translate(0.5f, 0.72f, 0.45f);
-                    pose.scale(0.52f, 0.52f, 0.52f);
-                    pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180f));
-                }
-                default -> {
-                    pose.translate(0.5f, 0.5f, 0.5f);
-                    pose.scale(0.45f, 0.45f, 0.45f);
-                    pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180f));
-                }
-            }
+            // (5.2.1) O ITEM NA MÃO — cópia do CRÂNIO vanilla, sem número inventado.
+            //
+            // Bytecode de SkullBlockRenderer.renderSkull(null, 180, 0, pose, ...):
+            //     pose.translate(0.5f, 0f, 0.5f);
+            //     pose.scale(-1f, -1f, 1f);
+            //     modelo (em PIXELS, o Polygon divide por 16)
+            // A nossa malha de cabeça ocupa o MESMO volume do modelo do crânio
+            // (x ±2,7 dentro de ±4 · y -7,45..-0,45 dentro de -8..0 · z -5,05..-3,75
+            // dentro de -4..4), então essa transformação põe a máscara exatamente onde
+            // o crânio fica. O resto do posicionamento (mão, GUI, chão, quadro) vem do
+            // `display` do JSON, copiado de minecraft:item/template_skull.
+            pose.translate(0.5f, 0f, 0.5f);
+            pose.scale(-1f / 16f, -1f / 16f, 1f / 16f);
 
             PoseStack.Pose entrada = pose.last();
             Matrix4f mat = entrada.pose();

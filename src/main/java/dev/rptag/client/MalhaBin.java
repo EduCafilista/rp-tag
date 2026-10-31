@@ -8,13 +8,11 @@ import java.io.InputStream;
 /**
  * (5.1.0) LEITOR DA MALHA BINÁRIA gerada por {@code arte/importar_glb.py}.
  *
- * <p>O Minecraft não carrega {@code .glb}, então o modelo do dono é convertido em
- * dois arquivos dentro do jar:
- * <ul>
- *   <li>{@code geo/mascara_glb.bin} — a máscara no espaço da cabeça;</li>
- *   <li>{@code geo/mascara_item.bin} — a mesma malha normalizada em cubo
- *       unitário, usada pelo item (mão/inventário).</li>
- * </ul>
+ * <p>O Minecraft não carrega {@code .glb}, então o modelo do dono é convertido no
+ * arquivo {@code geo/mascara_glb.bin}, <b>no espaço da cabeça</b> (pixels do
+ * modelo: x ±2,7 · y −7,45..−0,45 · z −5,05..−3,75). O mesmo arquivo serve para a
+ * máscara vestida (camada) e para o item na mão — (5.2.1) não existe mais uma
+ * segunda malha normalizada: ela só duplicava 769 KB no jar.
  *
  * <p>Formato: magic {@code RPTM}, versão, nº de vértices e os arrays
  * <b>planar</b> (todas as X, depois todas as Y…) em <b>big-endian</b> — é o que o
