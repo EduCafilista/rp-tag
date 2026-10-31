@@ -1,5 +1,52 @@
 # Changelog
 
+## 5.3.1 — O ITEM NO INVENTÁRIO (o bug do display em pixels) — 2026-10-31
+
+*"as mascaras melhoraram mas ainda estao bugadas no inv"* (print: a máscara saindo do slot)
+
+### A causa (achada no bytecode, não no chute)
+O `display` do JSON estava escrito em **PIXELS** ("48", "16"). No 1.21.1 o
+`ItemTransform$Deserializer` faz outra coisa:
+
+```java
+translation.mul(0.0625F);                              // 1/16 de BLOCO
+translation.set(clamp(x,-5,5), clamp(y,-5,5), ...);    // teto de 5 BLOCOS
+scale.set(clamp(x,-4,4), clamp(y,-4,4), ...);          // multiplicador direto, teto 4
+```
+
+- `"translation": [0, 48, 0]` → **3 BLOCOS** = 48 px de GUI: o item subia e saía do slot;
+- `"scale": [16,16,16]` → batia no **teto de 4**: ícone 4x maior que o slot.
+
+Medido com as classes do jogo (`ItemTransform.Deserializer` de verdade, ver
+`previa/mascara_531_inventario.png`): o item ocupava **26,6 x 42,4 px** num slot
+de 16 px, com o centro **3 blocos acima**.
+
+### O segundo problema (mesmo sintoma)
+O espaço do item é o **cubo 0..1** (o `ItemRenderer` faz `translate(-0.5,-0.5,-0.5)`
+antes de chamar o `BEWLR`). A nossa malha mora em **px da cabeça** (centro em
+y = −4, z = −5,65), então mesmo com o `display` certo ela apareceria deslocada
+pra cima/esquerda. Agora o `RenderItemMascara` calcula o centro da bbox e leva
+em cima do (8, 8, 8): `pose.translate(offX, offY, offZ)`.
+
+### Resultado (medido com o ItemTransform do jogo)
+| contexto | antes | **agora** |
+|---|---|---|
+| gui (slot de 16 px) | 26,6 x 42,4 px, centro 3 blocos acima | **10,0 x 13,9 px, centro (0, 0)** |
+| ground | — | 3,6 x 4,2 px |
+| 3ª pessoa | — | 3,3 x 5,3 px |
+| 1ª pessoa | — | 4,5 x 5,0 px |
+
+### Prévia
+`previa/mascara_531_inventario.png` — o antes (item saindo do slot, enorme) x o
+depois (dentro do slot), desenhado com `arte/previa_gui_item.py`, que aplica a
+MESMA conta do jogo (`* 0.0625`, `translate(-0.5)`, `scale(1/16)`).
+
+### Testes
+- `check.py`: **584 PASS / 0 FAIL** (6 checks novos de 5.3.1, um deles trava
+  `translation <= 5` / `scale <= 4` pra isso não voltar).
+- Servidor 21.1.249: `Done`, item invocado, **0 erro**.
+- Jar: **91.361.089 B**.
+
 ## 5.3.0 — A MÁSCARA AGORA É O MODELO DO DONO (.bbmodel) — 2026-10-31
 
 *"usa esse modelo para a mascara"* (mandou o `stone_mask.bbmodel` do Blockbench)

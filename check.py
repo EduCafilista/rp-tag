@@ -16,9 +16,10 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('5.3.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+VER = '5.3.1'
+ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 5.3.0 em RPTagMod/build.gradle/mods.toml', ver)
+check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -1097,8 +1098,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('5.3.0: versao 5.3.0 no build.gradle',
-      "version = '5.3.0'" in rd('build.gradle') or 'version = "5.3.0"' in rd('build.gradle'))
+check(f'versao {VER} no build.gradle',
+      "version = '5.3.1'" in rd('build.gradle') or 'version = "5.3.1"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1399,8 +1400,8 @@ check('5.2.2: item usa a MESMA escala 1/16 da camada (sem transformacao do crani
       and 'pose.translate(0.5f, 0f, 0.5f)' not in _ri)
 check('5.2.1: o item NAO tem mais translate/scale inventado por contexto',
       'THIRD_PERSON_RIGHT_HAND' not in _ri and 'case GUI' not in _ri)
-check('5.2.2: display do item em PIXELS (escala x16 do template_skull)',
-      '"thirdperson_righthand"' in _mj and '"scale": [\n        8.0,' in _mj)
+check('5.2.2/5.3.1: display do item com os 4 contextos do cranio vanilla',
+      all(c in _mj for c in ('"gui"', '"fixed"', '"ground"', '"thirdperson_righthand"')))
 check('5.2.1/5.3.0: particula do item aponta pra textura que existe (entity/mascara_bb)',
       'rptag:entity/mascara_bb' in _mj and 'mascara_face' not in _mj)
 check('5.3.0: o render de conferencia usa o MESMO .bin do jar',
@@ -1459,6 +1460,29 @@ check('5.3.0: camada e item apontam pra malha/textura novas',
 check('5.3.0: particula do item usa a textura que existe',
       'rptag:entity/mascara_bb' in _mj)
 
+
+# ============ 5.3.1: item no inventario (display em unidades do jogo) ============
+# ItemTransform$Deserializer (1.21.1): translation * 0.0625 (clamp +-5),
+# scale = multiplicador direto (clamp +-4). O `display` do 5.3.0 estava em
+# PIXELS: "48" virava 3 BLOCOS (o item saia voando do slot) e "16" batia no
+# teto de 4 (icone gigante). Este check impede a regressao.
+import json as _json
+_disp = _json.load(open(A + '/models/item/mascara_pedra.json'))['display']
+check('5.3.1: display do item em UNIDADES do jogo (translation <= 5 blocos)',
+      all(abs(v) <= 5 for c in _disp.values() for v in c.get('translation', [0, 0, 0])))
+check('5.3.1: display do item com scale <= 4 (limite do ItemTransform)',
+      all(abs(v) <= 4 for c in _disp.values() for v in c.get('scale', [1, 1, 1])))
+check('5.3.1: gui com rotacao do cranio (30,45) e translation 0 (malha ja centrada)',
+      _disp['gui']['translation'] == [0, 0, 0] and _disp['gui']['rotation'][2] == 0
+      and _disp['gui']['scale'][0] <= 1.6)
+check('5.3.1: o item centra a MALHA no cubo 0..1 (offX/offY/offZ)',
+      'offX = 8f - (x0 + x1) * 0.5f' in _ri and 'pose.translate(offX, offY, offZ)' in _ri)
+check('5.3.1: previa do item no slot existe e usa a mesma matematica',
+      os.path.exists('arte/previa_gui_item.py')
+      and '0.0625' in rd('arte/previa_gui_item.py')
+      and 'translate(-0.5' in rd('arte/previa_gui_item.py').replace(' ', ''))
+check('5.3.1: o icone do slot cabe no slot (<= 16 px de 16)',
+      _disp['gui']['scale'][0] * 9.7 <= 16.0)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

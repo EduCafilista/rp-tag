@@ -17,10 +17,10 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **5.3.0** (2026-10-31) — Tablet Neptune + máscara do .bbmodel do dono |
+| Versão | **5.3.1** (2026-10-31) — máscara do .bbmodel do dono, item certo no inventário |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.3.0.jar` (**91.360.789 B**) |
-| Checks | `check.py` → **578 PASS / 0 FAIL** |
+| Jar | `rptag-5.3.1.jar` (**91.361.089 B**) |
+| Checks | `check.py` → **584 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
@@ -28,6 +28,28 @@
 | Espelhos 5.2.0 | filebin `https://filebin.net/rptag520a553/rptag-5.2.0.jar` (cmp IDENTICO) · gofile `https://gofile.io/d/CdehqH7f` · release direto 200 |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 5.3.1 (2026-10-31): o item no inventário (display em pixels) — LIÇÃO GRANDE
+
+- O dono mandou print: *"as mascaras melhoraram mas ainda estao bugadas no inv"*.
+  A máscara gigante saía do slot. **Causa: o `display` do JSON em PIXELS.**
+- **FONTE DA VERDADE (não chutar):** descompilei o cliente 1.21.1 e li
+  `ItemTransform$Deserializer`:
+  `translation.mul(0.0625)` (= 1/16 de BLOCO, clamp ±5) e `scale` como
+  MULTIPLICADOR direto (clamp ±4). Então `"48"` = 3 blocos e `"16"` = teto 4.
+  **Os números do `display` são sempre em unidades de bloco, nunca em pixels.**
+- **Segundo detalhe:** item `builtin/entity` recebe o espaço do **cubo 0..1**
+  (`ItemRenderer.renderStatic` → `pose.translate(-0.5,-0.5,-0.5)`). Malha em px
+  da cabeça precisa ser CENTRADA: `pose.translate(offX/Y/Z)` com
+  `off = 8 - centro_da_bbox`. Sem isso o item fica pra cima/esquerda mesmo com
+  o display certo.
+- Recipe pra MEDIR: `java -cp "$(cat /var/tmp/cp.txt)" VerificaTransform <json>`
+  aplica o `ItemTransform` real e imprime tamanho em px de slot. O crânio vanilla
+  (8x8x8 px) dá 22,6 x 25,2 px — essa é a régua do "tamanho de item normal".
+- Prévia: `arte/previa_gui_item.py` → `previa/mascara_531_inventario.png`
+  (antes/depois, com o item desenhado ONDE ELE CAI).
+- Números finais: gui **10,0 x 13,9 px** com centro (0,0), ground 3,6x4,2,
+  3ª pessoa 3,3x5,3, 1ª pessoa 4,5x5,0. `check.py` **584 PASS / 0 FAIL**.
 
 ### 5.3.0 (2026-10-31): a máscara passa a ser o .bbmodel do dono
 
