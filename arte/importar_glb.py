@@ -30,10 +30,11 @@ TEX = RAIZ / 'src/main/resources/assets/rptag/textures/entity/mascara_glb.png'
 PREVIA = RAIZ / 'previa/mascara_glb.png'
 
 # ---- ajustes da malha no espaco da cabeca (em unidades do modelo do player)
-ALTURA = 8.6      # altura da mascara (a cabeca tem 8: sobra um pouco pra fora)
-ALARGA = 1.18     # o modelo e estreito; alarga so em X
-ACHA = 0.72       # achata em Z (o modelo e fundo: senao salta 3 blocos)
-Z_TRAS = -4.12    # onde encosta o fundo (aberto) da mascara: rosto da cabeca = -4
+ALTURA = 7.3      # (5.0.1) altura: 8,6 fazia a mascara passar 1 bloco pra fora da cabeca
+ALARGA = 1.20     # o modelo e estreito; alarga so em X
+ACHA = 0.70       # achata em Z (o modelo e fundo: senao salta 3 blocos)
+Z_TRAS = -3.75    # (5.0.1) afunda 0,25 DENTRO da cabeca (rosto = -4): antes ficava
+                  # 0,12 pra fora e o jogador via a mascara flutuando longe do rosto
 TEX_LADO = 512
 
 TIPO = {5120: ('b', 1), 5121: ('B', 1), 5122: ('h', 2), 5123: ('H', 2), 5125: ('I', 4), 5126: ('f', 4)}

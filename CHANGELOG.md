@@ -1,5 +1,46 @@
 # Changelog
 
+## 5.0.1 — ITEM NA MÃO E MÁSCARA NO ROSTO ACERTADOS — 2026-10-31
+
+*"muda o icone na minha mao, ta muito feia na mao do player, diminua o scale da
+mascara para caber na mao e no rosto do player, esta ficando longe no rosto"*
+
+### Item na mão
+- **O ícone agora é o ROSTO DO MODELO.** `arte/gerar_item_mascara.py` rasteriza
+  a vista frontal da malha do GLB (192 px), dá nitidez suave e usa como textura
+  (`item/mascara_face.png`, 128×128 **RGBA**). Antes era uma arte gerada por
+  código, sem relação com o modelo.
+- **Recorte por alfa (`render_type: minecraft:cutout`).** A silhueta do item é a
+  do próprio modelo: fora dela é transparente. Antes eram faixas empilhadas e
+  cada uma esticava uma fatia do rosto → virava "bandana"/tijolo.
+- **Só frente e verso**: as faces laterais da chapa eram retangulares e, vistas
+  de 3/4, apareciam como uma **moldura** em volta do rosto — era a parte "muito
+  feia na mão".
+- **Tamanho**: 8,9 unidades de item de altura (0,56 bloco) e `display` com
+  escala **0,38** no terceiro pessoal → **0,21 bloco na mão**. Antes eram 14,8
+  unidades × 0,72 = **0,92 bloco**, ou seja, a peça era maior que o próprio braço.
+
+### Máscara no rosto
+- **ALTURA 8,6 → 7,3**: a máscara passava mais de **1 bloco** por cima da cabeça
+  (a cabeça tem 8 de altura). Agora fica de queixo a testa (7,3) e 5,2 de largura.
+- **Z_TRAS −4,12 → −3,75**: o fundo da máscara agora entra **0,25 dentro da
+  cabeça** (o rosto da cabeça fica em z = −4). Antes ficava 0,12 **pra fora**,
+  e daí a sensação de "flutuando longe do rosto".
+
+### Armadilhas anotadas
+- `Image.paste` com máscara **compõe sobre o fundo e o alfa se perde** — a
+  textura precisa ser montada em numpy (RGBA direto), senão o jogo desenha o
+  quadrado inteiro.
+- UV **esticado por faixa** sempre distorce o rosto: o certo é recorte por alfa.
+- Git/workspace resetou de novo (6ª vez): `.git` voltou pra `437bb48`, `/var/tmp`
+  zerado, `run/libraries` vazio → `git fetch`+`reset --hard`, `bash toolchain.sh`
+  e `java -jar nf-installer.jar --installServer .`.
+
+**Prova:** `previa/como_ficou_501.png` (item em 3 ângulos, item na mão com o
+braço em escala, e a máscara na cabeça em 4 ângulos).
+**Qualidade:** `check.py` **530 PASS / 0 FAIL** · `arte/validar.py` 40 ok · servidor
+`Done (1.039s)`, 0 erros · jar **91.903.262 B**.
+
 ## 5.0.0 — A MÁSCARA AGORA É O MODELO DE VERDADE (GLB) — 2026-10-31
 
 O dono mandou `cqb9ib.glb` e pediu: *"veja se consegue colocar essa mascara"*.

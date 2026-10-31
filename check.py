@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('5.0.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('5.0.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 5.0.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 5.0.1 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -1097,8 +1097,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('5.0.0: versao 5.0.0 no build.gradle',
-      "version = '5.0.0'" in rd('build.gradle') or 'version = "5.0.0"' in rd('build.gradle'))
+check('5.0.1: versao 5.0.1 no build.gradle',
+      "version = '5.0.1'" in rd('build.gradle') or 'version = "5.0.1"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1182,6 +1182,24 @@ check('4.9.3: /rpfx teste ciberpsicose (cliente, sem servidor)',
       '"ciberpsicose"' in rd(C + '/FxComando.java') and '-> 14;' in rd(C + '/FxComando.java'))
 
 # ---- mascara de pedra
+def _pil_size(caminho):
+    """(largura, altura) do PNG sem precisar de PIL."""
+    with open(caminho, 'rb') as f:
+        d = f.read(33)
+    if d[:8] != b'\x89PNG\r\n\x1a\n':
+        return (0, 0)
+    import struct
+    w, h = struct.unpack('>II', d[16:24])
+    return (w, h)
+
+
+def _pil_mode(caminho):
+    """'RGBA' se o byte de tipo de cor do IHDR for 6 (RGBA)."""
+    with open(caminho, 'rb') as f:
+        d = f.read(26)
+    return 'RGBA' if d[25] == 6 else 'RGB'
+
+
 _mi = rd(R + '/MascaraPedraItem.java')
 check('4.9.3: MascaraPedraItem e item de CABECA (EquipmentSlot.HEAD)',
       'class MascaraPedraItem extends Item' in _mi and 'return EquipmentSlot.HEAD;' in _mi)
@@ -1191,10 +1209,17 @@ check('4.9.8: o ITEM e modelo 3D de verdade (elements), nao sprite item/generate
       'elements' in rd(A + '/models/item/mascara_pedra.json')
       and 'item/generated' not in rd(A + '/models/item/mascara_pedra.json')
       and 'display' in rd(A + '/models/item/mascara_pedra.json'))
-check('4.9.8: textura propria do item (cara + pedra + borda) no repo e no jar',
-      os.path.exists(A + '/textures/item/mascara_pedra_item.png')
+check('5.0.1: textura do item = ROSTO DO MODELO (item/mascara_face.png, RGBA)',
+      os.path.exists(A + '/textures/item/mascara_face.png')
+      and _pil_size(A + '/textures/item/mascara_face.png')[0] == 128
+      and _pil_mode(A + '/textures/item/mascara_face.png') == 'RGBA'
       and os.path.exists('arte/gerar_item_mascara.py')
       and os.path.exists('previa/mascara_item.png'))
+check('5.0.1: item com CUTOUT (alfa do rosto recortado) e escala pequena na mao',
+      'minecraft:cutout' in rd(A + '/models/item/mascara_pedra.json')
+      and '"scale": [0.38' in rd(A + '/models/item/mascara_pedra.json'))
+check('5.0.1: mascara do ROSTO menor e afundada (ALTURA 7.3, Z_TRAS -3.75)',
+      'ALTURA = 7.3' in rd('arte/importar_glb.py') and 'Z_TRAS = -3.75' in rd('arte/importar_glb.py'))
 check('4.9.3: modelo + textura do item no jar',
       os.path.exists(A + '/models/item/mascara_pedra.json')
       and os.path.exists(A + '/textures/item/mascara_pedra.png'))

@@ -17,16 +17,32 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **5.0.0** (2026-10-31) |
+| Versão | **5.0.1** (2026-10-31) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.0.0.jar` (**91.890.420 B** — só na GitHub Release `v5.0.0`) |
-| Checks | `check.py` → **528 PASS / 0 FAIL** |
+| Jar | `rptag-5.0.1.jar` (**91.903.262 B** — só na GitHub Release `v5.0.1`) |
+| Checks | `check.py` → **530 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v5.0.0** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v5.0.1** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 5.0.1 (2026-10-31): item na mão + encaixe no rosto
+
+- **Item bonito = recorte por alfa**, não faixas. Faixas empilhadas sempre
+  esticam uma fatia do rosto (vira bandana); o certo é UMA placa com a textura
+  do rosto em RGBA e `render_type: minecraft:cutout`.
+- **`Image.paste` mata o alfa** (compõe sobre o fundo). Montar a textura RGBA em
+  numpy: `arr[..., :3] = cor; arr[..., 3] = alpha`.
+- **Faces laterais de chapa fina aparecem como moldura** quando vistas de 3/4:
+  se o item é um recorte, use só `north`/`south`.
+- **Escala na mão:** `display.thirdperson_*.scale` multiplica o modelo. Referência
+  que funcionou: altura 8,9 unidades de item × 0,38 = **0,21 bloco** (o braço do
+  player tem ~0,25 de largura). Acima disso a peça fica maior que a mão.
+- **Máscara no rosto:** a cabeça é 8×8×8 e o rosto fica em **z = −4**. Para
+  encostar, o fundo da malha tem que ir **pra dentro** (z ≈ −3,75), não pra fora.
+  E a altura útil é ~7,3: 8,6 passava 1 bloco por cima da cabeça.
 
 ### 5.0.0 (2026-10-31): máscara = GLB do dono
 
