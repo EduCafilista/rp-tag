@@ -24,7 +24,8 @@
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v5.2.0** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v5.2.0** (release `430030620`, asset `695794039`) + `portais-v1.3.2` |
+| Espelhos 5.2.0 | filebin `https://filebin.net/rptag520a553/rptag-5.2.0.jar` (cmp IDENTICO) · gofile `https://gofile.io/d/CdehqH7f` · release direto 200 |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
 
