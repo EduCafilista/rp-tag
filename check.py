@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('5.2.2' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('5.3.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 5.2.2 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 5.3.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -1097,8 +1097,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('5.2.2: versao 5.2.2 no build.gradle',
-      "version = '5.2.2'" in rd('build.gradle') or 'version = "5.2.2"' in rd('build.gradle'))
+check('5.3.0: versao 5.3.0 no build.gradle',
+      "version = '5.3.0'" in rd('build.gradle') or 'version = "5.3.0"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1212,9 +1212,9 @@ check('5.1.0: o ITEM e 3D pelo renderer (nenhum sprite item/generated sobrou)',
 check('5.1.0/5.2.1: o ITEM desenha a MALHA DO MODELO (RenderItemMascara + geo/mascara_glb.bin)',
       os.path.exists(C + '/RenderItemMascara.java')
       and 'BlockEntityWithoutLevelRenderer' in rd(C + '/RenderItemMascara.java')
-      and 'mascara_glb.bin' in rd(C + '/RenderItemMascara.java')
-      and os.path.exists(A + '/geo/mascara_glb.bin')
-      and os.path.getsize(A + '/geo/mascara_glb.bin') > 700000)
+      and 'mascara_bb.bin' in rd(C + '/RenderItemMascara.java')
+      and os.path.exists(A + '/geo/mascara_bb.bin')
+      and os.path.getsize(A + '/geo/mascara_bb.bin') > 100000)
 check('5.1.0: renderer 3D registrado no item (initializeClient/getCustomRenderer)',
       'getCustomRenderer' in rd(R + '/MascaraPedraItem.java')
       and 'RenderItemMascara.get()' in rd(R + '/MascaraPedraItem.java'))
@@ -1228,9 +1228,9 @@ check('5.1.0: eixo da cabeca CERTO (+Y pra baixo) — espelha Y e usa caixa expl
       and 'ROSTO_Y_BASE = -0.45' in rd('arte/importar_glb.py'))
 check('5.1.0: mascara encostada no rosto (z -5.05..-3.75) e largura 5,4',
       'ROSTO_Z_FUNDO = -3.75' in rd('arte/importar_glb.py') and 'ROSTO_X = 2.70' in rd('arte/importar_glb.py'))
-check('5.1.0: CamadaMascara desenha a malha do MalhaBin (nao mais laco com MAXV)',
+check('5.1.0/5.3.0: CamadaMascara desenha a malha do MalhaBin (nao mais laco com MAXV)',
       'MalhaBin m = malhaGlb;' in rd(C + '/CamadaMascara.java')
-      and 'MalhaBin.carregar("/assets/rptag/geo/mascara_glb.bin")' in rd(C + '/CamadaMascara.java'))
+      and 'MalhaBin.carregar("/assets/rptag/geo/mascara_bb.bin")' in rd(C + '/CamadaMascara.java'))
 check('4.9.3: modelo + textura do item no jar',
       os.path.exists(A + '/models/item/mascara_pedra.json')
       and os.path.exists(A + '/textures/item/mascara_pedra.png'))
@@ -1256,17 +1256,17 @@ check('4.9.7: tracos do modelo (testa em Y, orbitas em fenda, focinho, presas)',
 check('4.9.7: malha 29x25 com normal por diferenca finita',
       'COLS = 29;' in _cm and 'ROWS = 25;' in _cm and 'diferença finita' in _cm)
 # ---- 5.0.0: a mascara agora E o modelo do dono (GLB), nao mais a malha gerada
-_GEO = A + '/geo/mascara_glb.bin'
-check('5.0.0: malha do MODELO do dono no jar (geo/mascara_glb.bin, 24042 vertices)',
-      os.path.exists(_GEO) and os.path.getsize(_GEO) > 700000)
+_GEO = A + '/geo/mascara_bb.bin'
+check('5.0.0/5.3.0: malha do MODELO do dono no jar (geo/mascara_bb.bin, 4176 vertices)',
+      os.path.exists(_GEO) and os.path.getsize(_GEO) > 100000)
 check('5.1.0: leitura do .bin centralizada no MalhaBin (magic RPTM + DataInputStream)',
       'RPTM' in rd(C + '/MalhaBin.java') and 'DataInputStream' in rd(C + '/MalhaBin.java')
       and 'MalhaBin.carregar' in rd(C + '/CamadaMascara.java'))
 check('5.0.0: MAXV comporta a malha do GLB (24042 vertices expandidos)',
       'MAXV = 26000' in rd(C + '/CamadaMascara.java'))
-check('5.0.0: textura do modelo (entity/mascara_glb.png) no repo',
-      os.path.exists(A + '/textures/entity/mascara_glb.png')
-      and os.path.getsize(A + '/textures/entity/mascara_glb.png') > 100000)
+check('5.0.0/5.3.0: textura do modelo (entity/mascara_bb.png) no repo',
+      os.path.exists(A + '/textures/entity/mascara_bb.png')
+      and os.path.getsize(A + '/textures/entity/mascara_bb.png') > 8000)
 check('5.0.0: se o .bin falhar, cai na malha procedural (o jogo nunca fica sem nada)',
       'construirMalha();' in rd(C + '/CamadaMascara.java') and 'TEX_PROC' in rd(C + '/CamadaMascara.java'))
 check('5.0.0: importador do GLB versionado (arte/importar_glb.py)',
@@ -1387,13 +1387,13 @@ _cm = rd(C + '/CamadaMascara.java')
 _ri = rd(C + '/RenderItemMascara.java')
 _mj = rd(A + '/models/item/mascara_pedra.json')
 
-check('5.2.1: a camada da mascara converte PIXELS do modelo para BLOCOS (scale 1/16)',
+check('5.2.1/5.3.0: a camada da mascara converte PIXELS do modelo para BLOCOS (scale 1/16)',
       'pose.scale(1f / 16f, 1f / 16f, 1f / 16f)' in _cm
       and 'o espaço está em BLOCOS' in _cm)
 check('5.2.1: a escolha do 1/16 esta explicada no codigo (fdiv 16 no bytecode)',
       'translateAndRotate faz' in _cm and 'fdiv' in _cm)
-check('5.2.1: o item usa a MESMA malha da cabeca (uma malha, nao duas)',
-      'mascara_glb.bin' in _ri and 'mascara_item.bin' not in _ri)
+check('5.3.0: item e camada usam a MESMA malha (mascara_bb.bin)',
+      'mascara_bb.bin' in _ri and 'mascara_bb.bin' in _cm and 'mascara_item.bin' not in _ri)
 check('5.2.2: item usa a MESMA escala 1/16 da camada (sem transformacao do cranio)',
       'pose.scale(1f / 16f, 1f / 16f, 1f / 16f)' in _ri and 'SkullBlockRenderer' not in _ri
       and 'pose.translate(0.5f, 0f, 0.5f)' not in _ri)
@@ -1401,15 +1401,15 @@ check('5.2.1: o item NAO tem mais translate/scale inventado por contexto',
       'THIRD_PERSON_RIGHT_HAND' not in _ri and 'case GUI' not in _ri)
 check('5.2.2: display do item em PIXELS (escala x16 do template_skull)',
       '"thirdperson_righthand"' in _mj and '"scale": [\n        8.0,' in _mj)
-check('5.2.1: particula do item aponta pra textura que existe (entity/mascara_glb)',
-      'rptag:entity/mascara_glb' in _mj and 'mascara_face' not in _mj)
-check('5.2.1: o render de conferencia usa o MESMO .bin do jar',
+check('5.2.1/5.3.0: particula do item aponta pra textura que existe (entity/mascara_bb)',
+      'rptag:entity/mascara_bb' in _mj and 'mascara_face' not in _mj)
+check('5.3.0: o render de conferencia usa o MESMO .bin do jar',
       os.path.exists('arte/render_mascara_offline.py')
-      and 'mascara_glb.bin' in rd('arte/render_mascara_offline.py'))
+      and 'mascara_bb.bin' in rd('arte/render_mascara_offline.py'))
 
 
 # ============ 5.2.2: a máscara ESCONDIDA atrás do chapéu da skin ============
-_mg = os.path.join(A, 'geo/mascara_glb.bin')
+_mg = os.path.join(A, 'geo/mascara_bb.bin')
 
 def _ler_geo():
     import struct
@@ -1424,12 +1424,12 @@ def _ler_geo():
     return n, vals
 
 _n, (_gx, _gy, _gz) = _ler_geo()
-check('5.2.2: a malha cobre o rosto (altura >= 8 px, largura >= 5,4)',
-      max(_gy) - min(_gy) >= 7.9 and max(_gx) - min(_gx) >= 5.4)
+check('5.3.0: a malha cobre o rosto (altura >= 8 px, largura >= 7)',
+      max(_gy) - min(_gy) >= 7.9 and max(_gx) - min(_gx) >= 7.0)
 check('5.2.2: 100% da malha fica À FRENTE da camada do chapéu (z < -4,5)',
       max(_gz) < -4.5)
-check('5.2.2: a malha está na frente do rosto (z entre -6,3 e -4,7)',
-      max(_gz) < -4.7 and min(_gz) > -6.4)
+check('5.3.0: a malha está na frente do rosto (z entre -7,1 e -4,5)',
+      max(_gz) < -4.5 and min(_gz) > -7.1)
 check('5.2.2: ajustar_mascara.py existe e documenta o chapéu',
       os.path.exists('arte/ajustar_mascara.py')
       and 'camada do chapéu' in rd('arte/ajustar_mascara.py'))
@@ -1438,6 +1438,26 @@ check('5.2.2: NAO mexer nas normais (casca dupla) — está explicado no script'
 check('5.2.2: previa da mascara vestida usa a malha do jar',
       os.path.exists('arte/previa_mascara_vestida.py')
       and 'GEO_MASCARA' in rd('arte/previa_mascara_vestida.py'))
+
+
+# ============ 5.3.0: a máscara agora é o MODELO DO DONO (.bbmodel) ============
+check('5.3.0: importar_bbmodel.py existe', os.path.exists('arte/importar_bbmodel.py'))
+_bb = rd('arte/importar_bbmodel.py') if os.path.exists('arte/importar_bbmodel.py') else ''
+check('5.3.0: conversor le os 116 cubos com rotacao em Y e UV por face',
+      'elements' in _bb and 'rotation' in _bb and 'faces' in _bb and 'resolution' in _bb)
+check('5.3.0: conversor espelha Y (Blockbench pra cabeca do MC) e comprime o Z',
+      'p[:, 1] = -p[:, 1]' in _bb and 'PROFUNDIDADE' in _bb)
+check('5.3.0: a malha do .bbmodel esta no jar (1.392 triangulos) e a do GLB saiu',
+      os.path.exists(A + '/geo/mascara_bb.bin')
+      and os.path.getsize(A + '/geo/mascara_bb.bin') < 300000
+      and not os.path.exists(A + '/geo/mascara_glb.bin'))
+check('5.3.0: a textura do .bbmodel (pedra em blocos 128x128) esta no jar',
+      os.path.exists(A + '/textures/entity/mascara_bb.png')
+      and os.path.getsize(A + '/textures/entity/mascara_bb.png') > 8000)
+check('5.3.0: camada e item apontam pra malha/textura novas',
+      'mascara_bb.png' in _cm and 'mascara_bb.png' in _ri)
+check('5.3.0: particula do item usa a textura que existe',
+      'rptag:entity/mascara_bb' in _mj)
 
 
 print(f'\n{OK} PASS / {FAIL} FAIL')

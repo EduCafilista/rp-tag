@@ -17,10 +17,10 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **5.2.2** (2026-10-31) — Tablet Neptune + máscara no rosto |
+| Versão | **5.3.0** (2026-10-31) — Tablet Neptune + máscara do .bbmodel do dono |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.2.2.jar` (**91.993.088 B**) |
-| Checks | `check.py` → **571 PASS / 0 FAIL** |
+| Jar | `rptag-5.3.0.jar` (**91.360.789 B**) |
+| Checks | `check.py` → **578 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
@@ -28,6 +28,18 @@
 | Espelhos 5.2.0 | filebin `https://filebin.net/rptag520a553/rptag-5.2.0.jar` (cmp IDENTICO) · gofile `https://gofile.io/d/CdehqH7f` · release direto 200 |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 5.3.0 (2026-10-31): a máscara passa a ser o .bbmodel do dono
+
+- O dono mandou o `stone_mask.bbmodel` (116 cubos, `pedra.png` 128², 85 cubos
+  girados em Y). **É esse o modelo oficial da máscara** — o GLB escaneado saiu.
+- **`arte/importar_bbmodel.py`** converte .bbmodel -> `.bin` do mod. Regras que
+  ficaram: UV por face na ordem dos cantos (se não, sai girada/espelhada),
+  espelhar Y (Blockbench pra cabeça), e comprimir o Z até tudo ficar em z < −4,5
+  (a camada do chapéu da skin cobre o que ficar atrás).
+- Números finais na cabeça: altura 8,4 · largura 7,2 · profundidade 2,2 · 1.392
+  triângulos · 134 KB (contra 769 KB do GLB).
+- Camada e item compartilham a mesma malha; o item é a máscara de verdade.
 
 ### 5.2.2 (2026-10-31): a máscara atrás da skin e o item com transformação dupla
 

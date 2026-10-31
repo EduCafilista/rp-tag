@@ -1,5 +1,41 @@
 # Changelog
 
+## 5.3.0 — A MÁSCARA AGORA É O MODELO DO DONO (.bbmodel) — 2026-10-31
+
+*"usa esse modelo para a mascara"* (mandou o `stone_mask.bbmodel` do Blockbench)
+
+### O que entrou
+O modelo do dono tem **116 cubos** com a textura `pedra.png` (128×128, pedra em
+blocos) e **85 cubos girados em Y** — é uma máscara que curva em volta do rosto.
+Substituiu a malha do GLB escaneado (8.014 triângulos irregulares), que era a
+origem da "cara feia": casca irregular e textura suja.
+
+| | GLB escaneado | **.bbmodel do dono** |
+|---|---|---|
+| geometria | 8.014 triângulos irregulares | **+1.392 triângulos em blocos** |
+| textura | foto 512² (escaneada) | **pedra 128² desenhada** |
+| pasta do jar | 769 KB de malha | **134 KB** |
+
+### O conversor (`arte/importar_bbmodel.py`)
+1. lê os cubos (`from`/`to`), a rotação em Y em volta de `origin` e o UV de cada face;
+2. monta os 4 cantos de cada face como 2 triângulos (a UV segue a ordem dos cantos,
+   então nada sai girado nem espelhado);
+3. **espelha Y** (Blockbench é +Y pra cima, a cabeça do Minecraft é +Y pra baixo);
+4. encaixa na cabeça: altura 8,4 · largura 7,2 · profundidade **comprimida** para
+   2,2 (o modelo tem 5,7 de fundura; tudo precisa ficar em z < −4,5, senão a
+   camada do chapéu da skin cobre);
+5. grava `geo/mascara_bb.bin` + `textures/entity/mascara_bb.png`.
+
+### Também mudou
+- **camada e item usam a MESMA malha** (`mascara_bb.bin`) — o item é a máscara, sem sprite.
+- A malha antiga do GLB e a textura de 512² saíram do jar (‑950 KB).
+- Jar: **91.360.789 B** (era 91.993.088).
+
+### Testes
+- `check.py`: **578 PASS / 0 FAIL** · `arte/validar.py`: 40 ok.
+- Servidor NeoForge 21.1.249: `Done (0.809s)`, máscara invocada, **0 erro**.
+- `previa/mascara_530_vestida.png`: 5 ângulos, vestida, com a camada do chapéu.
+
 ## 5.2.2 — A MÁSCARA ESTAVA ESCONDIDA ATRÁS DA SKIN (e o item invertido) — 2026-10-31
 
 *"a mascara esta ficando invertida, a mascara ainda está feia, resolva isso ai"*

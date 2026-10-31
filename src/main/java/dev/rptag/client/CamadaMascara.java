@@ -58,16 +58,16 @@ import net.minecraft.world.item.ItemStack;
  */
 public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
 
-    /** Textura do MODELO de verdade (GLB do dono, recortada em 512x512). */
+    /** Textura do MODELO do dono (pedra.png 128x128, do .bbmodel). */
     private static final ResourceLocation TEX_GLB =
-            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/entity/mascara_glb.png");
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/entity/mascara_bb.png");
     /** Textura da malha procedural — só se o .bin do GLB não puder ser lido. */
     private static final ResourceLocation TEX_PROC =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/entity/mascara_pedra.png");
     private static ResourceLocation texAtual = TEX_GLB;
 
-    /** Malha importada do GLB do dono (5864 vértices / 8014 triângulos expandidos). */
-    private static final String ARQ_MALHA = "/assets/rptag/geo/mascara_glb.bin";
+    /** Malha do .bbmodel do dono (116 cubos -> 1.392 triângulos), 5.3.0. */
+    private static final String ARQ_MALHA = "/assets/rptag/geo/mascara_bb.bin";
 
     // ---- malha
     // ATENÇÃO: +Y aqui aponta para BAIXO (é o espaço da cabeça do jogo: a cabeça
@@ -106,11 +106,11 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
         malhaTentada = true;
         // 1) a MALHA DO MODELO (GLB do dono, já convertida pelo importar_glb.py);
         // 2) se faltar, cai na malha procedural gerada aqui dentro.
-        malhaGlb = MalhaBin.carregar("/assets/rptag/geo/mascara_glb.bin");
+        malhaGlb = MalhaBin.carregar("/assets/rptag/geo/mascara_bb.bin");
         if (malhaGlb != null && malhaGlb.n >= 3) {
             NV = malhaGlb.n;
             texAtual = TEX_GLB;
-            RPTagMod.LOGGER.info("RP Tag: malha da mascara = MODELO DO DONO ({} triangulos)", NV / 3);
+            RPTagMod.LOGGER.info("RP Tag: malha da mascara = MODELO DO DONO .bbmodel ({} triangulos)", NV / 3);
             return;
         }
         try {

@@ -12,8 +12,8 @@ import numpy as np
 from PIL import Image
 
 RAIZ = "/home/user/rp-tag/src/main/resources/assets/rptag"
-GEO_MASCARA = RAIZ + "/geo/mascara_glb.bin"
-TEX = RAIZ + "/textures/entity/mascara_glb.png"
+GEO_MASCARA = RAIZ + "/geo/mascara_bb.bin"
+TEX = RAIZ + "/textures/entity/mascara_bb.png"
 
 
 # ----------------------------------------------------------------- malha

@@ -20,7 +20,7 @@ import org.joml.Matrix4f;
  *
  * <p>Antes o item era um JSON com blocos achatados (e pior: faixas que
  * esticavam o rosto). Agora o item desenha a MESMA malha do modelo do dono
- * ({@code geo/mascara_glb.bin} — 8.014 triângulos), então na mão, no chão e no
+ * ({@code geo/mascara_bb.bin} — 1.392 triângulos, do .bbmodel do dono), então na mão, no chão e no
  * inventário ele é a própria máscara.
  *
  * <p>(5.2.1) O ITEM NA MÃO estava "enorme e feio" porque cada contexto tinha um
@@ -31,7 +31,7 @@ import org.joml.Matrix4f;
 public class RenderItemMascara extends BlockEntityWithoutLevelRenderer {
 
     private static final ResourceLocation TEX =
-            ResourceLocation.fromNamespaceAndPath(dev.rptag.RPTagMod.MODID, "textures/entity/mascara_glb.png");
+            ResourceLocation.fromNamespaceAndPath(dev.rptag.RPTagMod.MODID, "textures/entity/mascara_bb.png");
 
     private static RenderItemMascara instancia;
     private MalhaBin malha;
@@ -49,7 +49,7 @@ public class RenderItemMascara extends BlockEntityWithoutLevelRenderer {
 
     private MalhaBin malha() {
         if (malha == null) {
-            malha = MalhaBin.carregar("/assets/rptag/geo/mascara_glb.bin");
+            malha = MalhaBin.carregar("/assets/rptag/geo/mascara_bb.bin");
         }
         return malha;
     }
