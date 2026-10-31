@@ -1,5 +1,47 @@
 # Changelog
 
+## 5.0.0 — A MÁSCARA AGORA É O MODELO DE VERDADE (GLB) — 2026-10-31
+
+O dono mandou `cqb9ib.glb` e pediu: *"veja se consegue colocar essa mascara"*.
+A máscara desenhada por código (malha 29×25 gerada em Java) saiu de cena e
+entrou o **modelo de verdade**: **5.864 vértices / 8.014 triângulos**, com a
+textura de pedra 2048×2048 dele.
+
+### Como o GLB entra no Minecraft (o Minecraft não lê .glb)
+Não dá para jogar o arquivo direto: o jogo não conhece glTF. O caminho foi
+**converter**:
+
+1. `arte/importar_glb.py` lê o `.glb` (header + JSON + BIN), aplica a **cadeia
+   de matrizes dos nodes** (o Sketchfab exporta com eixo trocado) e leva a
+   malha pro **espaço da cabeça** do Minecraft (cubo de 8³, rosto em z = -4):
+   - escala pela **altura** → 8,6 (a cabeça tem 8, então sobra um fio pra fora);
+   - **alarga 18% em X** (o modelo é estreito: daria 5,0 de largura);
+   - **achata em Z pra 72%** (senão o nariz sairia ~3 blocos pra frente);
+   - encosta o fundo (a parte aberta) em z = -4,12 — um fio à frente do rosto
+     da cabeça pra não dar z-fighting.
+2. Textura baseColor 2048² → **512²** em `textures/entity/mascara_glb.png`.
+3. A malha vira `assets/rptag/geo/mascara_glb.bin` (**769 KB**, 24.042 vértices
+   já expandidos em triângulos) e o `CamadaMascara` lê no primeiro render.
+
+### Duas armadilhas que custaram tempo
+- **byte order:** `struct.pack('<ii')` (little-endian) → o `DataInputStream` do
+  Java lê **big-endian** → a versão chegava como `16777216` e a máscara caía na
+  procedural em silêncio. Agora é `'>ii'` / `'>f4'`.
+- **layout:** gravar **intercalado** (x,y,z por vértice) e o Java ler em **blocos
+  planares** (todas as X, depois todas as Y…) **embaralha a malha inteira** — o
+  bbox saía `[-6.39 .. 4.18]` nos três eixos. Agora é planar.
+
+### Segurança
+- A malha procedural **continua no código** como reserva: se o `.bin` faltar, o
+  cabeçalho estiver estranho ou a leitura estourar, o log avisa e a máscara
+  gerada entra no lugar. **O jogador nunca fica sem máscara e o jogo não cai.**
+- `MAXV` subiu de 20.000 para 26.000 (a malha do GLB tem 24.042 vértices).
+
+**Prova:** `previa/mascara_glb_java.png` — os 8.014 triângulos **lidos pelo
+Java** e rasterizados. `previa/mascara_glb.png` — o modelo com a cabeça do
+jogador junto, pra conferir encaixe.
+**Qualidade:** `check.py` **528 PASS / 0 FAIL** · servidor `Done (0.691s)`, 0 erros · jar **91.890.420 B**.
+
 ## 4.9.9 — AVISO REAL: "Decreto da Coroa" — 2026-10-31
 
 O dono mandou o FX novo (`s5fylu.java`) e pediu: *"atualize o real"*. O estilo

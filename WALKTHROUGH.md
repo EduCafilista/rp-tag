@@ -17,16 +17,33 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.9.9** (2026-10-31) |
+| Versão | **5.0.0** (2026-10-31) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.9.9.jar` (**91.232.930 B** — só na GitHub Release `v4.9.9`) |
-| Checks | `check.py` → **522 PASS / 0 FAIL** |
+| Jar | `rptag-5.0.0.jar` (**91.890.420 B** — só na GitHub Release `v5.0.0`) |
+| Checks | `check.py` → **528 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v4.9.9** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v5.0.0** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 5.0.0 (2026-10-31): máscara = GLB do dono
+
+- **O Minecraft não carrega `.glb`.** O caminho é converter para a nossa malha
+  binária (`assets/rptag/geo/mascara_glb.bin`) e o `CamadaMascara` ler no
+  primeiro render. O renderizador já usava `entityCutoutNoCull` + UV, então só
+  troquei a fonte da malha e a textura.
+- **ARMADILHA 1 — endianness:** `DataInputStream` do Java é **big-endian**.
+  O Python tem que gravar `'>ii'`/`'>f4'`. Com `<` a versão chega 16777216 e o
+  mod cai na malha reserva **sem erro visível** (só um warn).
+- **ARMADILHA 2 — layout:** gravar intercalado (x,y,z por vértice) e ler planar
+  (todas as X, depois todas as Y…) **embaralha a malha**; o bbox fica com os
+  mesmos extremos nos 3 eixos. Sempre conferir o **bbox** no dump antes de
+  acreditar no render.
+- Receita de conversão de modelo: altura fixa → alarga X → achata Z → encosta o
+  fundo em `z = -4,12`. Conferir sempre com a **caixa da cabeça junto**.
+- Os dois erros acima o harness (`DumpMalha`) pegou na hora — manter esse teste.
 
 ### 4.9.9 (2026-10-31): aviso REAL vira "Decreto da Coroa" + harness de FX
 

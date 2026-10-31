@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.9.9' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('5.0.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.9.9 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 5.0.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -1097,8 +1097,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('4.9.9: versao 4.9.9 no build.gradle',
-      "version = '4.9.9'" in rd('build.gradle') or 'version = "4.9.9"' in rd('build.gradle'))
+check('5.0.0: versao 5.0.0 no build.gradle',
+      "version = '5.0.0'" in rd('build.gradle') or 'version = "5.0.0"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1219,6 +1219,22 @@ check('4.9.7: tracos do modelo (testa em Y, orbitas em fenda, focinho, presas)',
       'TESTA em Y' in _cm and 'ÓRBITAS: fenda funda e fina' in _cm and 'focinho' in _cm)
 check('4.9.7: malha 29x25 com normal por diferenca finita',
       'COLS = 29;' in _cm and 'ROWS = 25;' in _cm and 'diferença finita' in _cm)
+# ---- 5.0.0: a mascara agora E o modelo do dono (GLB), nao mais a malha gerada
+_GEO = A + '/geo/mascara_glb.bin'
+check('5.0.0: malha do MODELO do dono no jar (geo/mascara_glb.bin, 24042 vertices)',
+      os.path.exists(_GEO) and os.path.getsize(_GEO) > 700000)
+check('5.0.0: CamadaMascara LE a malha do GLB (magic RPTM + DataInputStream)',
+      'RPTM' in rd(C + '/CamadaMascara.java') and 'carregarMalhaGlb' in rd(C + '/CamadaMascara.java')
+      and "getResourceAsStream(ARQ_MALHA)" in rd(C + '/CamadaMascara.java'))
+check('5.0.0: MAXV comporta a malha do GLB (24042 vertices expandidos)',
+      'MAXV = 26000' in rd(C + '/CamadaMascara.java'))
+check('5.0.0: textura do modelo (entity/mascara_glb.png) no repo',
+      os.path.exists(A + '/textures/entity/mascara_glb.png')
+      and os.path.getsize(A + '/textures/entity/mascara_glb.png') > 100000)
+check('5.0.0: se o .bin falhar, cai na malha procedural (o jogo nunca fica sem nada)',
+      'construirMalha();' in rd(C + '/CamadaMascara.java') and 'TEX_PROC' in rd(C + '/CamadaMascara.java'))
+check('5.0.0: importador do GLB versionado (arte/importar_glb.py)',
+      os.path.exists('arte/importar_glb.py'))
 check('4.9.5: textura propria da malha (entity/mascara_pedra.png, 256x256)',
       'textures/entity/mascara_pedra.png' in _cm
       and os.path.getsize(A + '/textures/entity/mascara_pedra.png') > 5000
