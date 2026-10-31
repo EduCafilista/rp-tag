@@ -19,6 +19,12 @@ public final class ClientPayloadHandler {
     private ClientPayloadHandler() {
     }
 
+    /** (5.2.0) tablet Neptune: estado da ficha chega do servidor. */
+    public static void handleTablet(dev.rptag.TabletSyncPayload payload,
+                                    net.neoforged.neoforge.network.handling.IPayloadContext context) {
+        context.enqueueWork(() -> TabletClientEvents.receive(payload));
+    }
+
     public static void handleSync(final SyncRPStatePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             ClientRPStates.set(payload.playerId(), payload.inRp());

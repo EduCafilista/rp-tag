@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.1.0";
+    public static final String VERSION = "5.2.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -109,6 +109,11 @@ public final class RPTagMod {
 
     /** (4.9.3) MASCARA DE PEDRA (JoJo) — item de cabeca, para usar em lore. */
     public static final net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.world.item.Item,
+            TabletItem> TABLET = ITEMS.register("tablet",
+                    () -> new TabletItem(new Item.Properties().stacksTo(1)));
+
+    /** (5.2.0) máscara de pedra — item de cabeça (camada 3D em CamadaMascara). */
+    public static final Supplier<
             MascaraPedraItem> MASCARA_PEDRA = ITEMS.register("mascara_pedra",
             () -> new MascaraPedraItem(new net.minecraft.world.item.Item.Properties()
                     .stacksTo(1)

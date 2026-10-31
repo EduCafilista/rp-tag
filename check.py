@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('5.1.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('5.2.0' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 5.1.0 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 5.2.0 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -36,7 +36,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal v7', 'LorezoneMusicPayload' in mn and 'registrar("7")' in mn)
+check('payloads registrados no canal v8', 'LorezoneMusicPayload' in mn and 'registrar("8")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -163,7 +163,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo v7 (3 payloads de musica)', 'registrar("7")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo v8 (3 payloads de musica)', 'registrar("8")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -1016,41 +1016,41 @@ check('4.7.8: analisador de audio no repo (acha o melhor trecho)',
 check('4.7.8: a trilha toca no primeiro quadro e para no parar()',
       'tentouTrilha' in _egi2 and 'pararTrilha()' in _egi2)
 
-# ============ 4.9.0: O TABLET SAIU (pedido do dono: "remover tudo do tablet") ============
+# ============ 5.2.0: O TABLET VOLTOU (pedido 23 — "build ela por inteira no mod") ============
+# O bloco 4.9.0 ("o tablet saiu") foi REVOGADO pelo dono: a branch tablet-neptune entrou inteira.
 _java = []
 for _base, _dirs, _files in os.walk('src/main/java'):
     _java += [f for f in _files if f.endswith('.java')]
 _junto = '\n'.join(rd(os.path.join(_base2, f)) for _base2, _d, _fs in os.walk('src/main/java') for f in _fs if f.endswith('.java'))
-check('4.9.0: nenhum arquivo do tablet/ficha sobrou no mod',
-      not [f for f in _java if f.startswith(('Ficha', 'Tablet'))])
-check('4.9.0: nenhuma classe Ficha*/Tablet* no cliente',
-      not [f for f in os.listdir(C) if f.startswith(('Ficha', 'Tablet'))])
-check('4.9.0: nenhuma classe do tablet/ficha e citada no codigo',
-      not any(n in _junto for n in ('FichaRp', 'FichaServer', 'FichaScreen', 'FichaWidgets',
-                                    'FichaFundo', 'FichaCommands', 'FichaCodec', 'FichaLivro',
-                                    'FichaOpenPayload', 'FichaSavePayload', 'TabletItem')))
-check('4.9.0: item rptag:tablet nao existe mais',
-      'ITEMS.register("tablet"' not in rd(R + '/RPTagMod.java')
-      and not os.path.exists(A + '/models/item/tablet.json')
-      and not os.path.exists(A + '/textures/item/tablet.png'))
-check('4.9.0: texturas da ficha fora do jar',
+check('5.2.0: os arquivos do tablet/ficha estao no mod (7 no servidor + 5 no cliente)',
+      len([f for f in os.listdir(R) if f.startswith(('Ficha', 'Tablet'))]) == 7
+      and len([f for f in os.listdir(C) if f.startswith('Tablet')]) == 5)
+check('5.2.0: as 5 classes do tablet estao no cliente',
+      len([f for f in os.listdir(C) if f.startswith('Tablet')]) == 5)
+check('5.2.0: as classes novas sao as usadas (FichaPersonagem/FichaRegistro/TabletItem)',
+      all(n in _junto for n in ('FichaPersonagem', 'FichaRegistro', 'TabletItem')))
+check('5.2.0: item rptag:tablet existe com modelo e textura',
+      'ITEMS.register("tablet"' in rd(R + '/RPTagMod.java')
+      and os.path.exists(A + '/models/item/tablet.json')
+      and os.path.exists(A + '/textures/item/tablet.png'))
+check('5.2.0: texturas velhas da ficha (anel/buraco/nevoa) NAO voltaram',
       not any(os.path.exists(A + '/textures/gui/' + n) for n in
               ('ficha_anel.png', 'ficha_buraco.png', 'ficha_nevoa.png')))
-check('4.9.0: nada mais cita o tablet no lang',
-      'rptag.tablet' not in rd(A + '/lang/pt_br.json')
-      and 'rptag.tablet' not in rd(A + '/lang/en_us.json'))
+check('5.2.0: o lang cita o tablet nos dois idiomas',
+      'rptag.tablet' in rd(A + '/lang/pt_br.json')
+      and 'rptag.tablet' in rd(A + '/lang/en_us.json'))
 _mn9 = rd(R + '/ModNetworking.java')
-check('4.9.0: canais ficha_abrir/ficha_salvar sairam do protocolo',
-      'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9)
-check('4.9.0: protocolo subiu para v7 (cliente v6 e recusado)',
-      'registrar("7")' in _mn9 and 'registrar("6")' not in _mn9)
-check('4.9.0: o tablet nao e mais dado no login',
-      'garantirTablet' not in rd(R + '/ServerEvents.java'))
-check('4.9.0: comandos /tablet e /ficha nao existem',
-      'literal("tablet")' not in _junto and 'literal("ficha")' not in _junto)
-check('4.9.0: fichas nao ficam mais salvas no mundo',
-      'Fichas' not in rd(R + '/RPWorldData.java') and 'getFicha(' not in rd(R + '/RPWorldData.java'))
-check('4.9.0: mocks/geradores do tablet fora do repo',
+check('5.2.0: canais novos tablet_sync/tablet_update no lugar dos antigos ficha_*',
+      'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9
+      and 'tablet_sync' in rd(R + '/TabletSyncPayload.java') and 'tablet_update' in rd(R + '/TabletUpdatePayload.java'))
+check('5.2.0: protocolo subiu para v8 (cliente v7 e recusado)',
+      'registrar("8")' in _mn9 and 'registrar("7")' not in _mn9)
+check('5.2.0: o tablet e entregue no login', 'PlayerLoggedInEvent' in rd(R + '/TabletService.java'))
+check('5.2.0: /tablet existe e /ficha nao voltou',
+      'literal("tablet")' in _junto and 'literal("ficha")' not in _junto)
+check('5.2.0: fichas ficam salvas no mundo (TabletSheets/getFicha)',
+      'TabletSheets' in rd(R + '/RPWorldData.java') and 'getFicha(' in rd(R + '/RPWorldData.java'))
+check('5.2.0: geradores antigos de mock do tablet continuam fora do repo',
       not any(os.path.exists('arte/' + n) for n in
               ('gerar_texturas_ficha.py', 'mock_tablet.py', 'mock_resumo.py', 'tablet_960.png', 'tablet_634.png')))
 
@@ -1097,8 +1097,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('5.1.0: versao 5.1.0 no build.gradle',
-      "version = '5.1.0'" in rd('build.gradle') or 'version = "5.1.0"' in rd('build.gradle'))
+check('5.2.0: versao 5.2.0 no build.gradle',
+      "version = '5.2.0'" in rd('build.gradle') or 'version = "5.2.0"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1315,6 +1315,71 @@ check('4.9.7: render da mascara protegido (try/catch)',
       'erro ao desenhar a mascara (ignorado)' in _cm)
 check('4.9.7: audio do ciberpsicose protegido (try/catch)',
       'nao consegui tocar o audio do ciberpsicose' in _cib)
+
+# ============ 5.2.0: TABLET NEPTUNE (branch tablet-neptune inteira) ============
+_ti = rd(R + '/TabletItem.java')
+_ts = rd(R + '/TabletService.java')
+_tn = rd(C + '/TabletScreen.java')
+_tl = rd(C + '/TabletLayout.java')
+_tc = rd(C + '/TabletClientState.java')
+_te = rd(C + '/TabletClientEvents.java')
+_fr = rd(R + '/FichaRegistro.java')
+_fp = rd(R + '/FichaPersonagem.java')
+_rw = rd(R + '/RPWorldData.java')
+_mn = rd(R + '/ModNetworking.java')
+_hl = rd(R + '/RPCommands.java')
+
+check('5.2.0: 12 arquivos do tablet existem',
+      all(os.path.exists(R + '/' + f) for f in ['FichaPersonagem.java', 'FichaRegistro.java', 'TabletItem.java',
+          'TabletService.java', 'TabletSyncPayload.java', 'TabletUpdatePayload.java', 'TabletUpdateBudget.java'])
+      and all(os.path.exists(C + '/' + f) for f in ['TabletClientEvents.java', 'TabletClientState.java',
+          'TabletLayout.java', 'TabletPlayerPreview.java', 'TabletScreen.java']))
+check('5.2.0: item rptag:tablet registrado (stacksTo 1)', 'ITEMS.register("tablet"' in rd(R + '/RPTagMod.java')
+      and 'stacksTo(1)' in rd(R + '/RPTagMod.java'))
+check('5.2.0: tabela de limites da ficha 32/5/240/600/3000', 'LIMITES = {32, 5, 240, 600, 3000}' in _fp)
+check('5.2.0: protocolo subiu para registrar("8") com os 2 payloads',
+      'registrar("8")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
+check('5.2.0: handler do cliente registrado', 'handleTablet' in rd(C + '/ClientPayloadHandler.java'))
+check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID antes do load',
+      'tag.put("TabletSheets", sheets)' in _rw and 'hasUUID("Id")' in _rw
+      and 'ficha do tablet descartada' in _rw)
+check('5.2.0: entrega automatica no login + /tablet', 'PlayerLoggedInEvent' in _ts and 'tryGiveTablet' in _ts
+      and 'Commands.literal("tablet")' in _ts)
+check('5.2.0: /tablet ver e /tablet liberar exigem permissao 2',
+      _ts.count('hasPermission(2)') == 2)
+check('5.2.0: /persona criar|idade|desc|off bloqueados apos confirmar (e leitura liberada)',
+      'personaLocked' in rd(R + '/PersonaCommands.java')
+      and rd(R + '/PersonaCommands.java').count('TabletService.personaLocked(player)') == 4)
+check('5.2.0: orcamento de 20 updates por janela de 20 ticks', 'used >= 20' in rd(R + '/TabletUpdateBudget.java')
+      and 'tick - start >= 20' in rd(R + '/TabletUpdateBudget.java'))
+check('5.2.0: erro temporario tem retry de 250 ms (nao vira conflito)',
+      'retryAt = clock.getAsLong() + 250' in _tc and 'retryable' in _tc)
+check('5.2.0: conflito de revisao bloqueia e oferece "Usar ficha do servidor"',
+      'A ficha foi atualizada em outra sessão' in _fr and 'Usar ficha do servidor' in _tn)
+check('5.2.0: fundo proprio sem desfoque (renderBackground vazio)',
+      'public void renderBackground(GuiGraphics graphics,int mouseX,int mouseY,float partialTick) {}' in _tn)
+check('5.2.0: campo de texto sem borda padrao do Minecraft',
+      'box.setBordered(false)' in _tn and 'drawField(' in _tn)
+check('5.2.0: layout nunca negativo e some a coluna do personagem em tela estreita',
+      'MIN_CHARACTER_WIDTH = 430' in _tl and 'showCharacter' in _tl and 'Math.max(200, screenWidth)' in _tl)
+check('5.2.0: status desenhado fora do campo (bottomBar - 20)',
+      'layoutBottom - 20' in _tn)
+check('5.2.0: abertura curta (1100 ms) e clicavel para pular',
+      'opened >= 1100' in _tn and 'if (boot) { skipBoot(); return true; }' in _tn)
+check('5.2.0: item explica como abrir (tooltip) e entrega avisa no chat',
+      'Clique direito para abrir sua ficha' in _ti and 'clique direito para preencher sua ficha' in _ts)
+check('5.2.0: /rp ajuda lista /tablet e os comandos de admin',
+      '/tablet \\u00a77\\u2014 abre seu TABLET' in _hl and '/tablet liberar <jogador>' in _hl)
+check('5.2.0: /persona mostra origem/habilidades/historia da ficha confirmada',
+      'getFichaDireto' in _rw and 'ficha.confirmada().historia()' in rd(R + '/PersonaCommands.java'))
+check('5.2.0: modelo e texturas do tablet no jar', os.path.exists(A + '/models/item/tablet.json')
+      and os.path.getsize(A + '/textures/item/tablet.png') > 3000
+      and os.path.getsize(A + '/textures/item/quiralos.png') > 50000)
+check('5.2.0: lang pt_br/en_us com nome do item e titulo da tela',
+      'item.rptag.tablet' in rd(A + '/lang/pt_br.json') and 'tablet.rptag.title' in rd(A + '/lang/en_us.json'))
+check('5.2.0: pacote e fila do tablet protegidos contra excecao (nao derruba o jogo)',
+      'receiveUnsafe' in _te and 'pacote do tablet ignorado' in _te
+      and 'fila do tablet reiniciada' in _te)
 
 
 print(f'\n{OK} PASS / {FAIL} FAIL')

@@ -3,5 +3,7 @@
   "block.rptag.coracao_canon": "Canonical Life Heart",
   "item.rptag.lorezone_wand": "Lorezone Wand",
   "item.rptag.lorezone_wand.desc": "Right-click near a lorezone to see its barrier (admin only)",
-  "item.rptag.mascara_pedra": "Stone Mask"
+  "item.rptag.mascara_pedra": "Stone Mask",
+  "item.rptag.tablet": "QuiralOS Tablet",
+  "tablet.rptag.title": "Neptune SMP Character Sheet"
 }

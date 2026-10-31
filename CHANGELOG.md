@@ -1,5 +1,67 @@
 # Changelog
 
+## 5.2.0 — TABLET NEPTUNE ENTRA NO MOD (A BRANCH INTEIRA) — 2026-10-31
+
+*"olhe a branche do github tablet, build ela por inteira no mod, deixe bom para os
+players jogarem, coloque no mod e me manda o download para eu testar"*
+
+### O que a branch `tablet-neptune` trouxe
+A branch estava parada desde 25/10 (base 4.6.0, 50 commits atrás da main) e nunca
+tinha sido mergeada. Foi portada **arquivo por arquivo** para a main 5.1.0, sem
+merge cru, e ficou completa:
+
+- **Item `rptag:tablet`** (QuiralOS Tablet): modelo 3D de 15 cubos + 2 texturas,
+  `stacksTo(1)`, abre a ficha com clique direito.
+- **Ficha do personagem em 5 etapas**: nome (32), idade (1–999), origem (240),
+  habilidades (600), história (3000) + tela de revisão.
+- **Entrega automática no primeiro login**, com aviso no chat; se o inventário
+  estiver cheio, avisa e `/tablet` reentrega.
+- **Comandos**: `/tablet`, `/tablet ver <jogador>` e `/tablet liberar <jogador>`
+  (permissão 2), todos listados em `/rp ajuda`.
+- **Trava do `/persona`**: depois de confirmar, `criar|idade|desc|off` ficam
+  bloqueados até um admin liberar; `/persona` e `/persona ver` continuam livres.
+- **Persistência** no save do mundo (`TabletSheets`), com descarte seguro de
+  entrada corrompida (nunca derruba o servidor ao carregar).
+- **Sincronização** com orçamento de 20 updates por 20 ticks, retry de 250 ms
+  para erro temporário (não vira conflito) e revisão otimista de verdade.
+
+### O que foi corrigido para "ficar bom pros players"
+1. **Layout à prova de escala de GUI.** A conta antiga produzia largura negativa
+   em telas pequenas (escala 4 num 1280×720 = 320×180 de GUI). Agora abaixo de
+   430 px a coluna do personagem some e o formulário usa a tela inteira; nada de
+   valor negativo, campo sempre com no mínimo 96 px.
+2. **Status não invade mais o campo.** O texto de estado era desenhado em cima da
+   borda do campo (visto na prévia antes de empacotar). Agora existe uma faixa
+   reservada de 26 px entre o campo e os botões.
+3. **"Usar ficha do servidor"** saiu da linha extra e foi para a barra de baixo,
+   no lugar do "Continuar" (que fica desativado no conflito) — fim do atropelo.
+4. **Abertura curta**: 1,1 s (era 2,5 s) e **qualquer clique pula** a tela
+   QuiralOS.
+5. **Descoberta**: tooltip no item ("Clique direito para abrir sua ficha") e
+   mensagem no chat na primeira entrega.
+6. **`/persona` mostra a ficha confirmada** (origem, habilidades, história) além
+   de nome/idade.
+7. **Blindagem**: pacote e fila do tablet no cliente em `try/catch` — payload
+   estranho é ignorado com log, não derruba o jogo.
+
+### Rede
+Protocolo **v7 → v8**. Cliente e servidor precisam do **mesmo jar** 5.2.0.
+
+### Testes
+- `check.py`: **557 PASS / 0 FAIL** (23 checks novos; os 12 do bloco 4.9.0
+  "o tablet saiu" foram invertidos pelo pedido 23).
+- `verificacao/TesteTablet.java`: **76/76** asserts (limites, legado com §,
+  revisão/conflito, NBT, bytebuf, orçamento, fluxo do cliente, retry, reload).
+- `TesteLayout`: **570 asserts / 57 combinações** de tela (320×240 até 4K).
+- Servidor real (NeoForge 21.1.249): `Done (0.771s)`, item registrado,
+  `/tablet` nos comandos e em `/rp ajuda`, **0 exception/ERROR** no log.
+
+### Pendências honestas
+Não dá para abrir a tela pelo sandbox (sem cliente gráfico): a composição foi
+conferida pela geometria real do layout (`previa/tablet_520_layout.png`), mas a
+aprovação visual final é do dono no jogo. Também ficou de fora, por não haver
+Emotecraft na lista do servidor, a animação por pergunta.
+
 ## 5.1.0 — MÁSCARA DE PÉ, ENCOSTADA NO ROSTO E ITEM 3D DE VERDADE — 2026-10-31
 
 *"a mascara está longe do rosto, ficando de cabeça para baixo; use o 3d que te

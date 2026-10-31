@@ -36,6 +36,8 @@ public final class RPWorldData extends SavedData {
 
     private final Map<UUID, Boolean> states = new HashMap<>();
     private final Map<UUID, Persona> personas = new HashMap<>();
+    /** (5.2.0) fichas do tablet Neptune (rascunho + confirmada + revisao). */
+    private final Map<UUID, FichaRegistro> fichas = new HashMap<>();
     private final Map<UUID, Integer> colors = new HashMap<>();
     private final Map<UUID, Boolean> bubbleOptOut = new HashMap<>();
     /** jogadores PROIBIDOS de usar balao por um admin (ausente = permitido). */
@@ -93,6 +95,38 @@ public final class RPWorldData extends SavedData {
             personas.put(id, persona);
         }
         setDirty();
+    }
+
+    // ==== ficha do tablet (5.2.0) ====
+
+    /** ficha do jogador (cria uma inicial a partir da persona, se ainda nao houver). */
+    public FichaRegistro getFicha(UUID id) {
+        FichaRegistro existente = fichas.get(id);
+        if (existente != null && (existente.revisao() != 0 || existente.confirmada() != null)) {
+            return existente;
+        }
+        FichaRegistro inicial = FichaRegistro.inicial(getPersona(id));
+        if (existente != null && existente.tabletEntregue()) {
+            inicial = inicial.comTabletEntregue();
+        }
+        fichas.put(id, inicial);
+        setDirty();
+        return inicial;
+    }
+
+    /** ficha sem criar nada (consulta de card/comando). */
+    public FichaRegistro getFichaDireto(UUID id) {
+        return fichas.get(id);
+    }
+
+    public void setFicha(UUID id, FichaRegistro ficha) {
+        fichas.put(id, ficha);
+        setDirty();
+    }
+
+    public boolean hasConfirmedFicha(UUID id) {
+        FichaRegistro f = fichas.get(id);
+        return f != null && f.confirmada() != null;
     }
 
     // ==== cor pessoal (chat + balao) ====
@@ -292,6 +326,15 @@ public final class RPWorldData extends SavedData {
         });
         tag.put("Personas", personas);
 
+        ListTag sheets = new ListTag();
+        this.fichas.forEach((id, ficha) -> {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", id);
+            e.put("Sheet", ficha.save());
+            sheets.add(e);
+        });
+        tag.put("TabletSheets", sheets);
+
         ListTag colors = new ListTag();
         this.colors.forEach((id, rgb) -> {
             CompoundTag e = new CompoundTag();
@@ -390,6 +433,20 @@ public final class RPWorldData extends SavedData {
         for (int i = 0; i < personas.size(); i++) {
             CompoundTag e = personas.getCompound(i);
             data.personas.put(e.getUUID("Id"), Persona.load(e.getCompound("Persona")));
+        }
+
+        ListTag sheets = tag.getList("TabletSheets", Tag.TAG_COMPOUND);
+        for (int i = 0; i < sheets.size(); i++) {
+            CompoundTag e = sheets.getCompound(i);
+            // (5.2.0) nunca confiar no save: entrada sem UUID ou malformada e ignorada
+            if (!e.hasUUID("Id") || !e.contains("Sheet", Tag.TAG_COMPOUND)) {
+                continue;
+            }
+            try {
+                data.fichas.put(e.getUUID("Id"), FichaRegistro.load(e.getCompound("Sheet")));
+            } catch (RuntimeException erro) {
+                RPTagMod.LOGGER.warn("RP Tag: ficha do tablet descartada (dados invalidos)", erro);
+            }
         }
 
         ListTag colors = tag.getList("Colors", Tag.TAG_COMPOUND);

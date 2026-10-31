@@ -27,7 +27,12 @@ public final class ModNetworking {
         // DO SERVIDOR vai pro cliente em pedaços — todo mundo ouve).
         // (4.9.0) v7: o item da ficha saiu do mod — cliente v6 (que ainda
         // manda os pacotes antigos) e recusado na hora, com mensagem de versao.
-        PayloadRegistrar registrar = event.registrar("7");
+        // (5.2.0) v8: TABLET NEPTUNE (tablet_sync cliente / tablet_update servidor).
+        PayloadRegistrar registrar = event.registrar("8");
+        registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleTablet);
+        registrar.playToServer(TabletUpdatePayload.TYPE, TabletUpdatePayload.STREAM_CODEC,
+                TabletService::handleUpdate);
         registrar.playToClient(SyncRPStatePayload.TYPE, SyncRPStatePayload.STREAM_CODEC,
                 ClientPayloadHandler::handleSync);
         registrar.playToClient(PersonaSyncPayload.TYPE, PersonaSyncPayload.STREAM_CODEC,

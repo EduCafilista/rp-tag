@@ -17,16 +17,54 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **5.1.0** (2026-10-31) |
+| Versão | **5.2.0** (2026-10-31) — Tablet Neptune |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.1.0.jar` (**92.235.638 B** — só na GitHub Release `v5.1.0`) |
-| Checks | `check.py` → **534 PASS / 0 FAIL** |
-| Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
+| Jar | `rptag-5.2.0.jar` (**92.334.938 B**, md5 `44cb8c3a4ee1738ec2847ed4a1322357`) |
+| Checks | `check.py` → **557 PASS / 0 FAIL** |
+| Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v5.1.0** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v5.2.0** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 5.2.0 (2026-10-31): a branch `tablet-neptune` entra inteira
+
+- **Branch ≠ merge.** `tablet-neptune` nasceu da 4.6.0 e ficou 50 commits atrás da
+  main: merge cru daria conflito em `RPTagMod`, `ModNetworking`, `PersonaCommands`,
+  `RPWorldData`, lang, toml e gradle. O caminho que funciona é **copiar os 12
+  arquivos novos com `git show origin/<branch>:<path>`** e **remendar à mão** os
+  arquivos que a main evoluiu (item/`ITEMS.register`, `registrar("N")`, handler do
+  cliente, NBT do mundo, guarda do `/persona`).
+- **Arquitetura do tablet** (para quem continuar):
+  - `FichaPersonagem(nome, idade, origem, habilidades, historia)` + `LIMITES`
+    `{32,5,240,600,3000}`; `campo(i)`/`comCampo(i,v)`/`validationError(complete)`.
+  - `FichaRegistro(rascunho, confirmada, edicaoLiberada, etapa 0..5, revisao, tabletEntregue)`
+    com revisão otimista: `atualizar(..., expected)` exige `expected == revisao`.
+  - `RPWorldData` guarda `Map<UUID,FichaRegistro>` em **`TabletSheets`**;
+    `getFicha` cria a inicial da `Persona` e **preserva `tabletEntregue`**.
+  - `TabletService` (servidor): `tryGiveTablet` no `PlayerLoggedInEvent`, `/tablet`,
+    `/tablet ver|liberar` (perm 2), orçamento de 20 updates/20 ticks.
+  - Cliente: `TabletClientEvents` (recebe e abre) → `TabletClientState` (fila,
+    retry 250 ms, conflito, `reloadServer()`) → `TabletScreen` + `TabletLayout`.
+- **Três lições de UI que custaram a versão:**
+  1. `Screen.render()` chama `renderBackground()` ANTES dos widgets → se a tela
+     já desenhou o fundo, o blur volta por cima de tudo (era o "borrão" que o
+     dono reprovou). `renderBackground` tem de ficar vazio.
+  2. Conta de layout sem piso dá **largura negativa** em escala de GUI alta
+     (320×180!). Abaixo de `MIN_CHARACTER_WIDTH = 430` a coluna do personagem
+     some e o formulário ocupa a tela.
+  3. Cada faixa vertical precisa de **dono**: dots em `h-15`, botões em
+     `bottomBar = h-39`, status em `bottomBar-20`, campo até `bottomBar-26`.
+     Renderizar a prévia (`arte/previa_tablet_layout.py`) ANTES de empacotar
+     pegou o status invadindo a borda do campo.
+- **Protocolo v7 → v8** (`tablet_sync` cliente / `tablet_update` servidor).
+- **`TabletUpdateBudget` é package-private** → teste só compila em `dev.rptag`
+  (foi assim que `verificacao/TesteTablet.java` passou: 76/76).
+- **Teste de harness** com o layout de verdade: `TesteLayout` roda 57 combinações
+  de tela e falha se algum valor sair do lugar (570 asserts).
+- **Jar antigo**: o servidor de teste carrega `/home/user/run/mods/` — remover
+  `rptag-*.jar` ANTES de copiar o novo, senão ele sobe a versão velha (aconteceu).
 
 ### 5.1.0 (2026-10-31): eixo da cabeça, profundidade e item 3D
 

@@ -46,6 +46,7 @@ public final class PersonaCommands {
                 .then(Commands.argument("nome", StringArgumentType.string())
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
+                            if (TabletService.personaLocked(player)) return 0;
                             String nome = StringArgumentType.getString(ctx, "nome");
                             if (nome.length() > 32) {
                                 player.sendSystemMessage(Component.literal("Nome muito longo (max 32).").withStyle(ChatFormatting.RED));
@@ -67,6 +68,7 @@ public final class PersonaCommands {
                 .then(Commands.argument("n", IntegerArgumentType.integer(1, 999))
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
+                            if (TabletService.personaLocked(player)) return 0;
                             int idade = IntegerArgumentType.getInteger(ctx, "n");
                             Persona antiga = ServerEvents.getPersona(player);
                             if (antiga.isEmpty()) {
@@ -83,6 +85,7 @@ public final class PersonaCommands {
                 .then(Commands.argument("texto", StringArgumentType.greedyString())
                         .executes(ctx -> {
                             ServerPlayer player = ctx.getSource().getPlayerOrException();
+                            if (TabletService.personaLocked(player)) return 0;
                             String desc = StringArgumentType.getString(ctx, "texto");
                             Persona antiga = ServerEvents.getPersona(player);
                             if (antiga.isEmpty()) {
@@ -112,6 +115,7 @@ public final class PersonaCommands {
         // /persona off
         root.then(Commands.literal("off").executes(ctx -> {
             ServerPlayer player = ctx.getSource().getPlayerOrException();
+                            if (TabletService.personaLocked(player)) return 0;
             ServerEvents.setPersona(player, Persona.EMPTY);
             player.sendSystemMessage(Component.literal("Persona removida. Voce voltou a ser ")
                     .withStyle(ChatFormatting.GRAY)
@@ -141,5 +145,19 @@ public final class PersonaCommands {
             viewer.sendSystemMessage(Component.literal("Descrição: ").withStyle(ChatFormatting.GRAY)
                     .append(Component.literal(persona.desc()).withStyle(ChatFormatting.WHITE)));
         }
+        // (5.2.0) ficha do tablet confirmada: mostra os campos que a persona nao carrega
+        FichaRegistro ficha = RPWorldData.get(target.server).getFichaDireto(target.getUUID());
+        if (ficha != null && ficha.confirmada() != null) {
+            campo(viewer, "Origem", ficha.confirmada().origem());
+            campo(viewer, "Habilidades", ficha.confirmada().habilidades());
+            campo(viewer, "História", ficha.confirmada().historia());
+        }
+    }
+
+    /** Uma linha por campo, quebrando por palavras para nao estourar o chat. */
+    private static void campo(ServerPlayer viewer, String rotulo, String texto) {
+        if (texto == null || texto.isBlank()) return;
+        viewer.sendSystemMessage(Component.literal(rotulo + ": ").withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(texto).withStyle(ChatFormatting.WHITE)));
     }
 }
