@@ -1,5 +1,47 @@
 # Changelog
 
+## 4.9.9 — AVISO REAL: "Decreto da Coroa" — 2026-10-31
+
+O dono mandou o FX novo (`s5fylu.java`) e pediu: *"atualize o real"*. O estilo
+`real` deixou de ser "A Corte do Faraó" (friso de hieróglifos, disco solar,
+obelisco, placa) e virou **"Decreto da Coroa"**:
+
+- **coroa imperial** com capa de veludo carmesim, borda de **arminho**, aro de
+  ouro com rubi/safiras/esmeraldas e pérolas, dois **arcos** com pérolas,
+  **orbe e cruz** no topo; desce do alto com ar de cerimônia;
+- **faixa de cetim** carmesim com rabos de andorinha, bordas de ouro e arminho,
+  onde a **mensagem é carimbada em ouro**, letra por letra;
+- **fios dourados** do aviso original com pontas quadradas e **flores-de-lis**;
+- **louros** dourados crescem sob a faixa; aura, raios lentos e poeira de ouro.
+
+### O que tive que ajustar no arquivo dele (senão não entrava no mod)
+
+1. `package com.exemplo.rptag.client` → `dev.rptag.client`.
+2. **Não tinha `parar()`** — o mod chama em dois lugares (aviso novo e saída do
+   mundo). Sem ele não compila.
+3. `iniciar(String)` de 1 argumento → `iniciar(String titulo, String mensagem)`,
+   como todos os outros 12 FX do mod.
+4. **Título × mensagem:** no arquivo original a mensagem ia na faixa e o título
+   não existia. Como a regra da casa é *mensagem sempre EMBAIXO do título*,
+   o **título ("AVISO")** ganhou uma linha pequena em maiúsculas espaçadas
+   **acima da faixa**, e a coroa subiu (de `cy-32k` para `cy-44k`) pra abrir
+   espaço — senão o título batia no arminho da faixa.
+5. **Blindagem:** `render` virou um invólucro `try/catch` que chama
+   `desenhar(...)`; em falha ele **corta o FX** e restaura o blend/depth.
+6. **Bug de ritmo achado no harness:** o carimbo era `0,06 s` por letra. Numa
+   mensagem de 66 letras isso dá 3,9 s — a última letra aparecia **depois do FX
+   terminar** (6,5 s). Agora o passo é `min(0,06 ; 2,2/nº de letras)`.
+7. `p * 1.04` (double) → `p * 1.04f`.
+
+### Harness novo: `arte/harness_fx/`
+Renderiza o FX **real** fora do jogo: compila o `RealAvisoFx.java` de verdade
+contra um `AvisoFxUtil` falso cujo `Buf` rasteriza os triângulos num
+framebuffer. As imagens de `previa/real_decreto.png` saíram daí — não são
+redesenho. (Fonte do texto é aproximada; layout é real.)
+
+**Qualidade:** `check.py` **522 PASS / 0 FAIL** · servidor NeoForge
+`Done (0.735s)`, 0 erros · jar **91.232.930 B**.
+
 ## 4.9.8 — O BUG QUE DERRUBAVA O JOGO + ITEM 3D NA MÃO — 2026-10-31
 
 *"minecraft simplesmente nao carrega mais"* / *"está bugado o item no rosto, na mão,

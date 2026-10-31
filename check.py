@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.9.8' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.9.9' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.9.8 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.9.9 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -931,10 +931,16 @@ check('4.7.1: estilo 3 (real) tem FX proprio (antes era so veu + 2 filetes)',
       "if (style == 3)" in rd(C + '/ClientEffects.java') and 'RealAvisoFx.iniciar' in rd(C + '/ClientEffects.java'))
 check('4.7.1: REAL usa registerAboveAll (nunca RenderGuiEvent.Post)',
       'registerAboveAll' in real and 'RenderGuiEvent.Post' not in real)
-check('4.7.1: REAL tem disco solar alado + friso de hieroglifos + colunas + placa',
-      'discoSolar' in real and 'friso(' in real and 'colunas(' in real and 'placa(' in real)
-check('4.7.1: REAL desenha a mensagem EMBAIXO do titulo (cy + 27k)',
-      'cy + 27 * k' in real)
+check('4.9.9: REAL = "Decreto da Coroa" (coroa + faixa de cetim + louros + flores-de-lis)',
+      'coroa(' in real and 'faixa(' in real and 'louro(' in real and 'lis(' in real and 'fio(' in real)
+check('4.9.9: REAL tem coroa imperial de verdade (veludo, arminho, joias, arcos, orbe+cruz)',
+      'CRIML' in real and 'ERM' in real and 'RUBY' in real and 'SAFI' in real and 'joia(' in real)
+check('4.9.9: REAL desenha o TITULO acima e a MENSAGEM na faixa (msg embaixo do titulo)',
+      'bcy - hh - 32f * k' in real and 'float yT = bcy - hh' in real and 'titulo' in real)
+check('4.9.9: REAL blindado — render em try/catch (FX nunca derruba o jogo)',
+      'private static void desenhar(' in real and 'falha no FX REAL (o jogo segue)' in real)
+check('4.9.9: REAL aceita iniciar(titulo, mensagem) e tem parar()',
+      'public static void iniciar(String t, String mensagem)' in real and 'public static void parar()' in real)
 check('4.7.1: REAL e encerrado por aviso novo e pela saida do mundo',
       'RealAvisoFx.parar()' in rd(C + '/ClientEffects.java') and 'RealAvisoFx.parar()' in rd(C + '/ClientEvents.java'))
 check('4.7.1: REAL registrado na camada (ClientGuiLayers)', 'RealAvisoFx.registrar' in rd(C + '/ClientGuiLayers.java'))
@@ -1091,8 +1097,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('4.9.8: versao 4.9.8 no build.gradle',
-      "version = '4.9.8'" in rd('build.gradle') or 'version = "4.9.8"' in rd('build.gradle'))
+check('4.9.9: versao 4.9.9 no build.gradle',
+      "version = '4.9.9'" in rd('build.gradle') or 'version = "4.9.9"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')

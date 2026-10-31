@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'dev.rptag'
-version = '4.9.8'
+version = '4.9.9'
 
 base {
     archivesName = 'rptag'

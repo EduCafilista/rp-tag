@@ -51,7 +51,7 @@ public final class ClientGuiLayers {
         MorteAvisoFx.registrar(event);
         // (4.5.0) estilo 12 = EGIPICIO "O Olho de Horus" (cartucho + hieroglifos + areia)
         EgipcioAvisoFx.registrar(event);
-        // (4.7.1) estilo 3 = REAL "A Corte do Farao"
+        // (4.9.9) estilo 3 = REAL "Decreto da Coroa"
         RealAvisoFx.registrar(event);
         // (4.9.2) estilo 13 = EXPURGO "Hora do Expurgo" (TV de emergencia:
         // estatica, contagem 5-4-3-2-1, sirene, mascaras) — prototipo do dono

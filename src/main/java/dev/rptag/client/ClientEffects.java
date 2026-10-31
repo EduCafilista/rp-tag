@@ -111,12 +111,13 @@ public final class ClientEffects {
             RPTagMod.LOGGER.info("RP Tag: AVISO DIVINO iniciado (FX proprio)");
             return;
         }
-        // (4.7.1) estilo 3 = REAL: o FX proprio (A Corte do Farao: friso de
-        // hieroglifos, disco solar alado, obelisco, colunas, placa dourada)
+        // (4.9.9) estilo 3 = REAL: o FX proprio "Decreto da Coroa" (coroa
+        // imperial com veludo/arminho/joias, fios dourados com flores-de-lis,
+        // faixa de cetim com a mensagem carimbada, louros e poeira de ouro)
         if (style == 3) {
             String limpo3 = text.replaceAll("\u00a7.", "");
             RealAvisoFx.iniciar("AVISO", limpo3);
-            RPTagMod.LOGGER.info("RP Tag: A CORTE DO FARAO iniciada (FX proprio)");
+            RPTagMod.LOGGER.info("RP Tag: DECRETO DA COROA iniciado (FX proprio)");
             return;
         }
         // (3.95.0) estilo 9 = SANGUE: o FX proprio (Sangria: impacto de

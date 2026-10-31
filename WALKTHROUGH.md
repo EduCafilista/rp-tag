@@ -17,16 +17,36 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.9.8** (2026-10-31) |
+| Versão | **4.9.9** (2026-10-31) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.9.8.jar` (**91.230.537 B** — só na GitHub Release `v4.9.8`) |
-| Checks | `check.py` → **519 PASS / 0 FAIL** |
+| Jar | `rptag-4.9.9.jar` (**91.232.930 B** — só na GitHub Release `v4.9.9`) |
+| Checks | `check.py` → **522 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v4.9.8** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v4.9.9** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 4.9.9 (2026-10-31): aviso REAL vira "Decreto da Coroa" + harness de FX
+
+- O dono manda FX novo em `.java` solto, com `package com.exemplo.rptag.client`.
+  **Checklist pra integrar:** pacote → `dev.rptag.client`; garantir `parar()`;
+  assinatura `iniciar(titulo, mensagem)`; título **acima** e mensagem **dentro
+  da faixa**; `render` dentro de `try/catch`; `float` explícito nos literais
+  (`1.04f`) — o arquivo dele tinha `p * 1.04` (double) e não compilava.
+- **Harness de FX (`arte/harness_fx/`)**: compila o FX real contra stubs
+  (`AvisoFxUtil` com `Buf` que rasteriza, `GuiGraphics` que guarda o texto,
+  `RenderSystem` sem GL, `SoundEvents` nulo). Roda `render` por reflexão com
+  `inicio` recuado N segundos. **É a única forma de ver um FX sem abrir o
+  jogo.** Ordem de compilação importa: stubs primeiro, depois o FX real com
+  `/tmp/fxout` na frente do `-cp`.
+- **Aula:** o primeiro `javac` dos stubs falhou e **não escreveu nenhum
+  `.class`**; o segundo compilou o FX contra as classes REAIS do jar (sem eu
+  perceber) e o render saiu errado. Sempre conferir `ls /tmp/fxout/...` depois
+  de compilar.
+- Se o dono mandar um FX com mais elementos do que cabe, **não redesenhar**:
+  ajustar só o necessário (posição/ritmo) e mostrar o frame renderizado.
 
 ### 4.9.8 (2026-10-31): o NPE de ordem + item 3D
 
