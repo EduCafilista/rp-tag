@@ -1,0 +1,517 @@
+package dev.rptag;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
+
+/**
+ * (5.4.0) MOTOR DO EVENTO NEPTUNE — terremoto, deus do vazio e o bicho.
+ *
+ * <p>Tudo aqui é estado de SERVIDOR e roda num único tick handler
+ * ({@link #tick(MinecraftServer)}). Nada disso mexe em render: o cliente só
+ * recebe pacotes ({@link NeptunePackets}) e desenha.
+ *
+ * <h2>1. TERREMOTO ({@code /terremoto iniciar})</h2>
+ * Estilo "a correção do universo" (a série Loki): a terra colapsa e o universo
+ * se reescreve. Enquanto dura:
+ * <ul>
+ *   <li>o áudio do dono ({@link RPTagMod#SOM_TERREMOTO_COLAPSO}, 14,7 s) toca
+ *       no começo pra todos;</li>
+ *   <li>o rumble sintetizado entra em loop (um a cada 7 s, volume de evento);</li>
+ *   <li>a câmera de TODO MUNDO treme (pacote {@code Terremoto});</li>
+ *   <li>os jogadores ficam ESTUNCADOS E LENTOS em PULSOS: 6 s travados
+ *       (Lentidão III + Fadiga) e 4 s livres — e nesses 4 s podem correr com
+ *       tudo tremendo, exatamente como o dono pediu;</li>
+ *   <li>partículas de poeira/terra brotam no chão em volta de cada um.</li>
+ * </ul>
+ * Termina sozinho no tempo pedido, ou quando um admin manda
+ * {@code /terremoto parar}.
+ *
+ * <h2>2. SAÍDA DO SERVIDOR ({@code /terremoto sair [jogador|todos]})</h2>
+ * Player por player: cada um recebe a animação VERDE de dissolução
+ * ({@code Saida}), o servidor avisa no chat e SÓ DEPOIS de 4 s chuta o jogador
+ * (kick) com a mensagem do evento. É o "universo se corrigindo".
+ *
+ * <h2>3. DEUS DO VAZIO ({@code /vazio ligar})</h2>
+ * O admin vira o "Vazio" (tipo o Void da Marvel): aura preta de partículas em
+ * volta do corpo, trilha sonora própria enquanto ANDA, e medo em quem chega
+ * perto. Com o modo ligado ele controla o destino:
+ * <ul>
+ *   <li>{@code /vazio apagar <jogador>} — mata e anuncia
+ *       "---- vazio --- apagou <jogador> da existência";</li>
+ *   <li>{@code /vazio exilar <jogador>} — manda pra dimensão {@code rptag:vazio}
+ *       (feita sob medida pra isso).</li>
+ * </ul>
+ *
+ * <h2>4. O BICHO ({@code /bicho <x> <y> <z>} ou {@code /bicho aqui})</h2>
+ * Uma CAIXA DE MÚSICA é colocada no mundo. A caixinha toca (36 s, vai
+ * desafinando) pra o jogador ir atrás. Quando alguém chega a menos de
+ * {@link #BICHO_RAIO} blocos, o bicho PULA NA TELA (pacote {@code Susto} +
+ * berro) e a caixa arrebenta.
+ */
+public final class NeptuneEventos {
+
+    private NeptuneEventos() {
+    }
+
+    // ------------------------------------------------------------------ estado
+    /** terremoto */
+    private static boolean terremotoAtivo = false;
+    private static long terremotoFim = 0;
+    private static float terremotoForca = 1.0F;
+    private static long proximoRumble = 0;
+    private static long proximoPulso = 0;
+    private static boolean faseTravado = false;
+    /** deus do vazio */
+    private static final Map<UUID, Boolean> DEUSES = new HashMap<>();
+    private static final Map<UUID, long[]> TRILHA = new HashMap<>();   // [ultimoX, ultimoZ, ultimoTick, tocando]
+    private static final Map<UUID, Long> PROXIMO_MEDO = new HashMap<>();
+    /** saídas agendadas: [quando, segundos] + nome */
+    private static final List<Object[]> SAIDAS = new ArrayList<>();
+    /** caixas do bicho: posição + quando começou */
+    private static final List<Caixa> CAIXAS = new ArrayList<>();
+
+    public static final double BICHO_RAIO = 3.0;
+    public static final int BICHO_MUSICA_SEG = 36;
+
+    private static final class Caixa {
+        final BlockPos pos;
+        final long inicio;
+        long proximoAviso = 0;
+
+        Caixa(BlockPos pos) {
+            this.pos = pos;
+            this.inicio = System.currentTimeMillis();
+        }
+    }
+
+    /** Chamado do ServerEvents (PostTick) — 20x por segundo. */
+    public static void tick(MinecraftServer server) {
+        try {
+            tickTerremoto(server);
+            tickDeus(server);
+            tickSaidas(server);
+            tickCaixas(server);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: tick do evento Neptune falhou (o jogo segue)", t);
+        }
+    }
+
+    // =============================================================== TERREMOTO
+    public static boolean terremotoAtivo() {
+        return terremotoAtivo;
+    }
+
+    public static void iniciarTerremoto(MinecraftServer server, int segundos) {
+        terremotoAtivo = true;
+        terremotoFim = System.currentTimeMillis() + Math.max(10, segundos) * 1000L;
+        terremotoForca = 1.0F;
+        proximoRumble = 0;
+        proximoPulso = System.currentTimeMillis();
+        faseTravado = true;   // começa travado (o primeiro baque)
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            // o áudio do colapso do dono toca UMA vez, pra todo mundo
+            p.playNotifySound(RPTagMod.SOM_TERREMOTO_COLAPSO.get(), SoundSource.AMBIENT, 1.0F, 1.0F);
+            p.displayClientMessage(Component.literal(
+                    "\u00a78\u00a7oA terra está cedendo. O universo está se corrigindo..."), false);
+        }
+        server.getPlayerList().broadcastSystemMessage(Component.literal(
+                "\u00a7c\u00a7l\u2694 TERREMOTO  \u00a77— o chão está rachando! (\u00a7c"
+                        + segundos + "s\u00a77)").withStyle(ChatFormatting.RED), false);
+        enviarTerremoto(server, true, 1.0F, segundos, true);
+    }
+
+    public static void pararTerremoto(MinecraftServer server, boolean silencioso) {
+        boolean estava = terremotoAtivo;
+        terremotoAtivo = false;
+        faseTravado = false;
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            p.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+            p.removeEffect(MobEffects.DIG_SLOWDOWN);
+        }
+        enviarTerremoto(server, false, 0.0F, 0, false);
+        if (estava && !silencioso) {
+            server.getPlayerList().broadcastSystemMessage(Component.literal(
+                    "\u00a77\u00a7oO chão parou. Por enquanto.").withStyle(ChatFormatting.GRAY), false);
+        }
+    }
+
+    private static void enviarTerremoto(MinecraftServer server, boolean ativo, float forca, int seg,
+            boolean travado) {
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            PacketDistributor.sendToPlayer(p, new NeptunePackets.Terremoto(ativo, forca, seg, travado));
+        }
+    }
+
+    private static void tickTerremoto(MinecraftServer server) {
+        if (!terremotoAtivo) {
+            return;
+        }
+        long agora = System.currentTimeMillis();
+        if (agora >= terremotoFim) {
+            pararTerremoto(server, false);
+            return;
+        }
+        int restam = (int) Math.max(1, (terremotoFim - agora) / 1000L);
+
+        // ---- rumble em loop (um a cada ~7 s; o ogg tem 8 s)
+        if (agora >= proximoRumble) {
+            proximoRumble = agora + 7000;
+            for (ServerServerHold h : ServerServerHold.de(server)) {
+                ServerLevel nv = h.nivel();
+                Vec3 v = h.pos();
+                nv.playSound(null, v.x, v.y, v.z, RPTagMod.SOM_RUMBLE.get(),
+                        SoundSource.AMBIENT, 1.0F, 1.0F);
+            }
+        }
+
+        // ---- PULSOS: 6 s estuncado, 4 s livre (dá pra correr)
+        if (agora >= proximoPulso) {
+            faseTravado = !faseTravado;
+            proximoPulso = agora + (faseTravado ? 6000 : 4000);
+            // avisa o cliente (visão dupla + blur mudam no pulso)
+            enviarTerremoto(server, true, 1.0F, restam, faseTravado);
+            if (faseTravado) {
+                for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                    p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 130, 2, false, false, false));
+                    p.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 130, 1, false, false, false));
+                    p.displayClientMessage(Component.literal(
+                            "\u00a78Você cambaleia — o chão está cedendo."), true);
+                }
+            } else {
+                for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                    p.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+                    p.removeEffect(MobEffects.DIG_SLOWDOWN);
+                    p.displayClientMessage(Component.literal(
+                            "\u00a7aAgora! Corre!"), true);
+                }
+            }
+        }
+
+        // ---- poeira/terra brotando no chão
+        if (agora % 4 == 0) {
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                ServerLevel nv = (ServerLevel) p.level();
+                double px = p.getX();
+                double py = p.getY();
+                double pz = p.getZ();
+                for (double r = 1.5; r <= 7.0; r += 1.4) {
+                    double a = Math.toRadians((agora / 3 % 360) + r * 37);
+                    double x = px + Math.cos(a) * r;
+                    double z = pz + Math.sin(a) * r;
+                    nv.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, py + 0.05, z,
+                            1, 0.1, 0.02, 0.1, 0.005);
+                    if (r > 4.0) {
+                        nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                        ParticleTypes.BLOCK, nv.getBlockState(
+                                                net.minecraft.core.BlockPos.containing(x, py - 0.2, z))),
+                                x, py + 0.1, z, 2, 0.1, 0.05, 0.1, 0.02);
+                    }
+                }
+            }
+        }
+    }
+
+    /** atalho pra ter a posição de um jogador como "fonte de som do mundo". */
+    private record ServerServerHold(ServerLevel nivel, Vec3 pos) {
+        static List<ServerServerHold> de(MinecraftServer server) {
+            List<ServerServerHold> l = new ArrayList<>();
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                l.add(new ServerServerHold((ServerLevel) p.level(), p.position()));
+            }
+            return l;
+        }
+    }
+
+    // =================================================================== DEUS
+    public static boolean ehDeus(UUID id) {
+        return DEUSES.getOrDefault(id, false);
+    }
+
+    public static void ligarDeus(ServerPlayer p) {
+        DEUSES.put(p.getUUID(), true);
+        TRILHA.remove(p.getUUID());
+        PacketDistributor.sendToPlayer(p, new NeptunePackets.Aura(true, true));
+        for (ServerPlayer outro : p.getServer().getPlayerList().getPlayers()) {
+            if (outro != p) {
+                PacketDistributor.sendToPlayer(outro, new NeptunePackets.Aura(false, false));
+            }
+        }
+        p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
+                "\u00a78\u00a7l\u2588 \u00a75\u00a7lO VAZIO CAMINHA ENTRE NÓS\u00a78 \u00a7l\u2588")
+                .withStyle(ChatFormatting.DARK_PURPLE), false);
+        p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
+                "\u00a78Uma escuridão sem fundo acompanha \u00a7f" + p.getName().getString()
+                        + "\u00a78. Não chegue perto.").withStyle(ChatFormatting.DARK_GRAY), false);
+    }
+
+    public static void desligarDeus(ServerPlayer p) {
+        DEUSES.remove(p.getUUID());
+        TRILHA.remove(p.getUUID());
+        PacketDistributor.sendToPlayer(p, new NeptunePackets.Aura(false, false));
+        p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
+                "\u00a77A escuridão recolheu.").withStyle(ChatFormatting.DARK_GRAY), false);
+    }
+
+    private static void tickDeus(MinecraftServer server) {
+        long agora = System.currentTimeMillis();
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            if (!ehDeus(p.getUUID())) {
+                continue;
+            }
+            ServerLevel nv = (ServerLevel) p.level();
+            Vec3 pos = p.position();
+
+            // ---- AURA: rodela de escuridão girando em volta do corpo
+            double ri = 1.15;
+            for (int i = 0; i < 10; i++) {
+                double a = Math.toRadians((agora / 12.0) + i * 36.0);
+                double alt = -0.2 + 1.7 * (((i * 0.37) + (agora / 900.0)) % 1.0);
+                nv.sendParticles(ParticleTypes.SQUID_INK,
+                        pos.x + Math.cos(a) * ri, pos.y + alt, pos.z + Math.sin(a) * ri,
+                        0, 0.12, 0.06, 0.12, 0.02);
+                nv.sendParticles(ParticleTypes.SMOKE,
+                        pos.x + Math.cos(a) * (ri + 0.25), pos.y + alt, pos.z + Math.sin(a) * (ri + 0.25),
+                        0, 0.02, 0.12, 0.02, 0.01);
+            }
+            nv.sendParticles(ParticleTypes.SCULK_SOUL,
+                    pos.x, pos.y + 2.1, pos.z, 1, 0.35, 0.12, 0.35, 0.01);
+
+            // ---- MEDO em quem chega perto (inimigos tremem)
+            for (ServerPlayer outro : server.getPlayerList().getPlayers()) {
+                if (outro == p || outro.level() != p.level()) {
+                    continue;
+                }
+                double d = outro.position().distanceTo(pos);
+                if (d <= 14.0) {
+                    long prox = PROXIMO_MEDO.getOrDefault(outro.getUUID(), 0L);
+                    if (agora >= prox) {
+                        PROXIMO_MEDO.put(outro.getUUID(), agora + 6000);
+                        outro.addEffect(new MobEffectInstance(RPEffects.MEDO, 140, 0, false, false, true));
+                        PacketDistributor.sendToPlayer(outro, new FearPayload(7));
+                        outro.displayClientMessage(Component.literal(
+                                "\u00a78O ar fica pesado. Alguma coisa aqui não é daqui."), true);
+                    }
+                }
+            }
+
+            // ---- TRILHA: toca enquanto ELE ANDA; para quando ele para
+            long[] st = TRILHA.get(p.getUUID());
+            if (st == null) {
+                st = new long[]{ (long) pos.x, (long) pos.z, agora, 0 };
+                TRILHA.put(p.getUUID(), st);
+            }
+            double andou = Math.hypot(pos.x - st[0], pos.z - st[1]);
+            boolean tocando = st[3] == 1;
+            if (andou >= 0.9) {
+                st[0] = (long) pos.x;
+                st[1] = (long) pos.z;
+                st[2] = agora;
+                if (!tocando) {
+                    st[3] = 1;
+                    nv.playSound(null, p.blockPosition(), RPTagMod.SOM_TRILHA_DEUS.get(),
+                            SoundSource.AMBIENT, 1.0F, 1.0F);
+                }
+            } else if (tocando && agora - st[2] > 2500) {
+                // parou de andar há 2,5 s: corta a trilha
+                st[3] = 0;
+                for (ServerPlayer o : server.getPlayerList().getPlayers()) {
+                    if (o.level() == p.level() && o.position().distanceTo(pos) < 48) {
+                        o.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(
+                                RPTagMod.SOM_TRILHA_DEUS.get().getLocation(), SoundSource.AMBIENT));
+                    }
+                }
+            }
+        }
+    }
+
+    // =================================================================== SAÍDA
+    /** Agenda a saída: animação verde agora, kick depois de segundos. */
+    public static void sairDoServidor(ServerPlayer p, int segundos, String motivo) {
+        PacketDistributor.sendToPlayer(p, new NeptunePackets.Saida(segundos, p.getName().getString()));
+        ServerLevel nv = (ServerLevel) p.level();
+        Vec3 pos = p.position();
+        for (int i = 0; i < 90; i++) {
+            double a = Math.toRadians(i * 4);
+            double r = 0.2 + (i / 90.0) * 1.1;
+            nv.sendParticles(ParticleTypes.HAPPY_VILLAGER,
+                    pos.x + Math.cos(a) * r, pos.y + 0.15 + (i / 90.0) * 1.8, pos.z + Math.sin(a) * r,
+                    1, 0.02, 0.02, 0.02, 0.0);
+        }
+        nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME,
+                SoundSource.PLAYERS, 1.0F, 0.7F);
+        p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
+                "\u00a7a" + p.getName().getString() + " \u00a77está se desfazendo em luz verde...")
+                .withStyle(ChatFormatting.GREEN), false);
+        SAIDAS.add(new Object[]{ System.currentTimeMillis() + Math.max(1, segundos) * 1000L,
+                p.getUUID(), motivo });
+    }
+
+    private static void tickSaidas(MinecraftServer server) {
+        long agora = System.currentTimeMillis();
+        Iterator<Object[]> it = SAIDAS.iterator();
+        while (it.hasNext()) {
+            Object[] s = it.next();
+            if (agora < (Long) s[0]) {
+                continue;
+            }
+            it.remove();
+            ServerPlayer p = server.getPlayerList().getPlayer((UUID) s[1]);
+            if (p == null) {
+                continue;
+            }
+            p.connection.disconnect(Component.literal("\u00a78\u00a7l\u2591 O universo se corrigiu \u00a78\u00a7l\u2591\n\n")
+                    .append(Component.literal(String.valueOf(s[2])).withStyle(ChatFormatting.GRAY)));
+        }
+    }
+
+    // =================================================================== BICHO
+    public static Caixa colocarCaixa(ServerLevel nv, BlockPos pos) {
+        // (5.4.0) põe o BLOCO de verdade no mundo (é a caixinha que o jogador vê
+        // e de onde o bicho pula) e registra pra o tick vigiar a distância.
+        if (nv.getBlockState(pos).isAir()) {
+            nv.setBlockAndUpdate(pos, RPTagMod.CAIXA_BICHO.get().defaultBlockState());
+        }
+        Caixa c = new Caixa(pos);
+        CAIXAS.add(c);
+        nv.playSound(null, pos, RPTagMod.SOM_CAIXA.get(), SoundSource.AMBIENT, 1.0F, 1.0F);
+        return c;
+    }
+
+    public static void limparCaixas() {
+        CAIXAS.clear();
+    }
+
+    public static int caixas() {
+        return CAIXAS.size();
+    }
+
+    private static void tickCaixas(MinecraftServer server) {
+        if (CAIXAS.isEmpty()) {
+            return;
+        }
+        Iterator<Caixa> it = CAIXAS.iterator();
+        while (it.hasNext()) {
+            Caixa c = it.next();
+            ServerLevel nv = null;
+            for (ServerLevel n : server.getAllLevels()) {
+                if (n.hasChunkAt(c.pos)) {
+                    nv = n;
+                    break;
+                }
+            }
+            if (nv == null) {
+                continue;
+            }
+            long durou = (System.currentTimeMillis() - c.inicio) / 1000L;
+            // a caixinha range enquanto ninguém chega (a cada 30 s repete a música)
+            if (durou < BICHO_MUSICA_SEG && durou > 0 && durou % 30 == 0) {
+                nv.playSound(null, c.pos, RPTagMod.SOM_CAIXA.get(), SoundSource.AMBIENT, 1.0F, 1.0F);
+            }
+            // quem chegou perto?
+            for (Player p : nv.players()) {
+                if (!(p instanceof ServerPlayer sp)) {
+                    continue;
+                }
+                if (sp.isCreative() || sp.isSpectator()) {
+                    continue;
+                }
+                if (sp.blockPosition().distSqr(c.pos) <= BICHO_RAIO * BICHO_RAIO) {
+                    it.remove();
+                    dispararBicho(nv, c.pos, sp);
+                    break;
+                }
+            }
+        }
+    }
+
+    private static void dispararBicho(ServerLevel nv, BlockPos pos, ServerPlayer quem) {
+        // o berro, a caixa arrebentando e o bicho PULANDO NA TELA
+        PacketDistributor.sendToPlayer(quem, new NeptunePackets.Susto(1.0F, System.nanoTime()));
+        quem.playNotifySound(RPTagMod.SOM_BICHO_GRITO.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
+        nv.playSound(null, pos, net.minecraft.sounds.SoundEvents.GENERIC_EXPLODE.value(),
+                SoundSource.BLOCKS, 0.8F, 1.6F);
+        nv.sendParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 0.6, pos.getZ() + 0.5,
+                3, 0.2, 0.2, 0.2, 0.0);
+        nv.sendParticles(ParticleTypes.SMOKE, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                40, 0.4, 0.4, 0.4, 0.02);
+        nv.removeBlock(pos, false);
+        quem.addEffect(new MobEffectInstance(RPEffects.MEDO, 200, 0, false, false, true));
+        quem.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 1, false, false, false));
+        nv.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
+                "\u00a78\u00a7oA caixinha parou de tocar.").withStyle(ChatFormatting.DARK_GRAY), false);
+        // e ele continua aparecendo pros outros por perto (susto coletivo curto)
+        for (ServerPlayer outro : nv.getServer().getPlayerList().getPlayers()) {
+            if (outro != quem && outro.level() == nv && outro.position().distanceTo(quem.position()) < 12) {
+                PacketDistributor.sendToPlayer(outro, new NeptunePackets.Susto(0.55F, System.nanoTime()));
+            }
+        }
+    }
+
+    // =================================================================== VAZIO
+    /** Apaga alguém da existência (kill + aviso + som bizarro). */
+    public static void apagarDaExistencia(ServerPlayer alvo, ServerPlayer quem) {
+        ServerLevel nv = (ServerLevel) alvo.level();
+        Vec3 pos = alvo.position();
+        for (ServerPlayer p : alvo.getServer().getPlayerList().getPlayers()) {
+            PacketDistributor.sendToPlayer(p, new NeptunePackets.Nebulosa(4, true));
+            p.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
+        }
+        nv.sendParticles(ParticleTypes.SQUID_INK, pos.x, pos.y + 1, pos.z, 120, 0.6, 1.0, 0.6, 0.03);
+        nv.sendParticles(ParticleTypes.PORTAL, pos.x, pos.y + 1, pos.z, 80, 0.5, 1.0, 0.5, 0.4);
+        alvo.getServer().getPlayerList().broadcastSystemMessage(
+                Component.literal("---- vazio --- apagou ")
+                        .withStyle(ChatFormatting.DARK_GRAY)
+                        .append(Component.literal("\"" + alvo.getName().getString() + "\"")
+                                .withStyle(ChatFormatting.DARK_PURPLE))
+                        .append(Component.literal(" da existência").withStyle(ChatFormatting.DARK_GRAY)),
+                false);
+        alvo.hurt(alvo.damageSources().magic(), Float.MAX_VALUE);
+        if (alvo.isAlive()) {
+            alvo.kill();
+        }
+    }
+
+    /** Manda pra dimensão do vazio (feita sob medida). */
+    public static void exilar(ServerPlayer alvo, ServerPlayer quem) {
+        var chave = net.minecraft.resources.ResourceKey.create(
+                net.minecraft.core.registries.Registries.DIMENSION,
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "vazio"));
+        ServerLevel destino = alvo.getServer().getLevel(chave);
+        if (destino == null) {
+            quem.sendSystemMessage(Component.literal(
+                    "\u00a7cA dimensão rptag:vazio não carregou. Reinicie o servidor."));
+            return;
+        }
+        for (ServerPlayer p : alvo.getServer().getPlayerList().getPlayers()) {
+            PacketDistributor.sendToPlayer(p, new NeptunePackets.Nebulosa(5, true));
+            p.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
+        }
+        alvo.getServer().getPlayerList().broadcastSystemMessage(
+                Component.literal("---- vazio --- lançou ")
+                        .withStyle(ChatFormatting.DARK_GRAY)
+                        .append(Component.literal("\"" + alvo.getName().getString() + "\"")
+                                .withStyle(ChatFormatting.DARK_PURPLE))
+                        .append(Component.literal(" para fora do universo").withStyle(ChatFormatting.DARK_GRAY)),
+                false);
+        alvo.teleportTo(destino, 0.5, 120.0, 0.5, java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
+    }
+}

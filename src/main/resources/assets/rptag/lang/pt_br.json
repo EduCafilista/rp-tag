@@ -5,5 +5,7 @@
   "item.rptag.lorezone_wand.desc": "Clique direito perto de uma lorezone para ver a barreira (so admin)",
   "item.rptag.mascara_pedra": "Máscara de Pedra",
   "item.rptag.tablet": "Tablet QuiralOS",
-  "tablet.rptag.title": "Ficha Neptune SMP"
+  "tablet.rptag.title": "Ficha Neptune SMP",
+  "block.rptag.caixa_bicho": "Caixa de Música",
+  "item.rptag.caixa_bicho": "Caixa de Música"
 }

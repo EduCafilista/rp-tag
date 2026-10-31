@@ -37,6 +37,12 @@ public final class ServerEvents {
         return RPWorldData.get(player.server).getPersona(player.getUUID());
     }
 
+    // ---- (5.4.0) tick do evento NEPTUNE (terremoto, deus, bicho, saidas) ----
+    @SubscribeEvent
+    public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
+        NeptuneEventos.tick(event.getServer());
+    }
+
     // ================================================================
     //  Estado RP
     // ================================================================

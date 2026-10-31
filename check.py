@@ -11,12 +11,13 @@ def check(nome, cond):
 R = 'src/main/java/dev/rptag'
 C = R + '/client'
 A = 'src/main/resources/assets/rptag'
+S = A + '/sounds'
 
 def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.3.1'
+VER = '5.4.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -37,7 +38,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal v8', 'LorezoneMusicPayload' in mn and 'registrar("8")' in mn)
+check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("9")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -164,7 +165,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo v8 (3 payloads de musica)', 'registrar("8")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo atual (3 payloads de musica)', 'registrar("9")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -1044,8 +1045,8 @@ _mn9 = rd(R + '/ModNetworking.java')
 check('5.2.0: canais novos tablet_sync/tablet_update no lugar dos antigos ficha_*',
       'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9
       and 'tablet_sync' in rd(R + '/TabletSyncPayload.java') and 'tablet_update' in rd(R + '/TabletUpdatePayload.java'))
-check('5.2.0: protocolo subiu para v8 (cliente v7 e recusado)',
-      'registrar("8")' in _mn9 and 'registrar("7")' not in _mn9)
+check('5.2.0/5.4.0: protocolo subiu para v9 (cliente v8 e recusado)',
+      'registrar("9")' in _mn9 and 'registrar("8")' not in _mn9)
 check('5.2.0: o tablet e entregue no login', 'PlayerLoggedInEvent' in rd(R + '/TabletService.java'))
 check('5.2.0: /tablet existe e /ficha nao voltou',
       'literal("tablet")' in _junto and 'literal("ficha")' not in _junto)
@@ -1099,7 +1100,7 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
 check(f'versao {VER} no build.gradle',
-      "version = '5.3.1'" in rd('build.gradle') or 'version = "5.3.1"' in rd('build.gradle'))
+      ("version = '" + VER + "'") in rd('build.gradle') or ('version = "' + VER + '"') in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1338,8 +1339,8 @@ check('5.2.0: 12 arquivos do tablet existem',
 check('5.2.0: item rptag:tablet registrado (stacksTo 1)', 'ITEMS.register("tablet"' in rd(R + '/RPTagMod.java')
       and 'stacksTo(1)' in rd(R + '/RPTagMod.java'))
 check('5.2.0: tabela de limites da ficha 32/5/240/600/3000', 'LIMITES = {32, 5, 240, 600, 3000}' in _fp)
-check('5.2.0: protocolo subiu para registrar("8") com os 2 payloads',
-      'registrar("8")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
+check('5.2.0: protocolo com os 2 payloads do tablet',
+      'registrar("9")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
 check('5.2.0: handler do cliente registrado', 'handleTablet' in rd(C + '/ClientPayloadHandler.java'))
 check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID antes do load',
       'tag.put("TabletSheets", sheets)' in _rw and 'hasUUID("Id")' in _rw
@@ -1483,6 +1484,59 @@ check('5.3.1: previa do item no slot existe e usa a mesma matematica',
       and 'translate(-0.5' in rd('arte/previa_gui_item.py').replace(' ', ''))
 check('5.3.1: o icone do slot cabe no slot (<= 16 px de 16)',
       _disp['gui']['scale'][0] * 9.7 <= 16.0)
+
+# ============ 5.4.0: EVENTO NEPTUNE (terremoto, vazio, deus, bicho) ============
+_NP = R + '/NeptuneEventos.java'
+_NC = R + '/NeptuneCommands.java'
+_NX = C + '/NeptuneFx.java'
+_NPk = R + '/NeptunePackets.java'
+_NE = R + '/NeptuneEventos.java'
+check('5.4.0: motor do evento existe e tem os 4 sistemas',
+      all(k in rd(_NE) for k in ['iniciarTerremoto', 'sairDoServidor', 'apagarDaExistencia', 'dispararBicho']))
+check('5.4.0: terremoto deixa ESTUNCADO em PULSOS (6 s travado / 4 s livre)',
+      'proximoPulso = agora + (faseTravado ? 6000 : 4000)' in rd(_NE)
+      and 'MOVEMENT_SLOWDOWN' in rd(_NE))
+check('5.4.0: rumble em loop + audio do colapso do dono (14,7 s)',
+      'SOM_RUMBLE' in rd(_NE) and 'SOM_TERREMOTO_COLAPSO' in rd(_NE)
+      and os.path.getsize(S + '/terremoto_colapso.ogg') > 80000)
+check('5.4.0: saida do servidor com animacao verde e kick depois de N s',
+      'NeptunePackets.Saida' in rd(_NE) and 'SAIDAS' in rd(_NE) and 'disconnect' in rd(_NE))
+check('5.4.0: o deus do vazio tem aura, trilha ao andar e medo em quem chega perto',
+      all(k in rd(_NE) for k in ['tickDeus', 'SOM_TRILHA_DEUS', 'FearPayload', 'SQUID_INK']))
+check('5.4.0: vazio apaga com a frase exata do dono',
+      '---- vazio --- apagou' in rd(_NE) and 'da existência' in rd(_NE))
+check('5.4.0: dimensao rptag:vazio existe (dimension + dimension_type)',
+      os.path.exists('src/main/resources/data/rptag/dimension/vazio.json')
+      and os.path.exists('src/main/resources/data/rptag/dimension_type/vazio.json'))
+check('5.4.0: o bicho sai de uma CAIXA (bloco) e salta a 3 blocos',
+      'BICHO_RAIO = 3.0' in rd(_NE) and 'colocarCaixa' in rd(_NE)
+      and os.path.exists('src/main/resources/assets/rptag/blockstates/caixa_bicho.json'))
+check('5.4.0: caixinha de musica sintetizada (36 s) e berro do bicho (2,6 s)',
+      os.path.getsize(S + '/caixa_musica.ogg') > 200000
+      and os.path.getsize(S + '/bicho_grito.ogg') > 20000)
+check('5.4.0: cliente desenha terremoto, saida, susto e nebulosa',
+      all(k in rd(_NX) for k in ['desenharTerremoto', 'desenharSaida', 'desenharSusto', 'desenharNebulosa']))
+check('5.4.0: tremor de camera do terremoto (duas vozes: grave + tranco)',
+      'ViewportEvent.ComputeCameraAngles' in rd(_NX) and 'setRoll' in rd(_NX))
+check('5.4.0: blur REAL no pulso travado (processBlurEffect) com fallback',
+      'processBlurEffect' in rd(_NX) and 'catch (Throwable ignorado)' in rd(_NX))
+check('5.4.0: texto do vazio no chat com a frase do dono',
+      'NeptunePackets' in rd(_NPk) and 'neptune_saida' in rd(_NPk))
+check('5.4.0: canal v9 registra os 5 pacotes novos',
+      'event.registrar("9")' in rd('src/main/java/dev/rptag/ModNetworking.java')
+      and rd('src/main/java/dev/rptag/ModNetworking.java').count('NeptunePackets') >= 5)
+check('5.4.0: comandos /terremoto, /vazio, /bicho e /neptune so pra OP',
+      all(k in rd(_NC) for k in ['literal("terremoto")', 'literal("vazio")', 'literal("bicho")', 'literal("neptune")'])
+      and 'hasPermission(2)' in rd(_NC))
+check('5.4.0: o tick do Neptune esta ligado no ServerEvents',
+      'NeptuneEventos.tick' in rd(R + '/ServerEvents.java'))
+check('5.4.0: ajuda do /rp lista o terremoto e o vazio',
+      'terremoto iniciar' in rp and 'vazio ligar' in rp)
+check('5.4.0: previa do evento (o que o jogador ve) existe',
+      os.path.exists('arte/previa_neptune.py') and os.path.exists('previa/neptune_5.4.0.png'))
+check('5.4.0: os 3 audios do dono entraram (colapso, vazio, trilha)',
+      all(os.path.getsize(S + '/' + n + '.ogg') > 20000
+          for n in ['terremoto_colapso', 'vazio_apagar', 'trilha_deus']))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

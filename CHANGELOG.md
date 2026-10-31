@@ -1,5 +1,64 @@
 # Changelog
 
+## 5.4.0 — EVENTO NEPTUNE: TERREMOTO, VAZIO, DEUS E O BICHO — 2026-10-31
+
+> "preciso que os players fiquem estunados e lentos algumas vezes, aí podem
+> correr e tudo tremendo... efeito de blur estilo espaço que combine com o
+> evento... o terremoto vem de terras se colapsando"
+
+Tudo num lugar só: `NeptuneEventos` (servidor), `NeptuneFx` (cliente),
+`NeptuneCommands` (`/terremoto`, `/vazio`, `/bicho`, `/neptune`) e
+`NeptunePackets` (os 5 pacotes S2C). Canal de rede subiu pra **v9**.
+
+### 1. TERREMOTO — `/terremoto iniciar [segundos]`
+- **O áudio do dono toca na hora** (`terremoto_colapso.ogg`, 14,7 s) pra todo mundo;
+  depois o **rumble sintetizado** (8 s) entra em loop enquanto durar.
+- **Câmera tremendo** com duas vozes (balanço grave do chão + tranco rápido dos escombros).
+- **PULSOS de estuncado** (o pedido literal): **6 s travado** (Lentidão III + Fadiga +
+  blur real + visão dupla) e **4 s livre** — "aí podem correr e tudo tremendo".
+- **Blur de espaço**: nebulosa girando por cima (blend aditivo) + `processBlurEffect`
+  (o mesmo blur do menu de pausa) no pulso travado, mais poeira e rachaduras.
+- Termina sozinho ou por `/terremoto parar` (o desligamento que os admins pediram).
+
+### 2. SAÍDA DO SERVIDOR — `/terremoto sair [jogador|todos]`
+Player por player: animação **verde** (brilho central, pixels subindo, vinheta verde),
+aviso no chat e **kick em 4 s** — "o universo se corrigiu".
+
+### 3. DEUS DO VAZIO — `/vazio ligar | desligar`
+- **Aura preta** de partículas (ink/smoke/sculk) girando em volta do corpo.
+- **Trilha sonora própria** (o áudio do dono, 39,3 s) que **toca quando ele anda** e
+  corta 2,5 s depois de parar.
+- **Medo** (efeito + tremedeira de tela) em quem chega a 14 blocos.
+- **Controle do destino**: `/vazio apagar <jogador>` → `---- vazio --- apagou "X" da
+  existência` (+ som bizarro do dono e nebulosa na tela de todos);
+  `/vazio exilar <jogador>` → **dimensão nova `rptag:vazio`** (data pack própria,
+  céu do End, luz 0,02, chão vazio, teleporta pra y=120).
+
+### 4. O BICHO — `/bicho aqui` ou `/bicho <x> <y> <z>`
+- Nasce uma **CAIXA DE MÚSICA** no mundo (bloco `rptag:caixa_bicho`, arlequim).
+- Ela toca **36 s** de caixinha de criança que **vai desafinando** (sintetizada) —
+  "o som deve ficar um bom tempinho, para o player ir atrás".
+- Quem chega a **3 blocos**: a caixa arrebenta, o **berro** toca e o **bicho PULA NA
+  TELA** (face em tela cheia, flash branco/vermelho, tremor) — 2,6 s.
+
+### Áudios
+| arquivo | origem | uso |
+|---|---|---|
+| `terremoto_colapso.ogg` | **do dono** (5pts9o.mp3) | colapso |
+| `vazio_apagar.ogg` | **do dono** (h36ma4.mp3) | apagar da existência |
+| `trilha_deus.ogg` | **do dono** (z0r07u.mp3) | trilha do deus |
+| `caixa_musica.ogg` | sintetizada | a isca do bicho |
+| `bicho_grito.ogg` | sintetizada | o susto |
+| `rumble_terremoto.ogg` | sintetizada | tremor de fundo |
+
+`arte/audio_eventos.py` refaz todos; `arte/previa_neptune.py` desenha o que o jogador vê.
+
+### Testes
+- `check.py`: **603 PASS / 0 FAIL** (20 checks novos de 5.4.0) · `validar.py`: 40 ok.
+- Servidor 21.1.249: `Done`, `/terremoto iniciar 12` → LIGADO e **desligou sozinho**,
+  `/bicho` colocou a caixa, dimensão `rptag:vazio` carregou (`execute in`), **0 erro**.
+- Jar: **93.565.061 B**.
+
 ## 5.3.1 — O ITEM NO INVENTÁRIO (o bug do display em pixels) — 2026-10-31
 
 *"as mascaras melhoraram mas ainda estao bugadas no inv"* (print: a máscara saindo do slot)

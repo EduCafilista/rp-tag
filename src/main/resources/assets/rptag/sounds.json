@@ -30,5 +30,53 @@
         "stream": false
       }
     ]
+  },
+  "terremoto_colapso": {
+    "sounds": [
+      {
+        "name": "rptag:terremoto_colapso",
+        "stream": false
+      }
+    ]
+  },
+  "rumble_terremoto": {
+    "sounds": [
+      {
+        "name": "rptag:rumble_terremoto",
+        "stream": true
+      }
+    ]
+  },
+  "vazio_apagar": {
+    "sounds": [
+      {
+        "name": "rptag:vazio_apagar",
+        "stream": false
+      }
+    ]
+  },
+  "trilha_deus": {
+    "sounds": [
+      {
+        "name": "rptag:trilha_deus",
+        "stream": true
+      }
+    ]
+  },
+  "caixa_musica": {
+    "sounds": [
+      {
+        "name": "rptag:caixa_musica",
+        "stream": true
+      }
+    ]
+  },
+  "bicho_grito": {
+    "sounds": [
+      {
+        "name": "rptag:bicho_grito",
+        "stream": false
+      }
+    ]
   }
 }

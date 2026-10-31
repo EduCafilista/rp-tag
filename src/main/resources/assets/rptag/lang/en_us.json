@@ -5,5 +5,7 @@
   "item.rptag.lorezone_wand.desc": "Right-click near a lorezone to see its barrier (admin only)",
   "item.rptag.mascara_pedra": "Stone Mask",
   "item.rptag.tablet": "QuiralOS Tablet",
-  "tablet.rptag.title": "Neptune SMP Character Sheet"
+  "tablet.rptag.title": "Neptune SMP Character Sheet",
+  "block.rptag.caixa_bicho": "Music Box",
+  "item.rptag.caixa_bicho": "Music Box"
 }

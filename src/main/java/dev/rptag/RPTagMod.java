@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.3.1";
+    public static final String VERSION = "5.4.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -80,6 +80,33 @@ public final class RPTagMod {
             SOUNDS.register("ciberpsicose_aviso", () -> SoundEvent.createVariableRangeEvent(
                     ResourceLocation.fromNamespaceAndPath(MODID, "ciberpsicose_aviso")));
 
+    // ======================= 5.4.0 — EVENTO NEPTUNE (terremoto/vazio/deus) =======================
+    /** COLAPSO: a terra rachando (áudio do dono, 14,7 s) — toca quando o
+     *  terremoto começa. */
+    public static final Supplier<SoundEvent> SOM_TERREMOTO_COLAPSO =
+            SOUNDS.register("terremoto_colapso", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "terremoto_colapso")));
+    /** RUMBLE de tremor (sintetizado, 8 s, em loop enquanto dura o evento). */
+    public static final Supplier<SoundEvent> SOM_RUMBLE =
+            SOUNDS.register("rumble_terremoto", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "rumble_terremoto")));
+    /** VAZIO: o som bizarro de apagar alguém da existência (áudio do dono, 2,25 s). */
+    public static final Supplier<SoundEvent> SOM_VAZIO =
+            SOUNDS.register("vazio_apagar", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "vazio_apagar")));
+    /** TRILHA DO DEUS (áudio do dono, 39,3 s) — toca enquanto ele anda. */
+    public static final Supplier<SoundEvent> SOM_TRILHA_DEUS =
+            SOUNDS.register("trilha_deus", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "trilha_deus")));
+    /** CAIXA DE MÚSICA de criança (sintetizada, 36 s) — a isca do bicho. */
+    public static final Supplier<SoundEvent> SOM_CAIXA =
+            SOUNDS.register("caixa_musica", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "caixa_musica")));
+    /** O SUSTO: berro estrondoso (sintetizado, 2,6 s). */
+    public static final Supplier<SoundEvent> SOM_BICHO_GRITO =
+            SOUNDS.register("bicho_grito", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "bicho_grito")));
+
     /** (3.84.0) BLOCO/ITEM/BE do Coração Canônico (só adm obtém via /give;
      * nunca spawna naturalmente). */
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
@@ -99,6 +126,15 @@ public final class RPTagMod {
     public static final Supplier<Item> CORACAO_ITEM =
             ITEMS.register("coracao_canon", () -> new BlockItem(CORACAO_BLOCK.get(),
                     new Item.Properties()));
+    /** (5.4.0) CAIXA DO BICHO (só por comando — é a isca do susto). */
+    public static final Supplier<CaixaBichoBlock> CAIXA_BICHO = BLOCKS.register("caixa_bicho",
+            () -> new CaixaBichoBlock(BlockBehaviour.Properties.of()
+                    .strength(0.4F)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion()));
+    public static final Supplier<Item> CAIXA_BICHO_ITEM = ITEMS.register("caixa_bicho",
+            () -> new BlockItem(CAIXA_BICHO.get(), new Item.Properties()));
+
     /** (4.0.0) VARINHA DE LOREZONE (so admin): clique direito mostra/esconde
      *  a barreira da zona mais proxima. Nao faz nada nas maos de um player. */
     public static final net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.world.item.Item,

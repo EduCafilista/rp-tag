@@ -768,7 +768,15 @@ public final class RPCommands {
                     + "/lorezone texto|som|musica <id> ... \u00a77\u2014 edits a zona (musica aceita presets e @arquivo)\u00a7c\n"
                     + "/lorezone musicas \u00a77\u2014 lista sons prontos + API de musica custom\u00a7c\n"
                     + "/lorezone listar|remover <id> \u00a77\u2014 gerencia zonas\u00a7c\n"
-                    + "/effect give <jogador> rptag:medo <s> \u00a77\u2014 medo via efeito vanilla"), false);
+                    + "/effect give <jogador> rptag:medo <s> \u00a77\u2014 medo via efeito vanilla\u00a7c\n"
+                    + "\u00a75\u2014\u2014 EVENTO NEPTUNE (5.4.0) \u00a77\u2014\u2014\u00a7c\n"
+                    + "/terremoto iniciar [s] \u00a77\u2014 a terra colapsa (som + tremor + lentid\u00e3o em pulsos)\u00a7c\n"
+                    + "/terremoto sair [jogador|todos] \u00a77\u2014 sa\u00edda em luz verde (kick em 4 s)\u00a7c\n"
+                    + "/terremoto parar \u00a77\u2014 desliga o evento\u00a7c\n"
+                    + "/vazio ligar|desligar \u00a77\u2014 o Deus do Vazio (aura + trilha + medo)\u00a7c\n"
+                    + "/vazio apagar|exilar <jogador> \u00a77\u2014 apaga da exist\u00eancia / manda pra dimens\u00e3o\u00a7c\n"
+                    + "/bicho aqui \u00a77\u2014 caixinha de m\u00fasica (o bicho pula quando algu\u00e9m chega)\u00a7c\n"
+                    + "/neptune \u00a77\u2014 resumo de todos esses comandos"), false);
         }
         return Command.SINGLE_SUCCESS;
     }

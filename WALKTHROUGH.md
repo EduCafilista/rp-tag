@@ -17,10 +17,10 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **5.3.1** (2026-10-31) — máscara do .bbmodel do dono, item certo no inventário |
+| Versão | **5.4.0** (2026-10-31) — EVENTO NEPTUNE: terremoto, vazio, deus e o bicho |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.3.1.jar` (**91.361.089 B**) |
-| Checks | `check.py` → **584 PASS / 0 FAIL** |
+| Jar | `rptag-5.4.0.jar` (**93.565.061 B**) |
+| Checks | `check.py` → **603 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
@@ -28,6 +28,31 @@
 | Espelhos 5.2.0 | filebin `https://filebin.net/rptag520a553/rptag-5.2.0.jar` (cmp IDENTICO) · gofile `https://gofile.io/d/CdehqH7f` · release direto 200 |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 5.4.0 (2026-10-31): EVENTO NEPTUNE (terremoto + vazio + deus + bicho)
+
+- **Pedido grande e literal** — 6 coisas em um: terremoto estilo "correção do
+  universo" (Loki) com jogadores **estuncados e lentos em PULSOS** (6 s travado /
+  4 s livre pra correr), blur de espaço (`processBlurEffect` + nebulosa), saída
+  player-por-player com animação verde e kick, **Deus do Vazio** (aura preta,
+  trilha ao andar, medo em quem chega perto, apagar da existência / exilar numa
+  **dimensão nova** `rptag:vazio`) e o **bicho da caixinha de música** (36 s de
+  isca que desafina; a 3 blocos o bicho PULA NA TELA).
+- **Áudios**: os 3 do dono entraram como estavam (colapso 14,7 s, vazio 2,25 s,
+  trilha 39,3 s) — `arte/audio_eventos.py` normaliza pra .ogg. Caixinha, berro e
+  rumble são **sintetizados** no mesmo script (numpy -> ogg).
+- **Lição de arquitetura**: pacote de rede é STREAM_CODEC com ByteBufCodecs
+  (BOOL/FLOAT/VAR_INT/VAR_LONG/STRING_UTF8). O `Terremoto` carrega `travado`
+  pro cliente mudar blur/visão dupla no MESMO instante em que o servidor
+  aplica Lentidão — sem isso a tela e a lentidão saem de sincronia.
+- **Dimensão custom**: precisa de `data/<ns>/dimension_type/<id>.json` +
+  `data/<ns>/dimension/<id>.json`. `flat` com `layers: []` + bioma
+  `minecraft:the_void` = chão nenhum. Testado com `execute in rptag:vazio run ...`.
+- **Som que segue o jogador** (trilha do deus): `playSound(null, x,y,z, som,
+  AMBIENT, 1,1)` em loop; pra parar, `ClientboundStopSoundPacket` — o servidor
+  não "para" som sozinho.
+- Números: **603 PASS / 0 FAIL**, `validar.py` 40 ok, servidor `Done` com 0 erro,
+  jar 93.565.061 B.
 
 ### 5.3.1 (2026-10-31): o item no inventário (display em pixels) — LIÇÃO GRANDE
 

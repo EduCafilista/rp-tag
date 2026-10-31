@@ -28,7 +28,8 @@ public final class ModNetworking {
         // (4.9.0) v7: o item da ficha saiu do mod — cliente v6 (que ainda
         // manda os pacotes antigos) e recusado na hora, com mensagem de versao.
         // (5.2.0) v8: TABLET NEPTUNE (tablet_sync cliente / tablet_update servidor).
-        PayloadRegistrar registrar = event.registrar("8");
+        // (5.4.0) v9: EVENTO NEPTUNE (terremoto, saida verde, susto, aura, nebulosa)
+        PayloadRegistrar registrar = event.registrar("9");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         registrar.playToServer(TabletUpdatePayload.TYPE, TabletUpdatePayload.STREAM_CODEC,
@@ -77,5 +78,16 @@ public final class ModNetworking {
                 });
         registrar.playToServer(SetBubbleModePayload.TYPE, SetBubbleModePayload.STREAM_CODEC,
                 ServerEvents::handleSetBubbleMode);
+        // (5.4.0) EVENTO NEPTUNE — todos S2C
+        registrar.playToClient(NeptunePackets.Terremoto.TYPE, NeptunePackets.Terremoto.STREAM_CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onTerremoto(p)));
+        registrar.playToClient(NeptunePackets.Saida.TYPE, NeptunePackets.Saida.STREAM_CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onSaida(p)));
+        registrar.playToClient(NeptunePackets.Susto.TYPE, NeptunePackets.Susto.STREAM_CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onSusto(p)));
+        registrar.playToClient(NeptunePackets.Aura.TYPE, NeptunePackets.Aura.STREAM_CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onAura(p)));
+        registrar.playToClient(NeptunePackets.Nebulosa.TYPE, NeptunePackets.Nebulosa.STREAM_CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onNebulosa(p)));
     }
 }

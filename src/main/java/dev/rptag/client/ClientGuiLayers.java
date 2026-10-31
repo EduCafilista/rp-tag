@@ -59,6 +59,11 @@ public final class ClientGuiLayers {
         // (4.9.3) estilo 14 = CIBERPSICOSE "Alerta de Ciberpsicose" (glitch
         // cyberpunk: estatica, humanidade caindo, vidro estilhacando, ECG)
         CiberpsicoseAvisoFx.registrar(event);
+        // (5.4.0) EVENTO NEPTUNE: terremoto (nebulosa + poeira + visao dupla),
+        // saida verde, susto do bicho, nebulosa do vazio e aura do deus.
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "neptune_fx"),
+                (g, delta) -> NeptuneFx.desenhar(g));
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "medo_veu"),
                 (g, delta) -> ClientEffects.desenharMedoCamada(g));
