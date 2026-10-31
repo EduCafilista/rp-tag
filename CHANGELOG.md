@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.4.0 — TERREMOTO (colapso das Terras) + saída verde — 2026-10-31
+
+Primeira etapa do pacote Neptune (terremoto, poder do Void, trilha do deus, caixa de música).
+
+- `/rp admin terremoto iniciar` — liga o evento: a tela treme e toca o som do colapso
+  (áudio do dono, `terremoto_colapso.ogg`). De 8 a 20 s por jogador vem um **pulso**: a pessoa fica
+  estunada e lenta (Slowness) por 2 a 4 s, a tela fica **desfocada** com tom espacial (roxo, estrelas).
+- `/rp admin terremoto parar` encerra para todos; `status` mostra se está ativo.
+- `/rp admin terremoto levar <jogador>` — jogador a jogador: dissolve em **verde** (tela e partículas)
+  e é desconectado em 3 s ("A realidade te levou.").
+- **Toda saída do servidor** (levado, sair, cair) deixa um brilho verde e um som no lugar do jogador.
+- Protocolo **v9** (o cliente v8 é recusado). O estado do terremoto fica só na memória do servidor.
+- Os áudios do void (`void_apagar.ogg`) e da trilha do deus (`deus_trilha.ogg`) já estão no jar e
+  registrados, para as etapas 5.5.0 e 5.6.0.
+- Testes: `TerremotoFxTest` (o JUnit achou intensidade negativa antes do pulso; corrigido) e checks `5.4.0` no `check.py`.
+
 ## 5.3.1 — O ITEM NO INVENTÁRIO (o bug do display em pixels) — 2026-10-31
 
 *"as mascaras melhoraram mas ainda estao bugadas no inv"* (print: a máscara saindo do slot)

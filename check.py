@@ -16,7 +16,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.3.1'
+VER = '5.4.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -37,7 +37,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal v8', 'LorezoneMusicPayload' in mn and 'registrar("8")' in mn)
+check('payloads registrados no canal v9', 'LorezoneMusicPayload' in mn and 'registrar("9")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -164,7 +164,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo v8 (3 payloads de musica)', 'registrar("8")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo v9 (3 payloads de musica)', 'registrar("9")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -1044,8 +1044,8 @@ _mn9 = rd(R + '/ModNetworking.java')
 check('5.2.0: canais novos tablet_sync/tablet_update no lugar dos antigos ficha_*',
       'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9
       and 'tablet_sync' in rd(R + '/TabletSyncPayload.java') and 'tablet_update' in rd(R + '/TabletUpdatePayload.java'))
-check('5.2.0: protocolo subiu para v8 (cliente v7 e recusado)',
-      'registrar("8")' in _mn9 and 'registrar("7")' not in _mn9)
+check('5.2.0: protocolo subiu para v9 (cliente v8 e recusado)',
+      'registrar("9")' in _mn9 and 'registrar("8")' not in _mn9)
 check('5.2.0: o tablet e entregue no login', 'PlayerLoggedInEvent' in rd(R + '/TabletService.java'))
 check('5.2.0: /tablet existe e /ficha nao voltou',
       'literal("tablet")' in _junto and 'literal("ficha")' not in _junto)
@@ -1099,7 +1099,7 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
 check(f'versao {VER} no build.gradle',
-      "version = '5.3.1'" in rd('build.gradle') or 'version = "5.3.1"' in rd('build.gradle'))
+      "version = '5.4.0'" in rd('build.gradle') or 'version = "5.4.0"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1338,8 +1338,8 @@ check('5.2.0: 12 arquivos do tablet existem',
 check('5.2.0: item rptag:tablet registrado (stacksTo 1)', 'ITEMS.register("tablet"' in rd(R + '/RPTagMod.java')
       and 'stacksTo(1)' in rd(R + '/RPTagMod.java'))
 check('5.2.0: tabela de limites da ficha 32/5/240/600/3000', 'LIMITES = {32, 5, 240, 600, 3000}' in _fp)
-check('5.2.0: protocolo subiu para registrar("8") com os 2 payloads',
-      'registrar("8")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
+check('5.2.0: protocolo subiu para registrar("9") com os 2 payloads',
+      'registrar("9")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
 check('5.2.0: handler do cliente registrado', 'handleTablet' in rd(C + '/ClientPayloadHandler.java'))
 check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID antes do load',
       'tag.put("TabletSheets", sheets)' in _rw and 'hasUUID("Id")' in _rw
@@ -1483,6 +1483,37 @@ check('5.3.1: previa do item no slot existe e usa a mesma matematica',
       and 'translate(-0.5' in rd('arte/previa_gui_item.py').replace(' ', ''))
 check('5.3.1: o icone do slot cabe no slot (<= 16 px de 16)',
       _disp['gui']['scale'][0] * 9.7 <= 16.0)
+
+# ============ 5.4.0: TERREMOTO (colapso das Terras) ============
+_t = rd('src/main/java/dev/rptag/Terremoto.java')
+_tf = rd('src/main/java/dev/rptag/client/TerremotoFx.java')
+_rc = rd('src/main/java/dev/rptag/RPCommands.java')
+_mn54 = rd('src/main/java/dev/rptag/ModNetworking.java')
+_sj = rd('src/main/resources/assets/rptag/sounds.json')
+check('5.4.0: /rp admin terremoto (iniciar/parar/status/levar) so para adm',
+      'Terremoto.comando()' in _rc and all('literal("%s")' % x in _t for x in ['iniciar', 'parar', 'status', 'levar']))
+check('5.4.0: pacote do terremoto registrado e com handler no cliente',
+      'TerremotoPayload.TYPE' in _mn54 and 'handleTerremoto' in rd('src/main/java/dev/rptag/client/ClientPayloadHandler.java'))
+check('5.4.0: pulso deixa o jogador lento (Slowness) e manda o pacote',
+      'MOVEMENT_SLOWDOWN' in _t and 'TerremotoPayload.PULSO' in _t)
+check('5.4.0: levar = efeito verde e depois desconecta o jogador',
+      'TerremotoPayload.LEVAR' in _t and 'disconnect(' in _t)
+check('5.4.0: toda saida do servidor deixa efeito verde (PlayerLoggedOutEvent)',
+      'PlayerLoggedOutEvent' in _t and 'HAPPY_VILLAGER' in _t)
+check('5.4.0: som do colapso toca ao iniciar e esta no sounds.json + .ogg no jar',
+      'SOM_TERREMOTO' in _tf and 'terremoto_colapso' in _sj
+      and os.path.exists('src/main/resources/assets/rptag/sounds/terremoto_colapso.ogg'))
+check('5.4.0: sons do void e da trilha do deus registrados (etapas seguintes)',
+      all(n in _sj for n in ['void_apagar', 'deus_trilha'])
+      and os.path.exists('src/main/resources/assets/rptag/sounds/void_apagar.ogg')
+      and os.path.exists('src/main/resources/assets/rptag/sounds/deus_trilha.ogg'))
+check('5.4.0: cliente: tremor + blur nos pulsos + verde, com guarda de erro e camada de HUD',
+      'ComputeCameraAngles' in _tf and 'processBlurEffect' in _tf and 'catch (Throwable' in _tf
+      and 'TerremotoFx.desenhar' in rd('src/main/java/dev/rptag/client/ClientGuiLayers.java'))
+check('5.4.0: ao sair do mundo o terremoto do cliente para',
+      'TerremotoFx.parar()' in rd('src/main/java/dev/rptag/client/ClientEvents.java'))
+check('5.4.0: teste JUnit das contas do pulso existe',
+      os.path.exists('src/test/java/dev/rptag/client/TerremotoFxTest.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

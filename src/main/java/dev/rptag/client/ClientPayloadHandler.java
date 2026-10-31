@@ -71,6 +71,11 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> ClientBubbleCache.TYPEWRITER = payload.on());
     }
 
+    /** (5.4.0) TERREMOTO: tremor, blur espacial, pulsos e saida verde. */
+    public static void handleTerremoto(final dev.rptag.TerremotoPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> TerremotoFx.receber(payload.acao(), payload.ticks()));
+    }
+
     /** (3.44.0) MEDO: liga a tremedeira + vinheta neste cliente. */
     public static void handleFear(final FearPayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> ClientEffects.startFear(payload.seconds()));

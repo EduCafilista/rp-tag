@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.3.1";
+    public static final String VERSION = "5.4.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -79,6 +79,18 @@ public final class RPTagMod {
     public static final Supplier<SoundEvent> SOM_CIBERPSICOSE =
             SOUNDS.register("ciberpsicose_aviso", () -> SoundEvent.createVariableRangeEvent(
                     ResourceLocation.fromNamespaceAndPath(MODID, "ciberpsicose_aviso")));
+
+    /** (5.4.0) SONS do pacote Neptune: colapso das Terras (terremoto), o vazio
+     *  apagando alguem e a trilha do deus. Audios do dono, convertidos para .ogg. */
+    public static final Supplier<SoundEvent> SOM_TERREMOTO =
+            SOUNDS.register("terremoto_colapso", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "terremoto_colapso")));
+    public static final Supplier<SoundEvent> SOM_VOID_APAGAR =
+            SOUNDS.register("void_apagar", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "void_apagar")));
+    public static final Supplier<SoundEvent> SOM_DEUS_TRILHA =
+            SOUNDS.register("deus_trilha", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "deus_trilha")));
 
     /** (3.84.0) BLOCO/ITEM/BE do Coração Canônico (só adm obtém via /give;
      * nunca spawna naturalmente). */

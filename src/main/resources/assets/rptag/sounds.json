@@ -30,5 +30,29 @@
         "stream": false
       }
     ]
+  },
+  "terremoto_colapso": {
+    "sounds": [
+      {
+        "name": "rptag:terremoto_colapso",
+        "stream": false
+      }
+    ]
+  },
+  "void_apagar": {
+    "sounds": [
+      {
+        "name": "rptag:void_apagar",
+        "stream": false
+      }
+    ]
+  },
+  "deus_trilha": {
+    "sounds": [
+      {
+        "name": "rptag:deus_trilha",
+        "stream": true
+      }
+    ]
   }
 }

@@ -28,7 +28,10 @@ public final class ModNetworking {
         // (4.9.0) v7: o item da ficha saiu do mod — cliente v6 (que ainda
         // manda os pacotes antigos) e recusado na hora, com mensagem de versao.
         // (5.2.0) v8: TABLET NEPTUNE (tablet_sync cliente / tablet_update servidor).
-        PayloadRegistrar registrar = event.registrar("8");
+        // (5.4.0) v9: TERREMOTO (terremoto, S2C) - cliente v8 e recusado na hora.
+        PayloadRegistrar registrar = event.registrar("9");
+        registrar.playToClient(TerremotoPayload.TYPE, TerremotoPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleTerremoto);
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         registrar.playToServer(TabletUpdatePayload.TYPE, TabletUpdatePayload.STREAM_CODEC,
