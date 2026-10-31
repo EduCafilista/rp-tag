@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('5.2.1' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('5.2.2' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 5.2.1 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 5.2.2 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -1097,8 +1097,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('5.2.1: versao 5.2.1 no build.gradle',
-      "version = '5.2.1'" in rd('build.gradle') or 'version = "5.2.1"' in rd('build.gradle'))
+check('5.2.2: versao 5.2.2 no build.gradle',
+      "version = '5.2.2'" in rd('build.gradle') or 'version = "5.2.2"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1394,17 +1394,50 @@ check('5.2.1: a escolha do 1/16 esta explicada no codigo (fdiv 16 no bytecode)',
       'translateAndRotate faz' in _cm and 'fdiv' in _cm)
 check('5.2.1: o item usa a MESMA malha da cabeca (uma malha, nao duas)',
       'mascara_glb.bin' in _ri and 'mascara_item.bin' not in _ri)
-check('5.2.1: o item copia a transformacao do cranio vanilla (translate 0.5,0,0.5 + scale -1,-1,1)',
-      'pose.translate(0.5f, 0f, 0.5f)' in _ri and 'pose.scale(-1f / 16f, -1f / 16f, 1f / 16f)' in _ri)
+check('5.2.2: item usa a MESMA escala 1/16 da camada (sem transformacao do cranio)',
+      'pose.scale(1f / 16f, 1f / 16f, 1f / 16f)' in _ri and 'SkullBlockRenderer' not in _ri
+      and 'pose.translate(0.5f, 0f, 0.5f)' not in _ri)
 check('5.2.1: o item NAO tem mais translate/scale inventado por contexto',
       'THIRD_PERSON_RIGHT_HAND' not in _ri and 'case GUI' not in _ri)
-check('5.2.1: JSON do item usa o display do cranio (gui 30/45/0, ground 0.5, mao 0.5)',
-      '"thirdperson_righthand"' in _mj and '"scale": [\n        0.5,' in _mj)
+check('5.2.2: display do item em PIXELS (escala x16 do template_skull)',
+      '"thirdperson_righthand"' in _mj and '"scale": [\n        8.0,' in _mj)
 check('5.2.1: particula do item aponta pra textura que existe (entity/mascara_glb)',
       'rptag:entity/mascara_glb' in _mj and 'mascara_face' not in _mj)
 check('5.2.1: o render de conferencia usa o MESMO .bin do jar',
       os.path.exists('arte/render_mascara_offline.py')
       and 'mascara_glb.bin' in rd('arte/render_mascara_offline.py'))
+
+
+# ============ 5.2.2: a máscara ESCONDIDA atrás do chapéu da skin ============
+_mg = os.path.join(A, 'geo/mascara_glb.bin')
+
+def _ler_geo():
+    import struct
+    d = open(_mg, 'rb').read()
+    assert d[:4] == b'RPTM'
+    ver, n = struct.unpack('>ii', d[4:12])
+    vals = []
+    off = 12
+    for _ in range(3):
+        vals.append([struct.unpack('>f', d[off + 4*i:off + 4*i + 4])[0] for i in range(n)])
+        off += 4*n
+    return n, vals
+
+_n, (_gx, _gy, _gz) = _ler_geo()
+check('5.2.2: a malha cobre o rosto (altura >= 8 px, largura >= 5,4)',
+      max(_gy) - min(_gy) >= 7.9 and max(_gx) - min(_gx) >= 5.4)
+check('5.2.2: 100% da malha fica À FRENTE da camada do chapéu (z < -4,5)',
+      max(_gz) < -4.5)
+check('5.2.2: a malha está na frente do rosto (z entre -6,3 e -4,7)',
+      max(_gz) < -4.7 and min(_gz) > -6.4)
+check('5.2.2: ajustar_mascara.py existe e documenta o chapéu',
+      os.path.exists('arte/ajustar_mascara.py')
+      and 'camada do chapéu' in rd('arte/ajustar_mascara.py'))
+check('5.2.2: NAO mexer nas normais (casca dupla) — está explicado no script',
+      'NÃO MEXER' in rd('arte/ajustar_mascara.py'))
+check('5.2.2: previa da mascara vestida usa a malha do jar',
+      os.path.exists('arte/previa_mascara_vestida.py')
+      and 'GEO_MASCARA' in rd('arte/previa_mascara_vestida.py'))
 
 
 print(f'\n{OK} PASS / {FAIL} FAIL')

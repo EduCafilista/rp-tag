@@ -63,19 +63,14 @@ public class RenderItemMascara extends BlockEntityWithoutLevelRenderer {
         }
         try {
             pose.pushPose();
-            // (5.2.1) O ITEM NA MÃO — cópia do CRÂNIO vanilla, sem número inventado.
+            // (5.2.2) A MALHA ESTÁ EM PIXELS DO MODELO -> 1/16, igual à camada.
             //
-            // Bytecode de SkullBlockRenderer.renderSkull(null, 180, 0, pose, ...):
-            //     pose.translate(0.5f, 0f, 0.5f);
-            //     pose.scale(-1f, -1f, 1f);
-            //     modelo (em PIXELS, o Polygon divide por 16)
-            // A nossa malha de cabeça ocupa o MESMO volume do modelo do crânio
-            // (x ±2,7 dentro de ±4 · y -7,45..-0,45 dentro de -8..0 · z -5,05..-3,75
-            // dentro de -4..4), então essa transformação põe a máscara exatamente onde
-            // o crânio fica. O resto do posicionamento (mão, GUI, chão, quadro) vem do
-            // `display` do JSON, copiado de minecraft:item/template_skull.
-            pose.translate(0.5f, 0f, 0.5f);
-            pose.scale(-1f / 16f, -1f / 16f, 1f / 16f);
+            // O 5.2.1 usava a transformação do crânio (translate 0.5,0,0.5 +
+            // scale(-1,-1,1)), mas com o modelo do crânio, que já vem em pixels
+            // PRÓPRIOS e não é a nossa malha. Aqui a conta é a mesma da caminha da
+            // cabeça (CamadaMascara): só a escala 1/16. O `display` do JSON faz o
+            // resto (valores em PIXELS, /16 = blocos).
+            pose.scale(1f / 16f, 1f / 16f, 1f / 16f);
 
             PoseStack.Pose entrada = pose.last();
             Matrix4f mat = entrada.pose();

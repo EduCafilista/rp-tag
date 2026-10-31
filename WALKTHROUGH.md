@@ -17,10 +17,10 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **5.2.1** (2026-10-31) — Tablet Neptune + máscara em escala |
+| Versão | **5.2.2** (2026-10-31) — Tablet Neptune + máscara no rosto |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.2.1.jar` (**91.992.489 B**, md5 `b61aba1d445a1a57f5632fbd3710f886`) |
-| Checks | `check.py` → **565 PASS / 0 FAIL** |
+| Jar | `rptag-5.2.2.jar` (**91.993.088 B**) |
+| Checks | `check.py` → **571 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
@@ -28,6 +28,24 @@
 | Espelhos 5.2.0 | filebin `https://filebin.net/rptag520a553/rptag-5.2.0.jar` (cmp IDENTICO) · gofile `https://gofile.io/d/CdehqH7f` · release direto 200 |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 5.2.2 (2026-10-31): a máscara atrás da skin e o item com transformação dupla
+
+- **A camada do CHAPÉU é o vilão.** `PlayerModel` desenha o cubo do chapéu
+  inflado 0,5 (`-4,5..4,5`); a máscara ia até z = −3,75, ou seja **63% atrás
+  dele** → a pele cobria e sobrava um oval. **Regra: qualquer coisa no rosto
+  precisa estar em z < −4,5.**
+- **Escala uniforme, não por eixo.** Esticar em X para "cobrir o rosto" deixa a
+  cara larga como prato. Encaixa a ALTURA e deixa a largura seguir a proporção.
+- **NÃO recalcular as normais de uma malha com casca dupla.** ~50% apontam para
+  dentro de propósito (casca interna + aba). Média por vértice cancela tudo e o
+  relevo vira borrão. As do GLB estão certas. E trocar winding sem trocar UV
+  embaralha a textura (o material é `noCull`: o sentido não importa).
+- **Item: uma transformação só.** 5.2.1 misturou a do crânio com o `display` do
+  crânio (dupla) → fora do quadro e espelhado. Agora: `scale(1/16)` no código +
+  `display` em pixels (×16) no JSON.
+- **Prévia com pele preta engana**: a silhueta da máscara some. As prévias usam
+  pele clara e desenham a camada do chapéu junto.
 
 ### 5.2.1 (2026-10-31): máscara em escala (16×) e item pela referência do crânio
 

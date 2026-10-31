@@ -1,5 +1,46 @@
 # Changelog
 
+## 5.2.2 — A MÁSCARA ESTAVA ESCONDIDA ATRÁS DA SKIN (e o item invertido) — 2026-10-31
+
+*"a mascara esta ficando invertida, a mascara ainda está feia, resolva isso ai"*
+
+### 1. O "ovoide" era a máscara atrás da camada do chapéu
+Medindo vértice por vértice o `geo/mascara_glb.bin`: **62,9% da máscara estava
+atrás da camada do chapéu** da skin (`PlayerModel` desenha esse cubo inflado em
+z = −4,5; a malha ia de −5,05 a −3,75). Resultado: o jogo desenhava a pele **por
+cima** e só sobrava um oval no meio da cara — exatamente a captura.
+
+| | antes | agora |
+|---|---|---|
+| largura | 5,40 (68% do rosto) | **6,18** (77%) |
+| altura | 7,00 | **8,00** (rosto inteiro) |
+| z | −5,05..−3,75 | **−6,27..−4,78** |
+| à frente do chapéu (z < −4,5) | **37,1%** | **100%** |
+
+Escala **uniforme**: encaixa a altura e a largura segue a proporção do modelo.
+(o primeiro teste esticou em X e a cara virou um prato.)
+
+### 2. O item "invertido" era transformação dupla
+No 5.2.1 eu apliquei a transformação do crânio (`translate(0.5,0,0.5)` +
+`scale(-1,-1,1)`) **e** o `display` do crânio. As duas juntas jogavam a malha
+para fora do quadro e espelhavam. Agora o item usa **a mesma escala 1/16** da
+camada e o `display` do JSON em **pixels** (valores ×16).
+
+### 3. O que NÃO se deve fazer (tentado e descartado)
+Recalcular as normais "para fora" **piora tudo**: a máscara tem casca de fora e
+de dentro (com aba fechando o volume), então ~50% das normais apontam para
+dentro de propósito. A média por vértice cancela frente e verso e o relevo
+(olhos, boca) vira borrão. As normais do GLB estão certas — prova em
+`previa/diag_normais.png`. Trocar o *winding* sem trocar as UVs junto embaralha
+a textura. O material é `noCull` (dupla face): o sentido dos vértices não importa.
+
+### Testes
+- `check.py`: **571 PASS / 0 FAIL** (6 checks novos).
+- `arte/ajustar_mascara.py` (novo): refaz o `.bin` no lugar certo do rosto.
+- `arte/previa_mascara_vestida.py`: antes/depois em 4 ângulos **com a camada do
+  chapéu** e pele clara (com pele preta a silhueta some e a prévia mente).
+- Servidor NeoForge 21.1.249: `Done (0.965s)`, máscara invocada, **0 erro**.
+
 ## 5.2.1 — A MÁSCARA 16× MAIOR (agora assentada no rosto) e o ITEM NA MÃO — 2026-10-31
 
 *"a mascara ainda está bugada, e por algum motivo esta muito feia na mao, resolve isso"*
