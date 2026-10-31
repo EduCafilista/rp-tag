@@ -16,9 +16,9 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-ver = all('4.9.6' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
+ver = all('4.9.7' in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
-check('versão 4.9.6 em RPTagMod/build.gradle/mods.toml', ver)
+check('versão 4.9.7 em RPTagMod/build.gradle/mods.toml', ver)
 
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
@@ -298,9 +298,9 @@ check('CORAÇÃO CANÔNICO: bloco+item+BE registrados', '"coracao_canon"' in rtm
 check('coracao NUNCA spawna natural (só /give, indestrutível)', 'strength(-1.0F, 3600000.0F)' in rtm and 'EntityArgument' not in rtm)
 check('SHIFT + clique direito = +1 vida (coração se consome)', 'isShiftKeyDown' in blk and 'setCanonLives' in blk and 'removeBlock' in blk and 'NOVA CHANCE' in blk)
 check('vidas cheias 5/5: não consome (coração fica)', 'vidas >= 5' in blk and 'continua aqui' in blk)
-check('coração 3D PROCEDURAL girando/batendo (BER — malha esculpida 4.9.5)',
+check('coração 3D PROCEDURAL girando/batendo (BER — voxel 4.4, o antigo)',
       'RenderType.lightning()' in rdr and 'rotationDegrees' in rdr and 'pulso' in rdr
-      and 'contornoY(' in rdr and 'ESPESSURA' in rdr)
+      and 'MASCARA' in rdr and 'SOLIDO' in rdr)
 check('BER registrado (ClientRenderers, camada cliente)', 'registerBlockEntityRenderer' in rd(C + '/ClientRenderers.java'))
 check('assets do coração completos (estado/modelo/item/textura)', _os.path.exists(A + '/textures/item/coracao_canon.png') and _os.path.exists(A + '/blockstates/coracao_canon.json') and '"elements": []' in rd(A + '/models/block/coracao_canon.json'))
 check('protecao NÃO some no logout (relog nao burla)', 'PROTECAO_ATE é de propósito NÃO limpa' in cl)
@@ -363,15 +363,11 @@ check('4.0: boot log 4.8.5', 'RP Tag 4.8.5' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
-check('4.9.5: coracao = MALHA esculpida (contorno classico + espessura sqrt(1-s^2))',
-      'contornoX(' in ccr and 'contornoY(' in ccr and 'sqrt(Math.max(0f, 1f - s * s))' in ccr
-      and 'SOLIDO' not in ccr and 'MASCARA' not in ccr)
-check('4.9.5: malha NT x NS x 2 faces + cor assada por vertice (volume)',
-      'NT = 56' in ccr and 'NS = 13' in ccr and 'corDe(' in ccr and 'shade(' in ccr
-      and 'diferença finita' in ccr)
-check('4.9.5: render de conferencia do coracao no repo (mesma matematica)',
-      os.path.exists('arte/previa_coracao3d.py') and 'def contorno(' in rd('arte/previa_coracao3d.py')
-      and os.path.exists('previa/coracao3d.png'))
+check('4.9.7: o coracao de lore e o SOLIDO VOXEL ANTIGO (4.4)',
+      'MASCARA' in ccr and 'NY = 13' in ccr and 'construirSolido' in ccr and 'FATOR_PROF' in ccr
+      and 'contornoY(' not in ccr)
+check('4.9.7: o preview da malha do coracao saiu do repo',
+      not os.path.exists('arte/previa_coracao3d.py') and not os.path.exists('previa/coracao3d.png'))
 check('4.4: giro por relogio de parede (nao trava, nao pula) + batida tum-tum',
       'System.nanoTime()' in ccr and 'Axis.YP.rotationDegrees' in ccr
       and 'Math.exp(-bt * 18.0)' in ccr and 'getBlockPos().getX() * 37' in ccr)
@@ -1095,8 +1091,8 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
       'outro.level() != perdedor.level()' in _cl9)
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
-check('4.9.6: versao 4.9.6 no build.gradle',
-      "version = '4.9.6'" in rd('build.gradle') or 'version = "4.9.6"' in rd('build.gradle'))
+check('4.9.7: versao 4.9.7 no build.gradle',
+      "version = '4.9.7'" in rd('build.gradle') or 'version = "4.9.7"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1197,13 +1193,17 @@ check('4.9.5: a camada 3D e MALHA (ponto/normal/relevo/largura)',
       and 'static void ponto(' in _cm and 'static void normal(' in _cm
       and 'static float relevo(' in _cm and 'static float largura(' in _cm
       and 'painel(pose' not in _cm)
-check('4.9.5: EIXO Y CORRIGIDO (queixo embaixo, testa em cima)',
+check('4.9.7: EIXO Y CORRIGIDO (queixo embaixo, testa em cima)',
       'Y_BASE = -4.35f' in _cm and 'Y_TOPO = 4.15f' in _cm and 'Y_TOPO = -8.55f' not in _cm)
-check('4.9.5: VOLUME FECHADO (casca externa + interna + aba) - 100% 3D',
+check('4.9.7: VOLUME FECHADO (casca externa + interna + aba) - 100% 3D',
       'ESPESSURA = 0.62f' in _cm and 'private static void tira(' in _cm
       and 'grade(1.0f, false)' in _cm and 'grade(0.0f, true)' in _cm
       and 'private static float[][] borda(' in _cm)
-check('4.9.5: malha 29x25 com normal por diferenca finita',
+check('4.9.7: silhueta de ESCUDO do modelo do Sketchfab (tabela de largura)',
+      'V_LARG' in _cm and 'W_LARG' in _cm and '0.70f, 1.70f, 2.45f' in _cm)
+check('4.9.7: tracos do modelo (testa em Y, orbitas em fenda, focinho, presas)',
+      'TESTA em Y' in _cm and 'ÓRBITAS: fenda funda e fina' in _cm and 'focinho' in _cm)
+check('4.9.7: malha 29x25 com normal por diferenca finita',
       'COLS = 29;' in _cm and 'ROWS = 25;' in _cm and 'diferença finita' in _cm)
 check('4.9.5: textura propria da malha (entity/mascara_pedra.png, 256x256)',
       'textures/entity/mascara_pedra.png' in _cm
@@ -1235,7 +1235,16 @@ check('4.9.5: o aviso toca a trilha UMA vez (somTocou) no primeiro quadro',
 check('4.9.5: o VIDRO QUEBRANDO continua no aviso (pico e colapso)',
       'GLASS_BREAK, 1.7f, 0.30f' in _cib and 'GLASS_BREAK, 0.6f, 1.0f' in _cib)
 check('4.9.5: modo reduzido nao toca a trilha (acessibilidade)',
-      'if (!reduzido) {\n                tocar(dev.rptag.RPTagMod.SOM_CIBERPSICOSE.get()' in _cib)
+      'if (!reduzido) {\n                try {' in _cib
+      and 'SOM_CIBERPSICOSE.get(), 1.0f, 1.0f' in _cib)
+
+# ============ 4.9.7: o mod NAO pode derrubar o jogo (blindagem) ============
+check('4.9.7: montagem da malha protegida (try/catch — falha nao mata o jogo)',
+      'try {\n            construirMalha();' in _cm and 'o jogo segue' in _cm)
+check('4.9.7: render da mascara protegido (try/catch)',
+      'erro ao desenhar a mascara (ignorado)' in _cm)
+check('4.9.7: audio do ciberpsicose protegido (try/catch)',
+      'nao consegui tocar o audio do ciberpsicose' in _cib)
 
 
 print(f'\n{OK} PASS / {FAIL} FAIL')

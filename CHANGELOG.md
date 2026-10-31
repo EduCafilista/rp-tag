@@ -1,5 +1,36 @@
 # Changelog
 
+## 4.9.7 — BLINDADO (o mod não pode derrubar o jogo) + CORAÇÃO ANTIGO DE VERDADE — 2026-10-31
+
+*"minecraft simplesmente nao carrega mais apos eu colocar a ultima versao"*
+
+### Correção de rota (duas coisas que estavam erradas na 4.9.6)
+1. **O coração NÃO tinha voltado ao antigo.** O comando que restauraria o arquivo
+   falhou (`git show 66aa265` → eixo `.git` já regredido) e o `check.py` da 4.9.6
+   foi editado na árvore regredida e sobrescrito pelo `git reset` — então ele
+   validava a malha nova com nome de check antigo. Agora `CanonCoracaoRenderer` é
+   o **voxel da 4.4** (confirmado: `MASCARA`/`SOLIDO`/`NY = 13`, 630 triângulos,
+   sem `contornoY`) e há check que **proíbe** o preview da malha de voltar.
+2. **Nada garantia que um erro da máscara não derrubasse o jogo.** O teste que eu
+   vinha fazendo era no **servidor dedicado**, que não carrega classes de cliente.
+
+### Blindagem (é isto que resolve "não carrega mais")
+- `CamadaMascara`: a montagem da malha no `static` está em **try/catch** — se
+  falhar em alguma máquina, o log guarda a causa e o jogo abre sem a máscara.
+- `CamadaMascara.render`: **try/catch** com `popPose()` garantido — erro de
+  render não vira crash.
+- `CiberpsicoseAvisoFx`: o áudio novo toca dentro de **try/catch**.
+- Regra nova desta versão em diante: **classe de cliente também é testada**
+  (carregamos `CamadaMascara` e `CanonCoracaoRenderer` num JVM, ver WALKTHROUGH).
+
+### O que continua
+Máscara no estilo do modelo do Sketchfab (silhueta de escudo, testa em Y,
+órbitas em fenda, focinho, presas), volume fechado, áudio do dono no
+CIBERPSICOSE com o vidro quebrando mantido.
+
+**Qualidade:** `check.py` **509 PASS / 0 FAIL** · servidor NeoForge
+`Done (1.032s)` · jar **91.225.972 B**.
+
 ## 4.9.6 — MÁSCARA NO ESTILO DO MODELO DO SKETCHFAB + CORAÇÃO ANTIGO DE VOLTA — 2026-10-30
 
 *"melhore algo assim [Sketchfab: MASCARA DE PIEDRA JOJO] ... quero o coraçao de lore antigo"*

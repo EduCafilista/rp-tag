@@ -359,7 +359,11 @@ public final class CiberpsicoseAvisoFx {
         if (!somTocou) {
             somTocou = true;
             if (!reduzido) {
-                tocar(dev.rptag.RPTagMod.SOM_CIBERPSICOSE.get(), 1.0f, 1.0f);
+                try {
+                    tocar(dev.rptag.RPTagMod.SOM_CIBERPSICOSE.get(), 1.0f, 1.0f);
+                } catch (Throwable falha) {
+                    dev.rptag.RPTagMod.LOGGER.warn("RP Tag: nao consegui tocar o audio do ciberpsicose", falha);
+                }
             }
         }
         while (evIdx < EV_T.length && t >= EV_T[evIdx]) {

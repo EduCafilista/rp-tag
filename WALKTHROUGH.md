@@ -17,16 +17,37 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **4.9.6** (2026-10-30) |
+| Versão | **4.9.7** (2026-10-31) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-4.9.6.jar` (**91.225.946 B** — só na GitHub Release `v4.9.6`) |
-| Checks | `check.py` → **512 PASS / 0 FAIL** + **JUnit 42/42** |
+| Jar | `rptag-4.9.7.jar` (**91.225.972 B** — só na GitHub Release `v4.9.7`) |
+| Checks | `check.py` → **509 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.938s)`, RCON OK; `/tablet`, `/ficha`, `/rp admin regra` e `/rp admin confirmar` respondem "Unknown/Incorrect" (saíram) |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
-| Releases vivas | **v4.9.6** (jar) + `portais-v1.3.2` |
+| Releases vivas | **v4.9.7** (jar) + `portais-v1.3.2` |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 4.9.7 (2026-10-31): blindagem + coração antigo de verdade
+
+- **A LIÇÃO (ler sempre):** testar no servidor dedicado NÃO testa código de
+  cliente. A máscara e o coração só existem no cliente. A partir daqui:
+  compilar, e carregar as classes de cliente num JVM (`TesteCliente` em
+  `/tmp/cl`), além do servidor.
+- **Armadilha que causou o erro da 4.9.6:** `git show <commit>:<arquivo>` falha
+  quando o `.git` já regrediu — e o `&&` engole o resto da linha, então o "voltei
+  o arquivo antigo" virou nada. **Sempre conferir com `grep -c` depois de copiar.**
+  Mesma coisa com `python3` editando `check.py` por `.replace()`: sem `assert` o
+  replace falha em silêncio e o check passa mentindo. Os troca() agora dão
+  `sys.exit(1)` quando não acham o trecho.
+- **Blindagem:** `static { try { construirMalha(); } catch ... }` e
+  `render` inteiro em try/catch com `popPose()` no finally explícito; áudio do
+  CIBERPSICOSE em try/catch. Um erro de modelo **nunca** deve fechar o jogo.
+- **Coração:** `CanonCoracaoRenderer` = voxel da 4.4 (630 triângulos). O
+  `arte/previa_coracao3d.py` foi apagado e há check que exige a ausência.
+- **Diagnóstico de "não carrega" no PC do dono:** pedir `logs/latest.log` ou o
+  `crash-reports/*.txt`; conferir jar duplicado em `mods/` (erro clássico de
+  "Duplicate mod rptag") e jar truncado (comparar tamanho: 91.225.972 B).
 
 ### 4.9.6 (2026-10-30): máscara = modelo do Sketchfab; coração antigo de volta
 

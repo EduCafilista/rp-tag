@@ -76,7 +76,14 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
     private static int NV;
 
     static {
-        construirMalha();
+        // (4.9.7) BLINDAGEM: se a montagem da malha falhar em alguma máquina, o
+        // mod NÃO pode derrubar o jogo — registra no log e segue sem a máscara.
+        try {
+            construirMalha();
+        } catch (Throwable t) {
+            NV = 0;
+            RPTagMod.LOGGER.error("RP Tag: falha ao montar a malha da mascara (o jogo segue)", t);
+        }
     }
 
     public CamadaMascara(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> pai) {
@@ -320,21 +327,31 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
             return;
         }
 
-        pose.pushPose();
-        getParentModel().head.translateAndRotate(pose);
-        VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(TEX));
-        for (int k = 0; k + 2 < NV; k += 3) {
-            for (int v = 0; v < 3; v++) {
-                int q = k + v;
-                vc.addVertex(pose.last(), VPX[q], VPY[q], VPZ[q])
-                        .setColor(255, 255, 255, 255)
-                        .setUv(VTU[q], VTV[q])
-                        .setOverlay(OverlayTexture.NO_OVERLAY)
-                        .setLight(luz)
-                        .setNormal(VNX[q], VNY[q], VNZ[q]);
+        // (4.9.7) BLINDAGEM: erro de render não pode virar crash do jogo (o mod
+        // fica sem a máscara naquele quadro e o log guarda a causa).
+        try {
+            pose.pushPose();
+            getParentModel().head.translateAndRotate(pose);
+            VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(TEX));
+            for (int k = 0; k + 2 < NV; k += 3) {
+                for (int v = 0; v < 3; v++) {
+                    int q = k + v;
+                    vc.addVertex(pose.last(), VPX[q], VPY[q], VPZ[q])
+                            .setColor(255, 255, 255, 255)
+                            .setUv(VTU[q], VTV[q])
+                            .setOverlay(OverlayTexture.NO_OVERLAY)
+                            .setLight(luz)
+                            .setNormal(VNX[q], VNY[q], VNZ[q]);
+                }
+            }
+            pose.popPose();
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: erro ao desenhar a mascara (ignorado)", t);
+            try {
+                pose.popPose();
+            } catch (Throwable ignored) {
             }
         }
-        pose.popPose();
     }
 
     // ============================================================ registro
