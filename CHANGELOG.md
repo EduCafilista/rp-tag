@@ -1,5 +1,55 @@
 # Changelog
 
+## 5.7.3 — BICHO NA TELA, MÚSICA ÚNICA, AURA DE RAIOS E SOM DO TERREMOTO — 2026-11-01
+
+**1) O BICHO NÃO PULAVA NA TELA — eram DOIS bugs.**
+- **servidor:** o tick da caixinha fazia `if (sp.isCreative() || sp.isSpectator()) continue;`
+  — ou seja, **quem estava em criativo nunca levava o susto**, e é exatamente
+  assim que o dono testa. Agora só o ESPECTADOR fica de fora.
+- **cliente:** se UMA render do susto falhasse, `sustoOff = true` desligava o
+  bicho **até reiniciar o jogo**. Agora o erro só é logado e a próxima tentativa
+  acontece normalmente.
+- **o susto ficou muito mais visível:** entra grande (0,45 da tela) e cresce até
+  passar dos cantos, treme, tem aberração cromática (duplicata vermelha e ciano
+  deslocadas) e dura **3,4 s** (era 2,6 s e ficava pequeno). Se a textura falhar,
+  desenha um vulto escuro com dois olhos vermelhos — nunca fica sem susto.
+- **clicar na caixa agora abre o bicho na hora** (antes só tocava música).
+
+**2) ACABOU O "VÁRIAS MÚSICAS" NA CAIXA DO PALHAÇO — também eram dois bugs.**
+- `durou % 30 == 0` era **verdade durante um segundo inteiro**, e o tick roda
+  **20× por segundo** → **20 músicas tocadas juntas** a cada 30 s. Trocado por um
+  instante marcado (`proximaMusica`): toca **uma vez** a cada 30 s.
+- cada **clique** chamava `colocarCaixa`, que **adicionava outra caixa** na lista
+  (cada uma com sua música no seu ciclo). Agora há **dedupe por posição** e uma
+  trava de 4 s no som: apertar 10 vezes toca uma música só.
+
+**3) SOM DE FUNDO DO TERREMOTO — refeito.** O antigo era 99% grave (energia
+1651 na faixa 20-60 Hz contra **0,019** entre 400-2000 Hz): um zumbido que a
+caixa de som do PC nem reproduz. O novo (`arte/audio_573.py`) tem **seis
+camadas**: sub (peso), ronco das placas, corpo de terra (150-700 Hz), grãos,
+estalos secos irregulares e um "groan" da terra cedendo — estéreo, com cada
+estalo caindo num lado. Medição do novo: 474 / 92 / **118** / **22** nas faixas
+18-60 / 60-150 / 150-700 / 700-2000 Hz — agora tem corpo. `rumble` 12 s (emenda
+contínua) e `colapso` 75 s em **stream** (não carrega os 75 s decodificados na
+RAM).
+
+**4) AURA DO VAZIO (`/vazio ligar`) — agora é RAIOS SAINDO DO PLAYER.** O que
+aparecia de "esquisito no F5" era a **fumaça desenhada na TELA** (um borrão preto
+flutuando no céu). Mudou tudo:
+- **no mundo:** coluna de escuridão em espiral envolvendo o corpo (dust
+  roxo-escuro + LARGE_SMOKE + SQUID_INK), **raios serrilhados** que saem do
+  peito e dos pés — **negros por dentro e vermelhos na ponta** — e as rachaduras
+  vermelhas do chão continuam (agora 4 curtas, coadjuvantes).
+- **na tela:** só o acabamento — vinheta escura nas bordas (0,42), peso escuro
+  embaixo, granulação nas bordas e um piscar raro. **Zero fumaça, zero rachadura
+  de tela.** No F5 você vê o personagem dentro da escuridão com os raios saindo
+  dele; no F1 a visão fica limpa.
+
+### Testes
+`check.py`: **678 PASS / 0 FAIL** (9 checks novos). Servidor de teste: carrega
+5.7.3 limpo ("Done"), `/bicho` em 3 comandos cria **2** caixas (o repetido não
+duplica) e `/bicho limpar` zera.
+
 ## 5.7.2 — TERREMOTO NOVO, BANIDO NAS SOMBRAS E TÍTULOS — 2026-11-01
 
 **1) SOM NOS AVISOS (o que o dono cobrou).** O CONHECIMENTO e o ALL FOR ONE

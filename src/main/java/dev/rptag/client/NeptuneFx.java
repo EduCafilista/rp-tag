@@ -246,8 +246,9 @@ public final class NeptuneFx {
         try {
             desenharSusto(g);
         } catch (Throwable t) {
-            sustoOff = true;
-            RPTagMod.LOGGER.error("RP Tag: camada do susto desligada", t);
+            // (5.7.3) NÃO desliga mais pra sempre: se uma render falhar (textura
+            // demorando a carregar, por exemplo), o próximo susto tenta de novo.
+            RPTagMod.LOGGER.error("RP Tag: falha ao desenhar o susto do bicho (tenta no proximo)", t);
         }
         try {
             desenharNebulosa(g);
@@ -712,46 +713,81 @@ public final class NeptuneFx {
         AvisoFxUtil.normal();
     }
 
-    // ---- SUSTO: o bicho pula na tela
+    // ---- SUSTO: o bicho pula na tela (5.7.3 reforçado) ----------------
+    // O dono: "o bicho da caixa nao está pulando na tela do player". Duas
+    // causas: (a) o tick do servidor ignorava quem estava em CRIATIVO (é como
+    // ele testa) — corrigido lá; (b) aqui a imagem aparecia pequena (escala
+    // 0,35 -> 1,1) e sumia em 2,6 s. Agora ela PULA pra fora da tela: entra
+    // grande, cresce até sair dos cantos, treme, e fica 3,4 s. Se a textura
+    // falhar, desenha um vulto com olhos vermelhos (nunca fica sem susto).
     private static void desenharSusto(GuiGraphics g) {
         if (sustoOff || sustoInicio == 0L) {
             return;
         }
         long ms = System.currentTimeMillis() - sustoInicio;
-        long durMs = 2600L;
+        long durMs = 3400L;
         if (ms > durMs) {
             return;
         }
-        float t = ms / 1000.0F;
         int w = g.guiWidth();
         int h = g.guiHeight();
-        // entra estourando (0,22 s) e recua devagar, tremendo
-        float entra = Math.min(1.0F, ms / 220.0F);
-        float sai = ms > 1400 ? 1.0F - (ms - 1400) / (float) (durMs - 1400) : 1.0F;
-        float esc = (0.35F + 0.75F * entra) * (0.75F + 0.35F * sustoForca);
-        float tremor = (float) (Math.sin(ms * 0.09) * 7.0) * entra * (1 - sai * 0.6F);
+        float k = ms / (float) durMs;
+
+        // entra estourando (0,18 s), segura até 2,2 s e recua até o fim
+        float entra = Math.min(1.0F, ms / 180.0F);
+        float sai = ms > 2250 ? 1.0F - (ms - 2250) / (float) (durMs - 2250) : 1.0F;
+        sai = cl(sai) * cl(sai);
+        // escala: começa PEQUENA no centro e cresce até passar dos cantos
+        float esc = (0.45F + 0.85F * eo(cl(ms / 900.0F))) * (0.85F + 0.25F * sustoForca);
+        float tremor = (float) (Math.sin(ms * 0.11) * 12.0 + Math.sin(ms * 0.043) * 7.0) * entra;
         int lado = (int) (Math.min(w, h) * esc);
         int cx = w / 2 + (int) tremor;
-        int cy = h / 2 + (int) (Math.cos(ms * 0.11) * 5);
+        int cy = h / 2 + (int) (Math.cos(ms * 0.13) * 8.0);
 
         com.mojang.blaze3d.systems.RenderSystem.enableBlend();
-        // fundo vermelho de choque
-        int alfaV = (int) (140 * entra * sai);
-        g.fill(0, 0, w, h, (alfaV << 24) | 0x2A0000);
-        // a cara
-        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, Math.min(1.0F, entra * 1.4F) * sai);
-        g.blit(BICHO, cx - lado / 2, cy - lado / 2, 0, 0, lado, lado, lado, lado);
-        // flash branco do primeiro instante
-        if (ms < 260) {
-            int alfa = (int) (200 * (1 - ms / 260.0F));
+        // fundo vermelho de choque (pulsa)
+        int alfaV = (int) ((120 + 60 * Math.sin(ms * 0.02)) * entra * sai);
+        if (alfaV > 0) {
+            g.fill(0, 0, w, h, (Math.min(255, alfaV) << 24) | 0x2A0000);
+        }
+
+        // ---- a cara do palhaço (textura), com aberração cromática
+        try {
+            float alfa = Math.min(1.0F, entra * 1.6F) * sai;
+            int dx = (int) (4.0F * Math.sin(ms * 0.08)) * 2;
+            // sombra/duplicata vermelha e ciano deslocadas = cara "vibrando"
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 0.25F, 0.25F, alfa * 0.55F);
+            g.blit(BICHO, cx - lado / 2 + dx, cy - lado / 2, 0, 0, lado, lado, lado, lado);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.30F, 0.55F, 1.0F, alfa * 0.45F);
+            g.blit(BICHO, cx - lado / 2 - dx, cy - lado / 2, 0, 0, lado, lado, lado, lado);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alfa);
+            g.blit(BICHO, cx - lado / 2, cy - lado / 2, 0, 0, lado, lado, lado, lado);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
+        } catch (Throwable erro) {
+            // fallback: vulto escuro com dois olhos vermelhos (sempre tem susto)
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
+            int rr = (int) (lado * 0.46F);
+            g.fill(cx - rr, cy - rr, cx + rr, cy + rr, 0xE0000000 | 0x0A0A0A);
+            int olho = Math.max(6, rr / 4);
+            g.fill(cx - rr / 2 - olho, cy - rr / 3, cx - rr / 2 + olho, cy - rr / 3 + olho, 0xFFFF2020);
+            g.fill(cx + rr / 2 - olho, cy - rr / 3, cx + rr / 2 + olho, cy - rr / 3 + olho, 0xFFFF2020);
+        }
+
+        // flash branco curtíssimo no primeiro instante (só pra "estourar")
+        if (ms < 140) {
+            int alfa = (int) (170 * (1 - ms / 140.0F));
             g.fill(0, 0, w, h, (alfa << 24) | 0xFFFFFF);
         }
-        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
-        // garras nas bordas (vinheta vermelha pulsando)
+        // garras/vinheta vermelha pulsando nas bordas
         if (entra >= 1.0F) {
             int alfa = (int) (90 * (0.6F + 0.4F * (float) Math.sin(ms * 0.02)) * sai);
-            g.fill(0, 0, w, 22, (alfa << 24) | 0x3A0000);
-            g.fill(0, h - 22, w, h, (alfa << 24) | 0x3A0000);
+            g.fill(0, 0, w, 26, (alfa << 24) | 0x3A0000);
+            g.fill(0, h - 26, w, h, (alfa << 24) | 0x3A0000);
+            g.fill(0, 0, 18, h, (alfa << 24) | 0x3A0000);
+            g.fill(w - 18, 0, w, h, (alfa << 24) | 0x3A0000);
+        }
+        if (k >= 0.999F) {
+            sustoInicio = 0L;   // terminou: libera
         }
     }
 

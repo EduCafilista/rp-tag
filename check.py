@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.7.2'
+VER = '5.7.3'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1599,9 +1599,14 @@ check('5.5.0: /vazio soltar tira o jogador do exilio',
       'literal("soltar")' in _nc2 and 'soltarDoExilio' in _ne2)
 # (5.7.2) os 3 aneis antigos SAIRAM: o dono pediu rachaduras no CHAO que
 # acompanham o player (ancoradas no mundo) em vez de aneis em volta do corpo.
-check('5.7.2: a aura SUBSTITUIDA por rachaduras vermelhas no CHAO (seguem o player)',
-      'auraChao(' in _ne2 and 'DustParticleOptions' in _ne2
-      and 'chaoY' in _ne2 and 'rPeito' not in _ne2 and 'rCintura' not in _ne2)
+# (5.7.3) o dono pediu AURA DE ESCURIDAO + RAIOS saindo do player (a versao
+# so-de-rachaduras-no-chao virou coadjuvante)
+check('5.7.3: aura do vazio = escuridao + RAIOS negros/vermelhos saindo do player',
+      'auraVazio(' in _ne2 and 'DustParticleOptions' in _ne2
+      and 'negro' in _ne2 and 'RAIOS NEGROS E VERMELHOS' in _ne2)
+check('5.7.3: a aura tem COLUNA de escuridao em volta do corpo (visible no F5)',
+      'AURA DE ESCURIDÃO NO CORPO' in _ne2 and 'LARGE_SMOKE' in _ne2
+      and 'SQUID_INK' in _ne2)
 check('5.7.2: as rachaduras serpenteiam (as faixas vermelhas se mexem)',
       'fase * 1.6' in _ne2 and 'lateral' in _ne2)
 check('5.5.0: SAIU a particula que ficava NA CABEÇA (SCULK_SOUL em y+2,1)',
@@ -1660,6 +1665,34 @@ check('5.7.2: banimento SEM particulas verdes (sombras que aumentam)',
 check('5.6.0: detritos caindo pela tela durante o terremoto',
       'DETRITOS CAINDO' in _nf3)
 
+
+
+# ============ 5.7.3: bicho na tela, música única, som do terremoto ============
+check('5.7.3: BICHO pula na tela de quem esta em CRIATIVO (era o bug do dono)',
+      "if (sp.isCreati" not in rd(R + '/NeptuneEventos.java')
+      and 'if (sp.isSpectator())' in rd(R + '/NeptuneEventos.java'))
+check('5.7.3: clique na caixa dispara o bicho (estourarCaixa)',
+      'estourarCaixa' in rd(R + '/CaixaBichoBlock.java')
+      and 'public static void estourarCaixa' in rd(R + '/NeptuneEventos.java'))
+check('5.7.3: FIM das musicas empilhadas (durou % 30 == 0 -> proximaMusica)',
+      'durou % 30 == 0)' not in rd(R + '/NeptuneEventos.java')
+      and 'agoraMs >= c.proximaMusica' in rd(R + '/NeptuneEventos.java'))
+check('5.7.3: apertar a caixa varias vezes nao cria varias caixas (dedupe por pos)',
+      'if (c.pos.equals(pos))' in rd(R + '/NeptuneEventos.java')
+      and 'tocarSomCaixa' in rd(R + '/NeptuneEventos.java'))
+check('5.7.3: susto nao se desliga mais para sempre quando uma render falha',
+      'sustoOff = true;' not in _nf3 or 'tenta no proximo' in _nf3)
+check('5.7.3: susto ocupa a tela (aberr acao cromatica + fallback com olhos)',
+      'aberra' in _nf3 and 'olho' in _nf3 and 'durMs = 3400L' in _nf3)
+check('5.7.3: SOM do terremoto refeito em camadas (sub+ronco+corpo+graos+estalos)',
+      __import__('os').path.exists('/home/user/arte/audio_573.py')
+      and __import__('os').path.getsize('src/main/resources/assets/rptag/sounds/rumble_terremoto.ogg') > 50000
+      and __import__('os').path.getsize('src/main/resources/assets/rptag/sounds/terremoto_colapso.ogg') > 200000)
+check('5.7.3: colapso do terremoto agora e stream (75 s nao vai inteiro pra RAM)',
+      '"stream": true' in rd('src/main/resources/assets/rptag/sounds.json'))
+check('5.7.3: overlay da aura sem fumaca de TELA (nao tem mais o borrao preto no F5)',
+      'N_FUMACA' not in rd(C + '/VazioAuraDarkFx.java')
+      and 'tentaculo' not in rd(C + '/VazioAuraDarkFx.java').lower())
 
 # ============ 5.7.2: SISTEMA DE TÍTULOS ============
 _tit = rd(R) + rd(R + '/Titulos.java') if False else ''

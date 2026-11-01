@@ -136,10 +136,15 @@ public final class NeptuneEventos {
         final BlockPos pos;
         final long inicio;
         long proximoAviso = 0;
+        /** (5.7.3) próximo instante de TOCAR a música de novo. */
+        long proximaMusica = 0;
+        /** (5.7.3) quando essa caixa tocou o som pela última vez (anti-spam). */
+        long ultimoSom = 0;
 
         Caixa(BlockPos pos) {
             this.pos = pos;
             this.inicio = System.currentTimeMillis();
+            this.proximaMusica = this.inicio + 30_000L;
         }
     }
 
@@ -650,13 +655,14 @@ public final class NeptuneEventos {
             ServerLevel nv = (ServerLevel) p.level();
             Vec3 pos = p.position();
 
-            // ---- AURA DO VAZIO (5.7.2) — SUBSTITUI os anéis antigos.
-            // O dono pediu: "os feixes vermelhos ficam no CHÃO e, conforme o
-            // player anda, as faixas vermelhas se mexem". Então nada de anel em
-            // volta do corpo: são RACHADURAS no chão, ancoradas no mundo (sob
-            // os pés, com o chão de verdade embaixo), que WRITHAM devagar e
-            // acompanham o jogador quando ele anda.
-            auraChao(nv, p, pos, agora);
+            // ---- AURA DO VAZIO (5.7.3) — ESCURIDÃO + RAIOS NO CORPO.
+            // 5.7.2 tinha só rachaduras no chão e a fumaça era desenhada NA
+            // TELA (virava um borrão preto no céu no F5). O dono pediu: "aura
+            // de escuridão e raios negros e vermelhos SAINDO DO PLAYER".
+            // Agora tudo é partícula no MUNDO: coluna de escuridão em espiral,
+            // raios serrilhados preto/vermelho saindo do peito e dos pés, e as
+            // rachaduras do chão continuam (mais discretas).
+            auraVazio(nv, p, pos, agora);
 
             // ---- MEDO em quem chega perto (inimigos tremem)
             for (ServerPlayer outro : server.getPlayerList().getPlayers()) {
@@ -715,12 +721,92 @@ public final class NeptuneEventos {
      * dando a impressão de que está se abrindo. Só partículas de poeira
      * vermelha (DUST) + um pouco de fumaça escura baixa: nada na tela.
      */
-    private static void auraChao(ServerLevel nv, ServerPlayer p, Vec3 pos, long agora) {
+    private static void auraVazio(ServerLevel nv, ServerPlayer p, Vec3 pos, long agora) {
         // limita a taxa: o evento roda a cada tick; aqui desenhamos 1 em 3
         if (agora % 3 != 0) {
             return;
         }
-        // chão de verdade: desce até achar algo sólido (no máximo 5 blocos)
+        double fase = agora / 1000.0;
+        double t = agora / 1000.0;
+
+        // ---- as CORES. O "preto" do raio não pode ser dust 0,0,0 (some no
+        // escuro): usa um roxo-escuro quase preto, que o jogo desenha visível.
+        DustParticleOptions vermelho = new DustParticleOptions(new org.joml.Vector3f(0.92f, 0.02f, 0.03f), 1.5f);
+        DustParticleOptions sangue = new DustParticleOptions(new org.joml.Vector3f(0.45f, 0.0f, 0.02f), 1.7f);
+        DustParticleOptions negro = new DustParticleOptions(new org.joml.Vector3f(0.05f, 0.0f, 0.08f), 1.9f);
+        DustParticleOptions sombra = new DustParticleOptions(new org.joml.Vector3f(0.16f, 0.02f, 0.22f), 1.6f);
+
+        // ================= (A) AURA DE ESCURIDÃO NO CORPO =================
+        // fumaça/negro subindo em espiral em volta do jogador (0 a 2,4 de altura).
+        // É o que se vê no F5 envolvendo o personagem.
+        int fios = 10;
+        for (int i = 0; i < fios; i++) {
+            double a = (i / (double) fios) * Math.PI * 2 + fase * 1.4;      // gira
+            double r = 0.55 + 0.28 * Math.sin(fase * 1.9 + i * 1.3);        // respira
+            double h = ((fase * 0.55 + i * 0.37) % 1.0);                    // sobe e reinicia
+            double y = pos.y + 0.15 + h * 2.25;
+            double x = pos.x + Math.cos(a) * r * (1.0 - h * 0.35);
+            double z = pos.z + Math.sin(a) * r * (1.0 - h * 0.35);
+            var opt = (i % 3 == 0) ? sombra : negro;
+            nv.sendParticles(opt, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
+            if (i % 2 == 0) {
+                nv.sendParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 1, 0.03, 0.03, 0.03, 0.0);
+            }
+        }
+        // base: a escuridão "pesada" no chão, em volta dos pés
+        if (agora % 6 == 0) {
+            for (int i = 0; i < 6; i++) {
+                double a = Math.random() * Math.PI * 2;
+                double r = 0.25 + Math.random() * 0.9;
+                nv.sendParticles(ParticleTypes.SQUID_INK,
+                        pos.x + Math.cos(a) * r, pos.y + 0.08, pos.z + Math.sin(a) * r,
+                        1, 0.02, 0.0, 0.02, 0.0);
+            }
+        }
+
+        // ================= (B) RAIOS NEGROS E VERMELHOS =================
+        // A cada 6 ticks disparam 2 raios: um saindo do PEITO e outro dos PÉS.
+        // O raio é uma linha serrilhada (desvio aleatório em cada ponto) que
+        // atravessa a aura de fora pra fora; a ponta é vermelha, o corpo negro.
+        if (agora % 6 == 0) {
+            for (int n = 0; n < 2; n++) {
+                boolean doPe = n == 1;
+                double ang = Math.random() * Math.PI * 2;
+                double alcance = 2.2 + Math.random() * 2.8;
+                int pontos = 9 + (int) (Math.random() * 5);
+                double x0 = pos.x;
+                double y0 = doPe ? pos.y + 0.1 : pos.y + 1.0;
+                double z0 = pos.z;
+                double dx = Math.cos(ang);
+                double dz = Math.sin(ang);
+                // o raio sobe um pouco quando sai do chão (fica mais "elétrico")
+                double subida = doPe ? 0.55 : 0.25;
+                double x = x0, y = y0, z = z0;
+                for (int k = 1; k <= pontos; k++) {
+                    double f = k / (double) pontos;
+                    double serrilhado = (Math.random() - 0.5) * 0.34;
+                    x = x0 + dx * alcance * f - dz * serrilhado;
+                    z = z0 + dz * alcance * f + dx * serrilhado;
+                    y = y0 + subida * f * alcance * 0.45 + (Math.random() - 0.5) * 0.12;
+                    // perto do corpo é NEGRO, na ponta fica VERMELHO (e vice-versa
+                    // em metade dos raios, pra não ficar repetitivo)
+                    boolean ponta = f > 0.55;
+                    if (n == 0) {
+                        nv.sendParticles(ponta ? vermelho : (k % 2 == 0 ? negro : sombra),
+                                x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+                    } else {
+                        nv.sendParticles(ponta ? sangue : negro, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+                    }
+                    if (k % 3 == 0) {
+                        nv.sendParticles(ParticleTypes.SMOKE, x, y, z, 1, 0.01, 0.01, 0.01, 0.0);
+                    }
+                }
+            }
+        }
+
+        // ================= (C) RACHADURAS NO CHÃO (discretas) =================
+        // Continuam existindo, mas agora são COADJUVANTES: 4 rachaduras curtas
+        // em vez de 7 compridas (o pedido novo é "raios saindo do player").
         double chaoY = pos.y;
         var bp = p.blockPosition();
         for (int dy = 0; dy <= 5; dy++) {
@@ -731,39 +817,20 @@ public final class NeptuneEventos {
                 break;
             }
         }
-        double fase = agora / 1000.0;
-        DustParticleOptions vermelho = new DustParticleOptions(new org.joml.Vector3f(0.78f, 0.03f, 0.03f), 1.35f);
-        DustParticleOptions sangue = new DustParticleOptions(new org.joml.Vector3f(0.42f, 0.0f, 0.02f), 1.6f);
-
-        // 7 rachaduras saindo dos pés; cada uma serpenteia
-        int rachas = 7;
-        for (int r = 0; r < rachas; r++) {
-            double ang = (r / (double) rachas) * Math.PI * 2
-                    + Math.sin(fase * 0.35 + r * 1.7) * 0.22;          // gira/ondula devagar
-            double comp = 1.6 + 1.5 * Math.abs(Math.sin(fase * 0.27 + r * 2.1));   // abre e fecha
-            int passos = 7;
-            for (int k = 1; k <= passos; k++) {
-                double f = k / (double) passos;
-                // serpenteio (a "faixa vermelha se mexendo")
-                double lateral = Math.sin(fase * 1.6 + r * 2.3 + k * 0.9) * 0.28 * f;
+        for (int r = 0; r < 4; r++) {
+            double ang = (r / 4.0) * Math.PI * 2 + Math.sin(fase * 0.35 + r * 1.7) * 0.25;
+            double comp = 1.2 + 1.1 * Math.abs(Math.sin(fase * 0.27 + r * 2.1));
+            for (int k = 1; k <= 5; k++) {
+                double f = k / 5.0;
+                double lateral = Math.sin(fase * 1.6 + r * 2.3 + k * 0.9) * 0.24 * f;
                 double x = pos.x + Math.cos(ang) * comp * f - Math.sin(ang) * lateral;
                 double z = pos.z + Math.sin(ang) * comp * f + Math.cos(ang) * lateral;
-                var opt = (k % 3 == 0) ? sangue : vermelho;
-                nv.sendParticles(opt, x, chaoY + 0.02, z, 1, 0.02, 0.0, 0.02, 0.0);
-            }
-        }
-        // braseiro baixo: fumaça escura rasteira (fica no chão, não sobe na cara)
-        if (agora % 9 == 0) {
-            for (int i = 0; i < 3; i++) {
-                double a = Math.random() * Math.PI * 2, rr = 0.6 + Math.random() * 1.5;
-                nv.sendParticles(ParticleTypes.SMOKE,
-                        pos.x + Math.cos(a) * rr, chaoY + 0.05, pos.z + Math.sin(a) * rr,
-                        1, 0.05, 0.0, 0.05, 0.0);
+                nv.sendParticles((k % 3 == 0) ? sangue : vermelho, x, chaoY + 0.02, z, 1, 0.01, 0.0, 0.01, 0.0);
             }
         }
         // cinza subindo bem devagar, colada no corpo (não na tela)
         if (agora % 12 == 0) {
-            nv.sendParticles(ParticleTypes.ASH, pos.x, pos.y + 0.1, pos.z, 4, 0.45, 0.35, 0.45, 0.0);
+            nv.sendParticles(ParticleTypes.ASH, pos.x, pos.y + 0.1, pos.z, 3, 0.35, 0.30, 0.35, 0.0);
         }
     }
 
@@ -846,6 +913,18 @@ public final class NeptuneEventos {
 
     // =================================================================== BICHO
     public static Caixa colocarCaixa(ServerLevel nv, BlockPos pos) {
+        // (5.7.3) DEDUPE: cada clique criava uma Caixa NOVA na lista e cada uma
+        // tocava a música no seu ciclo — o dono apertava 5x e ouviam-se 5
+        // músicas sobrepostas. Agora, se já tem caixa aqui, devolve a mesma e
+        // NÃO toca nada (quem quiser som usa tocarSomCaixa).
+        for (Caixa c : CAIXAS) {
+            if (c.pos.equals(pos)) {
+                if (nv.getBlockState(pos).isAir()) {
+                    nv.setBlockAndUpdate(pos, RPTagMod.CAIXA_BICHO.get().defaultBlockState());
+                }
+                return c;
+            }
+        }
         // (5.4.0) põe o BLOCO de verdade no mundo (é a caixinha que o jogador vê
         // e de onde o bicho pula) e registra pra o tick vigiar a distância.
         if (nv.getBlockState(pos).isAir()) {
@@ -853,8 +932,27 @@ public final class NeptuneEventos {
         }
         Caixa c = new Caixa(pos);
         CAIXAS.add(c);
-        nv.playSound(null, pos, RPTagMod.SOM_CAIXA.get(), SoundSource.AMBIENT, 1.0F, 1.0F);
+        tocarSomCaixa(nv, c.pos);
         return c;
+    }
+
+    /**
+     * (5.7.3) Toca o som da caixinha UMA vez, com trava de 4 s na mesma caixa.
+     * Antes o `playSound` era solto em 3 lugares (colocar, clicar, ciclo de
+     * 30 s) e cada um deles empilhava uma música em cima da outra.
+     */
+    public static void tocarSomCaixa(ServerLevel nv, BlockPos pos) {
+        long agora = System.currentTimeMillis();
+        for (Caixa c : CAIXAS) {
+            if (c.pos.equals(pos)) {
+                if (agora - c.ultimoSom < 4000L) {
+                    return;                      // spam de clique: ignora
+                }
+                c.ultimoSom = agora;
+                break;
+            }
+        }
+        nv.playSound(null, pos, RPTagMod.SOM_CAIXA.get(), SoundSource.AMBIENT, 1.0F, 1.0F);
     }
 
     public static void limparCaixas() {
@@ -882,17 +980,25 @@ public final class NeptuneEventos {
             if (nv == null) {
                 continue;
             }
-            long durou = (System.currentTimeMillis() - c.inicio) / 1000L;
-            // a caixinha range enquanto ninguém chega (a cada 30 s repete a música)
-            if (durou < BICHO_MUSICA_SEG && durou > 0 && durou % 30 == 0) {
-                nv.playSound(null, c.pos, RPTagMod.SOM_CAIXA.get(), SoundSource.AMBIENT, 1.0F, 1.0F);
+            long agoraMs = System.currentTimeMillis();
+            long durou = (agoraMs - c.inicio) / 1000L;
+            // (5.7.3) FIM DO "VÁRIAS MÚSICAS": antes era `durou % 30 == 0`, que
+            // é verdade durante o SEGUNDO INTEIRO — e como o tick roda 20x por
+            // segundo, eram 20 músicas tocadas juntas a cada 30 s. Agora é um
+            // instante marcado (proximaMusica) e toca UMA vez.
+            if (durou < BICHO_MUSICA_SEG && agoraMs >= c.proximaMusica) {
+                c.proximaMusica = agoraMs + 30_000L;
+                tocarSomCaixa(nv, c.pos);
             }
             // quem chegou perto?
             for (Player p : nv.players()) {
                 if (!(p instanceof ServerPlayer sp)) {
                     continue;
                 }
-                if (sp.isCreative() || sp.isSpectator()) {
+                // (5.7.3) O CRIATIVO LEVA O SUSTO TAMBÉM. Era o motivo do
+                // "o bicho não pula na tela do player": o dono testa em
+                // criativo e o tick pulava ele — só o espectador fica fora.
+                if (sp.isSpectator()) {
                     continue;
                 }
                 if (sp.blockPosition().distSqr(c.pos) <= BICHO_RAIO * BICHO_RAIO) {
@@ -902,6 +1008,15 @@ public final class NeptuneEventos {
                 }
             }
         }
+    }
+
+    /**
+     * (5.7.3) Abre a caixa na hora (usado pelo CLIQUE DIREITO e pelo tick).
+     * Público porque o {@link CaixaBichoBlock} chama quando o admin clica —
+     * antes o clique não fazia o bicho pular, só tocava música.
+     */
+    public static void estourarCaixa(ServerLevel nv, BlockPos pos, ServerPlayer quem) {
+        dispararBicho(nv, pos, quem);
     }
 
     private static void dispararBicho(ServerLevel nv, BlockPos pos, ServerPlayer quem) {

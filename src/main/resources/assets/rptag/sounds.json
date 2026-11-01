@@ -35,7 +35,7 @@
     "sounds": [
       {
         "name": "rptag:terremoto_colapso",
-        "stream": false
+        "stream": true
       }
     ]
   },

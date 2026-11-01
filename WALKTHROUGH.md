@@ -89,6 +89,50 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
   do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
 
+## 5.7.3 (2026-11-01): bicho na tela, música única, aura de raios, som do terremoto
+
+> Pedido do dono: "o bicho da caixa não está pulando na tela do player";
+> "melhore o som de fundo do terremoto"; "o vazio ainda está esquisito na minha
+> f5, quero uma aura de escuridão e raios negros vermelhos saindo do player";
+> "se eu apertar várias vezes na caixa do palhaço, começa tocar várias músicas".
+
+### Causas achadas (importante — os dois "não funciona" tinham 2 bugs cada)
+- **Bicho:** `tickCaixas` pulava quem estava em **criativo**
+  (`sp.isCreative() || sp.isSpectator()`) — o dono testa em criativo, então
+  nunca via o susto. E no cliente, o `catch` de `desenharSusto` fazia
+  `sustoOff = true` **permanente** (um erro desligava o bicho até reiniciar).
+- **Música:** `durou % 30 == 0` é verdade **durante 1 segundo inteiro** e o tick
+  roda 20×/s → **20 músicas por ciclo**. E cada clique em `useWithoutItem`
+  chamava `colocarCaixa`, que **adicionava uma `Caixa` nova** (cada uma com seu
+  próprio ciclo de música).
+- **Aura "esquisita no F5":** não era a aura — era o `VazioAuraDarkFx`
+  desenhando **fumaça na tela** (70 partículas em coordenadas de HUD), que no F5
+  vira um borrão preto flutuando no céu.
+
+### Feito nesta versão
+- **Bicho:** gatilho só exclui ESPECTADOR; `sustoOff` não é mais permanente;
+  `desenharSusto` reescrito (0,45 → 1,3 da tela, tremor, aberração cromática,
+  3,4 s, fallback de vulto com olhos vermelhos se a textura falhar); clique
+  direito chama `NeptuneEventos.estourarCaixa(...)` (pula o bicho na hora).
+- **Caixa:** campo `proximaMusica` (+30 s) e `ultimoSom` na classe `Caixa`;
+  `colocarCaixa` faz **dedupe por posição**; novo `tocarSomCaixa(nv, pos)` com
+  trava de 4 s (único ponto que toca o som).
+- **Som do terremoto:** `arte/audio_573.py` gera `rumble_terremoto.ogg` (12 s) e
+  `terremoto_colapso.ogg` (75 s) com sub + ronco + corpo 150-700 + grãos +
+  estalos + groan, estéreo. `sounds.json`: colapso agora `"stream": true`.
+  Armadilha: `sf.write()` de um Vorbis de 75 s **SEGFAULTA** neste ambiente —
+  escrever com `sf.SoundFile(...)` em pedaços de 1 s.
+- **Aura do vazio:** `NeptuneEventos.auraChao` → **`auraVazio`** (coluna de
+  escuridão + raios pretos/vermelhos do peito e dos pés + 4 rachaduras no chão);
+  `VazioAuraDarkFx` reescrita: **só** vinheta, peso no rodapé, granulação de
+  borda e piscar raro (nada de fumaça/rachadura/tentáculo de tela).
+- Versão 5.7.3 em `RPTagMod`/`neoforge.mods.toml`/`build.gradle`/`check.py`
+  (canal de rede **continua 10**: nenhum pacote novo).
+
+### Testes
+`check.py` 678 PASS / 0 FAIL · servidor 5.7.3 sobe limpo · `/bicho` 3× em 2
+posições = 2 caixas (dedupe ok).
+
 ## 5.7.2 (2026-11-01): terremoto sem flash, banido nas sombras, títulos
 
 > Pedido do dono: som nos avisos de CONHECIMENTO e ALLFORONE; aura do `/vazio`
@@ -240,7 +284,7 @@ ALLFORONE) · `PWaHoNqN.mp4` = buraco negro 1280x720 24 fps 5,09 s.
 |---|---|
 | Versão | **5.7.1** (2026-11-01) — consertos (crash do CONHECIMENTO, vídeo) + aura do vazio |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.7.2.jar` (**98.577.094 B**, md5 `9f5cef7141fa8298af36a9bd4d00e559`) — release **430777464**, asset **699173438** |
+| Jar | `rptag-5.7.3.jar` (**98.915.233 B**, md5 `1294bd7e6269137a1897303cc3ae08b9`) — release **430781003**, asset **699177206** |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |

@@ -41,11 +41,17 @@ public class CaixaBichoBlock extends Block {
         if (level.isClientSide) {
             return InteractionResult.SUCCESS;
         }
-        level.playSound(null, pos, RPTagMod.SOM_CAIXA.get(), SoundSource.AMBIENT, 1.0F, 1.0F);
-        player.sendSystemMessage(Component.literal(
-                "\u00a78A caixinha continua girando... \u00a77Não fique muito perto."));
-        // zera o contador pra "chamar" quem estava longe
-        NeptuneEventos.colocarCaixa((net.minecraft.server.level.ServerLevel) level, pos);
+        // (5.7.3) ANTES: cada clique chamava colocarCaixa, que criava OUTRA
+        // caixa na lista e tocava a música de novo -> 5 cliques = 5 músicas
+        // juntas. Agora o clique só toca o som (com trava de 4 s) e abre a
+        // caixa: o bicho pula na tela de quem clicou, uma vez só.
+        if (!(level instanceof net.minecraft.server.level.ServerLevel nv)
+                || !(player instanceof net.minecraft.server.level.ServerPlayer sp)) {
+            return InteractionResult.CONSUME;
+        }
+        NeptuneEventos.colocarCaixa(nv, pos);       // garante que existe (dedupe)
+        NeptuneEventos.tocarSomCaixa(nv, pos);
+        NeptuneEventos.estourarCaixa(nv, pos, sp);
         return InteractionResult.CONSUME;
     }
 }

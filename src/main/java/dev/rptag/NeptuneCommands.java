@@ -213,7 +213,7 @@ public final class NeptuneCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a78\u00a7l\u2588 \u00a75\u00a7lEVENTO NEPTUNE \u00a78\u00a7l\u2588\n"
                     + "\u00a7e/terremoto iniciar [s] \u00a77— a terra colapsa (som do colapso + tremor + lentidão em pulsos)\n"
-                    + "\u00a7e/terremoto sair [jogador|todos] \u00a77— saída em luz verde (kick em 4 s)\n"
+                    + "\u00a7e/terremoto sair [jogador|todos] \u00a77— a pessoa some nas sombras (kick em 4 s)\n"
                     + "\u00a7e/terremoto parar \u00a77— desliga\n"
                     + "\u00a7e/vazio ligar|desligar \u00a77— aura + trilha + medo (o Deus do Vazio)\n"
                     + "\u00a7e/vazio apagar <jogador> \u00a77— apaga da existência\n"
