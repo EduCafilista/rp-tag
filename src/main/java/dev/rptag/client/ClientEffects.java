@@ -94,11 +94,38 @@ public final class ClientEffects {
         RealAvisoFx.parar();
         ExpurgoAvisoFx.parar();
         CiberpsicoseAvisoFx.parar();
+        // (5.7.9) os três avisos novos dos protótipos do dono
+        SolAvisoFx.parar();
+        MorteOpAvisoFx.parar();
+        SangueOpAvisoFx.parar();
         EnergiaAvisoFx.parar();
         ConhecimentoAvisoFx.parar();
         AllForOneAvisoFx.parar();
         SaidaPlayerFx.parar();
         SombraMorteFx.parar();
+        // (5.7.9) estilo 19 = ONEFALLALL: o protótipo AvisoSol do dono (sol
+        // dourado atrás da silhueta encapuzada, as 8 vidas antigas em volta,
+        // a tocha pulando de cabeça em cabeça, brasas e sussurros).
+        if (style == 19) {
+            String limpoS = text.replaceAll("\u00a7.", "");
+            SolAvisoFx.iniciar(limpoS);
+            RPTagMod.LOGGER.info("RP Tag: aviso ONE FOR ALL (sol) iniciado");
+            return;
+        }
+        // (5.7.9) estilo 20 = MORTEOP: espiral, relógio, crânio e cinzas.
+        if (style == 20) {
+            String limpoM = text.replaceAll("\u00a7.", "");
+            MorteOpAvisoFx.iniciar(limpoM);
+            RPTagMod.LOGGER.info("RP Tag: aviso MORTE OP iniciado");
+            return;
+        }
+        // (5.7.9) estilo 21 = SANGUEOP: batida, veias, gota e anel tracejado.
+        if (style == 21) {
+            String limpoG = text.replaceAll("\u00a7.", "");
+            SangueOpAvisoFx.iniciar(limpoG);
+            RPTagMod.LOGGER.info("RP Tag: aviso SANGUE OP iniciado");
+            return;
+        }
         // (3.94.0) estilo 10 = DEMONIACO: o FX proprio (Chamado do Abismo:
         // mandibulas, fissuras, pentagrama, olho de fenda) assume. Codigos
         // & sao ignorados.

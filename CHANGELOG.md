@@ -1,5 +1,69 @@
 # Changelog
 
+## 5.7.9 — SOM DO TERREMOTO CALA, CARA DO BICHO, EXÍLIO CLARO, SAÍDA AUTOMÁTICA E 3 AVISOS — 2026-11-01
+
+### Bug do dono: o som do terremoto não parava
+- `pararTerremoto` agora manda **`ClientboundStopSoundPacket`** por jogador para
+  `rptag:terremoto_colapso` e `rptag:rumble_terremoto` (fonte `null` = mata todas
+  as instâncias) — o mesmo padrão que resolveu a trilha no `desligarDeus`.
+- Rede de proteção no cliente: ao receber `Terremoto(ativo=false)`, o
+  `SoundManager` também para os dois sons na mão.
+
+### Bug do dono: a cara do bicho não aparecia
+- Era **ordem de desenho**: o vulto escuro (mesma textura, 1,06×, 85% de alfa)
+  era desenhado DEPOIS da cara e cobria o rosto. Agora: vulto primeiro (corpo
+  atrás, respirando), **cara opaca por cima** (1,18× mais clara, aberração
+  cromática), **olhos acesos em aditivo** e a vinheta por último.
+
+### Exílio MAIOR, VISÍVEL e ANDÁVEL
+- `dimension_type/exilio.json`: `ambient_light` 0,06 → **0,42**, `has_skylight`
+  **true**, `has_ceiling` **false**, `fixed_time` **6000** (meio-dia),
+  `effects` `the_end` → **`overworld`**.
+- `dimension/exilio.json`: camadas novas (`bedrock 1 / deepslate 3 / blackstone 2
+  / tuff 2 / sculk 1 / light_gray_concrete 1`, superfície em **y=9**) e bioma
+  `stony_shore`.
+- **BUG DE NASCIMENTO**: o teleporte era para **y=1** (dentro da pedra). Agora
+  `chegadaNoExilio()` resolve pela **superfície** (heightmap) e `prepararPraca()`
+  constrói, uma vez por sessão, uma **praça de 30×30** (cruz de concreto claro,
+  anel de pedra polida, centro de blackstone trabalhado) com **8 colunas de
+  obsidiana + lanterna de alma** e uma cruz de lanternas no centro.
+- `/vazio entrar` avisa que dá pra **andar, construir e usar comando**.
+
+### A animação de saída virou automática (e o `/saida` saiu)
+- **Removido** o comando `/saida` (o dono recusou: *"quero que a animação
+  apareça quando o player sair do jogo"*).
+- `NeptuneEventos.saidaAutomatica(player)`, chamado por `ServerEvents.onLoggedOut`:
+  coluna de **sombra** no lugar exato (SQUID_INK/LARGE_SMOKE/ASH), **almas** e
+  fogo de alma, **glifos** (códigos) em volta, **`SOM_EXPULSAO`** para quem está a
+  32 blocos, `ScreenTextPayload(nome, 18, 9)` (estilo 18 = o sprite se desfazendo)
+  e o anúncio no chat. Não depende mais do flag `saidafx` (o toggle continua).
+
+### Avisos novos (protótipos do dono) — estilos 19, 20 e 21
+- **`onefallall` (19)** — `client/SolAvisoFx.java`, porte do `AvisoSol`
+  (`SfUpFekf.java`): sol dourado aquarelado (13 anéis com jitter + 24 arcos de
+  pincel), 11 direções de raios, **8 silhuetas do legado** com tocha pulando e
+  frases, silhueta encapuzada com o sol na cabeça e olhos que acendem, brasas,
+  ripples, sussurros e as 3 linhas do protótipo (a 1ª é substituída pelo texto do
+  comando). 13 s.
+- **`morteop` (20)** — `client/MorteOpAvisoFx.java`, porte do `AvisoMorte`
+  (`OjqYnxyx.java`): espiral de 3 braços, relógio de 60 marcas com 3 ponteiros,
+  crânio que se forma → encara → **se desmancha em cinzas**, 200 cinzas, 12 ossos
+  à deriva, sussurros. 11 s.
+- **`sangueop` (21)** — `client/SangueOpAvisoFx.java`, porte do `AvisoSangue`
+  (`vScmJibF.java`): fundo vermelho pulsando a 62 bpm, 26 veias crescendo das
+  bordas, gota com degradê radial, anel tracejado (dois, sentidos opostos), as 7
+  palavras acendendo e o ECG com "PULSO". 10,5 s.
+- `client/FxDraw.java`: primitivas que faltavam (triângulo, linha grossa, anel,
+  arco, disco, disco em degradê radial, elipse, losango, texto centrado).
+- Registrados em `ClientGuiLayers`, ligados em `ClientEffects` (19/20/21) e nos
+  nomes do `/rp admin avisar` e do `/lorezone aviso`.
+
+### Qualidade
+- `check.py` **736 PASS / 0 FAIL** (as checagens do exílio escuro e do `/saida`
+  foram reescritas pro pedido novo; +12 checagens 5.7.9).
+- Servidor de teste: `Done (0.653s)`, **0 exceptions**; dimensão conferida por
+  comando (`light_gray_concrete` em y=9).
+
 ## 5.7.8 — SOM DE EXPULSÃO, EXÍLIO ANDÁVEL, CAIXA NO 1º CLIQUE — 2026-11-01
 
 ### Som de expulsão (o que o dono mandou)

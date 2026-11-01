@@ -377,6 +377,9 @@ public final class RPCommands {
             case "energia" -> 15;   // (5.5.0) ENERGIA — anomalia de entropia
             case "conhecimento" -> 16;   // (5.7.0) CONHECIMENTO — o olho que sabe
             case "allforone" -> 17;   // (5.7.0) ALLFORONE — as vozes têm forma
+            case "onefallall" -> 19;  // (5.7.9) protótipo AvisoSol: o sol dourado
+            case "morteop" -> 20;     // (5.7.9) protótipo AvisoMorte: relógio + crânio
+            case "sangueop" -> 21;    // (5.7.9) protótipo AvisoSangue: batida + veias
             default -> 0;
         };
         // (4.7.3) Grafia "egipcio" (sem o "i"): nao tem literal proprio, para nao
@@ -754,7 +757,7 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos: nomes ou @a)\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos: nomes ou @a), onefallall, morteop, sangueop\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
                     + "/rp admin saidafx on|off \u00a77\u2014 animacao de saida dos jogadores (quem fica ve)\u00a7c\n"
@@ -1074,6 +1077,33 @@ public final class RPCommands {
                                                     var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                                     avisar(ctx, alvos, "allforone", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.7.9) ONEFALLALL: o protótipo do sol dourado
+                                .then(Commands.literal("onefallall")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "onefallall", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.7.9) MORTEOP: espiral, relógio, crânio e cinzas
+                                .then(Commands.literal("morteop")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "morteop", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.7.9) SANGUEOP: batida, veias e a gota
+                                .then(Commands.literal("sangueop")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "sangueop", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))))
                 .then(Commands.literal("avisozona")

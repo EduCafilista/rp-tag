@@ -26,12 +26,11 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  * /terremoto status               o que está ligado
  * /terremoto fenda <jogador>      força a terra a abrir embaixo dele (teste)
  * /terremoto fechar               fecha todas as fendas e devolve os blocos
- * /saida <jogador>|todos          roda a animação de saída de código no mapa
- *   (no mundo: glifos verdes em volta do corpo; na tela: o bonequinho)
+ *   (5.7.9) o /saida SAIU: a animação de saída roda sozinha no logout
  *
  * /vazio ligar | desligar         o admin vira o DEUS DO VAZIO (aura + trilha + medo)
  * /vazio apagar <jogador>         "---- vazio --- apagou X da existência"
- * /vazio exilar <jogador>         manda pra dimensão rptag:exilio (tudo preto)
+ * /vazio exilar <jogador>         manda pra dimensão rptag:exilio (planície de pedra)
  * /vazio soltar <jogador>         traz de volta do exílio
  *
  * /bicho aqui                     põe a caixinha de música onde você está
@@ -188,8 +187,9 @@ public final class NeptuneCommands {
             ServerPlayer quem = ctx.getSource().getPlayerOrException();
             NeptuneEventos.entrarNoExilio(quem);
             ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a78Voc\u00ea entrou no ex\u00edlio. Use \u00a7f/vazio soltar "
-                            + quem.getName().getString() + "\u00a78 pra sair."), true);
+                    "\u00a78Voc\u00ea est\u00e1 no ex\u00edlio: d\u00e1 pra andar, construir e usar "
+                            + "comando normalmente.\n\u00a78Pra sair: \u00a7f/vazio soltar "
+                            + quem.getName().getString()), true);
             return Command.SINGLE_SUCCESS;
         }));
 
@@ -203,36 +203,11 @@ public final class NeptuneCommands {
                     return Command.SINGLE_SUCCESS;
                 })));
 
-        // -------------------------------------------------------------- /saida
-        // (5.7.6) "faça a animação para quando o pessoal poder usar no mapa":
-        // agora a animação de saída (o bonequinho se desfazendo em código) pode
-        // ser DISPARADA na hora, pra todo mundo, sem ninguém realmente sair do
-        // servidor. Serve pra anunciar a saída de um personagem no RP.
-        LiteralArgumentBuilder<CommandSourceStack> saida = Commands.literal("saida")
-                .requires(src -> src.hasPermission(2));
-        saida.then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
-            ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
-            int n = NeptuneEventos.tocarAnimacaoSaida(alvo, ctx.getSource().getServer());
-            ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a7aAnima\u00e7\u00e3o de sa\u00edda rodando pra \u00a7f"
-                            + n + "\u00a7a jogador(es) — nome: \u00a77"
-                            + alvo.getName().getString()), true);
-            return Command.SINGLE_SUCCESS;
-        }));
-        saida.then(Commands.literal("todos").executes(ctx -> {
-            var lista = ctx.getSource().getServer().getPlayerList().getPlayers();
-            int total = 0;
-            for (ServerPlayer alvo : lista) {
-                total = Math.max(total, NeptuneEventos.tocarAnimacaoSaida(alvo,
-                        ctx.getSource().getServer()));
-            }
-            final int n = total;
-            ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a7aAnima\u00e7\u00e3o de sa\u00edda rodando pra \u00a7f" + n
-                            + "\u00a7a jogador(es)."), true);
-            return Command.SINGLE_SUCCESS;
-        }));
-        event.getDispatcher().register(saida);
+        // ------------------------------------------------------- /saida: MORREU
+        // (5.7.9) O dono recusou o comando: "não quero essa /saida, quero que a
+        // animação apareça quando o player sair do jogo". O comando saiu do
+        // registro; quem dispara a animação agora é o próprio logout
+        // (ServerEvents.onLoggedOut -> NeptuneEventos.saidaAutomatica).
 
         event.getDispatcher().register(vazio);
 

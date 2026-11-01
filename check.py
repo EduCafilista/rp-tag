@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.7.8'
+VER = '5.7.9'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1590,12 +1590,15 @@ check('5.5.0: dimensao do EXILIO existe (rptag:exilio) com chao (5.7.8: camadas 
       and os.path.exists('src/main/resources/data/rptag/dimension_type/exilio.json')
       and ('black_concrete' in rd('src/main/resources/data/rptag/dimension/exilio.json')
            or 'blackstone' in rd('src/main/resources/data/rptag/dimension/exilio.json')))
-check('5.5.0: o exilio e ESCURO (ambient_light 0, sem ceu, meia-noite fixa)',
-      '"ambient_light": 0.0' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and '"has_skylight": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and '"fixed_time": 18000' in rd('src/main/resources/data/rptag/dimension_type/exilio.json'))
-check('5.5.0: /vazio exilar manda pra rptag:exilio e POUSA no chao (y=1)',
-      '"exilio"' in _ne2 and 'alvo.teleportTo(destino, 0.5, 1.0, 0.5' in _ne2)
+check('5.7.9: o exilio e CLARO e tem ceu (0.06 de luz nao dava pra ver nada)',
+      '"ambient_light": 0.42' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"has_skylight": true' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"has_ceiling": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"fixed_time": 6000' in rd('src/main/resources/data/rptag/dimension_type/exilio.json'))
+check('5.7.9: exilar POUSA na SUPERFICIE (y=1 era dentro da pedra: nao andava nem via)',
+      '"exilio"' in _ne2 and 'chegadaNoExilio(destino)' in _ne2
+      and 'alvo.teleportTo(destino, chegada.x, chegada.y, chegada.z' in _ne2
+      and 'alvo.teleportTo(destino, 0.5, 1.0, 0.5' not in _ne2)
 check('5.5.0: /vazio soltar tira o jogador do exilio',
       'literal("soltar")' in _nc2 and 'soltarDoExilio' in _ne2)
 # (5.7.2) os 3 aneis antigos SAIRAM: o dono pediu rachaduras no CHAO que
@@ -1803,8 +1806,8 @@ check('5.7.0: aviso ALLFORONE (estilo 17) e a silhueta de fogo do dono',
 check('5.7.0: ANIMACAO DE SAIDA (estilo 18) do prototipo do dono',
       'class SaidaPlayerFx' in _sai and 'style == 18' in _fxp and 'saida_player' in _sai
       and 'DESCONECTADO' in _sai and 'session.close();' in _sai)
-check('5.7.0: quando um jogador SAI, quem fica ve a animacao (e da pra desligar)',
-      'PlayerLoggedOutEvent' in _sev and 'ScreenTextPayload(nome, 9, 18)' in _sev
+check('5.7.0/5.7.9: quando um jogador SAI, a animacao roda SOZINHA (e da pra desligar)',
+      'PlayerLoggedOutEvent' in _sev and 'saidaAutomatica' in _sev
       and 'boolean saidaFx = true' in _wd and 'setSaidaFx' in _rpc
       and '/rp admin saidafx on|off' in _rpc)
 check('5.7.0: os 3 FX novos tem try/catch (nunca derrubam o jogo) e som proprio',
@@ -1867,9 +1870,9 @@ check('5.7.6: TRANSFORMACAO = rajada de raios vermelhos intensos',
       'surtoTransformacao' in _ne2 and 'surtoAte' in _rvfx and 'surto ? 3.4F : 2.6F' in _rvfx)
 check('5.7.6: /terremoto engolir (o chao leva a pessoa, os outros veem)',
       'engolirNoTerremoto' in _ne2 and 'literal("engolir")' in _ncmd)
-check('5.7.6: /saida — animacao de saida usavel no mapa por qualquer admin',
-      'tocarAnimacaoSaida' in _ne2 and 'register(saida)' in _ncmd
-      and 'style == 18' in rd(C + '/ClientEffects.java'))
+check('5.7.9: o /saida SAIU (o dono nao quer comando; a animacao roda no logout)',
+      'register(saida)' not in _ncmd and 'literal("saida")' not in _ncmd
+      and 'saidaAutomatica' in _ne2 and 'style == 18' in rd(C + '/ClientEffects.java'))
 
 
 # ============ 5.7.7: F1 limpo, exílio maior, cinzas, bicho, códigos 3D ======
@@ -1937,9 +1940,58 @@ check('5.7.8: /vazio entrar — o admin testa o exilio sem punir ninguém',
       'entrarNoExilio' in _ne2 and 'literal("entrar")' in _ncmd)
 check('5.7.8: a caixa NAO toca mais ao colocar (música só no 1o clique)',
       'A MÚSICA NÃO TOCA MAIS AO COLOCAR A CAIXA' in _ne2)
-check('5.7.8: o susto do bicho ficou mais forte (vinheta + avanço na tela)',
-      'MELHORIA DO SUSTO' in _nfx and 'avanca' in _nfx)
+check('5.7.8: o susto do bicho avanca pra tela (vinheta + escala extra)',
+      'avanca' in _nfx and 'vinheta preta em volta' in _nfx)
+_nfx2 = rd(C + '/NeptuneFx.java')
+check('5.7.9: A CARA DO BICHO aparece (o vulto escuro vem ANTES, nao cobre o rosto)',
+      'VULTO' in _nfx2 and 'a CARA' in _nfx2
+      and _nfx2.index('VULTO') < _nfx2.index('a CARA')
+      and _nfx2.count('g.blit(BICHO') >= 4)
 
+
+# ============ 5.7.9: som do terremoto, cara do bicho, exílio claro, logout, 3 avisos ======
+_sol = rd(C + '/SolAvisoFx.java')
+_mop = rd(C + '/MorteOpAvisoFx.java')
+_sop = rd(C + '/SangueOpAvisoFx.java')
+_fxd = rd(C + '/FxDraw.java')
+_cgl = rd(C + '/ClientGuiLayers.java')
+check('5.7.9: /terremoto parar CALA o som (StopSound por jogador, como no /vazio desligar)',
+      'ClientboundStopSoundPacket' in _ne2
+      and 'SOM_TERREMOTO_COLAPSO.get().getLocation(), null' in _ne2
+      and 'SOM_RUMBLE.get().getLocation(), null' in _ne2)
+check('5.7.9: o cliente tambem para na mao quando chega o pacote de "desligado"',
+      'getSoundManager()' in _nfx2 and 'sm.stop(' in _nfx2)
+check('5.7.9: exilio MAIOR: chao largo (15 blocos de praca) e superficie plana andavel',
+      'prepararPraca(' in _ne2 and 'CHISELED_POLISHED_BLACKSTONE' in _ne2
+      and 'POLISHED_DEEPSLATE' in _ne2 and 'LIGHT_GRAY_CONCRETE' in _ne2)
+check('5.7.9: a praca tem luz (8 colunas de obsidiana com lanterna de alma)',
+      'for (int i = 0; i < 8; i++)' in _ne2 and 'SOUL_LANTERN' in _ne2)
+check('5.7.9: ANIMACAO DE SAIDA automatica quando o player sai do jogo',
+      'saidaAutomatica' in rd(R + '/ServerEvents.java') and 'sombraChuva' in _ne2
+      and 'se desfez em sombra' in _ne2)
+check('5.7.9: /vazio entrar deixa o admin USAR o lugar (avisa que da pra andar/construir)',
+      'd\u00e1 pra andar, construir' in _nc2 or 'pra andar, construir' in _nc2)
+check('5.7.9: aviso ONEFALLALL (protótipo AvisoSol) — sol dourado + 8 silhuetas + tocha',
+      'class SolAvisoFx' in _sol and 'AS VOZES NA SUA CABE' in _sol
+      and 'NLEGADO = 8' in _sol and 'tocha' in _sol and 'aviso_sol' in _sol)
+check('5.7.9: aviso MORTEOP (protótipo AvisoMorte) — espiral, relógio, crânio, cinzas',
+      'class MorteOpAvisoFx' in _mop and 'ESPIRAL de 3 bra' in _mop
+      and 'REL' in _mop and 'TUDO O QUE COME' in _mop and 'aviso_morte_op' in _mop)
+check('5.7.9: aviso SANGUEOP (protótipo AvisoSangue) — batida, veias, gota, anel tracejado',
+      'class SangueOpAvisoFx' in _sop and 'BPM = 62F' in _sop and 'VEIAS' in _sop
+      and 'GOTA' in _sop and 'aviso_sangue_op' in _sop)
+check('5.7.9: os 3 avisos novos registrados como camada e ligados aos estilos 19/20/21',
+      'SolAvisoFx.registrar(event)' in _cgl and 'MorteOpAvisoFx.registrar(event)' in _cgl
+      and 'SangueOpAvisoFx.registrar(event)' in _cgl
+      and 'style == 19' in _fxp and 'style == 20' in _fxp and 'style == 21' in _fxp)
+check('5.7.9: nomes no comando — onefallall, morteop, sangueop (com TAB)',
+      'case "onefallall" -> 19' in rd(R + '/RPCommands.java')
+      and 'case "morteop" -> 20' in rd(R + '/RPCommands.java')
+      and 'case "sangueop" -> 21' in rd(R + '/RPCommands.java')
+      and 'literal("onefallall")' in rd(R + '/RPCommands.java'))
+check('5.7.9: FxDraw (triangulo, linha, anel, arco, disco em degrade) pros avisos novos',
+      'class FxDraw' in _fxd and 'public static void discoGrad' in _fxd
+      and 'public static void anel' in _fxd and 'public static void texto' in _fxd)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -13,6 +13,64 @@
 
 ---
 
+## 5.7.9 (2026-11-01): o som do terremoto cala, a cara aparece, o exílio é um lugar e 3 avisos novos
+
+> Pedido do dono (depois de testar a 5.7.8): *"parou o terremoto mas o som não
+> parou"*; *"não dá nem para ver o rosto mais do bicho"*; *"melhore a dimensão,
+> deixe ela MAIOR e que seja possível o player VER e ANDAR lá dentro"*; *"não
+> quero essa /saida, quero que a animação apareça quando o player sair do jogo"*;
+> *"do que adianta eu entrar no vazio e não poder fazer nada lá?"*; e três
+> protótipos JavaFX pra portar (`AvisoSol`, `AvisoMorte`, `AvisoSangue`).
+
+### Lições que economizam horas
+
+- **Som do servidor só para com `StopSound`.** `playNotifySound`/`playSound` viram
+  pacote de som no cliente: desligar o evento no servidor **não** cala nada. O
+  padrão certo (usado no `desligarDeus` e agora no `pararTerremoto`) é
+  `player.connection.send(new ClientboundStopSoundPacket(location, null))` —
+  `null` na fonte = todas as instâncias daquele som.
+- **Ordem de desenho é bug silencioso.** A "cara do bicho que não aparecia" era o
+  vulto escuro (mesma textura, 85% de alfa) desenhado DEPOIS dela. Regra: sombra
+  primeiro, sujeito depois, vinheta por último.
+- **Teleporte em dimensão custom usa o heightmap, nunca y fixo.** O `/vazio
+  exilar` jogava em **y=1**; a superfície é **y=9** → a pessoa nascia **dentro da
+  pedra** (não andava, não via, "não podia fazer nada"). `chegadaNoExilio()` usa
+  `getHeight(MOTION_BLOCKING_NO_LEAVES)` + `prepararPraca()` que garante o chão.
+- **Dimensão escura demais é dimensão quebrada.** `ambient_light 0.06` +
+  `has_skylight false` + `fixed_time 18000` = tela preta. O dono quer susto, não
+  cegueira: `0.42` + céu + meio-dia fixo, e o medo vem das partículas/monólitos.
+- **A animação de saída é do LOGOUT, não de comando.** `PlayerLoggedOutEvent` →
+  `NeptuneEventos.saidaAutomatica(...)`: sombra no mundo + glifos + som +
+  `ScreenTextPayload(nome, 18, 9)` (estilo 18 = sprite se desfazendo) + chat.
+- **Protótipos JavaFX → Minecraft**: `AvisoFxUtil.Buf` desenha triângulo com
+  `POSITION_COLOR`; o que falta (anel, arco, disco em degradê, linha grossa,
+  texto centrado) ficou em **`client/FxDraw.java`**. Um `Buf` por flush — depois
+  de `flush()` crie um `new Buf(...)`, senão os vértices antigos são redesenhados.
+
+### Feito nesta versão
+- `NeptuneEventos.pararTerremoto`: `StopSound` dos dois sons do terremoto por
+  jogador; `NeptuneFx.onTerremoto` também para no `SoundManager` quando
+  `ativo=false`.
+- `NeptuneFx.desenharSusto`: vulto → **cara** → olhos → vinheta (a cara sempre
+  aparece; fallback de vulto com olhos se a textura falhar).
+- Exílio: `dimension_type` claro (0,42 / céu / meio-dia / `overworld`),
+  `dimension` com 6 camadas (superfície y=9), `chegadaNoExilio()` +
+  `prepararPraca()` (praça 30×30, 8 colunas com lanterna de alma).
+- `/saida` **removido**; `saidaAutomatica()` no logout (ServerEvents).
+- Avisos **19 onefallall** (`SolAvisoFx`), **20 morteop** (`MorteOpAvisoFx`),
+  **21 sangueop** (`SangueOpAvisoFx`) + `FxDraw`; registrados em
+  `ClientGuiLayers`, despachados em `ClientEffects`, nomeados em `RPCommands`
+  (`/rp admin avisar`) e em `LoreZoneCommands` (`/lorezone aviso`).
+- `check.py` 736 PASS / 0 FAIL; servidor `Done (0.653s)`, 0 exceptions.
+
+### Estado do ambiente (sandbox)
+- O snapshot do workspace **regrediu pro 4.9.6 de novo** nesta sessão: a fonte
+  confiável é o clone do GitHub (`EduCafilista/rp-tag`), sempre conferir
+  `grep VERSION src/main/java/dev/rptag/RPTagMod.java` antes de mexer.
+- JDK 21 em `/var/tmp/java-21`, servidor em `/home/user/run` (recriar com
+  `java -jar nf-installer.jar --installServer`), cliente em `/tmp/mcclient`,
+  LWJGL 3.3.3 em `/tmp/lwjgl`, classpath em `/var/tmp/cp.txt`.
+
 ## 5.5.0 (2026-11-01): aviso ENERGIA, exílio, sombra e aura girando
 
 > Pedido do dono: avisar "ALLFORONE" + "energia" + "conhecimento", vídeo atrás

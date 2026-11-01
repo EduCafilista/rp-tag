@@ -101,6 +101,20 @@ public final class NeptuneFx {
         quakeForca = Math.max(0.0F, Math.min(1.5F, p.forca()));
         quakeFim = System.currentTimeMillis() + Math.max(0, p.segundos()) * 1000L;
         tremorCampea = p.travado();
+        // (5.7.9) BUG DO DONO: o /terremoto parar calava o tremor mas o SOM
+        // seguia tocando. O servidor agora manda o StopSound; aqui é a segunda
+        // rede de proteção — quando chega o pacote de "desligado", o cliente
+        // para na mão qualquer instância dos sons do terremoto que ainda esteja
+        // viva (o áudio do colapso tem 75 s e continuava rolando sozinho).
+        if (!p.ativo()) {
+            try {
+                var sm = Minecraft.getInstance().getSoundManager();
+                sm.stop(RPTagMod.SOM_TERREMOTO_COLAPSO.get().getLocation(), null);
+                sm.stop(RPTagMod.SOM_RUMBLE.get().getLocation(), null);
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: nao consegui calar o som do terremoto no cliente", t);
+            }
+        }
     }
 
     public static void onSaida(NeptunePackets.Saida p) {
@@ -626,37 +640,61 @@ public final class NeptuneFx {
             g.fill(0, 0, w, h, (Math.min(255, alfaV) << 24) | 0x2A0000);
         }
 
-        // ---- a cara do palhaço (textura), com aberração cromática
-        try {
-            float alfa = Math.min(1.0F, entra * 1.6F) * sai;
-            int dx = (int) (4.0F * Math.sin(ms * 0.08)) * 2;
-            // sombra/duplicata vermelha e ciano deslocadas = cara "vibrando"
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 0.25F, 0.25F, alfa * 0.55F);
-            g.blit(BICHO, cx - lado / 2 + dx, cy - lado / 2, 0, 0, lado, lado, lado, lado);
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.30F, 0.55F, 1.0F, alfa * 0.45F);
-            g.blit(BICHO, cx - lado / 2 - dx, cy - lado / 2, 0, 0, lado, lado, lado, lado);
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alfa);
-            g.blit(BICHO, cx - lado / 2, cy - lado / 2, 0, 0, lado, lado, lado, lado);
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
-        } catch (Throwable erro) {
-            // fallback: vulto escuro com dois olhos vermelhos (sempre tem susto)
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
-            int rr = (int) (lado * 0.46F);
-            g.fill(cx - rr, cy - rr, cx + rr, cy + rr, 0xE0000000 | 0x0A0A0A);
-            int olho = Math.max(6, rr / 4);
-            g.fill(cx - rr / 2 - olho, cy - rr / 3, cx - rr / 2 + olho, cy - rr / 3 + olho, 0xFFFF2020);
-            g.fill(cx + rr / 2 - olho, cy - rr / 3, cx + rr / 2 + olho, cy - rr / 3 + olho, 0xFFFF2020);
-        }
-
-        // (5.7.8) MELHORIA DO SUSTO: a cara agora AVANÇA em direção à tela nos
-        // primeiros 0,6 s (escala extra), as bordas ficam pretas em volta dela
-        // (foco no rosto) e o vulto respira por trás — antes era uma imagem
-        // chapada crescendo.
+        // ---- (5.7.9) BUG DO DONO: "não dá nem para ver o rosto mais do
+        // bicho". A causa era a ORDEM: o vulto escuro (a MESMA textura pintada
+        // de preto, 6% maior, com 85% de alfa) era desenhado DEPOIS da cara e
+        // comia o rosto inteiro — sobrava só a silhueta. Agora o vulto vem
+        // PRIMEIRO (ele é o corpo atrás), e a cara é a ÚLTIMA coisa a ser
+        // pintada, opaca, maior e com os olhos acesos por cima.
         try {
             float avanca = 1.0F + 0.35F * (1.0F - cl(ms / 600.0F));
             int lado2 = (int) (lado * avanca);
+            float resp = 0.5F + 0.5F * (float) Math.sin(ms * 0.006);
+
+            // (1) o VULTO — corpo escuro atrás, respirando
+            int lado3 = (int) (lado2 * (1.10F + 0.08F * resp));
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.05F, 0.0F, 0.05F, 0.85F * entra * sai);
+            g.blit(BICHO, cx - lado3 / 2, cy - lado3 / 2 + (int) (12 * resp),
+                    0, 0, lado3, lado3, lado3, lado3);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
+
+            // (2) a CARA — opaca, por cima de tudo, com aberração cromática
+            float alfa = Math.min(1.0F, entra * 1.6F) * sai;
+            int dx = (int) (4.0F * Math.sin(ms * 0.08)) * 2;
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 0.28F, 0.28F, alfa * 0.60F);
+            g.blit(BICHO, cx - lado2 / 2 + dx, cy - lado2 / 2, 0, 0, lado2, lado2, lado2, lado2);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.30F, 0.55F, 1.0F, alfa * 0.50F);
+            g.blit(BICHO, cx - lado2 / 2 - dx, cy - lado2 / 2, 0, 0, lado2, lado2, lado2, lado2);
+            // opaca e um tico mais CLARA que o original: o rosto tem que ler
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.18F, 1.12F, 1.10F, alfa);
+            g.blit(BICHO, cx - lado2 / 2, cy - lado2 / 2, 0, 0, lado2, lado2, lado2, lado2);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
+
+            // (3) os OLHOS acesos por cima da cara (dois borrões vermelhos no
+            // lugar dos olhos da textura — o rosto fica inconfundível)
+            float olhoA = 0.55F * entra * sai;
+            if (olhoA > 0.02F) {
+                int olhoDx = (int) (lado2 * 0.155F);
+                int olhoY = cy - (int) (lado2 * 0.075F);
+                int olhoR = Math.max(3, (int) (lado2 * 0.032F));
+                com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+                com.mojang.blaze3d.systems.RenderSystem.blendFunc(
+                        com.mojang.blaze3d.platform.GlStateManager.SourceFactor.SRC_ALPHA,
+                        com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE);
+                int a8 = (int) (olhoA * 255);
+                for (int i = 3; i >= 1; i--) {
+                    int r = olhoR * i / 2 + 2;
+                    int aa = a8 / (i * 2);
+                    g.fill(cx - olhoDx - r, olhoY - r, cx - olhoDx + r, olhoY + r, (aa << 24) | 0xFF2A10);
+                    g.fill(cx + olhoDx - r, olhoY - r, cx + olhoDx + r, olhoY + r, (aa << 24) | 0xFF2A10);
+                }
+                g.fill(cx - olhoDx - olhoR / 2, olhoY - olhoR / 2, cx - olhoDx + olhoR / 2, olhoY + olhoR / 2, (a8 << 24) | 0xFFE8D0);
+                g.fill(cx + olhoDx - olhoR / 2, olhoY - olhoR / 2, cx + olhoDx + olhoR / 2, olhoY + olhoR / 2, (a8 << 24) | 0xFFE8D0);
+                com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
+            }
+
+            // (4) vinheta preta em volta (foco no rosto, sem tapar o rosto)
             float aura = 0.55F * entra * sai;
-            // vinheta preta em volta (o mundo some, fica só a cara)
             for (int i = 0; i < 16; i++) {
                 float t2 = i / 16f;
                 int alfaB = (int) (aura * 255 * (1 - t2) * 0.5f);
@@ -670,15 +708,15 @@ public final class NeptuneFx {
                 g.fill(0, 0, m, h, cor);
                 g.fill(w - m, 0, w, h, cor);
             }
-            // vulto escuro atrás, respirando (dá corpo pro bicho)
-            float resp = 0.5F + 0.5F * (float) Math.sin(ms * 0.006);
-            int lado3 = (int) (lado2 * (1.06F + 0.10F * resp));
-            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.05F, 0.0F, 0.05F, 0.85F * entra * sai);
-            g.blit(BICHO, cx - lado3 / 2, cy - lado3 / 2 + (int) (12 * resp),
-                    0, 0, lado3, lado3, lado3, lado3);
+        } catch (Throwable erro) {
+            // fallback: vulto escuro com dois olhos vermelhos (sempre tem susto)
             com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
-        } catch (Throwable ignorado) {
-            // sem drama: se a vinheta falhar, a cara continua aparecendo
+            int rr = (int) (lado * 0.46F);
+            g.fill(cx - rr, cy - rr, cx + rr, cy + rr, 0xE0000000 | 0x0A0A0A);
+            int olho = Math.max(6, rr / 4);
+            g.fill(cx - rr / 2 - olho, cy - rr / 3, cx - rr / 2 + olho, cy - rr / 3 + olho, 0xFFFF2020);
+            g.fill(cx + rr / 2 - olho, cy - rr / 3, cx + rr / 2 + olho, cy - rr / 3 + olho, 0xFFFF2020);
+            RPTagMod.LOGGER.warn("RP Tag: desenho da cara do bicho falhou (vulto no lugar)", erro);
         }
 
         // flash branco curtíssimo no primeiro instante (só pra "estourar")

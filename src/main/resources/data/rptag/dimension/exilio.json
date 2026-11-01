@@ -3,15 +3,16 @@
   "generator": {
     "type": "minecraft:flat",
     "settings": {
-      "biome": "minecraft:the_void",
+      "biome": "minecraft:stony_shore",
       "lakes": false,
       "features": false,
       "layers": [
         { "block": "minecraft:bedrock", "height": 1 },
-        { "block": "minecraft:deepslate", "height": 4 },
-        { "block": "minecraft:blackstone", "height": 4 },
+        { "block": "minecraft:deepslate", "height": 3 },
+        { "block": "minecraft:blackstone", "height": 2 },
         { "block": "minecraft:tuff", "height": 2 },
-        { "block": "minecraft:sculk", "height": 1 }
+        { "block": "minecraft:sculk", "height": 1 },
+        { "block": "minecraft:light_gray_concrete", "height": 1 }
       ],
       "structure_overrides": []
     }

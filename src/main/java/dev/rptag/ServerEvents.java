@@ -174,26 +174,22 @@ public final class ServerEvents {
         LoreZones.clearSeen(event.getEntity().getUUID());
         // (5.7.0) ANIMACAO DE SAIDA: quem FICA vê o bonequinho do jogador que
         // saiu se desfazendo em código (o próprio que saiu não vê nada, claro).
+        // (5.7.9) O DONO PEDIU: "não quero essa /saida, quero que a animação
+        // apareça quando o player sair do jogo". Ela agora é AUTOMÁTICA e
+        // SEMPRE roda: coluna de sombra no lugar, códigos em volta, som da
+        // expulsão e o anúncio no chat (NeptuneEventos.saidaAutomatica).
         try {
             if (!(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer saiu)) {
                 return;
             }
             var server = saiu.getServer();
-            if (server == null || !RPWorldData.get(server).saidaFx()) {
+            if (server == null) {
                 return;
             }
-            String nome = saiu.getName().getString();
-            ScreenTextPayload payload = new ScreenTextPayload(nome, 9, 18);
-            // (5.7.7) os CÓDIGOS VERDES em volta do corpo, NO MUNDO, na posição
-            // de onde ele desconectou — é isso que "digitaliza" o personagem.
-            dev.rptag.NeptunePackets.Codigos glifos = new dev.rptag.NeptunePackets.Codigos(
-                    saiu.getX(), saiu.getY(), saiu.getZ(), 6500, nome);
-            for (net.minecraft.server.level.ServerPlayer outro : server.getPlayerList().getPlayers()) {
-                if (outro != saiu) {
-                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(outro, payload);
-                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(outro, glifos);
-                }
-            }
+            // (5.7.9) uma chamada só: sombra + códigos + som + anúncio.
+            // A animação deixou de depender do /rp admin saidafx: ela é a
+            // despedida do personagem e roda sempre que alguém sai do jogo.
+            dev.rptag.NeptuneEventos.saidaAutomatica(saiu);
         } catch (Throwable t) {
             dev.rptag.RPTagMod.LOGGER.warn("RP Tag: animacao de saida falhou ({})", t.toString());
         }

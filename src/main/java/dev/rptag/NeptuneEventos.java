@@ -333,6 +333,20 @@ public final class NeptuneEventos {
             p.removeEffect(MobEffects.DIG_SLOWDOWN);
             imobilizar(p, false);
             pesado(p, false);
+            // (5.7.9) BUG DO DONO: "/terremoto parar calava o tremor mas o SOM
+            // continuava". O áudio do colapso é tocado NO SERVIDOR
+            // (playNotifySound = pacote de som), então o cliente só para de
+            // tocar se RECEBER o StopSound — exatamente como foi feito no
+            // /vazio desligar. Manda parar os dois sons do evento em cada
+            // cliente (nome do som + fonte nula = mata todas as instâncias).
+            try {
+                p.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(
+                        RPTagMod.SOM_TERREMOTO_COLAPSO.get().getLocation(), null));
+                p.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(
+                        RPTagMod.SOM_RUMBLE.get().getLocation(), null));
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: nao consegui parar o som do terremoto", t);
+            }
         }
         fecharFendas(server);
         enviarTerremoto(server, false, 0.0F, 0, false);
@@ -1780,6 +1794,63 @@ public final class NeptuneEventos {
         return n;
     }
 
+    /**
+     * (5.7.9) A ANIMAÇÃO DE SAÍDA QUE O DONO QUER — SOZINHA.
+     *
+     * <p>Ele recusou o comando: <i>"não quero essa /saida, quero que a animação
+     * apareça quando o player sair do jogo"</i>. Então ela dispara no logout:
+     * quem FICA vê, na posição de onde a pessoa desconectou, o corpo sendo
+     * engolido — a coluna de sombra sobe em espiral, os códigos do glifo
+     * piscam em volta, o som da expulsão toca e o chat anuncia. O que saiu não
+     * vê nada (ele já foi), e é assim que tem que ser.
+     */
+    public static void saidaAutomatica(ServerPlayer saiu) {
+        try {
+            if (!(saiu.level() instanceof ServerLevel nv)) {
+                return;
+            }
+            Vec3 pos = saiu.position();
+            String nome = saiu.getName().getString();
+            // (1) o corpo sumindo: coluna de sombra no lugar exato
+            for (int passo = 0; passo < 4; passo++) {
+                sombraChuva(nv, pos.add(0, passo * 0.55, 0), 7 - passo);
+            }
+            nv.sendParticles(ParticleTypes.SOUL, pos.x, pos.y + 0.7, pos.z, 26,
+                    0.35, 0.9, 0.35, 0.02);
+            nv.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, pos.x, pos.y + 0.4, pos.z, 18,
+                    0.30, 0.7, 0.30, 0.01);
+            // (2) os CÓDIGOS em volta do corpo + a placa com o nome (só pra quem fica)
+            NeptunePackets.Codigos glifos = new NeptunePackets.Codigos(
+                    pos.x, pos.y, pos.z, 6500, nome);
+            // estilo 18 = A ANIMACAO DE SAIDA em si (o sprite do jogador se
+            // desfazendo em chuva de código, na tela de quem fica)
+            ScreenTextPayload pacote = new ScreenTextPayload(nome, 18, 9);
+            for (ServerPlayer outro : nv.getServer().getPlayerList().getPlayers()) {
+                if (outro == saiu) {
+                    continue;
+                }
+                PacketDistributor.sendToPlayer(outro, glifos);
+                PacketDistributor.sendToPlayer(outro, pacote);
+                if (outro.position().distanceTo(pos) <= 32.0) {
+                    outro.playNotifySound(RPTagMod.SOM_EXPULSAO.get(), SoundSource.AMBIENT, 0.9F, 0.8F);
+                    outro.displayClientMessage(Component.literal(
+                            "\u00a78" + nome + " se desfez em sombra."), true);
+                }
+            }
+            // (3) o som no mundo + o aviso no chat
+            nv.playSound(null, BlockPos.containing(pos), RPTagMod.SOM_EXPULSAO.get(),
+                    SoundSource.AMBIENT, 1.0F, 0.8F);
+            nv.playSound(null, BlockPos.containing(pos),
+                    net.minecraft.sounds.SoundEvents.AMBIENT_CAVE.value(),
+                    SoundSource.AMBIENT, 0.5F, 0.7F);
+            nv.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
+                    "\u00a78" + nome + " \u00a77saiu do jogo \u2014 e as sombras o levaram.")
+                    .withStyle(ChatFormatting.DARK_GRAY), false);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: animacao automatica de saida falhou (o jogo segue)", t);
+        }
+    }
+
     // ================================================================ EXÍLIO
     /**
      * (5.7.6) O EXÍLIO COM ANIMAÇÃO — "deve ter uma animação do player sendo
@@ -1822,9 +1893,92 @@ public final class NeptuneEventos {
                         .append(Component.literal(" para fora do universo").withStyle(ChatFormatting.DARK_GRAY)),
                 false);
         alvo.displayClientMessage(Component.literal(
-                "\u00a74\u00a7lN\u00c3O H\u00c1 MAIS CH\u00c3O.\n"
-                + "\u00a78Não há nada aqui. Nem chão, nem céu, nem volta.\n"
+                "\u00a74\u00a7lVOC\u00ca FOI EXPULSO DO MUNDO.\n"
+                + "\u00a78Uma planície de pedra cinzenta até onde a vista alcança.\n"
                 + "\u00a78(um admin pode te tirar com /vazio soltar <jogador>)"), false);
+    }
+
+    // ============================================================ EXÍLIO 5.7.9
+    /** (5.7.9) ponto de chegada: SUPERFÍCIE da praça (nunca mais dentro da pedra). */
+    private static Vec3 chegadaNoExilio(ServerLevel exilio) {
+        exilio.getChunk(0, 0);                    // garante o chunk carregado
+        prepararPraca(exilio);
+        int y = exilio.getHeight(
+                net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0);
+        if (y <= exilio.getMinBuildHeight() + 2) {
+            y = 12;
+        }
+        return new Vec3(0.5, y + 0.25, 0.5);
+    }
+
+    /** (5.7.9) a PRAÇA da chegada: chão firme, 8 colunas com lanterna de alma e a
+     * marca no centro. Feita uma vez por sessão (idempotente e barata). */
+    private static boolean pracaFeita = false;
+
+    private static void prepararPraca(ServerLevel exilio) {
+        if (pracaFeita) {
+            return;
+        }
+        pracaFeita = true;
+        try {
+            exilio.getChunk(0, 0);
+            int y = exilio.getHeight(
+                    net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0);
+            if (y <= exilio.getMinBuildHeight() + 2) {
+                y = 12;
+            }
+            final int R = 15;
+            for (int dx = -R; dx <= R; dx++) {
+                for (int dz = -R; dz <= R; dz++) {
+                    double d = Math.hypot(dx, dz);
+                    if (d > R) {
+                        continue;
+                    }
+                    BlockPos chao = new BlockPos(dx, y - 1, dz);
+                    BlockState bloco;
+                    if (d < 2.2) {
+                        bloco = Blocks.CHISELED_POLISHED_BLACKSTONE.defaultBlockState();
+                    } else if (d > R - 1.5) {
+                        bloco = Blocks.POLISHED_BLACKSTONE.defaultBlockState();
+                    } else if (Math.abs(dx) <= 1 || Math.abs(dz) <= 1) {
+                        bloco = Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState();
+                    } else {
+                        bloco = Blocks.POLISHED_DEEPSLATE.defaultBlockState();
+                    }
+                    exilio.setBlockAndUpdate(chao, bloco);
+                    // tira o que estiver em cima (nada de teto, nada de parede)
+                    for (int dy = 0; dy <= 6; dy++) {
+                        BlockPos ar = chao.above(1 + dy);
+                        if (!exilio.getBlockState(ar).isAir()) {
+                            exilio.setBlockAndUpdate(ar, Blocks.AIR.defaultBlockState());
+                        }
+                    }
+                }
+            }
+            // 8 colunas de obsidiana com lanterna de alma (luz no meio do nada)
+            for (int i = 0; i < 8; i++) {
+                double a = i * Math.PI * 2 / 8;
+                int px = (int) Math.round(Math.cos(a) * (R - 2));
+                int pz = (int) Math.round(Math.sin(a) * (R - 2));
+                for (int k = 0; k < 4; k++) {
+                    exilio.setBlockAndUpdate(new BlockPos(px, y + k, pz),
+                            Blocks.OBSIDIAN.defaultBlockState());
+                }
+                exilio.setBlockAndUpdate(new BlockPos(px, y + 4, pz),
+                        Blocks.SOUL_LANTERN.defaultBlockState());
+            }
+            // a marca do centro: cruz de lanternas apontando os 4 rumos
+            for (int i = 0; i < 4; i++) {
+                double a = i * Math.PI * 0.5;
+                int px = (int) Math.round(Math.cos(a) * 4);
+                int pz = (int) Math.round(Math.sin(a) * 4);
+                exilio.setBlockAndUpdate(new BlockPos(px, y, pz),
+                        Blocks.SOUL_LANTERN.defaultBlockState());
+            }
+            RPTagMod.LOGGER.info("RP Tag: praça do exílio pronta (y={})", y);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: praça do exílio falhou (a dimensão segue andável)", t);
+        }
     }
 
     /** (5.7.8) admin entra no exílio pra testar o ambiente (sem punir ninguém). */
@@ -2002,7 +2156,13 @@ public final class NeptuneEventos {
                     }
                 }
             }
-            alvo.teleportTo(destino, 0.5, 1.0, 0.5, java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
+            // (5.7.9) BUG DO DONO: "entro no vazio e não posso fazer nada".
+            // O teleporte era pra y=1.0 — DENTRO da pedra (a superfície é y≈9),
+            // então a pessoa nascia sufocada no escuro, sem andar e sem ver.
+            // Agora a chegada é na superfície da praça, com o chão garantido.
+            Vec3 chegada = chegadaNoExilio(destino);
+            alvo.teleportTo(destino, chegada.x, chegada.y, chegada.z,
+                    java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: exilio falhou (o jogo segue)", t);
         }
