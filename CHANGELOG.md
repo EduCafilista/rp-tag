@@ -1,5 +1,77 @@
 # Changelog
 
+## 5.5.0 — AVISO ENERGIA, O EXÍLIO E A SOMBRA — 2026-11-01
+
+> "agora vai ter um novo avisar ALLFORONE" · "esse video deve ficar atras do
+> player quando ele abrir o tablet" · "o exilar do vazio deve mandar para outra
+> dimensao (crie uma nova dimensao para isso) um lugar tudo preto e sem nada la"
+> · "o apagar deve fazer tipo uma sombra e nao gostei desse quadrado preto na
+> minha tela quando uso os comandos" · "os efeitos ao ligar devem circular o
+> player, e tira os que estao na cabeca dele" · avisares "energia" e
+> "conhecimento" + "nova animacao de saida"
+
+### 1. AVISO ENERGIA (estilo 15) — `/rp admin avisar @a energia <texto>`
+Porte fiel do protótipo do dono (`ywqg53.java`, `AvisoEnergiaOP`): a Energia de
+Ordem Paranormal (caos, transformação, inconsistência).
+- **Núcleo vivo:** 4 formas com "lobos" que mudam de frequência sozinhos — a
+  forma **nunca** fica igual.
+- **Raios** recursivos (glow violeta + núcleo branco) saindo do núcleo, raios
+  atravessando a tela (a "anarquia") e 180 faíscas em caos sendo sugadas.
+- **Glitch:** separação ciano/magenta no texto, fatias deslocadas, tremor e
+  clarões; texto que **decodifica** de glifos (`#%&01<>`) para letras.
+- **HUD:** círculos tracejados de cobre, marcas radiais e medidor de
+  **ENTROPIA** (55%..93%, avisa "CRÍTICO" quando passa de 90%).
+- **Moldura** de cobre com faísca correndo pela borda, scanlines, vinheta e
+  ligar de CRT (a tela abre numa fresta). Dura 11 s.
+- Ligado em: `ClientGuiLayers`, `ClientEffects` (estilo 15), `/rp admin avisar`
+  (`energia`), `/rpfx teste energia` e no `nomeEstilo` do feedback.
+
+### 2. O EXÍLIO — dimensão NOVA `rptag:exilio` (tudo preto e sem nada)
+`/vazio exilar <jogador>` agora manda pra uma dimensão feita só pra isso:
+- tipo `rptag:exilio`: **sem céu** (`has_skylight: false`), **luz ambiente 0**,
+  meia-noite fixa (`fixed_time: 18000`), efeitos do End (o mais escuro que o
+  vanilla tem sem texture pack);
+- gerador flat com **UM bloco de concreto preto** em y=0 — o jogador antes caía
+  pra sempre em `rptag:vazio` (que não tem chão nenhum);
+- **camada de cliente**: quem está lá recebe um preto macio por cima de tudo
+  (0,70 de alfa + vinheta) e, de vez em quando, um "não há nada aqui" quase
+  invisível — pra não parecer que o jogo travou.
+- `/vazio soltar <jogador>` traz de volta pro spawn do overworld (o admin nunca
+  prende ninguém pra sempre).
+
+### 3. `/vazio apagar` virou SOMBRA (e o quadrado preto morreu)
+O que aparecia na tela era literalmente `g.fill(w/2-r, h/2-r, w/2+r, h/2+r,
+preto)` — um **retângulo chapado** no meio do monitor. Trocado por uma sombra
+de verdade, toda em geometria com degradê (sem canto nenhum):
+- **3 discos radiais** (48 fatias) — borrão liso, centro escuro, borda que some;
+- **silhueta** de quem está sendo apagado se desfazendo de baixo pra cima;
+- **16 braços de sombra** entrando pelas bordas (curvas que respiram);
+- **aro fino roxo** na borda da sombra (pra ler como sombra, não como buraco) e
+  vinheta que fecha a tela. Vale pro `apagar` e pro `exilar`.
+
+### 4. A AURA DO VAZIO agora CIRCULA o player
+O dono mandou um print com as chamas **azuis em cima da cabeça**. Era o
+`SCULK_SOUL` nascendo em `y + 2,1`. **Removido.** No lugar, **três anéis
+horizontais** girando em sentidos diferentes:
+- peito (y+1,05): 10 de tinta preta, girando rápido no sentido horário;
+- cintura (y+0,62): 6 de fumaça escura, girando ao contrário;
+- tornozelo (y+0,12): 6 de cinza, girando devagar.
+Nada acima da cabeça, nada empilhado: o efeito **roda em volta** do personagem.
+
+### 5. Pendente (arquivos que vieram vazios do catbox)
+`1w29s3.java` (ALLFORONE), `m0qjal.java` (nova animação de saída),
+`7q9b95.java` (CONHECIMENTO) e `p5z3m3.mp4` (vídeo atrás do player no tablet)
+baixaram com **0 byte** (o catbox respondeu HTTP 200 com `content-length: 0`).
+Nada foi implementado no chute — é só reenviar que eu porto igual ao ENERGIA.
+
+### Testes
+- `check.py`: **625 PASS / 0 FAIL** (15 checks novos de 5.5.0).
+- `javac`: 0 erro. Servidor NeoForge 21.1.249 real: `Done (1.142s)`, mod
+  carregado como **5.5.0**, dimensão `rptag:exilio` carregada (forceload ok),
+  chão de concreto preto confirmado em y=0 com ar acima, `/vazio soltar` e
+  `/vazio exilar` parseando, `/terremoto iniciar 15` + `parar` sem erro,
+  **0 ERROR/exception** no log.
+
 ## 5.4.1 — TERREMOTO SEM CHIADO DE QUEIMADO E MAIS LONGO — 2026-11-01
 
 > "no som do terremoto deve continuar por mais tempo, e esse som de coisa se

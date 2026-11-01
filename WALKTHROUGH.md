@@ -13,11 +13,50 @@
 
 ---
 
+## 5.5.0 (2026-11-01): aviso ENERGIA, exílio, sombra e aura girando
+
+> Pedido do dono: avisar "ALLFORONE" + "energia" + "conhecimento", vídeo atrás
+> do player no tablet, exílio em dimensão nova "tudo preto e sem nada", o
+> apagar virando SOMBRA (o quadrado preto na tela era meu `g.fill`), efeitos do
+> `/vazio ligar` CIRCULANDO o player (sem nada na cabeça) e nova animação de
+> saída.
+
+### Feito nesta versão
+- **AVISO ENERGIA (estilo 15)**: `client/EnergiaAvisoFx.java` — porte do
+  protótipo JavaFX do dono (`ywqg53.java`). Núcleo de 4 formas que trocam de
+  lobos, raios recursivos, 180 faíscas, glitch (fatiado + separação
+  ciano/magenta), texto que decodifica de glifos, medidor de ENTROPIA, moldura
+  de cobre com faísca correndo, scanlines, vinheta e ligar de CRT. 11 s.
+  Ligado em `ClientGuiLayers`, `ClientEffects` (style 15), `/rp admin avisar
+  <alvos> energia <texto>`, `/rpfx teste energia` e no `nomeEstilo`.
+- **Dimensão `rptag:exilio`**: `data/rptag/dimension/exilio.json` +
+  `dimension_type/exilio.json`. Sem céu, luz ambiente 0, meia-noite fixa,
+  gerador flat com 1 camada de `black_concrete` em y=0. O `/vazio exilar`
+  agora manda pra lá e pousa em **y=1** (antes ia a y=120 num mundo sem chão e
+  o player caía pra sempre). Camada de cliente `desenharExilio` fecha a tela em
+  preto macio pra quem está na dimensão. `/vazio soltar <jogador>` devolve pro
+  spawn do overworld.
+- **`/vazio apagar` = SOMBRA**: o retângulo chapado (`g.fill` no centro) saiu.
+  No lugar: 3 discos radiais (48 fatias), silhueta do apagado se desfazendo de
+  baixo pra cima, 16 braços de sombra nas bordas, aro roxo e vinheta. Tudo em
+  `Buf` (POSITION_COLOR), então zero canto duro.
+- **Aura do vazio circulando**: o `SCULK_SOUL` em `y+2,1` (as chamas azuis na
+  cabeça) foi REMOVIDO. Agora são 3 anéis horizontais girando em sentidos
+  diferentes: peito (tinta), cintura (fumaça) e tornozelo (cinza).
+- `check.py`: **625 PASS / 0 FAIL** (16 checks novos de 5.5.0).
+
+### Pendente (arquivos chegaram VAZIOS)
+`1w29s3.java` (ALLFORONE), `m0qjal.java` (nova animação de saída),
+`7q9b95.java` (CONHECIMENTO), `p5z3m3.mp4` (vídeo atrás do player no tablet):
+o catbox respondeu **HTTP 200 com `content-length: 0`**. Não implementar no
+chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grande
+às vezes precisa de outro host).
+
 ## 1. Estado atual
 
 | Item | Valor |
 |---|---|
-| Versão | **5.4.1** (2026-11-01) — EVENTO NEPTUNE (terremoto sem chiado, som de 75 s) |
+| Versão | **5.5.0** (2026-11-01) — aviso ENERGIA, dimensão rptag:exilio, sombra do apagar, aura circulando |
 | Commit | (ver `git log`) |
 | Jar | `rptag-5.4.1.jar` (**93.295.612 B**) |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |

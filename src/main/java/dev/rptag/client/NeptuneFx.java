@@ -2,6 +2,8 @@ package dev.rptag.client;
 
 import dev.rptag.NeptunePackets;
 import dev.rptag.RPTagMod;
+import static dev.rptag.client.AvisoFxUtil.*;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -49,6 +51,8 @@ public final class NeptuneFx {
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/nebulosa.png");
     private static final ResourceLocation BICHO =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/bicho.png");
+    private static final ResourceLocation DIM_EXILIO =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "exilio");
     private static final ResourceLocation GLOW_VERDE =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/glow_verde.png");
     private static final ResourceLocation GLOW_BRANCO =
@@ -179,6 +183,11 @@ public final class NeptuneFx {
         } catch (Throwable t) {
             nebOff = true;
             RPTagMod.LOGGER.error("RP Tag: camada da nebulosa desligada", t);
+        }
+        try {
+            desenharExilio(g);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: camada do exilio desligada", t);
         }
         try {
             desenharAuraDeus(g);
@@ -355,7 +364,14 @@ public final class NeptuneFx {
         }
     }
 
-    // ---- NEBULOSA: o espaço se abrindo (vazio apagando alguém)
+    // ---- SOMBRA: o "apagar da existência" (5.5.0)
+    // O dono reclamou do QUADRADO PRETO que aparecia no meio da tela quando
+    // ele usava /vazio apagar ou /vazio exilar: era literalmente um
+    // g.fill(w/2-r, h/2-r, w/2+r, h/2+r, preto) — um retângulo chapado.
+    // Agora o efeito é uma SOMBRA de verdade: um borrão radial escuro (sem
+    // canto nenhum, feito de triângulos em degradê), a silhueta de quem está
+    // sendo apagado se desfazendo no meio e braços de sombra entrando pelas
+    // bordas. Nada de retângulo.
     private static void desenharNebulosa(GuiGraphics g) {
         if (nebOff || nebInicio == 0L) {
             return;
@@ -365,17 +381,124 @@ public final class NeptuneFx {
             return;
         }
         long dur = Math.max(1L, nebFim - nebInicio);
-        float k = (now - nebInicio) / (float) dur;
-        float pico = (float) Math.sin(Math.PI * Math.min(1.0F, Math.max(0.0F, k)));   // sobe e desce
+        float k = cl((now - nebInicio) / (float) dur);
+        float pico = sin((float) Math.PI * k);                 // 0 -> 1 -> 0
         int w = g.guiWidth();
         int h = g.guiHeight();
+        float escala = Math.min(w, h);
+        float cx = w / 2f;
+        float cy = h * 0.52f;
+        float forca = nebForte ? 1.0F : 0.72F;
+        float semente = nebInicio * 0.001F;
+
+        AvisoFxUtil.preparar(g);
+        AvisoFxUtil.Buf b = new AvisoFxUtil.Buf(g.pose().last().pose());
+
+        // (a) lavagem leve da tela (não é caixa: cobre tudo, sem borda)
+        b.rect(0, 0, w, h, col(0x060309, 0.26f * pico * forca));
+
+        // (b) a sombra crescendo: 3 discos em degradê empilhados = borrão
+        //     radial liso (48 fatias cada, nenhum canto aparece)
+        float raio = escala * (0.12f + 0.42f * pico) * forca;
+        disco(b, cx, cy + escala * 0.02f, raio * 1.55f, 0x0B0713, 0.55f * pico, 48);
+        disco(b, cx, cy, raio * 1.05f, 0x06040B, 0.78f * pico, 48);
+        disco(b, cx, cy, raio * 0.55f, 0x000000, 0.92f * pico, 48);
+
+        // (c) a SILHUETA de quem está sendo apagado, se desfazendo de baixo
+        //     pra cima (o corpo vira sombra e escorre)
+        float alto = escala * 0.30f;
+        float sobe = escala * 0.04f * sin(now * 0.004f);
+        float cabeca = alto * 0.20f;
+        float ombroY = cy - alto * 0.22f + sobe;
+        float alfaSil = 0.55f * pico;
+        // cabeça
+        disco(b, cx, ombroY - cabeca * 0.9f, cabeca, 0x000000, alfaSil, 24);
+        // tronco (trapézio) e braços
+        b.quad(cx - escala * 0.055f, ombroY, col(0x000000, alfaSil),
+                cx + escala * 0.055f, ombroY, col(0x000000, alfaSil),
+                cx + escala * 0.075f, ombroY + alto * 0.62f, col(0x000000, alfaSil * 0.55f),
+                cx - escala * 0.075f, ombroY + alto * 0.62f, col(0x000000, alfaSil * 0.55f));
+        b.quad(cx - escala * 0.075f, ombroY + alto * 0.02f, col(0x000000, alfaSil * 0.9f),
+                cx - escala * 0.050f, ombroY, col(0x000000, alfaSil * 0.9f),
+                cx - escala * 0.105f, ombroY + alto * 0.45f, col(0x000000, 0.0f),
+                cx - escala * 0.125f, ombroY + alto * 0.40f, col(0x000000, 0.0f));
+        b.quad(cx + escala * 0.075f, ombroY + alto * 0.02f, col(0x000000, alfaSil * 0.9f),
+                cx + escala * 0.050f, ombroY, col(0x000000, alfaSil * 0.9f),
+                cx + escala * 0.105f, ombroY + alto * 0.45f, col(0x000000, 0.0f),
+                cx + escala * 0.125f, ombroY + alto * 0.40f, col(0x000000, 0.0f));
+
+        // (d) braços de sombra entrando pelas bordas (curvas, não retas)
+        for (int i = 0; i < 16; i++) {
+            float ang = i * TAU / 16f + semente;
+            float comp = escala * (0.30f + 0.34f * pico) * (0.65f + 0.35f * rnd(i, 3));
+            float x0 = cx + cos(ang) * escala * 0.85f;
+            float y0 = cy + sin(ang) * escala * 0.85f;
+            float segLen = comp / 7f;
+            float cauda = 0.42f * pico;
+            for (int j = 0; j < 7; j++) {
+                float u0 = j / 7f;
+                float u1 = (j + 1) / 7f;
+                float desvio0 = sin(u0 * 6.0f + now * 0.004f + i) * escala * 0.05f;
+                float desvio1 = sin(u1 * 6.0f + now * 0.004f + i) * escala * 0.05f;
+                float px0 = x0 + (cx - x0) * u0 + cos(ang + 1.5708f) * desvio0;
+                float py0 = y0 + (cy - y0) * u0 + sin(ang + 1.5708f) * desvio0;
+                float px1 = x0 + (cx - x0) * u1 + cos(ang + 1.5708f) * desvio1;
+                float py1 = y0 + (cy - y0) * u1 + sin(ang + 1.5708f) * desvio1;
+                float al = cauda * (1f - u0 * 0.55f);
+                b.seg(px0, py0, px1, py1, 3.2f + 1.6f * sin(now * 0.006f + i),
+                        col(0x090610, al), col(0x090610, al * 0.75f));
+            }
+        }
+
+        // (e) a "borda" da sombra: uma linha fina roxa, pra ler como sombra
+        //     e não como buraco chapado
+        b.anel(cx, cy, raio * 1.02f, 64, 1.6f, semente, 0x3A2A55, 0.35f * pico);
+
+        // (f) vinheta fechando nas bordas (degradê, sem canto)
+        b.vinheta(w, h, escala * 0.30f, 0x000000, 0.62f * pico * forca);
+
+        b.flush();
+        AvisoFxUtil.normal();
+    }
+
+    /** Disco em degradê radial: cor cheia no centro, transparente na borda. */
+    private static void disco(AvisoFxUtil.Buf b, float cx, float cy, float r, int rgb, float a, int fatias) {
+        for (int i = 0; i < fatias; i++) {
+            float a0 = i * TAU / fatias;
+            float a1 = (i + 1) * TAU / fatias;
+            b.tri(cx, cy, col(rgb, a),
+                    cx + cos(a0) * r, cy + sin(a0) * r, col(rgb, 0f),
+                    cx + cos(a1) * r, cy + sin(a1) * r, col(rgb, 0f));
+        }
+    }
+
+    // ---- EXÍLIO (5.5.0): quem está em rptag:exilio vê TUDO PRETO.
+    // A dimensão já é escura por dados (sem céu, meia-noite fixa, luz 0), mas
+    // o céu do End ainda desenha estrelas — aqui a tela fecha num preto macio
+    // pra não sobrar nada. É só o que o dono pediu: "tudo preto e sem nada lá".
+    private static void desenharExilio(GuiGraphics g) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || !DIM_EXILIO.equals(mc.level.dimension().location())) {
+            return;
+        }
+        int w = g.guiWidth();
+        int h = g.guiHeight();
+        long now = System.currentTimeMillis();
+        float respira = 0.5F + 0.5F * (float) Math.sin(now * 0.0009);
         com.mojang.blaze3d.systems.RenderSystem.enableBlend();
-        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.32F, 0.26F, 0.55F, 0.62F * pico);
-        g.blit(NEBULOSA, 0, 0, 0, 0, w, h, w, h);
-        // buraco negro pulsando no centro
-        int r = (int) (Math.min(w, h) * (0.10F + 0.16F * pico * (nebForte ? 1.6F : 1.0F)));
-        g.fill(w / 2 - r, h / 2 - r, w / 2 + r, h / 2 + r, ((int) (230 * pico) << 24) | 0x000000);
+        com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
+        g.fill(0, 0, w, h, (int) ((0.70F + 0.03F * respira) * 255) << 24 | 0x000000);
+        // vinheta macia (canto sem borda dura)
+        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0, 0, 0, 0.55F + 0.10F * respira);
+        int lado = (int) (Math.max(w, h) * 1.35F);
+        g.blit(NEBULOSA, w / 2 - lado / 2, h / 2 - lado / 2, 0, 0, lado, lado, lado, lado);
         com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
+        // quase nada de texto, e bem apagado — só pra não parecer travado
+        if ((now / 7000L) % 2 == 0) {
+            String frase = "não há nada aqui";
+            int larg = mc.font.width(frase);
+            g.drawString(mc.font, frase, (w - larg) / 2, (int) (h * 0.84F), 0x22000000 | 0x1A0E24, false);
+        }
     }
 
     // ---- AURA do deus: escurece as bordas de quem está perto dele?

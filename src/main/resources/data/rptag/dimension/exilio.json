@@ -1,0 +1,15 @@
+{
+  "type": "rptag:exilio",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:the_void",
+      "lakes": false,
+      "features": false,
+      "layers": [
+        { "block": "minecraft:black_concrete", "height": 1 }
+      ],
+      "structure_overrides": []
+    }
+  }
+}

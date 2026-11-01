@@ -26,7 +26,8 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  *
  * /vazio ligar | desligar         o admin vira o DEUS DO VAZIO (aura + trilha + medo)
  * /vazio apagar <jogador>         "---- vazio --- apagou X da existência"
- * /vazio exilar <jogador>         manda pra dimensão rptag:vazio
+ * /vazio exilar <jogador>         manda pra dimensão rptag:exilio (tudo preto)
+ * /vazio soltar <jogador>         traz de volta do exílio
  *
  * /bicho aqui                     põe a caixinha de música onde você está
  * /bicho <x> <y> <z>              põe a caixinha no lugar marcado
@@ -119,6 +120,16 @@ public final class NeptuneCommands {
                     return Command.SINGLE_SUCCESS;
                 })));
 
+        // (5.5.0) tira do EXÍLIO (o admin sempre devolve o jogador)
+        vazio.then(Commands.literal("soltar")
+                .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
+                    ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                    NeptuneEventos.soltarDoExilio(alvo);
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a7a" + alvo.getName().getString() + " voltou do ex\u00edlio."), true);
+                    return Command.SINGLE_SUCCESS;
+                })));
+
         vazio.then(Commands.literal("exilar")
                 .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
                     ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
@@ -174,7 +185,8 @@ public final class NeptuneCommands {
                     + "\u00a7e/terremoto parar \u00a77— desliga\n"
                     + "\u00a7e/vazio ligar|desligar \u00a77— aura + trilha + medo (o Deus do Vazio)\n"
                     + "\u00a7e/vazio apagar <jogador> \u00a77— apaga da existência\n"
-                    + "\u00a7e/vazio exilar <jogador> \u00a77— manda pra dimensão rptag:vazio\n"
+                    + "\u00a7e/vazio exilar <jogador> \u00a77— manda pra rptag:exilio (tudo preto e vazio)\n"
+                    + "\u00a7e/vazio soltar <jogador> \u00a77— traz de volta do exílio\n"
                     + "\u00a7e/bicho aqui \u00a77— caixinha de música (o bicho pula quando alguém chega)")
                     .withStyle(ChatFormatting.DARK_PURPLE), false);
             return Command.SINGLE_SUCCESS;

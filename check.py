@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.4.1'
+VER = '5.5.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -490,7 +490,7 @@ check('3.95/3.98: lorezone sem ascensao (case 11 = pesadelo2)',
       'entry("ascensao"' not in zc and 'ascensao' not in zc
       and 'entry("pesadelo2", 11)' in zc and 'case 11 -> "pesadelo2"' in zc)
 rp2 = rd(R + '/RPCommands.java')
-check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio, expurgo, ciberpsicose (alvos' in rp2
+check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia (alvos' in rp2
       and 'ascensao' not in rp2 and 'pesadelo, pesadelo2, runico' in rp2)
 
 # ---- 3.93.0: DEMONIACO = FX "Chamado do Abismo" (arquivo do user) ----
@@ -862,7 +862,7 @@ check('4.9.0: ajuda lista afk + lote e NAO lista mais regra', 'admin afk tempo' 
 
 check('4.5: EGIPICIO e o estilo 12 (parse + nome + ajuda)',
       'case "egipicio", "egipcio" -> 12' in rp and 'case 12 -> "EGIPICIO"' in rp
-      and 'egipicio, expurgo, ciberpsicose (alvos' in rp)
+      and 'egipicio, expurgo, ciberpsicose, energia (alvos' in rp)
 check('4.5: EGIPICIO desenha o OLHO DE HORUS (sobrancelha/amendoa/iris)',
       'EgipcioAvisoFx' in egi and 'olho' in egi.lower())
 check('4.5: EGIPICIO tem templo, areia, hieroglifos e cartucho',
@@ -1559,6 +1559,49 @@ check('5.4.1: conversor do colapso corta o chiado em ~180-200 Hz (4a ordem)',
       'btype="low"' in _au and '180.0' in _au and '200.0' in _au)
 check('5.4.1: poeira de tela do cliente virou po fino (sem quadrado marrom solto)',
       '0x8A7457' in _nf)
+
+# ============ 5.5.0: aviso ENERGIA, exilio, sombra sem quadrado, aura circulando ============
+_en = rd(C + '/EnergiaAvisoFx.java')
+_ce = rd(C + '/ClientEffects.java')
+_cg = rd(C + '/ClientGuiLayers.java')
+_rp2 = rd(R + '/RPCommands.java')
+_fx = rd(C + '/FxComando.java')
+_ne2 = rd(R + '/NeptuneEventos.java')
+_nf2 = rd(C + '/NeptuneFx.java')
+_nc2 = rd(R + '/NeptuneCommands.java')
+check('5.5.0: EnergiaAvisoFx existe e e registrado como camada de HUD',
+      os.path.exists(C + '/EnergiaAvisoFx.java') and 'EnergiaAvisoFx::render' in _en
+      and 'EnergiaAvisoFx.registrar(event)' in _cg)
+check('5.5.0: estilo 15 = ENERGIA no avisar (cliente, servidor e /rpfx teste)',
+      'if (style == 15)' in _ce and 'case "energia" -> 15;' in _rp2
+      and 'case "energia" -> 15;' in _fx and 'case 15 -> "ENERGIA"' in _rp2)
+check('5.5.0: /rp admin avisar aceita o literal "energia"',
+      'Commands.literal("energia")' in _rp2 and 'avisar(ctx, alvos, "energia", texto)' in _rp2)
+check('5.5.0: o ENERGIA tem nucleo que muda de forma, raios e medidor de ENTROPIA',
+      'lobo' in _en and 'criarRaio' in _en and 'ENTROPIA' in _en and 'CRÍTICO' in _en)
+check('5.5.0: dimensao do EXILIO existe (rptag:exilio) com chao preto',
+      os.path.exists('src/main/resources/data/rptag/dimension/exilio.json')
+      and os.path.exists('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and 'black_concrete' in rd('src/main/resources/data/rptag/dimension/exilio.json'))
+check('5.5.0: o exilio e ESCURO (ambient_light 0, sem ceu, meia-noite fixa)',
+      '"ambient_light": 0.0' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"has_skylight": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"fixed_time": 18000' in rd('src/main/resources/data/rptag/dimension_type/exilio.json'))
+check('5.5.0: /vazio exilar manda pra rptag:exilio e POUSA no chao (y=1)',
+      '"exilio"' in _ne2 and 'alvo.teleportTo(destino, 0.5, 1.0, 0.5' in _ne2)
+check('5.5.0: /vazio soltar tira o jogador do exilio',
+      'literal("soltar")' in _nc2 and 'soltarDoExilio' in _ne2)
+check('5.5.0: a aura CIRCULA o player em 3 aneis (peito, cintura, tornozelo)',
+      'rPeito' in _ne2 and 'rCintura' in _ne2 and 'rChao' in _ne2)
+check('5.5.0: SAIU a particula que ficava NA CABEÇA (SCULK_SOUL em y+2,1)',
+      'ParticleTypes.SCULK_SOUL' not in _ne2 and 'pos.y + 2.1' not in _ne2)
+check('5.5.0: o apagar/exilar nao desenha mais o QUADRADO PRETO (g.fill no centro)',
+      'g.fill(w / 2 - r' not in _nf2 and 'g.fill(w/2 - r' not in _nf2)
+check('5.5.0: o apagar virou SOMBRA (discos em degrade + silhueta + bracos)',
+      'disco(b,' in _nf2 and 'alfaSil' in _nf2 and 'b.vinheta(' in _nf2)
+check('5.5.0: em rptag:exilio a tela fecha em preto (camada propria do cliente)',
+      'desenharExilio' in _nf2 and 'DIM_EXILIO' in _nf2)
+check('5.5.0: /neptune explica o exilio e o soltar', 'rptag:exilio' in _nc2 and 'vazio soltar' in _nc2)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

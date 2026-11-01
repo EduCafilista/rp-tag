@@ -305,20 +305,38 @@ public final class NeptuneEventos {
             ServerLevel nv = (ServerLevel) p.level();
             Vec3 pos = p.position();
 
-            // ---- AURA: rodela de escuridão girando em volta do corpo
-            double ri = 1.15;
+            // ---- AURA (5.5.0) — TUDO GIRA EM VOLTA DO CORPO.
+            // O dono reclamou de dois coisas: (1) o efeito subia pela CABEÇA
+            // (era o SCULK_SOUL em y+2,1 — aquelas chamas azuis em cima do
+            // personagem na captura dele) e (2) as partículas não "circulavam"
+            // o player: ficavam empilhadas num anel que subia. Agora são TRÊS
+            // anéis horizontais de alturas diferentes, girando em sentidos
+            // diferentes (peito, cintura e tornozelo) — e NADA acima da cabeça.
+            double volta = agora / 1000.0;
+            // (1) peito: tinta preta, gira rápido no sentido horário
+            double rPeito = 1.20;
             for (int i = 0; i < 10; i++) {
-                double a = Math.toRadians((agora / 12.0) + i * 36.0);
-                double alt = -0.2 + 1.7 * (((i * 0.37) + (agora / 900.0)) % 1.0);
+                double a = Math.toRadians(volta * 170.0 + i * 36.0);
                 nv.sendParticles(ParticleTypes.SQUID_INK,
-                        pos.x + Math.cos(a) * ri, pos.y + alt, pos.z + Math.sin(a) * ri,
-                        0, 0.12, 0.06, 0.12, 0.02);
-                nv.sendParticles(ParticleTypes.SMOKE,
-                        pos.x + Math.cos(a) * (ri + 0.25), pos.y + alt, pos.z + Math.sin(a) * (ri + 0.25),
-                        0, 0.02, 0.12, 0.02, 0.01);
+                        pos.x + Math.cos(a) * rPeito, pos.y + 1.05, pos.z + Math.sin(a) * rPeito,
+                        0, 0.02, 0.02, 0.02, 0.0);
             }
-            nv.sendParticles(ParticleTypes.SCULK_SOUL,
-                    pos.x, pos.y + 2.1, pos.z, 1, 0.35, 0.12, 0.35, 0.01);
+            // (2) cintura: fumaça escura, gira ao contrário (mais devagar)
+            double rCintura = 1.05;
+            for (int i = 0; i < 6; i++) {
+                double a = Math.toRadians(-volta * 105.0 + i * 60.0);
+                nv.sendParticles(ParticleTypes.SMOKE,
+                        pos.x + Math.cos(a) * rCintura, pos.y + 0.62, pos.z + Math.sin(a) * rCintura,
+                        0, 0.0, 0.01, 0.0, 0.0);
+            }
+            // (3) tornozelo: cinza/poeira preta, gira no sentido horário
+            double rChao = 1.45;
+            for (int i = 0; i < 6; i++) {
+                double a = Math.toRadians(volta * 70.0 + i * 60.0);
+                nv.sendParticles(ParticleTypes.ASH,
+                        pos.x + Math.cos(a) * rChao, pos.y + 0.12, pos.z + Math.sin(a) * rChao,
+                        0, 0.0, 0.0, 0.0, 0.0);
+            }
 
             // ---- MEDO em quem chega perto (inimigos tremem)
             for (ServerPlayer outro : server.getPlayerList().getPlayers()) {
@@ -515,15 +533,15 @@ public final class NeptuneEventos {
         }
     }
 
-    /** Manda pra dimensão do vazio (feita sob medida). */
+    /** Manda pra dimensão do EXÍLIO (5.5.0: rptag:exilio — tudo preto e vazio). */
     public static void exilar(ServerPlayer alvo, ServerPlayer quem) {
         var chave = net.minecraft.resources.ResourceKey.create(
                 net.minecraft.core.registries.Registries.DIMENSION,
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "vazio"));
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "exilio"));
         ServerLevel destino = alvo.getServer().getLevel(chave);
         if (destino == null) {
             quem.sendSystemMessage(Component.literal(
-                    "\u00a7cA dimensão rptag:vazio não carregou. Reinicie o servidor."));
+                    "\u00a7cA dimensão rptag:exilio não carregou. Reinicie o servidor."));
             return;
         }
         for (ServerPlayer p : alvo.getServer().getPlayerList().getPlayers()) {
@@ -537,6 +555,21 @@ public final class NeptuneEventos {
                                 .withStyle(ChatFormatting.DARK_PURPLE))
                         .append(Component.literal(" para fora do universo").withStyle(ChatFormatting.DARK_GRAY)),
                 false);
-        alvo.teleportTo(destino, 0.5, 120.0, 0.5, java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
+        // (5.5.0) chão preto em y=0: 1 bloco de concreto preto. O jogador cai
+        // em cima dele (antes ia pra y=120 num mundo SEM chão e despencava).
+        alvo.teleportTo(destino, 0.5, 1.0, 0.5, java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
+        alvo.displayClientMessage(Component.literal(
+                "\u00a78Não há nada aqui. Nem chão, nem céu, nem volta.\n"
+                + "\u00a78(um admin pode te tirar com /vazio soltar <jogador>)"), false);
+    }
+
+    /** (5.5.0) tira alguém do exílio e devolve pro spawn do overworld. */
+    public static void soltarDoExilio(ServerPlayer alvo) {
+        ServerLevel mundo = alvo.getServer().overworld();
+        BlockPos spawn = mundo.getSharedSpawnPos();
+        alvo.teleportTo(mundo, spawn.getX() + 0.5, spawn.getY() + 1.0, spawn.getZ() + 0.5,
+                java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
+        alvo.displayClientMessage(Component.literal(
+                "\u00a77A escuridão te devolve. Não conte o que viu."), false);
     }
 }

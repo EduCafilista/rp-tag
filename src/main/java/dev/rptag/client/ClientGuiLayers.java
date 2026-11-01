@@ -59,6 +59,9 @@ public final class ClientGuiLayers {
         // (4.9.3) estilo 14 = CIBERPSICOSE "Alerta de Ciberpsicose" (glitch
         // cyberpunk: estatica, humanidade caindo, vidro estilhacando, ECG)
         CiberpsicoseAvisoFx.registrar(event);
+        // (5.5.0) estilo 15 = ENERGIA "Anomalia de Entropia" (raios, plasma
+        // roxo, glitch, medidor de entropia) — protótipo do dono
+        EnergiaAvisoFx.registrar(event);
         // (5.4.0) EVENTO NEPTUNE: terremoto (nebulosa + poeira + visao dupla),
         // saida verde, susto do bicho, nebulosa do vazio e aura do deus.
         event.registerAboveAll(

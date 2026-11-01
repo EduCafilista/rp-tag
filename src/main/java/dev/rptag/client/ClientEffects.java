@@ -93,6 +93,7 @@ public final class ClientEffects {
         RealAvisoFx.parar();
         ExpurgoAvisoFx.parar();
         CiberpsicoseAvisoFx.parar();
+        EnergiaAvisoFx.parar();
         // (3.94.0) estilo 10 = DEMONIACO: o FX proprio (Chamado do Abismo:
         // mandibulas, fissuras, pentagrama, olho de fenda) assume. Codigos
         // & sao ignorados.
@@ -142,6 +143,14 @@ public final class ClientEffects {
             String limpo8 = text.replaceAll("\\u00a7.", "");
             VoidAvisoFx.iniciar("AVISO", limpo8);
             RPTagMod.LOGGER.info("RP Tag: QUEDA SEM FUNDO iniciada (FX proprio)");
+            return;
+        }
+        // (5.5.0) estilo 15 = ENERGIA: o caos da Energia de Ordem Paranormal
+        // (núcleo que muda de forma, raios, plasma roxo, glitch, ENTROPIA)
+        if (style == 15) {
+            String limpoE15 = text.replaceAll("\u00a7.", "");
+            EnergiaAvisoFx.iniciar(limpoE15);
+            RPTagMod.LOGGER.info("RP Tag: AVISO ENERGIA iniciado (FX proprio)");
             return;
         }
         // (4.9.3) estilo 14 = CIBERPSICOSE: o glitch cyberpunk do prototipo do
