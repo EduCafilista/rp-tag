@@ -78,6 +78,7 @@ public final class NeptuneEventos {
     private static long terremotoFim = 0;
     private static float terremotoForca = 1.0F;
     private static long proximoRumble = 0;
+    private static long proximoColapso = 0;
     private static long proximoPulso = 0;
     private static boolean faseTravado = false;
     /** deus do vazio */
@@ -89,6 +90,8 @@ public final class NeptuneEventos {
     /** caixas do bicho: posição + quando começou */
     private static final List<Caixa> CAIXAS = new ArrayList<>();
 
+    /** (5.4.1) duração do ogg do colapso (75 s) — pra repetir se o evento durar mais. */
+    public static final long COLAPSO_MS = 75000L;
     public static final double BICHO_RAIO = 3.0;
     public static final int BICHO_MUSICA_SEG = 36;
 
@@ -125,11 +128,10 @@ public final class NeptuneEventos {
         terremotoFim = System.currentTimeMillis() + Math.max(10, segundos) * 1000L;
         terremotoForca = 1.0F;
         proximoRumble = 0;
+        proximoColapso = System.currentTimeMillis();
         proximoPulso = System.currentTimeMillis();
         faseTravado = true;   // começa travado (o primeiro baque)
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-            // o áudio do colapso do dono toca UMA vez, pra todo mundo
-            p.playNotifySound(RPTagMod.SOM_TERREMOTO_COLAPSO.get(), SoundSource.AMBIENT, 1.0F, 1.0F);
             p.displayClientMessage(Component.literal(
                     "\u00a78\u00a7oA terra está cedendo. O universo está se corrigindo..."), false);
         }
@@ -172,14 +174,23 @@ public final class NeptuneEventos {
         }
         int restam = (int) Math.max(1, (terremotoFim - agora) / 1000L);
 
-        // ---- rumble em loop (um a cada ~7 s; o ogg tem 8 s)
+        // ---- COLAPSO: o áudio do dono agora tem 75 s (5.4.1). Se o evento
+        // passar disso, ele volta (o som não pode "acabar" no meio do terremoto).
+        if (agora >= proximoColapso) {
+            proximoColapso = agora + COLAPSO_MS;
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                p.playNotifySound(RPTagMod.SOM_TERREMOTO_COLAPSO.get(),
+                        SoundSource.AMBIENT, 1.0F, 1.0F);
+            }
+        }
+        // ---- rumble de reforço, BEM de vez em quando e baixinho (é cama, não som)
         if (agora >= proximoRumble) {
-            proximoRumble = agora + 7000;
+            proximoRumble = agora + 12000;
             for (ServerServerHold h : ServerServerHold.de(server)) {
                 ServerLevel nv = h.nivel();
                 Vec3 v = h.pos();
                 nv.playSound(null, v.x, v.y, v.z, RPTagMod.SOM_RUMBLE.get(),
-                        SoundSource.AMBIENT, 1.0F, 1.0F);
+                        SoundSource.AMBIENT, 0.45F, 1.0F);
             }
         }
 
@@ -206,25 +217,39 @@ public final class NeptuneEventos {
             }
         }
 
-        // ---- poeira/terra brotando no chão
-        if (agora % 4 == 0) {
+        // ---- POEIRA DE TERRA (5.4.1): SAIU a fumaça branca (CAMPFIRE_COSY_SMOKE)
+        // porque parecia bolha de sabão e dava cara de queimado. O que combina
+        // com terra cedendo é o MATERIAL do chão: FALLING_DUST (poeira caindo do
+        // bloco) + BLOCK (pedrisco subindo do impacto) + um pouco de ASH.
+        if (agora % 3 == 0) {
             for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                 ServerLevel nv = (ServerLevel) p.level();
                 double px = p.getX();
                 double py = p.getY();
                 double pz = p.getZ();
-                for (double r = 1.5; r <= 7.0; r += 1.4) {
-                    double a = Math.toRadians((agora / 3 % 360) + r * 37);
+                for (double r = 1.2; r <= 6.0; r += 1.2) {
+                    double a = Math.toRadians((agora / 3 % 360) + r * 61);
                     double x = px + Math.cos(a) * r;
                     double z = pz + Math.sin(a) * r;
-                    nv.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, py + 0.05, z,
-                            1, 0.1, 0.02, 0.1, 0.005);
-                    if (r > 4.0) {
-                        nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
-                                        ParticleTypes.BLOCK, nv.getBlockState(
-                                                net.minecraft.core.BlockPos.containing(x, py - 0.2, z))),
-                                x, py + 0.1, z, 2, 0.1, 0.05, 0.1, 0.02);
+                    BlockPos chao = BlockPos.containing(x, py - 0.4, z);
+                    var estado = nv.getBlockState(chao);
+                    if (estado.isAir()) {
+                        continue;                       // não faz poeira no ar
                     }
+                    // poeira do próprio chão subindo devagar
+                    nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                    ParticleTypes.FALLING_DUST, estado),
+                            x, py + 0.15, z, 2, 0.15, 0.05, 0.15, 0.02);
+                    // pedrisco saindo do chão quando o tranco é forte
+                    if (faseTravado && r > 3.4) {
+                        nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                        ParticleTypes.BLOCK, estado),
+                                x, py + 0.05, z, 2, 0.06, 0.10, 0.06, 0.25);
+                    }
+                }
+                // cinza fina caindo (pouca, e só no pulso travado)
+                if (faseTravado && agora % 9 == 0) {
+                    nv.sendParticles(ParticleTypes.ASH, px, py + 2.2, pz, 3, 1.4, 0.6, 1.4, 0.01);
                 }
             }
         }

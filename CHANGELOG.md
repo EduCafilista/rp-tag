@@ -1,5 +1,47 @@
 # Changelog
 
+## 5.4.1 — TERREMOTO SEM CHIADO DE QUEIMADO E MAIS LONGO — 2026-11-01
+
+> "no som do terremoto deve continuar por mais tempo, e esse som de coisa se
+> queimando nao gostei, a fumaça ficou esquisita e nao combina"
+
+### 1. O chiado de queimado NÃO era o áudio do dono
+O mp3 dele (5pts9o) é praticamente só grave (28–150 Hz) — medido: 0,5% de
+energia entre 900 e 5000 Hz. **O chiado era MEU**: o `rumble_terremoto`
+sintetizado usava **ruído branco** (`ruido()`) pro corpo dos baques, e ruído
+branco soa exatamente como fritura. Medição do defeito:
+
+| arquivo (5.4.0) | grave 28–150 Hz | agudo 900–5k | razão (fritura) |
+|---|---|---|---|
+| `rumble_terremoto` | 0,039 | 0,034 | **87,6%** |
+| `terremoto_colapso` (refeito) | 0,292 | 0,000 | **0,0%** |
+
+Conserto: helper **`ruido_marrom()`** (1/f, passa-banda 30–180 Hz) — o corpo
+dos impactos agora é terra, não óleo quente. Rumble final passa-baixa de 4ª
+ordem em 160 Hz. O colapso novo tem passa-baixa em 200 Hz no fim, como rede.
+
+### 2. O áudio do terra cedendo agora dura **75 s** (era 14,7 s)
+`terremoto_longo()`: pega o áudio do dono, tira o chiado, e monta 75 s com
+pedaços de 6,5 s em pontos de entrada diferentes, crossfade de 1,1 s e
+variação de afinação por `resample_poly` (sem alias). Por cima, sub-grave que
+"respira" (34 Hz ± 6) e baques distantes. E o servidor **repete** o áudio se o
+evento durar mais que isso (`COLAPSO_MS = 75000`).
+
+### 3. A fumaça saiu
+`CAMPFIRE_COSY_SMOKE` **removido** — eram aquelas bolas brancas flutuando
+(cara de bolha de sabão / queimado). No lugar, poeira do **próprio chão**:
+`FALLING_DUST` com o bloco embaixo do jogador, `BLOCK` (pedrisco) só no pulso
+travado e `ASH` bem pouca. Sem partícula nenhuma quando o bloco embaixo é ar.
+Na tela, a "poeira" da borda virou pó fino (risco de 1 px a 26 de alfa) em vez
+de quadradinhos marrons soltos.
+
+### Testes
+- `check.py`: **604 PASS / 0 FAIL** (8 checks novos de 5.4.1) · `validar.py`: 40 ok.
+- Medição do áudio: fritura **0,0%** no colapso e no rumble; duração 75,0 s.
+- Servidor 21.1.249: `Done`, `/terremoto iniciar 20` → LIGADO, `/terremoto parar`
+  no meio → DESLIGADO, **0 erro**.
+- Jar: **93.295.612 B**.
+
 ## 5.4.0 — EVENTO NEPTUNE: TERREMOTO, VAZIO, DEUS E O BICHO — 2026-10-31
 
 > "preciso que os players fiquem estunados e lentos algumas vezes, aí podem

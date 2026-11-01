@@ -234,15 +234,17 @@ public final class NeptuneFx {
             desfocar(1.6F + 2.8F * pulso * f);
         }
 
-        // (b) poeira subindo nas bordas (tira de terra)
-        int borda = (int) (h * 0.22F);
-        for (int i = 0; i < 26; i++) {
-            float fase = ((now * 0.00035F + i * 0.137F) % 1.0F);
+        // (b) (5.4.1) POEIRA NA BORDA — antes eram quadradinhos marrons soltos
+        // que o dono leu como fumaça estranha. Agora é um pó fino rente ao chão:
+        // risquinhos curtos, quase transparentes, só nos 12% de baixo da tela.
+        int borda = (int) (h * 0.12F);
+        for (int i = 0; i < 34; i++) {
+            float fase = ((now * 0.00022F + i * 0.093F) % 1.0F);
             int x = (int) ((i * 97 % w));
             int y = (int) (h - fase * borda);
-            int alfa = (int) (60 * (1 - fase) * f);
+            int alfa = (int) (26 * (1 - fase) * f);
             if (alfa > 2) {
-                g.fill(x, y, x + 2 + (i % 3) * 2, y + 2, (alfa << 24) | 0x6B543C);
+                g.fill(x, y, x + 8 + (i % 4) * 5, y + 1, (alfa << 24) | 0x8A7457);
             }
         }
 

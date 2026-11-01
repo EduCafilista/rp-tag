@@ -17,10 +17,10 @@
 
 | Item | Valor |
 |---|---|
-| Versão | **5.4.0** (2026-10-31) — EVENTO NEPTUNE: terremoto, vazio, deus e o bicho |
+| Versão | **5.4.1** (2026-11-01) — EVENTO NEPTUNE (terremoto sem chiado, som de 75 s) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.4.0.jar` (**93.565.061 B**) |
-| Checks | `check.py` → **603 PASS / 0 FAIL** |
+| Jar | `rptag-5.4.1.jar` (**93.295.612 B**) |
+| Checks | `check.py` → **604 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
 | Repo local | `/home/user/rp-tag` — tag `v4.9.1` |
@@ -28,6 +28,25 @@
 | Espelhos 5.2.0 | filebin `https://filebin.net/rptag520a553/rptag-5.2.0.jar` (cmp IDENTICO) · gofile `https://gofile.io/d/CdehqH7f` · release direto 200 |
 | Bundle | **NÃO gerar**: passa de 155 MB (o backup é o próprio GitHub + Release) |
 | Servidor local | `run/` existe (installer 21.1.249); se `libraries/` sumir, reinstalar com o installer |
+
+### 5.4.1 (2026-11-01): o chiado de queimado era MEU (ruído branco) e a fumaça saiu
+
+- Dono: *"no som do terremoto deve continuar por mais tempo, e esse som de coisa
+  se queimando nao gostei, a fumaça ficou esquisita"*.
+- **DIAGNÓSTICO ERRADO NA PRIMEIRA TENTATIVA**: eu fui atrás do chiado no mp3
+  dele (5pts9o). Medi: **ele é 99,5% grave**, 0,5% entre 900–5k. O chiado era o
+  **ruído branco** que EU usei em `rumble_terremoto` (`ruido()` no corpo dos
+  baques) — branco = som de fritura. Razão agudo/grave era **87,6%**.
+- **LIÇÃO (guardar):** em áudio de AMBIENTE (terra, vento, impacto) usar SEMPRE
+  `ruido_marrom()` (1/f + passa-banda). Ruído branco só serve pra chiado
+  proposital (estática de TV, chapa de metal). E medir antes de acusar o arquivo
+  do dono: RMS por banda (`scipy.signal.butter` + `sosfiltfilt`) resolve.
+- Colapso agora: 75 s (era 14,7 s), montado com pedaços deslocados + crossfade
+  + `resample_poly` (nunca `np.interp` pra afinar — serrilha e vira chiado).
+  O servidor repete o áudio com `COLAPSO_MS` se o evento durar mais.
+- `CAMPFIRE_COSY_SMOKE` REMOVIDO (as bolas brancas do print = bolha de sabão).
+  No lugar: `FALLING_DUST`/`BLOCK` com o bloco do CHÃO + `ASH` pouca.
+- Números: 604 PASS / 0 FAIL, servidor `Done` com 0 erro, jar 93.295.612 B.
 
 ### 5.4.0 (2026-10-31): EVENTO NEPTUNE (terremoto + vazio + deus + bicho)
 

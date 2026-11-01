@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.4.0'
+VER = '5.4.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1537,6 +1537,28 @@ check('5.4.0: previa do evento (o que o jogador ve) existe',
 check('5.4.0: os 3 audios do dono entraram (colapso, vazio, trilha)',
       all(os.path.getsize(S + '/' + n + '.ogg') > 20000
           for n in ['terremoto_colapso', 'vazio_apagar', 'trilha_deus']))
+
+# ============ 5.4.1: sem chiado de queimado, sem fumaca branca, som longo ============
+_ne = rd(R + '/NeptuneEventos.java')
+_nf = rd(C + '/NeptuneFx.java')
+_au = rd('arte/audio_eventos.py')
+check('5.4.1: a fumaca branca (CAMPFIRE_COSY_SMOKE) saiu do terremoto',
+      'ParticleTypes.CAMPFIRE_COSY_SMOKE' not in _ne)
+check('5.4.1: no lugar entra poeira do PROPRIO chao (FALLING_DUST + BLOCK)',
+      'FALLING_DUST' in _ne and 'ParticleTypes.BLOCK' in _ne and 'ParticleTypes.ASH' in _ne)
+check('5.4.1: o audio do colapso agora tem 75 s (era 14,7 s)',
+      os.path.getsize(S + '/terremoto_colapso.ogg') > 120000
+      and 'COLAPSO_MS = 75000L' in _ne)
+check('5.4.1: se o evento durar mais que o audio, ele TOCA DE NOVO',
+      'proximoColapso = agora + COLAPSO_MS' in _ne)
+check('5.4.1: rumble de reforco mais raro (12 s) e baixinho (0,45)',
+      'agora + 12000' in _ne and 'SoundSource.AMBIENT, 0.45F' in _ne)
+check('5.4.1: NENHUM audio do evento usa ruido BRANCO pra corpo de impacto',
+      'ruido_marrom' in _au and _au.count('ruido(') <= 3)
+check('5.4.1: conversor do colapso corta o chiado em ~180-200 Hz (4a ordem)',
+      'btype="low"' in _au and '180.0' in _au and '200.0' in _au)
+check('5.4.1: poeira de tela do cliente virou po fino (sem quadrado marrom solto)',
+      '0x8A7457' in _nf)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
