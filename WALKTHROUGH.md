@@ -148,7 +148,7 @@ ALLFORONE) · `PWaHoNqN.mp4` = buraco negro 1280x720 24 fps 5,09 s.
 |---|---|
 | Versão | **5.7.0** (2026-11-01) — vídeo real no tablet + CONHECIMENTO + ALLFORONE + saída dos players |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.6.1.jar` (**94.324.938 B**, md5 `98fd4f3ccb05b0c8e89782dbe11bb07a`) — release **430715291**, asset **698903934**; espelho `https://gofile.io/d/WVzxaOpu` |
+| Jar | `rptag-5.7.0.jar` (**98.521.322 B**, md5 `d6fbabfaa8daa767d7f54feb8ceb931f`) — release **430730349**, asset **698965500**; espelho `https://gofile.io/d/r2pfv3DV` |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
