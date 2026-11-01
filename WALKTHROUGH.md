@@ -102,6 +102,11 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Placeholder de 32 quadros (nebulosa roxa em loop) no jar até o mp4 real.
 - Ciclo de vida: `abrir()` no `init()`, `fechar()` no `onClose()` e no
   `removed()`; erro desliga o vídeo na sessão (nunca crasha).
+- **Loop sem engasgo**: `VideoFrameLoader(..., true)` — a thread volta pro quadro
+  0 quando chega no fim (`prox = 0`) e o `TabletVideoFundo` só soma o tempo de um
+  clipe em `inicioLoop` (mantém a fase, não recria o decodificador). O construtor
+  antigo (5 args) continua com `loop=false`, então os **avisos em vídeo não
+  viraram loop**.
 
 ## 1. Estado atual
 
@@ -109,7 +114,7 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 |---|---|
 | Versão | **5.6.1** (2026-11-01) — vídeo atrás do player no tablet (loop) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.6.1.jar` (**94.324.821 B**, md5 `2b6178588390a9bc79b61378c4034a13`) — release **430715291**, asset **698897094**; espelho `https://gofile.io/d/FBAbqhDP` |
+| Jar | `rptag-5.6.1.jar` (**94.324.938 B**, md5 `98fd4f3ccb05b0c8e89782dbe11bb07a`) — release **430715291**, asset **698903934**; espelho `https://gofile.io/d/WVzxaOpu` |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |

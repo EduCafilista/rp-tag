@@ -14,7 +14,10 @@ formato dos avisos em vídeo do mod.
   dentro da área do personagem, **levemente apagado** (0,55/0,52/0,72 a 0,85)
   pra o boneco 3D e o texto continuarem legíveis.
 - **Em LOOP**, como o dono pediu: quando o vídeo chega no fim, recomeça (sem
-  parar) enquanto a ficha estiver aberta.
+  parar) enquanto a ficha estiver aberta — e a volta **não dá engasgo**: quem
+  volta pro quadro 0 é a própria thread de decodificação
+  (`VideoFrameLoader(..., loop=true)`), que já deixa os primeiros quadros
+  prontos. Os avisos em vídeo continuam parando no fim (loop=false).
 - Começa do quadro 0 toda vez que o tablet abre; para ao fechar
   (`onClose`/`removed`).
 - Se o asset não existir, o tablet fica exatamente como era (nada quebra). Se

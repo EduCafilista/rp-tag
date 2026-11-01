@@ -79,7 +79,7 @@ public final class TabletVideoFundo {
             }
             tl = FxTimeline.parse(json);
             int g = ++geracao;
-            loader = new VideoFrameLoader(ID, tl, g, () -> geracao);
+            loader = new VideoFrameLoader(ID, tl, g, () -> geracao, true);   // true = EM LOOP
             loader.iniciar();
             mostrado = -1;
             inicioLoop = System.nanoTime();
@@ -114,30 +114,26 @@ public final class TabletVideoFundo {
             float t = (agora - inicioLoop) / 1e9F;
             int frames = tl.frames();
             int q = (int) (t * tl.fps());
-            if (q >= frames) {              // LOOP: acabou? volta do começo
-                fechar();
-                abrir();
-                if (tl == null || loader == null) {
-                    return;
-                }
-                t = 0F;
-                q = 0;
+            if (q >= frames) {              // LOOP: acabou? volta do começo sem parar
+                // soma o tempo de um clipe (mantém a fase) em vez de recriar o
+                // decodificador: o VideoFrameLoader está rodando com loop=true e já
+                // tem o quadro 0 pronto — assim a volta não dá engasgo
+                long volta = (long) (frames * 1_000_000_000L / Math.max(1, tl.fps()));
+                inicioLoop += volta;
+                t = (agora - inicioLoop) / 1e9F;
+                q = (int) (t * tl.fps());
+                if (q >= frames || q < 0) { inicioLoop = agora; q = 0; }
             }
-            if (q > mostrado) {
-                NativeImage img = loader.pegar(q);
-                if (img != null) {
-                    if (tex == null) {
-                        tex = new DynamicTexture(img);
-                        Minecraft.getInstance().getTextureManager().register(TEX, tex);
-                    } else {
-                        tex.setPixels(img);   // fecha a imagem anterior
-                    }
-                    tex.upload();
-                    mostrado = loader.ultimoPego();
+            NativeImage img = loader.pegar(q);
+            if (img != null) {
+                if (tex == null) {
+                    tex = new DynamicTexture(img);
+                    Minecraft.getInstance().getTextureManager().register(TEX, tex);
+                } else {
+                    tex.setPixels(img);   // fecha a imagem anterior
                 }
-            } else {
-                // já tem o quadro: só confirma pro loader que ele pode adiantar
-                loader.pegar(q);
+                tex.upload();
+                mostrado = loader.ultimoPego();
             }
             if (mostrado < 0) {
                 return;                     // ainda decodificando o primeiro

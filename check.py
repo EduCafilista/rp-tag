@@ -1645,8 +1645,12 @@ check('5.6.1: TabletVideoFundo existe (player de video em loop)',
       os.path.exists(C + '/TabletVideoFundo.java') and 'VideoFrameLoader' in _tvf and 'DynamicTexture' in _tvf)
 check('5.6.1: o video do tablet fica ATRAS do player (desenhado antes da previa 3D)',
       _ts.index('TabletVideoFundo.desenhar') < _ts.index('TabletPlayerPreview.render'))
-check('5.6.1: em LOOP (acabou, volta do comeco)',
-      'if (q >= frames)' in _tvf and 'fechar();' in _tvf and 'abrir();' in _tvf)
+_vfl = rd(C + '/VideoFrameLoader.java')
+check('5.6.1: em LOOP sem engasgo (o decodificador volta pro quadro 0 e continua)',
+      'if (q >= frames)' in _tvf and 'inicioLoop += volta;' in _tvf
+      and 'boolean loop' in _vfl and 'prox = 0;' in _vfl and 'new VideoFrameLoader(ID, tl, g, () -> geracao, true)' in _tvf)
+check('5.6.1/loop: os avisos em video NAO viraram loop (padrao continua parando no fim)',
+      'this(id, tl, geracao, geracaoAtual, false);' in _vfl and 'if (!loop) break;' in _vfl)
 check('5.6.1: para o video quando o tablet fecha/sai',
       'TabletVideoFundo.fechar();' in _ts and 'removed()' in _ts)
 check('5.6.1: respeita fxVideo=false e nao quebra se o asset faltar',

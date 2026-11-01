@@ -28,6 +28,8 @@ final class VideoFrameLoader implements Runnable {
     private final FxTimeline tl;
     private final int geracao;
     private final IntSupplier geracaoAtual;
+    /** (5.6.1) true = quando chega no ultimo quadro volta pro 0 (video de fundo do tablet). */
+    private final boolean loop;
     private final Map<Integer, NativeImage> prontos = new ConcurrentHashMap<>();
     private final Thread thread;
     private volatile int alvo = 0;
@@ -35,6 +37,11 @@ final class VideoFrameLoader implements Runnable {
     private volatile boolean parar, erro;
 
     VideoFrameLoader(String id, FxTimeline tl, int geracao, IntSupplier geracaoAtual) {
+        this(id, tl, geracao, geracaoAtual, false);
+    }
+
+    VideoFrameLoader(String id, FxTimeline tl, int geracao, IntSupplier geracaoAtual, boolean loop) {
+        this.loop = loop;
         this.id = id;
         this.tl = tl;
         this.geracao = geracao;
@@ -55,10 +62,14 @@ final class VideoFrameLoader implements Runnable {
     NativeImage pegar(int q) {
         alvo = q;
         int k = VideoEstado.escolher(prontos.keySet(), q);
-        for (Integer v : prontos.keySet()) {
-            if (v < k) {
-                NativeImage velho = prontos.remove(v);
-                if (velho != null) velho.close();
+        // no LOOP nao descarta: depois da volta os quadros do comeco sao de novo uteis
+        // (o cache continua limitado pelo BUFFER de quadros a frente do alvo)
+        if (!loop) {
+            for (Integer v : prontos.keySet()) {
+                if (v < k) {
+                    NativeImage velho = prontos.remove(v);
+                    if (velho != null) velho.close();
+                }
             }
         }
         if (k < 0) return null;
@@ -86,8 +97,12 @@ final class VideoFrameLoader implements Runnable {
     public void run() {
         int prox = 0;
         try {
-            while (!parar && prox < tl.frames()) {
+            while (!parar) {
                 if (!VideoEstado.aceitaGeracao(geracao, geracaoAtual.getAsInt())) break;
+                if (prox >= tl.frames()) {
+                    if (!loop) break;
+                    prox = 0;                       // LOOP: volta pro primeiro quadro
+                }
                 int a = alvo;
                 if (prox < a) prox = a + 1;                   // atrasou: pula (1 a frente: o decode leva ~1 quadro)
                 if (prox - a >= BUFFER) { Thread.sleep(2); continue; }
