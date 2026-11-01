@@ -79,6 +79,7 @@ public final class ClientEvents {
         ClientPersonaCache.clear();
         ClientBubbleCache.clear();
         TerremotoFx.parar(); // (5.4.0)
+        VoidFx.parar(); // (5.5.0)
         VideoFx.fechar(); // (4.2.0) nada de video sobrando no proximo mundo
         // (4.5.0) e nenhum aviso em video "volta" se o jogador reentrar em menos de 6 s
         MorteAvisoFx.parar();

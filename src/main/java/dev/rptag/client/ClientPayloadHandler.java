@@ -71,6 +71,11 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> ClientBubbleCache.TYPEWRITER = payload.on());
     }
 
+    /** (5.5.0) PODER DO VOID: a tela escurece ate o preto. */
+    public static void handleVoid(final dev.rptag.VoidPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> VoidFx.receber(payload.ticks()));
+    }
+
     /** (5.4.0) TERREMOTO: tremor, blur espacial, pulsos e saida verde. */
     public static void handleTerremoto(final dev.rptag.TerremotoPayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> TerremotoFx.receber(payload.acao(), payload.ticks()));

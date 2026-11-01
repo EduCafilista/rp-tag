@@ -858,6 +858,8 @@ public final class RPCommands {
                                             medar(ctx, alvo, seg);
                                             return Command.SINGLE_SUCCESS;
                                         }))))
+                // (5.5.0) /rp admin void apagar | dimensao | voltar <jogador>
+                .then(VoidPoder.comando())
                 // (5.4.0) /rp admin terremoto iniciar | parar | status | levar <jogador>
                 .then(Terremoto.comando())
                 // (4.5.0) /rp admin afk tempo <segundos> | status

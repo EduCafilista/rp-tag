@@ -29,7 +29,10 @@ public final class ModNetworking {
         // manda os pacotes antigos) e recusado na hora, com mensagem de versao.
         // (5.2.0) v8: TABLET NEPTUNE (tablet_sync cliente / tablet_update servidor).
         // (5.4.0) v9: TERREMOTO (terremoto, S2C) - cliente v8 e recusado na hora.
-        PayloadRegistrar registrar = event.registrar("9");
+        // (5.5.0) v10: PODER DO VOID (void_poder, S2C) - cliente v9 e recusado na hora.
+        PayloadRegistrar registrar = event.registrar("10");
+        registrar.playToClient(VoidPayload.TYPE, VoidPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleVoid);
         registrar.playToClient(TerremotoPayload.TYPE, TerremotoPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTerremoto);
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,

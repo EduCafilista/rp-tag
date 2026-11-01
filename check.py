@@ -16,7 +16,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.4.0'
+VER = '5.5.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -37,7 +37,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal v9', 'LorezoneMusicPayload' in mn and 'registrar("9")' in mn)
+check('payloads registrados no canal v10', 'LorezoneMusicPayload' in mn and 'registrar("10")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -164,7 +164,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo v9 (3 payloads de musica)', 'registrar("9")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo v10 (3 payloads de musica)', 'registrar("10")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -1044,8 +1044,8 @@ _mn9 = rd(R + '/ModNetworking.java')
 check('5.2.0: canais novos tablet_sync/tablet_update no lugar dos antigos ficha_*',
       'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9
       and 'tablet_sync' in rd(R + '/TabletSyncPayload.java') and 'tablet_update' in rd(R + '/TabletUpdatePayload.java'))
-check('5.2.0: protocolo subiu para v9 (cliente v8 e recusado)',
-      'registrar("9")' in _mn9 and 'registrar("8")' not in _mn9)
+check('5.2.0: protocolo subiu para v10 (cliente v9 e recusado)',
+      'registrar("10")' in _mn9 and 'registrar("9")' not in _mn9)
 check('5.2.0: o tablet e entregue no login', 'PlayerLoggedInEvent' in rd(R + '/TabletService.java'))
 check('5.2.0: /tablet existe e /ficha nao voltou',
       'literal("tablet")' in _junto and 'literal("ficha")' not in _junto)
@@ -1099,7 +1099,7 @@ check('4.9.0: so avisa quem esta no MESMO mundo',
 check('4.9.0: o aviso sai junto do ritual (depois de perder a vida)',
       'ritualDeVidaPerdida(p, vidas - 1);' in _cl9)
 check(f'versao {VER} no build.gradle',
-      "version = '5.4.0'" in rd('build.gradle') or 'version = "5.4.0"' in rd('build.gradle'))
+      "version = '5.5.0'" in rd('build.gradle') or 'version = "5.5.0"' in rd('build.gradle'))
 
 # ============ 4.9.1: o DIVINO voltou ao procedural antigo (o video do Marcello saiu) ============
 _div = rd(C + '/DivinoAvisoFx.java')
@@ -1338,8 +1338,8 @@ check('5.2.0: 12 arquivos do tablet existem',
 check('5.2.0: item rptag:tablet registrado (stacksTo 1)', 'ITEMS.register("tablet"' in rd(R + '/RPTagMod.java')
       and 'stacksTo(1)' in rd(R + '/RPTagMod.java'))
 check('5.2.0: tabela de limites da ficha 32/5/240/600/3000', 'LIMITES = {32, 5, 240, 600, 3000}' in _fp)
-check('5.2.0: protocolo subiu para registrar("9") com os 2 payloads',
-      'registrar("9")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
+check('5.2.0: protocolo subiu para registrar("10") com os 2 payloads',
+      'registrar("10")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
 check('5.2.0: handler do cliente registrado', 'handleTablet' in rd(C + '/ClientPayloadHandler.java'))
 check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID antes do load',
       'tag.put("TabletSheets", sheets)' in _rw and 'hasUUID("Id")' in _rw
@@ -1514,6 +1514,31 @@ check('5.4.0: ao sair do mundo o terremoto do cliente para',
       'TerremotoFx.parar()' in rd('src/main/java/dev/rptag/client/ClientEvents.java'))
 check('5.4.0: teste JUnit das contas do pulso existe',
       os.path.exists('src/test/java/dev/rptag/client/TerremotoFxTest.java'))
+
+# ============ 5.5.0: PODER DO VOID (dimensao + apagar) ============
+_v = rd('src/main/java/dev/rptag/VoidPoder.java')
+_vf = rd('src/main/java/dev/rptag/client/VoidFx.java')
+check('5.5.0: /rp admin void apagar|dimensao|voltar so para adm',
+      'VoidPoder.comando()' in rd('src/main/java/dev/rptag/RPCommands.java')
+      and all('literal("%s")' % x in _v for x in ['apagar', 'dimensao', 'voltar']))
+check('5.5.0: aviso no chat para todos com o texto "---- VAZIO ---- apagou X da existencia"',
+      'broadcastSystemMessage' in _v and 'apagou' in _v and 'da existência' in _v)
+check('5.5.0: som do void toca para todos os jogadores',
+      'SOM_VOID_APAGAR' in _v and 'playNotifySound' in _v)
+check('5.5.0: apagar mata (kill) e dimensao teleporta para rptag:vazio',
+      'alvo.kill()' in _v and 'teleportTo(vazio' in _v and '"vazio"' in _v)
+check('5.5.0: dimensao rptag:vazio existe no jar (tipo + gerador void)',
+      os.path.exists('src/main/resources/data/rptag/dimension/vazio.json')
+      and os.path.exists('src/main/resources/data/rptag/dimension_type/vazio.json')
+      and 'the_void' in rd('src/main/resources/data/rptag/dimension/vazio.json')
+      and 'rptag:vazio' in rd('src/main/resources/data/rptag/dimension/vazio.json'))
+check('5.5.0: pacote void_poder registrado, com handler e camada de HUD na vitima',
+      'VoidPayload.TYPE' in rd('src/main/java/dev/rptag/ModNetworking.java')
+      and 'handleVoid' in rd('src/main/java/dev/rptag/client/ClientPayloadHandler.java')
+      and 'VoidFx.desenhar' in rd('src/main/java/dev/rptag/client/ClientGuiLayers.java')
+      and 'catch (Throwable' in _vf)
+check('5.5.0: teste JUnit do aviso e do escurecer existe',
+      os.path.exists('src/test/java/dev/rptag/VoidPoderTest.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

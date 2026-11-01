@@ -1,5 +1,17 @@
 # Changelog
 
+## 5.5.0 — PODER DO VOID (apagar ou mandar para outra dimensão) — 2026-11-01
+
+Segunda etapa do pacote Neptune.
+
+- `/rp admin void apagar <jogador>` — a tela da vítima escurece por 2 s, todos ouvem o som do vazio
+  (áudio do dono, `void_apagar.ogg`), o chat avisa `---- VAZIO ---- apagou <nome> da existência` e ela morre.
+- `/rp admin void dimensao <jogador>` — mesmo ritual, mas a pessoa vai para a nova dimensão **`rptag:vazio`**
+  (céu do End, sem chão, noite fixa; uma plataforma de obsidiana 7x7 é criada no ponto de chegada).
+- `/rp admin void voltar <jogador>` — traz a pessoa de volta ao spawn do mundo.
+- Protocolo **v10** (cliente v9 é recusado). Dimensão e tipo ficam em `data/rptag/` dentro do jar.
+- Testes: `VoidPoderTest` e checks `5.5.0` no `check.py`. Ainda sem teste no jogo.
+
 ## 5.4.0 — TERREMOTO (colapso das Terras) + saída verde — 2026-10-31
 
 Primeira etapa do pacote Neptune (terremoto, poder do Void, trilha do deus, caixa de música).
