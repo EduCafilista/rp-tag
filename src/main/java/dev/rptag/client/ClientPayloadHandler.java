@@ -40,6 +40,24 @@ public final class ClientPayloadHandler {
         });
     }
 
+    /** (5.7.2) TÍTULO de um jogador: guarda e redesenha o nametag. */
+    public static void handleTitulo(final dev.rptag.TituloSyncPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                ClientTitulos.set(payload.playerId(), payload.etiqueta(), payload.cor(), payload.personalizado());
+                Minecraft minecraft = Minecraft.getInstance();
+                if (minecraft.level != null) {
+                    Player player = minecraft.level.getPlayerByUUID(payload.playerId());
+                    if (player != null) {
+                        player.refreshDisplayName();
+                    }
+                }
+            } catch (Throwable erro) {
+                dev.rptag.RPTagMod.LOGGER.warn("RP Tag: falha ao aplicar titulo no cliente", erro);
+            }
+        });
+    }
+
     public static void handlePersona(final PersonaSyncPayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             ClientPersonaCache.set(payload.playerId(), payload.name(), payload.age(), payload.desc());

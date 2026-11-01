@@ -10,6 +10,7 @@ import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -100,6 +101,8 @@ public final class NeptuneEventos {
      * 2 blocos numa cova e fica lá, imóvel, até a terra voltar.
      */
     private static final List<Fenda> FENDAS = new ArrayList<>();
+    /** (5.7.2) próximo instante de abrir uma rachadura que quebra blocos. */
+    private static long proximaFendaSolta = 0L;
     private static final java.util.Set<Long> CAVADOS = new java.util.HashSet<>();
     /** queda: uuid -> {y do chão original} (só quem caiu na fenda) */
     private static final Map<UUID, long[]> QUEDA = new HashMap<>();
@@ -164,6 +167,7 @@ public final class NeptuneEventos {
         proximoRumble = 0;
         proximoColapso = System.currentTimeMillis();
         proximoPulso = System.currentTimeMillis();
+        proximaFendaSolta = System.currentTimeMillis() + 2500;
         faseTravado = true;   // começa travado (o primeiro baque)
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             p.displayClientMessage(Component.literal(
@@ -175,7 +179,7 @@ public final class NeptuneEventos {
         // (5.6.0) o TRANCO inicial: flash + onda de choque + rachadura na tela
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             PacketDistributor.sendToPlayer(p, new NeptunePackets.Cena(
-                    NeptunePackets.Cena.CENA_ESTOURO, 1.0F, 2600, System.nanoTime()));
+                    NeptunePackets.Cena.CENA_ESTOURO, 1.0F, 1400, System.nanoTime()));   // 5.7.2: 2600 -> 1400 (sem flash branco)
         }
         enviarTerremoto(server, true, 1.0F, segundos, true);
     }
@@ -251,12 +255,12 @@ public final class NeptuneEventos {
                     boolean caiu = abrirFenda(p);
                     if (caiu) {
                         PacketDistributor.sendToPlayer(p, new NeptunePackets.Cena(
-                                NeptunePackets.Cena.CENA_QUEDA, 1.0F, 5500, System.nanoTime()));
+                                NeptunePackets.Cena.CENA_QUEDA, 1.0F, 3200, System.nanoTime()));  // 5.7.2: era 5500 (preto demais)
                         p.displayClientMessage(Component.literal(
                                 "\u00a74\u00a7lO CH\u00c3O SE ABRIU! \u00a7cVoc\u00ea caiu e n\u00e3o consegue se levantar."), true);
                     } else {
                         PacketDistributor.sendToPlayer(p, new NeptunePackets.Cena(
-                                NeptunePackets.Cena.CENA_RACHADURA, 0.7F, 4500, System.nanoTime()));
+                                NeptunePackets.Cena.CENA_RACHADURA, 0.7F, 2800, System.nanoTime()));  // 5.7.2: era 4500
                         p.displayClientMessage(Component.literal(
                                 "\u00a78Voc\u00ea cambaleia \u2014 o ch\u00e3o est\u00e1 cedendo."), true);
                     }
@@ -271,6 +275,21 @@ public final class NeptuneEventos {
                 }
                 // a terra se fecha atrás de quem caiu (antes de sair do buraco)
                 fecharFendas(server);
+            }
+        }
+
+        // ---- (5.7.2) FENDAS QUE QUEBRAM BLOCOS: a cada ~5 s abre uma rachadura
+        // fina no chão em volta de um jogador (blocos quebrando na frente dele,
+        // com poeira e estalo). Tudo é restaurado no fim (fecharFendas).
+        if (agora >= proximaFendaSolta) {
+            proximaFendaSolta = agora + 4200 + (long) (Math.random() * 2600);
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                if (p.isCreative() || p.isSpectator()) {
+                    continue;
+                }
+                if (p.level() instanceof ServerLevel nv && Math.random() < 0.75) {
+                    fendaDePassagem(nv, p.position(), new java.util.Random());
+                }
             }
         }
 
@@ -434,6 +453,49 @@ public final class NeptuneEventos {
         }
     }
 
+    /**
+     * (5.7.2) FENDA DE PASSAGEM: o dono pediu "fendas quebrando blocos, para dar
+     * mais imersão". Enquanto o terremoto está ativo, de tempos em tempos abre
+     * uma rachadura FINA (1 bloco de largura, 4 a 8 de comprimento, 1 de
+     * profundidade) no chão em volta de um jogador — os blocos quebram na frente
+     * dele, com a poeira do próprio bloco e o estalo. Tudo volta no
+     * {@link #fecharFendas} (mesmo motor, mesmas regras: só bloco CAVEl, nunca
+     * baú/forno, nunca água/lava).
+     *
+     * @return quantidade de blocos quebrados (0 = não achou chão bom ali)
+     */
+    public static int fendaDePassagem(ServerLevel nv, Vec3 centro, java.util.Random r) {
+        try {
+            int quantos = 0;
+            double ang = r.nextDouble() * Math.PI * 2;
+            double raio = 2.0 + r.nextDouble() * 6.0;
+            int x = (int) Math.floor(centro.x + Math.cos(ang) * raio);
+            int z = (int) Math.floor(centro.z + Math.sin(ang) * raio);
+            int comp = 4 + r.nextInt(5);
+            for (int i = 0; i < comp; i++) {
+                ang += (r.nextDouble() - 0.5) * 0.6;
+                x += (int) Math.round(Math.cos(ang));
+                z += (int) Math.round(Math.sin(ang));
+                for (int dy = -2; dy <= 3; dy++) {
+                    BlockPos c = new BlockPos(x, (int) Math.floor(centro.y) + dy, z);
+                    if (cavar(nv, c, r)) {
+                        quantos++;
+                        break;
+                    }
+                }
+            }
+            if (quantos > 0) {
+                nv.playSound(null, BlockPos.containing(centro),
+                        net.minecraft.sounds.SoundEvents.GRAVEL_BREAK,
+                        SoundSource.BLOCKS, 0.9F, 0.55F + r.nextFloat() * 0.2F);
+            }
+            return quantos;
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: fenda de passagem falhou", t);
+            return 0;
+        }
+    }
+
     /** cava um bloco (se for permitido) e guarda o original pra fechar depois. */
     private static boolean cavar(ServerLevel nv, BlockPos pos, java.util.Random r) {
         if (CAVADOS.contains(pos.asLong())) {
@@ -588,38 +650,13 @@ public final class NeptuneEventos {
             ServerLevel nv = (ServerLevel) p.level();
             Vec3 pos = p.position();
 
-            // ---- AURA (5.5.0) — TUDO GIRA EM VOLTA DO CORPO.
-            // O dono reclamou de dois coisas: (1) o efeito subia pela CABEÇA
-            // (era o SCULK_SOUL em y+2,1 — aquelas chamas azuis em cima do
-            // personagem na captura dele) e (2) as partículas não "circulavam"
-            // o player: ficavam empilhadas num anel que subia. Agora são TRÊS
-            // anéis horizontais de alturas diferentes, girando em sentidos
-            // diferentes (peito, cintura e tornozelo) — e NADA acima da cabeça.
-            double volta = agora / 1000.0;
-            // (1) peito: tinta preta, gira rápido no sentido horário
-            double rPeito = 1.20;
-            for (int i = 0; i < 10; i++) {
-                double a = Math.toRadians(volta * 170.0 + i * 36.0);
-                nv.sendParticles(ParticleTypes.SQUID_INK,
-                        pos.x + Math.cos(a) * rPeito, pos.y + 1.05, pos.z + Math.sin(a) * rPeito,
-                        0, 0.02, 0.02, 0.02, 0.0);
-            }
-            // (2) cintura: fumaça escura, gira ao contrário (mais devagar)
-            double rCintura = 1.05;
-            for (int i = 0; i < 6; i++) {
-                double a = Math.toRadians(-volta * 105.0 + i * 60.0);
-                nv.sendParticles(ParticleTypes.SMOKE,
-                        pos.x + Math.cos(a) * rCintura, pos.y + 0.62, pos.z + Math.sin(a) * rCintura,
-                        0, 0.0, 0.01, 0.0, 0.0);
-            }
-            // (3) tornozelo: cinza/poeira preta, gira no sentido horário
-            double rChao = 1.45;
-            for (int i = 0; i < 6; i++) {
-                double a = Math.toRadians(volta * 70.0 + i * 60.0);
-                nv.sendParticles(ParticleTypes.ASH,
-                        pos.x + Math.cos(a) * rChao, pos.y + 0.12, pos.z + Math.sin(a) * rChao,
-                        0, 0.0, 0.0, 0.0, 0.0);
-            }
+            // ---- AURA DO VAZIO (5.7.2) — SUBSTITUI os anéis antigos.
+            // O dono pediu: "os feixes vermelhos ficam no CHÃO e, conforme o
+            // player anda, as faixas vermelhas se mexem". Então nada de anel em
+            // volta do corpo: são RACHADURAS no chão, ancoradas no mundo (sob
+            // os pés, com o chão de verdade embaixo), que WRITHAM devagar e
+            // acompanham o jogador quando ele anda.
+            auraChao(nv, p, pos, agora);
 
             // ---- MEDO em quem chega perto (inimigos tremem)
             for (ServerPlayer outro : server.getPlayerList().getPlayers()) {
@@ -669,26 +706,110 @@ public final class NeptuneEventos {
         }
     }
 
+    /**
+     * (5.7.2) RACHADURAS DO VAZIO no chão, em volta do deus.
+     *
+     * <p>Ancorado no MUNDO (procura o chão de verdade embaixo do jogador e põe
+     * tudo em cima do bloco), então quando ele anda as faixas vermelhas vão
+     * junto — e cada "racha" serpenteia com o tempo (fase que avança devagar),
+     * dando a impressão de que está se abrindo. Só partículas de poeira
+     * vermelha (DUST) + um pouco de fumaça escura baixa: nada na tela.
+     */
+    private static void auraChao(ServerLevel nv, ServerPlayer p, Vec3 pos, long agora) {
+        // limita a taxa: o evento roda a cada tick; aqui desenhamos 1 em 3
+        if (agora % 3 != 0) {
+            return;
+        }
+        // chão de verdade: desce até achar algo sólido (no máximo 5 blocos)
+        double chaoY = pos.y;
+        var bp = p.blockPosition();
+        for (int dy = 0; dy <= 5; dy++) {
+            var abaixo = bp.below(dy);
+            var estado = nv.getBlockState(abaixo);
+            if (estado.isSolidRender(nv, abaixo)) {
+                chaoY = abaixo.getY() + 1.02;
+                break;
+            }
+        }
+        double fase = agora / 1000.0;
+        DustParticleOptions vermelho = new DustParticleOptions(new org.joml.Vector3f(0.78f, 0.03f, 0.03f), 1.35f);
+        DustParticleOptions sangue = new DustParticleOptions(new org.joml.Vector3f(0.42f, 0.0f, 0.02f), 1.6f);
+
+        // 7 rachaduras saindo dos pés; cada uma serpenteia
+        int rachas = 7;
+        for (int r = 0; r < rachas; r++) {
+            double ang = (r / (double) rachas) * Math.PI * 2
+                    + Math.sin(fase * 0.35 + r * 1.7) * 0.22;          // gira/ondula devagar
+            double comp = 1.6 + 1.5 * Math.abs(Math.sin(fase * 0.27 + r * 2.1));   // abre e fecha
+            int passos = 7;
+            for (int k = 1; k <= passos; k++) {
+                double f = k / (double) passos;
+                // serpenteio (a "faixa vermelha se mexendo")
+                double lateral = Math.sin(fase * 1.6 + r * 2.3 + k * 0.9) * 0.28 * f;
+                double x = pos.x + Math.cos(ang) * comp * f - Math.sin(ang) * lateral;
+                double z = pos.z + Math.sin(ang) * comp * f + Math.cos(ang) * lateral;
+                var opt = (k % 3 == 0) ? sangue : vermelho;
+                nv.sendParticles(opt, x, chaoY + 0.02, z, 1, 0.02, 0.0, 0.02, 0.0);
+            }
+        }
+        // braseiro baixo: fumaça escura rasteira (fica no chão, não sobe na cara)
+        if (agora % 9 == 0) {
+            for (int i = 0; i < 3; i++) {
+                double a = Math.random() * Math.PI * 2, rr = 0.6 + Math.random() * 1.5;
+                nv.sendParticles(ParticleTypes.SMOKE,
+                        pos.x + Math.cos(a) * rr, chaoY + 0.05, pos.z + Math.sin(a) * rr,
+                        1, 0.05, 0.0, 0.05, 0.0);
+            }
+        }
+        // cinza subindo bem devagar, colada no corpo (não na tela)
+        if (agora % 12 == 0) {
+            nv.sendParticles(ParticleTypes.ASH, pos.x, pos.y + 0.1, pos.z, 4, 0.45, 0.35, 0.45, 0.0);
+        }
+    }
+
     // =================================================================== SAÍDA
-    /** Agenda a saída: animação verde agora, kick depois de segundos. */
+    /** Agenda a saída: sombras crescem agora, kick depois de segundos. */
     public static void sairDoServidor(ServerPlayer p, int segundos, String motivo) {
         PacketDistributor.sendToPlayer(p, new NeptunePackets.Saida(segundos, p.getName().getString()));
         ServerLevel nv = (ServerLevel) p.level();
         Vec3 pos = p.position();
-        for (int i = 0; i < 90; i++) {
-            double a = Math.toRadians(i * 4);
-            double r = 0.2 + (i / 90.0) * 1.1;
-            nv.sendParticles(ParticleTypes.HAPPY_VILLAGER,
-                    pos.x + Math.cos(a) * r, pos.y + 0.15 + (i / 90.0) * 1.8, pos.z + Math.sin(a) * r,
-                    1, 0.02, 0.02, 0.02, 0.0);
-        }
-        nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME,
-                SoundSource.PLAYERS, 1.0F, 0.7F);
+        // (5.7.2) SAIU a chuva de 90 HAPPY_VILLAGER (verde). O dono rejeitou:
+        // "essas partículas verdes não ficaram legais, coloque algumas e vai
+        // aumentando até a pessoa sumir". Então: começa com POUCAS sombras e é
+        // o tickSaidas que vai multiplicando até ela desaparecer.
+        sombraChuva(nv, pos, 3);
+        nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.SOUL_ESCAPE.value(),
+                SoundSource.PLAYERS, 0.85F, 0.55F);
+        nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.AMBIENT_CAVE.value(),
+                SoundSource.PLAYERS, 0.45F, 0.7F);
         p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
-                "\u00a7a" + p.getName().getString() + " \u00a77está se desfazendo em luz verde...")
-                .withStyle(ChatFormatting.GREEN), false);
+                "\u00a78" + p.getName().getString() + " \u00a77foi engolido pelas sombras...")
+                .withStyle(ChatFormatting.DARK_GRAY), false);
         SAIDAS.add(new Object[]{ System.currentTimeMillis() + Math.max(1, segundos) * 1000L,
-                p.getUUID(), motivo });
+                p.getUUID(), motivo, System.currentTimeMillis() });
+    }
+
+    /**
+     * (5.7.2) A SOMBRA DO BANIMENTO: um punhado de partículas escuras em volta do
+     * corpo. Quem chama é o {@link #tickSaidas}, aumentando a quantidade com o
+     * tempo — no começo 2, no fim 11 por quadro (o dobro do espaçamento), então
+     * a nuvem CRESCE até o jogador sumir dentro dela.
+     */
+    private static void sombraChuva(ServerLevel nv, Vec3 pos, int quantas) {
+        for (int i = 0; i < quantas; i++) {
+            double a = Math.random() * Math.PI * 2;
+            double r = 0.12 + Math.random() * 0.6;
+            double y = pos.y + 0.1 + Math.random() * 1.8;
+            double px = pos.x + Math.cos(a) * r;
+            double pz = pos.z + Math.sin(a) * r;
+            nv.sendParticles(ParticleTypes.SQUID_INK, px, y, pz, 1, 0.01, 0.02, 0.01, 0.0);
+            if (Math.random() < 0.45) {
+                nv.sendParticles(ParticleTypes.LARGE_SMOKE, px, y, pz, 1, 0.02, 0.02, 0.02, 0.0);
+            }
+            if (Math.random() < 0.18) {
+                nv.sendParticles(ParticleTypes.ASH, px, y, pz, 1, 0.02, 0.02, 0.02, 0.0);
+            }
+        }
     }
 
     private static void tickSaidas(MinecraftServer server) {
@@ -696,11 +817,25 @@ public final class NeptuneEventos {
         Iterator<Object[]> it = SAIDAS.iterator();
         while (it.hasNext()) {
             Object[] s = it.next();
-            if (agora < (Long) s[0]) {
+            long fim = (Long) s[0];
+            ServerPlayer p = server.getPlayerList().getPlayer((UUID) s[1]);
+            // (5.7.2) a sombra do banimento vai AUMENTANDO até engolir a pessoa:
+            // 1 partícula por quadro no começo, até 11 no fim (a cada 2 ticks
+            // pra não exagerar no pacote nem pesar o cliente).
+            if (p != null && p.level() instanceof ServerLevel nv && (agora % 2 == 0)) {
+                long inicio = (Long) s[3];
+                long dur = Math.max(1L, fim - inicio);
+                float k = Math.max(0.0F, Math.min(1.0F, (agora - inicio) / (float) dur));
+                sombraChuva(nv, p.position(), 1 + (int) (10 * k * k));
+                if (k > 0.35F && Math.random() < 0.5) {
+                    nv.sendParticles(ParticleTypes.SOUL, p.getX(), p.getY() + 0.9, p.getZ(),
+                            1, 0.25, 0.6, 0.25, 0.01);
+                }
+            }
+            if (agora < fim) {
                 continue;
             }
             it.remove();
-            ServerPlayer p = server.getPlayerList().getPlayer((UUID) s[1]);
             if (p == null) {
                 continue;
             }

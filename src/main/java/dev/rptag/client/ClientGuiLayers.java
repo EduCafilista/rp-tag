@@ -70,6 +70,8 @@ public final class ClientGuiLayers {
         AllForOneAvisoFx.registrar(event);
         // (5.7.0) ANIMAÇÃO DE SAÍDA do jogador (sprite dissolvendo em código)
         SaidaPlayerFx.registrar(event);
+        // (5.7.2) SOMBRA DA MORTE: a escuridão saindo do corpo de quem morre
+        SombraMorteFx.registrar(event);
         // (5.4.0) EVENTO NEPTUNE: terremoto (nebulosa + poeira + visao dupla),
         // saida verde, susto do bicho, nebulosa do vazio e aura do deus.
         event.registerAboveAll(

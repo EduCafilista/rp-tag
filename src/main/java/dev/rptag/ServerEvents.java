@@ -122,6 +122,50 @@ public final class ServerEvents {
             PacketDistributor.sendToPlayer(joined, new SyncRPStatePayload(other.getUUID(), data.isInRp(other.getUUID())));
             PacketDistributor.sendToPlayer(joined, PersonaSyncPayload.of(other.getUUID(), data.getPersona(other.getUUID())));
         }
+        // (5.7.2) TÍTULOS: manda os que já existem pro recém-chegado e avisa
+        // quem já estava online do título DELE (senão o nametag fica sem).
+        Titulos.enviarTodos(joined);
+        Titulos.avisar(server, joined.getUUID());
+    }
+
+    /**
+     * (5.7.2) SOMBRA DA MORTE: quando um jogador morre, sai escuridão do corpo.
+     * <ul>
+     *   <li>o MORTO recebe o efeito de tela (estilo 19) — ele está olhando pro
+     *       próprio corpo na tela de morte;</li>
+     *   <li>quem está por perto vê as partículas escuras subindo do cadáver.</li>
+     * </ul>
+     */
+    @SubscribeEvent
+    public static void onMorte(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        try {
+            if (!(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer morto)) {
+                return;
+            }
+            var server = morto.getServer();
+            if (server == null) {
+                return;
+            }
+            // efeito de tela pra quem morreu
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(morto,
+                    new ScreenTextPayload("", 5, 19));
+            // partículas no cadáver (todos que estiverem perto veem)
+            var nivel = morto.serverLevel();
+            var pos = morto.position();
+            nivel.sendParticles(net.minecraft.core.particles.ParticleTypes.SQUID_INK,
+                    pos.x, pos.y + 0.6, pos.z, 90, 0.45, 0.7, 0.45, 0.02);
+            nivel.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                    pos.x, pos.y + 0.5, pos.z, 60, 0.5, 0.6, 0.5, 0.01);
+            nivel.sendParticles(net.minecraft.core.particles.ParticleTypes.ASH,
+                    pos.x, pos.y + 1.0, pos.z, 50, 0.6, 0.8, 0.6, 0.0);
+            nivel.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL,
+                    pos.x, pos.y + 0.8, pos.z, 12, 0.3, 0.5, 0.3, 0.01);
+            nivel.playSound(null, morto.blockPosition(),
+                    net.minecraft.sounds.SoundEvents.SOUL_ESCAPE.value(),
+                    net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 0.55F);
+        } catch (Throwable t) {
+            dev.rptag.RPTagMod.LOGGER.warn("RP Tag: sombra da morte falhou", t);
+        }
     }
 
     @SubscribeEvent
@@ -182,8 +226,10 @@ public final class ServerEvents {
         if (RPTags.hasTag(event.getDisplayname())) {
             return;
         }
-        event.setDisplayname(baseName(player, getPersona(player))
-                .append(RPTags.tag(isInRp(player))));
+        // (5.7.2) TÍTULO na frente: [Sagrado] Seraphiel (ʀᴘ) [O Ferreiro]
+        event.setDisplayname(Titulos.aplicar(player.server, player.getUUID(),
+                baseName(player, getPersona(player)))
+                .copy().append(RPTags.tag(isInRp(player))));
     }
 
     /** Nome usado na lista de jogadores (TAB). */
@@ -198,7 +244,10 @@ public final class ServerEvents {
         }
         // (3.34.0) FIX: null = padrao do vanilla — AGORA colocamos a tag!
         // (antes dava return e o TAB NUNCA mostrava o estado RP)
-        event.setDisplayName(baseName(player, getPersona(player)).append(RPTags.tag(isInRp(player))));
+        // (5.7.2) o TÍTULO também vale pro TAB
+        event.setDisplayName(Titulos.aplicar(player.server, player.getUUID(),
+                baseName(player, getPersona(player)))
+                .copy().append(RPTags.tag(isInRp(player))));
     }
 
     // ================================================================

@@ -1,5 +1,65 @@
 # Changelog
 
+## 5.7.2 — TERREMOTO NOVO, BANIDO NAS SOMBRAS E TÍTULOS — 2026-11-01
+
+**1) SOM NOS AVISOS (o que o dono cobrou).** O CONHECIMENTO e o ALL FOR ONE
+agora têm som PRÓPRIO, sintetizados aqui (44,1 kHz, estéreo, Vorbis):
+- `conhecimento_aviso.ogg` — 11,5 s: sino de templo, drone grave por baixo,
+  sussurros e campainhas brilhando no fim (parece "revelação", não susto);
+- `allforone_aviso.ogg` — 12,5 s: boom grave + coro de vozes + estalos.
+Os dois entram no PUSH do aviso (streaming, não esperam o download terminar) e
+param junto com o efeito. Antes era só o som do vanilla batendo — agora tem
+trilha.
+
+**2) TERREMOTO — ABERTURA NOVA.** Saiu o flash BRANCO de 2,6 s (parecia foto
+estourando) e o blur 3,5. Entrou: abertura de **1,4 s** com o chão rachando em
+zigue-zague do centro pra fora, pedrisco pulando da linha da fenda, o mundo só
+ESCURECENDO nas bordas (0,30 de alfa, nada de tela preta) e um tremor de 0,2 s
+(blur 1,2 no máximo). A "rachadura de vidro" da tela agora entra fraca (0,42) e
+curta (1,1 s) — antes ficava ~4 s e dava cara de tela de celular quebrada.
+
+**3) TERREMOTO — FENDAS QUEBRANDO BLOCOS.** A cada ~5 s, durante o evento,
+abre uma rachadura FINA de 4–8 blocos no chão em volta de um jogador: os blocos
+quebram na frente dele com a poeira do PRÓPRIO bloco e o estalo. Mesmas regras
+de segurança de sempre (só terra/pedra/areia, nunca baú/forno, nunca
+água/lava) e **tudo volta** no fim (`fecharFendas`). O tempo de tela preta da
+queda também caiu: 5,5 s → 3,2 s e a rachadura 4,5 s → 2,8 s.
+
+**4) BANIMENTO — SOMBRAS, NÃO VERDE.** O dono rejeitou as 90 partículas verdes
+("não ficaram legais"). Agora `/terremoto sair` (e `/saida`) começam com
+**poucas** sombras (3) e o servidor vai MULTIPLICANDO a cada 2 ticks — 1 no
+começo, 11 por vez no fim — mais algumas almas subindo, até a pessoa
+desaparecer. A camada da tela também perdeu o verde: são 3 → 26 borrões escuros
+que nascem em volta do corpo, crescem, se juntam no último terço e escurecem no
+máximo 78% (sem tela preta, sem lavada colorida).
+
+**5) SISTEMA DE TÍTULOS (a print do AETHERIS).** Qualquer jogador pode ter:
+- uma **etiqueta colorida** na frente do nome — `[Sagrado]`, `[Warden]`,
+  `[Gelo]`, `[Fragmento]`, `[Almas]`, `[Chronos]`, `[Sombra]`, `[Divino]`,
+  `[Morte]`, `[Vazio]`, `[Ferreiro]`, `[Player]` — ou qualquer palavra (fica
+  cinza-claro);
+- um **título pessoal** depois do nome, como o `Nephisto [O Ferreiro]`.
+Aparece **no TAB, no chat e no nametag acima da cabeça**. Comandos:
+```
+/titulo definir <jogador> <etiqueta>        (admin)
+/titulo personalizado <jogador> <texto>     (admin)
+/titulo limpar <jogador>                    (admin)
+/titulo lista                               (todos)
+/titulo paleta                              (todos)
+/titulo ver <jogador>                       (todos)
+```
+Salvo no mundo (`rptag_titulos`), então reiniciar não perde nada. O texto é
+limpo de `§` e limitado (16/24 caracteres) pra ninguém quebrar a tela.
+
+**6) SOMBRA DA MORTE.** Quem morre recebe o efeito 19: tentáculos subindo do
+chão, halo vermelho, cinza, fios de alma e a tela escurecendo e voltando; em
+volta do corpo saem tinta de lula, fumaça escura, cinza e alma.
+
+### Testes
+`check.py`: **661 PASS / 0 FAIL**. Servidor de teste com o jar novo: sobe
+limpo ("Done"), `/titulo paleta` e `/titulo lista` respondem, `/terremoto
+fenda` abre 39 blocos e `/terremoto fechar` devolve tudo.
+
 ## 5.7.1 — CONSERTOS E AURA DO VAZIO — 2026-11-01
 
 **1) CONHECIMENTO não "crasha no meio" mais.** Era um bug de verdade: o desenho

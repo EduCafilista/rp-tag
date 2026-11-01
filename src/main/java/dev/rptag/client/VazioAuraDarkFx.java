@@ -118,7 +118,7 @@ public final class VazioAuraDarkFx {
             Buf b = new Buf(g.pose().last().pose());
 
             // ---------------- escurecer (NÃO opaco: o mundo continua aparecendo)
-            b.rect(0, 0, w, h, col(0x0A0A0C, 0.42f));
+            b.rect(0, 0, w, h, col(0x0A0A0C, 0.26f));   // (5.7.2) mais leve: era um borrão preto
             b.brilho(cx, corpo, Math.max(w, h) * 0.55f, 0x2A2230, 0.10f);
             // névoa clara atrás pra silhueta escura aparecer
             b.brilho(cx, corpo, 300f * s, 0x50424E, 0.12f);
@@ -202,7 +202,7 @@ public final class VazioAuraDarkFx {
             }
 
             // ---------------- vinheta forte (o preto que engole as bordas)
-            b.vinheta(w, h, Math.max(90f, 190f * s), 0x000000, 0.80f);
+            b.vinheta(w, h, Math.max(70f, 150f * s), 0x000000, 0.62f);
 
             // piscada de raiva: a tela escurece por um instante
             boolean pisca = n(Math.floor(t * 10f)) > 0.93;

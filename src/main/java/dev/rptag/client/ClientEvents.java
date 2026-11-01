@@ -78,6 +78,7 @@ public final class ClientEvents {
         ClientRPStates.clear();
         ClientPersonaCache.clear();
         ClientBubbleCache.clear();
+        ClientTitulos.limpar(); // (5.7.2) título do mundo anterior não vale aqui
         VideoFx.fechar(); // (4.2.0) nada de video sobrando no proximo mundo
         // (4.5.0) e nenhum aviso em video "volta" se o jogador reentrar em menos de 6 s
         MorteAvisoFx.parar();

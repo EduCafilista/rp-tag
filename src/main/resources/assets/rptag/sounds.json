@@ -78,5 +78,21 @@
         "stream": false
       }
     ]
+  },
+  "conhecimento_aviso": {
+    "sounds": [
+      {
+        "name": "rptag:conhecimento_aviso",
+        "stream": true
+      }
+    ]
+  },
+  "allforone_aviso": {
+    "sounds": [
+      {
+        "name": "rptag:allforone_aviso",
+        "stream": true
+      }
+    ]
   }
 }

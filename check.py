@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.7.1'
+VER = '5.7.2'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -38,7 +38,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("9")' in mn)
+check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("10")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -165,7 +165,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo atual (3 payloads de musica)', 'registrar("9")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo atual (3 payloads de musica)', 'registrar("10")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -1047,8 +1047,12 @@ _mn9 = rd(R + '/ModNetworking.java')
 check('5.2.0: canais novos tablet_sync/tablet_update no lugar dos antigos ficha_*',
       'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9
       and 'tablet_sync' in rd(R + '/TabletSyncPayload.java') and 'tablet_update' in rd(R + '/TabletUpdatePayload.java'))
-check('5.2.0/5.4.0: protocolo subiu para v9 (cliente v8 e recusado)',
-      'registrar("9")' in _mn9 and 'registrar("8")' not in _mn9)
+check('5.2.0/5.4.0: protocolo subiu para v9 e agora v10 (cliente v8 e recusado)',
+      'registrar("9")' not in _mn9 and 'registrar("10")' in _mn9 and 'registrar("8")' not in _mn9)
+# (5.7.2) o canal subiu de novo: TITULOS entrou, cliente 5.7.1 e recusado
+check('5.7.2: protocolo v10 com o pacote de TITULOS',
+      'event.registrar("10")' in rd(R + '/ModNetworking.java')
+      and 'TituloSyncPayload.TYPE' in rd(R + '/ModNetworking.java'))
 check('5.2.0: o tablet e entregue no login', 'PlayerLoggedInEvent' in rd(R + '/TabletService.java'))
 check('5.2.0: /tablet existe e /ficha nao voltou',
       'literal("tablet")' in _junto and 'literal("ficha")' not in _junto)
@@ -1342,7 +1346,7 @@ check('5.2.0: item rptag:tablet registrado (stacksTo 1)', 'ITEMS.register("table
       and 'stacksTo(1)' in rd(R + '/RPTagMod.java'))
 check('5.2.0: tabela de limites da ficha 32/5/240/600/3000', 'LIMITES = {32, 5, 240, 600, 3000}' in _fp)
 check('5.2.0: protocolo com os 2 payloads do tablet',
-      'registrar("9")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
+      'registrar("10")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
 check('5.2.0: handler do cliente registrado', 'handleTablet' in rd(C + '/ClientPayloadHandler.java'))
 check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID antes do load',
       'tag.put("TabletSheets", sheets)' in _rw and 'hasUUID("Id")' in _rw
@@ -1524,8 +1528,8 @@ check('5.4.0: blur REAL no pulso travado (processBlurEffect) com fallback',
       'processBlurEffect' in rd(_NX) and 'catch (Throwable ignorado)' in rd(_NX))
 check('5.4.0: texto do vazio no chat com a frase do dono',
       'NeptunePackets' in rd(_NPk) and 'neptune_saida' in rd(_NPk))
-check('5.4.0: canal v9 registra os 5 pacotes novos',
-      'event.registrar("9")' in rd('src/main/java/dev/rptag/ModNetworking.java')
+check('5.4.0: canal v9 (agora v10) registra os 5 pacotes novos',
+      'event.registrar("10")' in rd('src/main/java/dev/rptag/ModNetworking.java')
       and rd('src/main/java/dev/rptag/ModNetworking.java').count('NeptunePackets') >= 5)
 check('5.4.0: comandos /terremoto, /vazio, /bicho e /neptune so pra OP',
       all(k in rd(_NC) for k in ['literal("terremoto")', 'literal("vazio")', 'literal("bicho")', 'literal("neptune")'])
@@ -1593,8 +1597,13 @@ check('5.5.0: /vazio exilar manda pra rptag:exilio e POUSA no chao (y=1)',
       '"exilio"' in _ne2 and 'alvo.teleportTo(destino, 0.5, 1.0, 0.5' in _ne2)
 check('5.5.0: /vazio soltar tira o jogador do exilio',
       'literal("soltar")' in _nc2 and 'soltarDoExilio' in _ne2)
-check('5.5.0: a aura CIRCULA o player em 3 aneis (peito, cintura, tornozelo)',
-      'rPeito' in _ne2 and 'rCintura' in _ne2 and 'rChao' in _ne2)
+# (5.7.2) os 3 aneis antigos SAIRAM: o dono pediu rachaduras no CHAO que
+# acompanham o player (ancoradas no mundo) em vez de aneis em volta do corpo.
+check('5.7.2: a aura SUBSTITUIDA por rachaduras vermelhas no CHAO (seguem o player)',
+      'auraChao(' in _ne2 and 'DustParticleOptions' in _ne2
+      and 'chaoY' in _ne2 and 'rPeito' not in _ne2 and 'rCintura' not in _ne2)
+check('5.7.2: as rachaduras serpenteiam (as faixas vermelhas se mexem)',
+      'fase * 1.6' in _ne2 and 'lateral' in _ne2)
 check('5.5.0: SAIU a particula que ficava NA CABEÇA (SCULK_SOUL em y+2,1)',
       'ParticleTypes.SCULK_SOUL' not in _ne2 and 'pos.y + 2.1' not in _ne2)
 check('5.5.0: o apagar/exilar nao desenha mais o QUADRADO PRETO (g.fill no centro)',
@@ -1633,10 +1642,45 @@ check('5.6.0: a tela RACHA (abismo abrindo no rodape + 9 rachaduras serrilhadas)
       and 'rachaduras = 11' in _nf3)
 check('5.6.0: a queda tomba a camera e poe a tela no fundo da cova',
       'desenharQueda' in _nf3 and 'pitch += 22.0F * tomba' in _nf3 and 'roll += 14.0F * tomba' in _nf3)
-check('5.6.0: o tranco inicial tem flash + onda de choque',
-      'desenharEstouro' in _nf3 and 'onda de choque' in _nf3)
+# (5.7.2) o dono VETOU a abertura antiga ("nao quero essa animacao quando
+# comecou o terremoto"): saiu o flash branco de 0.55 e o blur 3.5.
+check('5.7.2: ABERTURA do terremoto sem flash branco (fenda no chao)',
+      'desenharEstouro' in _nf3 and 'FENDA na tela' in _nf3
+      and '0xFFF3DC' not in _nf3)
+check('5.7.2: abertura curta (1,4 s) e sem blur de 3,5',
+      'desfocar(1.2F' in _nf3 and 'desfocar(3.5F' not in _nf3
+      and 'CENA_ESTOURO, 1.0F, 1400' in rd(R + '/NeptuneEventos.java'))
+check('5.7.2: FENDAS QUEBRANDO BLOCOS durante o terremoto',
+      'fendaDePassagem' in rd(R + '/NeptuneEventos.java')
+      and 'proximaFendaSolta' in rd(R + '/NeptuneEventos.java'))
+check('5.7.2: banimento SEM particulas verdes (sombras que aumentam)',
+      'ParticleTypes.HAPPY_VILLAGER' not in rd(R + '/NeptuneEventos.java')
+      and 'sombraChuva' in rd(R + '/NeptuneEventos.java')
+      and '0x2BFF77' not in _nf3 and '0x7CFF9A' not in _nf3)
 check('5.6.0: detritos caindo pela tela durante o terremoto',
       'DETRITOS CAINDO' in _nf3)
+
+
+# ============ 5.7.2: SISTEMA DE TÍTULOS ============
+_tit = rd(R) + rd(R + '/Titulos.java') if False else ''
+_tit = rd(R + '/Titulos.java')
+check('5.7.2: TITULOS - etiqueta colorida na frente do nome ([Sagrado] Nome)',
+      'ETIQUETAS' in _tit and 'CORES' in _tit and '"Sagrado"' in _tit
+      and '"Warden"' in _tit and '"Gelo"' in _tit and '"Fragmento"' in _tit
+      and '"Almas"' in _tit and '"Chronos"' in _tit)
+check('5.7.2: TITULOS - titulo pessoal depois do nome (Nephisto [O Ferreiro])',
+      'personalizado' in _tit and 'out.append(Component.literal(" [" + t.personalizado() + "]")' in _tit)
+check('5.7.2: TITULOS - salvos no mundo (SavedData rptag_titulos)',
+      'rptag_titulos' in _tit and 'extends SavedData' in _tit)
+check('5.7.2: TITULOS - aparecem no TAB, no chat e no nametag',
+      'Titulos.aplicar' in rd(R + '/ServerEvents.java')
+      and 'handleTitulo' in rd(C + '/ClientPayloadHandler.java')
+      and 'onRenderNameTagTitulo' in rd(C + '/NameplateRenderer.java'))
+check('5.7.2: TITULOS - comandos /titulo definir|personalizado|limpar|lista|paleta',
+      all(x in rd(R + '/TituloCommands.java') for x in
+          ['"definir"', '"personalizado"', '"limpar"', '"lista"', '"paleta"']))
+check('5.7.2: TITULOS - nome e limpo de § e limitado (nao quebra a tela)',
+      'MAX_ETIQUETA' in _tit and 'MAX_PERSONALIZADO' in _tit and 'isISOControl' in _tit)
 
 # ============ 5.6.1: video atras do player no tablet (em loop) ============
 _tvf = rd(C + '/TabletVideoFundo.java')

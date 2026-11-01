@@ -29,7 +29,8 @@ public final class ModNetworking {
         // manda os pacotes antigos) e recusado na hora, com mensagem de versao.
         // (5.2.0) v8: TABLET NEPTUNE (tablet_sync cliente / tablet_update servidor).
         // (5.4.0) v9: EVENTO NEPTUNE (terremoto, saida verde, susto, aura, nebulosa)
-        PayloadRegistrar registrar = event.registrar("9");
+        // (5.7.2) v10: TITULOS (sync_titulo) — cliente 5.7.1 nao tem o canal
+        PayloadRegistrar registrar = event.registrar("10");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         registrar.playToServer(TabletUpdatePayload.TYPE, TabletUpdatePayload.STREAM_CODEC,
@@ -92,5 +93,8 @@ public final class ModNetworking {
         // (5.6.0) CENA: rachadura na tela, queda do jogador e o estouro inicial
         registrar.playToClient(NeptunePackets.Cena.TYPE, NeptunePackets.Cena.STREAM_CODEC,
                 (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onCena(p)));
+        // (5.7.2) SISTEMA DE TÍTULOS (etiqueta colorida + título pessoal)
+        registrar.playToClient(TituloSyncPayload.TYPE, TituloSyncPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleTitulo);
     }
 }

@@ -57,6 +57,27 @@ public final class NameplateRenderer {
     private NameplateRenderer() {
     }
 
+    /**
+     * (5.7.2) TÍTULOS NO NAMETAG: roda SEMPRE (independente de
+     * {@link #BADGE_ENABLED}) e só troca o TEXTO do nametag pelo
+     * {@code [Sagrado] Nome [O Ferreiro]} de quem tem título. Quem não tem
+     * não é tocado — o vanilla desenha igual a antes.
+     */
+    @SubscribeEvent
+    public static void onRenderNameTagTitulo(RenderNameTagEvent event) {
+        try {
+            if (!(event.getEntity() instanceof Player player)) {
+                return;
+            }
+            if (ClientTitulos.get(player.getUUID()) == null) {
+                return;
+            }
+            event.setContent(ClientTitulos.aplicar(player.getUUID(), event.getContent()));
+        } catch (Throwable erro) {
+            RPTagMod.LOGGER.warn("RP Tag: titulo do nametag desligado nesta render", erro);
+        }
+    }
+
     @SubscribeEvent
     public static void onRenderNameTag(RenderNameTagEvent event) {
         if (!BADGE_ENABLED || !ClientRPStates.hasData()) {

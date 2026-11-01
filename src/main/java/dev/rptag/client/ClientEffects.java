@@ -70,7 +70,8 @@ public final class ClientEffects {
     /** (3.87.0) estilo do aviso em exibicao: 0 classico, 1 pesadelo,
      * 2 runico, 3 real, 4 morte, 5 inferno, 6 gelo, 7 divino, 8 void,
      * 9 sangue, 10 demoniaco, 11 pesadelo2, 12 egipicio, 13 expurgo,
-     * 14 ciberpsicose, 15 energia, 16 conhecimento, 17 allforone, 18 saida. */
+     * 14 ciberpsicose, 15 energia, 16 conhecimento, 17 allforone, 18 saida,
+     * 19 sombra da morte. */
     private static volatile int textStyle = 0;
 
     /** Liga o MEDO por N segundos (servidor clampa 1..30). */
@@ -97,6 +98,7 @@ public final class ClientEffects {
         ConhecimentoAvisoFx.parar();
         AllForOneAvisoFx.parar();
         SaidaPlayerFx.parar();
+        SombraMorteFx.parar();
         // (3.94.0) estilo 10 = DEMONIACO: o FX proprio (Chamado do Abismo:
         // mandibulas, fissuras, pentagrama, olho de fenda) assume. Codigos
         // & sao ignorados.
@@ -154,6 +156,13 @@ public final class ClientEffects {
             String limpoE15 = text.replaceAll("\u00a7.", "");
             EnergiaAvisoFx.iniciar(limpoE15);
             RPTagMod.LOGGER.info("RP Tag: AVISO ENERGIA iniciado (FX proprio)");
+            return;
+        }
+        // (5.7.2) estilo 19 = SOMBRA DA MORTE: escuridão saindo do corpo,
+        // tentáculos subindo, cinza e desaparecimento (pedido do dono)
+        if (style == 19) {
+            SombraMorteFx.iniciar();
+            RPTagMod.LOGGER.info("RP Tag: SOMBRA DA MORTE iniciada (FX proprio)");
             return;
         }
         // (5.7.0) estilo 17 = ALLFORONE: as vozes têm forma (sol pintado +

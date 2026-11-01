@@ -89,6 +89,78 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
   do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
 
+## 5.7.2 (2026-11-01): terremoto sem flash, banido nas sombras, títulos
+
+> Pedido do dono: som nos avisos de CONHECIMENTO e ALLFORONE; aura do `/vazio`
+> com feixes NO CHÃO (e nada de fumaça no F1); escuridão saindo do corpo de quem
+> morre; **nova** abertura do terremoto (a antiga com flash branco foi vetada),
+> pouca tela preta e **fendas quebrando blocos**; banimento sem as partículas
+> verdes ("algumas e vai aumentando até a pessoa sumir"); e TÍTULOS para
+> qualquer jogador (print do AETHERIS: `[Sagrado] Seraphiel`,
+> `Nephisto [O Ferreiro]`).
+
+### Feito nesta versão
+- **SOM DOS AVISOS**: `arte/audio_570.py` sintetiza `conhecimento_aviso.ogg`
+  (11,5 s, sino de templo + drone + sussurros + campainhas) e
+  `allforone_aviso.ogg` (12,5 s, boom + coro + estalos) em
+  `assets/rptag/sounds/`. `RPTagMod` registra `SOM_CONHECIMENTO` e
+  `SOM_ALLFORONE`; `sounds.json` com `stream:true`; `tocar(...)` no começo de
+  `ConhecimentoAvisoFx.iniciar()` e do `AllForOneAvisoFx`.
+- **AURA NO CHÃO**: em `NeptuneEventos.tickDeus` os 3 anéis SAÍRAM (o dono
+  mandou trocar) e entrou `auraChao(...)`: 7 rachaduras serpenteantes de
+  `DustParticleOptions` vermelho-sangue sob os pés, ancoradas no chão real
+  (desce até 5 blocos), 1 a cada 3 ticks, + fumaça rasteira + cinza.
+  `NeptuneFx` faz early-return da aura em PRIMEIRA PESSOA
+  (`options.getCameraType().isFirstPerson()`) — no F1 não suja a tela; no F5
+  aparece tudo. O overlay `VazioAuraDarkFx` ficou mais leve (0,42→0,26 de
+  preto; vinheta 0,80→0,62).
+- **SOMBRA DA MORTE (estilo 19)**: `client/SombraMorteFx.java` (4,2 s:
+  tentáculos saindo do chão, halo vermelho, cinza, fios de alma, tela escurece
+  e volta). Registrado em `ClientGuiLayers`; `ClientEffects` estilo 19 →
+  `iniciar()`/`parar()`; `ServerEvents.onMorte` manda `ScreenTextPayload("",5,19)`
+  pro morto, partículas (SQUID_INK/LARGE_SMOKE/ASH/SOUL) e `SOUL_ESCAPE`.
+- **TERREMOTO — ABERTURA NOVA**: `NeptuneFx.desenharEstouro` reescrito. Antes:
+  flash branco 0,55 + `desfocar(3.5)` por 2,6 s. Agora: 1,4 s
+  (`CENA_ESTOURO`), fenda em zigue-zague abrindo do centro pra fora, pedrisco da
+  linha da rachadura, bordas escurecendo 0,30, tremor de 0,2 s com blur 1,2. A
+  rachadura de tela do estouro caiu de `forca 1.2 / ~4 s` para `0.42 / 1,1 s`.
+  Tempo de tela preta do pulso: `CENA_QUEDA` 5500→3200 ms, `CENA_RACHADURA`
+  4500→2800 ms.
+- **FENDAS QUEBRANDO BLOCOS**: `NeptuneEventos.fendaDePassagem(nv, centro, r)`
+  abre uma rachadura fina (4–8 blocos, 1 de profundidade) a 2–8 blocos de um
+  jogador, usando o mesmo `cavar(...)` (só `CAVEIS`, nunca block entity/fluido,
+  e registra em `FENDAS` pra restaurar). Chamada no `tickTerremoto` a cada
+  ~4,2–6,8 s (`proximaFendaSolta`), com 75% de chance por jogador.
+- **BANIMENTO SEM VERDE**: `sairDoServidor` perdeu os 90 `HAPPY_VILLAGER` e a
+  mensagem "luz verde". Entrou `sombraChuva(nv, pos, quantas)` (SQUID_INK +
+  LARGE_SMOKE + ASH) iniciando com 3; `tickSaidas` recalcula
+  `1 + 10*k²` a cada 2 ticks (a nuvem AUMENTA até sumir) e solta SOUL depois de
+  35%. A `SAIDAS` ganhou um 4º campo (`inicioMs`) para calcular o `k`. No
+  cliente, `desenharSaida` foi reescrita sem verde: 3→26 borrões escuros que
+  nascem em volta do corpo e crescem, juntando-se no último terço; escurece no
+  máximo ~78%, nunca tela preta.
+- **TÍTULOS**: `Titulos.java` (SavedData `rptag_titulos`, paleta de 12 etiquetas
+  com cor, `Titulo(etiqueta, cor, personalizado)`, `aplicar(server, uuid, nome)`),
+  `TituloSyncPayload` (`sync_titulo`, canal **v10**), `TituloCommands`
+  (`/titulo definir|personalizado|limpar|ver|lista|paleta`),
+  `client/ClientTitulos` + `ClientPayloadHandler.handleTitulo` +
+  `NameplateRenderer.onRenderNameTagTitulo` (`RenderNameTagEvent.setContent`).
+  `ServerEvents` aplica no `NameFormat` (chat) e no `TabListNameFormat` (TAB) e
+  envia tudo no login.
+
+### Armadilhas aprendidas
+- `SavedData.Factory<>(New::new, Load::load, null)` exige o 3º argumento (e o
+  `load` precisa de `(CompoundTag, HolderLookup.Provider)`) — sem isso o
+  `javac` reclama de "cannot infer type arguments".
+- `SoundEvents.SOUL_ESCAPE` é `Holder<SoundEvent>`: use `.value()` no
+  `playSound`.
+- Comentário `//` DEPOIS de argumento em chamada multi-linha quebra o `)` do
+  fechamento — o javac aponta erro no `)` e não no comentário.
+
+### Testes
+`check.py` 661 PASS / 0 FAIL (novos: abertura sem flash, fenda quebrando
+blocos, banimento sem verde, 6 de títulos, canal v10).
+
 ## 5.7.1 (2026-11-01): crash do CONHECIMENTO, vídeo sem marca d'água, aura do vazio
 
 - **BUG (real, do meu porte):** em `ConhecimentoAvisoFx.olho()` o array do

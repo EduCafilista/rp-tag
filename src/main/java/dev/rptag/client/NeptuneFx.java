@@ -133,10 +133,13 @@ public final class NeptuneFx {
             case NeptunePackets.Cena.CENA_ESTOURO -> {
                 estouroInicio = agora;
                 estouroFim = agora + ms;
-                // o estouro já vem com a rachadura grande da tela
+                // (5.7.2) o estouro agora é o próprio desenharEstouro (a fenda
+                // no chão). A rachadura "de vidro" da tela entra FRACA e curta —
+                // antes ela vinha com forca 1.2 por ~4 s e dava cara de tela
+                // rachada de celular (o dono não gostou).
                 rachInicio = agora;
-                rachFim = agora + ms + 1800L;
-                rachForca = 1.2F;
+                rachFim = agora + 1100L;
+                rachForca = 0.42F;
                 rachSemente = p.semente();
             }
             default -> {
@@ -561,7 +564,13 @@ public final class NeptuneFx {
         desfocar(2.5F + 2.5F * (1F - u) + 1.5F * (float) Math.sin(now * 0.004));
     }
 
-    // ===================== (5.6.0) ESTOURO: o tranco inicial ==============
+    // ============ (5.7.2) ABERTURA DO TERREMOTO: o chão racha, sem flash ====
+    // O dono VETOU a abertura antiga: "não quero essa animação que você fez
+    // quando começou o terremoto". Ela era um FLASH BRANCO de 0,55 + blur 3,5
+    // por 2,6 s (parecia foto estourando / tela lavada). Agora a abertura é
+    // curta (1,4 s), escura, e mostra o CHÃO RACHANDO: uma fenda em zigue-zague
+    // se abrindo do centro pra fora + pedrisco pulando da linha da rachadura.
+    // Nada de branco, nada de blur acima de 1,2 (não dá enjoo).
     private static void desenharEstouro(GuiGraphics g) {
         long now = System.currentTimeMillis();
         if (estouroInicio == 0L || now > estouroFim) {
@@ -572,38 +581,76 @@ public final class NeptuneFx {
         int w = g.guiWidth();
         int h = g.guiHeight();
         float cx = w / 2f;
-        float cy = h / 2f;
-        float escala = Math.min(w, h);
+        float cy = h * 0.74f;                     // mira no CHÃO, não no meio da cara
+        float esc = Math.min(w, h);
 
         AvisoFxUtil.preparar(g);
         AvisoFxUtil.Buf b = new AvisoFxUtil.Buf(g.pose().last().pose());
-        // flash branco-arenoso no primeiro instante
-        float flash = (1F - ss(0.0F, 0.22F, u)) * 0.55F;
-        if (flash > 0.01F) {
-            b.rect(0, 0, w, h, col(0xFFF3DC, flash));
+
+        // (1) o tranco: 4 faixas de sombra piscam nas bordas (nunca branco)
+        float tranco = (1F - ss(0.0F, 0.30F, u)) * 0.30F;
+        if (tranco > 0.01F) {
+            b.rect(0, 0, w, (int) (h * 0.16F), col(0x0A0505, tranco));
+            b.rect(0, h - (int) (h * 0.20F), w, h, col(0x0A0505, tranco));
         }
-        // onda de choque: dois aros que se abrem
-        float r1 = escala * (0.05F + 0.75F * eo(cl(u * 1.6F)));
-        float a1 = (1F - cl(u * 1.6F)) * 0.55F;
-        b.anel(cx, cy, r1, 72, 3.0F + 5.0F * (1F - u), 0F, 0xE8D5B0, a1);
-        b.anel(cx, cy, r1 * 0.82F, 60, 9.0F * (1F - u), 0F, 0x8A7050, a1 * 0.6F);
-        // poeira estourando do centro
-        for (int i = 0; i < 40; i++) {
-            float s1 = rnd(i * 5 + 2, (int) (estouroInicio & 0xFFFFF));
-            float a = s1 * TAU;
-            float d = escala * (0.06F + 0.55F * eo(cl(u * 1.4F)) * (0.5F + s1 * 0.5F));
-            disco(b, cx + cos(a) * d, cy + sin(a) * d * 0.8F,
-                    6F + 16F * s1 * (1F - u), 0x9A8365, 0.22F * (1F - u), 10);
+        // (2) a FENDA na tela: zigue-zague que se ABRE do centro pra fora.
+        //     cresce até 62% da tela em ~0,9 s e depois some
+        float abre = eo(cl(u / 0.55F));
+        float some = u < 0.62F ? 1F : 1F - (u - 0.62F) / 0.38F;
+        float a = 0.75F * some;
+        int pontos = 26;
+        float semente = 0x5EED;
+        float px = cx;
+        float py = cy;
+        // metade direita e metade esquerda (a rachadura é uma linha só)
+        for (int lado = -1; lado <= 1; lado += 2) {
+            px = cx;
+            py = cy;
+            for (int i = 1; i <= pontos; i++) {
+                float t = i / (float) pontos;
+                if (t > abre) {
+                    break;
+                }
+                float nx = cx + lado * esc * 0.34F * t;
+                float ny = cy + (rnd(i * 31 + 7, (int) semente) - 0.5F) * esc * 0.10F * t
+                        - esc * 0.02F * t;
+                // a linha: um retângulo fino girado é caro; uso 3 segmentos
+                // curtos empilhados (dá o serrilhado da terra quebrando)
+                b.seg(px, py, nx, ny, 1.6F + 3.2F * (1F - t),
+                        col(0x140707, a * (1F - t * 0.35F)), col(0x140707, a * (1F - t * 0.35F)));
+                // a "luz" do fundo da fenda (vermelho-sangue, bem discreta)
+                b.seg(px, py, nx, ny, 0.7F + 1.2F * (1F - t),
+                        col(0x6E1A12, a * 0.55F * (1F - t * 0.5F)),
+                        col(0x6E1A12, a * 0.55F * (1F - t * 0.5F)));
+                px = nx;
+                py = ny;
+            }
+        }
+        // (3) pedrisco saindo da rachadura (não é fumaça: é TERRA)
+        for (int i = 0; i < 26; i++) {
+            float s1 = rnd(i * 19 + 3, (int) semente);
+            float s2 = rnd(i * 43 + 5, (int) semente);
+            float t = (u * 1.6F + s2) % 1F;
+            float x = cx + (s1 - 0.5F) * esc * 0.55F * abre;
+            float y = cy - esc * 0.045F - esc * 0.16F * t * (0.4F + s1);
+            float r = 1.5F + 3.5F * s2 * (1F - t);
+            if (t < abre) {
+                disco(b, x, y, r, 0x6B563C, 0.55F * (1F - t) * some, 6);
+            }
         }
         b.flush();
         AvisoFxUtil.normal();
-        // gemido grave do tranco: a tela fecha um pouco
-        if (u < 0.3F) {
-            desfocar(3.5F * (1F - u / 0.3F));
+        // (4) tremor de tela MUITO curto e leve (antes era blur 3,5 por 1 s)
+        if (u < 0.2F) {
+            desfocar(1.2F * (1F - u / 0.2F));
         }
     }
 
-    // ---- SAÍDA VERDE: dissolve pra luz
+    // ---- SAÍDA (5.7.2): a pessoa SOME nas sombras ------------------------
+    // 5.7.0/5.7.1 tinha "luz verde / pixels verdes" e o dono REJEITOU ("essas
+    // partículas verdes não ficaram legais"). Agora: começam POUCAS sombras em
+    // volta do corpo e elas se multiplicam até engolir a pessoa. Sem flash, sem
+    // lavada colorida e — regra da casa — SEM deixar a tela preta.
     private static void desenharSaida(GuiGraphics g) {
         if (saidaOff) {
             return;
@@ -613,40 +660,56 @@ public final class NeptuneFx {
             return;
         }
         long dur = Math.max(1L, saidaFim - saidaInicio);
-        float k = Math.min(1.0F, (now - saidaInicio) / (float) dur);   // 0..1
+        float k = cl((now - saidaInicio) / (float) dur);          // 0..1
         int w = g.guiWidth();
         int h = g.guiHeight();
+        float esc = Math.min(w, h);
+        float cx = w / 2f;
+        float cy = h * 0.60f;                                     // no corpo, não na cara
+        long sem = saidaInicio;
 
-        // brilho central cresce até tomar a tela
-        int r = (int) (Math.max(w, h) * (0.25F + 0.95F * k));
-        com.mojang.blaze3d.systems.RenderSystem.enableBlend();
-        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.55F, 1.0F, 0.68F, 0.35F + 0.55F * k);
-        g.blit(GLOW_VERDE, w / 2 - r, h / 2 - r, 0, 0, r * 2, r * 2, r * 2, r * 2);
+        AvisoFxUtil.preparar(g);
+        AvisoFxUtil.Buf b = new AvisoFxUtil.Buf(g.pose().last().pose());
 
-        // vinheta verde fechando nas bordas
-        int alfaV = (int) (200 * k);
-        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.10F, 0.55F, 0.20F, alfaV / 255.0F);
-        g.blit(GLOW_VERDE, -w / 3, -h / 3, 0, 0, w + w / 2, h + h / 2, w + w / 2, h + h / 2);
-        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
-
-        // "pixels" verdes subindo e sumindo (a dissolução)
-        long semente = saidaInicio;
-        for (int i = 0; i < 60; i++) {
-            float px = ((i * 733 + (int) (semente % 97)) % 1000) / 1000.0F;
-            float fase = ((now * 0.0006F + i * 0.11F) % 1.0F);
-            int x = (int) (px * w);
-            int y = (int) (h - fase * h * 1.1F);
-            int sz = 2 + (i % 4);
-            int alfa = (int) (150 * (1 - fase) * (0.4F + k));
-            if (alfa > 4) {
-                g.fill(x, y, x + sz, y + sz, (Math.min(255, alfa) << 24) | 0x7CFF9A);
+        // (1) o mundo escurece DE LEVE (no máximo 55%): assusta, não cega
+        float vin = 0.55F * k * k;
+        if (vin > 0.01F) {
+            b.rect(0, 0, w, h, col(0x0A0710, vin));
+        }
+        // (2) as sombras: 3 no começo -> 26 no fim, nascendo em volta do corpo,
+        //     girando devagar e crescendo. Borda macia (discos concêntricos),
+        //     nada de quadrado.
+        int quantas = 3 + (int) (23 * k);
+        for (int i = 0; i < quantas; i++) {
+            float s1 = rnd(i * 37 + 11, (int) (sem & 0xFFFFF));
+            float s2 = rnd(i * 53 + 7, (int) ((sem >> 3) & 0xFFFFF));
+            float nasc = i / (float) Math.max(1, quantas);
+            float vida = cl((k - nasc) / Math.max(0.16F, 1F - nasc));
+            if (vida <= 0.01F) {
+                continue;
+            }
+            float ang = s1 * TAU + k * 1.7F * (s2 > 0.5F ? 1F : -1F);
+            float dist = esc * (0.02F + 0.15F * (0.35F + s2) * (1F - vida * 0.5F));
+            float px = cx + cos(ang) * dist;
+            float py = cy + sin(ang) * dist * 0.55F - esc * 0.09F * vida;
+            float raio = esc * (0.018F + 0.085F * vida) * (0.6F + s1 * 0.8F);
+            disco(b, px, py, raio, 0x140C1E, 0.26F * vida, 14);
+            disco(b, px, py, raio * 0.66F, 0x0B0612, 0.34F * vida, 12);
+            disco(b, px, py, raio * 0.34F, 0x050309, 0.40F * vida, 10);
+        }
+        // (3) no último terço as sombras se JUNTAM no centro e apagam a
+        //     silhueta — mas nunca 100% de preto (fica ~78% no pico).
+        if (k > 0.6F) {
+            float f = (k - 0.6F) / 0.4F;
+            float raio = esc * (0.05F + 0.36F * eo(f));
+            for (int i = 0; i < 7; i++) {
+                float t2 = i / 7f;
+                disco(b, cx, cy - esc * 0.05F * f, raio * (1F - t2 * 0.30F),
+                        0x08040E, (0.10F + 0.09F * t2) * f, 22);
             }
         }
-        // a última "lavada" verde: nos 35% finais, a tela toda vira verde
-        if (k > 0.65F) {
-            int alfa = (int) (255 * ((k - 0.65F) / 0.35F));
-            g.fill(0, 0, w, h, (Math.min(255, alfa) << 24) | 0x2BFF77);
-        }
+        b.flush();
+        AvisoFxUtil.normal();
     }
 
     // ---- SUSTO: o bicho pula na tela
@@ -834,6 +897,19 @@ public final class NeptuneFx {
     //  na tela do PRÓPRIO deus — os outros sentem pelo medo)
     private static void desenharAuraDeus(GuiGraphics g) {
         if (!souDeus) {
+            return;
+        }
+        // (5.7.2) O DONO PEDIU: em PRIMEIRA pessoa (F1, o padrão) NÃO pode
+        // aparecer fumaça/escurecimento na tela — "como vou acertar alguém sem
+        // ver?". Em terceira pessoa (F5) aparece tudo. As rachaduras vermelhas
+        // do chão são partículas do MUNDO (servidor), aparecem nos dois modos.
+        boolean primeiraPessoa;
+        try {
+            primeiraPessoa = Minecraft.getInstance().options.getCameraType().isFirstPerson();
+        } catch (Throwable t) {
+            primeiraPessoa = true;      // na dúvida, não atrapalha a mira
+        }
+        if (primeiraPessoa) {
             return;
         }
         // (5.7.1) a aura nova (protótipo VoidAuraDark) desenha tudo

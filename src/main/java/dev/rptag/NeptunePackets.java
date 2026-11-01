@@ -52,7 +52,7 @@ public final class NeptunePackets {
         }
     }
 
-    /** SAÍDA DO SERVIDOR: animação verde dissolvendo (segundos) + o nome. */
+    /** SAÍDA DO SERVIDOR: a pessoa some nas sombras (segundos) + o nome. */
     public record Saida(int segundos, String nome) implements CustomPacketPayload {
         public static final Type<Saida> TYPE = new Type<>(id("neptune_saida"));
         public static final StreamCodec<ByteBuf, Saida> STREAM_CODEC = StreamCodec.of(

@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.7.1";
+    public static final String VERSION = "5.7.2";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -102,6 +102,16 @@ public final class RPTagMod {
     public static final Supplier<SoundEvent> SOM_CAIXA =
             SOUNDS.register("caixa_musica", () -> SoundEvent.createVariableRangeEvent(
                     ResourceLocation.fromNamespaceAndPath(MODID, "caixa_musica")));
+    /** (5.7.2) SOM do aviso CONHECIMENTO: sino de templo, drone grave, sussurros
+     *  invertidos e campainhas (sintetizado em arte/audio_570.py, 11,5 s). */
+    public static final Supplier<SoundEvent> SOM_CONHECIMENTO =
+            SOUNDS.register("conhecimento_aviso", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "conhecimento_aviso")));
+    /** (5.7.2) SOM do aviso ALLFORONE: boom grave + coro de vozes + estalos
+     *  (sintetizado em arte/audio_570.py, 12,5 s). */
+    public static final Supplier<SoundEvent> SOM_ALLFORONE =
+            SOUNDS.register("allforone_aviso", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "allforone_aviso")));
     /** O SUSTO: berro estrondoso (sintetizado, 2,6 s). */
     public static final Supplier<SoundEvent> SOM_BICHO_GRITO =
             SOUNDS.register("bicho_grito", () -> SoundEvent.createVariableRangeEvent(

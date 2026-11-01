@@ -166,6 +166,12 @@ public final class ConhecimentoAvisoFx {
         proxOnda = 2.4f;
         SUSSURROS.clear();
         ONDAS.clear();
+        // (5.7.2) o som: sino de templo + sussurros (o dono reclamou que faltava)
+        try {
+            tocar(dev.rptag.RPTagMod.SOM_CONHECIMENTO.get(), 1.0f, 1.0f);
+        } catch (Throwable ignorado) {
+            // sem som, o aviso continua
+        }
     }
 
     public static void parar() {

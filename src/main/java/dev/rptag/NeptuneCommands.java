@@ -71,7 +71,7 @@ public final class NeptuneCommands {
                         NeptuneEventos.sairDoServidor(p, 4, "O universo se corrigiu.");
                     }
                     ctx.getSource().sendSuccess(() -> Component.literal(
-                            "\u00a7a" + todos.size() + " jogador(es) saindo em 4 s (animação verde)."), true);
+                            "\u00a7a" + todos.size() + " jogador(es) sumindo nas sombras em 4 s."), true);
                     return Command.SINGLE_SUCCESS;
                 }))
                 .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
@@ -79,7 +79,7 @@ public final class NeptuneCommands {
                     NeptuneEventos.sairDoServidor(alvo, 4, "O universo se corrigiu.");
                     ctx.getSource().sendSuccess(() -> Component.literal(
                             "\u00a7a" + alvo.getName().getString()
-                                    + " sai em 4 s (animação verde)."), true);
+                                    + " some nas sombras em 4 s."), true);
                     return Command.SINGLE_SUCCESS;
                 })));
 

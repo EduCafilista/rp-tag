@@ -137,6 +137,12 @@ public final class AllForOneAvisoFx {
             nascer(p, 0f);
             p.idade = p.chegando ? -SORTE.nextFloat() * 2.4f : SORTE.nextFloat() * p.vida;
         }
+        // (5.7.2) o som: boom + coro de vozes (o dono reclamou que faltava)
+        try {
+            tocar(dev.rptag.RPTagMod.SOM_ALLFORONE.get(), 1.0f, 1.0f);
+        } catch (Throwable ignorado) {
+            // sem som, o aviso continua
+        }
     }
 
     public static void parar() {
