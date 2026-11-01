@@ -89,6 +89,26 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
   do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
 
+## 5.7.1 (2026-11-01): crash do CONHECIMENTO, vídeo sem marca d'água, aura do vazio
+
+- **BUG (real, do meu porte):** em `ConhecimentoAvisoFx.olho()` o array do
+  laço era `new float[N*2]` e o laço escrevia até `N+i = 2N` →
+  `ArrayIndexOutOfBoundsException` no desenho do olho → o `catch` desligava o
+  aviso ("começa e para no meio"). Agora `N*2+1`. **Lição:** em FX com array
+  auxiliar, dimensionar `N*len+1` e revisar `<=` nos laços.
+- `VideoFrameLoader` em loop: cache **limitado** (`CACHE_LOOP = 16`, descarta os
+  mais distantes em distância circular) + `close()` ao substituir um índice na
+  volta — antes o `prontos` crescia a cada volta (~3,7 MB/quadro) e travava.
+- `TabletVideoFundo`: trava anti-congelamento (4 s sem quadro → `fechar()+abrir()`).
+- `mp4_para_fx.py`: novas flags **`--delogo x,y,w,h`** e **`--cortar-baixo N`**
+  (tira marca d'água). Comando usado no vídeo do tablet:
+  `--fps 24 --qualidade 86 --delogo 2,2,60,40 --cortar-baixo 62`.
+- `VazioAuraDarkFx` = protótipo `VoidAuraDark` (`xzxRmnve.java`) ligado ao
+  `/vazio ligar` via `NeptuneFx.onAura` (packet `Aura(deus)`), sem o bonequinho
+  de pixel (no jogo o player é o de verdade).
+- Prévia animada: `/home/user/previa/tablet_video_5.7.1.mp4` (10 s, 2 voltas do
+  loop) — gerador `arte/previa_tablet_anim.py`; aura: `previa/vazio_aura_5.7.1.png`.
+
 ## 5.7.0 (2026-11-01): vídeo real do tablet + CONHECIMENTO + ALLFORONE + saída
 
 Arquivos do dono (uguu, todos baixaram certos):
@@ -146,7 +166,7 @@ ALLFORONE) · `PWaHoNqN.mp4` = buraco negro 1280x720 24 fps 5,09 s.
 
 | Item | Valor |
 |---|---|
-| Versão | **5.7.0** (2026-11-01) — vídeo real no tablet + CONHECIMENTO + ALLFORONE + saída dos players |
+| Versão | **5.7.1** (2026-11-01) — consertos (crash do CONHECIMENTO, vídeo) + aura do vazio |
 | Commit | (ver `git log`) |
 | Jar | `rptag-5.7.0.jar` (**98.521.322 B**, md5 `d6fbabfaa8daa767d7f54feb8ceb931f`) — release **430730349**, asset **698965500**; espelho `https://gofile.io/d/r2pfv3DV` |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |

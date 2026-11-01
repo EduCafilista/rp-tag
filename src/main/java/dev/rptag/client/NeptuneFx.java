@@ -148,6 +148,13 @@ public final class NeptuneFx {
     public static void onAura(NeptunePackets.Aura p) {
         souDeus = p.deus();
         trilhaOn = p.trilha();
+        // (5.7.1) AURA DO VAZIO do protótipo do dono (rachaduras, tentáculos,
+        // estilhaços, fumaça, granulação) enquanto o deus estiver ligado
+        if (p.deus()) {
+            VazioAuraDarkFx.ligar();
+        } else {
+            VazioAuraDarkFx.desligar();
+        }
     }
 
     public static void onNebulosa(NeptunePackets.Nebulosa p) {
@@ -827,6 +834,11 @@ public final class NeptuneFx {
     //  na tela do PRÓPRIO deus — os outros sentem pelo medo)
     private static void desenharAuraDeus(GuiGraphics g) {
         if (!souDeus) {
+            return;
+        }
+        // (5.7.1) a aura nova (protótipo VoidAuraDark) desenha tudo
+        if (VazioAuraDarkFx.ligado()) {
+            VazioAuraDarkFx.desenhar(g);
             return;
         }
         long now = System.currentTimeMillis();

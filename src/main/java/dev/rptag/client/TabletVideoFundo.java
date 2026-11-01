@@ -53,6 +53,7 @@ public final class TabletVideoFundo {
     private static long inicioLoop;
     private static boolean semAsset;      // não tem fx.json: não tenta de novo
     private static boolean desligado;     // erro: desliga nesta sessão
+    private static long ultimoQuadroNovo;  // (5.7.1) trava anti-congelamento
 
     // ------------------------------------------------------------------ abrir
     /** Abre (ou reabre) o vídeo do começo. Chamado quando o tablet aparece. */
@@ -136,16 +137,24 @@ public final class TabletVideoFundo {
                 mostrado = loader.ultimoPego();
             }
             if (mostrado < 0) {
+                // (5.7.1) ficou tempo demais sem NENHUM quadro? o decodificador
+                // morreu (memória/IO): recomeça em vez de ficar em preto
+                if (inicioLoop > 0 && (System.nanoTime() - inicioLoop) > 4_000_000_000L) {
+                    fechar();
+                    abrir();
+                }
                 return;                     // ainda decodificando o primeiro
             }
 
-            // recorte "cover" centrado
             int texW = FxTimeline.LARGURA;
             int texH = FxTimeline.ALTURA;
             float alvoRatio = w / (float) h;
             float texRatio = texW / (float) texH;
             int desenhaW;
             int desenhaH;
+            // (5.7.1) "cover": enche o painel (o painel é retrato e o vídeo é
+            // 16:9, então corta só as beiradas — o buraco negro fica inteiro no
+            // meio). A animação roda do primeiro ao último quadro em loop.
             if (alvoRatio > texRatio) {
                 desenhaW = w;
                 desenhaH = Math.round(w / texRatio);
@@ -158,14 +167,28 @@ public final class TabletVideoFundo {
 
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            // um pouco apagado: o player e o texto do tablet ficam legíveis
-            RenderSystem.setShaderColor(0.55F, 0.52F, 0.72F, 0.85F);
+            // apagado só o suficiente pra o player e o texto continuarem legíveis
+            RenderSystem.setShaderColor(0.72F, 0.70F, 0.84F, 0.95F);
             g.enableScissor(x, y, x + w, y + h);
             g.blit(TEX, dx, dy, desenhaW, desenhaH, 0, 0, texW, texH, texW, texH);
             g.disableScissor();
             RenderSystem.setShaderColor(1, 1, 1, 1);
             g.flush();
             RenderSystem.defaultBlendFunc();
+
+            // faixas pretas em degradê pra o vídeo "derreter" no painel
+            float s = Math.max(8f, w / 48f);
+            AvisoFxUtil.preparar(g);
+            AvisoFxUtil.Buf bf = new AvisoFxUtil.Buf(g.pose().last().pose());
+            int preto = AvisoFxUtil.col(0x0A0812, 0.85f);
+            int zero = AvisoFxUtil.col(0x0A0812, 0f);
+            float topo = Math.max(y, dy);
+            float base = Math.min(y + h, dy + desenhaH);
+            s = Math.max(8f, Math.min(w, h) / 26f);
+            bf.quad(x, topo, preto, x + w, topo, preto, x + w, topo + s, zero, x, topo + s, zero);
+            bf.quad(x, base, preto, x + w, base, preto, x + w, base - s, zero, x, base - s, zero);
+            bf.flush();
+            AvisoFxUtil.normal();
         } catch (Throwable t) {
             desligado = true;
             fechar();

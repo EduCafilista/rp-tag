@@ -449,7 +449,7 @@ public final class ConhecimentoAvisoFx {
             }
         } catch (Throwable t) {
             inicio = -1L;
-            dev.rptag.RPTagMod.LOGGER.warn("RP Tag: aviso CONHECIMENTO desligado ({})", t.toString());
+            dev.rptag.RPTagMod.LOGGER.warn("RP Tag: aviso CONHECIMENTO desligado", t);
         }
     }
 
@@ -539,7 +539,10 @@ public final class ConhecimentoAvisoFx {
         }
         // lente: duas quadráticas aproximadas por polilinhas
         int N = 10;
-        float[] px = new float[N * 2], py = new float[N * 2];
+        // (5.7.1) BUG: era N*2 e o laço escreve até N+i = 2N (estourava o array
+        // no MEIO do aviso: o desenho do olho lançava ArrayIndexOutOfBounds e o
+        // try/catch desligava tudo — era o "começa e crasha" que o dono viu)
+        float[] px = new float[N * 2 + 1], py = new float[N * 2 + 1];
         for (int i = 0; i <= N; i++) {
             float u = i / (float) N;
             px[i] = cx - w + 2 * w * u;

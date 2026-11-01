@@ -1,5 +1,36 @@
 # Changelog
 
+## 5.7.1 — CONSERTOS E AURA DO VAZIO — 2026-11-01
+
+**1) CONHECIMENTO não "crasha no meio" mais.** Era um bug de verdade: o desenho
+do olho escrevia no índice `2N` de um array de tamanho `N*2` — estourava o array
+e o `try/catch` desligava o aviso na metade (exatamente o "começa a acontecer e
+não acontece mais nada"). Corrigido (`N*2+1`), e agora quando algum FX falhar o
+log mostra a exceção inteira.
+
+**2) Vídeo do tablet.** Continua a SUA animação (120 quadros, 24 fps, 5 s,
+**em loop**), com dois consertos:
+- **sem marca d'água**: o `delogo` tira o selo "AI" do canto superior esquerdo e
+  o rodapé é cortado (onde ficava o "Dreamina AI") — o quadro é reescalado pra
+  1280x720;
+- **cache do decodificador limitado** (16 quadros): no loop os quadros velhos se
+  acumulavam e em 2–3 voltas o jogo engasgava/caía. Também ganhou uma trava que
+  reinicia o vídeo se ele ficar sem entregar quadro por mais de 4 s;
+- um pouco mais claro (menos apagado) e faixas de degradê nas bordas pra
+  "derreter" no painel do tablet.
+
+**3) AURA DO VAZIO do `/vazio ligar`.** Porte do `VoidAuraDark` que o dono
+mandou: rachaduras vermelho-sangue saindo do chão, 12 tentáculos (halo vermelho
++ núcleo preto) tremendo em passos, 14 estilhaços orbitando, fumaça preta atrás
+e na frente, cinza subindo, piscadas e granulação de filme. Fica ligada
+enquanto o deus estiver no modo vazio (`/vazio desligar` apaga).
+(O bonequinho de pixel do protótipo NÃO é desenhado: no jogo o personagem é o de
+verdade — o resto é igual.)
+
+### Testes
+`check.py` **657 PASS / 0 FAIL** (6 checks novos) · `javac` 0 erro · servidor
+real: **5.7.1**, `Done`, 0 ERROR.
+
 ## 5.7.0 — O QUE CHEGOU DO DONO: VÍDEO NO TABLET + 3 EFEITOS NOVOS — 2026-11-01
 
 > arquivos enviados por link (uguu): `OVsEHLOl.java` (CONHECIMENTO),

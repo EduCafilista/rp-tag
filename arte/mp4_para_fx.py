@@ -53,6 +53,10 @@ def main():
     ap.add_argument('--qualidade', type=int, default=88)
     ap.add_argument('--zoom', type=float, default=1.0,
                     help='recorta o centro e amplia (tira marca d\'agua do canto e aproxima)')
+    ap.add_argument('--delogo', action='append', default=[],
+                    help='apaga marca d\'agua numa caixa x,y,w,h (pode repetir)')
+    ap.add_argument('--cortar-baixo', type=int, default=0,
+                    help='corta N pixels do rodapé (tira marca d\'agua) e reescala')
     ap.add_argument('--centro', type=float, default=0.5,
                     help='onde esta o centro do que interessa (0.5 = no meio)')
     a = ap.parse_args()
@@ -78,6 +82,14 @@ def main():
         cx = max(0, min(LARGURA - cw, cx))
         cy = (ALTURA - ch) // 2
         recorte = f'crop={cw}:{ch}:{cx}:{cy},'
+    for caixa in a.delogo:
+        try:
+            x, y, dw, dh = [int(v) for v in caixa.replace(' ', '').split(',')]
+        except ValueError:
+            sys.exit('--delogo espera x,y,w,h')
+        recorte += f'delogo=x={x}:y={y}:w={dw}:h={dh},'
+    if a.cortar_baixo > 0:
+        recorte += f'crop={LARGURA}:{ALTURA - a.cortar_baixo}:0:0,scale={LARGURA}:{ALTURA},'
     filtro = (f'fps={a.fps},' + recorte +
               f'scale={LARGURA}:{ALTURA}:force_original_aspect_ratio=decrease:flags=lanczos,'
               f'pad={LARGURA}:{ALTURA}:(ow-iw)/2:(oh-ih)/2:black')

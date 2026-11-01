@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.7.0'
+VER = '5.7.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1697,6 +1697,28 @@ check('5.7.0: quando um jogador SAI, quem fica ve a animacao (e da pra desligar)
 check('5.7.0: os 3 FX novos tem try/catch (nunca derrubam o jogo) e som proprio',
       all('catch (Throwable t)' in x for x in (_conh, _afo, _sai))
       and all('inicio = -1L;' in x for x in (_conh, _afo, _sai)))
+
+# ============ 5.7.1: crash do CONHECIMENTO, cache do video, aura do vazio ============
+_conv = rd('arte/mp4_para_fx.py')
+_tvf = rd(C + '/TabletVideoFundo.java')
+_vfl = rd(C + '/VideoFrameLoader.java')
+_vad = rd(C + '/VazioAuraDarkFx.java')
+_nfx = rd(C + '/NeptuneFx.java')
+check('5.7.1: BUG do CONHECIMENTO corrigido (array do olho estourava no meio do aviso)',
+      'float[] px = new float[N * 2 + 1]' in _conh and 'ArrayIndexOutOfBounds' in _conh)
+check('5.7.1: quando um FX falha, o log mostra a excecao inteira (pra achar a causa)',
+      'aviso CONHECIMENTO desligado", t)' in _conh)
+check('5.7.1: video do tablet com os quadros SEM marca d agua (delogo + corte do rodape)',
+      '--delogo' in _conv and '--cortar-baixo' in _conv
+      and os.path.exists(A + '/fx/tablet_fundo/frames/0119_c.jpg'))
+check('5.7.1: cache do video em loop LIMITADO (senao enchia a memoria e travava)',
+      'CACHE_LOOP' in _vfl and 'dist(a, q, total)' in _vfl and 'antigo.close()' in _vfl)
+check('5.7.1: trava anti-congelamento do video do tablet (reinicia se nao vier quadro)',
+      '4_000_000_000L' in _tvf and 'fechar();' in _tvf)
+check('5.7.1: AURA DO VAZIO (/vazio ligar) = prototipo VoidAuraDark do dono',
+      'class VazioAuraDarkFx' in _vad and 'VazioAuraDarkFx.ligar()' in _nfx
+      and 'VazioAuraDarkFx.desenhar(g)' in _nfx and 'rachaduras' in _vad.lower()
+      and 'tentáculos' in _vad.lower())
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

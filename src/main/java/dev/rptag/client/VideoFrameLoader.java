@@ -23,6 +23,8 @@ import java.util.function.IntSupplier;
  */
 final class VideoFrameLoader implements Runnable {
     static final int BUFFER = 8;
+    /** (5.7.1) teto de quadros guardados quando o video é em LOOP (~3,7 MB cada). */
+    static final int CACHE_LOOP = 16;
 
     private final String id;
     private final FxTimeline tl;
@@ -62,14 +64,25 @@ final class VideoFrameLoader implements Runnable {
     NativeImage pegar(int q) {
         alvo = q;
         int k = VideoEstado.escolher(prontos.keySet(), q);
-        // no LOOP nao descarta: depois da volta os quadros do comeco sao de novo uteis
-        // (o cache continua limitado pelo BUFFER de quadros a frente do alvo)
         if (!loop) {
             for (Integer v : prontos.keySet()) {
                 if (v < k) {
                     NativeImage velho = prontos.remove(v);
                     if (velho != null) velho.close();
                 }
+            }
+        } else if (prontos.size() > CACHE_LOOP) {
+            // (5.7.1) no LOOP nao dá pra descartar "tudo o que é menor": na volta
+            // os quadros novos (0,1,2…) chegam enquanto o alvo ainda é 119. Então
+            // limita pelo TAMANHO, tirando os mais DISTANTES (em distância
+            // circular). Antes o cache crescia sem parar e em 2-3 voltas o jogo
+            // engasgava/caía (o dono viu a animação "congelar").
+            int total = tl.frames();
+            java.util.List<Integer> chaves = new java.util.ArrayList<>(prontos.keySet());
+            chaves.sort((a, b) -> Integer.compare(dist(a, q, total), dist(b, q, total)));
+            for (int i = chaves.size() - 1; i >= 0 && prontos.size() > CACHE_LOOP / 2; i--) {
+                NativeImage velho = prontos.remove(chaves.get(i));
+                if (velho != null) velho.close();
             }
         }
         if (k < 0) return null;
@@ -79,6 +92,12 @@ final class VideoFrameLoader implements Runnable {
 
     /** Indice do ultimo quadro entregue pelo pegar(). */
     int ultimoPego() { return ultimoPego; }
+
+    /** distância circular entre dois índices de quadro (pro limite do cache no loop). */
+    private static int dist(int a, int b, int total) {
+        int d = Math.abs(a - b);
+        return Math.min(d, Math.max(1, total) - d);
+    }
 
     void parar() {
         parar = true;
@@ -108,7 +127,8 @@ final class VideoFrameLoader implements Runnable {
                 if (prox - a >= BUFFER) { Thread.sleep(2); continue; }
                 NativeImage img = decodificar(prox);
                 if (parar || !VideoEstado.aceitaGeracao(geracao, geracaoAtual.getAsInt())) { img.close(); break; }
-                prontos.put(prox, img);
+                NativeImage antigo = prontos.put(prox, img);
+                if (antigo != null) antigo.close();   // (5.7.1) na volta o índice repete
                 prox++;
             }
         } catch (InterruptedException ignored) {
