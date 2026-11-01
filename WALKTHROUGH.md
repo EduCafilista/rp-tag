@@ -43,6 +43,9 @@
   entram no jar; `CamadaMascara` e `RenderItemMascara` passam a usá-los e o
   `.bbmodel` fica como reserva.
 - `check.py` 745 PASS / 0 FAIL (+9 da máscara); servidor `Done (0.751s)`.
+- **Release publicada**: `v5.8.0` = release **430906285** / asset **699736237**
+  (`rptag-5.8.0.jar`, **99.916.164 B**, md5 `ceb347ff0bb2d64161bd1614d23e46e6`),
+  commit `da34162`.
 
 ### Sobre "a máscara que o Marcelo colocou no GitHub"
 - Foi conferido: o repo tem **3 branches** (`main`, `neptune-terremoto-void`,
