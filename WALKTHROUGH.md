@@ -108,6 +108,20 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
   antigo (5 args) continua com `loop=false`, então os **avisos em vídeo não
   viraram loop**.
 
+
+### Onde o dono manda arquivo (testado de dentro do sandbox, 2026-11-01)
+
+| Host | Upload do dono | Meu download | Situação |
+|---|---|---|---|
+| **uguu.se** | arrastar no site (128 MiB, some em 3 h) | **OK** — `h.uguu.se/XXXX.ext` volta os bytes certos (testado upload+download de ponta a ponta) | **usar** |
+| **Discord** | manda no canal/DM, "Copiar link" | OK (CDN responde; expira ~24 h) | usar |
+| **Google Drive** | "Qualquer pessoa com o link" | OK (fluxo `uc?export=download`) | usar |
+| **GitHub** (repo/Gist) | Add file → Upload files | OK (`raw.githubusercontent.com` = 200) | usar p/ `.java` |
+| catbox / litterbox | — | — | **upload sai VAZIO** (content-length 0) |
+| gofile | — | **API devolve 401** (`error-token` / `error-notPremium`) | evitar |
+| tmpfiles / temp.sh | — | a página devolve HTML, não o arquivo | evitar |
+| 0x0 / envs.sh / oshi / filebin | — | 403/000/404 | evitar |
+
 ## 1. Estado atual
 
 | Item | Valor |
