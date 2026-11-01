@@ -319,7 +319,7 @@ ALLFORONE) · `PWaHoNqN.mp4` = buraco negro 1280x720 24 fps 5,09 s.
 |---|---|
 | Versão | **5.7.1** (2026-11-01) — consertos (crash do CONHECIMENTO, vídeo) + aura do vazio |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.7.4.jar` (**98.921.559 B**, md5 `b9376dc06bf4763e723df5db1e880f01`) — release **430794095**, asset **699224818** |
+| Jar | `rptag-5.7.4.jar` (**98.921.559 B**, md5 `b9376dc06bf4763e723df5db1e880f01`) — release **430792925**, asset **699240038** |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
