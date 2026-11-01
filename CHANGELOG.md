@@ -56,7 +56,7 @@ chão, halo vermelho, cinza, fios de alma e a tela escurecendo e voltando; em
 volta do corpo saem tinta de lula, fumaça escura, cinza e alma.
 
 ### Testes
-`check.py`: **661 PASS / 0 FAIL**. Servidor de teste com o jar novo: sobe
+`check.py`: **668 PASS / 0 FAIL**. Servidor de teste com o jar novo: sobe
 limpo ("Done"), `/titulo paleta` e `/titulo lista` respondem, `/terremoto
 fenda` abre 39 blocos e `/terremoto fechar` devolve tudo.
 

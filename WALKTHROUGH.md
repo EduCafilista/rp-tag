@@ -158,7 +158,7 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
   fechamento — o javac aponta erro no `)` e não no comentário.
 
 ### Testes
-`check.py` 661 PASS / 0 FAIL (novos: abertura sem flash, fenda quebrando
+`check.py` 668 PASS / 0 FAIL (novos: abertura sem flash, fenda quebrando
 blocos, banimento sem verde, 6 de títulos, canal v10).
 
 ## 5.7.1 (2026-11-01): crash do CONHECIMENTO, vídeo sem marca d'água, aura do vazio
