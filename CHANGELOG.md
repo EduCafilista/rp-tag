@@ -1,5 +1,42 @@
 # Changelog
 
+## 5.6.1 — VÍDEO ATRÁS DO PLAYER NO TABLET — 2026-11-01
+
+> "esse video deve ficar atras do player quando ele abrir o tablet"
+
+**Feito:** o tablet (`TabletScreen`) agora tem uma **camada de vídeo atrás do
+player**. O mod não toca mp4 — o vídeo é convertido em pares de JPEG por quadro
+(`NNNN_c.jpg` cor + `NNNN_a.jpg` alpha, 1280x720) e um `fx.json`, o MESMO
+formato dos avisos em vídeo do mod.
+
+- Classe nova `client/TabletVideoFundo.java`: decodifica em thread separada
+  (`VideoFrameLoader`), sobe no `DynamicTexture` e desenha com recorte "cover"
+  dentro da área do personagem, **levemente apagado** (0,55/0,52/0,72 a 0,85)
+  pra o boneco 3D e o texto continuarem legíveis.
+- **Em LOOP**, como o dono pediu: quando o vídeo chega no fim, recomeça (sem
+  parar) enquanto a ficha estiver aberta.
+- Começa do quadro 0 toda vez que o tablet abre; para ao fechar
+  (`onClose`/`removed`).
+- Se o asset não existir, o tablet fica exatamente como era (nada quebra). Se
+  `fxVideo=false` no `config/rptag/cliente.properties`, o vídeo nem tenta.
+- `arte/mp4_para_fx.py`: conversor **mp4 -> o formato do mod**
+  (`--fps`, `--blend normal|aditivo`, `--alpha opaco|luminancia`, `--qualidade`),
+  testado com um clipe de 2 s (24 quadros 1280x720, 1,1 MB).
+
+**Placeholder:** o pacote `assets/rptag/fx/tablet_fundo/` está no jar com um
+fundo roxo de nebulosa em loop (32 quadros, 1,2 MB) só pra a camada já existir
+e ser testada. **Quando o mp4 do dono chegar, é só rodar o conversor e regerar**
+— nada de código muda.
+
+### Pendente
+Os 4 links do catbox (`7q9b95` CONHECIMENTO, `m0qjal` SAÍDA, `1w29s3`
+ALLFORONE e `p5z3m3.mp4`) voltaram de novo com **0 byte** — o upload do catbox
+falhou e ele guardou arquivo vazio. O dono vai colar o código dos `.java` aqui.
+
+### Testes
+`check.py` **643 PASS / 0 FAIL** (7 checks novos de 5.6.1) · `javac` 0 erro ·
+servidor real: mod **5.6.1**, `Done (0.645s)`, **0 ERROR**.
+
 ## 5.6.0 — O CHÃO RACHA, O PLAYER CAI E FICA IMÓVEL — 2026-11-01
 
 > "melhore mais ainda o terremoto, quero efeito de algo se rachando o player

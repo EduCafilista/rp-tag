@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.6.0'
+VER = '5.6.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1024,11 +1024,13 @@ _java = []
 for _base, _dirs, _files in os.walk('src/main/java'):
     _java += [f for f in _files if f.endswith('.java')]
 _junto = '\n'.join(rd(os.path.join(_base2, f)) for _base2, _d, _fs in os.walk('src/main/java') for f in _fs if f.endswith('.java'))
-check('5.2.0: os arquivos do tablet/ficha estao no mod (7 no servidor + 5 no cliente)',
+# (5.6.1) +1 classe no cliente: TabletVideoFundo (video atras do player)
+check('5.2.0: os arquivos do tablet/ficha estao no mod (7 no servidor + 6 no cliente)',
       len([f for f in os.listdir(R) if f.startswith(('Ficha', 'Tablet'))]) == 7
-      and len([f for f in os.listdir(C) if f.startswith('Tablet')]) == 5)
-check('5.2.0: as 5 classes do tablet estao no cliente',
-      len([f for f in os.listdir(C) if f.startswith('Tablet')]) == 5)
+      and len([f for f in os.listdir(C) if f.startswith('Tablet')]) == 6)
+check('5.2.0/5.6.1: as 6 classes do tablet estao no cliente (com o video de fundo)',
+      len([f for f in os.listdir(C) if f.startswith('Tablet')]) == 6
+      and os.path.exists(C + '/TabletVideoFundo.java'))
 check('5.2.0: as classes novas sao as usadas (FichaPersonagem/FichaRegistro/TabletItem)',
       all(n in _junto for n in ('FichaPersonagem', 'FichaRegistro', 'TabletItem')))
 check('5.2.0: item rptag:tablet existe com modelo e textura',
@@ -1635,6 +1637,27 @@ check('5.6.0: o tranco inicial tem flash + onda de choque',
       'desenharEstouro' in _nf3 and 'onda de choque' in _nf3)
 check('5.6.0: detritos caindo pela tela durante o terremoto',
       'DETRITOS CAINDO' in _nf3)
+
+# ============ 5.6.1: video atras do player no tablet (em loop) ============
+_tvf = rd(C + '/TabletVideoFundo.java')
+_ts = rd(C + '/TabletScreen.java')
+check('5.6.1: TabletVideoFundo existe (player de video em loop)',
+      os.path.exists(C + '/TabletVideoFundo.java') and 'VideoFrameLoader' in _tvf and 'DynamicTexture' in _tvf)
+check('5.6.1: o video do tablet fica ATRAS do player (desenhado antes da previa 3D)',
+      _ts.index('TabletVideoFundo.desenhar') < _ts.index('TabletPlayerPreview.render'))
+check('5.6.1: em LOOP (acabou, volta do comeco)',
+      'if (q >= frames)' in _tvf and 'fechar();' in _tvf and 'abrir();' in _tvf)
+check('5.6.1: para o video quando o tablet fecha/sai',
+      'TabletVideoFundo.fechar();' in _ts and 'removed()' in _ts)
+check('5.6.1: respeita fxVideo=false e nao quebra se o asset faltar',
+      'FxConfig.video()' in _tvf and 'semAsset' in _tvf and 'desligado' in _tvf)
+check('5.6.1: conversor mp4 -> formato do mod existe (arte/mp4_para_fx.py)',
+      os.path.exists('arte/mp4_para_fx.py') and '_c.jpg' in rd('arte/mp4_para_fx.py')
+      and 'fx.json' in rd('arte/mp4_para_fx.py'))
+check('5.6.1: o pacote de quadros de FUNDO do tablet esta no jar (placeholder ate o video do dono)',
+      os.path.exists(A + '/fx/tablet_fundo/fx.json')
+      and os.path.exists(A + '/fx/tablet_fundo/frames/0000_c.jpg')
+      and os.path.exists(A + '/fx/tablet_fundo/frames/0000_a.jpg'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

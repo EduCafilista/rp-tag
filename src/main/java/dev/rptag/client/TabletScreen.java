@@ -61,6 +61,9 @@ public final class TabletScreen extends Screen {
         renderedReadOnly = state.readOnly();
         transitionAt = Util.getMillis();
         answer = null;
+        // (5.6.1) VÍDEO ATRÁS DO PLAYER: começa do quadro 0 toda vez que a
+        // ficha abre (roda em loop enquanto a tela estiver aberta)
+        TabletVideoFundo.abrir();
         if (boot) {
             addRenderableWidget(new ActionButton(x + w / 2 - 46, y + h - 35, 92, "Continuar", true, this::skipBoot));
             return;
@@ -171,10 +174,17 @@ public final class TabletScreen extends Screen {
 
     @Override public void onClose() {
         if (!state.readOnly()) state.flush(false);
+        TabletVideoFundo.fechar();   // (5.6.1) para o vídeo de fundo
         super.onClose();
     }
 
     @Override public boolean isPauseScreen() { return false; }
+
+    /** (5.6.1) se a tela for trocada (não fechada), o vídeo também para. */
+    @Override public void removed() {
+        TabletVideoFundo.fechar();
+        super.removed();
+    }
 
     // Screen.render chama renderBackground novamente antes dos widgets; aqui causava blur na própria interface.
     @Override public void renderBackground(GuiGraphics graphics,int mouseX,int mouseY,float partialTick) {}
@@ -217,6 +227,8 @@ public final class TabletScreen extends Screen {
         g.drawString(font, "Neptune SMP", x+15, y+14, 0xffc9c2d3, false);
         int leftWidth = Math.max(0, formX-x-18);
         if (showCharacter && leftWidth > 40 && blackHoleRadius > 0) {
+            // (5.6.1) o vídeo fica ATRÁS do player (o player 3D é desenhado por cima)
+            TabletVideoFundo.desenhar(g, x+4, y+30, leftWidth+8, h-54);
             blackHole(g, x+leftWidth/2+8, y+Math.max(48,(h-20)/3)-blackHoleRadius/3, blackHoleRadius);
             TabletPlayerPreview.render(g, state.target(), x+8, y+37, leftWidth, h-65, state.etapa(), motion());
             String name = state.respostas().nome().isBlank() ? "Seu personagem" : state.respostas().nome();

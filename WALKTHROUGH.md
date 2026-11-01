@@ -89,11 +89,25 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
   do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
 
+## 5.6.1 (2026-11-01): vídeo atrás do player no tablet
+
+- `client/TabletVideoFundo.java` — player de vídeo em **loop** desenhado ATRÁS
+  da prévia 3D do personagem (`TabletPlayerPreview.render`), dentro do painel
+  esquerdo do tablet, apagado (shaderColor 0,55/0,52/0,72 @ 0,85) pra não
+  atrapalhar a leitura.
+- Assets: `assets/rptag/fx/tablet_fundo/{fx.json, frames/NNNN_c.jpg, NNNN_a.jpg}`
+  — o MESMO formato do VideoFx dos avisos (`FxTimeline`/`VideoFrameLoader`).
+- Conversor: **`arte/mp4_para_fx.py`** (`python3 arte/mp4_para_fx.py video.mp4 tablet_fundo --fps 24`).
+  Ele apaga a pasta `frames/` antiga, então trocar o vídeo é só rodar de novo.
+- Placeholder de 32 quadros (nebulosa roxa em loop) no jar até o mp4 real.
+- Ciclo de vida: `abrir()` no `init()`, `fechar()` no `onClose()` e no
+  `removed()`; erro desliga o vídeo na sessão (nunca crasha).
+
 ## 1. Estado atual
 
 | Item | Valor |
 |---|---|
-| Versão | **5.6.0** (2026-11-01) — terremoto com chão rachando, queda e jogador imóvel |
+| Versão | **5.6.1** (2026-11-01) — vídeo atrás do player no tablet (loop) |
 | Commit | (ver `git log`) |
 | Jar | `rptag-5.4.1.jar` (**93.295.612 B**) |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |
