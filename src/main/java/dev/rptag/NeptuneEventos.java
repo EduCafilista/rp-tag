@@ -117,6 +117,15 @@ public final class NeptuneEventos {
     private static final List<Object[]> EXILIOS = new ArrayList<>();
     /** (5.7.6) de ONDE a pessoa foi exilada — ela volta pro mesmo lugar. */
     private static final Map<UUID, Object[]> ORIGEM = new HashMap<>();
+    /** (5.7.7) APAGADOS: a animação de cinzas/alma em volta de quem o vazio apagou. */
+    private static final List<Apagando> APAGANDO = new ArrayList<>();
+    /** (5.7.7) BICHO: primeiro toque (som) -> depois de 4 s, o segundo dá o susto. */
+    private static final Map<BlockPos, Long> TOQUES_CAIXA = new HashMap<>();
+
+    /** (5.7.7) uma animação de apagamento em andamento. */
+    private record Apagando(ServerLevel nivel, Vec3 pos, long fim) {
+    }
+
     /** (5.7.6) RASTRO DE CAOS: manchas que FICAM no chão por onde o vazio passou. */
     private static final List<Mancha> MANCHAS = new ArrayList<>();
     private static final Map<UUID, double[]> ULTIMA_MANCHA = new HashMap<>();
@@ -173,6 +182,7 @@ public final class NeptuneEventos {
             tickCaixas(server);
             tickExilios(server);
             tickManchas(server);
+            tickApagando(server);
         } catch (Throwable t) {
             RPTagMod.LOGGER.error("RP Tag: tick do evento Neptune falhou (o jogo segue)", t);
         }
@@ -214,6 +224,31 @@ public final class NeptuneEventos {
             }
         }
         enviarTerremoto(server, true, 1.0F, segundos, true);
+    }
+
+    /**
+     * (5.7.7) PARTÍCULA DA AURA — quem é o vazio NÃO pode ficar cego.
+     *
+     * <p>O dono mandou print: em primeira pessoa a tela dele ficava PRETA (o
+     * manto de SQUID_INK/fumaça nascia justo na altura do rosto). Ele pediu:
+     * <i>"deixe de uma maneira que só dá para ver no F5, e os outros players
+     * poder ver"</i>.
+     *
+     * <p>Como o servidor não sabe se o cara está em F1 ou F5, a regra é pela
+     * ALTURA: tudo que nasce acima de 1,25 do corpo (peito, ombro, rosto) vai
+     * SÓ para os outros jogadores; o que é baixo (chão, pernas) vai pra todos.
+     * Assim o vazio enxerga o mundo, e no F5 (câmera atrás) ainda vê o manto
+     * subindo e os raios.
+     */
+    private static void auraPart(ServerLevel nv, ServerPlayer dono, net.minecraft.core.particles.ParticleOptions opt,
+            double x, double y, double z, int n, double dx, double dy, double dz, double sp) {
+        boolean alto = y > dono.getY() + 0.95;
+        for (ServerPlayer o : nv.players()) {
+            if (o == dono && alto) {
+                continue;                      // F1 dele fica limpo
+            }
+            nv.sendParticles(o, opt, false, x, y, z, n, dx, dy, dz, sp);
+        }
     }
 
     /**
@@ -422,7 +457,15 @@ public final class NeptuneEventos {
                     continue;
                 }
                 if (p.level() instanceof ServerLevel nv && Math.random() < 0.75) {
-                    fendaDePassagem(nv, p.position(), new java.util.Random());
+                    // (5.7.7) "fendas devem acontecer aleatoriamente": antes
+                    // abria sempre no pé do jogador (padrão previsível). Agora
+                    // é num ponto sorteado de 2 a 12 blocos em volta dele,
+                    // em qualquer direção — pode abrir do lado, atrás, longe.
+                    double ang = Math.random() * Math.PI * 2;
+                    double dist = 2.0 + Math.random() * 10.0;
+                    Vec3 alvo = p.position().add(Math.cos(ang) * dist, 0,
+                            Math.sin(ang) * dist);
+                    fendaDePassagem(nv, alvo, new java.util.Random());
                 }
             }
         }
@@ -437,8 +480,11 @@ public final class NeptuneEventos {
                 double px = p.getX();
                 double py = p.getY();
                 double pz = p.getZ();
-                for (double r = 1.2; r <= 6.0; r += 1.2) {
-                    double a = Math.toRadians((agora / 3 % 360) + r * 61);
+                // (5.7.7) era um ANEL girando (dava pra ver o padrão de relógio):
+                // agora são 5 pontos SORTEADOS em volta a cada quadro.
+                for (int q = 0; q < 5; q++) {
+                    double a = Math.random() * Math.PI * 2;
+                    double r = 1.2 + Math.random() * 5.2;
                     double x = px + Math.cos(a) * r;
                     double z = pz + Math.sin(a) * r;
                     BlockPos chao = BlockPos.containing(x, py - 0.4, z);
@@ -848,8 +894,10 @@ public final class NeptuneEventos {
                 nv.sendParticles(brasa, pos.x + Math.cos(ang) * rr, pos.y + 0.08,
                         pos.z + Math.sin(ang) * rr, 1, 0.0, 0.0, 0.0, 0.0);
             }
-            nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.WITHER_SPAWN,
-                    SoundSource.HOSTILE, 1.0F, 0.55F);
+            // (5.7.7) SAIU o som que EU tinha posto aqui (WITHER_SPAWN): o dono
+            // disse "tira esse som que você adicionou no vazio... ficou
+            // estranho; deixa apenas aquele que eu te mandei". A transformação
+            // agora é só VISUAL — o som fica por conta do SOM_VAZIO original.
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: surto de transformacao falhou (o jogo segue)", t);
         }
@@ -860,6 +908,18 @@ public final class NeptuneEventos {
         TRILHA.remove(p.getUUID());
         for (ServerPlayer outro : p.getServer().getPlayerList().getPlayers()) {
             PacketDistributor.sendToPlayer(outro, NeptunePackets.Aura.desligada());
+            // (5.7.7) BUG: a trilha do deus continuava tocando "no ouvido de
+            // todos, infinito" mesmo depois do /vazio desligar. O som é tocado
+            // no SERVIDOR (playSound posicionado), então tem que ser MANDADO
+            // PARAR em cada cliente.
+            try {
+                outro.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(
+                        RPTagMod.SOM_TRILHA_DEUS.get().getLocation(), SoundSource.AMBIENT));
+                outro.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(
+                        RPTagMod.SOM_VAZIO.get().getLocation(), SoundSource.HOSTILE));
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: nao consegui parar a trilha do vazio", t);
+            }
         }
         p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
                 "\u00a77A escuridão recolheu.").withStyle(ChatFormatting.DARK_GRAY), false);
@@ -990,8 +1050,8 @@ public final class NeptuneEventos {
         // altura. Na faixa do ROSTO (1,52 a 1,98) a densidade cai pela metade
         // e entram dois pontos vermelhos (os olhos) — o corpo vira silhueta e
         // o rosto é a única coisa que dá pra enxergar.
-        for (int i = 0; i < 20; i++) {
-            double a = (i / 20.0) * Math.PI * 2 + fase * 1.15;              // gira
+        for (int i = 0; i < 16; i++) {
+            double a = (i / 16.0) * Math.PI * 2 + fase * 1.15;              // gira
             double r = 0.32 + 0.20 * Math.sin(fase * 1.7 + i * 0.9);        // colado
             double h = ((fase * 0.62 + i * 0.29) % 1.0);                    // sobe
             double y = pos.y + 0.05 + h * 2.30;
@@ -1003,13 +1063,13 @@ public final class NeptuneEventos {
             if (rosto && i % 2 == 0) {
                 continue;                        // poupa o rosto (dá pra ver)
             }
-            nv.sendParticles(ParticleTypes.SQUID_INK, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
-            nv.sendParticles(negro, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
+            auraPart(nv, p, ParticleTypes.SQUID_INK, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
+            auraPart(nv, p, negro, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
             if (i % 3 == 0) {
-                nv.sendParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 1, 0.03, 0.03, 0.03, 0.0);
+                auraPart(nv, p, ParticleTypes.LARGE_SMOKE, x, y, z, 1, 0.03, 0.03, 0.03, 0.0);
             }
             if (i % 5 == 0) {
-                nv.sendParticles(sombra, x, y, z, 1, 0.01, 0.01, 0.01, 0.0);
+                auraPart(nv, p, sombra, x, y, z, 1, 0.01, 0.01, 0.01, 0.0);
             }
         }
         // os OLHOS: dois pontos vermelhos na altura do rosto, sempre no mesmo
@@ -1020,10 +1080,10 @@ public final class NeptuneEventos {
         double lz = Math.sin(yaw) * 0.085;
         double olhoY = pos.y + 1.62;
         for (int s2 = -1; s2 <= 1; s2 += 2) {
-            nv.sendParticles(vermelho, pos.x + ox + lx * s2, olhoY, pos.z + oz + lz * s2,
+            auraPart(nv, p, vermelho, pos.x + ox + lx * s2, olhoY, pos.z + oz + lz * s2,
                     1, 0.012, 0.012, 0.012, 0.0);
             if (agora % 9 == 0) {
-                nv.sendParticles(brasa, pos.x + ox + lx * s2, olhoY, pos.z + oz + lz * s2,
+                auraPart(nv, p, brasa, pos.x + ox + lx * s2, olhoY, pos.z + oz + lz * s2,
                         1, 0.03, 0.03, 0.03, 0.0);
             }
         }
@@ -1039,33 +1099,42 @@ public final class NeptuneEventos {
         }
 
         // ================= (B) RAIOS NEGROS E VERMELHOS =================
-        // A cada 6 ticks disparam 2 raios: um saindo do PEITO e outro dos PÉS.
-        // (5.7.6) agora o vermelho é MAIS intenso (brasa + sangue) e o corpo
-        // do raio é mais preto — é a "transformação" que o dono quis destacar.
-        if (agora % 6 == 0) {
-            for (int n = 0; n < 2; n++) {
-                boolean doPe = n == 1;
+        // (5.7.7) O dono: "quero que seja tipo uma aura de escuridão e raios
+        // negros e vermelhos saindo do player". Agora são 4 raios por disparo
+        // (antes 2), mais compridos e mais grossos, saindo do PEITO, dos PÉS e
+        // também do ALTO da cabeça — em todas as direções, inclusive pra cima.
+        // O miolo é NEGRO (SQUID_INK, que aparece no escuro) e a ponta é
+        // VERMELHA viva, com brasa estalando: lê como raio, não como poeira.
+        if (agora % 4 == 0) {
+            for (int n = 0; n < 4; n++) {
                 double ang = Math.random() * Math.PI * 2;
-                double alcance = 2.2 + Math.random() * 2.8;
-                int pontos = 9 + (int) (Math.random() * 5);
+                double alcance = 2.6 + Math.random() * 3.6;
+                int pontos = 12 + (int) (Math.random() * 6);
+                boolean doPe = n == 1;
+                boolean doAlto = n == 3;
                 double x0 = pos.x;
-                double y0 = doPe ? pos.y + 0.1 : pos.y + 1.0;
+                double y0 = doPe ? pos.y + 0.1 : (doAlto ? pos.y + 2.0 : pos.y + 1.0);
                 double z0 = pos.z;
                 double dx = Math.cos(ang);
                 double dz = Math.sin(ang);
-                double subida = doPe ? 0.55 : 0.25;
+                double subida = doPe ? 0.55 : (doAlto ? 1.15 : 0.25);
                 double x, y, z;
                 for (int k = 1; k <= pontos; k++) {
                     double f = k / (double) pontos;
-                    double serrilhado = (Math.random() - 0.5) * 0.34;
+                    double serrilhado = (Math.random() - 0.5) * 0.42;
                     x = x0 + dx * alcance * f - dz * serrilhado;
                     z = z0 + dz * alcance * f + dx * serrilhado;
-                    y = y0 + subida * f * alcance * 0.45 + (Math.random() - 0.5) * 0.12;
-                    boolean ponta = f > 0.5;
-                    nv.sendParticles(ponta ? (k % 2 == 0 ? vermelho : brasa) : negro,
+                    y = y0 + subida * f * alcance * 0.5 + (Math.random() - 0.5) * 0.16;
+                    boolean ponta = f > 0.45;
+                    auraPart(nv, p, ponta ? (k % 2 == 0 ? vermelho : brasa) : negro,
                             x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+                    // o NEGRO precisa de volume: SQUID_INK em cima do dust
+                    if (!ponta) {
+                        auraPart(nv, p, ParticleTypes.SQUID_INK, x, y, z,
+                                1, 0.02, 0.02, 0.02, 0.0);
+                    }
                     if (k % 3 == 0) {
-                        nv.sendParticles(ponta ? brasa : ParticleTypes.SMOKE,
+                        auraPart(nv, p, ponta ? brasa : ParticleTypes.SMOKE,
                                 x, y, z, 1, 0.01, 0.01, 0.01, 0.0);
                     }
                 }
@@ -1113,6 +1182,59 @@ public final class NeptuneEventos {
                     MANCHAS.add(new Mancha(nv, pos.x, chaoY, pos.z, agora + 22_000L,
                             Math.random() * Math.PI * 2));
                 }
+            }
+        }
+    }
+
+    /**
+     * (5.7.7) CINZAS, SOMBRA E ALMA — a marca da perda canônica.
+     *
+     * <p>Quando o vazio apaga alguém, o corpo não só cai: ele se DESFAZ. Aqui,
+     * por 3 s, saem do lugar três coisas ao mesmo tempo:
+     * <ul>
+     *   <li><b>CINZAS</b> (ASH) subindo devagar, como se o corpo virasse pó;</li>
+     *   <li><b>SOMBRA</b> (SQUID_INK + fumaça preta) escorrendo pra baixo e
+     *       ficando no chão;</li>
+     *   <li><b>ALMA</b> (SOUL) — uma coluna fina de almas subindo reta, que é o
+     *       que dá o "ele se foi de verdade".</li>
+     * </ul>
+     * Tudo visível pra todo mundo: a morte canônica é um evento público.
+     */
+    private static void tickApagando(MinecraftServer server) {
+        if (APAGANDO.isEmpty()) {
+            return;
+        }
+        long agora = System.currentTimeMillis();
+        Iterator<Apagando> it = APAGANDO.iterator();
+        while (it.hasNext()) {
+            Apagando a = it.next();
+            if (agora > a.fim()) {
+                it.remove();
+                continue;
+            }
+            double k = 1.0 - (a.fim() - agora) / 3000.0;         // 0 -> 1
+            ServerLevel nv = a.nivel();
+            Vec3 p = a.pos();
+            // cinzas subindo
+            nv.sendParticles(ParticleTypes.ASH, p.x, p.y + 0.3 + k * 1.4, p.z,
+                    6, 0.55, 0.35, 0.55, 0.01);
+            nv.sendParticles(ParticleTypes.WHITE_ASH, p.x, p.y + 0.2 + k * 1.1, p.z,
+                    3, 0.45, 0.30, 0.45, 0.01);
+            // sombra escorrendo (fica baixa, no chão)
+            nv.sendParticles(ParticleTypes.SQUID_INK, p.x, p.y + 0.15, p.z,
+                    3, 0.5, 0.12, 0.5, 0.0);
+            nv.sendParticles(ParticleTypes.LARGE_SMOKE, p.x, p.y + 0.45, p.z,
+                    2, 0.45, 0.30, 0.45, 0.0);
+            // a alma subindo reta
+            for (int i = 0; i < 2; i++) {
+                double y = p.y + 0.6 + ((k * 3.0 + i * 0.7) % 2.4);
+                nv.sendParticles(ParticleTypes.SOUL, p.x + (Math.random() - 0.5) * 0.25,
+                        y, p.z + (Math.random() - 0.5) * 0.25, 1, 0.02, 0.02, 0.02, 0.005);
+            }
+            if (Math.random() < 0.35) {
+                nv.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, p.x + (Math.random() - 0.5) * 0.5,
+                        p.y + 0.4 + Math.random() * 1.2, p.z + (Math.random() - 0.5) * 0.5,
+                        1, 0.02, 0.02, 0.02, 0.0);
             }
         }
     }
@@ -1269,6 +1391,26 @@ public final class NeptuneEventos {
                 return c;
             }
         }
+        // (5.7.7) SÓ UMA CAIXA TOCANDO POR VEZ NO MUNDO. O dono reclamou de
+        // novo: "se eu apertar varias vezes na caixa do palhaço, começa tocar
+        // varias musicas". O dedupe por posição não resolvia quando ele
+        // colocava caixas em lugares diferentes (cada uma com sua música, e o
+        // jogo SOBREPÕE as instâncias de som). Agora a caixa nova APAGA a
+        // anterior (bloco e som) antes de tocar.
+        for (Iterator<Caixa> it = CAIXAS.iterator(); it.hasNext();) {
+            Caixa velha = it.next();
+            it.remove();
+            if (!velha.pos.equals(pos)) {
+                try {
+                    if (nv.getBlockState(velha.pos).is(RPTagMod.CAIXA_BICHO.get())) {
+                        nv.removeBlock(velha.pos, false);
+                    }
+                } catch (Throwable t) {
+                    RPTagMod.LOGGER.warn("RP Tag: nao consegui apagar a caixa velha", t);
+                }
+            }
+        }
+        pararMusicaCaixa(nv);
         // (5.4.0) põe o BLOCO de verdade no mundo (é a caixinha que o jogador vê
         // e de onde o bicho pula) e registra pra o tick vigiar a distância.
         if (nv.getBlockState(pos).isAir()) {
@@ -1289,14 +1431,29 @@ public final class NeptuneEventos {
         long agora = System.currentTimeMillis();
         for (Caixa c : CAIXAS) {
             if (c.pos.equals(pos)) {
-                if (agora - c.ultimoSom < 4000L) {
+                if (agora - c.ultimoSom < 8000L) {
                     return;                      // spam de clique: ignora
                 }
                 c.ultimoSom = agora;
                 break;
             }
         }
+        // (5.7.7) para a música ANTERIOR antes de começar a nova: sem isso o
+        // jogo sobrepõe instâncias e vira "várias músicas juntas".
+        pararMusicaCaixa(nv);
         nv.playSound(null, pos, RPTagMod.SOM_CAIXA.get(), SoundSource.AMBIENT, 1.0F, 1.0F);
+    }
+
+    /** (5.7.7) manda TODO MUNDO parar a música da caixa (fim do empilhamento). */
+    public static void pararMusicaCaixa(ServerLevel nv) {
+        try {
+            for (ServerPlayer o : nv.players()) {
+                o.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(
+                        RPTagMod.SOM_CAIXA.get().getLocation(), SoundSource.AMBIENT));
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui parar a musica da caixa", t);
+        }
     }
 
     public static void limparCaixas() {
@@ -1331,7 +1488,8 @@ public final class NeptuneEventos {
             // segundo, eram 20 músicas tocadas juntas a cada 30 s. Agora é um
             // instante marcado (proximaMusica) e toca UMA vez.
             if (durou < BICHO_MUSICA_SEG && agoraMs >= c.proximaMusica) {
-                c.proximaMusica = agoraMs + 30_000L;
+                c.proximaMusica = agoraMs + BICHO_MUSICA_SEG * 1000L;
+                c.ultimoSom = 0L;                 // libera a trava: é o ciclo do tick
                 tocarSomCaixa(nv, c.pos);
             }
             // quem chegou perto?
@@ -1363,6 +1521,41 @@ public final class NeptuneEventos {
         dispararBicho(nv, pos, quem);
     }
 
+    /**
+     * (5.7.7) O BICHO SÓ PULA NA SEGUNDA VEZ — pedido do dono:
+     * <i>"o bicho no primeiro click deve fazer um som, e depois de passar alguns
+     * segundos ele dá o susto quando apertar de novo na caixa"</i>.
+     *
+     * <p>Primeiro toque: a caixa toca (som/chim) e o jogador leva um aviso de
+     * que tem alguma coisa dentro. A partir de {@link #ESPERA_SUSTO_MS}, o
+     * próximo toque ARREBENTA a caixa e o bicho pula na cara. Antes disso o
+     * clique só repete o som (não gasta o susto).
+     */
+    public static void toqueNaCaixa(ServerLevel nv, BlockPos pos, ServerPlayer quem) {
+        long agora = System.currentTimeMillis();
+        Long primeiro = TOQUES_CAIXA.get(pos);
+        if (primeiro == null) {
+            TOQUES_CAIXA.put(pos, agora);
+            tocarSomCaixa(nv, pos);
+            quem.displayClientMessage(Component.literal(
+                    "\u00a77A caixa rangeu sozinha. Tem alguma coisa aí dentro \u2014 "
+                            + "bata de novo quando quiser ver."), true);
+            return;
+        }
+        if (agora - primeiro < ESPERA_SUSTO_MS) {
+            tocarSomCaixa(nv, pos);
+            long falta = (ESPERA_SUSTO_MS - (agora - primeiro)) / 1000L + 1L;
+            quem.displayClientMessage(Component.literal(
+                    "\u00a78Ainda não. (" + falta + "s) A música está te chamando."), true);
+            return;
+        }
+        TOQUES_CAIXA.remove(pos);
+        estourarCaixa(nv, pos, quem);      // agora sim: o susto
+    }
+
+    /** (5.7.7) quanto tempo entre o primeiro toque e o susto liberar. */
+    private static final long ESPERA_SUSTO_MS = 4000L;
+
     private static void dispararBicho(ServerLevel nv, BlockPos pos, ServerPlayer quem) {
         // o berro, a caixa arrebentando e o bicho PULANDO NA TELA
         PacketDistributor.sendToPlayer(quem, new NeptunePackets.Susto(1.0F, System.nanoTime()));
@@ -1374,6 +1567,23 @@ public final class NeptuneEventos {
         nv.sendParticles(ParticleTypes.SMOKE, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                 40, 0.4, 0.4, 0.4, 0.02);
         nv.removeBlock(pos, false);
+        // (5.7.7) ELE SAI PRA FORA: o bicho vira criatura de verdade e persegue
+        // quem abriu a caixa. Os players podem bater nele (vida 40).
+        try {
+            long perto = nv.getEntitiesOfClass(BichoEntity.class,
+                    new net.minecraft.world.phys.AABB(pos).inflate(24.0)).size();
+            if (perto == 0) {
+                BichoEntity bicho = RPTagMod.BICHO.get().create(nv);
+                if (bicho != null) {
+                    bicho.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
+                            nv.random.nextFloat() * 360.0F, 0.0F);
+                    bicho.setTarget(quem);
+                    nv.addFreshEntity(bicho);
+                }
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui soltar o bicho (o susto ja aconteceu)", t);
+        }
         quem.addEffect(new MobEffectInstance(RPEffects.MEDO, 200, 0, false, false, true));
         quem.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 1, false, false, false));
         nv.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
@@ -1395,8 +1605,12 @@ public final class NeptuneEventos {
             PacketDistributor.sendToPlayer(p, new NeptunePackets.Nebulosa(4, true));
             p.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
         }
+        // (5.7.7) O CORPO SE DESFAZ: cinzas, sombra e a ALMA saindo — o dono
+        // pediu "algo para evidenciar essa perda canon".
         nv.sendParticles(ParticleTypes.SQUID_INK, pos.x, pos.y + 1, pos.z, 120, 0.6, 1.0, 0.6, 0.03);
         nv.sendParticles(ParticleTypes.PORTAL, pos.x, pos.y + 1, pos.z, 80, 0.5, 1.0, 0.5, 0.4);
+        // a animação contínua (3 s) fica no tickApagando
+        APAGANDO.add(new Apagando(nv, pos, System.currentTimeMillis() + 3000L));
         alvo.getServer().getPlayerList().broadcastSystemMessage(
                 Component.literal("---- vazio --- apagou ")
                         .withStyle(ChatFormatting.DARK_GRAY)
@@ -1464,8 +1678,13 @@ public final class NeptuneEventos {
         try {
             ScreenTextPayload pacote = new ScreenTextPayload(alvo.getName().getString().toUpperCase(),
                     9, 18);
+            // (5.7.7) e os CÓDIGOS VERDES EM VOLTA DO CORPO, no mundo
+            NeptunePackets.Codigos glifos = new NeptunePackets.Codigos(
+                    alvo.getX(), alvo.getY(), alvo.getZ(), 6500,
+                    alvo.getName().getString());
             for (ServerPlayer outro : server.getPlayerList().getPlayers()) {
                 PacketDistributor.sendToPlayer(outro, pacote);
+                PacketDistributor.sendToPlayer(outro, glifos);
                 n++;
             }
             // som de "sessão encerrando"
@@ -1620,6 +1839,44 @@ public final class NeptuneEventos {
         if (Math.random() < 0.5) {
             nv.sendParticles(ParticleTypes.ASH, pos.x, pos.y + 0.2 + Math.random(), pos.z,
                     2, 0.45, 0.45, 0.45, 0.01);
+        }
+
+        // ================= (5.7.7) O EXÍLIO FICOU MAIOR =================
+        // 5) BURACO NO CHÃO: um aro de escuridão que ABRE (cresce) e depois
+        //    fecha, como se o chão fosse um papel sendo rasgado por baixo.
+        float abrir = (float) Math.sin(Math.PI * Math.min(1.0, k * 1.1));
+        double raio = 0.35 + 1.75 * abrir;
+        int aro = 26;
+        for (int a = 0; a < aro; a++) {
+            double ang = (a / (double) aro) * Math.PI * 2 + fase * 0.6;
+            double x = pos.x + Math.cos(ang) * raio;
+            double z = pos.z + Math.sin(ang) * raio;
+            nv.sendParticles(ParticleTypes.SQUID_INK, x, pos.y + 0.06, z, 1, 0.01, 0.0, 0.01, 0.0);
+            nv.sendParticles(negro, x, pos.y + 0.05, z, 1, 0.0, 0.0, 0.0, 0.0);
+        }
+        // 6) TENTÁCULOS: 6 colunas tortas de escuridão em volta do corpo
+        if (Math.random() < 0.7) {
+            for (int t = 0; t < 6; t++) {
+                double ang = (t / 6.0) * Math.PI * 2 + fase * 0.4;
+                double rr = 0.75 + Math.random() * 0.25;
+                for (int j = 0; j < 4; j++) {
+                    double y = pos.y + 0.1 + j * 0.45 + Math.sin(fase * 2 + j + t) * 0.08;
+                    double xx = pos.x + Math.cos(ang) * rr + Math.sin(fase * 1.3 + j) * 0.10;
+                    double zz = pos.z + Math.sin(ang) * rr + Math.cos(fase * 1.1 + j) * 0.10;
+                    nv.sendParticles(t % 2 == 0 ? ParticleTypes.SQUID_INK : negro,
+                            xx, y, zz, 1, 0.01, 0.01, 0.01, 0.0);
+                }
+            }
+        }
+        // 7) O ESTOURO FINAL: brasa vermelha em círculo (o vazio "cuspindo")
+        if (k > 0.82F) {
+            double r2 = 0.5 + 0.6 * Math.random();
+            for (int a = 0; a < 40; a++) {
+                double ang = (a / 40.0) * Math.PI * 2;
+                nv.sendParticles(vermelho, pos.x + Math.cos(ang) * r2, pos.y + 0.9 + Math.random() * 0.9,
+                        pos.z + Math.sin(ang) * r2, 1, 0.0, 0.0, 0.0, 0.0);
+            }
+            nv.sendParticles(ParticleTypes.EXPLOSION, pos.x, pos.y + 1.0, pos.z, 1, 0.0, 0.0, 0.0, 0.0);
         }
     }
 

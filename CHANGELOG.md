@@ -1,5 +1,62 @@
 # Changelog
 
+## 5.7.7 — O VAZIO NÃO CEGA, O BICHO DÁ PRA MATAR, CÓDIGOS EM VOLTA DO PLAYER
+### (2026-11-01)
+
+### Vazio (aura)
+- **O vazio não fica mais cego em primeira pessoa.** As partículas do manto
+  acima de 0,95 do corpo (peito/rosto) agora vão **só para os outros jogadores**
+  (`auraPart`): em F1 ele vê o mundo; em F5 vê o manto e os raios.
+- **Aura no MUNDO, não na tela.** Saíram as 70 nuvens de fumaça e as rachaduras
+  desenhadas no overlay (era o **borrão preto flutuando no céu** do print).
+  `VazioAuraDarkFx` agora só faz vinheta leve + granulação nas bordas.
+- **Raios negros e vermelhos saindo do player**: 4 por disparo (a cada 4 ticks),
+  saindo do peito, dos pés e do alto da cabeça, miolo NEGRO (SQUID_INK + dust
+  quase preto) e ponta VERMELHA com brasa — 2,6 a 6,2 blocos de alcance.
+
+### Exílio
+- Animação maior: **aro de escuridão no chão** que abre e fecha, **6 tentáculos**
+  de sombra em volta do corpo e **estouro final de brasa** em círculo.
+
+### Terremoto
+- **Tela balanceada**: nebulosa pela metade (0,10 → 0,05), desfoque do pulso de
+  1,6–4,4 → **0,8–2,0**, detritos 26 → 18 e mais apagados.
+- **Fendas aleatórias**: não abrem mais no pé do jogador — são sorteadas de
+  **2 a 12 blocos** em qualquer direção. A poeira também deixou de ser um anel
+  girando: agora são 5 pontos sorteados por quadro.
+
+### Som do vazio
+- **Saiu** o som que o mod tinha acrescentado na transformação (`WITHER_SPAWN`).
+  Fica só o som original (`vazio_apagar` / `trilha_deus`).
+- **BUG corrigido**: a trilha do deus continuava tocando "no ouvido de todos,
+  infinito" depois do `/vazio desligar` — agora é enviado `StopSound` para todo
+  mundo ao desligar.
+
+### Apagar alguém (`/vazio apagar`)
+- **Cinzas, sombra e alma**: por 3 s no local saem ASH + WHITE_ASH subindo,
+  SQUID_INK/LARGE_SMOKE escorrendo e uma coluna de SOUL (com SOUL_FIRE_FLAME) —
+  a marca pública de que a perda foi canônica.
+
+### Bicho
+- **1º clique = som; 2º clique (depois de 4 s) = susto.** Antes cada toque já
+  arrebentava a caixa.
+- **O bicho agora é uma criatura de verdade** (`rptag:bicho`): sai da caixa,
+  persegue quem abriu, tem **40 de vida** e pode ser morto (solta grito e medo).
+  Renderer próprio (billboard com a arte do susto).
+- **Caixa**: só **uma** caixa tocando por vez no mundo; ao colocar outra, a
+  anterior é apagada e o som dela é **parado** (`pararMusicaCaixa`) — fim das
+  músicas sobrepostas.
+
+### Saída
+- **Códigos verdes EM VOLTA DO PLAYER** (no mundo): novo pacote `Codigos` +
+  `GlifosSaidaFx` — 44 glifos (0/1/0x1F/session.close()…) em 3 anéis girando em
+  volta do corpo, coluna de scan subindo, anel no chão e o nome flutuando.
+  **Todo mundo vê**, na saída real e no `/saida`.
+
+### Testes
+`check.py`: **715 PASS / 0 FAIL** (+14). Servidor 5.7.7 sobe limpo; `rptag:bicho`
+spawna; terremoto liga/desliga; `/saida` responde; **zero exception** no log.
+
 ## 5.7.6 — EXÍLIO ANIMADO, VAZIO PRETO, TERREMOTO ANDÁVEL — 2026-11-01
 
 ### Exílio (`/vazio exilar` / `/vazio soltar`)

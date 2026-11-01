@@ -181,6 +181,36 @@ public final class NeptunePackets {
         }
     }
 
+    /**
+     * (5.7.7) SAÍDA NO MUNDO: glifos verdes girando EM VOLTA do jogador.
+     *
+     * <p>O dono explicou o que queria por "animação": <i>"uns efeitos em volta
+     * do player, digitalizando códigos em números verdes por exemplo, como se
+     * estivessem sendo computados para sair do servidor"</i>. Então o servidor
+     * manda a POSIÇÃO de quem está saindo e o cliente desenha os glifos em 3D
+     * ali (todo mundo vê), além do bonequinho de tela que já existia.
+     */
+    public record Codigos(double x, double y, double z, int ms, String nome)
+            implements CustomPacketPayload {
+        public static final Type<Codigos> TYPE = new Type<>(id("neptune_codigos"));
+        public static final StreamCodec<ByteBuf, Codigos> STREAM_CODEC = StreamCodec.of(
+                (buf, p) -> {
+                    ByteBufCodecs.DOUBLE.encode(buf, p.x());
+                    ByteBufCodecs.DOUBLE.encode(buf, p.y());
+                    ByteBufCodecs.DOUBLE.encode(buf, p.z());
+                    ByteBufCodecs.VAR_INT.encode(buf, p.ms());
+                    ByteBufCodecs.STRING_UTF8.encode(buf, p.nome());
+                },
+                buf -> new Codigos(ByteBufCodecs.DOUBLE.decode(buf),
+                        ByteBufCodecs.DOUBLE.decode(buf), ByteBufCodecs.DOUBLE.decode(buf),
+                        ByteBufCodecs.VAR_INT.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf)));
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
     /** Lista só pra o registro ficar legível. */
     public static List<CustomPacketPayload.Type<? extends CustomPacketPayload>> todos() {
         List<CustomPacketPayload.Type<? extends CustomPacketPayload>> l = new ArrayList<>();
@@ -190,6 +220,7 @@ public final class NeptunePackets {
         l.add(Aura.TYPE);
         l.add(Nebulosa.TYPE);
         l.add(Cena.TYPE);
+        l.add(Codigos.TYPE);
         return l;
     }
 }

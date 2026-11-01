@@ -50,8 +50,8 @@ public class CaixaBichoBlock extends Block {
             return InteractionResult.CONSUME;
         }
         NeptuneEventos.colocarCaixa(nv, pos);       // garante que existe (dedupe)
-        NeptuneEventos.tocarSomCaixa(nv, pos);
-        NeptuneEventos.estourarCaixa(nv, pos, sp);
+        // (5.7.7) 1º clique = som; 2º clique (depois de 4 s) = susto do bicho
+        NeptuneEventos.toqueNaCaixa(nv, pos, sp);
         return InteractionResult.CONSUME;
     }
 }

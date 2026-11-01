@@ -89,6 +89,48 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
   do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
 
+## 5.7.7 (2026-11-01): F1 limpo, aura no mundo, cinzas, bicho matável, glifos 3D
+
+### Pedidos do dono (todos nesta versão)
+1. "por causa das particulas o vazio não consegue enxergar nada em volta dele...
+   só dá para ver no F5, e os outros players poder ver" → `auraPart()`: partícula
+   acima de `y + 0,95` vai só para os outros (`if (o == dono && alto) continue`).
+2. "melhore a animação dele indo para o exílio" → aro no chão + 6 tentáculos +
+   estouro final de brasa em `particulasExilio`.
+3. "balance um pouquinho mais a tela" → nebulosa 0,10→0,05, blur 1,6–4,4→
+   0,8–2,0, detritos 26→18.
+4. "fendas devem acontecer aleatoriamente" → sorteio de 2–12 blocos em 360°;
+   poeira deixou de ser anel (`Math.random()` em vez de `agora/3 % 360`).
+5. "esse /saida é apenas por enquanto né?" → **sim**, é comando manual; o
+   automático de logout continua. Os dois mandam `Codigos` (glifos).
+6. "animação... efeitos em volta do player, digitalizando códigos em números
+   verdes" → `GlifosSaidaFx` (44 glifos em 3 anéis, billboard 3D) + pacote
+   `Codigos`.
+7. "tira esse som que você adicionou no vazio" → saiu `WITHER_SPAWN` do
+   `surtoTransformacao` (só visual agora).
+8. "quando o vazio apagar alguém... cinzas, a sombra, a alma" → `tickApagando`
+   (ASH + WHITE_ASH + SQUID_INK/LARGE_SMOKE + SOUL + SOUL_FIRE_FLAME, 3 s).
+9. "o som continua depois de desligar o vazio, infinito" → `ClientboundStopSoundPacket`
+   de `SOM_TRILHA_DEUS` e `SOM_VAZIO` em `desligarDeus`.
+10. "o bicho no primeiro click deve fazer um som, e depois de alguns segundos dá
+    o susto no segundo" → `toqueNaCaixa` + `ESPERA_SUSTO_MS = 4000`.
+11. "quero que os players possam bater nele" → entidade `rptag:bicho`
+    (`BichoEntity` + `BichoRenderer`, 40 HP, `HurtByTargetGoal`).
+
+### Armadilhas aprendidas
+- **`MobType` e `setMaxUpStep` não existem** como usados em 1.21.1 (mojmap) — o
+  override saiu.
+- **`EntityType.Builder.build()` ainda é `build(String)`** neste NeoForge
+  (passar `ResourceKey` não compila).
+- **`float h = 0.5F`** — declarar como `int` quebra o render.
+- O overlay `VazioAuraDarkFx` era o **borrão preto no céu** do print; a aura
+  agora é **só partícula do servidor**.
+
+### Testes
+`check.py` 715 PASS / 0 FAIL (+14) · servidor 5.7.7 limpo (`Done 0.641s`) ·
+`/summon rptag:bicho` → "Summoned new Bicho" · terremoto e `/saida` sem
+exception.
+
 ## 5.7.6 (2026-11-01): exílio animado, vazio preto, terremoto andável
 
 ### Pedidos do dono (todos nesta versão)

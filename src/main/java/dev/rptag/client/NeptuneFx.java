@@ -317,7 +317,9 @@ public final class NeptuneFx {
         // (a) a camada de ESPAÇO: nebulosa girando devagar, aditiva, fraca
         //     (é o "blur" que combina com o evento — o universo se abrindo)
         float ang = (now % 240000L) / 240000.0F * 360.0F;
-        float a1 = 0.10F + 0.05F * (float) Math.sin(now * 0.0013);
+        // (5.7.7) "balance um pouquinho mais a tela": a nebulosa estava
+        // pesada demais (tingia tudo de roxo). Caiu para ~metade.
+        float a1 = 0.05F + 0.03F * (float) Math.sin(now * 0.0013);
         com.mojang.blaze3d.systems.RenderSystem.enableBlend();
         com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
         com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.42F, 0.40F, 0.72F, a1 * f);
@@ -331,8 +333,10 @@ public final class NeptuneFx {
         // (a2) BLUR de verdade no pulso travado (o mesmo post-process do menu
         //      de pausa) — é o "estunado" com cara de espaço, e sai sozinho
         if (tremorCampea) {
+            // (5.7.7) o desfoque do pulso era 1,6–4,4 (cegava no pico).
+            // Agora é 0,8–2,0: dá o "estufado" sem embaçar o mundo.
             float pulso = 0.5F + 0.5F * (float) Math.sin(now * 0.006);
-            desfocar(1.6F + 2.8F * pulso * f);
+            desfocar(0.8F + 1.2F * pulso * f);
         }
 
         // (b) (5.4.1) POEIRA NA BORDA — antes eram quadradinhos marrons soltos
@@ -351,7 +355,9 @@ public final class NeptuneFx {
 
         // (b2) (5.6.0) DETRITOS CAINDO: lascas de terra/pedra passando pela tela
         // de cima pra baixo o tempo todo (é o "está tudo desabando em volta")
-        for (int i = 0; i < 26; i++) {
+        // (5.7.7) detritos: 26 -> 18 lascas e um pouco mais apagadas, pra tela
+        // não ficar parecendo chuva de lixo.
+        for (int i = 0; i < 18; i++) {
             float s1 = rnd(i * 11 + 3, 7);
             float s2 = rnd(i * 5 + 9, 3);
             float vel = 0.22F + s2 * 0.55F;
@@ -359,7 +365,7 @@ public final class NeptuneFx {
             int x = (int) (s1 * w) + (int) (Math.sin(now * 0.002F + i) * 10);
             int y = (int) (fase * h * 1.2F) - (int) (h * 0.1F);
             int tamy = 3 + (i % 3) * 2;
-            int alfa = (int) (120 * f * (1F - Math.abs(fase - 0.5F) * 1.4F));
+            int alfa = (int) (78 * f * (1F - Math.abs(fase - 0.5F) * 1.4F));
             if (alfa > 3) {
                 g.fill(x, y, x + 2 + (i % 2), y + tamy, (Math.min(255, alfa) << 24) | 0x6E5A42);
             }

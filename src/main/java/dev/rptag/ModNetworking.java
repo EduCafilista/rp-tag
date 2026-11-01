@@ -94,6 +94,9 @@ public final class ModNetworking {
         // (5.6.0) CENA: rachadura na tela, queda do jogador e o estouro inicial
         registrar.playToClient(NeptunePackets.Cena.TYPE, NeptunePackets.Cena.STREAM_CODEC,
                 (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onCena(p)));
+        // (5.7.7) CÓDIGOS EM VOLTA DO PLAYER na saída (animação no mundo)
+        registrar.playToClient(NeptunePackets.Codigos.TYPE, NeptunePackets.Codigos.STREAM_CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.GlifosSaidaFx.iniciar(p)));
         // (5.7.2) SISTEMA DE TÍTULOS (etiqueta colorida + título pessoal)
         registrar.playToClient(TituloSyncPayload.TYPE, TituloSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTitulo);

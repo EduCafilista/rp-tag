@@ -21,10 +21,13 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  * <pre>
  * /terremoto iniciar [segundos]   a terra colapsa (áudio do dono + tremor + pulso de lentidão)
  * /terremoto parar                os admins desligam quando acabar
- * /terremoto sair [jogador|todos] player por player: animação VERDE e kick depois de 4 s
+ * /terremoto sair [jogador|todos] player por player: sombras engolindo e kick depois de 4 s
+ * /terremoto engolir <jogador>     o chão leva a pessoa pro exílio (todos veem)
  * /terremoto status               o que está ligado
  * /terremoto fenda <jogador>      força a terra a abrir embaixo dele (teste)
  * /terremoto fechar               fecha todas as fendas e devolve os blocos
+ * /saida <jogador>|todos          roda a animação de saída de código no mapa
+ *   (no mundo: glifos verdes em volta do corpo; na tela: o bonequinho)
  *
  * /vazio ligar | desligar         o admin vira o DEUS DO VAZIO (aura + trilha + medo)
  * /vazio apagar <jogador>         "---- vazio --- apagou X da existência"
@@ -230,9 +233,9 @@ public final class NeptuneCommands {
             ServerPlayer p = ctx.getSource().getPlayerOrException();
             NeptuneEventos.colocarCaixa((net.minecraft.server.level.ServerLevel) p.level(), p.blockPosition());
             ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a7aCaixinha colocada aqui. \u00a77Ela vai tocar por "
-                    + NeptuneEventos.BICHO_MUSICA_SEG + " s — quando alguém chegar a "
-                    + (int) NeptuneEventos.BICHO_RAIO + " blocos, o bicho pula."), false);
+                    "\u00a7aCaixinha colocada aqui. \u00a77Ela toca por "
+                    + NeptuneEventos.BICHO_MUSICA_SEG + " s. O primeiro clique só toca o som; "
+                    + "o SEGUNDO (depois de 4 s) solta o bicho \u2014 e ele dá pra matar."), false);
             return Command.SINGLE_SUCCESS;
         }));
 

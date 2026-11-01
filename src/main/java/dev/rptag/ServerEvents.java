@@ -184,9 +184,14 @@ public final class ServerEvents {
             }
             String nome = saiu.getName().getString();
             ScreenTextPayload payload = new ScreenTextPayload(nome, 9, 18);
+            // (5.7.7) os CÓDIGOS VERDES em volta do corpo, NO MUNDO, na posição
+            // de onde ele desconectou — é isso que "digitaliza" o personagem.
+            dev.rptag.NeptunePackets.Codigos glifos = new dev.rptag.NeptunePackets.Codigos(
+                    saiu.getX(), saiu.getY(), saiu.getZ(), 6500, nome);
             for (net.minecraft.server.level.ServerPlayer outro : server.getPlayerList().getPlayers()) {
                 if (outro != saiu) {
                     net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(outro, payload);
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(outro, glifos);
                 }
             }
         } catch (Throwable t) {

@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.7.6'
+VER = '5.7.7'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1706,7 +1706,8 @@ check('5.7.3: BICHO pula na tela de quem esta em CRIATIVO (era o bug do dono)',
       "if (sp.isCreati" not in rd(R + '/NeptuneEventos.java')
       and 'if (sp.isSpectator())' in rd(R + '/NeptuneEventos.java'))
 check('5.7.3: clique na caixa dispara o bicho (estourarCaixa)',
-      'estourarCaixa' in rd(R + '/CaixaBichoBlock.java')
+      ('toqueNaCaixa' in rd(R + '/CaixaBichoBlock.java')
+       or 'estourarCaixa' in rd(R + '/CaixaBichoBlock.java'))
       and 'public static void estourarCaixa' in rd(R + '/NeptuneEventos.java'))
 check('5.7.3: FIM das musicas empilhadas (durou % 30 == 0 -> proximaMusica)',
       'durou % 30 == 0)' not in rd(R + '/NeptuneEventos.java')
@@ -1868,6 +1869,53 @@ check('5.7.6: /terremoto engolir (o chao leva a pessoa, os outros veem)',
 check('5.7.6: /saida — animacao de saida usavel no mapa por qualquer admin',
       'tocarAnimacaoSaida' in _ne2 and 'register(saida)' in _ncmd
       and 'style == 18' in rd(C + '/ClientEffects.java'))
+
+
+# ============ 5.7.7: F1 limpo, exílio maior, cinzas, bicho, códigos 3D ======
+_bicho = rd(R + '/BichoEntity.java')
+_bren = rd(C + '/BichoRenderer.java')
+_glif = rd(C + '/GlifosSaidaFx.java')
+check('5.7.7: o vazio NAO fica cego em F1 (particula alta vai so pros outros)',
+      'private static void auraPart(' in _ne2 and 'boolean alto = y > dono.getY() + 0.95;' in _ne2
+      and 'if (o == dono && alto)' in _ne2)
+check('5.7.7: EXILIO maior (aro no chao + tentaculos + estouro final)',
+      'BURACO NO CH' in _ne2 and 'TENTÁCULOS' in _ne2 and 'O ESTOURO FINAL' in _ne2)
+check('5.7.7: terremoto com FENDAS aleatorias (nao mais no pe do jogador)',
+      'fendas devem acontecer aleatoriamente' in _ne2 and 'double dist = 2.0 + Math.random() * 10.0;' in _ne2)
+check('5.7.7: tela do terremoto BALANCEADA (nebulosa/blur/detritos menores)',
+      'desfocar(0.8F + 1.2F * pulso * f)' in _nfx and 'for (int i = 0; i < 18; i++) {' in _nfx)
+check('5.7.7: SAIU o som que o bot tinha posto no vazio (WITHER_SPAWN)',
+      'SoundEvents.WITHER_SPAWN' not in _ne2)
+check('5.7.7: trilha do vazio PARA de verdade no /vazio desligar',
+      'ClientboundStopSoundPacket' in _ne2 and 'SOM_TRILHA_DEUS.get().getLocation()' in _ne2)
+check('5.7.7: apagar alguem = CINZAS + SOMBRA + ALMA por 3 s',
+      'tickApagando' in _ne2 and 'ParticleTypes.WHITE_ASH' in _ne2
+      and 'ParticleTypes.SOUL,' in _ne2 and 'ParticleTypes.SOUL_FIRE_FLAME' in _ne2)
+check('5.7.7: BICHO no 1o clique so toca som; o susto vem no 2o (4 s)',
+      'toqueNaCaixa' in _ne2 and 'ESPERA_SUSTO_MS = 4000L' in _ne2
+      and 'toqueNaCaixa(nv, pos, sp)' in _cb)
+check('5.7.7: o BICHO existe no MUNDO e da pra bater nele',
+      'class BichoEntity extends Monster' in _bicho and 'atributos()' in _bicho
+      and 'registerEntityRenderer(RPTagMod.BICHO.get()' in rd(C + '/ClientRenderers.java')
+      and 'addFreshEntity(bicho)' in _ne2)
+check('5.7.7: CODIGOS VERDES em volta do player na saida (3D, no mundo)',
+      'class GlifosSaidaFx' in _glif and 'drawInBatch' in _glif and 'CODIGOS' in _glif
+      and 'Codigos.TYPE' in rd(R + '/NeptunePackets.java')
+      and 'GlifosSaidaFx.iniciar' in rd(R + '/ModNetworking.java'))
+
+
+# ============ 5.7.3: aura SEM borrao de tela, som novo, caixa unica =========
+check('5.7.3: SAIU o borrao de fumaca/rachadura DESENHADO na tela (era o que ficava esquisito no F5)',
+      'fumaca(' not in _vad and 'rachadura(' not in _vad and 'tentaculo(' not in _vad
+      and _vad.count('b.vinheta(') >= 1 and 'granula' in _vad.lower())
+check('5.7.3: a aura do vazio agora e NO MUNDO (raios negros e vermelhos saindo do player)',
+      'RAIOS NEGROS E VERMELHOS' in _ne2 and 'class VazioAuraDarkFx' in _vad
+      and 'vinheta' in _vad.lower())
+check('5.7.3: som novo do terremoto com corpo (nao so zumbido grave)',
+      os.path.getsize(A + '/sounds/rumble_terremoto.ogg') > 100_000
+      and os.path.getsize(A + '/sounds/terremoto_colapso.ogg') > 300_000)
+check('5.7.3: caixa do palhaco NAO empilha mais musica (para a anterior antes)',
+      'pararMusicaCaixa' in _ne2 and 'ClientboundStopSoundPacket' in _ne2)
 
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
