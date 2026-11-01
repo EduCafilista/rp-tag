@@ -624,11 +624,11 @@ public final class NeptuneEventos {
     public static void ligarDeus(ServerPlayer p) {
         DEUSES.put(p.getUUID(), true);
         TRILHA.remove(p.getUUID());
-        PacketDistributor.sendToPlayer(p, new NeptunePackets.Aura(true, true));
+        // (5.7.4) a aura vai pra TODO MUNDO com o UUID de quem é o vazio: é
+        // assim que os outros clientes desenham os raios 3D em volta dele.
         for (ServerPlayer outro : p.getServer().getPlayerList().getPlayers()) {
-            if (outro != p) {
-                PacketDistributor.sendToPlayer(outro, new NeptunePackets.Aura(false, false));
-            }
+            PacketDistributor.sendToPlayer(outro,
+                    new NeptunePackets.Aura(p.getUUID(), outro == p, outro == p));
         }
         p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
                 "\u00a78\u00a7l\u2588 \u00a75\u00a7lO VAZIO CAMINHA ENTRE NÓS\u00a78 \u00a7l\u2588")
@@ -641,13 +641,40 @@ public final class NeptuneEventos {
     public static void desligarDeus(ServerPlayer p) {
         DEUSES.remove(p.getUUID());
         TRILHA.remove(p.getUUID());
-        PacketDistributor.sendToPlayer(p, new NeptunePackets.Aura(false, false));
+        for (ServerPlayer outro : p.getServer().getPlayerList().getPlayers()) {
+            PacketDistributor.sendToPlayer(outro, NeptunePackets.Aura.desligada());
+        }
         p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
                 "\u00a77A escuridão recolheu.").withStyle(ChatFormatting.DARK_GRAY), false);
     }
 
+    /** (5.7.4) próximo trovão grave que os OUTROS vão ouvir (medo). */
+    private static long proximoTrovao = 0L;
+
     private static void tickDeus(MinecraftServer server) {
         long agora = System.currentTimeMillis();
+        // ---- TROVÃO DO VAZIO: quem está perto ouve o raio estalar no corpo
+        // dele (grave e distante — não é para ser um trovão de tempestade).
+        if (agora >= proximoTrovao) {
+            proximoTrovao = agora + 4200 + (long) (Math.random() * 2800);
+            for (ServerPlayer deus : server.getPlayerList().getPlayers()) {
+                if (!ehDeus(deus.getUUID())) {
+                    continue;
+                }
+                for (ServerPlayer ouvinte : server.getPlayerList().getPlayers()) {
+                    if (ouvinte == deus || ouvinte.level() != deus.level()) {
+                        continue;
+                    }
+                    double d = ouvinte.position().distanceTo(deus.position());
+                    if (d > 32.0) {
+                        continue;
+                    }
+                    float vol = (float) Math.max(0.12, 0.55 * (1.0 - d / 32.0));
+                    ouvinte.playNotifySound(net.minecraft.sounds.SoundEvents.LIGHTNING_BOLT_THUNDER,
+                            SoundSource.AMBIENT, vol, 0.55F + (float) Math.random() * 0.12F);
+                }
+            }
+        }
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (!ehDeus(p.getUUID())) {
                 continue;

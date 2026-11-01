@@ -149,11 +149,13 @@ public final class NeptuneFx {
     }
 
     public static void onAura(NeptunePackets.Aura p) {
-        souDeus = p.deus();
+        boolean eu = p.euSou();
+        souDeus = eu;
         trilhaOn = p.trilha();
-        // (5.7.1) AURA DO VAZIO do protótipo do dono (rachaduras, tentáculos,
-        // estilhaços, fumaça, granulação) enquanto o deus estiver ligado
-        if (p.deus()) {
+        // (5.7.4) RAIOS 3D em volta de QUEM É O VAZIO (todos os clientes veem)
+        RaiosVazioFx.definir(p.alvo(), eu);
+        // o acabamento de TELA é só pro próprio vazio (é ele que está dentro)
+        if (eu) {
             VazioAuraDarkFx.ligar();
         } else {
             VazioAuraDarkFx.desligar();

@@ -87,15 +87,37 @@ public final class NeptunePackets {
     }
 
     /** AURA: sou (ou não) o DEUS do vazio; trilha = pode tocar a trilha. */
-    public record Aura(boolean deus, boolean trilha) implements CustomPacketPayload {
+    /**
+     * (5.7.4) AURA DO VAZIO — agora carrega QUEM é o vazio.
+     *
+     * <p>Antes era só {@code (deus, trilha)} e ia só pro próprio jogador; os
+     * outros não sabiam de quem era a aura, então não dava pra desenhar os raios
+     * 3D em volta dele. Agora vai pra TODOS: {@code alvo} é o UUID do vazio
+     * (vazio/zero = ninguém), {@code euSou} diz se este cliente é o próprio
+     * (ele vê a trilha e os raios mais discretos) e {@code trilha} o som.
+     */
+    public record Aura(java.util.UUID alvo, boolean euSou, boolean trilha) implements CustomPacketPayload {
         public static final Type<Aura> TYPE = new Type<>(id("neptune_aura"));
         public static final StreamCodec<ByteBuf, Aura> STREAM_CODEC = StreamCodec.of(
                 (buf, p) -> {
-                    ByteBufCodecs.BOOL.encode(buf, p.deus());
+                    net.minecraft.core.UUIDUtil.STREAM_CODEC.encode(buf,
+                            p.alvo() == null ? new java.util.UUID(0L, 0L) : p.alvo());
+                    ByteBufCodecs.BOOL.encode(buf, p.euSou());
                     ByteBufCodecs.BOOL.encode(buf, p.trilha());
                 },
-                buf -> new Aura(ByteBufCodecs.BOOL.decode(buf),
+                buf -> new Aura(net.minecraft.core.UUIDUtil.STREAM_CODEC.decode(buf),
+                        ByteBufCodecs.BOOL.decode(buf),
                         ByteBufCodecs.BOOL.decode(buf)));
+
+        /** atalho: aura desligada. */
+        public static Aura desligada() {
+            return new Aura(new java.util.UUID(0L, 0L), false, false);
+        }
+
+        public boolean ligada() {
+            return alvo() != null && !(alvo().getMostSignificantBits() == 0L
+                    && alvo().getLeastSignificantBits() == 0L);
+        }
 
         @Override
         public Type<? extends CustomPacketPayload> type() {

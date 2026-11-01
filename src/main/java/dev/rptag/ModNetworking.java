@@ -30,7 +30,8 @@ public final class ModNetworking {
         // (5.2.0) v8: TABLET NEPTUNE (tablet_sync cliente / tablet_update servidor).
         // (5.4.0) v9: EVENTO NEPTUNE (terremoto, saida verde, susto, aura, nebulosa)
         // (5.7.2) v10: TITULOS (sync_titulo) — cliente 5.7.1 nao tem o canal
-        PayloadRegistrar registrar = event.registrar("10");
+        // (5.7.4) v11: o pacote AURA ganhou o UUID de quem e o vazio (raios 3D)
+        PayloadRegistrar registrar = event.registrar("11");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         registrar.playToServer(TabletUpdatePayload.TYPE, TabletUpdatePayload.STREAM_CODEC,

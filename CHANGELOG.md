@@ -1,5 +1,35 @@
 # Changelog
 
+## 5.7.4 — RAIOS DE VERDADE NO VAZIO — 2026-11-01
+
+**"Não quero apenas partículas, quero animação de verdade."** Feito: os raios do
+vazio agora são **GEOMETRIA 3D desenhada no mundo**, não nuvem de ponto.
+
+- `client/RaiosVazioFx.java` (novo): 14 raios vivos ao mesmo tempo, desenhados
+  como **fitas 3D** (`RenderType.lightning()`) em `RenderLevelStageEvent`
+  (AFTER_PARTICLES). Cada raio tem zigue-zague de 6 a 10 segmentos com
+  serrilhado estável, vida de **95–260 ms** e depois **re-estala** em outra
+  direção — é animação de relâmpago, não partícula.
+- **Para todo lado:** azimute 360° sorteado + elevação de até ±0,75 rad (pra
+  cima e pra baixo) e 3 alturas de saída (chão, corpo, cabeça). Alcance de 1,8 a
+  6,4 blocos.
+- **Duas passadas de cor:** capa **VERMELHA** por fora (mais larga) e núcleo
+  **NEGRO-ROXO** por dentro, afinando na ponta.
+- **Não atrapalha quem é o vazio:** se o cliente é o próprio vazio, ele vê
+  **metade** dos raios, mais finos e transparentes (alpha 0,30 no F1 / 0,55 no
+  F5) — e no F1 os raios que apontam pra câmera são encurtados. Ele precisa
+  mirar.
+- **Dá medo a quem vê:** para os outros jogadores os raios são grandes e
+  opacos; **trovão grave** (`LIGHTNING_BOLT_THUNDER`, pitch 0,55, volume caindo
+  com a distância até 32 blocos) estala a cada 4–7 s em volta do vazio.
+- O pacote `Aura` agora carrega o **UUID de quem é o vazio** (e vai pra todos os
+  jogadores, não só pro próprio), e `euSou` diz se o cliente é ele. Canal de
+  rede **v11** (cliente 5.7.3 é recusado com aviso de versão).
+
+### Testes
+`check.py`: **685 PASS / 0 FAIL** (7 checks novos). Servidor: carrega 5.7.4
+limpo (`Done (0.572s)`).
+
 ## 5.7.3 — BICHO NA TELA, MÚSICA ÚNICA, AURA DE RAIOS E SOM DO TERREMOTO — 2026-11-01
 
 **1) O BICHO NÃO PULAVA NA TELA — eram DOIS bugs.**

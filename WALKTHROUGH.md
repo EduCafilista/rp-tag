@@ -89,6 +89,41 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
   do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
 
+## 5.7.4 (2026-11-01): raios 3D de verdade no vazio
+
+> Pedido do dono: "os raios negros e vermelhos eu não quero apenas partículas,
+> quero animação de verdade, quero que em volta do vazio seja raios negros
+> vermelhos para todo lado, não atrapalhando quem é o vazio e dando medo a quem
+> ver".
+
+### Feito
+- **`client/RaiosVazioFx.java`** (novo, ~300 linhas): renderer de mundo em
+  `RenderLevelStageEvent.Stage.AFTER_PARTICLES`. 14 raios, cada um com direção
+  sorteada (azimute 360° + elevação ±0,75 rad), alcance 1,8–6,4, 6–10
+  segmentos de zigue-zague (`hash` estável + senos), vida 95–260 ms e
+  re-estalo. Desenho em **fitas** (`RenderType.lightning()`, QUADS
+  POSITION_COLOR): para cada segmento o vetor é cruzado com a direção até a
+  câmera para achar a largura — a fita sempre fica de frente.
+  **Importante:** usar `vc.addVertex(pose.last().pose(), x, y, z)` (com a
+  matriz!); `addVertex(float,float,float)` ignora o translate da pose.
+- **Cores/ordem:** primeiro a capa vermelha (`baseW*2.6`), depois o núcleo
+  preto-roxo (`baseW`); alpha segue a curva `sin(pi*vida)` (pisca como
+  relâmpago).
+- **Discreto pro próprio:** `suave` (euSou) → metade dos raios (`idx++ % 2`),
+  alpha 0,55 (F5) / 0,30 (F1), e no F1 os raios com `dot(dir, paraCam) > 0.35`
+  são encurtados a 35%.
+- **Medo nos outros:** em `tickDeus`, `proximoTrovao` a cada 4,2–7 s toca
+  `LIGHTNING_BOLT_THUNDER` (pitch 0,55) para cada jogador a ≤32 blocos do
+  vazio, volume caindo com a distância.
+- **Rede:** `NeptunePackets.Aura` virou `Aura(UUID alvo, boolean euSou, boolean
+  trilha)` com `desligada()`/`ligada()`; vai pra TODOS em `ligarDeus`/`desligarDeus`.
+  Canal **v11**. `NeptuneFx.onAura` chama `RaiosVazioFx.definir(alvo, euSou)` e
+  só liga o overlay de tela (`VazioAuraDarkFx`) para o próprio.
+- `ClientEvents.onLoggingOut` chama `RaiosVazioFx.desligar()`.
+
+### Testes
+`check.py` 685 PASS / 0 FAIL · servidor 5.7.4 sobe limpo.
+
 ## 5.7.3 (2026-11-01): bicho na tela, música única, aura de raios, som do terremoto
 
 > Pedido do dono: "o bicho da caixa não está pulando na tela do player";
@@ -284,7 +319,7 @@ ALLFORONE) · `PWaHoNqN.mp4` = buraco negro 1280x720 24 fps 5,09 s.
 |---|---|
 | Versão | **5.7.1** (2026-11-01) — consertos (crash do CONHECIMENTO, vídeo) + aura do vazio |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.7.3.jar` (**98.915.233 B**, md5 `1294bd7e6269137a1897303cc3ae08b9`) — release **430788629**, asset **699219401** |
+| Jar | `rptag-5.7.4.jar` (**98.921.559 B**, md5 `b9376dc06bf4763e723df5db1e880f01`) — release **430794095**, asset **699224818** |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
