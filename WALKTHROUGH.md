@@ -109,7 +109,7 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 |---|---|
 | Versão | **5.6.1** (2026-11-01) — vídeo atrás do player no tablet (loop) |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.4.1.jar` (**93.295.612 B**) |
+| Jar | `rptag-5.6.1.jar` (**94.324.821 B**, md5 `2b6178588390a9bc79b61378c4034a13`) — release **430715291**, asset **698897094**; espelho `https://gofile.io/d/FBAbqhDP` |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |
