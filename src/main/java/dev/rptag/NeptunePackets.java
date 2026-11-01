@@ -120,6 +120,41 @@ public final class NeptunePackets {
         }
     }
 
+
+    /**
+     * (5.6.0) CENA do terremoto — o drama na tela.
+     * <ul>
+     *   <li>tipo {@link #CENA_RACHADURA} (0): o chão RACHANDO na tela (teia de
+     *       rachaduras crescendo das bordas), "algo se abrindo";</li>
+     *   <li>tipo {@link #CENA_QUEDA} (1): o jogador CAIU na fenda — poeira
+     *       subindo da base da tela, câmera tombada, vinheta de terra;</li>
+     *   <li>tipo {@link #CENA_ESTOURO} (2): o tranco inicial (flash +
+     *       onda de choque).</li>
+     * </ul>
+     */
+    public record Cena(int tipo, float forca, int ms, long semente) implements CustomPacketPayload {
+        public static final int CENA_RACHADURA = 0;
+        public static final int CENA_QUEDA = 1;
+        public static final int CENA_ESTOURO = 2;
+
+        public static final Type<Cena> TYPE = new Type<>(id("neptune_cena"));
+        public static final StreamCodec<ByteBuf, Cena> STREAM_CODEC = StreamCodec.of(
+                (buf, p) -> {
+                    ByteBufCodecs.VAR_INT.encode(buf, p.tipo());
+                    ByteBufCodecs.FLOAT.encode(buf, p.forca());
+                    ByteBufCodecs.VAR_INT.encode(buf, p.ms());
+                    ByteBufCodecs.VAR_LONG.encode(buf, p.semente());
+                },
+                buf -> new Cena(ByteBufCodecs.VAR_INT.decode(buf),
+                        ByteBufCodecs.FLOAT.decode(buf), ByteBufCodecs.VAR_INT.decode(buf),
+                        ByteBufCodecs.VAR_LONG.decode(buf)));
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
     /** Lista só pra o registro ficar legível. */
     public static List<CustomPacketPayload.Type<? extends CustomPacketPayload>> todos() {
         List<CustomPacketPayload.Type<? extends CustomPacketPayload>> l = new ArrayList<>();
@@ -128,6 +163,7 @@ public final class NeptunePackets {
         l.add(Susto.TYPE);
         l.add(Aura.TYPE);
         l.add(Nebulosa.TYPE);
+        l.add(Cena.TYPE);
         return l;
     }
 }

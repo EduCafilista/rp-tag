@@ -89,5 +89,8 @@ public final class ModNetworking {
                 (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onAura(p)));
         registrar.playToClient(NeptunePackets.Nebulosa.TYPE, NeptunePackets.Nebulosa.STREAM_CODEC,
                 (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onNebulosa(p)));
+        // (5.6.0) CENA: rachadura na tela, queda do jogador e o estouro inicial
+        registrar.playToClient(NeptunePackets.Cena.TYPE, NeptunePackets.Cena.STREAM_CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onCena(p)));
     }
 }

@@ -52,11 +52,48 @@ o catbox respondeu **HTTP 200 com `content-length: 0`**. Não implementar no
 chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grande
 às vezes precisa de outro host).
 
+## 5.6.0 (2026-11-01): o chão racha, o player cai e fica imóvel
+
+> "quero efeito de algo se rachando o player caindo, ficando imovel, quero que
+> seja legal mesmo o terremoto quando os players ver o terremoto"
+
+### O que foi feito
+- **Servidor (`NeptuneEventos`)**: `abrirFenda(ServerPlayer)` /
+  `abrirFendaEm(ServerLevel, BlockPos)` / `fecharFendas(server)`. Cova **3×3
+  com 2 de profundidade** + **4–6 rachaduras** de 5–10 blocos seguindo o
+  relevo. Lista branca `CAVEIS` (terra/pedra/areia…) — nunca bloco com
+  `hasBlockEntity()` (baú/forno), nunca líquido. Cada bloco tem o **estado
+  original guardado** (`record Fenda`) e volta em `fecharFendas()` (roda no fim
+  de cada pulso, no `pararTerremoto` e no `/terremoto fechar`).
+- **IMÓVEL de verdade**: `imobilizar(p, true/false)` aplica
+  `AttributeModifier(MOD_RAIZ, -1.0, ADD_MULTIPLIED_TOTAL)` em
+  `MOVEMENT_SPEED` e `-0.42 ADD_VALUE` em `JUMP_STRENGTH`. Lentidão por efeito
+  **não** segurava: o jogador pulava fora do buraco.
+- **Cliente (`NeptuneFx`)**: camadas `desenharRachadura` (abismo no rodapé +
+  11 rachaduras serrilhadas), `desenharQueda` (dentro da cova, câmera tombada,
+  poeira, blur), `desenharEstouro` (flash + 2 ondas de choque) e detritos
+  caindo na tela. Pacote novo `NeptunePackets.Cena(tipo, forca, ms, semente)`
+  com `CENA_RACHADURA`/`CENA_QUEDA`/`CENA_ESTOURO`.
+- Comandos de teste: `/terremoto fenda [jogador]`, `/terremoto fechar`;
+  `status` mostra `blocosCavados()`.
+
+### Lições
+- **Nunca desenhar "rachadura" saindo das bordas pro centro com traço grosso**:
+  vira galho de árvore. O que lê como chão rachando é **abismo na base** (boca
+  jagada, beirada clara) + rachaduras **finas** subindo dele.
+- `IMAGE.translate`/câmera: `ViewportEvent.ComputeCameraAngles` não tem hook de
+  posição; pra "cair no buraco" use **pitch/roll** (tombo) em vez de tentar
+  mover a câmera.
+- `run.sh` **exige** `export PATH=/var/tmp/java-21/bin:$PATH`; sem isso ele usa
+  o java do sistema e morre com `Unsupported major.minor version 65.0`.
+- Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
+  do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
+
 ## 1. Estado atual
 
 | Item | Valor |
 |---|---|
-| Versão | **5.5.0** (2026-11-01) — aviso ENERGIA, dimensão rptag:exilio, sombra do apagar, aura circulando |
+| Versão | **5.6.0** (2026-11-01) — terremoto com chão rachando, queda e jogador imóvel |
 | Commit | (ver `git log`) |
 | Jar | `rptag-5.4.1.jar` (**93.295.612 B**) |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |

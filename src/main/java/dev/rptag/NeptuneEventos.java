@@ -17,6 +17,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -89,11 +94,40 @@ public final class NeptuneEventos {
     private static final List<Object[]> SAIDAS = new ArrayList<>();
     /** caixas do bicho: posição + quando começou */
     private static final List<Caixa> CAIXAS = new ArrayList<>();
+    /**
+     * (5.6.0) FENDAS ABERTAS — cada bloco que a terra engoliu, com o estado
+     * original guardado pra fechar depois. É o "chão rachando": o jogador cai
+     * 2 blocos numa cova e fica lá, imóvel, até a terra voltar.
+     */
+    private static final List<Fenda> FENDAS = new ArrayList<>();
+    private static final java.util.Set<Long> CAVADOS = new java.util.HashSet<>();
+    /** queda: uuid -> {y do chão original} (só quem caiu na fenda) */
+    private static final Map<UUID, long[]> QUEDA = new HashMap<>();
+    private static final ResourceLocation MOD_RAIZ =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "raiz_do_terremoto");
 
     /** (5.4.1) duração do ogg do colapso (75 s) — pra repetir se o evento durar mais. */
     public static final long COLAPSO_MS = 75000L;
     public static final double BICHO_RAIO = 3.0;
     public static final int BICHO_MUSICA_SEG = 36;
+
+    /** um bloco que foi cavado pela fenda (nível + posição + estado original). */
+    private record Fenda(ServerLevel nivel, BlockPos pos, BlockState estado) {
+    }
+
+    /**
+     * (5.6.0) Só terra, pedra e areia entram na fenda. Nada de baú, forno,
+     * bloco de valor ou bloco com dados (block entity) — e nada de água/lava.
+     * Assim o evento NUNCA destrói a build de ninguém: tudo volta no fim.
+     */
+    private static final java.util.Set<net.minecraft.world.level.block.Block> CAVEIS =
+            java.util.Set.of(Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.ROOTED_DIRT,
+                    Blocks.PODZOL, Blocks.MYCELIUM, Blocks.MUD, Blocks.CLAY, Blocks.GRAVEL,
+                    Blocks.SAND, Blocks.RED_SAND, Blocks.STONE, Blocks.DEEPSLATE, Blocks.GRANITE,
+                    Blocks.DIORITE, Blocks.ANDESITE, Blocks.TUFF, Blocks.CALCITE, Blocks.SANDSTONE,
+                    Blocks.PACKED_MUD, Blocks.MOSS_BLOCK, Blocks.SNOW_BLOCK, Blocks.DIRT_PATH,
+                    Blocks.FARMLAND, Blocks.DRIPSTONE_BLOCK, Blocks.BLACKSTONE, Blocks.BASALT,
+                    Blocks.NETHERRACK, Blocks.SOUL_SAND, Blocks.SOUL_SOIL);
 
     private static final class Caixa {
         final BlockPos pos;
@@ -138,6 +172,11 @@ public final class NeptuneEventos {
         server.getPlayerList().broadcastSystemMessage(Component.literal(
                 "\u00a7c\u00a7l\u2694 TERREMOTO  \u00a77— o chão está rachando! (\u00a7c"
                         + segundos + "s\u00a77)").withStyle(ChatFormatting.RED), false);
+        // (5.6.0) o TRANCO inicial: flash + onda de choque + rachadura na tela
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            PacketDistributor.sendToPlayer(p, new NeptunePackets.Cena(
+                    NeptunePackets.Cena.CENA_ESTOURO, 1.0F, 2600, System.nanoTime()));
+        }
         enviarTerremoto(server, true, 1.0F, segundos, true);
     }
 
@@ -148,7 +187,9 @@ public final class NeptuneEventos {
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             p.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
             p.removeEffect(MobEffects.DIG_SLOWDOWN);
+            imobilizar(p, false);
         }
+        fecharFendas(server);
         enviarTerremoto(server, false, 0.0F, 0, false);
         if (estava && !silencioso) {
             server.getPlayerList().broadcastSystemMessage(Component.literal(
@@ -204,16 +245,32 @@ public final class NeptuneEventos {
                 for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                     p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 130, 2, false, false, false));
                     p.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 130, 1, false, false, false));
-                    p.displayClientMessage(Component.literal(
-                            "\u00a78Você cambaleia — o chão está cedendo."), true);
+                    // (5.6.0) O CHÃO ABRE: imobiliza de verdade (velocidade e
+                    // pulo zerados por atributo) e abre a fenda embaixo dele.
+                    imobilizar(p, true);
+                    boolean caiu = abrirFenda(p);
+                    if (caiu) {
+                        PacketDistributor.sendToPlayer(p, new NeptunePackets.Cena(
+                                NeptunePackets.Cena.CENA_QUEDA, 1.0F, 5500, System.nanoTime()));
+                        p.displayClientMessage(Component.literal(
+                                "\u00a74\u00a7lO CH\u00c3O SE ABRIU! \u00a7cVoc\u00ea caiu e n\u00e3o consegue se levantar."), true);
+                    } else {
+                        PacketDistributor.sendToPlayer(p, new NeptunePackets.Cena(
+                                NeptunePackets.Cena.CENA_RACHADURA, 0.7F, 4500, System.nanoTime()));
+                        p.displayClientMessage(Component.literal(
+                                "\u00a78Voc\u00ea cambaleia \u2014 o ch\u00e3o est\u00e1 cedendo."), true);
+                    }
                 }
             } else {
                 for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                     p.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
                     p.removeEffect(MobEffects.DIG_SLOWDOWN);
+                    imobilizar(p, false);
                     p.displayClientMessage(Component.literal(
                             "\u00a7aAgora! Corre!"), true);
                 }
+                // a terra se fecha atrás de quem caiu (antes de sair do buraco)
+                fecharFendas(server);
             }
         }
 
@@ -263,6 +320,232 @@ public final class NeptuneEventos {
                 l.add(new ServerServerHold((ServerLevel) p.level(), p.position()));
             }
             return l;
+        }
+    }
+
+    // ============================================================ FENDA / QUEDA
+    /**
+     * (5.6.0) ABRE A FENDA embaixo do jogador: cava um poço de 2 de
+     * profundidade (3x3) e comprido de rachaduras saindo dele. Ele cai dentro,
+     * fica IMÓVEL (velocidade e pulo zerados) e a terra fecha depois.
+     *
+     * <p>Regras de segurança (o evento não pode estragar build):
+     * só entra na fenda bloco de {@link #CAVEIS} (terra/pedra/areia), nunca
+     * bloco com block entity (baú, forno…), nunca água/lava, e TUDO é
+     * restaurado no fim ({@link #fecharFendas}).
+     *
+     * @return true se o jogador realmente afundou na fenda
+     */
+    public static boolean abrirFenda(ServerPlayer p) {
+        try {
+            if (!(p.level() instanceof ServerLevel nv)) {
+                return false;
+            }
+            if (p.isCreative() || p.isSpectator() || p.isPassenger()) {
+                return false;
+            }
+            int bx = p.blockPosition().getX();
+            int bz = p.blockPosition().getZ();
+            int by = p.blockPosition().getY();
+            // o chão é o primeiro bloco cavável logo abaixo dos pés
+            BlockPos chao = null;
+            for (int dy = 1; dy <= 3 && chao == null; dy++) {
+                BlockPos c = new BlockPos(bx, by - dy, bz);
+                if (CAVEIS.contains(nv.getBlockState(c).getBlock())) {
+                    chao = c;
+                }
+            }
+            if (chao == null) {
+                return false;            // piso de madeira/pedra trabalhada: não mexe
+            }
+            java.util.Random r = new java.util.Random(p.getUUID().getMostSignificantBits()
+                    ^ System.nanoTime());
+            return cavarFenda(nv, chao, r, p);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: nao consegui abrir a fenda do terremoto", t);
+            return false;
+        }
+    }
+
+    /**
+     * (5.6.0) abre a fenda num lugar do mundo (sem jogador) — é o que o
+     * {@code /terremoto fenda} usa quando o admin quer testar no chão em que
+     * está pisando, e é o mesmo motor que roda embaixo dos jogadores.
+     */
+    public static boolean abrirFendaEm(ServerLevel nv, BlockPos perto) {
+        try {
+            BlockPos chao = null;
+            for (int dy = 0; dy <= 3 && chao == null; dy++) {
+                BlockPos c = perto.offset(0, -dy, 0);
+                if (CAVEIS.contains(nv.getBlockState(c).getBlock())) {
+                    chao = c;
+                }
+            }
+            if (chao == null) {
+                return false;
+            }
+            java.util.Random r = new java.util.Random(nv.getRandom().nextLong());
+            return cavarFenda(nv, chao, r, null);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: nao consegui abrir a fenda no mundo", t);
+            return false;
+        }
+    }
+
+    /** o miolo: cava a cova + as rachaduras e (se houver jogador) marca a queda. */
+    private static boolean cavarFenda(ServerLevel nv, BlockPos chao, java.util.Random r,
+            ServerPlayer p) {
+        {
+            // (1) a COVA: 3x3, dois blocos de profundidade -> ele cai 2
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    cavar(nv, chao.offset(dx, 0, dz), r);
+                    cavar(nv, chao.offset(dx, -1, dz), r);
+                }
+            }
+            // (2) as RACHADURAS: 4 a 6 braços serpenteando pela superfície
+            int bracos = 4 + r.nextInt(3);
+            for (int b = 0; b < bracos; b++) {
+                double ang = (Math.PI * 2 * b / bracos) + (r.nextDouble() - 0.5) * 0.9;
+                int x = chao.getX();
+                int z = chao.getZ();
+                int comp = 5 + r.nextInt(6);
+                for (int i = 0; i < comp; i++) {
+                    ang += (r.nextDouble() - 0.5) * 0.75;
+                    x += (int) Math.round(Math.cos(ang));
+                    z += (int) Math.round(Math.sin(ang));
+                    // segue o relevo: procura o primeiro bloco cavável na coluna
+                    for (int dy = -2; dy <= 3; dy++) {
+                        if (cavar(nv, new BlockPos(x, chao.getY() + dy, z), r)) {
+                            break;
+                        }
+                    }
+                }
+            }
+            if (p != null) {
+                QUEDA.put(p.getUUID(), new long[]{ chao.getY() });
+            }
+            // o baque da terra se abrindo
+            nv.playSound(null, chao, net.minecraft.sounds.SoundEvents.WITHER_BREAK_BLOCK,
+                    SoundSource.BLOCKS, 1.0F, 0.55F);
+            nv.playSound(null, chao, net.minecraft.sounds.SoundEvents.DEEPSLATE_BREAK,
+                    SoundSource.BLOCKS, 1.0F, 0.6F);
+            return true;
+        }
+    }
+
+    /** cava um bloco (se for permitido) e guarda o original pra fechar depois. */
+    private static boolean cavar(ServerLevel nv, BlockPos pos, java.util.Random r) {
+        if (CAVADOS.contains(pos.asLong())) {
+            return false;
+        }
+        if (pos.getY() <= nv.getMinBuildHeight() + 1) {
+            return false;
+        }
+        BlockState st = nv.getBlockState(pos);
+        if (st.isAir() || st.hasBlockEntity() || !st.getFluidState().isEmpty()) {
+            return false;
+        }
+        if (!CAVEIS.contains(st.getBlock())) {
+            return false;
+        }
+        nv.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+        FENDAS.add(new Fenda(nv, pos.immutable(), st));
+        CAVADOS.add(pos.asLong());
+        // poeira do próprio bloco saindo da boca da fenda
+        nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                        ParticleTypes.BLOCK, st),
+                pos.getX() + 0.5, pos.getY() + 0.8, pos.getZ() + 0.5,
+                7, 0.35, 0.25, 0.35, 0.05);
+        if (r.nextInt(3) == 0) {
+            nv.playSound(null, pos, r.nextBoolean()
+                            ? net.minecraft.sounds.SoundEvents.STONE_BREAK
+                            : net.minecraft.sounds.SoundEvents.GRAVEL_BREAK,
+                    SoundSource.BLOCKS, 0.85F, 0.65F + r.nextFloat() * 0.5F);
+        }
+        return true;
+    }
+
+    /**
+     * (5.6.0) FECHA TODAS as fendas: tira quem caiu (sobe de volta pro nível do
+     * chão) e devolve cada bloco no lugar. Roda no fim de cada pulso, ao parar
+     * o terremoto e se o evento for desligado no meio.
+     */
+    public static void fecharFendas(MinecraftServer server) {
+        try {
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                long[] q = QUEDA.remove(p.getUUID());
+                if (q == null) {
+                    continue;
+                }
+                // (5.6.0) se ele morreu ou trocou de dimensão no meio, não
+                // teleporta ninguém pra cima de um buraco que não é dele
+                if (p.isDeadOrDying() || p.isRemoved()) {
+                    continue;
+                }
+                if (p.level() instanceof ServerLevel nv && Math.abs(p.getY() - q[0]) < 8.0) {
+                    p.teleportTo(nv, p.getX(), q[0] + 1.0, p.getZ(),
+                            java.util.Set.of(), p.getYRot(), p.getXRot());
+                    // (5.6.0) poeira de TERRA fechando o buraco — nada de
+                    // fumaça branca (o dono já vetou: parecia bolha/queimado)
+                    nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                    ParticleTypes.FALLING_DUST, Blocks.DIRT.defaultBlockState()),
+                            p.getX(), q[0] + 0.9, p.getZ(), 28, 0.8, 0.2, 0.8, 0.02);
+                    nv.playSound(null, p.blockPosition(),
+                            net.minecraft.sounds.SoundEvents.GRAVEL_PLACE,
+                            SoundSource.BLOCKS, 1.0F, 0.6F);
+                }
+            }
+            for (Fenda f : FENDAS) {
+                f.nivel().setBlockAndUpdate(f.pos(), f.estado());
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: erro ao fechar as fendas do terremoto", t);
+        } finally {
+            FENDAS.clear();
+            CAVADOS.clear();
+            QUEDA.clear();
+        }
+    }
+
+    /** quantos blocos estão cavados agora (o /terremoto status mostra). */
+    public static int blocosCavados() {
+        return FENDAS.size();
+    }
+
+    /**
+     * (5.6.0) IMOBILIZA o jogador de verdade: velocidade e força de pulo em
+     * zero por modificador de atributo (efeito de poção não dava conta — o
+     * jogador ainda pulava pra fora da fenda). Tudo é temporal: sai ao soltar.
+     */
+    /** (5.6.0) versão pública (o /terremoto fenda usa pra testar). */
+    public static void imobilizarAlvo(ServerPlayer p, boolean preso) {
+        imobilizar(p, preso);
+    }
+
+    private static void imobilizar(ServerPlayer p, boolean preso) {
+        try {
+            var vel = p.getAttribute(Attributes.MOVEMENT_SPEED);
+            var pulo = p.getAttribute(Attributes.JUMP_STRENGTH);
+            if (preso) {
+                if (vel != null) {
+                    vel.addOrUpdateTransientModifier(new AttributeModifier(MOD_RAIZ, -1.0,
+                            AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+                }
+                if (pulo != null) {
+                    pulo.addOrUpdateTransientModifier(new AttributeModifier(MOD_RAIZ, -0.42,
+                            AttributeModifier.Operation.ADD_VALUE));
+                }
+            } else {
+                if (vel != null) {
+                    vel.removeModifier(MOD_RAIZ);
+                }
+                if (pulo != null) {
+                    pulo.removeModifier(MOD_RAIZ);
+                }
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: nao consegui (des)imobilizar o jogador", t);
         }
     }
 

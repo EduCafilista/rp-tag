@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.5.0'
+VER = '5.6.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1602,6 +1602,39 @@ check('5.5.0: o apagar virou SOMBRA (discos em degrade + silhueta + bracos)',
 check('5.5.0: em rptag:exilio a tela fecha em preto (camada propria do cliente)',
       'desenharExilio' in _nf2 and 'DIM_EXILIO' in _nf2)
 check('5.5.0: /neptune explica o exilio e o soltar', 'rptag:exilio' in _nc2 and 'vazio soltar' in _nc2)
+
+# ============ 5.6.0: o chão RACHA, o player CAI e fica IMÓVEL ============
+_ne3 = rd(R + '/NeptuneEventos.java')
+_nf3 = rd(C + '/NeptuneFx.java')
+_np3 = rd(R + '/NeptunePackets.java')
+_nc3 = rd(R + '/NeptuneCommands.java')
+check('5.6.0: pacote CENA existe e esta registrado (rachadura/queda/estouro)',
+      'record Cena(' in _np3 and 'CENA_RACHADURA' in _np3 and 'neptune_cena' in _np3
+      and 'NeptunePackets.Cena.TYPE' in rd(R + '/ModNetworking.java'))
+check('5.6.0: o chao ABRE de verdade (cava blocos e guarda o original pra fechar)',
+      'abrirFenda' in _ne3 and 'private static boolean cavar(' in _ne3
+      and 'private record Fenda(' in _ne3)
+check('5.6.0: so cava TERRA/PEDRA/AREIA (nunca bau, forno ou bloco com dados)',
+      'CAVEIS' in _ne3 and 'st.hasBlockEntity()' in _ne3 and '!st.getFluidState().isEmpty()' in _ne3)
+check('5.6.0: a fenda SEMPRE fecha (restaura cada bloco no fim)',
+      'fecharFendas' in _ne3 and 'f.setBlockAndUpdate' not in _ne3
+      and 'nivel().setBlockAndUpdate(f.pos(), f.estado())' in _ne3)
+check('5.6.0: o jogador cai (poco 3x3 de 2 de profundidade embaixo dele)',
+      'chao.offset(dx, -1, dz)' in _ne3 and 'chao.offset(dx, 0, dz)' in _ne3)
+check('5.6.0: FICA IMOVEL (velocidade e pulo zerados por atributo)',
+      'AttributeModifier' in _ne3 and 'Attributes.MOVEMENT_SPEED' in _ne3
+      and 'Attributes.JUMP_STRENGTH' in _ne3 and 'ADD_MULTIPLIED_TOTAL' in _ne3)
+check('5.6.0: /terremoto fenda <jogador> e /terremoto fechar existem (teste)',
+      'literal("fenda")' in _nc3 and 'literal("fechar")' in _nc3)
+check('5.6.0: a tela RACHA (abismo abrindo no rodape + 9 rachaduras serrilhadas)',
+      'desenharRachadura' in _nf3 and 'O ABISMO' in _nf3 and 'AS RACHADURAS' in _nf3
+      and 'rachaduras = 11' in _nf3)
+check('5.6.0: a queda tomba a camera e poe a tela no fundo da cova',
+      'desenharQueda' in _nf3 and 'pitch += 22.0F * tomba' in _nf3 and 'roll += 14.0F * tomba' in _nf3)
+check('5.6.0: o tranco inicial tem flash + onda de choque',
+      'desenharEstouro' in _nf3 and 'onda de choque' in _nf3)
+check('5.6.0: detritos caindo pela tela durante o terremoto',
+      'DETRITOS CAINDO' in _nf3)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

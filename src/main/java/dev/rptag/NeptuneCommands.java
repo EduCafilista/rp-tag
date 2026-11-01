@@ -23,6 +23,8 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  * /terremoto parar                os admins desligam quando acabar
  * /terremoto sair [jogador|todos] player por player: animação VERDE e kick depois de 4 s
  * /terremoto status               o que está ligado
+ * /terremoto fenda <jogador>      força a terra a abrir embaixo dele (teste)
+ * /terremoto fechar               fecha todas as fendas e devolve os blocos
  *
  * /vazio ligar | desligar         o admin vira o DEUS DO VAZIO (aura + trilha + medo)
  * /vazio apagar <jogador>         "---- vazio --- apagou X da existência"
@@ -81,10 +83,40 @@ public final class NeptuneCommands {
                     return Command.SINGLE_SUCCESS;
                 })));
 
+        // (5.6.0) testar/forçar a fenda num jogador (o chão abre, ele cai)
+        terremoto.then(Commands.literal("fenda")
+                .executes(ctx -> {
+                    // sem jogador: abre no chão onde o comando foi digitado
+                    var nivel = ctx.getSource().getLevel();
+                    BlockPos pos = BlockPos.containing(ctx.getSource().getPosition());
+                    boolean caiu = NeptuneEventos.abrirFendaEm(nivel, pos);
+                    ctx.getSource().sendSuccess(() -> Component.literal(caiu
+                            ? "\u00a7aFenda aberta aqui (" + NeptuneEventos.blocosCavados() + " blocos). Use /terremoto fechar."
+                            : "\u00a7cAqui não tem terra/pedra pra rachar."), true);
+                    return Command.SINGLE_SUCCESS;
+                })
+                .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
+                    ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                    NeptuneEventos.imobilizarAlvo(alvo, true);
+                    boolean caiu = NeptuneEventos.abrirFenda(alvo);
+                    ctx.getSource().sendSuccess(() -> Component.literal(caiu
+                            ? "\u00a7aO ch\u00e3o abriu embaixo de " + alvo.getName().getString() + "."
+                            : "\u00a7cN\u00e3o deu pra abrir: o piso dele n\u00e3o \u00e9 terra/pedra."), true);
+                    return Command.SINGLE_SUCCESS;
+                })));
+
+        terremoto.then(Commands.literal("fechar").executes(ctx -> {
+            NeptuneEventos.fecharFendas(ctx.getSource().getServer());
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a7aTodas as fendas fecharam (blocos restaurados)."), true);
+            return Command.SINGLE_SUCCESS;
+        }));
+
         terremoto.then(Commands.literal("status").executes(ctx -> {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7eTerremoto: \u00a7f" + (NeptuneEventos.terremotoAtivo() ? "LIGADO" : "desligado")
-                    + "  \u00a77| caixinhas do bicho: \u00a7f" + NeptuneEventos.caixas()), false);
+                    + "  \u00a77| caixinhas do bicho: \u00a7f" + NeptuneEventos.caixas()
+                    + "  \u00a77| blocos cavados agora: \u00a7f" + NeptuneEventos.blocosCavados()), false);
             return Command.SINGLE_SUCCESS;
         }));
 

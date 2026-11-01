@@ -1,5 +1,59 @@
 # Changelog
 
+## 5.6.0 — O CHÃO RACHA, O PLAYER CAI E FICA IMÓVEL — 2026-11-01
+
+> "melhore mais ainda o terremoto, quero efeito de algo se rachando o player
+> caindo, ficando imovel, quero que seja legal mesmo o terremoto quando os
+> players ver o terremoto"
+
+### 1. O CHÃO ABRE DE VERDADE (servidor)
+No pulso travado, embaixo de cada jogador a terra **cede**:
+- **cova 3×3 com 2 de profundidade** — o jogador cai dentro e fica lá;
+- **4 a 6 rachaduras serpenteando** pela superfície, 5 a 10 blocos cada, seguindo
+  o relevo (e poeira do bloco saindo da boca da fenda);
+- quando o pulso **solta**, a terra **fecha** e cada bloco volta exatamente como
+  era (e a pessoa sobe de volta pro nível do chão).
+
+**Segurança (o evento não pode estragar build):** só entra na fenda bloco de
+uma lista branca (`CAVEIS`: terra, grama, pedra, deepslate, areia, cascalho,
+argila, tuff, arenito, netherrack…). **Nunca** baú, forno, bloco com dados
+(`hasBlockEntity()`), líquido, nem bloco „de valor". Tudo é restaurado:
+no fim do pulso, no `/terremoto parar` e por `/terremoto fechar`.
+
+### 2. FICA IMÓVEL (agora é de verdade)
+Efeito de lentidão não segurava — o jogador **pulava** pra fora do buraco.
+Agora o pulso travado aplica **modificador de atributo**:
+`MOVEMENT_SPEED` em `-100%` e `JUMP_STRENGTH` em `-0,42` (transitório, com id
+fixo, sai no instante em que o pulso solta). No buraco de 2 blocos, sem pulo e
+sem velocidade, a pessoa **não sai, não pula, não corre** — só espera.
+
+### 3. A CENA NA TELA (cliente) — três camadas novas
+- **RACHADURA** (`desenharRachadura`): a tela racha. Abre um **abismo no rodapé**
+  (boca jagada crescendo pra cima, beirada iluminada = a lasca, pedaços de terra
+  despencando pra dentro) e **11 rachaduras serrilhadas** sobem dele, afinando,
+  com galhos, poeira na ponta e vinheta de terra. Depois **cicatriza** sozinha.
+- **QUEDA** (`desenharQueda`): quem caiu na fenda vê a cena de dentro: faixa de
+  terra na base, poeira subindo, tremor de impacto nos primeiros 25%, vinheta
+  fechando e **blur** (atordoado no fundo do buraco). A câmera também **tomba**
+  (`roll +14°`, `pitch +22°`) — dá pra ver que ele não consegue se levantar.
+- **ESTOURO** (`desenharEstouro`): o tranco inicial — flash arenoso, **duas ondas
+  de choque** abrindo e poeira estourando do centro, com blur na entrada.
+- **Detritos**: lascas de terra passando pela tela durante todo o terremoto e um
+  véu de poeira no rodapé nos pulsos travados.
+
+### 4. Comandos novos de teste
+- `/terremoto fenda` — abre uma fenda no chão onde o comando foi digitado.
+- `/terremoto fenda <jogador>` — abre embaixo do jogador (trava ele).
+- `/terremoto fechar` — fecha todas e **devolve os blocos**.
+- `/terremoto status` agora mostra **quantos blocos estão cavados** agora.
+
+### Testes
+- `check.py`: **636 PASS / 0 FAIL** (11 checks novos de 5.6.0).
+- `javac` 0 erro · servidor NeoForge 21.1.249 real: `Done (0.640s)`, mod
+  **5.6.0**, `/terremoto fenda` abriu **60 blocos** numa plataforma de teste e
+  `/terremoto fechar` **restaurou tudo** (grama de volta em 202,59,202),
+  `/terremoto iniciar 18` + `parar` no meio: **0 ERROR/exception**.
+
 ## 5.5.0 — AVISO ENERGIA, O EXÍLIO E A SOMBRA — 2026-11-01
 
 > "agora vai ter um novo avisar ALLFORONE" · "esse video deve ficar atras do
