@@ -62,6 +62,9 @@
   `ClientGuiLayers`, despachados em `ClientEffects`, nomeados em `RPCommands`
   (`/rp admin avisar`) e em `LoreZoneCommands` (`/lorezone aviso`).
 - `check.py` 736 PASS / 0 FAIL; servidor `Done (0.653s)`, 0 exceptions.
+- **Release publicada**: `v5.7.9` = release **430901604** / asset **699715976**
+  (`rptag-5.7.9.jar`, **99.601.141 B**, md5 `11def4794a707b959412037a71987d05`),
+  commit `3de4e52`. Download conferido (baixa e o md5 bate).
 
 ### Estado do ambiente (sandbox)
 - O snapshot do workspace **regrediu pro 4.9.6 de novo** nesta sessão: a fonte
