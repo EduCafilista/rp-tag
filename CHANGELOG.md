@@ -1,5 +1,41 @@
 # Changelog
 
+## 5.7.5 — TERREMOTO NO MUNDO (sem rachadura na tela) — 2026-11-01
+
+**O que você apontou:** "não estou gostando ainda de como fica o terremoto" e,
+na pergunta de qual era o pior, **as rachaduras desenhadas na tela**. Feito:
+
+**1) A RACHADURA DE TELA SAIU.** Saiu o "abismo preto no rodapé" + as 11
+rachaduras serrilhadas desenhadas por cima do jogo (aquele efeito de vidro
+rachado na lente). Sobrou só uma faixa de poeira nos **10% de baixo** da tela
+(alpha 52/255) — nada de rabisco na frente do jogador.
+
+**2) O TERREMOTO AGORA ACONTECE NO MUNDO.**
+- **Abertura:** em vez de desenhar uma fenda na tela, o servidor abre **duas
+  fendas REAIS** embaixo/ao lado de cada jogador (blocos viram ar e voltam no
+  fim), cospe **pedra e poeira do próprio bloco** pra cima (`BLOCK` + 
+  `FALLING_DUST`) e toca o estalo da terra quebrando. Na tela sobra só o "peso":
+  bordas escurecem 0,9 s e um blur de 1,0 nos primeiros 0,18 s.
+- **Escombros caindo do alto:** a cada 1,5 s chove pedra/terra em volta de cada
+  jogador — é o "tudo desabando" sem nada desenhado na lente.
+- **Fendas quebrando blocos mais frequentes:** de ~5 s para **2,8–4,6 s**, com a
+  poeira do bloco que realmente quebrou (e tudo é restaurado no fim).
+
+**3) Menos tela preta.** A queda agora só escurece as bordas (vinheta de terra
+0,62) com a faixa de terra na altura dos olhos — sem cortina preta, e o pulso já
+não estoura o desfoque.
+
+### Sobre a "animação nova do Marcelo"
+Procurei no GitHub: o último commit dele é o `a4cc42d` (5.5.0) e o terremoto
+dele é o **5.4.0 antigo** (`TerremotoFx`: tremor + pulso roxo com estrelinhas +
+blur espacial + banimento verde). Não há animação nova — essa é mais velha que a
+que está no mod. Se ele mandar outra, é só me avisar o nome da branch.
+
+### Testes
+`check.py`: **689 PASS / 0 FAIL**. Servidor: carrega 5.7.5 limpo (`Done
+(0.604s)`), `/terremoto iniciar 20` liga e `/terremoto parar` desliga sem
+exception no log.
+
 ## 5.7.4 — RAIOS DE VERDADE NO VAZIO — 2026-11-01
 
 **"Não quero apenas partículas, quero animação de verdade."** Feito: os raios do

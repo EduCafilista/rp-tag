@@ -89,6 +89,36 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
   do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
 
+## 5.7.5 (2026-11-01): terremoto no MUNDO, sem rachadura na tela
+
+> Dono: "não estou gostando ainda de como fica o terremoto" — e, entre as opções,
+> marcou **as rachaduras desenhadas na tela** como o que mais incomoda. Escolheu
+> o caminho "terremoto 3D no mundo".
+
+### Feito
+- `NeptuneFx.desenharRachadura` **reescrita**: o abismo preto + 11 rachaduras
+  serrilhadas saíram; ficou só um degradê de poeira nos 10% inferiores
+  (`fillGradient`, alpha 52*forca).
+- `NeptuneFx.desenharEstouro` **reescrita**: nada de zigue-zague na lente. Só
+  bordas escurecendo 0,9 s + `desfocar(1.0)` nos primeiros 0,18 s.
+- `NeptuneEventos.aberturaNoMundo(nv, p, r)` (novo): abre **2 fendas reais**
+  (`fendaDePassagem`), joga `BLOCK` + `FALLING_DUST` com o **estado do bloco de
+  verdade** (pega `blockPosition().below()`), toca `WITHER_BREAK_BLOCK` +
+  `GRAVEL_BREAK`. Chamado no `iniciarTerremoto` (CENA_ESTOURO agora 900 ms).
+- `proximoEscombro` (novo): a cada 1,5 s chove `BLOCK` 2,6–4,4 blocos acima de
+  cada jogador (escombros do "teto" desabando).
+- `proximaFendaSolta`: 4200–6800 ms → **2800–4600 ms**.
+- (5.7.2 já tinha resolvido, e continua) banimento = `sombraChuva` crescendo
+  1→11 partículas por quadro e a tela escurecendo até ~78% (sem verde).
+
+### Armadilha
+- `SoundEvents.DIRT_BREAK` **não existe** em 1.21.1 — o do bloco de terra é
+  `GRAVEL_BREAK`/`GRASS_BREAK`. (Erro de compilação pego na hora.)
+
+### Testes
+`check.py` 689 PASS / 0 FAIL · servidor 5.7.5 sobe limpo · `/terremoto
+iniciar 20` + `parar` sem exception.
+
 ## 5.7.4 (2026-11-01): raios 3D de verdade no vazio
 
 > Pedido do dono: "os raios negros e vermelhos eu não quero apenas partículas,
@@ -319,7 +349,7 @@ ALLFORONE) · `PWaHoNqN.mp4` = buraco negro 1280x720 24 fps 5,09 s.
 |---|---|
 | Versão | **5.7.1** (2026-11-01) — consertos (crash do CONHECIMENTO, vídeo) + aura do vazio |
 | Commit | (ver `git log`) |
-| Jar | `rptag-5.7.4.jar` (**98.921.559 B**, md5 `b9376dc06bf4763e723df5db1e880f01`) — release **430792925**, asset **699240038** |
+| Jar | `rptag-5.7.5.jar` (**98.920.570 B**, md5 `5b7dfd3258e33a90e12930619fe52fd1`) — release **430800177**, asset **699247212** |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |
 | Smoke | Servidor NeoForge 21.1.249 real: `Done (0.771s)`, `rptag:tablet` summon OK, `/tablet` no `help` e em `/rp ajuda`, **0 exception/ERROR** |
 | Alvo | **Minecraft 1.21.1 + NeoForge 21.1.249**, Java 21 |

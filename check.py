@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.7.4'
+VER = '5.7.5'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1642,19 +1642,32 @@ check('5.6.0: FICA IMOVEL (velocidade e pulo zerados por atributo)',
       and 'Attributes.JUMP_STRENGTH' in _ne3 and 'ADD_MULTIPLIED_TOTAL' in _ne3)
 check('5.6.0: /terremoto fenda <jogador> e /terremoto fechar existem (teste)',
       'literal("fenda")' in _nc3 and 'literal("fechar")' in _nc3)
-check('5.6.0: a tela RACHA (abismo abrindo no rodape + 9 rachaduras serrilhadas)',
-      'desenharRachadura' in _nf3 and 'O ABISMO' in _nf3 and 'AS RACHADURAS' in _nf3
-      and 'rachaduras = 11' in _nf3)
+# (5.7.5) O DONO MANDOU TIRAR A RACHADURA DA TELA ("as rachaduras desenhadas
+# na tela" era o que mais incomodava): agora quem racha e o MUNDO.
+check('5.7.5: SAIU a rachadura desenhada na tela (nada de vidro rachado na lente)',
+      'O ABISMO' not in _nf3 and 'rachaduras = 11' not in _nf3
+      and 'A RACHADURA DE TELA SAIU' in _nf3)
+check('5.7.5: sobrou so uma faixa de poeira (10% do rodape) no lugar do rabisco',
+      'faixa = h * 0.10F' in _nf3 and 'fillGradient(0, h - (int) faixa' in _nf3)
 check('5.6.0: a queda tomba a camera e poe a tela no fundo da cova',
       'desenharQueda' in _nf3 and 'pitch += 22.0F * tomba' in _nf3 and 'roll += 14.0F * tomba' in _nf3)
 # (5.7.2) o dono VETOU a abertura antiga ("nao quero essa animacao quando
 # comecou o terremoto"): saiu o flash branco de 0.55 e o blur 3.5.
-check('5.7.2: ABERTURA do terremoto sem flash branco (fenda no chao)',
-      'desenharEstouro' in _nf3 and 'FENDA na tela' in _nf3
+check('5.7.5: ABERTURA nao desenha rachadura nenhuma (nem flash branco)',
+      'desenharEstouro' in _nf3 and 'FENDA na tela' not in _nf3
+      and 'b.seg(' not in _nf3.split('desenharEstouro')[1].split('private static')[0]
       and '0xFFF3DC' not in _nf3)
-check('5.7.2: abertura curta (1,4 s) e sem blur de 3,5',
-      'desfocar(1.2F' in _nf3 and 'desfocar(3.5F' not in _nf3
-      and 'CENA_ESTOURO, 1.0F, 1400' in rd(R + '/NeptuneEventos.java'))
+check('5.7.5: abertura ACONTECE NO MUNDO (fenda real + pedra + poeira do bloco)',
+      'aberturaNoMundo' in _ne2 and 'ParticleTypes.FALLING_DUST' in _ne2
+      and 'ParticleTypes.BLOCK, estado' in _ne2)
+check('5.7.5: abertura curta (0,9 s) e sem blur de 3,5',
+      'desfocar(1.0F' in _nf3 and 'desfocar(3.5F' not in _nf3
+      and 'CENA_ESTOURO, 1.0F, 900' in rd(R + '/NeptuneEventos.java'))
+check('5.7.5: fendas quebrando blocos MAIS frequentes (2,8 a 4,6 s)',
+      'agora + 2800 +' in rd(R + '/NeptuneEventos.java'))
+check('5.7.5: ESCOMBROS caindo do alto em volta dos jogadores (mundo caindo)',
+      'proximoEscombro' in rd(R + '/NeptuneEventos.java')
+      and 'ESCOMBROS CAINDO DO ALTO' in rd(R + '/NeptuneEventos.java'))
 check('5.7.2: FENDAS QUEBRANDO BLOCOS durante o terremoto',
       'fendaDePassagem' in rd(R + '/NeptuneEventos.java')
       and 'proximaFendaSolta' in rd(R + '/NeptuneEventos.java'))

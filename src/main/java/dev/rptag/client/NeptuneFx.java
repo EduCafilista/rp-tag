@@ -380,139 +380,34 @@ public final class NeptuneFx {
     // 10 braços saem das bordas na direção do centro, serpenteando, crescendo
     // com o tempo, com galhos menores saindo de cada um. Traço escuro (a
     // abertura) com um fio claro na borda (a lasca) e poeira na ponta.
+    // (5.7.5) A RACHADURA DE TELA SAIU.
+    // Era um "vidro rachado" desenhado por cima do jogo (o abismo preto no rodapé
+    // + 11 rachaduras serrilhadas). O dono apontou isso como o que mais incomoda:
+    // "as rachaduras desenhadas na tela". Agora quem racha é o MUNDO: os blocos
+    // quebram de verdade (fendaDePassagem no servidor) e a poeira é do próprio
+    // bloco. Sobrou só uma pitada de "peso" no rodapé — nada de rabisco na lente.
     private static void desenharRachadura(GuiGraphics g) {
         long now = System.currentTimeMillis();
         if (rachInicio == 0L || now > rachFim) {
             return;
         }
         long dur = Math.max(1L, rachFim - rachInicio);
-        float u = (now - rachInicio) / (float) dur;            // 0..1
-        float f = rachForca;
-        int w = g.guiWidth();
-        int h = g.guiHeight();
-        float escala = Math.min(w, h);
-
-        AvisoFxUtil.preparar(g);
-        AvisoFxUtil.Buf b = new AvisoFxUtil.Buf(g.pose().last().pose());
-
-        float cresce = ss(0.0F, 0.42F, u);          // a rachadura se abrindo
-        float some = 1.0F - ss(0.80F, 1.0F, u);     // e cicatrizando no fim
-        float alfaBase = cl(cresce) * some * Math.min(1.15F, f);
-        if (alfaBase <= 0.01F) {
-            AvisoFxUtil.normal();
+        float u = cl((now - rachInicio) / (float) dur);
+        // sobe rápido, morre devagar
+        float forca = ss(0.0F, 0.18F, u) * (1.0F - ss(0.55F, 1.0F, u));
+        if (forca <= 0.01F) {
             return;
         }
-
-        // ---------------------------------------------------------- (1) O ABISMO
-        // O chão se ABRE no rodapé da tela: uma boca preta que cresce pra cima,
-        // com a boca jagada (zigue-zague) e a beirada iluminada (a lasca). É o
-        // que faz ler "algo se rachando" em vez de "rabisco na tela".
-        float fundura = h * 0.30F * cl(cresce) * Math.min(1.3F, f);
-        int degraus = 16;
-        float[] lx = new float[degraus + 1];
-        float[] ly = new float[degraus + 1];
-        for (int i = 0; i <= degraus; i++) {
-            float t01 = i / (float) degraus;
-            // perfil da BOCA: a terra AFUNDOU — mais fundo nas laterais, mais
-            // raso no meio (é cova, não morro) + serra (a beirada quebrada)
-            float perfil = 0.30F + 0.62F * Math.abs(t01 - 0.5F) * 2.0F;
-            float serra = (rnd(i * 7 + 1, (int) (rachSemente & 0xFFFF)) - 0.5F) * 0.60F;
-            perfil = Math.max(0.10F, Math.min(1.0F, perfil + serra * 0.42F));
-            lx[i] = t01 * w;
-            ly[i] = h - fundura * perfil;
-        }
-        // miolo do abismo (preto) e o "fundo" mais claro lá no fundo
-        for (int i = 0; i < degraus; i++) {
-            b.quad(lx[i], ly[i], col(0x000000, 0.94F * alfaBase),
-                    lx[i + 1], ly[i + 1], col(0x000000, 0.94F * alfaBase),
-                    lx[i + 1], h + 2F, col(0x000000, 0.94F * alfaBase),
-                    lx[i], h + 2F, col(0x000000, 0.94F * alfaBase));
-        }
-        // beirada: fio claro (a terra lascada pegando luz) + halo terroso
-        for (int i = 0; i < degraus; i++) {
-            b.seg(lx[i], ly[i], lx[i + 1], ly[i + 1], 2.0F + 1.2F * Math.min(1.2F, f),
-                    col(0xF3E6CC, 0.72F * alfaBase), col(0xF3E6CC, 0.72F * alfaBase));
-            b.seg(lx[i], ly[i] - 2.5F, lx[i + 1], ly[i + 1] - 2.5F, 6.0F,
-                    col(0x6B563B, 0.30F * alfaBase), col(0x6B563B, 0.30F * alfaBase));
-        }
-        // pedaços de terra despencando pra dentro do abismo
-        for (int i = 0; i < 26; i++) {
-            float s1 = rnd(i * 13 + 3, (int) (rachSemente & 0xFFFF));
-            float s2 = rnd(i * 29 + 5, (int) (rachSemente & 0xFFFF));
-            float caindo = ((now * 0.0011F) + s1 * 3.0F) % 1.0F;
-            float px = s1 * w;
-            float py = h - fundura - 6F + caindo * (fundura + 20F);
-            if (py > h) {
-                continue;
-            }
-            float lado = 2F + 4F * s2;
-            b.quad(px, py, col(0x3A2C1B, 0.85F * alfaBase),
-                    px + lado, py + 1.5F, col(0x3A2C1B, 0.85F * alfaBase),
-                    px + lado - 1F, py + lado, col(0x3A2C1B, 0.85F * alfaBase),
-                    px - 1.5F, py + lado - 1F, col(0x3A2C1B, 0.85F * alfaBase));
-        }
-
-        // ------------------------------------------------- (2) AS RACHADURAS
-        // 9 rachaduras FINAS e serrilhadas subindo do abismo pras laterais e
-        // pra cima (parecem vidro/pedra quebrada, não galho de árvore).
-        int rachaduras = 11;
-        for (int n = 0; n < rachaduras; n++) {
-            float s1 = rnd(n * 17 + 2, (int) (rachSemente & 0xFFFF));
-            float s2 = rnd(n * 31 + 9, (int) (rachSemente & 0xFFFF));
-            // sai da boca do abismo (na base da tela)
-            float x = s1 * w;
-            float y = h - fundura * 0.75F;
-            // direção: pra cima e pro lado
-            float ang = (float) Math.toRadians(-90.0 + (s2 - 0.5F) * 105.0);
-            int segs = 6 + (n % 5);
-            float comprimento = cresce * segs;
-            float largo = 2.4F + 3.4F * Math.min(1.2F, f);
-            for (int i = 1; i <= segs; i++) {
-                if (comprimento < i) {
-                    break;
-                }
-                ang += (rnd(n * 41 + i, (int) ((now / 110) % 991)) - 0.5F) * 0.85F;
-                float passo = escala * 0.055F;
-                float nx = x + cos(ang) * passo;
-                float ny = y + sin(ang) * passo;
-                float afina = (float) Math.pow(1.0F - i / (float) segs, 1.3F);
-                float larg = largo * (0.45F + 0.75F * afina);
-                // a abertura (escura)
-                b.seg(x, y, nx, ny, larg,
-                        col(0x000000, 0.88F * alfaBase), col(0x000000, 0.55F * alfaBase));
-                // a lasca (clara) encostada na abertura
-                b.seg(x, y - larg * 0.55F, nx, ny - larg * 0.55F, Math.max(0.8F, larg * 0.30F),
-                        col(0xF2E5CB, 0.55F * alfaBase), col(0xF2E5CB, 0.0F));
-                // galhinho
-                if (i == 2 || i == 4) {
-                    float ga = ang + (rnd(n + i, 7) - 0.5F) * 2.4F;
-                    float gl = passo * 0.7F;
-                    b.seg(nx, ny, nx + cos(ga) * gl, ny + sin(ga) * gl, Math.max(0.8F, larg * 0.6F),
-                            col(0x000000, 0.6F * alfaBase), col(0x000000, 0.0F));
-                }
-                x = nx;
-                y = ny;
-            }
-            // poeira saindo da ponta (pontinhos, nada de bolota)
-            if (cresce < 0.999F) {
-                for (int p = 0; p < 10; p++) {
-                    float pa = rnd(n * 19 + p, (int) ((now / 60) % 991));
-                    float pb = rnd(n * 23 + p + 3, (int) ((now / 60) % 983));
-                    disco(b, x + (pa - 0.5F) * 20F, y + (pb - 0.5F) * 20F,
-                            1.0F + 1.8F * pa, 0x7A674E, 0.26F * alfaBase, 6);
-                }
-            }
-        }
-
-        // vinheta de terra nas bordas (o mundo ficando longe)
-        b.vinheta(w, h, escala * 0.20F, 0x1A120A, 0.42F * alfaBase);
-        b.flush();
-        AvisoFxUtil.normal();
+        int w = g.guiWidth();
+        int h = g.guiHeight();
+        float faixa = h * 0.10F;
+        com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+        // poeira subindo do chão: degradê escuro só nos 10% de baixo
+        int a = (int) (52 * forca);
+        g.fillGradient(0, h - (int) faixa, w, h, 0x00000000, (a << 24) | 0x140C08);
+        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
     }
 
-    // ===================== (5.6.0) QUEDA: o jogador caiu na fenda =========
-    // Ele caiu 2 blocos e está imóvel: a tela ganha poeira subindo de baixo,
-    // uma vinheta de terra fechando os cantos e um tremor curto no impacto.
     private static void desenharQueda(GuiGraphics g) {
         long now = System.currentTimeMillis();
         if (quedaInicio == 0L || now > quedaFim) {
@@ -574,6 +469,14 @@ public final class NeptuneFx {
     // curta (1,4 s), escura, e mostra o CHÃO RACHANDO: uma fenda em zigue-zague
     // se abrindo do centro pra fora + pedrisco pulando da linha da rachadura.
     // Nada de branco, nada de blur acima de 1,2 (não dá enjoo).
+    // ============ (5.7.5) ABERTURA DO TERREMOTO — agora é o MUNDO ==========
+    // O dono apontou a rachadura desenhada na TELA como o que mais incomoda. A
+    // abertura antiga desenhava um zigue-zague na lente; saiu. Quem faz o
+    // espetáculo agora é o servidor, no mundo: no instante do START ele abre
+    // fendas de VERDADE embaixo dos jogadores, joga pedra e poeira pra cima e
+    // toca o estalo da terra. Aqui sobrou só o "peso" da câmera: as bordas
+    // escurecem por 0,9 s e o desfoque é curtinho (1,0 no pico, e só nos
+    // primeiros 0,18 s).
     private static void desenharEstouro(GuiGraphics g) {
         long now = System.currentTimeMillis();
         if (estouroInicio == 0L || now > estouroFim) {
@@ -583,77 +486,23 @@ public final class NeptuneFx {
         float u = cl((now - estouroInicio) / (float) dur);
         int w = g.guiWidth();
         int h = g.guiHeight();
-        float cx = w / 2f;
-        float cy = h * 0.74f;                     // mira no CHÃO, não no meio da cara
-        float esc = Math.min(w, h);
 
         AvisoFxUtil.preparar(g);
         AvisoFxUtil.Buf b = new AvisoFxUtil.Buf(g.pose().last().pose());
-
-        // (1) o tranco: 4 faixas de sombra piscam nas bordas (nunca branco)
-        float tranco = (1F - ss(0.0F, 0.30F, u)) * 0.30F;
-        if (tranco > 0.01F) {
-            b.rect(0, 0, w, (int) (h * 0.16F), col(0x0A0505, tranco));
-            b.rect(0, h - (int) (h * 0.20F), w, h, col(0x0A0505, tranco));
-        }
-        // (2) a FENDA na tela: zigue-zague que se ABRE do centro pra fora.
-        //     cresce até 62% da tela em ~0,9 s e depois some
-        float abre = eo(cl(u / 0.55F));
-        float some = u < 0.62F ? 1F : 1F - (u - 0.62F) / 0.38F;
-        float a = 0.75F * some;
-        int pontos = 26;
-        float semente = 0x5EED;
-        float px = cx;
-        float py = cy;
-        // metade direita e metade esquerda (a rachadura é uma linha só)
-        for (int lado = -1; lado <= 1; lado += 2) {
-            px = cx;
-            py = cy;
-            for (int i = 1; i <= pontos; i++) {
-                float t = i / (float) pontos;
-                if (t > abre) {
-                    break;
-                }
-                float nx = cx + lado * esc * 0.34F * t;
-                float ny = cy + (rnd(i * 31 + 7, (int) semente) - 0.5F) * esc * 0.10F * t
-                        - esc * 0.02F * t;
-                // a linha: um retângulo fino girado é caro; uso 3 segmentos
-                // curtos empilhados (dá o serrilhado da terra quebrando)
-                b.seg(px, py, nx, ny, 1.6F + 3.2F * (1F - t),
-                        col(0x140707, a * (1F - t * 0.35F)), col(0x140707, a * (1F - t * 0.35F)));
-                // a "luz" do fundo da fenda (vermelho-sangue, bem discreta)
-                b.seg(px, py, nx, ny, 0.7F + 1.2F * (1F - t),
-                        col(0x6E1A12, a * 0.55F * (1F - t * 0.5F)),
-                        col(0x6E1A12, a * 0.55F * (1F - t * 0.5F)));
-                px = nx;
-                py = ny;
-            }
-        }
-        // (3) pedrisco saindo da rachadura (não é fumaça: é TERRA)
-        for (int i = 0; i < 26; i++) {
-            float s1 = rnd(i * 19 + 3, (int) semente);
-            float s2 = rnd(i * 43 + 5, (int) semente);
-            float t = (u * 1.6F + s2) % 1F;
-            float x = cx + (s1 - 0.5F) * esc * 0.55F * abre;
-            float y = cy - esc * 0.045F - esc * 0.16F * t * (0.4F + s1);
-            float r = 1.5F + 3.5F * s2 * (1F - t);
-            if (t < abre) {
-                disco(b, x, y, r, 0x6B563C, 0.55F * (1F - t) * some, 6);
-            }
+        // um "soco" escuro que entra e sai (nunca branco, nunca tela preta)
+        float peso = (1F - ss(0.0F, 0.45F, u)) * 0.34F;
+        if (peso > 0.01F) {
+            int faixa = (int) (h * (0.13F + 0.05F * u));
+            b.rect(0, 0, w, faixa, col(0x0A0505, peso));
+            b.rect(0, h - faixa, w, h, col(0x0A0505, peso));
         }
         b.flush();
         AvisoFxUtil.normal();
-        // (4) tremor de tela MUITO curto e leve (antes era blur 3,5 por 1 s)
-        if (u < 0.2F) {
-            desfocar(1.2F * (1F - u / 0.2F));
+        if (u < 0.18F) {
+            desfocar(1.0F * (1F - u / 0.18F));
         }
     }
 
-    // ---- SAÍDA (5.7.2): a pessoa SOME nas sombras ------------------------
-    // 5.7.0/5.7.1 tinha "luz verde / pixels verdes" e o dono REJEITOU ("essas
-    // partículas verdes não ficaram legais"). Agora: começam POUCAS sombras em
-    // volta do corpo e elas se multiplicam até engolir a pessoa. Sem flash, sem
-    // lavada colorida e — regra da casa — SEM deixar a tela preta.
     private static void desenharSaida(GuiGraphics g) {
         if (saidaOff) {
             return;

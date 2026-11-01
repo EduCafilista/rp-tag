@@ -103,6 +103,8 @@ public final class NeptuneEventos {
     private static final List<Fenda> FENDAS = new ArrayList<>();
     /** (5.7.2) próximo instante de abrir uma rachadura que quebra blocos. */
     private static long proximaFendaSolta = 0L;
+    /** (5.7.5) próximo instante de chover escombro em volta dos jogadores. */
+    private static long proximoEscombro = 0L;
     private static final java.util.Set<Long> CAVADOS = new java.util.HashSet<>();
     /** queda: uuid -> {y do chão original} (só quem caiu na fenda) */
     private static final Map<UUID, long[]> QUEDA = new HashMap<>();
@@ -181,12 +183,66 @@ public final class NeptuneEventos {
         server.getPlayerList().broadcastSystemMessage(Component.literal(
                 "\u00a7c\u00a7l\u2694 TERREMOTO  \u00a77— o chão está rachando! (\u00a7c"
                         + segundos + "s\u00a77)").withStyle(ChatFormatting.RED), false);
-        // (5.6.0) o TRANCO inicial: flash + onda de choque + rachadura na tela
+        // (5.7.5) O TRANCO INICIAL ACONTECE NO MUNDO, não na tela.
+        // O dono apontou a rachadura desenhada na lente como o que mais
+        // incomodava ("não quero essa animação"). Agora a abertura é o chão
+        // quebrando DE VERDADE embaixo de cada jogador: duas fendas reais
+        // (blocos viram ar), pedra e poeira do próprio bloco voando pra cima,
+        // estalo de terra e o tremor da câmera começando junto.
+        java.util.Random sorte = new java.util.Random();
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             PacketDistributor.sendToPlayer(p, new NeptunePackets.Cena(
-                    NeptunePackets.Cena.CENA_ESTOURO, 1.0F, 1400, System.nanoTime()));   // 5.7.2: 2600 -> 1400 (sem flash branco)
+                    NeptunePackets.Cena.CENA_ESTOURO, 1.0F, 900, System.nanoTime()));
+            if (p.level() instanceof ServerLevel nv) {
+                aberturaNoMundo(nv, p, sorte);
+            }
         }
         enviarTerremoto(server, true, 1.0F, segundos, true);
+    }
+
+    /**
+     * (5.7.5) ABERTURA DO TERREMOTO NO MUNDO — o "baque" que o dono pediu.
+     *
+     * <p>Em vez de desenhar uma rachadura na tela, o chão aqui racha de verdade:
+     * abre duas fendas reais embaixo/ao lado do jogador (blocos viram ar e são
+     * guardados pra voltar no fim), sobe pedra e poeira DO PRÓPRIO bloco em
+     * volta, e a terra "cospe" detritos pra cima. O som é o estalo de pedra
+     * quebrando — nada de zumbido.
+     */
+    private static void aberturaNoMundo(ServerLevel nv, ServerPlayer p, java.util.Random r) {
+        try {
+            Vec3 pos = p.position();
+            // duas fendas reais: uma embaixo e outra num raio de 2 a 4 blocos
+            fendaDePassagem(nv, pos, r);
+            Vec3 perto = pos.add(r.nextDouble() * 6 - 3, 0, r.nextDouble() * 6 - 3);
+            fendaDePassagem(nv, perto, r);
+            // pedra/terra saltando: pega o bloco REAL do chão pra poeira ser a certa
+            BlockPos chao = p.blockPosition().below();
+            BlockState estado = nv.getBlockState(chao);
+            if (estado.isAir()) {
+                estado = Blocks.DIRT.defaultBlockState();
+            }
+            for (int i = 0; i < 3; i++) {
+                double a = r.nextDouble() * Math.PI * 2;
+                double rr = 0.6 + r.nextDouble() * 2.4;
+                double x = pos.x + Math.cos(a) * rr;
+                double z = pos.z + Math.sin(a) * rr;
+                // pedra subindo (é a terra quebrando)
+                nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                ParticleTypes.BLOCK, estado),
+                        x, pos.y + 0.15, z, 18, 0.35, 0.25, 0.35, 0.22);
+                // poeira caindo do alto (o que levanta da cratera)
+                nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                ParticleTypes.FALLING_DUST, estado),
+                        x, pos.y + 2.2, z, 10, 0.4, 0.5, 0.4, 0.02);
+            }
+            nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.WITHER_BREAK_BLOCK,
+                    SoundSource.BLOCKS, 1.0F, 0.5F);
+            nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.GRAVEL_BREAK,
+                    SoundSource.BLOCKS, 1.2F, 0.6F);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: abertura do terremoto no mundo falhou", t);
+        }
     }
 
     public static void pararTerremoto(MinecraftServer server, boolean silencioso) {
@@ -283,11 +339,36 @@ public final class NeptuneEventos {
             }
         }
 
+        // ---- (5.7.5) ESCOMBROS CAINDO DO ALTO: a cada 1,5 s chove terra/pedrinha
+        // em volta de cada jogador (pedaços do "teto" que está desabando). É o
+        // que dá a sensação de mundo caindo — junto com as fendas no chão.
+        if (agora >= proximoEscombro) {
+            proximoEscombro = agora + 1500L;
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                if (!(p.level() instanceof ServerLevel nv)) {
+                    continue;
+                }
+                BlockPos chao = p.blockPosition().below();
+                BlockState baixo = nv.getBlockState(chao);
+                BlockState pedra = baixo.isAir() ? Blocks.DIRT.defaultBlockState() : baixo;
+                for (int i = 0; i < 4; i++) {
+                    double a = Math.random() * Math.PI * 2;
+                    double rr = 0.8 + Math.random() * 3.2;
+                    double x = p.getX() + Math.cos(a) * rr;
+                    double z = p.getZ() + Math.sin(a) * rr;
+                    double y = p.getY() + 2.6 + Math.random() * 1.8;
+                    nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                    ParticleTypes.BLOCK, pedra),
+                            x, y, z, 3, 0.12, 0.10, 0.12, 0.06);
+                }
+            }
+        }
+
         // ---- (5.7.2) FENDAS QUE QUEBRAM BLOCOS: a cada ~5 s abre uma rachadura
         // fina no chão em volta de um jogador (blocos quebrando na frente dele,
         // com poeira e estalo). Tudo é restaurado no fim (fecharFendas).
         if (agora >= proximaFendaSolta) {
-            proximaFendaSolta = agora + 4200 + (long) (Math.random() * 2600);
+            proximaFendaSolta = agora + 2800 + (long) (Math.random() * 1800);   // 5.7.5: mais seguido
             for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                 if (p.isCreative() || p.isSpectator()) {
                     continue;
