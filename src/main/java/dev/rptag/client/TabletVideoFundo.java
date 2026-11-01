@@ -173,6 +173,15 @@ public final class TabletVideoFundo {
         }
     }
 
+    /**
+     * (5.6.1) true quando o vídeo está de fato desenhando na tela — nesse caso o
+     * tablet NÃO desenha o aro procedural: o vídeo do dono já é um buraco negro
+     * com o próprio aro, dois aros ficaria estranho.
+     */
+    public static boolean ativo() {
+        return !desligado && !semAsset && tl != null && loader != null && mostrado >= 0;
+    }
+
     /** true se existe algum vídeo de fundo disponível (pro /rpfx status). */
     public static boolean disponivel() {
         return !desligado && !semAsset && tl != null;

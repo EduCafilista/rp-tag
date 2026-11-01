@@ -54,6 +54,9 @@ public final class RPWorldData extends SavedData {
     private final Map<UUID, BubbleStyle> styles = new HashMap<>();
     private boolean chatLocal = true;
     private boolean bubblesOn = true;
+    /** (5.7.0) ANIMAÇÃO DE SAÍDA dos jogadores (quem fica vê o bonequinho se
+     * desfazendo em código). Padrão LIGADO; /rp admin saidafx on|off. */
+    private boolean saidaFx = true;
 
     // ==== (4.5.0) REGRAS EM RP (padrao: tudo LIBERADO) ====
     /** PvP permitido em RP (false = bloqueia; vale se qualquer lado estiver em RP). */
@@ -158,6 +161,16 @@ public final class RPWorldData extends SavedData {
 
     public void setBubblesOn(boolean on) {
         bubblesOn = on;
+        setDirty();
+    }
+
+    /** (5.7.0) animação de saída dos jogadores (quem FICA vê). */
+    public boolean saidaFx() {
+        return saidaFx;
+    }
+
+    public void setSaidaFx(boolean on) {
+        saidaFx = on;
         setDirty();
     }
 
@@ -406,6 +419,7 @@ public final class RPWorldData extends SavedData {
 
         tag.putBoolean("ChatLocal", chatLocal);
         tag.putBoolean("BubblesOn", bubblesOn);
+        tag.putBoolean("SaidaFx", saidaFx);
         // (4.9.0) as 3 flags de "regra em RP" sairam junto com o /rp admin regra
         tag.putInt("AfkTimeout", afkTimeout);
         // (4.5.0) recados de vida de quem estava offline
@@ -495,6 +509,8 @@ public final class RPWorldData extends SavedData {
         // (ligado) em vez de virar "false" so por ausencia da chave.
         data.chatLocal = !tag.contains("ChatLocal") || tag.getBoolean("ChatLocal");
         data.bubblesOn = !tag.contains("BubblesOn") || tag.getBoolean("BubblesOn");
+        // (5.7.0) save antigo nao tem a chave -> padrao LIGADO
+        data.saidaFx = !tag.contains("SaidaFx") || tag.getBoolean("SaidaFx");
 
         // (4.5.0) mesmo cuidado: save antigo nao tem as chaves -> padrao LIBERADO
         data.afkTimeout = tag.contains("AfkTimeout") ? tag.getInt("AfkTimeout") : AfkSistema.TIMEOUT_PADRAO_S;

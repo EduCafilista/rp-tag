@@ -128,6 +128,26 @@ public final class ServerEvents {
     public static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         // As lore zones voltam a aparecer na proxima sessao.
         LoreZones.clearSeen(event.getEntity().getUUID());
+        // (5.7.0) ANIMACAO DE SAIDA: quem FICA vê o bonequinho do jogador que
+        // saiu se desfazendo em código (o próprio que saiu não vê nada, claro).
+        try {
+            if (!(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer saiu)) {
+                return;
+            }
+            var server = saiu.getServer();
+            if (server == null || !RPWorldData.get(server).saidaFx()) {
+                return;
+            }
+            String nome = saiu.getName().getString();
+            ScreenTextPayload payload = new ScreenTextPayload(nome, 9, 18);
+            for (net.minecraft.server.level.ServerPlayer outro : server.getPlayerList().getPlayers()) {
+                if (outro != saiu) {
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(outro, payload);
+                }
+            }
+        } catch (Throwable t) {
+            dev.rptag.RPTagMod.LOGGER.warn("RP Tag: animacao de saida falhou ({})", t.toString());
+        }
     }
 
     // ================================================================

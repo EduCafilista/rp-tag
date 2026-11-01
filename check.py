@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.6.1'
+VER = '5.7.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -490,7 +490,7 @@ check('3.95/3.98: lorezone sem ascensao (case 11 = pesadelo2)',
       'entry("ascensao"' not in zc and 'ascensao' not in zc
       and 'entry("pesadelo2", 11)' in zc and 'case 11 -> "pesadelo2"' in zc)
 rp2 = rd(R + '/RPCommands.java')
-check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia (alvos' in rp2
+check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos' in rp2
       and 'ascensao' not in rp2 and 'pesadelo, pesadelo2, runico' in rp2)
 
 # ---- 3.93.0: DEMONIACO = FX "Chamado do Abismo" (arquivo do user) ----
@@ -862,7 +862,7 @@ check('4.9.0: ajuda lista afk + lote e NAO lista mais regra', 'admin afk tempo' 
 
 check('4.5: EGIPICIO e o estilo 12 (parse + nome + ajuda)',
       'case "egipicio", "egipcio" -> 12' in rp and 'case 12 -> "EGIPICIO"' in rp
-      and 'egipicio, expurgo, ciberpsicose, energia (alvos' in rp)
+      and 'egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos' in rp)
 check('4.5: EGIPICIO desenha o OLHO DE HORUS (sobrancelha/amendoa/iris)',
       'EgipcioAvisoFx' in egi and 'olho' in egi.lower())
 check('4.5: EGIPICIO tem templo, areia, hieroglifos e cartucho',
@@ -1662,6 +1662,41 @@ check('5.6.1: o pacote de quadros de FUNDO do tablet esta no jar (placeholder at
       os.path.exists(A + '/fx/tablet_fundo/fx.json')
       and os.path.exists(A + '/fx/tablet_fundo/frames/0000_c.jpg')
       and os.path.exists(A + '/fx/tablet_fundo/frames/0000_a.jpg'))
+
+# ============ 5.7.0: video real do tablet + avisos CONHECIMENTO/ALLFORONE + saida ============
+_conh = rd(C + '/ConhecimentoAvisoFx.java')
+_afo = rd(C + '/AllForOneAvisoFx.java')
+_sai = rd(C + '/SaidaPlayerFx.java')
+_fxp = rd('src/main/java/dev/rptag/client/ClientEffects.java')
+_rpc = rd(R + '/RPCommands.java')
+_wd = rd(R + '/RPWorldData.java')
+_sev = rd(R + '/ServerEvents.java')
+check('5.7.0: video REAL do dono no fundo do tablet (120 quadros 1280x720, 5 s, em loop)',
+      os.path.exists(A + '/fx/tablet_fundo/fx.json')
+      and _json.load(open(A + "/fx/tablet_fundo/fx.json"))["frames"] >= 100
+      and _json.load(open(A + "/fx/tablet_fundo/fx.json"))['width'] == 1280
+      and os.path.exists(A + '/fx/tablet_fundo/frames/0119_c.jpg'))
+check('5.7.0: TabletVideoFundo.ativo() esconde o aro procedural (o video ja e o buraco negro)',
+      'public static boolean ativo()' in rd(C + '/TabletVideoFundo.java')
+      and '!TabletVideoFundo.ativo()' in rd(C + '/TabletScreen.java'))
+check('5.7.0: aviso CONHECIMENTO (estilo 16) e o olho dourado do dono',
+      'class ConhecimentoAvisoFx' in _conh and 'style == 16' in _fxp
+      and 'case "conhecimento" -> 16' in _rpc and 'aviso_conhecimento' in _conh
+      and 'RUNAS' in _conh and 'SANIDADE' in _conh)
+check('5.7.0: aviso ALLFORONE (estilo 17) e a silhueta de fogo do dono',
+      'class AllForOneAvisoFx' in _afo and 'style == 17' in _fxp
+      and 'case "allforone" -> 17' in _rpc and 'aviso_allforone' in _afo
+      and 'perfil(' in _afo and 'SEMPRE FORAM UMA PESSOA' in _afo)
+check('5.7.0: ANIMACAO DE SAIDA (estilo 18) do prototipo do dono',
+      'class SaidaPlayerFx' in _sai and 'style == 18' in _fxp and 'saida_player' in _sai
+      and 'DESCONECTADO' in _sai and 'session.close();' in _sai)
+check('5.7.0: quando um jogador SAI, quem fica ve a animacao (e da pra desligar)',
+      'PlayerLoggedOutEvent' in _sev and 'ScreenTextPayload(nome, 9, 18)' in _sev
+      and 'boolean saidaFx = true' in _wd and 'setSaidaFx' in _rpc
+      and '/rp admin saidafx on|off' in _rpc)
+check('5.7.0: os 3 FX novos tem try/catch (nunca derrubam o jogo) e som proprio',
+      all('catch (Throwable t)' in x for x in (_conh, _afo, _sai))
+      and all('inicio = -1L;' in x for x in (_conh, _afo, _sai)))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

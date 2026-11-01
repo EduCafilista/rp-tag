@@ -51,6 +51,10 @@ def main():
     ap.add_argument('--saida', default=None)
     ap.add_argument('--max-quadros', type=int, default=0)
     ap.add_argument('--qualidade', type=int, default=88)
+    ap.add_argument('--zoom', type=float, default=1.0,
+                    help='recorta o centro e amplia (tira marca d\'agua do canto e aproxima)')
+    ap.add_argument('--centro', type=float, default=0.5,
+                    help='onde esta o centro do que interessa (0.5 = no meio)')
     a = ap.parse_args()
 
     if not os.path.exists(a.video):
@@ -64,9 +68,17 @@ def main():
         shutil.rmtree(frames_dir)
     os.makedirs(frames_dir, exist_ok=True)
 
-    tmp = tempfile.mkdtemp(prefix='mp4fx_')
-    paleta = os.path.join(tmp, 'f_%04d.png')
-    filtro = (f'fps={a.fps},'
+    # no disco grande do projeto (/tmp e tmpfs de 992 MB: 120 quadros 1280x720 estouram)
+    tmp = tempfile.mkdtemp(prefix='.mp4fx_', dir=os.path.abspath(saida))
+    paleta = os.path.join(tmp, 'f_%04d.jpg')   # JPEG: PNG de 1280x720 nao cabe no /tmp
+    recorte = ''
+    if a.zoom > 1.001:
+        cw, ch = int(LARGURA / a.zoom) & ~1, int(ALTURA / a.zoom) & ~1
+        cx = int(round(a.centro * LARGURA - cw / 2))
+        cx = max(0, min(LARGURA - cw, cx))
+        cy = (ALTURA - ch) // 2
+        recorte = f'crop={cw}:{ch}:{cx}:{cy},'
+    filtro = (f'fps={a.fps},' + recorte +
               f'scale={LARGURA}:{ALTURA}:force_original_aspect_ratio=decrease:flags=lanczos,'
               f'pad={LARGURA}:{ALTURA}:(ow-iw)/2:(oh-ih)/2:black')
     cmd = [ffmpeg(), '-y', '-hide_banner', '-loglevel', 'error',
@@ -76,7 +88,7 @@ def main():
     subprocess.run(cmd, check=True)
 
     from PIL import Image
-    arquivos = sorted(f for f in os.listdir(tmp) if f.endswith('.png'))
+    arquivos = sorted(f for f in os.listdir(tmp) if f.endswith(('.jpg', '.png')))
     if not arquivos:
         sys.exit('nenhum quadro extraído — o vídeo está corrompido?')
 

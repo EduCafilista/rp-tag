@@ -1,7 +1,7 @@
 {
   "id": "tablet_fundo",
-  "fps": 12,
-  "frames": 32,
+  "fps": 24,
+  "frames": 120,
   "width": 1280,
   "height": 720,
   "blend": "normal",

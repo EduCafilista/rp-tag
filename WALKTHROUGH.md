@@ -89,6 +89,26 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
   do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
 
+## 5.7.0 (2026-11-01): vídeo real do tablet + CONHECIMENTO + ALLFORONE + saída
+
+Arquivos do dono (uguu, todos baixaram certos):
+`OVsEHLOl.java` = AvisoConhecimento · `yJXaxPdQ.java` = AnimacaoSaida ·
+`HxYcxABt.java` = AvisoEnergiaOP (**idêntico** ao `ywqg53.java` já porteado
+em 5.5.0, md5 `16c3db9b…`) · `xZomZtNl.java` = classe **AvisoEnergia** (é o
+ALLFORONE) · `PWaHoNqN.mp4` = buraco negro 1280x720 24 fps 5,09 s.
+
+- **Vídeo:** `python3 arte/mp4_para_fx.py tablet.mp4 tablet_fundo --fps 24 --qualidade 86`
+  → 120 quadros (5,3 MB) em `assets/rptag/fx/tablet_fundo/`. O mp4 tem marca
+  d'água "Dreamina AI" no canto; com `--zoom 1.6` ela sai, mas o painel do
+  tablet é retrato e só mostra ~28% da largura: **sem zoom fica melhor** (corta
+  a marca sozinho e mostra o buraco negro inteiro).
+- `TabletVideoFundo.ativo()` + `TabletScreen`: sem aro procedural com vídeo.
+- `ConhecimentoAvisoFx` (16), `AllForOneAvisoFx` (17), `SaidaPlayerFx` (18).
+- Saída: `ServerEvents.onLoggedOut` manda `ScreenTextPayload(nome, 9, 18)` pra
+  todos MENOS quem saiu; flag `RPWorldData.saidaFx` (padrão LIGADO) com
+  `/rp admin saidafx on|off`.
+- Prévia: `/home/user/previa/pedido30_570.png` (gerador `arte/previa_570.py`).
+
 ## 5.6.1 (2026-11-01): vídeo atrás do player no tablet
 
 - `client/TabletVideoFundo.java` — player de vídeo em **loop** desenhado ATRÁS
@@ -126,7 +146,7 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 
 | Item | Valor |
 |---|---|
-| Versão | **5.6.1** (2026-11-01) — vídeo atrás do player no tablet (loop) |
+| Versão | **5.7.0** (2026-11-01) — vídeo real no tablet + CONHECIMENTO + ALLFORONE + saída dos players |
 | Commit | (ver `git log`) |
 | Jar | `rptag-5.6.1.jar` (**94.324.938 B**, md5 `98fd4f3ccb05b0c8e89782dbe11bb07a`) — release **430715291**, asset **698903934**; espelho `https://gofile.io/d/WVzxaOpu` |
 | Checks | `check.py` → **604 PASS / 0 FAIL** |

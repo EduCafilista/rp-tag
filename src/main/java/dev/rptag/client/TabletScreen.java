@@ -229,7 +229,10 @@ public final class TabletScreen extends Screen {
         if (showCharacter && leftWidth > 40 && blackHoleRadius > 0) {
             // (5.6.1) o vídeo fica ATRÁS do player (o player 3D é desenhado por cima)
             TabletVideoFundo.desenhar(g, x+4, y+30, leftWidth+8, h-54);
-            blackHole(g, x+leftWidth/2+8, y+Math.max(48,(h-20)/3)-blackHoleRadius/3, blackHoleRadius);
+            // o vídeo do dono JÁ tem o buraco negro com aro: não desenha o aro de novo
+            if (!TabletVideoFundo.ativo()) {
+                blackHole(g, x+leftWidth/2+8, y+Math.max(48,(h-20)/3)-blackHoleRadius/3, blackHoleRadius);
+            }
             TabletPlayerPreview.render(g, state.target(), x+8, y+37, leftWidth, h-65, state.etapa(), motion());
             String name = state.respostas().nome().isBlank() ? "Seu personagem" : state.respostas().nome();
             g.drawCenteredString(font, font.plainSubstrByWidth(name,leftWidth-8), x+leftWidth/2+8, y+h-21, 0xffd4cddc);

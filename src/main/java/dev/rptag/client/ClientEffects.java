@@ -70,7 +70,7 @@ public final class ClientEffects {
     /** (3.87.0) estilo do aviso em exibicao: 0 classico, 1 pesadelo,
      * 2 runico, 3 real, 4 morte, 5 inferno, 6 gelo, 7 divino, 8 void,
      * 9 sangue, 10 demoniaco, 11 pesadelo2, 12 egipicio, 13 expurgo,
-     * 14 ciberpsicose. */
+     * 14 ciberpsicose, 15 energia, 16 conhecimento, 17 allforone, 18 saida. */
     private static volatile int textStyle = 0;
 
     /** Liga o MEDO por N segundos (servidor clampa 1..30). */
@@ -94,6 +94,9 @@ public final class ClientEffects {
         ExpurgoAvisoFx.parar();
         CiberpsicoseAvisoFx.parar();
         EnergiaAvisoFx.parar();
+        ConhecimentoAvisoFx.parar();
+        AllForOneAvisoFx.parar();
+        SaidaPlayerFx.parar();
         // (3.94.0) estilo 10 = DEMONIACO: o FX proprio (Chamado do Abismo:
         // mandibulas, fissuras, pentagrama, olho de fenda) assume. Codigos
         // & sao ignorados.
@@ -151,6 +154,31 @@ public final class ClientEffects {
             String limpoE15 = text.replaceAll("\u00a7.", "");
             EnergiaAvisoFx.iniciar(limpoE15);
             RPTagMod.LOGGER.info("RP Tag: AVISO ENERGIA iniciado (FX proprio)");
+            return;
+        }
+        // (5.7.0) estilo 17 = ALLFORONE: as vozes têm forma (sol pintado +
+        // silhueta em chamas + olhos) — protótipo do dono
+        if (style == 17) {
+            String limpo17 = text.replaceAll("\u00a7.", "");
+            AllForOneAvisoFx.iniciar(limpo17);
+            RPTagMod.LOGGER.info("RP Tag: AVISO ALLFORONE iniciado (FX proprio)");
+            return;
+        }
+        // (5.7.0) estilo 18 = ANIMACAO DE SAIDA (o texto é o NOME do jogador
+        // que saiu): sprite se desfazendo em chuva de código
+        if (style == 18) {
+            String limpo18 = text.replaceAll("\u00a7.", "");
+            SaidaPlayerFx.iniciar(limpo18);
+            RPTagMod.LOGGER.info("RP Tag: ANIMACAO DE SAIDA iniciada ({})", limpo18);
+            return;
+        }
+        // (5.7.0) estilo 16 = CONHECIMENTO: o olho dourado que sabe tudo
+        // (anéis de runas girando, olhinhos nas beiradas, sussurros, sanidade
+        // caindo) — protótipo do dono
+        if (style == 16) {
+            String limpo16 = text.replaceAll("\u00a7.", "");
+            ConhecimentoAvisoFx.iniciar(limpo16);
+            RPTagMod.LOGGER.info("RP Tag: AVISO CONHECIMENTO iniciado (FX proprio)");
             return;
         }
         // (4.9.3) estilo 14 = CIBERPSICOSE: o glitch cyberpunk do prototipo do

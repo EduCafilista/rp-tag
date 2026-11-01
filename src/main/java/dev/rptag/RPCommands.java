@@ -375,6 +375,8 @@ public final class RPCommands {
             case "expurgo" -> 13;   // (4.9.2) Hora do Expurgo (TV de emergencia)
             case "ciberpsicose", "ciber" -> 14;   // (4.9.3) Alerta de Ciberpsicose (glitch)
             case "energia" -> 15;   // (5.5.0) ENERGIA — anomalia de entropia
+            case "conhecimento" -> 16;   // (5.7.0) CONHECIMENTO — o olho que sabe
+            case "allforone" -> 17;   // (5.7.0) ALLFORONE — as vozes têm forma
             default -> 0;
         };
         // (4.7.3) Grafia "egipcio" (sem o "i"): nao tem literal proprio, para nao
@@ -423,6 +425,8 @@ public final class RPCommands {
             case 13 -> "EXPURGO";
             case 14 -> "CIBERPSICOSE";
             case 15 -> "ENERGIA";   // (5.5.0) anomalia de entropia
+            case 16 -> "CONHECIMENTO";   // (5.7.0) o olho que sabe
+            case 17 -> "ALLFORONE";   // (5.7.0) as vozes têm forma
             default -> "classico";
         };
     }
@@ -750,9 +754,10 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia (alvos: nomes ou @a)\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos: nomes ou @a)\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
+                    + "/rp admin saidafx on|off \u00a77\u2014 animacao de saida dos jogadores (quem fica ve)\u00a7c\n"
                     + "/rp admin bolha <jogador> on|off \u00a77\u2014 modo balao de outro\u00a7c\n"
                     + "/rp admin balao <jogador> on|off \u00a77\u2014 libera/bloqueia o balao\u00a7c\n"
                     + "/rp admin balaolist \u00a77\u2014 quem tem balao liberado\u00a7c\n"
@@ -1052,6 +1057,24 @@ public final class RPCommands {
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                                     avisar(ctx, alvos, "energia", texto);
                                                     return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.7.0) CONHECIMENTO: o olho dourado que sabe tudo
+                                .then(Commands.literal("conhecimento")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "conhecimento", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.7.0) ALLFORONE: as vozes na sua cabeça têm forma
+                                .then(Commands.literal("allforone")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "allforone", texto);
+                                                    return Command.SINGLE_SUCCESS;
                                                 })))))
                 .then(Commands.literal("avisozona")
                         .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
@@ -1061,6 +1084,26 @@ public final class RPCommands {
                                             String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                             return avisarZona(ctx, zonaId, texto);
                                         }))))
+                // (5.7.0) /rp admin saidafx on|off — animação de saída dos jogadores
+                .then(Commands.literal("saidafx")
+                        .then(Commands.literal("on").executes(ctx -> {
+                            RPWorldData.get(ctx.getSource().getServer()).setSaidaFx(true);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Animação de saída LIGADA — quem fica vê o jogador se desfazendo em código."), true);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .then(Commands.literal("off").executes(ctx -> {
+                            RPWorldData.get(ctx.getSource().getServer()).setSaidaFx(false);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Animação de saída DESLIGADA — ninguém vê nada quando um jogador sai."), true);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .executes(ctx -> {
+                            boolean on = RPWorldData.get(ctx.getSource().getServer()).saidaFx();
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Animação de saída está " + (on ? "LIGADA" : "DESLIGADA") + " (use on|off)."), false);
+                            return Command.SINGLE_SUCCESS;
+                        }))
                 .then(Commands.literal("chatlocal")
                         .then(Commands.literal("on").executes(ctx -> {
                             RPWorldData.get(ctx.getSource().getServer()).setChatLocal(true);

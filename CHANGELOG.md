@@ -1,5 +1,47 @@
 # Changelog
 
+## 5.7.0 — O QUE CHEGOU DO DONO: VÍDEO NO TABLET + 3 EFEITOS NOVOS — 2026-11-01
+
+> arquivos enviados por link (uguu): `OVsEHLOl.java` (CONHECIMENTO),
+> `yJXaxPdQ.java` (saída), `HxYcxABt.java` (energia), `xZomZtNl.java`
+> (ALLFORONE) e `PWaHoNqN.mp4` (fundo do tablet).
+
+**1) VÍDEO REAL ATRÁS DO PLAYER NO TABLET.** O mp4 do dono (buraco negro,
+1280x720, 24 fps, 5,09 s) entrou no lugar do placeholder: **120 quadros** em
+loop, 5,3 MB, recortado "cover" no painel do personagem e levemente apagado.
+O aro procedural do tablet **não é mais desenhado** quando o vídeo está
+rodando (`TabletVideoFundo.ativo()`) — o vídeo já É o buraco negro, dois aros
+ficava estranho.
+
+**2) AVISO CONHECIMENTO (estilo 16)** — `ConhecimentoAvisoFx`, porte do
+`AvisoConhecimento`: fundo âmbar, 15 raias de luz, **3 anéis de runas** girando
+em sentidos opostos (alfabeto de 28 runas em grade 3x4), **olho grande** dourado
+que abre e pisca, **12 olhinhos** nas beiradas, poeira dourada, **sussurros**
+("eu sei o seu nome"), ondas de revelação e as barras **SANIDADE ×
+CONHECIMENTO** (quanto mais sabe, menos sã). Mostra o texto do comando.
+
+**3) AVISO ALLFORONE (estilo 17)** — `AllForOneAvisoFx`, porte do
+`AvisoEnergia` (arquivo "oneforall"): sol pintado à mão (raios amarelos + 70
+arcos brancos), **silhueta de fogo** em 5 camadas que tremem, **olhos brancos**
+abrindo no rosto, faíscas que convergem pra dentro do corpo e sobem como chama,
+brasas e sussurros. Texto: "AS VOZES NA SUA CABEÇA / SEMPRE FORAM UMA PESSOA."
+
+**4) ANIMAÇÃO DE SAÍDA DOS JOGADORES (estilo 18)** — `SaidaPlayerFx`, porte do
+`AnimacaoSaida`: o bonequinho 16x32 do jogador que saiu **se desfaz em chuva de
+código** (feixe de varredura subindo), anéis de texto girando
+(`session.close();`), **log de terminal** com [OK], barra de SESSÃO e
+"DESCONECTADO / Até a próxima, <nome>." Toca **pra quem fica**, quando alguém
+desconecta. Liga/desliga: **`/rp admin saidafx on|off`** (padrão LIGADO).
+
+### Comandos
+- `/rp admin avisar <jogadores> conhecimento <texto>`
+- `/rp admin avisar <jogadores> allforone <texto>`
+- `/rp admin saidafx on|off` (ou sem nada = mostra o estado)
+
+### Testes
+`check.py` **651 PASS / 0 FAIL** (7 checks novos) · `javac` 0 erro · servidor
+real: mod **5.7.0**, `Done`, **0 ERROR** no log, `/rp admin saidafx` respondendo.
+
 ## 5.6.1 — VÍDEO ATRÁS DO PLAYER NO TABLET — 2026-11-01
 
 > "esse video deve ficar atras do player quando ele abrir o tablet"
