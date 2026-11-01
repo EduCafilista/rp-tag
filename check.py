@@ -16,8 +16,15 @@ S = A + '/sounds'
 def rd(p):
     return io.open(p, encoding='utf-8').read()
 
+
+def _tam_png(caminho):
+    import struct
+    with open(caminho, 'rb') as f:
+        cab = f.read(33)
+    return struct.unpack('>II', cab[16:24])
+
 # ---- 1. versão em 3 lugares
-VER = '5.7.9'
+VER = '5.8.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1236,9 +1243,10 @@ check('5.1.0: eixo da cabeca CERTO (+Y pra baixo) — espelha Y e usa caixa expl
       and 'ROSTO_Y_BASE = -0.45' in rd('arte/importar_glb.py'))
 check('5.1.0: mascara encostada no rosto (z -5.05..-3.75) e largura 5,4',
       'ROSTO_Z_FUNDO = -3.75' in rd('arte/importar_glb.py') and 'ROSTO_X = 2.70' in rd('arte/importar_glb.py'))
-check('5.1.0/5.3.0: CamadaMascara desenha a malha do MalhaBin (nao mais laco com MAXV)',
+check('5.1.0/5.8.0: CamadaMascara desenha a malha do MalhaBin (agora a da 5.8.0)',
       'MalhaBin m = malhaGlb;' in rd(C + '/CamadaMascara.java')
-      and 'MalhaBin.carregar("/assets/rptag/geo/mascara_bb.bin")' in rd(C + '/CamadaMascara.java'))
+      and 'MalhaBin.carregar(ARQ_MALHA)' in rd(C + '/CamadaMascara.java')
+      and 'MalhaBin.carregar(ARQ_MALHA_BB)' in rd(C + '/CamadaMascara.java'))
 check('4.9.3: modelo + textura do item no jar',
       os.path.exists(A + '/models/item/mascara_pedra.json')
       and os.path.exists(A + '/textures/item/mascara_pedra.png'))
@@ -1409,8 +1417,8 @@ check('5.2.1: o item NAO tem mais translate/scale inventado por contexto',
       'THIRD_PERSON_RIGHT_HAND' not in _ri and 'case GUI' not in _ri)
 check('5.2.2/5.3.1: display do item com os 4 contextos do cranio vanilla',
       all(c in _mj for c in ('"gui"', '"fixed"', '"ground"', '"thirdperson_righthand"')))
-check('5.2.1/5.3.0: particula do item aponta pra textura que existe (entity/mascara_bb)',
-      'rptag:entity/mascara_bb' in _mj and 'mascara_face' not in _mj)
+check('5.2.1/5.8.0: particula do item aponta pra textura que existe (entity/mascara_58)',
+      'rptag:entity/mascara_58' in _mj and 'mascara_face' not in _mj)
 check('5.3.0: o render de conferencia usa o MESMO .bin do jar',
       os.path.exists('arte/render_mascara_offline.py')
       and 'mascara_bb.bin' in rd('arte/render_mascara_offline.py'))
@@ -1462,10 +1470,10 @@ check('5.3.0: a malha do .bbmodel esta no jar (1.392 triangulos) e a do GLB saiu
 check('5.3.0: a textura do .bbmodel (pedra em blocos 128x128) esta no jar',
       os.path.exists(A + '/textures/entity/mascara_bb.png')
       and os.path.getsize(A + '/textures/entity/mascara_bb.png') > 8000)
-check('5.3.0: camada e item apontam pra malha/textura novas',
-      'mascara_bb.png' in _cm and 'mascara_bb.png' in _ri)
-check('5.3.0: particula do item usa a textura que existe',
-      'rptag:entity/mascara_bb' in _mj)
+check('5.8.0: camada e item apontam pra malha/textura NOVAS (5.8.0)',
+      'mascara_58.png' in _cm and 'mascara_58.png' in _ri)
+check('5.8.0: particula do item usa a textura que existe (5.8.0)',
+      'rptag:entity/mascara_58' in _mj)
 
 
 # ============ 5.3.1: item no inventario (display em unidades do jogo) ============
@@ -1992,6 +2000,47 @@ check('5.7.9: nomes no comando — onefallall, morteop, sangueop (com TAB)',
 check('5.7.9: FxDraw (triangulo, linha, anel, arco, disco em degrade) pros avisos novos',
       'class FxDraw' in _fxd and 'public static void discoGrad' in _fxd
       and 'public static void anel' in _fxd and 'public static void texto' in _fxd)
+
+# ============ 5.8.0: MÁSCARA DE PEDRA REFEITA (malha + textura novas) ========
+_bin58 = 'src/main/resources/assets/rptag/geo/mascara_58.bin'
+_png58 = 'src/main/resources/assets/rptag/textures/entity/mascara_58.png'
+_cam = rd(C + '/CamadaMascara.java')
+_itm = rd(C + '/RenderItemMascara.java')
+
+def _cabecalho_bin(caminho):
+    """lê o cabeçalho RPTM do .bin como o MalhaBin.java lê (big-endian)."""
+    import struct
+    with open(caminho, 'rb') as f:
+        cru = f.read()
+    if cru[:4] != b'RPTM':
+        return None
+    ver, n = struct.unpack('>ii', cru[4:12])
+    return ver, n, len(cru)
+
+_hdr = _cabecalho_bin(_bin58) if os.path.exists(_bin58) else None
+check('5.8.0: a MALHA NOVA da máscara existe e o cabeçalho RPTM está certo',
+      _hdr is not None and _hdr[0] == 1 and _hdr[1] >= 6000
+      and _hdr[2] == 12 + 8 * 4 * _hdr[1])
+check('5.8.0: a malha é uma ESCULTURA fechada (externa + interna + aba), não 116 cubos',
+      _hdr is not None and _hdr[1] // 3 > 4000)
+check('5.8.0: a TEXTURA nova existe, 256x256 (traço fino sem serrilhado)',
+      os.path.exists(_png58) and _tam_png(_png58) == (256, 256))
+check('5.8.0: a máscara VESTIDA usa a malha e a textura novas',
+      'mascara_58.bin' in _cam and 'mascara_58.png' in _cam
+      and 'TEX_58' in _cam and 'ESCULTURA 5.8.0' in _cam)
+check('5.8.0: o ITEM na mão/inventário também usa a máscara nova (com a antiga de reserva)',
+      'mascara_58.bin' in _itm and 'mascara_58.png' in _itm and 'mascara_bb.bin' in _itm)
+check('5.8.0: a antiga (.bbmodel de 116 cubos) continua como RESERVA, não foi apagada',
+      os.path.exists('src/main/resources/assets/rptag/geo/mascara_bb.bin')
+      and 'mascara_bb.bin' in _cam)
+_ger = 'arte/gerar_mascara_58.py'
+check('5.8.0: o gerador da máscara está no repo (malha + textura + prévia)',
+      os.path.exists(_ger) and 'def relevo' in rd(_ger) and 'def gera_textura' in rd(_ger)
+      and 'def monta_previa' in rd(_ger))
+check('5.8.0: a textura é pintada nas MESMAS coordenadas (u,v) da malha',
+      'def uv_de' in rd(_ger) and 'rel = relevo(u, v)' in rd(_ger))
+check('5.8.0: a prévia da máscara está em previa/ (pra o dono ver antes de testar)',
+      os.path.exists('previa/mascara_58.png') and os.path.getsize('previa/mascara_58.png') > 40_000)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -1,5 +1,49 @@
 # Changelog
 
+## 5.8.0 — MÁSCARA DE PEDRA REFEITA (malha nova + textura com rosto) — 2026-11-01
+
+> O dono: *"a máscara está horrível até o momento"*.
+
+### O que estava errado
+- **5.3.0** passou a usar o `.bbmodel` do dono (116 cubos). A **geometria** está
+  lá, mas a **textura do arquivo** é pedra cinza com ruído — **não tem rosto
+  nenhum pintado**. No jogo o resultado era um bloco de pedra com dois buracos.
+  Pior: os 116 cubos são um mosaico de caixinhas com 52 rotações diferentes, e
+  as emendas aparecem como degraus.
+- A malha procedural da **4.9.6** tinha relevo suave demais (parecia gesso
+  derretido) e a textura era pintada num script separado, sem garantir o
+  alinhamento com a geometria.
+
+### O que foi feito (novo `arte/gerar_mascara_58.py`)
+- **Malha nova de 9.852 triângulos** (grade 44×56), volume **fechado**: casca
+  externa + casca interna + aba nas bordas (tem grossura de pedra).
+  Relevo esculpido por gaussianas: silhueta de escudo, **testa em Y**, sobrancelha
+  em **V** (brava), **órbitas em fenda inclinada**, nariz com ponte/dorso/asas e
+  narinas, maçãs, **focinho**, **boca funda**, **duas presas**, queixo projetado e
+  **espiral na têmpora** (a voluta do modelo original).
+- **Textura 256×256 pintada nas MESMAS coordenadas (u,v) da malha** — por isso o
+  desenho nunca escorrega: pedra azul-acinzentada com grão, **pintura preta em
+  volta dos olhos** (a marca do JoJo, com bico entre eles), **amêndoa branca com
+  pupila**, pálpebra, cílios, sobrancelha grossa, crista em Y, espirais,
+  hachura nas maçãs/mandíbula, boca escura com dentes e **presas compridas**,
+  narinas, **rachaduras** quebradas e a metade esquerda na sombra (como na
+  referência).
+- `CamadaMascara` e `RenderItemMascara` usam a malha/textura novas
+  (`geo/mascara_58.bin` + `textures/entity/mascara_58.png`); o `.bbmodel` de 116
+  cubos **continua no jar como reserva** (se o arquivo novo faltar, ele assume).
+- `previa/mascara_58.png`: 4 vistas renderizadas com a malha REAL do jar (frente,
+  3/4, lado e um close no rosto).
+- BUG de empacotamento corrigido no caminho: o cabeçalho do `.bin` precisa ser
+  **big-endian** (`struct.pack(">ii", ...)`); com numpy 2 o arquivo saía
+  little-endian e a malha inteira era lida como lixo. O gerador agora **relê o
+  arquivo e valida** antes de terminar.
+
+### Qualidade
+- `check.py` **745 PASS / 0 FAIL** (+9 checagens da máscara: cabeçalho do `.bin`,
+  tamanho da textura, malha/textura ligadas na camada e no item, reserva antiga,
+  gerador e prévia).
+- Servidor de teste com a 5.8.0: `Done (0.751s)`, **0 exceptions**.
+
 ## 5.7.9 — SOM DO TERREMOTO CALA, CARA DO BICHO, EXÍLIO CLARO, SAÍDA AUTOMÁTICA E 3 AVISOS — 2026-11-01
 
 ### Bug do dono: o som do terremoto não parava

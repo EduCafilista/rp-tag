@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:builtin/entity",
   "textures": {
-    "particle": "rptag:entity/mascara_bb"
+    "particle": "rptag:entity/mascara_58"
   },
   "display": {
     "gui": {

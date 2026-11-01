@@ -13,6 +13,45 @@
 
 ---
 
+## 5.8.0 (2026-11-01): a máscara de pedra refeita (malha e textura novas)
+
+> O dono: *"a máscara está horrível até o momento"*.
+
+### Lições
+- **Modelo do dono ≠ máscara pronta.** O `.bbmodel` (`imports/imvaqj.bbmodel`)
+  tem 116 cubos e a GEOMETRIA do rosto, mas a textura embutida (`pedra.png`) é só
+  **pedra cinza com ruído** — nenhum traço pintado. Sem pintura, 116 cubos viram
+  um bloco com dois buracos. Foi por isso que a 5.3.0 ficou "horrível".
+- **A textura tem que ser pintada no MESMO espaço (u,v) da geometria.** O
+  `arte/gerar_mascara_58.py` usa uma função `uv_de(u,v)` para a malha e a mesma
+  grade (u,v) para pintar: olhos, boca e rachaduras caem exatamente onde o relevo
+  está. Nada escorrega.
+- **`.bin` é BIG-ENDIAN.** `MalhaBin.java` lê com `DataInputStream`. Com numpy 2,
+  `np.int32(1).astype(">i4").tobytes()` gravou **little-endian** e o jogo leu
+  `ver=16777216 / n=1953693696`. Usar `struct.pack(">ii", 1, n)` e **reler o
+  arquivo** no fim do gerador (o script agora faz isso e aborta se divergir).
+- **Prévia antes de entregar**: `previa/mascara_58.png` renderiza a malha real do
+  jar (z-buffer + textura) em frente, 3/4, lado e close. Foi assim que o "nariz
+  de pontinhos" e o "olho morto" apareceram antes de ir pro jogo.
+
+### Feito
+- `arte/gerar_mascara_58.py`: malha paramétrica (44×56, casca externa+interna+aba,
+  ~9,8 mil triângulos) com relevo (testa em Y, sobrancelha em V, órbitas em
+  fenda, nariz, focinho, presas, queixo, espiral na têmpora) + textura 256×256
+  pintada nas mesmas UVs + prévia.
+- `geo/mascara_58.bin` (945.804 B) e `textures/entity/mascara_58.png` (112.371 B)
+  entram no jar; `CamadaMascara` e `RenderItemMascara` passam a usá-los e o
+  `.bbmodel` fica como reserva.
+- `check.py` 745 PASS / 0 FAIL (+9 da máscara); servidor `Done (0.751s)`.
+
+### Sobre "a máscara que o Marcelo colocou no GitHub"
+- Foi conferido: o repo tem **3 branches** (`main`, `neptune-terremoto-void`,
+  `tablet-neptune`), **0 pull requests** e **0 forks**. Não existe outra máscara
+  lá; o único modelo de máscara do repo é o `imports/imvaqj.bbmodel` (do dono,
+  usado desde a 5.3.0) e as malhas geradas por ele. Se o Marcelo mandar outro
+  arquivo, o caminho é: `.bbmodel`/`.glb` → `arte/importar_bbmodel.py`/`importar_glb.py`
+  → `geo/*.bin` + textura.
+
 ## 5.7.9 (2026-11-01): o som do terremoto cala, a cara aparece, o exílio é um lugar e 3 avisos novos
 
 > Pedido do dono (depois de testar a 5.7.8): *"parou o terremoto mas o som não

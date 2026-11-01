@@ -58,16 +58,33 @@ import net.minecraft.world.item.ItemStack;
  */
 public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
 
-    /** Textura do MODELO do dono (pedra.png 128x128, do .bbmodel). */
+    /**
+     * (5.8.0) TEXTURA NOVA — pintada nas MESMAS coordenadas (u,v) da malha nova:
+     * pedra azul-acinzentada, pintura preta em volta dos olhos, órbitas em
+     * amêndoa com pupila, sobrancelha em V, crista em Y na testa, espiral na
+     * têmpora, nariz, boca com presas e rachaduras. Ver
+     * {@code arte/gerar_mascara_58.py}.
+     */
+    private static final ResourceLocation TEX_58 =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/entity/mascara_58.png");
+    /** Textura do MODELO do dono (pedra.png 128x128, do .bbmodel) — reserva. */
     private static final ResourceLocation TEX_GLB =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/entity/mascara_bb.png");
     /** Textura da malha procedural — só se o .bin do GLB não puder ser lido. */
     private static final ResourceLocation TEX_PROC =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/entity/mascara_pedra.png");
-    private static ResourceLocation texAtual = TEX_GLB;
+    private static ResourceLocation texAtual = TEX_58;
 
-    /** Malha do .bbmodel do dono (116 cubos -> 1.392 triângulos), 5.3.0. */
-    private static final String ARQ_MALHA = "/assets/rptag/geo/mascara_bb.bin";
+    /**
+     * (5.8.0) MALHA NOVA — escultura paramétrica de 9.852 triângulos:
+     * silhueta de escudo, relevo de verdade (testa em Y, sobrancelha em V,
+     * órbitas em fenda, nariz com asas, focinho, presas, queixo pontudo,
+     * espiral na têmpora) e volume fechado (casca externa + interna + aba).
+     * O cupim de 116 cubos do .bbmodel fica como reserva.
+     */
+    private static final String ARQ_MALHA = "/assets/rptag/geo/mascara_58.bin";
+    /** Malha do .bbmodel do dono (116 cubos -> 1.392 triângulos), 5.3.0 — reserva. */
+    private static final String ARQ_MALHA_BB = "/assets/rptag/geo/mascara_bb.bin";
 
     // ---- malha
     // ATENÇÃO: +Y aqui aponta para BAIXO (é o espaço da cabeça do jogo: a cabeça
@@ -106,7 +123,16 @@ public class CamadaMascara extends RenderLayer<AbstractClientPlayer, PlayerModel
         malhaTentada = true;
         // 1) a MALHA DO MODELO (GLB do dono, já convertida pelo importar_glb.py);
         // 2) se faltar, cai na malha procedural gerada aqui dentro.
-        malhaGlb = MalhaBin.carregar("/assets/rptag/geo/mascara_bb.bin");
+        // (5.8.0) a MALHA NOVA (escultura) vem primeiro; depois o .bbmodel do
+        // dono (116 cubos, textura cinza sem rosto) e, por último, a procedural.
+        malhaGlb = MalhaBin.carregar(ARQ_MALHA);
+        if (malhaGlb != null && malhaGlb.n >= 3) {
+            NV = malhaGlb.n;
+            texAtual = TEX_58;
+            RPTagMod.LOGGER.info("RP Tag: malha da mascara = ESCULTURA 5.8.0 ({} triangulos)", NV / 3);
+            return;
+        }
+        malhaGlb = MalhaBin.carregar(ARQ_MALHA_BB);
         if (malhaGlb != null && malhaGlb.n >= 3) {
             NV = malhaGlb.n;
             texAtual = TEX_GLB;

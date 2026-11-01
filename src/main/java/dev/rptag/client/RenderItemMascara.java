@@ -38,8 +38,9 @@ import org.joml.Matrix4f;
  */
 public class RenderItemMascara extends BlockEntityWithoutLevelRenderer {
 
+    /** (5.8.0) a MESMA textura da máscara vestida (o item é a própria máscara). */
     private static final ResourceLocation TEX =
-            ResourceLocation.fromNamespaceAndPath(dev.rptag.RPTagMod.MODID, "textures/entity/mascara_bb.png");
+            ResourceLocation.fromNamespaceAndPath(dev.rptag.RPTagMod.MODID, "textures/entity/mascara_58.png");
 
     private static RenderItemMascara instancia;
     private MalhaBin malha;
@@ -59,7 +60,10 @@ public class RenderItemMascara extends BlockEntityWithoutLevelRenderer {
 
     private MalhaBin malha() {
         if (malha == null) {
-            malha = MalhaBin.carregar("/assets/rptag/geo/mascara_bb.bin");
+            malha = MalhaBin.carregar("/assets/rptag/geo/mascara_58.bin");
+            if (malha == null || malha.n < 3) {
+                malha = MalhaBin.carregar("/assets/rptag/geo/mascara_bb.bin");
+            }
             if (malha != null && malha.n > 0) {
                 // (5.3.1) O espaço do item é o CUBO 0..1 (o vanilla faz
                 // translate(-0.5,-0.5,-0.5) antes de chamar a gente). A malha,
