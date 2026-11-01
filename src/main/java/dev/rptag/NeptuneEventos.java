@@ -183,6 +183,7 @@ public final class NeptuneEventos {
             tickExilios(server);
             tickManchas(server);
             tickApagando(server);
+            tickExilioMundo(server);
         } catch (Throwable t) {
             RPTagMod.LOGGER.error("RP Tag: tick do evento Neptune falhou (o jogo segue)", t);
         }
@@ -1283,6 +1284,97 @@ public final class NeptuneEventos {
         }
     }
 
+    /**
+     * (5.7.8) O AMBIENTE DO EXÍLIO — "toda escura porém dá para o player andar,
+     * se perder lá dentro e tal".
+     *
+     * <p>A dimensão era uma laje preta e vazia: não dava nem pra se orientar nem
+     * pra se perder. Agora:
+     * <ul>
+     *   <li>o chão tem camadas (deepslate, blackstone, tufo, sculk) — dá textura
+     *       sem claridade;</li>
+     *   <li>a cada ~14 s nasce um <b>MONÓLITO</b> no escuro, a 10–25 blocos de
+     *       quem está lá: uma coluna de deepslate com um <b>lanterna de alma</b>
+     *       no topo. São TODOS iguais — servem de referência e de armadilha: você
+     *       acha que voltou pro mesmo lugar;</li>
+     *   <li>sussurros e passos de vez em quando (som baixo, sem tela).</li>
+     * </ul>
+     * Nada é feito fora da dimensão do exílio, e nada é salvo em lugar nenhum
+     * além dela.
+     */
+    private static void tickExilioMundo(MinecraftServer server) {
+        ServerLevel exilio = server.getLevel(CHAVE_EXILIO);
+        if (exilio == null) {
+            return;
+        }
+        long agora = System.currentTimeMillis();
+        boolean podeMonolito = agora >= proximoMonolito;
+        boolean podeSussurro = agora >= proximoSussurro;
+        if (podeMonolito) {
+            proximoMonolito = agora + 14_000L;
+        }
+        if (podeSussurro) {
+            proximoSussurro = agora + 11_000L;
+        }
+        for (ServerPlayer p : exilio.players()) {
+            try {
+                // poeira escura nos pés (o chão respira)
+                if (agora % 8 == 0) {
+                    exilio.sendParticles(ParticleTypes.SQUID_INK,
+                            p.getX() + (Math.random() - 0.5) * 1.6, p.getY() + 0.1,
+                            p.getZ() + (Math.random() - 0.5) * 1.6, 1, 0.0, 0.02, 0.0, 0.0);
+                }
+                if (podeSussurro && p.level() == exilio) {
+                    p.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.AMBIENT, 0.28F, 0.62F);
+                    if (Math.random() < 0.35) {
+                        p.displayClientMessage(Component.literal(
+                                "\u00a78\u00a7o...você já passou por aqui."), true);
+                    }
+                }
+                if (podeMonolito) {
+                    monólito(exilio, p);
+                }
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: ambiente do exilio falhou (o jogo segue)", t);
+            }
+        }
+    }
+
+    /** (5.7.8) nasce um monólito com lanterna de alma a 10–25 blocos do jogador. */
+    private static void monólito(ServerLevel nv, ServerPlayer p) {
+        double ang = Math.random() * Math.PI * 2;
+        double dist = 10 + Math.random() * 15;
+        int x = (int) Math.floor(p.getX() + Math.cos(ang) * dist);
+        int z = (int) Math.floor(p.getZ() + Math.sin(ang) * dist);
+        if (!nv.isLoaded(new BlockPos(x, p.getBlockY(), z))) {
+            nv.getChunk(x >> 4, z >> 4);          // carrega o chunk antes
+        }
+        int y = nv.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        if (y <= nv.getMinBuildHeight() + 1) {
+            return;
+        }
+        BlockPos base = new BlockPos(x, y, z);
+        if (!nv.getBlockState(base.below()).isSolidRender(nv, base.below())) {
+            return;
+        }
+        int alt = 3 + (int) (Math.random() * 4);
+        for (int i = 0; i < alt; i++) {
+            BlockPos b = base.above(i);
+            if (!nv.getBlockState(b).isAir()) {
+                return;                            // não estraga nada que existe
+            }
+        }
+        for (int i = 0; i < alt - 1; i++) {
+            nv.setBlockAndUpdate(base.above(i),
+                    (i % 3 == 0 ? Blocks.OBSIDIAN : Blocks.DEEPSLATE).defaultBlockState());
+        }
+        nv.setBlockAndUpdate(base.above(alt - 1),
+                Blocks.SOUL_LANTERN.defaultBlockState());
+        // estalo de pedra surgindo do nada (de noite, sem ver de onde vem)
+        nv.playSound(null, base, net.minecraft.sounds.SoundEvents.DEEPSLATE_BREAK,
+                SoundSource.BLOCKS, 0.45F, 0.6F);
+    }
+
     // =================================================================== SAÍDA
     /** Agenda a saída: sombras crescem agora, kick depois de segundos. */
     public static void sairDoServidor(ServerPlayer p, int segundos, String motivo) {
@@ -1311,6 +1403,9 @@ public final class NeptuneEventos {
                         "\u00a78Alguma coisa está sendo puxada pra dentro do nada..."), true);
             }
         }
+        // (5.7.8) o mesmo som da expulsão, que o dono mandou (terremoto sair)
+        nv.playSound(null, p.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
+                SoundSource.HOSTILE, 1.0F, 0.8F);
         nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.SOUL_ESCAPE.value(),
                 SoundSource.PLAYERS, 0.85F, 0.55F);
         nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.AMBIENT_CAVE.value(),
@@ -1418,7 +1513,10 @@ public final class NeptuneEventos {
         }
         Caixa c = new Caixa(pos);
         CAIXAS.add(c);
-        tocarSomCaixa(nv, c.pos);
+        // (5.7.8) A MÚSICA NÃO TOCA MAIS AO COLOCAR A CAIXA. O dono: "arrume o
+        // negócio de começar a tocar a música quando o player apertar a
+        // primeira vez". Antes o /bicho aqui já saía tocando; agora quem
+        // começa é o primeiro clique (toqueNaCaixa).
         return c;
     }
 
@@ -1487,7 +1585,8 @@ public final class NeptuneEventos {
             // é verdade durante o SEGUNDO INTEIRO — e como o tick roda 20x por
             // segundo, eram 20 músicas tocadas juntas a cada 30 s. Agora é um
             // instante marcado (proximaMusica) e toca UMA vez.
-            if (durou < BICHO_MUSICA_SEG && agoraMs >= c.proximaMusica) {
+            // (5.7.8) só continua a música se já começou (alguém clicou)
+            if (c.ultimoSom > 0L && durou < BICHO_MUSICA_SEG && agoraMs >= c.proximaMusica) {
                 c.proximaMusica = agoraMs + BICHO_MUSICA_SEG * 1000L;
                 c.ultimoSom = 0L;                 // libera a trava: é o ciclo do tick
                 tocarSomCaixa(nv, c.pos);
@@ -1567,23 +1666,6 @@ public final class NeptuneEventos {
         nv.sendParticles(ParticleTypes.SMOKE, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                 40, 0.4, 0.4, 0.4, 0.02);
         nv.removeBlock(pos, false);
-        // (5.7.7) ELE SAI PRA FORA: o bicho vira criatura de verdade e persegue
-        // quem abriu a caixa. Os players podem bater nele (vida 40).
-        try {
-            long perto = nv.getEntitiesOfClass(BichoEntity.class,
-                    new net.minecraft.world.phys.AABB(pos).inflate(24.0)).size();
-            if (perto == 0) {
-                BichoEntity bicho = RPTagMod.BICHO.get().create(nv);
-                if (bicho != null) {
-                    bicho.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
-                            nv.random.nextFloat() * 360.0F, 0.0F);
-                    bicho.setTarget(quem);
-                    nv.addFreshEntity(bicho);
-                }
-            }
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: nao consegui soltar o bicho (o susto ja aconteceu)", t);
-        }
         quem.addEffect(new MobEffectInstance(RPEffects.MEDO, 200, 0, false, false, true));
         quem.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 1, false, false, false));
         nv.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
@@ -1745,6 +1827,22 @@ public final class NeptuneEventos {
                 + "\u00a78(um admin pode te tirar com /vazio soltar <jogador>)"), false);
     }
 
+    /** (5.7.8) admin entra no exílio pra testar o ambiente (sem punir ninguém). */
+    public static void entrarNoExilio(ServerPlayer quem) {
+        ServerLevel destino = quem.getServer().getLevel(CHAVE_EXILIO);
+        if (destino == null) {
+            quem.sendSystemMessage(Component.literal(
+                    "\u00a7cA dimensão rptag:exilio não carregou."));
+            return;
+        }
+        PacketDistributor.sendToPlayer(quem, new NeptunePackets.Cena(
+                NeptunePackets.Cena.CENA_EXILIO, 1.0F, 2600, System.nanoTime()));
+        EXILIOS.add(new Object[]{ System.currentTimeMillis() + 2400L, quem.getUUID(), 0,
+                System.currentTimeMillis() });
+        quem.displayClientMessage(Component.literal(
+                "\u00a78Um lugar sem céu. Sem norte. Só o que você conseguir lembrar."), false);
+    }
+
     /** (5.5.0/5.7.6) tira alguém do exílio: animação de escuridão + volta pro lugar de origem. */
     public static void soltarDoExilio(ServerPlayer alvo) {
         long agora = System.currentTimeMillis();
@@ -1788,7 +1886,7 @@ public final class NeptuneEventos {
             if (tipo == 0) {
                 levarProExilio(p);
             } else {
-                devolverDaOrigem(p);
+                devolverAleatorio(p);
             }
         }
     }
@@ -1890,35 +1988,89 @@ public final class NeptuneEventos {
             if (destino == null) {
                 return;
             }
+            // (5.7.8) O SOM DA EXPULSÃO (o que o dono mandou) toca no instante
+            // em que ele é JOGADO PRA FORA DO MAPA — e quem está por perto ouve.
+            var nivelOrigem = alvo.level() instanceof ServerLevel sl ? sl : null;
+            if (nivelOrigem != null) {
+                BlockPos aqui = alvo.blockPosition();
+                nivelOrigem.playSound(null, aqui, RPTagMod.SOM_EXPULSAO.get(),
+                        SoundSource.HOSTILE, 1.0F, 0.75F);
+                for (ServerPlayer perto : nivelOrigem.players()) {
+                    if (perto.position().distanceTo(alvo.position()) < 40) {
+                        perto.playNotifySound(RPTagMod.SOM_EXPULSAO.get(),
+                                SoundSource.HOSTILE, 0.8F, 0.7F);
+                    }
+                }
+            }
             alvo.teleportTo(destino, 0.5, 1.0, 0.5, java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: exilio falhou (o jogo segue)", t);
         }
     }
 
-    /** (5.7.6) devolve a pessoa pro LUGAR EXATO de onde ela foi exilada. */
-    private static void devolverDaOrigem(ServerPlayer alvo) {
+    /**
+     * (5.7.8) DEVOLVE A PESSOA NUM LUGAR ALEATÓRIO DO MUNDO.
+     *
+     * <p>O dono: <i>"quando algum adm tirar do vazio, tem que soltar por lugares
+     * aleatórios do mundo"</i>. Antes ela voltava pro exato lugar de onde saiu
+     * (o que estragava a punição: o exílio era só uma pausa). Agora ela cai
+     * num ponto sorteado do Overworld, a até {@link #RAIO_SOLTURA} blocos do
+     * spawn — longe de casa, possivelmente perdida.
+     *
+     * <p>Segurança: procura a SUPERFÍCIE (heightmap), rejeita água/lava/ar e
+     * tenta 24 vezes antes de desistir; se nada der certo, cai no spawn.
+     */
+    private static void devolverAleatorio(ServerPlayer alvo) {
         try {
-            Object[] o = ORIGEM.remove(alvo.getUUID());
-            if (o == null) {
-                // sem origem guardada (servidor reiniciou): cai no spawn, como antes
-                ServerLevel mundo = alvo.getServer().overworld();
-                BlockPos spawn = mundo.getSharedSpawnPos();
-                alvo.teleportTo(mundo, spawn.getX() + 0.5, spawn.getY() + 1.0, spawn.getZ() + 0.5,
-                        java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
-                return;
+            ORIGEM.remove(alvo.getUUID());
+            ServerLevel mundo = alvo.getServer().overworld();
+            java.util.Random sorte = new java.util.Random();
+            BlockPos alvoPos = null;
+            for (int tentativa = 0; tentativa < 24 && alvoPos == null; tentativa++) {
+                int x = sorte.nextInt(RAIO_SOLTURA * 2 + 1) - RAIO_SOLTURA;
+                int z = sorte.nextInt(RAIO_SOLTURA * 2 + 1) - RAIO_SOLTURA;
+                if (Math.hypot(x, z) < 120) {
+                    continue;                        // não solta colado no spawn
+                }
+                // garante que o chunk existe antes de perguntar a altura
+                mundo.getChunk(x >> 4, z >> 4);
+                int y = mundo.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                BlockPos p = new BlockPos(x, y, z);
+                BlockState chao = mundo.getBlockState(p.below());
+                BlockState ar = mundo.getBlockState(p);
+                boolean ruim = chao.isAir() || !chao.getFluidState().isEmpty()
+                        || chao.is(Blocks.LAVA) || chao.is(Blocks.WATER)
+                        || !ar.getFluidState().isEmpty();
+                if (!ruim) {
+                    alvoPos = p;
+                }
             }
-            var chave = (net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>) o[0];
-            ServerLevel nivel = alvo.getServer().getLevel(chave);
-            if (nivel == null) {
-                nivel = alvo.getServer().overworld();
+            if (alvoPos == null) {
+                alvoPos = mundo.getSharedSpawnPos();
             }
-            alvo.teleportTo(nivel, (Double) o[1], (Double) o[2], (Double) o[3],
-                    java.util.Set.of(), (Float) o[4], (Float) o[5]);
+            alvo.teleportTo(mundo, alvoPos.getX() + 0.5, alvoPos.getY() + 1.0, alvoPos.getZ() + 0.5,
+                    java.util.Set.of(), sorte.nextFloat() * 360.0F, 0.0F);
+            mundo.playSound(null, alvoPos, RPTagMod.SOM_EXPULSAO.get(), SoundSource.HOSTILE, 1.0F, 0.9F);
             PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
                     NeptunePackets.Cena.CENA_VOLTA, 1.0F, 2200, System.nanoTime()));
+            alvo.displayClientMessage(Component.literal(
+                    "\u00a78A escuridão te cuspiu em algum lugar do mundo. "
+                    + "Boa sorte achando o caminho de volta."), false);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: volta do exilio falhou (o jogo segue)", t);
         }
     }
+
+    /** (5.7.8) raio (em blocos) em volta do spawn onde a pessoa pode ser solta. */
+    private static final int RAIO_SOLTURA = 4000;
+
+    /** (5.7.8) a dimensão do exílio (pra o ambiente dela rodar no tick). */
+    private static final net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> CHAVE_EXILIO =
+            net.minecraft.resources.ResourceKey.create(
+                    net.minecraft.core.registries.Registries.DIMENSION,
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "exilio"));
+    /** (5.7.8) próximo monólito que nasce no escuro. */
+    private static long proximoMonolito = 0L;
+    /** (5.7.8) próximo sussurro. */
+    private static long proximoSussurro = 0L;
 }

@@ -648,6 +648,39 @@ public final class NeptuneFx {
             g.fill(cx + rr / 2 - olho, cy - rr / 3, cx + rr / 2 + olho, cy - rr / 3 + olho, 0xFFFF2020);
         }
 
+        // (5.7.8) MELHORIA DO SUSTO: a cara agora AVANÇA em direção à tela nos
+        // primeiros 0,6 s (escala extra), as bordas ficam pretas em volta dela
+        // (foco no rosto) e o vulto respira por trás — antes era uma imagem
+        // chapada crescendo.
+        try {
+            float avanca = 1.0F + 0.35F * (1.0F - cl(ms / 600.0F));
+            int lado2 = (int) (lado * avanca);
+            float aura = 0.55F * entra * sai;
+            // vinheta preta em volta (o mundo some, fica só a cara)
+            for (int i = 0; i < 16; i++) {
+                float t2 = i / 16f;
+                int alfaB = (int) (aura * 255 * (1 - t2) * 0.5f);
+                int m = (int) (Math.min(w, h) * 0.5F * t2);
+                if (alfaB <= 0) {
+                    continue;
+                }
+                int cor = (Math.min(255, alfaB) << 24);
+                g.fill(0, 0, w, m, cor);
+                g.fill(0, h - m, w, h, cor);
+                g.fill(0, 0, m, h, cor);
+                g.fill(w - m, 0, w, h, cor);
+            }
+            // vulto escuro atrás, respirando (dá corpo pro bicho)
+            float resp = 0.5F + 0.5F * (float) Math.sin(ms * 0.006);
+            int lado3 = (int) (lado2 * (1.06F + 0.10F * resp));
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0.05F, 0.0F, 0.05F, 0.85F * entra * sai);
+            g.blit(BICHO, cx - lado3 / 2, cy - lado3 / 2 + (int) (12 * resp),
+                    0, 0, lado3, lado3, lado3, lado3);
+            com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
+        } catch (Throwable ignorado) {
+            // sem drama: se a vinheta falhar, a cara continua aparecendo
+        }
+
         // flash branco curtíssimo no primeiro instante (só pra "estourar")
         if (ms < 140) {
             int alfa = (int) (170 * (1 - ms / 140.0F));

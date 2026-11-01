@@ -1,5 +1,40 @@
 # Changelog
 
+## 5.7.8 — SOM DE EXPULSÃO, EXÍLIO ANDÁVEL, CAIXA NO 1º CLIQUE — 2026-11-01
+
+### Som de expulsão (o que o dono mandou)
+- `expulsao.ogg` (a partir do MP3 enviado, 2,3 s) registrado como `rptag:expulsao`
+  e tocado:
+  - quando o player é **jogado pra fora do mapa** (`/vazio exilar`) — quem está
+    a até 40 blocos também ouve;
+  - no **`/terremoto sair`** (o kick) e na volta aleatória.
+
+### Exílio (`/vazio`)
+- **`/vazio soltar <jogador>` não devolve mais no mesmo lugar**: sorteia um ponto
+  do Overworld até **4000 blocos** do spawn (24 tentativas, rejeita água/lava/ar,
+  usa o heightmap) e avisa "a escuridão te cuspiu em algum lugar do mundo".
+- **A dimensão `rptag:exilio` virou um lugar de verdade**: chão em camadas
+  (bedrock → deepslate → blackstone → tufo → sculk), **escura** (luz ambiente
+  0,06, sem céu, meia-noite fixa) mas **dá pra andar e se perder**.
+- **`tickExilioMundo`**: a cada ~14 s nasce um **monólito** (deepslate/obsidiana
+  com **lanterna de alma** no topo) a 10–25 blocos de quem está lá — todos
+  iguais, servindo de referência e de armadilha; sussurros a cada ~11 s e
+  poeira escura nos pés.
+- **`/vazio entrar`**: o admin entra no exílio pra testar sem punir ninguém.
+
+### Bicho (caixa)
+- **Desfeito** o bicho como criatura (o dono pediu): saíram `BichoEntity`,
+  `BichoRenderer`, o registro `rptag:bicho` e o spawn. **O susto na tela
+  continua** e ficou melhor: a cara **avança** nos primeiros 0,6 s, as bordas
+  escurecem e há um vulto respirando atrás.
+- **A música agora começa no PRIMEIRO CLIQUE**, não ao colocar a caixa
+  (`/bicho aqui` fica em silêncio até alguém bater).
+
+### Testes
+`check.py`: **716 PASS / 0 FAIL**. Servidor 5.7.8 sobe limpo (`Done 0.885s`);
+dimensão do exílio gera **sculk no topo (y=11) e deepslate embaixo (y=2)**;
+`/terremoto`, `/saida`, `/bicho` respondem; **zero exception** no log.
+
 ## 5.7.7 — O VAZIO NÃO CEGA, O BICHO DÁ PRA MATAR, CÓDIGOS EM VOLTA DO PLAYER
 ### (2026-11-01)
 

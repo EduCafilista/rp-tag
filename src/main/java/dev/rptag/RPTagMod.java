@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.7.7";
+    public static final String VERSION = "5.7.8";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -136,16 +136,16 @@ public final class RPTagMod {
     public static final Supplier<Item> CORACAO_ITEM =
             ITEMS.register("coracao_canon", () -> new BlockItem(CORACAO_BLOCK.get(),
                     new Item.Properties()));
-    /** (5.7.7) O BICHO em si — criatura de verdade, dá pra bater nela. */
-    public static final DeferredRegister<net.minecraft.world.entity.EntityType<?>> ENTITIES =
-            DeferredRegister.create(Registries.ENTITY_TYPE, MODID);
-    public static final java.util.function.Supplier<net.minecraft.world.entity.EntityType<BichoEntity>> BICHO =
-            ENTITIES.register("bicho", () -> net.minecraft.world.entity.EntityType.Builder
-                    .of(BichoEntity::new, net.minecraft.world.entity.MobCategory.MONSTER)
-                    .sized(0.9F, 1.5F)
-                    .clientTrackingRange(10)
-                    .build("bicho"));
+    /**
+     * (5.7.8) EXPULSÃO — o som que o DONO mandou (h.uguu.se/lDBUuUuk.mp3).
+     * Toca quando o jogador é JOGADO PRA FORA DO MAPA (exílio) e no
+     * /terremoto sair.
+     */
+    public static final java.util.function.Supplier<SoundEvent> SOM_EXPULSAO = SOUNDS.register("expulsao",
+            () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "expulsao")));
 
+    /** (5.7.7) O BICHO em si — criatura de verdade, dá pra bater nela. */
     /** (5.4.0) CAIXA DO BICHO (só por comando — é a isca do susto). */
     public static final Supplier<CaixaBichoBlock> CAIXA_BICHO = BLOCKS.register("caixa_bicho",
             () -> new CaixaBichoBlock(BlockBehaviour.Properties.of()
@@ -185,7 +185,6 @@ public final class RPTagMod {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         BE_TYPES.register(modEventBus);
-        ENTITIES.register(modEventBus);
         // (4.5.1) BUG QUE DERRUBA JOGADOR NO LOGIN: argumento de comando custom
         // PRECISA estar no registry COMMAND_ARGUMENT_TYPE. Sem isso o servidor
         // nao consegue serializar a arvore de comandos e o cliente cai com

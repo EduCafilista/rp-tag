@@ -89,6 +89,40 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
   do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
 
+## 5.7.8 (2026-11-01): som de expulsão, exílio andável, caixa no 1º clique
+
+### Pedidos do dono
+1. "desfaça o negócio de matar o bicho" → removidos `BichoEntity`,
+   `BichoRenderer`, registro `ENTITIES`/`BICHO`, o spawn em `dispararBicho` e a
+   chave de lang. O susto de tela continua (e melhorou: `avanca` + vinheta).
+2. "arrume o negócio de começar a tocar a música quando o player apertar a
+   primeira vez" → tirado `tocarSomCaixa` de `colocarCaixa`; o tick só continua
+   a música se `c.ultimoSom > 0`.
+3. "quando algum adm tirar do vazio, soltar por lugares aleatórios do mundo" →
+   `devolverAleatorio` + `RAIO_SOLTURA = 4000` (heightmap, 24 tentativas).
+4. "faça algo nessa dimensão, toda escura porém dá pra andar, se perder" →
+   `dimension/exilio.json` com 5 camadas + `tickExilioMundo` (monólitos com
+   SOUL_LANTERN + sussurros) + `/vazio entrar` pra testar.
+5. "coloque esse som pra quando o player for jogado pra fora do mapa, terremoto
+   sair" (h.uguu.se/lDBUuUuk.mp3) → `expulsao.ogg` + `SOM_EXPULSAO`, tocado no
+   `levarProExilio`, no `sairDoServidor` e no `devolverAleatorio`.
+
+### Armadilhas aprendidas (recuperação de ambiente)
+- O workspace voltou de um snapshot antigo (repo em 4.9.6). A fonte 5.7.7 estava
+  salva no GitHub → `git clone` com o PAT resolveu (commit `cb6bbb9`).
+- `/var/tmp` (JDK 21 + `cp.txt`) e `run/libraries` sumiram: recuperados com
+  `nf-installer.jar --installServer` (no `run/`) e `--installClient` (com um
+  `launcher_profiles.json` falso) + LWJGL 3.3.3 do Maven Central.
+- **A ordem do classpath importa**: os jars `neoforge-21.1.249-client.jar` e
+  `neoforge-21.1.249-server.jar` (que já trazem as classes do Minecraft COM os
+  patches do NeoForge) precisam vir ANTES dos `client/server-...-srg.jar`; e os
+  jars `-slim`, `-extra` e `-unpacked` têm que ficar FORA (trazem classes
+  parciais e quebram a compilação com erros do tipo "método não existe").
+
+### Testes
+`check.py` 716 PASS / 0 FAIL · servidor 5.7.8 limpo · dimensão do exílio gera
+sculk (y=11) e deepslate (y=2) · zero exception.
+
 ## 5.7.7 (2026-11-01): F1 limpo, aura no mundo, cinzas, bicho matável, glifos 3D
 
 ### Pedidos do dono (todos nesta versão)

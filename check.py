@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.7.7'
+VER = '5.7.8'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1585,10 +1585,11 @@ check('5.5.0: /rp admin avisar aceita o literal "energia"',
       'Commands.literal("energia")' in _rp2 and 'avisar(ctx, alvos, "energia", texto)' in _rp2)
 check('5.5.0: o ENERGIA tem nucleo que muda de forma, raios e medidor de ENTROPIA',
       'lobo' in _en and 'criarRaio' in _en and 'ENTROPIA' in _en and 'CRÍTICO' in _en)
-check('5.5.0: dimensao do EXILIO existe (rptag:exilio) com chao preto',
+check('5.5.0: dimensao do EXILIO existe (rptag:exilio) com chao (5.7.8: camadas de pedra)',
       os.path.exists('src/main/resources/data/rptag/dimension/exilio.json')
       and os.path.exists('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and 'black_concrete' in rd('src/main/resources/data/rptag/dimension/exilio.json'))
+      and ('black_concrete' in rd('src/main/resources/data/rptag/dimension/exilio.json')
+           or 'blackstone' in rd('src/main/resources/data/rptag/dimension/exilio.json')))
 check('5.5.0: o exilio e ESCURO (ambient_light 0, sem ceu, meia-noite fixa)',
       '"ambient_light": 0.0' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and '"has_skylight": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
@@ -1853,8 +1854,8 @@ check('5.7.6: som NOVO do terremoto (gravacao CC0 real + estalos + sub)',
 check('5.7.6: EXILIO com animacao no mundo (particulas + sucção + raios)',
       'tickExilios' in _ne2 and 'particulasExilio' in _ne2
       and 'CENA_EXILIO' in _npk and 'CENA_VOLTA' in _npk)
-check('5.7.6: quem volta do exilio volta pro MESMO lugar (origem guardada)',
-      'ORIGEM.put(' in _ne2 and 'devolverDaOrigem' in _ne2 and 'ORIGEM.remove(' in _ne2)
+check('5.7.6: a ORIGEM de quem foi exilado fica guardada (5.7.8: solta aleatorio)',
+      'ORIGEM.put(' in _ne2 and 'devolverAleatorio' in _ne2 and 'ORIGEM.remove(' in _ne2)
 check('5.7.6: na tela, escuridao do exilio (indo) e da volta (abrindo)',
       'desenharExilioCena' in _nfx and 'CENA_EXILIO' in _nfx and 'CENA_VOLTA' in _nfx)
 check('5.7.6: aura do vazio BEM mais preta (manto cobre o corpo, rosto poupado)',
@@ -1872,8 +1873,6 @@ check('5.7.6: /saida — animacao de saida usavel no mapa por qualquer admin',
 
 
 # ============ 5.7.7: F1 limpo, exílio maior, cinzas, bicho, códigos 3D ======
-_bicho = rd(R + '/BichoEntity.java')
-_bren = rd(C + '/BichoRenderer.java')
 _glif = rd(C + '/GlifosSaidaFx.java')
 check('5.7.7: o vazio NAO fica cego em F1 (particula alta vai so pros outros)',
       'private static void auraPart(' in _ne2 and 'boolean alto = y > dono.getY() + 0.95;' in _ne2
@@ -1894,10 +1893,10 @@ check('5.7.7: apagar alguem = CINZAS + SOMBRA + ALMA por 3 s',
 check('5.7.7: BICHO no 1o clique so toca som; o susto vem no 2o (4 s)',
       'toqueNaCaixa' in _ne2 and 'ESPERA_SUSTO_MS = 4000L' in _ne2
       and 'toqueNaCaixa(nv, pos, sp)' in _cb)
-check('5.7.7: o BICHO existe no MUNDO e da pra bater nele',
-      'class BichoEntity extends Monster' in _bicho and 'atributos()' in _bicho
-      and 'registerEntityRenderer(RPTagMod.BICHO.get()' in rd(C + '/ClientRenderers.java')
-      and 'addFreshEntity(bicho)' in _ne2)
+check('5.7.8: DESFEITO o bicho como criatura (o dono pediu) — susto continua na tela',
+      not os.path.exists(R + '/BichoEntity.java')
+      and not os.path.exists(C + '/BichoRenderer.java')
+      and 'addFreshEntity(bicho)' not in _ne2)
 check('5.7.7: CODIGOS VERDES em volta do player na saida (3D, no mundo)',
       'class GlifosSaidaFx' in _glif and 'drawInBatch' in _glif and 'CODIGOS' in _glif
       and 'Codigos.TYPE' in rd(R + '/NeptunePackets.java')
@@ -1916,6 +1915,30 @@ check('5.7.3: som novo do terremoto com corpo (nao so zumbido grave)',
       and os.path.getsize(A + '/sounds/terremoto_colapso.ogg') > 300_000)
 check('5.7.3: caixa do palhaco NAO empilha mais musica (para a anterior antes)',
       'pararMusicaCaixa' in _ne2 and 'ClientboundStopSoundPacket' in _ne2)
+
+
+# ============ 5.7.8: som de expulsão, exílio andável, caixa no 1o clique =====
+_exp = os.path.getsize(A + '/sounds/expulsao.ogg')
+check('5.7.8: som NOVO de expulsão (o que o dono mandou) no jogo',
+      _exp > 10_000 and 'SOM_EXPULSAO' in rd(R + '/RPTagMod.java')
+      and 'expulsao' in rd('src/main/resources/assets/rptag/sounds.json'))
+check('5.7.8: o som toca quando jogam a pessoa pra fora do mapa e no /terremoto sair',
+      _ne2.count('SOM_EXPULSAO.get()') >= 3)
+check('5.7.8: /vazio soltar devolve num lugar ALEATORIO do mundo',
+      'devolverAleatorio' in _ne2 and 'RAIO_SOLTURA = 4000' in _ne2
+      and 'MOTION_BLOCKING_NO_LEAVES' in _ne2)
+check('5.7.8: a dimensao do exilio tem chao de verdade e da pra ANDAR no escuro',
+      'blackstone' in rd('src/main/resources/data/rptag/dimension/exilio.json')
+      and 'sculk' in rd('src/main/resources/data/rptag/dimension/exilio.json')
+      and 'TENTÁCULOS' not in rd('src/main/resources/data/rptag/dimension/exilio.json'))
+check('5.7.8: monolitos com lanterna de alma nascem no escuro (se perder lá dentro)',
+      'tickExilioMundo' in _ne2 and 'monólito(' in _ne2 and 'SOUL_LANTERN' in _ne2)
+check('5.7.8: /vazio entrar — o admin testa o exilio sem punir ninguém',
+      'entrarNoExilio' in _ne2 and 'literal("entrar")' in _ncmd)
+check('5.7.8: a caixa NAO toca mais ao colocar (música só no 1o clique)',
+      'A MÚSICA NÃO TOCA MAIS AO COLOCAR A CAIXA' in _ne2)
+check('5.7.8: o susto do bicho ficou mais forte (vinheta + avanço na tela)',
+      'MELHORIA DO SUSTO' in _nfx and 'avanca' in _nfx)
 
 
 print(f'\n{OK} PASS / {FAIL} FAIL')

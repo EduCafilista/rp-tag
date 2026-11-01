@@ -16,7 +16,5 @@ public final class ClientRenderers {
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers e) {
         e.registerBlockEntityRenderer(RPTagMod.CORACAO_BE.get(), CanonCoracaoRenderer::new);
-        // (5.7.7) o BICHO da caixa agora aparece NO MUNDO (dá pra bater nele)
-        e.registerEntityRenderer(RPTagMod.BICHO.get(), BichoRenderer::new);
     }
 }

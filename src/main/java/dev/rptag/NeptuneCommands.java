@@ -178,9 +178,20 @@ public final class NeptuneCommands {
                     ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
                     NeptuneEventos.soltarDoExilio(alvo);
                     ctx.getSource().sendSuccess(() -> Component.literal(
-                            "\u00a7a" + alvo.getName().getString() + " voltou do ex\u00edlio."), true);
+                            "\u00a7a" + alvo.getName().getString() + " voltou do ex\u00edlio (num lugar aleat\u00f3rio do mundo)."), true);
                     return Command.SINGLE_SUCCESS;
                 })));
+
+        // (5.7.8) /vazio entrar — o admin vai pra dimensão do exílio testar o
+        // ambiente (andar no escuro, monólitos, sussurros) sem punir ninguém.
+        vazio.then(Commands.literal("entrar").executes(ctx -> {
+            ServerPlayer quem = ctx.getSource().getPlayerOrException();
+            NeptuneEventos.entrarNoExilio(quem);
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a78Voc\u00ea entrou no ex\u00edlio. Use \u00a7f/vazio soltar "
+                            + quem.getName().getString() + "\u00a78 pra sair."), true);
+            return Command.SINGLE_SUCCESS;
+        }));
 
         vazio.then(Commands.literal("exilar")
                 .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
@@ -269,7 +280,7 @@ public final class NeptuneCommands {
                     + "\u00a7e/vazio ligar|desligar \u00a77— aura + trilha + medo (o Deus do Vazio)\n"
                     + "\u00a7e/vazio apagar <jogador> \u00a77— apaga da existência\n"
                     + "\u00a7e/vazio exilar <jogador> \u00a77— manda pra rptag:exilio (tudo preto e vazio)\n"
-                    + "\u00a7e/vazio soltar <jogador> \u00a77— traz de volta do exílio\n"
+                    + "\u00a7e/vazio soltar <jogador> \u00a77— solta ele num lugar ALEATÓRIO do mundo\n"
                     + "\u00a7e/bicho aqui \u00a77— caixinha de música (o bicho pula quando alguém chega)")
                     .withStyle(ChatFormatting.DARK_PURPLE), false);
             return Command.SINGLE_SUCCESS;

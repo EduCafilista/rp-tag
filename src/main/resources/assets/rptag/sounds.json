@@ -94,5 +94,13 @@
         "stream": true
       }
     ]
+  },
+  "expulsao": {
+    "sounds": [
+      {
+        "name": "rptag:expulsao",
+        "stream": false
+      }
+    ]
   }
 }
