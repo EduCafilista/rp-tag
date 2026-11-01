@@ -1,5 +1,46 @@
 # Changelog
 
+## 5.7.6 — EXÍLIO ANIMADO, VAZIO PRETO, TERREMOTO ANDÁVEL — 2026-11-01
+
+### Exílio (`/vazio exilar` / `/vazio soltar`)
+- **Animação no mundo** (2,6 s) antes de levar: espiral de escuridão, pedaços do
+  chão sugados, raios vermelhos, cinza. Todo mundo vê.
+- **A volta também é animada** (escuridão se abrindo) e devolve pro **lugar
+  exato** de onde a pessoa saiu (`ORIGEM`), não mais pro spawn.
+- Na tela: sombras fechando (ida) / se abrindo (volta), máx. 0,72 — sem tela
+  preta chapada.
+
+### Vazio (`/vazio ligar`)
+- **Manto de 3 camadas de preto** (SQUID_INK + LARGE_SMOKE + dust quase preto),
+  20 fios em espiral, em cone; a **faixa do rosto é poupada** e ganha **dois
+  olhos vermelhos** que acompanham a direção do olhar.
+- **Transformação:** rajada de 28 raios vermelhos (360° + pra cima), onda de
+  choque de brasa no chão e rugido; por 2,5 s os raios 3D ficam mais grossos,
+  longos e vermelhos (`surtoAte` em `RaiosVazioFx`).
+- **Rastro de caos:** mancha no chão a cada meio bloco andado, soltando tinta,
+  brasa, sangue e cinza por **22 s** (`tickManchas`).
+
+### Terremoto
+- **Dá pra andar:** saiu `imobilizar` do pulso; entrou `pesado()` = **−45% de
+  velocidade** e **−0,20 de pulo**. Anda arrastado, mas anda.
+- **Sem partícula verde:** `estadoPoeira()` converte grama/musgo/folha/mato em
+  **terra grossa** (nos 4 pontos que usavam o bloco real).
+- **Som novo**: base é gravação real CC0 (OpenGameArt "Rumbling Sound Effects",
+  bretbernhoft) com **excitador harmônico** (o original era todo abaixo de 60
+  Hz), estalos de rocha em cascata, sub-impactos, arrasto de terra, grãos e
+  groan. Grave 534→1088, corpo 97→435, brilho 4→23 (mesma medição de antes).
+- **`/terremoto engolir <jogador>`**: o chão abre, engole e leva pro exílio com
+  efeito que todos veem.
+- `/terremoto sair` agora avisa e assusta quem está a até 24 blocos.
+
+### Saída
+- **`/saida <jogador>`** e **`/saida todos`**: roda a animação de saída (estilo
+  18, `SaidaPlayerFx`) na hora, pra todo mundo, sem ninguém desconectar.
+
+### Testes
+`check.py`: **701 PASS / 0 FAIL** (+12). Servidor 5.7.6 sobe limpo; terremoto
+liga/desliga e `/saida` responde sem exception.
+
 ## 5.7.5 — TERREMOTO NO MUNDO (sem rachadura na tela) — 2026-11-01
 
 **O que você apontou:** "não estou gostando ainda de como fica o terremoto" e,

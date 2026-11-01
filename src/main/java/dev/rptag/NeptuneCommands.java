@@ -83,6 +83,23 @@ public final class NeptuneCommands {
                     return Command.SINGLE_SUCCESS;
                 })));
 
+        // (5.7.6) /terremoto engolir <jogador> — o chão leva a pessoa EMBORA.
+        // O dono perguntou: "tem a animação de quando o terremoto tirar a
+        // pessoa do jogo? as outras pessoas que estiverem la dentro vao ver
+        // essas pessoas desaparecendo? com efeito e tudo mais?" — agora tem:
+        // a fenda abre, a escuridão sobe e engole, os outros VEEM (é partícula
+        // no mundo, não tela) e no fim a pessoa vai pro exílio.
+        terremoto.then(Commands.literal("engolir")
+                .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
+                    ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                    ServerPlayer quem = ctx.getSource().getPlayer();
+                    NeptuneEventos.engolirNoTerremoto(alvo, quem);
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a78O ch\u00e3o engoliu \u00a75" + alvo.getName().getString()
+                                    + "\u00a78 (todo mundo viu)."), true);
+                    return Command.SINGLE_SUCCESS;
+                })));
+
         // (5.6.0) testar/forçar a fenda num jogador (o chão abre, ele cai)
         terremoto.then(Commands.literal("fenda")
                 .executes(ctx -> {
@@ -171,6 +188,37 @@ public final class NeptuneCommands {
                             "\u00a78Exilado no vazio: \u00a75" + alvo.getName().getString()), true);
                     return Command.SINGLE_SUCCESS;
                 })));
+
+        // -------------------------------------------------------------- /saida
+        // (5.7.6) "faça a animação para quando o pessoal poder usar no mapa":
+        // agora a animação de saída (o bonequinho se desfazendo em código) pode
+        // ser DISPARADA na hora, pra todo mundo, sem ninguém realmente sair do
+        // servidor. Serve pra anunciar a saída de um personagem no RP.
+        LiteralArgumentBuilder<CommandSourceStack> saida = Commands.literal("saida")
+                .requires(src -> src.hasPermission(2));
+        saida.then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
+            ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+            int n = NeptuneEventos.tocarAnimacaoSaida(alvo, ctx.getSource().getServer());
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a7aAnima\u00e7\u00e3o de sa\u00edda rodando pra \u00a7f"
+                            + n + "\u00a7a jogador(es) — nome: \u00a77"
+                            + alvo.getName().getString()), true);
+            return Command.SINGLE_SUCCESS;
+        }));
+        saida.then(Commands.literal("todos").executes(ctx -> {
+            var lista = ctx.getSource().getServer().getPlayerList().getPlayers();
+            int total = 0;
+            for (ServerPlayer alvo : lista) {
+                total = Math.max(total, NeptuneEventos.tocarAnimacaoSaida(alvo,
+                        ctx.getSource().getServer()));
+            }
+            final int n = total;
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a7aAnima\u00e7\u00e3o de sa\u00edda rodando pra \u00a7f" + n
+                            + "\u00a7a jogador(es)."), true);
+            return Command.SINGLE_SUCCESS;
+        }));
+        event.getDispatcher().register(saida);
 
         event.getDispatcher().register(vazio);
 

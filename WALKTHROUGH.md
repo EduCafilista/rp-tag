@@ -89,6 +89,46 @@ chute — pedir reenvio (anexo direto no chat é o mais confiável; `.mp4` grand
 - Prévia das cenas: `arte/previa_terremoto_560.py` (desenha a mesma matemática
   do mod em PIL) — útil pra mostrar ao dono sem abrir o jogo.
 
+## 5.7.6 (2026-11-01): exílio animado, vazio preto, terremoto andável
+
+### Pedidos do dono (todos nesta versão)
+1. "animação do player sendo exilado para a dimensão do vazio e quando ele
+   voltar também ter uma animação de escuridão" → `EXILIOS` + `tickExilios` +
+   `particulasExilio` (server) e `desenharExilioCena` (client, CENA_EXILIO=3,
+   CENA_VOLTA=4). Volta pro lugar de origem via `ORIGEM`.
+2. "escureça mais a parte de partículas... nem ver o corpo... apenas o rosto" →
+   manto de 3 camadas + cone + faixa do rosto poupada + 2 olhos vermelhos.
+3. "rastro de caos e destruição... partículas ficando pelo local" → record
+   `Mancha` + `tickManchas` (22 s por mancha, máx. 220).
+4. "as particulas vermelhas devem virar raios vermelhos mais intensos" →
+   `surtoTransformacao` no `ligarDeus` + `surtoAte` no `RaiosVazioFx`.
+5. "no terremoto o player não deve ficar 100% parado" → `pesado()` (−45% vel,
+   −0,20 pulo); `imobilizar` só no `/terremoto fenda`.
+6. "tira as particulas verdes que saem do chao" → `estadoPoeira()` (grama/folha
+   → COARSE_DIRT) nos 4 pontos.
+7. "melhore a qualidade do som, pesquise outro" → `arte/audio_576.py`: base CC0
+   OpenGameArt (rumbling17.wav) + excitador harmônico + estalos + sub.
+8. "tem a animação de quando o terremoto tirar a pessoa do jogo?" →
+   `engolirNoTerremoto` + `/terremoto engolir`; `/terremoto sair` avisa e dá
+   medo em quem está perto.
+9. "quando o player sair do servidor, você já colocou aquela animação?" → já
+   estava (5.7.0, `ServerEvents.onLoggedOut` → ScreenTextPayload estilo 18).
+   Novo: `/saida <jogador>` e `/saida todos` (`tocarAnimacaoSaida`).
+
+### Armadilhas aprendidas
+- **`Blocks.GRASS` e `Blocks.LEAVES` não existem** em 1.21.1 (é `SHORT_GRASS` e
+  as folhas por espécie).
+- O **r17.wav do OpenGameArt** é 32-bit float com DC de 0,40 e valores fora da
+  faixa: `lfilter` com butter **ordem 4 em 22 Hz vira NaN em 5 de 5,3 milhões de
+  amostras**. Usar **`sosfilt`** (second-order sections) e sanitizar com
+  `nan_to_num` + `clip`.
+- A gravação é praticamente **subsônica** (pico em 12 Hz): sem `tanh` (excitador
+  harmônico) ela não existe em caixa de PC.
+
+### Testes
+`check.py` 701 PASS / 0 FAIL (+12) · servidor 5.7.6 sobe limpo · `/terremoto
+iniciar|parar` e `/saida todos` sem exception.
+
 ## 5.7.5 (2026-11-01): terremoto no MUNDO, sem rachadura na tela
 
 > Dono: "não estou gostando ainda de como fica o terremoto" — e, entre as opções,

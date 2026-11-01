@@ -158,6 +158,10 @@ public final class NeptunePackets {
         public static final int CENA_RACHADURA = 0;
         public static final int CENA_QUEDA = 1;
         public static final int CENA_ESTOURO = 2;
+        /** (5.7.6) o jogador está sendo EXILADO (escuridão engolindo a tela). */
+        public static final int CENA_EXILIO = 3;
+        /** (5.7.6) o jogador está VOLTANDO do exílio (escuridão se abrindo). */
+        public static final int CENA_VOLTA = 4;
 
         public static final Type<Cena> TYPE = new Type<>(id("neptune_cena"));
         public static final StreamCodec<ByteBuf, Cena> STREAM_CODEC = StreamCodec.of(

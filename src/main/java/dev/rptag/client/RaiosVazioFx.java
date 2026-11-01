@@ -82,6 +82,13 @@ public final class RaiosVazioFx {
     private static boolean euSou;         // o jogador local É o vazio
     private static UUID alvo;
     private static long ultimoQuadro = 0L;
+    /**
+     * (5.7.6) SURTO DA TRANSFORMAÇÃO — nos 2,5 s seguintes ao "ligar", os raios
+     * ficam MAIS VERMELHOS, mais grossos e mais longos (o dono: "as particulas
+     * vermelhas devem virar raios vermelhos mais intensos, para dar uma
+     * diferenciada na transformação"). Depois volta ao normal.
+     */
+    private static long surtoAte = 0L;
 
     static {
         for (int i = 0; i < RAIOS; i++) {
@@ -103,6 +110,7 @@ public final class RaiosVazioFx {
                 r.nasceu = 0L;
                 r.vida = 1L;
             }
+            surtoAte = System.currentTimeMillis() + 2500L;   // (5.7.6) transformação
         }
         alvo = id;
         euSou = souEu;
@@ -199,6 +207,11 @@ public final class RaiosVazioFx {
 
             r.alcance = 1.8F + SORTE.nextFloat() * 4.6F;        // 1,8 a 6,4 blocos
             r.largura = 0.022F + SORTE.nextFloat() * 0.030F;
+            // (5.7.6) durante o surto da transformação tudo é maior
+            if (System.currentTimeMillis() < surtoAte) {
+                r.alcance *= 1.25F;
+                r.largura *= 1.45F;
+            }
             r.semente = SORTE.nextFloat() * 100F;
             r.pontos = 6 + SORTE.nextInt(5);
             // 3 alturas de saída: chão, corpo, cabeça — dá volume à coisa
@@ -282,12 +295,18 @@ public final class RaiosVazioFx {
             // núcleo preto-roxo por dentro, vermelho por fora (2 passadas)
             float baseW = r.largura * larguraMult;
             org.joml.Matrix4f mat = pose.last().pose();
-            fita(vc, mat, a, b, perp, baseW * 2.6F,
-                    cor(0.55F, 0.02F, 0.03F, 0.55F * forca * alphaMult),
-                    cor(0.95F, 0.06F, 0.05F, 0.75F * forca * alphaMult), f0, f1);
+            // (5.7.6) no SURTO a capa vermelha fica maior e mais quente; fora
+            // dele o vermelho continua forte mas o miolo preto domina mais.
+            boolean surto = System.currentTimeMillis() < surtoAte;
+            float capa = surto ? 3.4F : 2.6F;
+            float aCapa = (surto ? 0.72F : 0.50F) * forca * alphaMult;
+            float aPonta = (surto ? 0.95F : 0.72F) * forca * alphaMult;
+            fita(vc, mat, a, b, perp, baseW * capa,
+                    cor(surto ? 0.72F : 0.52F, 0.02F, 0.03F, aCapa),
+                    cor(1.0F, surto ? 0.22F : 0.06F, 0.05F, aPonta), f0, f1);
             fita(vc, mat, a, b, perp, baseW,
-                    cor(0.02F, 0.0F, 0.03F, 0.92F * forca * alphaMult),
-                    cor(0.10F, 0.0F, 0.12F, 0.55F * forca * alphaMult), f0, f1);
+                    cor(0.015F, 0.0F, 0.02F, 0.95F * forca * alphaMult),
+                    cor(0.08F, 0.0F, 0.10F, 0.60F * forca * alphaMult), f0, f1);
         }
     }
 

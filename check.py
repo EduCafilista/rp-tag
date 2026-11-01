@@ -17,7 +17,7 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 # ---- 1. versão em 3 lugares
-VER = '5.7.5'
+VER = '5.7.6'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1605,7 +1605,7 @@ check('5.7.3: aura do vazio = escuridao + RAIOS negros/vermelhos saindo do playe
       'auraVazio(' in _ne2 and 'DustParticleOptions' in _ne2
       and 'negro' in _ne2 and 'RAIOS NEGROS E VERMELHOS' in _ne2)
 check('5.7.3: a aura tem COLUNA de escuridao em volta do corpo (visible no F5)',
-      'AURA DE ESCURIDÃO NO CORPO' in _ne2 and 'LARGE_SMOKE' in _ne2
+      '(A) O MANTO' in _ne2 and 'LARGE_SMOKE' in _ne2
       and 'SQUID_INK' in _ne2)
 check('5.7.2: as rachaduras serpenteiam (as faixas vermelhas se mexem)',
       'fase * 1.6' in _ne2 and 'lateral' in _ne2)
@@ -1830,6 +1830,45 @@ check('5.7.1: AURA DO VAZIO (/vazio ligar) = prototipo VoidAuraDark do dono',
       'class VazioAuraDarkFx' in _vad and 'VazioAuraDarkFx.ligar()' in _nfx
       and 'VazioAuraDarkFx.desenhar(g)' in _nfx and 'rachaduras' in _vad.lower()
       and 'tentáculos' in _vad.lower())
+
+# ============ 5.7.6: exílio animado, aura preta, rastro, terremoto andável ====
+_ncmd = rd(R + '/NeptuneCommands.java')
+_npk = rd(R + '/NeptunePackets.java')
+_rvfx = rd(C + '/RaiosVazioFx.java')
+_cb = rd(R + '/CaixaBichoBlock.java')
+check('5.7.6: TERREMOTO deixa o player ANDAR (peso, nao imobilizar)',
+      'private static void pesado(' in _ne2 and 'pesado(p, true);' in _ne2
+      and 'MOD_LENTO' in _ne2 and '-0.45' in _ne2)
+check('5.7.6: pulso travado NAO chama mais imobilizar (zerava a velocidade)',
+      'imobilizar(p, true);' not in _ne2.split('private static void tickTerremoto')[1]
+      .split('private static void')[0])
+check('5.7.6: SAIU a particula VERDE do chao (grama/folha viram terra)',
+      'private static BlockState estadoPoeira(' in _ne2 and 'COARSE_DIRT' in _ne2
+      and 'estadoPoeira(nv.getBlockState(chao))' in _ne2)
+_csize = os.path.getsize(A + '/sounds/terremoto_colapso.ogg')
+check('5.7.6: som NOVO do terremoto (gravacao CC0 real + estalos + sub)',
+      _csize > 900_000 and 'rumbling-sound-effects' in rd('arte/audio_576.py')
+      and 'excita(' in rd('arte/audio_576.py'))
+check('5.7.6: EXILIO com animacao no mundo (particulas + sucção + raios)',
+      'tickExilios' in _ne2 and 'particulasExilio' in _ne2
+      and 'CENA_EXILIO' in _npk and 'CENA_VOLTA' in _npk)
+check('5.7.6: quem volta do exilio volta pro MESMO lugar (origem guardada)',
+      'ORIGEM.put(' in _ne2 and 'devolverDaOrigem' in _ne2 and 'ORIGEM.remove(' in _ne2)
+check('5.7.6: na tela, escuridao do exilio (indo) e da volta (abrindo)',
+      'desenharExilioCena' in _nfx and 'CENA_EXILIO' in _nfx and 'CENA_VOLTA' in _nfx)
+check('5.7.6: aura do vazio BEM mais preta (manto cobre o corpo, rosto poupado)',
+      'boolean rosto =' in _ne2 and 'continue;                        // poupa o rosto' in _ne2
+      and 'os OLHOS' in _ne2)
+check('5.7.6: RASTRO DE CAOS no chao por onde o vazio passa (22 s)',
+      'private record Mancha(' in _ne2 and 'tickManchas' in _ne2 and '22_000L' in _ne2)
+check('5.7.6: TRANSFORMACAO = rajada de raios vermelhos intensos',
+      'surtoTransformacao' in _ne2 and 'surtoAte' in _rvfx and 'surto ? 3.4F : 2.6F' in _rvfx)
+check('5.7.6: /terremoto engolir (o chao leva a pessoa, os outros veem)',
+      'engolirNoTerremoto' in _ne2 and 'literal("engolir")' in _ncmd)
+check('5.7.6: /saida — animacao de saida usavel no mapa por qualquer admin',
+      'tocarAnimacaoSaida' in _ne2 and 'register(saida)' in _ncmd
+      and 'style == 18' in rd(C + '/ClientEffects.java'))
+
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

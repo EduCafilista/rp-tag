@@ -110,6 +110,20 @@ public final class NeptuneEventos {
     private static final Map<UUID, long[]> QUEDA = new HashMap<>();
     private static final ResourceLocation MOD_RAIZ =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "raiz_do_terremoto");
+    /** (5.7.6) modificador do "peso": o jogador anda, só que devagar. */
+    private static final ResourceLocation MOD_LENTO =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "peso_do_terremoto");
+    /** (5.7.6) EXÍLIOS em animação: [fim, uuid, tipo(0=sair, 1=voltar), inicio]. */
+    private static final List<Object[]> EXILIOS = new ArrayList<>();
+    /** (5.7.6) de ONDE a pessoa foi exilada — ela volta pro mesmo lugar. */
+    private static final Map<UUID, Object[]> ORIGEM = new HashMap<>();
+    /** (5.7.6) RASTRO DE CAOS: manchas que FICAM no chão por onde o vazio passou. */
+    private static final List<Mancha> MANCHAS = new ArrayList<>();
+    private static final Map<UUID, double[]> ULTIMA_MANCHA = new HashMap<>();
+
+    /** (5.7.6) uma mancha do rastro: ponto do chão + até quando ela solta partícula. */
+    private record Mancha(ServerLevel nivel, double x, double y, double z, long fim, double fase) {
+    }
 
     /** (5.4.1) duração do ogg do colapso (75 s) — pra repetir se o evento durar mais. */
     public static final long COLAPSO_MS = 75000L;
@@ -157,6 +171,8 @@ public final class NeptuneEventos {
             tickDeus(server);
             tickSaidas(server);
             tickCaixas(server);
+            tickExilios(server);
+            tickManchas(server);
         } catch (Throwable t) {
             RPTagMod.LOGGER.error("RP Tag: tick do evento Neptune falhou (o jogo segue)", t);
         }
@@ -201,6 +217,36 @@ public final class NeptuneEventos {
     }
 
     /**
+     * (5.7.6) POEIRA SEM VERDE — o dono: "tira as particulas verdes que saem do
+     * chao".
+     *
+     * <p>O problema não era a cor escolhida no código: era usar o bloco REAL do
+     * chão. Em cima de grama, musgo, folha ou mato o jogo cospe partícula
+     * VERDE — e no meio de um terremoto isso parece confete. Aqui qualquer
+     * bloco de vegetação vira <b>terra grossa</b> (marrom), e o resto (pedra,
+     * areia, neve…) continua sendo o material de verdade.
+     */
+    private static BlockState estadoPoeira(BlockState estado) {
+        if (estado == null || estado.isAir()) {
+            return Blocks.COARSE_DIRT.defaultBlockState();
+        }
+        var b = estado.getBlock();
+        if (b == Blocks.GRASS_BLOCK || b == Blocks.MOSS_BLOCK || b == Blocks.MOSS_CARPET
+                || b == Blocks.MYCELIUM || b == Blocks.PODZOL || b == Blocks.FARMLAND
+                || b == Blocks.DIRT_PATH || b == Blocks.SHORT_GRASS
+                || b == Blocks.TALL_GRASS || b == Blocks.FERN || b == Blocks.LARGE_FERN
+                || b == Blocks.OAK_LEAVES || b == Blocks.BIRCH_LEAVES
+                || b == Blocks.SPRUCE_LEAVES || b == Blocks.JUNGLE_LEAVES
+                || b == Blocks.ACACIA_LEAVES || b == Blocks.DARK_OAK_LEAVES
+                || b == Blocks.MANGROVE_LEAVES || b == Blocks.CHERRY_LEAVES
+                || b == Blocks.AZALEA_LEAVES || b == Blocks.FLOWERING_AZALEA_LEAVES
+                || b == Blocks.VINE || b == Blocks.GLOW_LICHEN || b == Blocks.LILY_PAD) {
+            return Blocks.COARSE_DIRT.defaultBlockState();
+        }
+        return estado;
+    }
+
+    /**
      * (5.7.5) ABERTURA DO TERREMOTO NO MUNDO — o "baque" que o dono pediu.
      *
      * <p>Em vez de desenhar uma rachadura na tela, o chão aqui racha de verdade:
@@ -218,10 +264,7 @@ public final class NeptuneEventos {
             fendaDePassagem(nv, perto, r);
             // pedra/terra saltando: pega o bloco REAL do chão pra poeira ser a certa
             BlockPos chao = p.blockPosition().below();
-            BlockState estado = nv.getBlockState(chao);
-            if (estado.isAir()) {
-                estado = Blocks.DIRT.defaultBlockState();
-            }
+            BlockState estado = estadoPoeira(nv.getBlockState(chao));
             for (int i = 0; i < 3; i++) {
                 double a = r.nextDouble() * Math.PI * 2;
                 double rr = 0.6 + r.nextDouble() * 2.4;
@@ -253,6 +296,7 @@ public final class NeptuneEventos {
             p.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
             p.removeEffect(MobEffects.DIG_SLOWDOWN);
             imobilizar(p, false);
+            pesado(p, false);
         }
         fecharFendas(server);
         enviarTerremoto(server, false, 0.0F, 0, false);
@@ -310,20 +354,23 @@ public final class NeptuneEventos {
                 for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                     p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 130, 2, false, false, false));
                     p.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 130, 1, false, false, false));
-                    // (5.6.0) O CHÃO ABRE: imobiliza de verdade (velocidade e
-                    // pulo zerados por atributo) e abre a fenda embaixo dele.
-                    imobilizar(p, true);
+                    // (5.7.6) O DONO PEDIU: "o player não deve ficar 100%
+                    // parado, ele deve conseguir andar, mais lento, mas
+                    // andar". Então SAIU o imobilizar (que zerava a
+                    // velocidade): agora é peso — anda arrastado e pula
+                    // baixo, mas se mexe.
+                    pesado(p, true);
                     boolean caiu = abrirFenda(p);
                     if (caiu) {
                         PacketDistributor.sendToPlayer(p, new NeptunePackets.Cena(
                                 NeptunePackets.Cena.CENA_QUEDA, 1.0F, 3200, System.nanoTime()));  // 5.7.2: era 5500 (preto demais)
                         p.displayClientMessage(Component.literal(
-                                "\u00a74\u00a7lO CH\u00c3O SE ABRIU! \u00a7cVoc\u00ea caiu e n\u00e3o consegue se levantar."), true);
+                                "\u00a74\u00a7lO CH\u00c3O SE ABRIU! \u00a7cVoc\u00ea caiu \u2014 o corpo pesa."), true);
                     } else {
                         PacketDistributor.sendToPlayer(p, new NeptunePackets.Cena(
                                 NeptunePackets.Cena.CENA_RACHADURA, 0.7F, 2800, System.nanoTime()));  // 5.7.2: era 4500
                         p.displayClientMessage(Component.literal(
-                                "\u00a78Voc\u00ea cambaleia \u2014 o ch\u00e3o est\u00e1 cedendo."), true);
+                                "\u00a78Voc\u00ea cambaleia \u2014 anda arrastado, mas anda."), true);
                     }
                 }
             } else {
@@ -331,6 +378,7 @@ public final class NeptuneEventos {
                     p.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
                     p.removeEffect(MobEffects.DIG_SLOWDOWN);
                     imobilizar(p, false);
+                    pesado(p, false);
                     p.displayClientMessage(Component.literal(
                             "\u00a7aAgora! Corre!"), true);
                 }
@@ -350,7 +398,7 @@ public final class NeptuneEventos {
                 }
                 BlockPos chao = p.blockPosition().below();
                 BlockState baixo = nv.getBlockState(chao);
-                BlockState pedra = baixo.isAir() ? Blocks.DIRT.defaultBlockState() : baixo;
+                BlockState pedra = estadoPoeira(baixo);
                 for (int i = 0; i < 4; i++) {
                     double a = Math.random() * Math.PI * 2;
                     double rr = 0.8 + Math.random() * 3.2;
@@ -394,10 +442,11 @@ public final class NeptuneEventos {
                     double x = px + Math.cos(a) * r;
                     double z = pz + Math.sin(a) * r;
                     BlockPos chao = BlockPos.containing(x, py - 0.4, z);
-                    var estado = nv.getBlockState(chao);
-                    if (estado.isAir()) {
+                    if (nv.getBlockState(chao).isAir()) {
                         continue;                       // não faz poeira no ar
                     }
+                    // (5.7.6) poeira SEM VERDE: grama/folha viram terra grossa
+                    BlockState estado = estadoPoeira(nv.getBlockState(chao));
                     // poeira do próprio chão subindo devagar
                     nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
                                     ParticleTypes.FALLING_DUST, estado),
@@ -697,6 +746,42 @@ public final class NeptuneEventos {
         }
     }
 
+    /**
+     * (5.7.6) PESO DO TERREMOTO — anda devagar, mas ANDA.
+     *
+     * <p>O dono: <i>"no terremoto o player nao deve ficar 100% parado, ele deve
+     * conseguir andar, mais lento, mas andar de certa forma"</i>. Então saiu o
+     * {@link #imobilizar} (que zerava a velocidade por atributo, usado só pelo
+     * {@code /terremoto fenda}) e entrou este: <b>-45% de velocidade</b> e
+     * <b>-0,20 de força de pulo</b> — ele se arrasta e pula baixinho, mas tem
+     * controle. Tudo em modificador temporal (some quando o pulso acaba).
+     */
+    private static void pesado(ServerPlayer p, boolean lento) {
+        try {
+            var vel = p.getAttribute(Attributes.MOVEMENT_SPEED);
+            var pulo = p.getAttribute(Attributes.JUMP_STRENGTH);
+            if (lento) {
+                if (vel != null) {
+                    vel.addOrUpdateTransientModifier(new AttributeModifier(MOD_LENTO, -0.45,
+                            AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+                }
+                if (pulo != null) {
+                    pulo.addOrUpdateTransientModifier(new AttributeModifier(MOD_LENTO, -0.20,
+                            AttributeModifier.Operation.ADD_VALUE));
+                }
+            } else {
+                if (vel != null) {
+                    vel.removeModifier(MOD_LENTO);
+                }
+                if (pulo != null) {
+                    pulo.removeModifier(MOD_LENTO);
+                }
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: peso do terremoto falhou (o jogo segue)", t);
+        }
+    }
+
     // =================================================================== DEUS
     public static boolean ehDeus(UUID id) {
         return DEUSES.getOrDefault(id, false);
@@ -717,6 +802,57 @@ public final class NeptuneEventos {
         p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
                 "\u00a78Uma escuridão sem fundo acompanha \u00a7f" + p.getName().getString()
                         + "\u00a78. Não chegue perto.").withStyle(ChatFormatting.DARK_GRAY), false);
+        // (5.7.6) A TRANSFORMAÇÃO: rajada de RAIOS VERMELHOS por 2,2 s
+        if (p.level() instanceof ServerLevel nv) {
+            surtoTransformacao(nv, p);
+        }
+    }
+
+    /**
+     * (5.7.6) A TRANSFORMAÇÃO — "as particulas vermelhas devem virar raios
+     * vermelhos mais intensos, para dar uma diferenciada na transformação".
+     *
+     * <p>Quando o admin liga o modo vazio, o corpo dele abre: 28 raios
+     * vermelhos de verdade (linhas grossas de partícula saindo do peito em
+     * 360°, e também pra cima), uma onda de choque rente ao chão e um boom.
+     * Depois disso entra a aura normal — agora bem mais preta.
+     */
+    private static void surtoTransformacao(ServerLevel nv, ServerPlayer p) {
+        try {
+            Vec3 pos = p.position();
+            DustParticleOptions fogo = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.06f, 0.02f), 1.9f);
+            DustParticleOptions brasa = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.35f, 0.08f), 1.3f);
+            DustParticleOptions negro = new DustParticleOptions(new org.joml.Vector3f(0.02f, 0.0f, 0.03f), 2.4f);
+            for (int r = 0; r < 28; r++) {
+                double az = (r / 28.0) * Math.PI * 2 + Math.random() * 0.12;
+                boolean alto = r % 4 == 0;
+                double incl = alto ? 1.05 + Math.random() * 0.5 : (Math.random() - 0.5) * 0.45;
+                double alcance = 3.2 + Math.random() * 4.2;
+                double y0 = pos.y + 1.0;
+                for (int k = 1; k <= 14; k++) {
+                    double f = k / 14.0;
+                    double serr = (Math.random() - 0.5) * 0.20 * f;
+                    double x = pos.x + Math.cos(az) * Math.cos(incl) * alcance * f + serr;
+                    double z = pos.z + Math.sin(az) * Math.cos(incl) * alcance * f + serr;
+                    double y = y0 + Math.sin(incl) * alcance * f;
+                    nv.sendParticles(f > 0.35 ? brasa : fogo, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+                    if (k % 4 == 0) {
+                        nv.sendParticles(negro, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
+                    }
+                }
+            }
+            // onda de choque rente ao chão (aro de brasa abrindo)
+            for (int a = 0; a < 64; a++) {
+                double ang = (a / 64.0) * Math.PI * 2;
+                double rr = 2.6;
+                nv.sendParticles(brasa, pos.x + Math.cos(ang) * rr, pos.y + 0.08,
+                        pos.z + Math.sin(ang) * rr, 1, 0.0, 0.0, 0.0, 0.0);
+            }
+            nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.WITHER_SPAWN,
+                    SoundSource.HOSTILE, 1.0F, 0.55F);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: surto de transformacao falhou (o jogo segue)", t);
+        }
     }
 
     public static void desligarDeus(ServerPlayer p) {
@@ -835,47 +971,77 @@ public final class NeptuneEventos {
             return;
         }
         double fase = agora / 1000.0;
-        double t = agora / 1000.0;
 
         // ---- as CORES. O "preto" do raio não pode ser dust 0,0,0 (some no
         // escuro): usa um roxo-escuro quase preto, que o jogo desenha visível.
         DustParticleOptions vermelho = new DustParticleOptions(new org.joml.Vector3f(0.92f, 0.02f, 0.03f), 1.5f);
         DustParticleOptions sangue = new DustParticleOptions(new org.joml.Vector3f(0.45f, 0.0f, 0.02f), 1.7f);
-        DustParticleOptions negro = new DustParticleOptions(new org.joml.Vector3f(0.05f, 0.0f, 0.08f), 1.9f);
-        DustParticleOptions sombra = new DustParticleOptions(new org.joml.Vector3f(0.16f, 0.02f, 0.22f), 1.6f);
+        DustParticleOptions negro = new DustParticleOptions(new org.joml.Vector3f(0.03f, 0.0f, 0.05f), 2.1f);
+        DustParticleOptions sombra = new DustParticleOptions(new org.joml.Vector3f(0.10f, 0.01f, 0.15f), 1.8f);
+        DustParticleOptions brasa = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.12f, 0.05f), 1.2f);
 
-        // ================= (A) AURA DE ESCURIDÃO NO CORPO =================
-        // fumaça/negro subindo em espiral em volta do jogador (0 a 2,4 de altura).
-        // É o que se vê no F5 envolvendo o personagem.
-        int fios = 10;
-        for (int i = 0; i < fios; i++) {
-            double a = (i / (double) fios) * Math.PI * 2 + fase * 1.4;      // gira
-            double r = 0.55 + 0.28 * Math.sin(fase * 1.9 + i * 1.3);        // respira
-            double h = ((fase * 0.55 + i * 0.37) % 1.0);                    // sobe e reinicia
-            double y = pos.y + 0.15 + h * 2.25;
-            double x = pos.x + Math.cos(a) * r * (1.0 - h * 0.35);
-            double z = pos.z + Math.sin(a) * r * (1.0 - h * 0.35);
-            var opt = (i % 3 == 0) ? sombra : negro;
-            nv.sendParticles(opt, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
-            if (i % 2 == 0) {
+        // ============ (A) O MANTO: O CORPO Some DENTRO DA ESCURIDÃO ============
+        // (5.7.6) O dono: "escureça mais a parte de partículas, quero o preto
+        // principalmente ficando bizarro, que de certa maneira nem ver o corpo
+        // da entidade os players consigam, apenas o rosto se possível".
+        //
+        // Então agora são 3 camadas de PRETO bem juntas (SQUID_INK + fumaça
+        // grande + dust quase preto) subindo em espiral, de 0,05 a 2,35 de
+        // altura. Na faixa do ROSTO (1,52 a 1,98) a densidade cai pela metade
+        // e entram dois pontos vermelhos (os olhos) — o corpo vira silhueta e
+        // o rosto é a única coisa que dá pra enxergar.
+        for (int i = 0; i < 20; i++) {
+            double a = (i / 20.0) * Math.PI * 2 + fase * 1.15;              // gira
+            double r = 0.32 + 0.20 * Math.sin(fase * 1.7 + i * 0.9);        // colado
+            double h = ((fase * 0.62 + i * 0.29) % 1.0);                    // sobe
+            double y = pos.y + 0.05 + h * 2.30;
+            // fecha em cima (cone) e abre na base: é um manto, não um tubo
+            double raio = r * (1.0 + 0.55 * (1.0 - h));
+            double x = pos.x + Math.cos(a) * raio;
+            double z = pos.z + Math.sin(a) * raio;
+            boolean rosto = y > pos.y + 1.52 && y < pos.y + 1.98;
+            if (rosto && i % 2 == 0) {
+                continue;                        // poupa o rosto (dá pra ver)
+            }
+            nv.sendParticles(ParticleTypes.SQUID_INK, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
+            nv.sendParticles(negro, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
+            if (i % 3 == 0) {
                 nv.sendParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 1, 0.03, 0.03, 0.03, 0.0);
+            }
+            if (i % 5 == 0) {
+                nv.sendParticles(sombra, x, y, z, 1, 0.01, 0.01, 0.01, 0.0);
+            }
+        }
+        // os OLHOS: dois pontos vermelhos na altura do rosto, sempre no mesmo
+        // lugar do corpo (giram com ele) — é o que "aparece" no meio do preto
+        double yaw = Math.toRadians(p.getYRot());
+        double ox = Math.cos(yaw) * 0.16, oz = Math.sin(yaw) * 0.16;
+        double lx = Math.cos(yaw) * 0.085;
+        double lz = Math.sin(yaw) * 0.085;
+        double olhoY = pos.y + 1.62;
+        for (int s2 = -1; s2 <= 1; s2 += 2) {
+            nv.sendParticles(vermelho, pos.x + ox + lx * s2, olhoY, pos.z + oz + lz * s2,
+                    1, 0.012, 0.012, 0.012, 0.0);
+            if (agora % 9 == 0) {
+                nv.sendParticles(brasa, pos.x + ox + lx * s2, olhoY, pos.z + oz + lz * s2,
+                        1, 0.03, 0.03, 0.03, 0.0);
             }
         }
         // base: a escuridão "pesada" no chão, em volta dos pés
         if (agora % 6 == 0) {
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 8; i++) {
                 double a = Math.random() * Math.PI * 2;
-                double r = 0.25 + Math.random() * 0.9;
+                double r = 0.2 + Math.random() * 1.1;
                 nv.sendParticles(ParticleTypes.SQUID_INK,
-                        pos.x + Math.cos(a) * r, pos.y + 0.08, pos.z + Math.sin(a) * r,
+                        pos.x + Math.cos(a) * r, pos.y + 0.06, pos.z + Math.sin(a) * r,
                         1, 0.02, 0.0, 0.02, 0.0);
             }
         }
 
         // ================= (B) RAIOS NEGROS E VERMELHOS =================
         // A cada 6 ticks disparam 2 raios: um saindo do PEITO e outro dos PÉS.
-        // O raio é uma linha serrilhada (desvio aleatório em cada ponto) que
-        // atravessa a aura de fora pra fora; a ponta é vermelha, o corpo negro.
+        // (5.7.6) agora o vermelho é MAIS intenso (brasa + sangue) e o corpo
+        // do raio é mais preto — é a "transformação" que o dono quis destacar.
         if (agora % 6 == 0) {
             for (int n = 0; n < 2; n++) {
                 boolean doPe = n == 1;
@@ -887,34 +1053,26 @@ public final class NeptuneEventos {
                 double z0 = pos.z;
                 double dx = Math.cos(ang);
                 double dz = Math.sin(ang);
-                // o raio sobe um pouco quando sai do chão (fica mais "elétrico")
                 double subida = doPe ? 0.55 : 0.25;
-                double x = x0, y = y0, z = z0;
+                double x, y, z;
                 for (int k = 1; k <= pontos; k++) {
                     double f = k / (double) pontos;
                     double serrilhado = (Math.random() - 0.5) * 0.34;
                     x = x0 + dx * alcance * f - dz * serrilhado;
                     z = z0 + dz * alcance * f + dx * serrilhado;
                     y = y0 + subida * f * alcance * 0.45 + (Math.random() - 0.5) * 0.12;
-                    // perto do corpo é NEGRO, na ponta fica VERMELHO (e vice-versa
-                    // em metade dos raios, pra não ficar repetitivo)
-                    boolean ponta = f > 0.55;
-                    if (n == 0) {
-                        nv.sendParticles(ponta ? vermelho : (k % 2 == 0 ? negro : sombra),
-                                x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
-                    } else {
-                        nv.sendParticles(ponta ? sangue : negro, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
-                    }
+                    boolean ponta = f > 0.5;
+                    nv.sendParticles(ponta ? (k % 2 == 0 ? vermelho : brasa) : negro,
+                            x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
                     if (k % 3 == 0) {
-                        nv.sendParticles(ParticleTypes.SMOKE, x, y, z, 1, 0.01, 0.01, 0.01, 0.0);
+                        nv.sendParticles(ponta ? brasa : ParticleTypes.SMOKE,
+                                x, y, z, 1, 0.01, 0.01, 0.01, 0.0);
                     }
                 }
             }
         }
 
         // ================= (C) RACHADURAS NO CHÃO (discretas) =================
-        // Continuam existindo, mas agora são COADJUVANTES: 4 rachaduras curtas
-        // em vez de 7 compridas (o pedido novo é "raios saindo do player").
         double chaoY = pos.y;
         var bp = p.blockPosition();
         for (int dy = 0; dy <= 5; dy++) {
@@ -940,6 +1098,67 @@ public final class NeptuneEventos {
         if (agora % 12 == 0) {
             nv.sendParticles(ParticleTypes.ASH, pos.x, pos.y + 0.1, pos.z, 3, 0.35, 0.30, 0.35, 0.0);
         }
+
+        // ================= (D) RASTRO DE CAOS =================
+        // (5.7.6) "faça que por onde ele passar, ficar um rastro de caos e
+        // destruição (apenas efeito das partículas ficando pelo local)".
+        // Cada 6 ticks, se ele andou pelo menos meio bloco, deixa uma MANCHA
+        // no chão — e a mancha é desenhada pelo tickManchas por 22 s.
+        if (agora % 6 == 0) {
+            double[] ult = ULTIMA_MANCHA.get(p.getUUID());
+            if (ult == null || Math.hypot(pos.x - ult[0], pos.z - ult[1]) > 0.5
+                    || Math.abs(pos.y - ult[1]) > 1.5) {
+                ULTIMA_MANCHA.put(p.getUUID(), new double[]{ pos.x, pos.z, pos.y });
+                if (MANCHAS.size() < 220) {
+                    MANCHAS.add(new Mancha(nv, pos.x, chaoY, pos.z, agora + 22_000L,
+                            Math.random() * Math.PI * 2));
+                }
+            }
+        }
+    }
+
+    /**
+     * (5.7.6) O RASTRO QUE FICA: as manchas deixadas pelo vazio continuam
+     * soltando fumaça, brasa e rachadura no chão por 22 s (22 s é o tempo que
+     * dá pra alguém passar depois e ver que "alguma coisa passou aqui").
+     * Nada é escrito no mundo — é só partícula, some sozinho.
+     */
+    private static void tickManchas(MinecraftServer server) {
+        if (MANCHAS.isEmpty()) {
+            return;
+        }
+        long agora = System.currentTimeMillis();
+        DustParticleOptions brasa = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.15f, 0.05f), 1.1f);
+        DustParticleOptions sangue = new DustParticleOptions(new org.joml.Vector3f(0.55f, 0.02f, 0.02f), 1.6f);
+        Iterator<Mancha> it = MANCHAS.iterator();
+        while (it.hasNext()) {
+            Mancha m = it.next();
+            if (agora > m.fim()) {
+                it.remove();
+                continue;
+            }
+            // só desenha 1 em 4 ticks por mancha (não pesa o pacote)
+            if ((agora + (long) (m.fase() * 100)) % 4 != 0) {
+                continue;
+            }
+            ServerLevel nivel = m.nivel();
+            double vida = (m.fim() - agora) / 22_000.0;          // 1 -> 0
+            int n = 1 + (int) (3 * vida);
+            for (int i = 0; i < n; i++) {
+                double a = m.fase() + Math.random() * Math.PI * 2;
+                double r = Math.random() * 0.85;
+                double x = m.x() + Math.cos(a) * r;
+                double z = m.z() + Math.sin(a) * r;
+                nivel.sendParticles(ParticleTypes.SQUID_INK, x, m.y() + 0.05, z, 1, 0.01, 0.01, 0.01, 0.0);
+                if (Math.random() < 0.5) {
+                    nivel.sendParticles(Math.random() < 0.5 ? brasa : sangue,
+                            x, m.y() + 0.03, z, 1, 0.01, 0.0, 0.01, 0.0);
+                }
+                if (Math.random() < 0.25) {
+                    nivel.sendParticles(ParticleTypes.ASH, x, m.y() + 0.35, z, 1, 0.05, 0.15, 0.05, 0.0);
+                }
+            }
+        }
     }
 
     // =================================================================== SAÍDA
@@ -953,6 +1172,23 @@ public final class NeptuneEventos {
         // aumentando até a pessoa sumir". Então: começa com POUCAS sombras e é
         // o tickSaidas que vai multiplicando até ela desaparecer.
         sombraChuva(nv, pos, 3);
+        // (5.7.6) "as outras pessoas que estiverem la dentro vao ver essas
+        // pessoas desaparecendo?" — SIM: a coluna de sombra é partícula no
+        // MUNDO (todo mundo vê), e quem está num raio de 24 blocos sente o
+        // peso (medo) + ouve o corpo sendo puxado.
+        for (ServerPlayer outro : p.getServer().getPlayerList().getPlayers()) {
+            if (outro == p || outro.level() != p.level()) {
+                continue;
+            }
+            double d = outro.position().distanceTo(pos);
+            if (d <= 24.0) {
+                outro.addEffect(new MobEffectInstance(RPEffects.MEDO, 100, 0, false, false, true));
+                outro.playNotifySound(net.minecraft.sounds.SoundEvents.SOUL_ESCAPE.value(),
+                        SoundSource.AMBIENT, 0.7F, 0.5F);
+                outro.displayClientMessage(Component.literal(
+                        "\u00a78Alguma coisa está sendo puxada pra dentro do nada..."), true);
+            }
+        }
         nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.SOUL_ESCAPE.value(),
                 SoundSource.PLAYERS, 0.85F, 0.55F);
         nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.AMBIENT_CAVE.value(),
@@ -1174,7 +1410,88 @@ public final class NeptuneEventos {
         }
     }
 
-    /** Manda pra dimensão do EXÍLIO (5.5.0: rptag:exilio — tudo preto e vazio). */
+    // ============================================================== ENGOLIR
+    /**
+     * (5.7.6) O TERREMOTO TIRA A PESSOA DO JOGO — com animação que os outros
+     * VEEM.
+     *
+     * <p>Pergunta do dono: <i>"tem a animação de quando o terremoto tirar a
+     * pessoa do jogo? as outras pessoas que estiverem lá dentro vão ver essas
+     * pessoas desaparecendo? com efeito e tudo mais?"</i> — antes o
+     * {@code /terremoto sair} só chutava o jogador e as sombras eram discretas.
+     * Agora o chão ABRE embaixo dele, a escuridão sobe em espiral, blocos são
+     * sugados e os outros veem tudo (partícula de mundo) antes de ele sumir
+     * pro exílio.
+     */
+    public static void engolirNoTerremoto(ServerPlayer alvo, ServerPlayer quem) {
+        try {
+            if (alvo.level() instanceof ServerLevel nv) {
+                // abre a fenda de verdade embaixo dele
+                abrirFenda(alvo);
+                // e a animação de exílio (2,6 s) com todo mundo vendo
+                exilar(alvo, quem == null ? alvo : quem);
+                for (ServerPlayer outro : alvo.getServer().getPlayerList().getPlayers()) {
+                    if (outro.level() == alvo.level()
+                            && outro.position().distanceTo(alvo.position()) <= 40) {
+                        PacketDistributor.sendToPlayer(outro, new NeptunePackets.Cena(
+                                NeptunePackets.Cena.CENA_RACHADURA, 0.8F, 2600, System.nanoTime()));
+                        outro.displayClientMessage(Component.literal(
+                                "\u00a74\u00a7lO CH\u00c3O ABRIU E LEVOU \u00a7f"
+                                        + alvo.getName().getString().toUpperCase()), true);
+                    }
+                }
+                nv.playSound(null, alvo.blockPosition(),
+                        net.minecraft.sounds.SoundEvents.WITHER_DEATH, SoundSource.HOSTILE, 1.0F, 0.5F);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: engolir no terremoto falhou (o jogo segue)", t);
+        }
+    }
+
+    /**
+     * (5.7.6) A ANIMAÇÃO DE SAÍDA, USÁVEL NO MAPA.
+     *
+     * <p>Antes ela só rodava quando alguém desconectava de verdade (e quem saía
+     * não via nada). Agora o admin pode disparar com {@code /saida <jogador>}:
+     * todo mundo vê o bonequinho se desfazendo em chuva de código, com o nome
+     * de quem "saiu" — perfeito pra fechar uma cena de RP. Ninguém é
+     * desconectado.
+     *
+     * @return quantos jogadores receberam a animação.
+     */
+    public static int tocarAnimacaoSaida(ServerPlayer alvo, net.minecraft.server.MinecraftServer server) {
+        int n = 0;
+        try {
+            ScreenTextPayload pacote = new ScreenTextPayload(alvo.getName().getString().toUpperCase(),
+                    9, 18);
+            for (ServerPlayer outro : server.getPlayerList().getPlayers()) {
+                PacketDistributor.sendToPlayer(outro, pacote);
+                n++;
+            }
+            // som de "sessão encerrando"
+            if (alvo.level() instanceof ServerLevel nv) {
+                nv.playSound(null, alvo.blockPosition(),
+                        net.minecraft.sounds.SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.8F, 0.6F);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: animacao de saida manual falhou (o jogo segue)", t);
+        }
+        return n;
+    }
+
+    // ================================================================ EXÍLIO
+    /**
+     * (5.7.6) O EXÍLIO COM ANIMAÇÃO — "deve ter uma animação do player sendo
+     * exilado para a dimensão do vazio".
+     *
+     * <p>Antes: teleporte seco (o cara piscava e sumia) e, na volta, outro
+     * teleporte seco no spawn. Agora são <b>2,6 s de animação no mundo</b>,
+     * visível por TODO MUNDO que estiver por perto: o chão escurece, a escuridão
+     * sobe em espiral engolindo o corpo, pedaços de terra são ARRANCADOS do
+     * chão e sugados pra dentro, raios vermelhos estalam — e só depois ele é
+     * levado. A volta é o contrário: a escuridão se abre e cospe ele de volta
+     * no MESMO lugar de onde saiu.
+     */
     public static void exilar(ServerPlayer alvo, ServerPlayer quem) {
         var chave = net.minecraft.resources.ResourceKey.create(
                 net.minecraft.core.registries.Registries.DIMENSION,
@@ -1185,6 +1502,13 @@ public final class NeptuneEventos {
                     "\u00a7cA dimensão rptag:exilio não carregou. Reinicie o servidor."));
             return;
         }
+        // guarda de ONDE ele saiu (a volta devolve pro mesmo lugar)
+        ORIGEM.put(alvo.getUUID(), new Object[]{ alvo.level().dimension(),
+                alvo.getX(), alvo.getY(), alvo.getZ(), alvo.getYRot(), alvo.getXRot() });
+        long agora = System.currentTimeMillis();
+        EXILIOS.add(new Object[]{ agora + 2600L, alvo.getUUID(), 0, agora });
+        PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
+                NeptunePackets.Cena.CENA_EXILIO, 1.0F, 3000, System.nanoTime()));
         for (ServerPlayer p : alvo.getServer().getPlayerList().getPlayers()) {
             PacketDistributor.sendToPlayer(p, new NeptunePackets.Nebulosa(5, true));
             p.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
@@ -1196,21 +1520,148 @@ public final class NeptuneEventos {
                                 .withStyle(ChatFormatting.DARK_PURPLE))
                         .append(Component.literal(" para fora do universo").withStyle(ChatFormatting.DARK_GRAY)),
                 false);
-        // (5.5.0) chão preto em y=0: 1 bloco de concreto preto. O jogador cai
-        // em cima dele (antes ia pra y=120 num mundo SEM chão e despencava).
-        alvo.teleportTo(destino, 0.5, 1.0, 0.5, java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
         alvo.displayClientMessage(Component.literal(
-                "\u00a78Não há nada aqui. Nem chão, nem céu, nem volta.\n"
+                "\u00a74\u00a7lN\u00c3O H\u00c1 MAIS CH\u00c3O.\n"
+                + "\u00a78Não há nada aqui. Nem chão, nem céu, nem volta.\n"
                 + "\u00a78(um admin pode te tirar com /vazio soltar <jogador>)"), false);
     }
 
-    /** (5.5.0) tira alguém do exílio e devolve pro spawn do overworld. */
+    /** (5.5.0/5.7.6) tira alguém do exílio: animação de escuridão + volta pro lugar de origem. */
     public static void soltarDoExilio(ServerPlayer alvo) {
-        ServerLevel mundo = alvo.getServer().overworld();
-        BlockPos spawn = mundo.getSharedSpawnPos();
-        alvo.teleportTo(mundo, spawn.getX() + 0.5, spawn.getY() + 1.0, spawn.getZ() + 0.5,
-                java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
+        long agora = System.currentTimeMillis();
+        EXILIOS.add(new Object[]{ agora + 2400L, alvo.getUUID(), 1, agora });
+        PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
+                NeptunePackets.Cena.CENA_VOLTA, 1.0F, 2800, System.nanoTime()));
         alvo.displayClientMessage(Component.literal(
                 "\u00a77A escuridão te devolve. Não conte o que viu."), false);
+    }
+
+    /**
+     * (5.7.6) ANIMAÇÃO DO EXÍLIO/DA VOLTA, tick a tick, NO MUNDO.
+     *
+     * <p>Nada de tela (o dono já vetou desenho na lente): é partícula de
+     * verdade no lugar onde a pessoa está, então os outros jogadores veem a
+     * pessoa sendo engolida e depois cuspida de volta.
+     */
+    private static void tickExilios(MinecraftServer server) {
+        if (EXILIOS.isEmpty()) {
+            return;
+        }
+        long agora = System.currentTimeMillis();
+        Iterator<Object[]> it = EXILIOS.iterator();
+        while (it.hasNext()) {
+            Object[] e = it.next();
+            long fim = (Long) e[0];
+            ServerPlayer p = server.getPlayerList().getPlayer((UUID) e[1]);
+            int tipo = (Integer) e[2];
+            long inicio = (Long) e[3];
+            if (p != null && p.level() instanceof ServerLevel nv) {
+                float k = Math.max(0.0F, Math.min(1.0F, (agora - inicio) / (float) Math.max(1L, fim - inicio)));
+                particulasExilio(nv, p.position(), k, tipo == 1);
+            }
+            if (agora < fim) {
+                continue;
+            }
+            it.remove();
+            if (p == null) {
+                continue;
+            }
+            if (tipo == 0) {
+                levarProExilio(p);
+            } else {
+                devolverDaOrigem(p);
+            }
+        }
+    }
+
+    /** (5.7.6) as partículas do exílio (k = 0..1). {@code voltando} inverte a direção. */
+    private static void particulasExilio(ServerLevel nv, Vec3 pos, float k, boolean voltando) {
+        DustParticleOptions negro = new DustParticleOptions(new org.joml.Vector3f(0.03f, 0.0f, 0.05f), 2.2f);
+        DustParticleOptions vermelho = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.08f, 0.05f), 1.4f);
+        // o chão de onde ele está sendo arrancado (poeira certa, SEM verde)
+        BlockState estado = estadoPoeira(nv.getBlockState(BlockPos.containing(pos.x, pos.y - 0.5, pos.z)));
+        double fase = System.currentTimeMillis() / 1000.0;
+        // 1) ESPIRAL DE ESCURIDÃO: engolindo (subindo) ou abrindo (descendo)
+        for (int i = 0; i < 12; i++) {
+            double a = (i / 12.0) * Math.PI * 2 + fase * (voltando ? -2.2 : 2.2);
+            double h = voltando ? (1.0 - k) * 2.2 : k * 2.2;
+            double r = 0.75 * (1.0 - 0.55 * h / 2.2);
+            double x = pos.x + Math.cos(a) * r;
+            double z = pos.z + Math.sin(a) * r;
+            double y = pos.y + 0.1 + h + (i % 3) * 0.12;
+            nv.sendParticles(negro, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
+            nv.sendParticles(ParticleTypes.SQUID_INK, x, y, z, 1, 0.03, 0.03, 0.03, 0.0);
+        }
+        // 2) SUCÇÃO: pedaços do chão voando PRA DENTRO do corpo (e o contrário na volta)
+        for (int i = 0; i < 5; i++) {
+            double a = Math.random() * Math.PI * 2;
+            double r = voltando ? (0.4 + Math.random() * 0.8) : (2.6 - 2.0 * k + Math.random() * 0.8);
+            double x = pos.x + Math.cos(a) * r;
+            double z = pos.z + Math.sin(a) * r;
+            double y = pos.y + 0.1 + Math.random() * 1.8;
+            nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                            ParticleTypes.BLOCK, estado),
+                    x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+        }
+        // 3) RAIOS vermelhos estalando (mais fortes no auge)
+        float auge = 1.0F - Math.abs(k - 0.5F) * 2.0F;
+        if (auge > 0.25F && Math.random() < 0.55) {
+            double ang = Math.random() * Math.PI * 2;
+            double alcance = 1.6 + Math.random() * 2.6;
+            for (int s2 = 1; s2 <= 6; s2++) {
+                double f = s2 / 6.0;
+                double x = pos.x + Math.cos(ang) * alcance * f;
+                double z = pos.z + Math.sin(ang) * alcance * f;
+                double y = pos.y + 0.35 + f * 1.4 + (Math.random() - 0.5) * 0.18;
+                nv.sendParticles(vermelho, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+            }
+        }
+        // 4) CINZA subindo devagar
+        if (Math.random() < 0.5) {
+            nv.sendParticles(ParticleTypes.ASH, pos.x, pos.y + 0.2 + Math.random(), pos.z,
+                    2, 0.45, 0.45, 0.45, 0.01);
+        }
+    }
+
+    /** (5.7.6) leva pro exílio (fim da animação). */
+    private static void levarProExilio(ServerPlayer alvo) {
+        try {
+            var chave = net.minecraft.resources.ResourceKey.create(
+                    net.minecraft.core.registries.Registries.DIMENSION,
+                    net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "exilio"));
+            ServerLevel destino = alvo.getServer().getLevel(chave);
+            if (destino == null) {
+                return;
+            }
+            alvo.teleportTo(destino, 0.5, 1.0, 0.5, java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: exilio falhou (o jogo segue)", t);
+        }
+    }
+
+    /** (5.7.6) devolve a pessoa pro LUGAR EXATO de onde ela foi exilada. */
+    private static void devolverDaOrigem(ServerPlayer alvo) {
+        try {
+            Object[] o = ORIGEM.remove(alvo.getUUID());
+            if (o == null) {
+                // sem origem guardada (servidor reiniciou): cai no spawn, como antes
+                ServerLevel mundo = alvo.getServer().overworld();
+                BlockPos spawn = mundo.getSharedSpawnPos();
+                alvo.teleportTo(mundo, spawn.getX() + 0.5, spawn.getY() + 1.0, spawn.getZ() + 0.5,
+                        java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
+                return;
+            }
+            var chave = (net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>) o[0];
+            ServerLevel nivel = alvo.getServer().getLevel(chave);
+            if (nivel == null) {
+                nivel = alvo.getServer().overworld();
+            }
+            alvo.teleportTo(nivel, (Double) o[1], (Double) o[2], (Double) o[3],
+                    java.util.Set.of(), (Float) o[4], (Float) o[5]);
+            PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
+                    NeptunePackets.Cena.CENA_VOLTA, 1.0F, 2200, System.nanoTime()));
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: volta do exilio falhou (o jogo segue)", t);
+        }
     }
 }

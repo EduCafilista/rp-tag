@@ -82,6 +82,9 @@ public final class NeptuneFx {
     private static volatile long rachSemente = 0L;
     private static volatile long quedaInicio = 0L, quedaFim = 0L;
     private static volatile long estouroInicio = 0L, estouroFim = 0L;
+    // (5.7.6) EXÍLIO: a escuridão que engole (indo) e que se abre (voltando)
+    private static volatile long exilioInicio = 0L, exilioFim = 0L;
+    private static volatile long voltaInicio = 0L, voltaFim = 0L;
 
     private static volatile boolean souDeus = false;
     private static volatile boolean trilhaOn = false;
@@ -129,6 +132,16 @@ public final class NeptuneFx {
             case NeptunePackets.Cena.CENA_QUEDA -> {
                 quedaInicio = agora;
                 quedaFim = agora + ms;
+            }
+            case NeptunePackets.Cena.CENA_EXILIO -> {
+                exilioInicio = agora;
+                exilioFim = agora + ms;
+                voltaInicio = 0L;
+            }
+            case NeptunePackets.Cena.CENA_VOLTA -> {
+                voltaInicio = agora;
+                voltaFim = agora + ms;
+                exilioInicio = 0L;
             }
             case NeptunePackets.Cena.CENA_ESTOURO -> {
                 estouroInicio = agora;
@@ -251,6 +264,11 @@ public final class NeptuneFx {
             // (5.7.3) NÃO desliga mais pra sempre: se uma render falhar (textura
             // demorando a carregar, por exemplo), o próximo susto tenta de novo.
             RPTagMod.LOGGER.error("RP Tag: falha ao desenhar o susto do bicho (tenta no proximo)", t);
+        }
+        try {
+            desenharExilioCena(g);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.error("RP Tag: cena do exilio desligada", t);
         }
         try {
             desenharNebulosa(g);
@@ -650,6 +668,100 @@ public final class NeptuneFx {
     // canto nenhum, feito de triângulos em degradê), a silhueta de quem está
     // sendo apagado se desfazendo no meio e braços de sombra entrando pelas
     // bordas. Nada de retângulo.
+    // ---- EXÍLIO (5.7.6): a escuridão que ENGole e a que DEVOLVE ------------
+    /**
+     * (5.7.6) ANIMAÇÃO DE TELA DO EXÍLIO.
+     *
+     * <p>O corpo do que acontece está NO MUNDO (partículas, ver
+     * {@code NeptuneEventos.tickExilios}) — aqui é só o peso na lente de quem
+     * está sendo levado: sombras subindo pelas bordas e fechando em volta,
+     * sem nunca virar preto chapado (regra do dono: "tela preta longa
+     * proibida").
+     *
+     * <p>A VOLTA é o contrário: nasce tudo escuro e a escuridão se abre do
+     * centro pra fora, com um pouco de brasa caindo — "a escuridão te devolve".
+     */
+    private static void desenharExilioCena(GuiGraphics g) {
+        long now = System.currentTimeMillis();
+        boolean indo = exilioInicio != 0L && now <= exilioFim;
+        boolean vindo = voltaInicio != 0L && now <= voltaFim;
+        if (!indo && !vindo) {
+            return;
+        }
+        int w = g.guiWidth();
+        int h = g.guiHeight();
+        float esc = Math.min(w, h);
+        float cx = w / 2f, cy = h / 2f;
+
+        AvisoFxUtil.preparar(g);
+        AvisoFxUtil.Buf b = new AvisoFxUtil.Buf(g.pose().last().pose());
+
+        if (indo) {
+            float u = cl((now - exilioInicio) / (float) Math.max(1L, exilioFim - exilioInicio));
+            // (1) vinheta pesada que avança pra dentro (máx. 0.72 — não cega)
+            float peso = 0.72F * u * u;
+            b.vinheta(w, h, esc * (0.46F - 0.30F * u), 0x040207, peso);
+            // (2) sombras puxando do corpo pra dentro: discos que nascem na
+            //     borda e correm pro centro (a sucção do exílio)
+            for (int i = 0; i < 22; i++) {
+                float s1 = rnd(i * 23 + 5, (int) (exilioInicio & 0xFFFFF));
+                float s2 = rnd(i * 41 + 9, (int) ((exilioInicio >> 3) & 0xFFFFF));
+                float vida = cl((u - i / 22f * 0.55F) / 0.45F);
+                if (vida <= 0.02F) {
+                    continue;
+                }
+                float ang = s1 * TAU + u * 2.4F;
+                float dist = esc * (0.52F - 0.40F * vida);
+                float px = cx + cos(ang) * dist;
+                float py = cy + sin(ang) * dist * 0.62F;
+                float raio = esc * (0.03F + 0.10F * vida) * (0.6F + s2 * 0.7F);
+                disco(b, px, py, raio, 0x0A0512, 0.30F * vida, 14);
+                disco(b, px, py, raio * 0.55F, 0x040208, 0.40F * vida, 12);
+            }
+            // (3) brasa vermelha estalando no meio (o vazio cuspindo)
+            for (int i = 0; i < 10; i++) {
+                float s1 = rnd(i * 17 + 3, (int) ((exilioInicio >> 5) & 0xFFFFF));
+                float s2 = rnd(i * 29 + 1, 11);
+                float f = ((now * 0.0006F + s1) % 1f);
+                float ang = s2 * TAU;
+                float r = esc * 0.05F * f;
+                disco(b, cx + cos(ang) * r * 3f, cy + sin(ang) * r * 2f,
+                        3F + 5F * (1F - f), 0xE6212B, 0.35F * (1F - f) * u, 8);
+            }
+        }
+
+        if (vindo) {
+            float u = cl((now - voltaInicio) / (float) Math.max(1L, voltaFim - voltaInicio));
+            // começa fundo e ABRE: a escuridão se afasta do centro
+            float abre = 1.0F - u;
+            b.vinheta(w, h, esc * (0.10F + 0.42F * abre), 0x040207, 0.68F * abre * abre);
+            if (abre > 0.02F) {
+                for (int i = 0; i < 16; i++) {
+                    float s1 = rnd(i * 31 + 7, (int) (voltaInicio & 0xFFFFF));
+                    float s2 = rnd(i * 13 + 5, 23);
+                    float ang = s1 * TAU + u * 1.4F;
+                    float dist = esc * (0.06F + 0.50F * u) * (0.5F + s2);
+                    float px = cx + cos(ang) * dist;
+                    float py = cy + sin(ang) * dist * 0.6F;
+                    disco(b, px, py, esc * 0.16F * abre * (0.5F + s1), 0x0B0514,
+                            0.26F * abre, 16);
+                }
+            }
+            // brasa/cinza caindo (o que veio junto com ele)
+            for (int i = 0; i < 14; i++) {
+                float s1 = rnd(i * 7 + 3, (int) (voltaInicio & 0xFFFFF));
+                float s2 = rnd(i * 19 + 5, 31);
+                float f = ((now * 0.0007F + s1) % 1f);
+                float px = s2 * w;
+                float py = h * (0.35F + f * 0.6F);
+                disco(b, px, py, 2F + 4F * s1, 0xC2401A, 0.30F * (1F - f) * (1F - u), 6);
+            }
+        }
+
+        b.flush();
+        AvisoFxUtil.normal();
+    }
+
     private static void desenharNebulosa(GuiGraphics g) {
         if (nebOff || nebInicio == 0L) {
             return;
