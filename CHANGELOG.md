@@ -68,6 +68,11 @@ de Ordem Paranormal: sigilo, olho, memórias e balança.
 - Servidor de teste: `Done (0.752s)`, **0 exceções**, `RP Tag 5.10.0` na lista.
 - Jar: **69.292.343 B** (66,0 MB), 1.752 quadros dentro (nenhum perdido).
 
+### Release
+- **v5.10.0** — release **431719665**, asset **702475538**
+- `https://github.com/EduCafilista/rp-tag/releases/download/v5.10.0/rptag-5.10.0.jar`
+- **69.292.343 B** (66,0 MB) · md5 **`a4fba42320ff31abbc90a0d93bbfe39f`**
+
 ## 5.9.0 — TÍTULOS com COR MODIFICÁVEL (TAB, chat e nametag) — 2026-11-02
 
 > O dono perguntou: *"você fez o set dos 'títulos' para os players? que vai ficar

@@ -51,6 +51,11 @@
   imagens com degradê/ruído (gelo caiu 40%); em imagem chapada o progressivo pode
   ficar **maior** — por isso o script compara e mantém o original.
 
+### Release
+- **v5.10.0** — release **431719665**, asset **702475538**
+- `https://github.com/EduCafilista/rp-tag/releases/download/v5.10.0/rptag-5.10.0.jar`
+- **69.292.343 B** (66,0 MB) · md5 **`a4fba42320ff31abbc90a0d93bbfe39f`**
+
 ### Como testar (cliente)
 1. `/rp admin avisar @a conhecimento` → o sigilo se forma, as cordas crescem e a
    1ª memória começa a encher sozinha aos ~3,2 s.
