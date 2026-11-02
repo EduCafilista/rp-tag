@@ -2,7 +2,8 @@
 
 **Data:** 02/11/2026
 **Jar:** `rptag-5.11.2.jar` — **69.300.292 B (66,1 MB)** · md5 **`f2eeab3579020cbc92ffd1cb8c9e3a29`**
-**Download:** _(preenchido depois da release)_
+**Download:** https://github.com/EduCafilista/rp-tag/releases/download/v5.11.2/rptag-5.11.2.jar
+**Release:** 431844767 (v5.11.2) · asset 702800723
 **Verificação:** `check.py` **801 PASS / 0 FAIL** · servidor sobe com **0 ERROR** · linha do chat conferida no servidor
 
 ---
