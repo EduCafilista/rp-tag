@@ -240,22 +240,46 @@ public final class ConhecimentoAvisoFx {
             float boost = finalT > 0f ? eo((t - finalT) / 1.2f) : 0f;
 
             preparar(g);
-            Buf b = new Buf(g.pose().last().pose());
+            org.joml.Matrix4f m = g.pose().last().pose();
 
-            fundo(b, w, h, cx, cy, s, t, env);
+            // a ORDEM importa: fundo → runas → sigilo → cordas → memórias → olho
+            // → poeira → ondas → balança → contador → ícone → rodapé → vinheta
+            Buf b = new Buf(m);
+            b = fundo(b, w, h, cx, cy, s, t, env);
+            b.flush();
+            b = new Buf(m);
             scripts(b, ox, oy, s, w, h, t, env);
+            b.flush();
+            b = new Buf(m);
             sigilo(b, cx, cy, s, t, env, pulso);
-            cordas(b, cx, cy, s, t, env);
+            b.flush();
+            b = new Buf(m);
+            b = cordas(b, cx, cy, s, t, env);
+            b.flush();
+            b = new Buf(m);
             for (int i = 0; i < 4; i++) {
                 memoria(b, i, ox + MEM_X[i] * s, oy + MEM_Y[i] * s, s, t, env);
             }
-            olho(b, cx, cy + 0f, 68f * s + 8f * s * boost, 36f * s + 6f * s * boost,
-                    t, env, boost, s);
-            poeira(b, ox, oy, s, t, env, h);
+            b.flush();
+            b = new Buf(m);
+            b = olho(b, cx, cy, 68f * s + 8f * s * boost, 36f * s + 6f * s * boost, t, env, boost, s);
+            b.flush();
+            b = new Buf(m);
+            b = poeira(b, ox, oy, s, t, env, h);
+            b.flush();
+            b = new Buf(m);
             ondas(b, ox, oy, s, t, env);
-            balanca(b, ox, oy, s, t, env);
+            b.flush();
+            b = new Buf(m);
+            b = balanca(b, ox, oy, s, t, env);
+            b.flush();
+            b = new Buf(m);
             contador(b, ox, oy, s, t, env);
-            icone(b, cx, oy + 62f * s, 38f * s, s, t, env);
+            b.flush();
+            b = new Buf(m);
+            b = icone(b, cx, oy + 62f * s, 38f * s, s, t, env);
+            b.flush();
+            b = new Buf(m);
             faixaBaixo(b, w, h, s, t, env);
             b.vinheta(w, h, Math.max(60f, 130f * s), 0x000000, 0.62f * env);
             b.flush();
@@ -397,13 +421,13 @@ public final class ConhecimentoAvisoFx {
     }
 
     // ---------------------------------------------------------------- fundo
-    private static void fundo(Buf b, int w, int h, float cx, float cy, float s, float t, float env) {
+    private static Buf fundo(Buf b, int w, int h, float cx, float cy, float s, float t, float env) {
         b.rect(0, 0, w, h, col(0x040201, 0.97f * env));
         // o degradê radial do centro (vinho/dourado escuro)
         float ap = eo(t / 2f);
         gradienteRadial(b, cx, cy, Math.max(w, h) * 0.95f, 0x36220A, 0x160D03, 0x040201, env);
         // as duas "imagens" de luz do protótipo (sprites 1 e 0 em SCREEN)
-        aditivo();
+        b = somar(b);
         b.brilho(cx, cy, 380f * s, AMBAR, 0.32f * ap * env);
         b.brilho(cx, cy, 250f * s, OURO, 0.22f * ap * env);
         // oito feixes saindo do olho
@@ -418,13 +442,32 @@ public final class ConhecimentoAvisoFx {
                     cx + cos(a1) * r1, cy + sin(a1) * r1, fora,
                     cx + cos(a0) * r1, cy + sin(a0) * r1, fora);
         }
-        normal();
+        b = voltar(b);
         // sombras lentas atravessando a cena
         for (int i = 0; i < 3; i++) {
             float x = cx + 520f * s * sin(t * 0.05f + i * 2.1f);
             float y = cy + 90f * s + 120f * s * cos(t * 0.04f + i);
             b.brilho(x, y, 250f * s, 0x000000, 0.30f * env);
         }
+        return b;
+    }
+
+    /**
+     * Fecha o Buf atual e abre outro em mistura ADITIVA. (A mistura do
+     * RenderSystem só vale no flush — trocar o blend no meio de um Buf aberto
+     * não faz nada. Por isso cada trecho aditivo tem o seu Buf.)
+     */
+    private static Buf somar(Buf b) {
+        b.flush();
+        AvisoFxUtil.aditivo();
+        return new Buf(b.m);
+    }
+
+    /** Fecha o Buf aditivo e volta pra mistura normal. */
+    private static Buf voltar(Buf b) {
+        b.flush();
+        AvisoFxUtil.normal();
+        return new Buf(b.m);
     }
 
     /**
@@ -580,7 +623,7 @@ public final class ConhecimentoAvisoFx {
         return new float[]{a * x0 + c * x1 + d * x2, a * y0 + c * y1 + d * y2};
     }
 
-    private static void cordas(Buf b, float cx, float cy, float s, float t, float env) {
+    private static Buf cordas(Buf b, float cx, float cy, float s, float t, float env) {
         for (int i = 0; i < 4; i++) {
             float cresce = eo((t - T_CORDAS - i * 0.2f) / 1.4f);
             if (cresce <= 0.01f) {
@@ -609,7 +652,7 @@ public final class ConhecimentoAvisoFx {
                 py = q[1];
             }
             // pulsos de luz correndo do anel até a memória
-            aditivo();
+            b = somar(b);
             float spd = REVELADA[i] ? 0.34f : 0.14f;
             for (int k = 0; k < 3; k++) {
                 float u = 1f - fr(t * spd + k / 3f + i * 0.23f);
@@ -619,8 +662,9 @@ public final class ConhecimentoAvisoFx {
                 float[] q = quadBez(p0x, p0y, ccx, ccy, p2x, p2y, u);
                 b.brilho(q[0], q[1], (REVELADA[i] ? 9f : 6f) * s, PALIDO, 0.85f * brilho * env);
             }
-            normal();
+            b = voltar(b);
         }
+        return b;
     }
 
     // ---------------------------------------------------------------- memórias
@@ -713,11 +757,11 @@ public final class ConhecimentoAvisoFx {
     }
 
     // ---------------------------------------------------------------- olho
-    private static void olho(Buf b, float cx, float cy, float w, float h, float t,
+    private static Buf olho(Buf b, float cx, float cy, float w, float h, float t,
             float env, float boost, float s) {
         float abre = eo((t - 1.4f) / 1.8f) * env;
         if (abre <= 0.01f) {
-            return;
+            return b;
         }
         float ph = fr(t / 7.5f) * 7.5f;
         float open = abre;
@@ -726,13 +770,13 @@ public final class ConhecimentoAvisoFx {
         }
         float hh = Math.max(0.5f, h * open);
         // brilho de fundo
-        aditivo();
+        b = somar(b);
         b.brilho(cx, cy, w * 1.15f, OURO, (0.30f + 0.25f * boost) * open * env);
-        normal();
+        b = voltar(b);
         if (open <= 0.05f) {
             float e = Math.max(1f, 3f * s);
             b.seg(cx - w, cy, cx + w, cy, e, col(OURO, env), col(OURO, env));
-            return;
+            return b;
         }
         // pálpebra em forma de lente (duas quadráticas), preenchida em leque
         int n = 12;
@@ -766,6 +810,7 @@ public final class ConhecimentoAvisoFx {
             b.seg(px[i], py[i], px[i + 1], py[i + 1], esp, c, c);
         }
         b.seg(px[px.length - 1], py[py.length - 1], px[0], py[0], esp, c, c);
+        return b;
     }
 
     private static void iris(Buf b, float ix, float iy, float ir, float env, float t) {
@@ -794,8 +839,8 @@ public final class ConhecimentoAvisoFx {
     }
 
     // ---------------------------------------------------------------- poeira e ondas
-    private static void poeira(Buf b, float ox, float oy, float s, float t, float env, int h) {
-        aditivo();
+    private static Buf poeira(Buf b, float ox, float oy, float s, float t, float env, int h) {
+        b = somar(b);
         for (int i = 0; i < N_POEIRA; i++) {
             float x = ox + POE_X[i] * s, y = oy + POE_Y[i] * s;
             if (y < -12 || y > h + 12) {
@@ -804,7 +849,8 @@ public final class ConhecimentoAvisoFx {
             float sz = Math.max(1f, (3.5f + 2.5f * sin(t * 2f + POE_F[i])) * s);
             b.brilho(x, y, sz, OURO, 0.45f * env);
         }
-        normal();
+        b = voltar(b);
+        return b;
     }
 
     private static void ondas(Buf b, float ox, float oy, float s, float t, float env) {
@@ -822,10 +868,10 @@ public final class ConhecimentoAvisoFx {
     }
 
     // ---------------------------------------------------------------- balança
-    private static void balanca(Buf b, float ox, float oy, float s, float t, float env) {
+    private static Buf balanca(Buf b, float ox, float oy, float s, float t, float env) {
         float ap = eo((t - 2.8f) / 1.0f) * env;
         if (ap <= 0.01f) {
-            return;
+            return b;
         }
         float[] g = geomBalanca(ox, oy, s);
         float lx = g[0], ly = g[1], rx = g[2], ry = g[3];
@@ -851,10 +897,11 @@ public final class ConhecimentoAvisoFx {
                         ax - raio * cos(a1), ay - raio * 0.6f * sin(a1), Math.max(1f, 1.6f * s), cc, cc);
             }
             float sz = lado == 0 ? 10f + 14f * san / 100f : 10f + 16f * conhece / 100f;
-            aditivo();
+            b = somar(b);
             b.brilho(px, py + 22f * s, sz * 1.2f * s, lado == 0 ? PALIDO : OURO, 0.85f * ap);
-            normal();
+            b = voltar(b);
         }
+        return b;
     }
 
     /**
@@ -891,14 +938,14 @@ public final class ConhecimentoAvisoFx {
     }
 
     // ---------------------------------------------------------------- ícone e rodapé
-    private static void icone(Buf b, float cx, float cy, float tam, float s, float t, float env) {
+    private static Buf icone(Buf b, float cx, float cy, float tam, float s, float t, float env) {
         float a = (0.78f + 0.22f * sin(t * 3f)) * eo((t - 0.8f) / 0.8f) * env;
         if (a <= 0.01f) {
-            return;
+            return b;
         }
-        aditivo();
+        b = somar(b);
         b.brilho(cx, cy, tam * 1.7f, OURO, 0.40f * a);
-        normal();
+        b = voltar(b);
         int c = col(PALIDO, a);
         float e = Math.max(1.2f, tam * 0.10f);
         float ax = cx, ay = cy - tam * 0.5f, bx = cx + tam * 0.58f, by = cy + tam * 0.5f;
@@ -913,6 +960,7 @@ public final class ConhecimentoAvisoFx {
         b.tri(ex, ey, c, ex - ew, ey, c, ex, ey + eh, c);
         b.tri(ex, ey, c, ex + ew, ey, c, ex, ey + eh, c);
         b.circ(ex, ey, Math.max(1f, tam * 0.07f), c);
+        return b;
     }
 
     private static void faixaBaixo(Buf b, int w, int h, float s, float t, float env) {

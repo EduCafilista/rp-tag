@@ -1,9 +1,9 @@
 # ENTREGA 5.10.0 — CONHECIMENTO novo + mod 30 MB mais leve
 
 **Data:** 02/11/2026
-**Jar:** `rptag-5.10.0.jar` — **69.292.343 B (66,0 MB)** · md5 **`a4fba42320ff31abbc90a0d93bbfe39f`**
+**Jar:** `rptag-5.10.0.jar` — **69.292.643 B (66,0 MB)** · md5 **`2aa87c3b5cb909874511481dbce1761e`**
 **Download:** https://github.com/EduCafilista/rp-tag/releases/download/v5.10.0/rptag-5.10.0.jar
-**Release:** 431719665 (v5.10.0) · asset 702475538
+**Release:** 431719665 (v5.10.0) · asset 702487180
 **Verificação:** `check.py` **776 PASS / 0 FAIL** · servidor `Done (0.752s)`, 0 exceções
 
 ---

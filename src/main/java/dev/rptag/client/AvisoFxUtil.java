@@ -83,7 +83,12 @@ public final class AvisoFxUtil {
             quad(0, 0, col(rgb, a), 0, h, col(rgb, a), d, h, col(rgb, 0), d, 0, col(rgb, 0));
             quad(w, 0, col(rgb, a), w, h, col(rgb, a), w - d, h, col(rgb, 0), w - d, 0, col(rgb, 0));
         }
-        public void flush() { if (n > 0) BufferUploader.drawWithShader(bb.buildOrThrow()); }
+        /** (5.10.0) fecha o desenho e LIBERA o builder: dá pra chamar de novo depois. */
+        public void flush() {
+            if (n > 0 && bb != null) BufferUploader.drawWithShader(bb.buildOrThrow());
+            bb = null;
+            n = 0;
+        }
     }
 
     public static int mix(int c1, int c2, float u) {

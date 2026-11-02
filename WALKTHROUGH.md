@@ -52,9 +52,19 @@
   ficar **maior** — por isso o script compara e mantém o original.
 
 ### Release
-- **v5.10.0** — release **431719665**, asset **702475538**
+- **v5.10.0** — release **431719665**, asset **702487180**
 - `https://github.com/EduCafilista/rp-tag/releases/download/v5.10.0/rptag-5.10.0.jar`
-- **69.292.343 B** (66,0 MB) · md5 **`a4fba42320ff31abbc90a0d93bbfe39f`**
+- **69.292.643 B** (66,0 MB) · md5 **`2aa87c3b5cb909874511481dbce1761e`**
+
+### Lição: mistura aditiva dentro de um Buf NÃO vale
+- `Buf` junta triângulos e só desenha no `flush()`. O `RenderSystem.blendFunc`
+  do momento do **flush** é o que vale — trocar o blend no meio de um Buf aberto
+  não muda nada, e o brilho saía como "fumaça" opaca em vez de luz.
+- Solução: `somar(b)` (flush + blend aditivo + Buf novo) e `voltar(b)`; e as
+  funções que abrem esses trechos **devolvem o Buf novo** (`b = fundo(b, …)`),
+  senão a geometria do Buf novo se perde.
+- `Buf.flush()` passou a **zerar o builder** (`bb = null; n = 0`), então chamar
+  flush duas vezes não estoura mais o "BufferBuilder already built".
 
 ### Como testar (cliente)
 1. `/rp admin avisar @a conhecimento` → o sigilo se forma, as cordas crescem e a

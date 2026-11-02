@@ -66,12 +66,12 @@ de Ordem Paranormal: sigilo, olho, memórias e balança.
   sigilo, revelação por tempo, STAGE1, teto de 80 MB, maior quadro < 200 KB,
   amostra toda 1280×720, script e prévias no repo).
 - Servidor de teste: `Done (0.752s)`, **0 exceções**, `RP Tag 5.10.0` na lista.
-- Jar: **69.292.343 B** (66,0 MB), 1.752 quadros dentro (nenhum perdido).
+- Jar: **69.292.643 B** (66,0 MB), 1.752 quadros dentro (nenhum perdido).
 
 ### Release
-- **v5.10.0** — release **431719665**, asset **702475538**
+- **v5.10.0** — release **431719665**, asset **702487180**
 - `https://github.com/EduCafilista/rp-tag/releases/download/v5.10.0/rptag-5.10.0.jar`
-- **69.292.343 B** (66,0 MB) · md5 **`a4fba42320ff31abbc90a0d93bbfe39f`**
+- **69.292.643 B** (66,0 MB) · md5 **`2aa87c3b5cb909874511481dbce1761e`**
 
 ## 5.9.0 — TÍTULOS com COR MODIFICÁVEL (TAB, chat e nametag) — 2026-11-02
 
