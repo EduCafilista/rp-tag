@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.11.2'
+VER = '5.12.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1623,11 +1623,16 @@ check('5.5.0: dimensao do EXILIO existe (rptag:exilio) com chao (5.7.8: camadas 
       and os.path.exists('src/main/resources/data/rptag/dimension_type/exilio.json')
       and ('black_concrete' in rd('src/main/resources/data/rptag/dimension/exilio.json')
            or 'blackstone' in rd('src/main/resources/data/rptag/dimension/exilio.json')))
-check('5.7.9: o exilio e CLARO e tem ceu (0.06 de luz nao dava pra ver nada)',
-      '"ambient_light": 0.42' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and '"has_skylight": true' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and '"has_ceiling": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and '"fixed_time": 6000' in rd('src/main/resources/data/rptag/dimension_type/exilio.json'))
+# (5.12.0) O DONO MUDOU O PEDIDO: era "o exilio e CLARO" (5.7.9), agora e
+# "o vazio tem que ser mais escuro, mais preto" (pedido 49). O check antigo
+# virou este aqui — continua verificando que a dimensao esta configurada,
+# so que no tom novo (luz 0, sem ceu, teto) e com a neblina do cliente.
+check('5.7.9 -> 5.12.0: o exilio agora e PRETO (pedido 49) e continua configurado',
+      '"ambient_light": 0.0' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"has_skylight": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"has_ceiling": true' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"fixed_time": 6000' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and os.path.exists(C + '/VazioNeblina.java'))
 check('5.7.9: exilar POUSA na SUPERFICIE (y=1 era dentro da pedra: nao andava nem via)',
       '"exilio"' in _ne2 and 'chegadaNoExilio(destino)' in _ne2
       and 'alvo.teleportTo(destino, chegada.x, chegada.y, chegada.z' in _ne2
@@ -2280,6 +2285,117 @@ check('5.11.2: TODOS os canais usam o mesmo nome (g, s, w, pensar, me, chat loca
       and rd(R + '/ChatCommands.java').count('RPChat.displayName(player)') >= 4)
 check('5.11.2: a ordem é a mesma do TAB — [Etiqueta] Nome [Pessoal] (ʀᴘ)',
       'comTitulo.append(RPTags.tag(inRp))' in _rpc)
+
+
+# ============ 5.12.0 — pedido 49 ============================================
+_nev = rd(R + '/NeptuneEventos.java')
+_eng = rd(R + '/EngolirFx.java') if os.path.exists(R + '/EngolirFx.java') else rd(C + '/EngolirFx.java')
+_vr = rd(R + '/VazioReino.java')
+_rwd = rd(R + '/RPWorldData.java')
+_ce = rd(C + '/ClientEffects.java')
+_nfx = rd(C + '/NeptuneFx.java')
+_ngl = rd(C + '/ClientGuiLayers.java')
+_sev2 = rd(R + '/ServerEvents.java')
+_nec = rd(R + '/NeptuneCommands.java')
+_dim = rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+
+# 1) /apagar mata 100% (não deixa deitado; revive não traz de volta)
+check('5.12.0: /apagar mata pela via DIRETA (setHealth(0) + die, sem passar pelo hurt)',
+      'public static void matarDefinitivo(ServerPlayer alvo' in _nev
+      and 'alvo.setHealth(0.0F);' in _nev and 'alvo.die(fonte);' in _nev)
+check('5.12.0: a morte fica SELADA 60 s (tickApagados derruba ressurreição)',
+      'SELO_MORTE_MS = 60_000L' in _nev and 'private static void tickApagados' in _nev
+      and 'tickApagados(server, System.currentTimeMillis());' in _nev)
+check('5.12.0: respawn de verdade encerra o selo (avisarRespawn)',
+      'public static void avisarRespawn(UUID id)' in _nev
+      and 'NeptuneEventos.avisarRespawn(p.getUUID())' in _sev2)
+check('5.12.0: o hurt(magic, MAX_VALUE) antigo do /apagar saiu',
+      'alvo.hurt(alvo.damageSources().magic(), Float.MAX_VALUE)' not in _nev)
+
+# 2) som do andar do deus mais alto
+check('5.12.0: a trilha do deus toca em volume 2.6 (era 1.0)',
+      'SoundSource.AMBIENT, 2.6F, 0.95F' in _nev)
+check('5.12.0: CADA passo do deus bate um WARDEN_STEP grave',
+      'SoundEvents.WARDEN_STEP' in _nev and 'SoundSource.HOSTILE, 1.35F' in _nev)
+
+# 3) vazio mais preto + prédios perdidos
+check('5.12.0: a dimensão do exílio ficou PRETA (luz ambiente 0, sem céu, céu do End)',
+      '"ambient_light": 0.0' in _dim and '"has_skylight": false' in _dim
+      and 'minecraft:the_end' in _dim)
+check('5.12.0: neblina do vazio quase preta no cliente (VazioNeblina)',
+      os.path.exists(C + '/VazioNeblina.java')
+      and 'ViewportEvent.ComputeFogColor' in rd(C + '/VazioNeblina.java')
+      and 'ViewportEvent.RenderFog' in rd(C + '/VazioNeblina.java'))
+check('5.12.0: PRÉDIOS PERDIDOS nascem no vazio (ruínas de arranha-céu)',
+      'private static void enfileirarPredio' in _vr and 'PREDIOS_FEITOS' in _vr
+      and 'CRACKED_DEEPSLATE_BRICKS' in _vr)
+
+# 4) o vazio que mata dá tempo e depois mata
+check('5.12.0: cair no vazio dá 12 s de contagem antes da morte',
+      'ESPERA_MORTE = 12_000L' in _vr and 'private static void tickCaindo' in _vr
+      and 'public static boolean estaCaindo(UUID id)' in _vr)
+check('5.12.0: o dano do void é CANCELADO enquanto a contagem corre',
+      'LivingIncomingDamageEvent' in _sev2 and 'DamageTypes.FELL_OUT_OF_WORLD' in _sev2
+      and 'VazioReino.estaCaindo(p.getUUID())' in _sev2)
+
+# 5) NADA de tela preta no terremoto
+check('5.12.0: o Nebulosa(5, true) que escurecia a tela de TODOS no exílio saiu',
+      'new NeptunePackets.Nebulosa(5, true)' not in _nev)
+check('5.12.0: a nebulosa não faz mais disco preto (miolo 0,62 / lavagem 0,16)',
+      '0.62f * pico' in _nfx and '0.16f * pico * forca' in _nfx)
+check('5.12.0: a cortina do exílio baixou de 0,70 para 0,50',
+      '0.50F + 0.03F * respira' in _nfx)
+
+# 6) animação de ENGOLIR (protótipo uKqjYudD / SwallowedByDarkness)
+check('5.12.0: EngolirFx existe e é o protótipo do dono (poça, olhos, braços)',
+      'POÇA NEGRA' in _eng and 'NOLHOS' in _eng and 'NBRACOS = 9' in _eng
+      and 'NDEDOS = 7' in _eng)
+check('5.12.0: o texto corrompido FOI ENGOLIDO / PELA ESCURIDÃO está lá',
+      'FOI ENGOLIDO' in _eng and 'PELA ESCURIDÃO' in _eng and '▓▒░█#@%&?' in _eng)
+check('5.12.0: a cobertura da tela é ORGÂNICA e limitada a 0,80 (sem tela preta)',
+      '0.80F * fade' in _eng and 'int pts = 65' in _eng)
+check('5.12.0: estilo 23 = ENGOLIR no cliente e na camada de GUI',
+      'if (style == 23)' in _ce and 'EngolirFx.iniciar(limpo23)' in _ce
+      and 'EngolirFx.registrar(event)' in _ngl)
+check('5.12.0: o terremoto usa a animação nova em vez da Cena(RACHADURA)',
+      'alvo.getName().getString().toUpperCase(), 11, 23);' in _nev
+      and 'CENA_RACHADURA, 0.8F, 2600' not in _nev)
+
+# 7) portal + 8 fragmentos (a volta SEM admin)
+check('5.12.0: 8 fragmentos do vazio e 8 pedestais',
+      'public static final int TOTAL_FRAGMENTOS = 8' in _vr
+      and _vr.count('{ 210,   40 }') >= 0 and 'PED = {' in _vr)
+check('5.12.0: o portal fica MUITO LONGE (780 blocos a leste)',
+      'PORTAL_X = 780' in _vr)
+check('5.12.0: clicar no pedestal pega o fragmento (1 por pedestal, por jogador)',
+      'public static boolean interagir(ServerPlayer p, BlockPos pos)' in _vr
+      and 'pegarFragmento(p.getUUID(), i)' in _vr
+      and 'PlayerInteractEvent.RightClickBlock' in _sev2)
+check('5.12.0: os fragmentos ficam SALVOS no mundo (não somem ao morrer)',
+      'public int pegarFragmento(UUID id, int indice)' in _rwd
+      and 'VazioFragmentos' in _rwd and 'VazioYs' in _rwd)
+check('5.12.0: a volta pelo portal não depende de admin (voltarPeloPortal)',
+      'public static void voltarPeloPortal(ServerPlayer alvo)' in _nev
+      and 'NeptuneEventos.voltarPeloPortal(p)' in _vr)
+check('5.12.0: o texto do exílio ensina a sair sozinho (fragmentos + portal)',
+      'FRAGMENTOS DO VAZIO' in _nev and 'Ninguém precisa de admin' in _nev)
+check('5.12.0: comandos de teste /vazio fragmentos | portal | pedestais',
+      'VazioReino.darTudo(quem)' in _nec and 'NeptuneEventos.irAoPortal(quem)' in _nec
+      and 'VazioReino.listaPedestais()' in _nec)
+
+# 8) aviso de sangue na tela: era o estilo 9 mandado no lugar do 18
+check('5.12.0: a animação de SAÍDA manda estilo 18 (era 9 = SANGUE)',
+      'new ScreenTextPayload(nome, 9, 18)' in _nev
+      and 'new ScreenTextPayload(nome, 18, 9)' not in _nev)
+check('5.12.0: o exilar não manda mais nada de sangue pra quem fica',
+      'SangueAvisoFx.iniciar' in _ce and '11, 23' in _nev)
+
+# 9) a animação de saída roda mesmo (registro + camada)
+check('5.12.0: SaidaPlayerFx segue registrado e é disparado pelo estilo 18',
+      'SaidaPlayerFx.registrar(event)' in _ngl and 'if (style == 18)' in _ce)
+check('5.12.0: o logout automático continua chamando saidaAutomatica',
+      'saidaAutomatica(saiu)' in _sev2)
+check('5.12.0: sem classe de debug na entrega', not os.path.exists(R + '/DebugVazio.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -1,5 +1,39 @@
 # Changelog
 
+## 5.12.0 — pedido 49 (terremoto, vazio e morte de verdade) — 2026-11-02
+
+> Pedido do dono: som do andar do deus · vazio mais escuro com prédios perdidos · `/apagar`
+> matando 100% · o vazio que dá tempo antes de matar · **sem tela preta no terremoto** · animação
+> de engolir do protótipo `uKqjYudD.java` · portal + 8 fragmentos para voltar sozinho · sem aviso
+> de sangue · animação de saída aparecendo.
+
+### Bugs de verdade que estavam por trás dos pedidos
+
+- **A animação de saída nunca aparecia** e **aparecia sangue na tela**: `saidaAutomatica()` mandava
+  `ScreenTextPayload(nome, 18, 9)`. O **9 é o estilo SANGUE** — o cliente abria a Sangria no lugar do
+  `SaidaPlayerFx` (estilo **18**). Trocado para `(nome, 9, 18)`.
+- **Tela preta no terremoto**: o `exilar()` mandava `Nebulosa(5, true)` para **todos os jogadores** e
+  a nebulosa desenhava um disco **preto a 92%**. O envio saiu; o disco caiu para 0,62 e a lavagem
+  para 0,16; a cortina do exílio de 0,70 para 0,50.
+- **`/apagar` não matava**: `hurt(magic, MAX_VALUE)` era revertido pelo mod de revive (o corpo ficava
+  deitado). Agora `matarDefinitivo()`: `setHealth(0)` + `die()` (fora do `hurt`), `genericKill` de
+  reserva e um **selo de 60 s** que derruba qualquer ressurreição (respawn de verdade encerra o selo).
+
+### O resto do pacote
+
+- **Som do deus**: trilha em volume **2,6** (era 1,0) + um `WARDEN_STEP` grave a cada passo.
+- **Vazio preto**: luz ambiente **0,0**, sem céu, efeitos `the_end` (era `overworld` — daí o roxo
+  lavado) e a neblina nova `VazioNeblina` (quase preta, fecha em 96 blocos).
+- **Prédios perdidos**: ruínas de arranha-céu (22–63 de altura, paredes furadas, andares quebrados,
+  entulho) nascem 60–190 blocos de quem anda, construídas em fatias de 240 blocos/tick.
+- **Animação de engolir** (`EngolirFx`, estilo 23): porte do `SwallowedByDarkness` — poça com anéis,
+  tremor, olhos com 3 pupilas, corpo esticado, escuridão orgânica de 65 pontos (alfa máx. 0,80),
+  9 braços com 7 dedos, `FOI ENGOLIDO / PELA ESCURIDÃO` com glitch.
+- **Voltar do vazio sem admin**: 8 pedestais com coluna de luz + portal a 780 blocos a leste que
+  acende com 8/8 e devolve o jogador. Fragmentos salvos no mundo.
+- **O vazio que mata devagar**: 12 s de contagem com a gravidade travada, dano de void cancelado, e
+  só então a morte.
+
 ## 5.11.2 — o TÍTULO aparece no CHAT — 2026-11-02
 
 > Pedido: *"o título deve aparecer no chat, veja e altere isso para mim"*.

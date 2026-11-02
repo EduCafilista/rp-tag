@@ -183,6 +183,7 @@ public final class NeptuneEventos {
             tickExilios(server);
             tickManchas(server);
             tickApagando(server);
+            tickApagados(server, System.currentTimeMillis());
             tickExilioMundo(server);
         } catch (Throwable t) {
             RPTagMod.LOGGER.error("RP Tag: tick do evento Neptune falhou (o jogo segue)", t);
@@ -1097,10 +1098,17 @@ public final class NeptuneEventos {
                 st[0] = (long) pos.x;
                 st[1] = (long) pos.z;
                 st[2] = agora;
+                // (5.12.0) PEDIDO 49: "aumentar o som do andar do deus".
+                // Volume saiu de 1,0 -> 2,6 (o dobro e meio: alcance e volume)
+                // e CADA passo agora bate um WARDEN_STEP grave embaixo dele,
+                // então o andar é ouvido como passos de uma coisa enorme.
+                nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.WARDEN_STEP,
+                        SoundSource.HOSTILE, 1.35F,
+                        0.55F + (float) Math.random() * 0.12F);
                 if (!tocando) {
                     st[3] = 1;
                     nv.playSound(null, p.blockPosition(), RPTagMod.SOM_TRILHA_DEUS.get(),
-                            SoundSource.AMBIENT, 1.0F, 1.0F);
+                            SoundSource.AMBIENT, 2.6F, 0.95F);
                 }
             } else if (tocando && agora - st[2] > 2500) {
                 // parou de andar há 2,5 s: corta a trilha
@@ -1423,6 +1431,9 @@ public final class NeptuneEventos {
             return;
         }
         long agora = System.currentTimeMillis();
+        if (agora % 2000L < 50L) {
+            VazioReino.limparOffline(server);
+        }
         boolean podeMonolito = agora >= proximoMonolito;
         boolean podeSussurro = agora >= proximoSussurro;
         if (podeMonolito) {
@@ -1449,6 +1460,9 @@ public final class NeptuneEventos {
                 if (podeMonolito) {
                     monólito(exilio, p);
                 }
+                // (5.12.0) o REINO DO VAZIO: pedestais, portal aceso, prédios
+                // perdidos, colunas de luz e o vazio que mata devagar.
+                VazioReino.tick(exilio, p, agora);
             } catch (Throwable t) {
                 RPTagMod.LOGGER.warn("RP Tag: ambiente do exilio falhou (o jogo segue)", t);
             }
@@ -1799,7 +1813,7 @@ public final class NeptuneEventos {
         ServerLevel nv = (ServerLevel) alvo.level();
         Vec3 pos = alvo.position();
         for (ServerPlayer p : alvo.getServer().getPlayerList().getPlayers()) {
-            PacketDistributor.sendToPlayer(p, new NeptunePackets.Nebulosa(4, true));
+            PacketDistributor.sendToPlayer(p, new NeptunePackets.Nebulosa(4, false));
             p.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
         }
         // (5.7.7) O CORPO SE DESFAZ: cinzas, sombra e a ALMA saindo — o dono
@@ -1815,9 +1829,104 @@ public final class NeptuneEventos {
                                 .withStyle(ChatFormatting.DARK_PURPLE))
                         .append(Component.literal(" da existência").withStyle(ChatFormatting.DARK_GRAY)),
                 false);
-        alvo.hurt(alvo.damageSources().magic(), Float.MAX_VALUE);
-        if (alvo.isAlive()) {
-            alvo.kill();
+        // (5.12.0) PEDIDO 49: "/apagar deve MATAR 100% o player atingido — não
+        // deixar só deitado". O hurt(magic) antigo era revertido pelo mod de
+        // revive do modpack (o corpo ficava caído e alguém levantava). Agora a
+        // morte não passa pelo caminho do dano: zera a vida e chama die() na
+        // marra — e fica SELADO por 60 s (se um mod levantar o corpo, cai de
+        // novo no tick seguinte; um respawn de verdade encerra o selo).
+        matarDefinitivo(alvo, alvo.damageSources().genericKill());
+    }
+
+    /**
+     * (5.12.0) MORTE IRREVERSÍVEL (pedido 49).
+     *
+     * <p>Ordem escolhida de propósito:
+     * <ol>
+     *   <li>tira tudo que segura a vida (efeitos, invulnerabilidade, montaria);</li>
+     *   <li>{@code setHealth(0)} + {@code die()}: <b>não</b> passa pelo
+     *       {@code hurt()}, que é onde os mods de revive escutam e transformam
+     *       a morte em "deitado";</li>
+     *   <li>se ainda assim estiver vivo, cai no {@code genericKill} (o mesmo
+     *       do /kill: ignora totem) e no {@code kill()} vanilla;</li>
+     *   <li>o UUID entra em {@link #APAGADOS} por 60 s: o {@code tickApagados}
+     *       derruba de novo qualquer ressurreição nessa janela. Quem respawna
+     *       de verdade (tela de morte) sai do selo.</li>
+     * </ol>
+     */
+    public static void matarDefinitivo(ServerPlayer alvo, net.minecraft.world.damagesource.DamageSource fonte) {
+        if (alvo == null) {
+            return;
+        }
+        try {
+            alvo.stopRiding();
+            alvo.removeAllEffects();
+            alvo.setInvulnerable(false);
+            alvo.getAbilities().invulnerable = false;
+            alvo.getAbilities().flying = false;
+            alvo.onUpdateAbilities();
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui limpar o corpo antes de apagar", t);
+        }
+        try {
+            alvo.setHealth(0.0F);
+            alvo.die(fonte);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: morte direta falhou, tentando o caminho do dano", t);
+        }
+        try {
+            if (alvo.isAlive() || alvo.getHealth() > 0.0F) {
+                alvo.hurt(fonte, Float.MAX_VALUE);
+            }
+            if (alvo.isAlive()) {
+                alvo.kill();
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: /apagar nao conseguiu matar de primeira", t);
+        }
+        APAGADOS.put(alvo.getUUID(), System.currentTimeMillis() + SELO_MORTE_MS);
+        alvo.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+    }
+
+    /** (5.12.0) quem morreu por /apagar fica selado por este tempo (ms). */
+    private static final long SELO_MORTE_MS = 60_000L;
+    /** (5.12.0) uuid -> até quando (ms) a morte é obrigatória. */
+    private static final Map<UUID, Long> APAGADOS = new HashMap<>();
+
+    /** (5.12.0) respawn de verdade encerra o selo (a morte aconteceu). */
+    public static void avisarRespawn(UUID id) {
+        APAGADOS.remove(id);
+    }
+
+    /** (5.12.0) a morte selada: se um mod de revive levantar o corpo, cai de novo. */
+    private static void tickApagados(MinecraftServer server, long agora) {
+        if (APAGADOS.isEmpty()) {
+            return;
+        }
+        Iterator<Map.Entry<UUID, Long>> it = APAGADOS.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Long> e = it.next();
+            if (agora > e.getValue()) {
+                it.remove();
+                continue;
+            }
+            ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
+            if (p == null) {
+                continue;                        // deslogado: o selo espera ele voltar
+            }
+            if (!p.isAlive() && p.getHealth() <= 0.0F) {
+                continue;                        // morto de verdade: nada a fazer
+            }
+            // alguém tentou reviver: apaga de novo, sem animação e sem aviso
+            try {
+                p.setHealth(0.0F);
+                p.die(p.damageSources().genericKill());
+                if (p.isAlive()) {
+                    p.hurt(p.damageSources().genericKill(), Float.MAX_VALUE);
+                }
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: selo de morte falhou (o jogo segue)", t);
+            }
         }
     }
 
@@ -1841,11 +1950,12 @@ public final class NeptuneEventos {
                 abrirFenda(alvo);
                 // e a animação de exílio (2,6 s) com todo mundo vendo
                 exilar(alvo, quem == null ? alvo : quem);
+                // (5.12.0) o aviso de tela saiu daqui: a animação de ENGOLIR
+                // (estilo 23) já é mandada pelo exilar() pra quem está perto.
+                // Só ficou o recado do chat, que é curto e não cobre a tela.
                 for (ServerPlayer outro : alvo.getServer().getPlayerList().getPlayers()) {
                     if (outro.level() == alvo.level()
                             && outro.position().distanceTo(alvo.position()) <= 40) {
-                        PacketDistributor.sendToPlayer(outro, new NeptunePackets.Cena(
-                                NeptunePackets.Cena.CENA_RACHADURA, 0.8F, 2600, System.nanoTime()));
                         outro.displayClientMessage(Component.literal(
                                 "\u00a74\u00a7lO CH\u00c3O ABRIU E LEVOU \u00a7f"
                                         + alvo.getName().getString().toUpperCase()), true);
@@ -1924,8 +2034,12 @@ public final class NeptuneEventos {
             NeptunePackets.Codigos glifos = new NeptunePackets.Codigos(
                     pos.x, pos.y, pos.z, 6500, nome);
             // estilo 18 = A ANIMACAO DE SAIDA em si (o sprite do jogador se
-            // desfazendo em chuva de código, na tela de quem fica)
-            ScreenTextPayload pacote = new ScreenTextPayload(nome, 18, 9);
+            // desfazendo em chuva de código, na tela de quem fica).
+            // (5.12.0) BUG DO DONO: aqui estava 9 (SANGUE). O cliente recebia
+            // "aviso de sangue" em vez da animação de saída — por isso ela
+            // "não aparecia" e por isso a tela de sangue pipocava quando
+            // alguém saía/era levado. O certo é (nome, segundos=18, estilo=18).
+            ScreenTextPayload pacote = new ScreenTextPayload(nome, 9, 18);
             for (ServerPlayer outro : nv.getServer().getPlayerList().getPlayers()) {
                 if (outro == saiu) {
                     continue;
@@ -1979,13 +2093,23 @@ public final class NeptuneEventos {
         ORIGEM.put(alvo.getUUID(), new Object[]{ alvo.level().dimension(),
                 alvo.getX(), alvo.getY(), alvo.getZ(), alvo.getYRot(), alvo.getXRot() });
         long agora = System.currentTimeMillis();
-        EXILIOS.add(new Object[]{ agora + 2600L, alvo.getUUID(), 0, agora });
-        PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
-                NeptunePackets.Cena.CENA_EXILIO, 1.0F, 3000, System.nanoTime()));
+        // (5.12.0) A ANIMAÇÃO DE ENGOLIR (estilo 23, o protótipo SwallowedByDarkness
+        // do dono) roda na tela dele E na de todo mundo por perto. Ele fica
+        // 5,2 s sendo puxado pra baixo e só então é teleportado.
+        EXILIOS.add(new Object[]{ agora + 5200L, alvo.getUUID(), 0, agora });
+        ScreenTextPayload engolir = new ScreenTextPayload(
+                alvo.getName().getString().toUpperCase(), 11, 23);
+        PacketDistributor.sendToPlayer(alvo, engolir);
+        // (5.12.0) SAIU o Nebulosa(5, true) que ia pra TODO MUNDO: era ele o
+        // "disco preto" na tela durante o terremoto (o dono vetou tela preta).
         for (ServerPlayer p : alvo.getServer().getPlayerList().getPlayers()) {
-            PacketDistributor.sendToPlayer(p, new NeptunePackets.Nebulosa(5, true));
-            p.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
+            if (p != alvo && p.level() == alvo.level()
+                    && p.position().distanceTo(alvo.position()) <= 64) {
+                PacketDistributor.sendToPlayer(p, engolir);
+                p.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 0.85F);
+            }
         }
+        alvo.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 0.75F);
         alvo.getServer().getPlayerList().broadcastSystemMessage(
                 Component.literal("---- vazio --- lançou ")
                         .withStyle(ChatFormatting.DARK_GRAY)
@@ -1995,8 +2119,10 @@ public final class NeptuneEventos {
                 false);
         alvo.displayClientMessage(Component.literal(
                 "\u00a74\u00a7lVOC\u00ca FOI EXPULSO DO MUNDO.\n"
-                + "\u00a78Uma planície de pedra cinzenta até onde a vista alcança.\n"
-                + "\u00a78(um admin pode te tirar com /vazio soltar <jogador>)"), false);
+                + "\u00a78Uma cidade morta no breu até onde a vista alcança.\n"
+                + "\u00a77Para VOLTAR sozinho: ache os \u00a7f8 FRAGMENTOS DO VAZIO\u00a77 nos pedestais\n"
+                + "\u00a77(as colunas de luz) e leve-os até o PORTAL, a leste.\n"
+                + "\u00a78Ninguém precisa de admin para te tirar."), false);
     }
 
     // ============================================================ EXÍLIO 5.7.9
@@ -2100,6 +2226,7 @@ public final class NeptuneEventos {
 
     /** (5.5.0/5.7.6) tira alguém do exílio: animação de escuridão + volta pro lugar de origem. */
     public static void soltarDoExilio(ServerPlayer alvo) {
+        VazioReino.soltarCaindo(alvo);
         long agora = System.currentTimeMillis();
         EXILIOS.add(new Object[]{ agora + 2400L, alvo.getUUID(), 1, agora });
         PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
@@ -2322,14 +2449,78 @@ public final class NeptuneEventos {
         }
     }
 
+    /**
+     * (5.12.0) A VOLTA PELO PORTAL — o jogador sai do vazio SOZINHO.
+     *
+     * <p>Pedido 49: <i>"sem nenhum adm precisar tirar ele"</i>. Quem juntou os
+     * 8 fragmentos e tocou no miolo do portal volta pro lugar de onde foi
+     * expulso (o {@code ORIGEM}); se não houver origem guardada (servidor
+     * reiniciou, por exemplo), cai num ponto sorteado do mundo.
+     */
+    public static void voltarPeloPortal(ServerPlayer alvo) {
+        try {
+            VazioReino.soltarCaindo(alvo);
+            PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
+                    NeptunePackets.Cena.CENA_VOLTA, 1.0F, 2600, System.nanoTime()));
+            Object[] o = ORIGEM.remove(alvo.getUUID());
+            if (o != null && o[0] instanceof net.minecraft.resources.ResourceKey<?> chaveBruta) {
+                @SuppressWarnings("unchecked")
+                net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> chave =
+                        (net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>) chaveBruta;
+                ServerLevel destino = alvo.getServer().getLevel(chave);
+                if (destino != null) {
+                    alvo.teleportTo(destino, (Double) o[1], (Double) o[2], (Double) o[3],
+                            java.util.Set.of(), (Float) o[4], (Float) o[5]);
+                    destino.playSound(null, alvo.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
+                            SoundSource.HOSTILE, 1.0F, 0.9F);
+                    alvo.displayClientMessage(Component.literal(
+                            "\u00a75\u00a7lO PORTAL TE DEVOLVEU.\n"
+                            + "\u00a78O mundo está onde você deixou. Ninguém te tirou de lá."), false);
+                    return;
+                }
+            }
+            devolverAleatorio(alvo);
+            alvo.displayClientMessage(Component.literal(
+                    "\u00a75\u00a7lO PORTAL TE DEVOLVEU.\n"
+                    + "\u00a78A escuridão te cuspiu em algum lugar do mundo."), false);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: volta pelo portal falhou (o jogo segue)", t);
+        }
+    }
+
+    /** (5.12.0) leva o admin até o portal do vazio (teste do dono). */
+    public static void irAoPortal(ServerPlayer p) {
+        try {
+            ServerLevel destino = p.getServer().getLevel(CHAVE_EXILIO);
+            if (destino == null) {
+                p.displayClientMessage(Component.literal(
+                        "\u00a7cA dimensão rptag:exilio não carregou."), false);
+                return;
+            }
+            int x = 780, z = 40;
+            destino.getChunk(x >> 4, z >> 4);
+            int y = destino.getHeight(
+                    net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            p.teleportTo(destino, x + 0.5, y + 1.0, z + 14.5,
+                    java.util.Set.of(), 180.0F, 0.0F);
+            destino.playSound(null, p.blockPosition(), RPTagMod.SOM_VAZIO.get(),
+                    SoundSource.AMBIENT, 0.8F, 0.8F);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui levar ao portal", t);
+        }
+    }
+
     /** (5.7.8) raio (em blocos) em volta do spawn onde a pessoa pode ser solta. */
     private static final int RAIO_SOLTURA = 4000;
 
     /** (5.7.8) a dimensão do exílio (pra o ambiente dela rodar no tick). */
-    private static final net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> CHAVE_EXILIO =
+    public static final net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> CHAVE_EXILIO_PUBLICA =
             net.minecraft.resources.ResourceKey.create(
                     net.minecraft.core.registries.Registries.DIMENSION,
                     net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "exilio"));
+
+    private static final net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> CHAVE_EXILIO =
+            CHAVE_EXILIO_PUBLICA;
     /** (5.7.8) próximo monólito que nasce no escuro. */
     private static long proximoMonolito = 0L;
     /** (5.7.8) próximo sussurro. */

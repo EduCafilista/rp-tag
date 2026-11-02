@@ -96,6 +96,9 @@ Alvos: nomes (aceita lista `Ana,Beto`) ou `@a`.
 | `/vazio apagar <jogador>` | apaga da existência |
 | `/vazio exilar <jogador>` · `/vazio soltar <jogador>` | manda pro exílio / solta num lugar aleatório |
 | `/vazio entrar` | o admin entra no exílio para testar |
+| `/vazio fragmentos [jogador]` | (5.12.0) dá os 8 fragmentos do vazio — testa o portal sem caçar pedestal |
+| `/vazio portal` | (5.12.0) leva até o portal do vazio (780, 40) |
+| `/vazio pedestais` | (5.12.0) lista os 8 pedestais e quantos fragmentos você tem |
 | `/bicho aqui` · `/bicho <pos>` · `/bicho limpar` | caixinha de música (o bicho pula quando alguém chega) |
 
 ## Vanilla (não é do mod)

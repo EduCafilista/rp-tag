@@ -13,6 +13,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.ServerChatEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -47,6 +49,58 @@ public final class ServerEvents {
     @SubscribeEvent
     public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
         NeptuneEventos.tick(event.getServer());
+    }
+
+    // ---- (5.12.0) REINO DO VAZIO: cliques nos pedestais e no portal ----
+    @SubscribeEvent
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (!(event.getEntity() instanceof ServerPlayer p)) {
+            return;
+        }
+        try {
+            if (VazioReino.interagir(p, event.getPos())) {
+                event.setCanceled(true);          // não abre baú/usa item à toa
+                event.setUseBlock(net.neoforged.neoforge.common.util.TriState.FALSE);
+                event.setUseItem(net.neoforged.neoforge.common.util.TriState.FALSE);
+                event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: clique no pedestal falhou (o jogo segue)", t);
+        }
+    }
+
+    /**
+     * (5.12.0) O VAZIO QUE MATA DEVAGAR — pedido 49: "dá um tempo e depois
+     * mata". Esta é a parte essencial: enquanto a contagem corre ({@link
+     * VazioReino#estaCaindo}), o dano do void do jogo é CANCELADO. Sem isso o
+     * jogador morreria no primeiro tick em que passasse do min_y, e a
+     * contagem nunca aconteceria.
+     */
+    @SubscribeEvent
+    public static void onIncoming(LivingIncomingDamageEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer p)) {
+            return;
+        }
+        try {
+            if (!p.level().dimension().equals(NeptuneEventos.CHAVE_EXILIO_PUBLICA)) {
+                return;
+            }
+            var fonte = event.getSource();
+            boolean doVoid = fonte.is(net.minecraft.world.damagesource.DamageTypes.FELL_OUT_OF_WORLD);
+            if (doVoid && VazioReino.estaCaindo(p.getUUID())) {
+                event.setCanceled(true);          // o vazio espera a contagem
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: dano do vazio tratado com erro (o jogo segue)", t);
+        }
+    }
+
+    // ---- (5.12.0) respawn de verdade encerra o selo do /apagar ----
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer p) {
+            NeptuneEventos.avisarRespawn(p.getUUID());
+        }
     }
 
     // ================================================================
@@ -197,6 +251,8 @@ public final class ServerEvents {
             // (5.7.9) uma chamada só: sombra + códigos + som + anúncio.
             // A animação deixou de depender do /rp admin saidafx: ela é a
             // despedida do personagem e roda sempre que alguém sai do jogo.
+            // (5.12.0) se ele estava no meio da contagem do vazio, solta a gravidade
+            dev.rptag.VazioReino.soltarCaindo(saiu);
             dev.rptag.NeptuneEventos.saidaAutomatica(saiu);
         } catch (Throwable t) {
             dev.rptag.RPTagMod.LOGGER.warn("RP Tag: animacao de saida falhou ({})", t.toString());

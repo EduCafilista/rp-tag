@@ -204,6 +204,44 @@ public final class NeptuneCommands {
                     return Command.SINGLE_SUCCESS;
                 })));
 
+        // (5.12.0) /vazio fragmentos [jogador] — dá os 8 fragmentos (teste do
+        // portal sem caçar pedestal) e /vazio portal — leva o admin até ele.
+        vazio.then(Commands.literal("fragmentos")
+                .executes(ctx -> {
+                    ServerPlayer quem = ctx.getSource().getPlayerOrException();
+                    VazioReino.darTudo(quem);
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a75Voc\u00ea tem os 8 fragmentos do vazio. "
+                                    + "\u00a77V\u00e1 at\u00e9 o PORTAL (\u00a7f/vazio portal\u00a77) e toque no miolo."), true);
+                    return Command.SINGLE_SUCCESS;
+                })
+                .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
+                    ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                    VazioReino.darTudo(alvo);
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a75" + alvo.getName().getString() + " recebeu os 8 fragmentos do vazio."), true);
+                    return Command.SINGLE_SUCCESS;
+                })));
+
+        vazio.then(Commands.literal("portal").executes(ctx -> {
+            ServerPlayer quem = ctx.getSource().getPlayerOrException();
+            NeptuneEventos.irAoPortal(quem);
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a78Levado ao portal do vazio. Toque no miolo de sculk com os 8 fragmentos."), true);
+            return Command.SINGLE_SUCCESS;
+        }));
+
+        vazio.then(Commands.literal("pedestais").executes(ctx -> {
+            ServerPlayer quem = ctx.getSource().getPlayerOrException();
+            int tem = RPWorldData.get(quem.getServer()).getFragmentos(quem.getUUID());
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a75Fragmentos do vazio: \u00a7f" + tem + "/8\n\u00a78"
+                            + VazioReino.listaPedestais()
+                            + "\n\u00a78portal: \u00a7f780, 40 \u00a78(fila de constru\u00e7\u00e3o: "
+                            + VazioReino.construindo() + ")"), false);
+            return Command.SINGLE_SUCCESS;
+        }));
+
         // ------------------------------------------------------- /saida: MORREU
         // (5.7.9) O dono recusou o comando: "não quero essa /saida, quero que a
         // animação apareça quando o player sair do jogo". O comando saiu do
@@ -257,6 +295,9 @@ public final class NeptuneCommands {
                     + "\u00a7e/vazio apagar <jogador> \u00a77— apaga da existência\n"
                     + "\u00a7e/vazio exilar <jogador> \u00a77— manda pra rptag:exilio (tudo preto e vazio)\n"
                     + "\u00a7e/vazio soltar <jogador> \u00a77— solta ele num lugar ALEATÓRIO do mundo\n"
+                    + "\u00a7e/vazio fragmentos [jogador] \u00a77— dá os 8 fragmentos (teste do portal)\n"
+                    + "\u00a7e/vazio portal \u00a77— vai até o portal do vazio\n"
+                    + "\u00a7e/vazio pedestais \u00a77— lista os 8 pedestais e quantos fragmentos você tem\n"
                     + "\u00a7e/bicho aqui \u00a77— caixinha de música (o bicho pula quando alguém chega)")
                     .withStyle(ChatFormatting.DARK_PURPLE), false);
             return Command.SINGLE_SUCCESS;

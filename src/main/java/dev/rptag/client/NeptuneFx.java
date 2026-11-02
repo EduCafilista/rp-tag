@@ -305,7 +305,7 @@ public final class NeptuneFx {
     }
 
     /** Real blur do jogo (menu de pausa usa); se falhar, segue sem. */
-    private static void desfocar(float forca) {
+    public static void desfocar(float forca) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) {
             return;
@@ -864,14 +864,19 @@ public final class NeptuneFx {
         AvisoFxUtil.Buf b = new AvisoFxUtil.Buf(g.pose().last().pose());
 
         // (a) lavagem leve da tela (não é caixa: cobre tudo, sem borda)
-        b.rect(0, 0, w, h, col(0x060309, 0.26f * pico * forca));
+        // (5.12.0) era 0,26 — o dono vetou "tela preta" no terremoto, então
+        // a nebulosa ficou só como peso de ar (0,16 no pico).
+        b.rect(0, 0, w, h, col(0x060309, 0.16f * pico * forca));
 
         // (b) a sombra crescendo: 3 discos em degradê empilhados = borrão
         //     radial liso (48 fatias cada, nenhum canto aparece)
         float raio = escala * (0.12f + 0.42f * pico) * forca;
-        disco(b, cx, cy + escala * 0.02f, raio * 1.55f, 0x0B0713, 0.55f * pico, 48);
-        disco(b, cx, cy, raio * 1.05f, 0x06040B, 0.78f * pico, 48);
-        disco(b, cx, cy, raio * 0.55f, 0x000000, 0.92f * pico, 48);
+        // (5.12.0) o miolo do disco era preto 0,92 = tela preta com borda
+        // macia. Agora o miolo para em 0,62 e o resto em 0,38/0,46: sombra
+        // funda, mas o mundo continua aparecendo por baixo.
+        disco(b, cx, cy + escala * 0.02f, raio * 1.55f, 0x0B0713, 0.34f * pico, 48);
+        disco(b, cx, cy, raio * 1.05f, 0x06040B, 0.46f * pico, 48);
+        disco(b, cx, cy, raio * 0.55f, 0x000000, 0.62f * pico, 48);
 
         // (c) a SILHUETA de quem está sendo apagado, se desfazendo de baixo
         //     pra cima (o corpo vira sombra e escorre)
@@ -956,7 +961,9 @@ public final class NeptuneFx {
         float respira = 0.5F + 0.5F * (float) Math.sin(now * 0.0009);
         com.mojang.blaze3d.systems.RenderSystem.enableBlend();
         com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
-        g.fill(0, 0, w, h, (int) ((0.70F + 0.03F * respira) * 255) << 24 | 0x000000);
+        // (5.12.0) era 0,70 de preto cheio: baixou pra 0,50 (o exílio continua
+        // pesado, mas sem aquela cortina preta na cara durante o terremoto).
+        g.fill(0, 0, w, h, (int) ((0.50F + 0.03F * respira) * 255) << 24 | 0x0A0512);
         // vinheta macia (canto sem borda dura)
         com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0, 0, 0, 0.55F + 0.10F * respira);
         int lado = (int) (Math.max(w, h) * 1.35F);

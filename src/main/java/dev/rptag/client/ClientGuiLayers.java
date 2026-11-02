@@ -80,6 +80,8 @@ public final class ClientGuiLayers {
         MedoOpAvisoFx.registrar(event);
         // (5.7.0) ANIMAÇÃO DE SAÍDA do jogador (sprite dissolvendo em código)
         SaidaPlayerFx.registrar(event);
+        // (5.12.0) 23 = ENGOLIR (o terremoto levando a pessoa — protótipo do dono)
+        EngolirFx.registrar(event);
         // (5.7.2) SOMBRA DA MORTE: a escuridão saindo do corpo de quem morre
         SombraMorteFx.registrar(event);
         // (5.4.0) EVENTO NEPTUNE: terremoto (nebulosa + poeira + visao dupla),

@@ -104,6 +104,8 @@ public final class ClientEffects {
         AllForOneAvisoFx.parar();
         SaidaPlayerFx.parar();
         SombraMorteFx.parar();
+        // (5.12.0) a animação de ENGOLIR também é uma só por vez
+        EngolirFx.parar();
         // (5.7.9) estilo 19 = ONEFALLALL: o protótipo AvisoSol do dono (sol
         // dourado atrás da silhueta encapuzada, as 8 vidas antigas em volta,
         // a tocha pulando de cabeça em cabeça, brasas e sussurros).
@@ -206,6 +208,15 @@ public final class ClientEffects {
             String limpo17 = text.replaceAll("\u00a7.", "");
             AllForOneAvisoFx.iniciar(limpo17);
             RPTagMod.LOGGER.info("RP Tag: AVISO ALLFORONE iniciado (FX proprio)");
+            return;
+        }
+        // (5.12.0) estilo 23 = ENGOLIR (protótipo SwallowedByDarkness do dono):
+        // poça negra, olhos, corpo esticado, 9 braços com 7 dedos e o texto
+        // FOI ENGOLIDO / PELA ESCURIDÃO. É o terremoto levando a pessoa.
+        if (style == 23) {
+            String limpo23 = text.replaceAll("\u00a7.", "");
+            EngolirFx.iniciar(limpo23);
+            RPTagMod.LOGGER.info("RP Tag: ANIMACAO DE ENGOLIR iniciada ({})", limpo23);
             return;
         }
         // (5.7.0) estilo 18 = ANIMACAO DE SAIDA (o texto é o NOME do jogador

@@ -54,6 +54,17 @@ public final class RPWorldData extends SavedData {
     /** (3.82.0) VIDAS CANÔNICAS de cada jogador (quem nunca morreu tem
      * VIDAS_INICIAIS = 5, guardado só quem já perdeu/ganhou diferente). */
     private final Map<UUID, Integer> canonLives = new HashMap<>();
+    /**
+     * (5.12.0) ALTURA em que cada construção do vazio foi levantada (0..7 =
+     * pedestais, 8 = portal). Fica salvo no mundo para a estrutura NÃO ser
+     * reconstruída em cima dela mesma depois de um restart (o heightmap subiria
+     * a cada boot e o pedestal viraria uma torre).
+     */
+    private final int[] vazioYs = new int[9];
+
+    /** (5.12.0) FRAGMENTOS DO VAZIO que cada jogador já recolheu (0..8).
+     *  Persiste no mundo: quem morre no vazio NÃO perde o que achou. */
+    private final Map<UUID, Integer> fragmentos = new HashMap<>();
     private final Map<UUID, BubbleStyle> styles = new HashMap<>();
     private boolean chatLocal = true;
     private boolean bubblesOn = true;
@@ -241,6 +252,61 @@ public final class RPWorldData extends SavedData {
     /** define o estoque de vidas canônicas (persiste no mundo). */
     public void setCanonLives(UUID id, int vidas) {
         canonLives.put(id, Math.max(0, vidas));
+        setDirty();
+    }
+
+    /** (5.12.0) altura salva de uma construção do vazio (0 = ainda não feita). */
+    public int getVazioY(int chave) {
+        return (chave >= 0 && chave < vazioYs.length) ? vazioYs[chave] : 0;
+    }
+
+    /** (5.12.0) grava a altura de uma construção do vazio. */
+    public void setVazioY(int chave, int y) {
+        if (chave >= 0 && chave < vazioYs.length && y > 0) {
+            vazioYs[chave] = y;
+            setDirty();
+        }
+    }
+
+    // ==== (5.12.0) FRAGMENTOS DO VAZIO (a saída do exílio pelo portal) ====
+    // Um int por jogador guarda as duas coisas: os 4 bits de baixo = quantos
+    // fragmentos ele tem (0..8) e o resto = a MÁSCARA de quais pedestais já
+    // foram usados (bit i = pedestal i). Assim ninguém farma o mesmo pedestal.
+
+    /** quantos fragmentos do vazio o jogador já recolheu (0..8). */
+    public int getFragmentos(UUID id) {
+        int v = fragmentos.getOrDefault(id, 0);
+        return Math.max(0, Math.min(VazioReino.TOTAL_FRAGMENTOS, v & 0xF));
+    }
+
+    /** máscara dos pedestais já usados por este jogador. */
+    public int getPedestais(UUID id) {
+        return fragmentos.getOrDefault(id, 0) >>> 4;
+    }
+
+    /** este jogador já pegou o fragmento do pedestal {@code indice}? */
+    public boolean jaPegouPedestal(UUID id, int indice) {
+        return (getPedestais(id) & (1 << indice)) != 0;
+    }
+
+    /**
+     * Tenta pegar o fragmento de um pedestal. Devolve o total novo, ou -1 se
+     * ele já tinha pegado esse (aí não conta de novo).
+     */
+    public int pegarFragmento(UUID id, int indice) {
+        int mascara = getPedestais(id);
+        if ((mascara & (1 << indice)) != 0) {
+            return -1;
+        }
+        int total = Math.min(VazioReino.TOTAL_FRAGMENTOS, getFragmentos(id) + 1);
+        fragmentos.put(id, (mascara | (1 << indice)) << 4 | total);
+        setDirty();
+        return total;
+    }
+
+    /** zera os fragmentos (usado quando ele atravessa o portal). */
+    public void limparFragmentos(UUID id) {
+        fragmentos.remove(id);
         setDirty();
     }
 
@@ -459,6 +525,19 @@ public final class RPWorldData extends SavedData {
         }
         tag.put("CanonLives", vidasList);
 
+        // (5.12.0) alturas das construções do vazio
+        tag.putIntArray("VazioYs", vazioYs);
+
+        // (5.12.0) fragmentos do vazio
+        ListTag fragList = new ListTag();
+        for (Map.Entry<UUID, Integer> en : fragmentos.entrySet()) {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", en.getKey());
+            e.putInt("N", en.getValue());
+            fragList.add(e);
+        }
+        tag.put("VazioFragmentos", fragList);
+
         tag.putBoolean("ChatLocal", chatLocal);
         tag.putBoolean("BubblesOn", bubblesOn);
         tag.putBoolean("SaidaFx", saidaFx);
@@ -557,6 +636,17 @@ public final class RPWorldData extends SavedData {
         for (int i = 0; i < vidasList.size(); i++) {
             CompoundTag e = vidasList.getCompound(i);
             data.canonLives.put(e.getUUID("Id"), e.getInt("Lives"));
+        }
+
+        int[] ys = tag.getIntArray("VazioYs");
+        for (int i = 0; i < Math.min(ys.length, data.vazioYs.length); i++) {
+            data.vazioYs[i] = ys[i];
+        }
+
+        ListTag fragList = tag.getList("VazioFragmentos", Tag.TAG_COMPOUND);
+        for (int i = 0; i < fragList.size(); i++) {
+            CompoundTag e = fragList.getCompound(i);
+            data.fragmentos.put(e.getUUID("Id"), e.getInt("N"));
         }
 
         ListTag stylesList = tag.getList("BubbleStyles", Tag.TAG_COMPOUND);

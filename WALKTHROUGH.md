@@ -13,6 +13,41 @@
 
 ---
 
+## 5.12.0 (2026-11-02): pedido 49 — engolir, vazio preto, morte selada e portal
+
+- **Dois bugs de número/estilo explicavam metade do pedido**: `saidaAutomatica()` mandava
+  `ScreenTextPayload(nome, 18, 9)` — **9 = SANGUE**, não 18 (saída). Resultado: a animação de saída
+  **nunca rodava** e todo mundo levava a Sangria na tela quando alguém saía. Fix: `(nome, 9, 18)`.
+  Tabela de estilos confirmada: 18 saída · 19 SolAviso · 20 MorteOp · 21 SangueOp · 22 MedoOp ·
+  **23 ENGOLIR (novo)**.
+- **"Tela preta no terremoto"** era o `exilar()` mandando `Nebulosa(5, true)` para todos, com o
+  miolo do disco em **preto 0,92** em `NeptuneFx.desenharNebulosa`. Tirei o envio; disco 0,62;
+  lavagem 0,16; cortina do exílio 0,70 → 0,50.
+- **`/apagar`**: `hurt(magic, MAX)` deixava o corpo deitado (revive do modpack levantava). Novo
+  `matarDefinitivo()` = limpar corpo → `setHealth(0)` + `die()` (fora do `hurt`) → `genericKill` de
+  reserva → **selo de 60 s** (`tickApagados`) que derruba ressurreição. `PlayerRespawnEvent` remove
+  o selo (senão mataria o jogador de novo depois do respawn legítimo).
+- **`EngolirFx` (estilo 23)** é o porte do `SwallowedByDarkness` (`uKqjYudD.java`): poça + 3 anéis,
+  tremor, olhos (alguns com 3 pupilas), corpo esticado/afundando com clip, cobertura orgânica de
+  65 pontos (alfa máx. **0,80** — regra do dono: sem tela preta), 9 braços × 7 dedos **desenhados
+  depois da cobertura** (senão o preto sumia no breu) e o texto `FOI ENGOLIDO / PELA ESCURIDÃO`.
+  O exilado é teleportado **5,2 s** depois do início (era 2,6 s).
+- **`VazioReino`** (novo, server-side): 8 pedestais (210–470 blocos) com coluna de ENO_ROD e shrieker;
+  portal em **(780, 40)** que acende com 8/8; prédiso perdidos (arranha-céus em ruínas) gerados em
+  **fila** de 240 blocos/tick; contagem de 12 s para quem cai no vazio (dano de void cancelado por
+  `LivingIncomingDamageEvent`).
+  - **Persistência obrigatória**: a altura de cada construção fica em `RPWorldData.VazioYs`. Sem isso
+    o heightmap subia a cada boot e o pedestal era reconstruído **em cima dele mesmo** (foi visto no
+    teste: y 16 → 22 → 47). Fragmentos ficam em `VazioFragmentos` (máscara de pedestais + total).
+  - A fila **não sobrescreve** bloco existente: por isso o catalisador do portal é enfileirado
+    **antes** do sculk (senão ficava sculk no lugar do miolo).
+- **Vazio preto**: `ambient_light` 0,0 · `has_skylight:false` · efeitos `the_end` (era `overworld`,
+  que dava céu azul) · `client/VazioNeblina` (neblina #050309, fecha em 96 blocos).
+- **Som do deus**: trilha 1.0 → **2,6** + `WARDEN_STEP` (1.35 / 0.55–0.67) a cada passo.
+- **Teste** (sem cliente): comando temporário `devvazio` (removido na entrega) provou no servidor:
+  pedestal com `sculk_shrieker` no topo, portal com `sculk_catalyst` no miolo, e **segunda execução
+  não reconstrói** (`construidos=0`). `check.py`: 832 PASS.
+
 ## 5.11.2 (2026-11-02): o título no CHAT
 
 - **Causa**: o título entrava só pelo `PlayerEvent.NameFormat` (TAB + nametag).
