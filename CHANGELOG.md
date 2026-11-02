@@ -62,7 +62,7 @@ de Ordem Paranormal: sigilo, olho, memórias e balança.
 - O script fica no repo: dá pra rodar de novo (`--medir` só mede).
 
 ### Verificação
-- `check.py`: **769 PASS / 0 FAIL** (12 checks novos: memórias, verdades, balança,
+- `check.py`: **776 PASS / 0 FAIL** (12 checks novos: memórias, verdades, balança,
   sigilo, revelação por tempo, STAGE1, teto de 80 MB, maior quadro < 200 KB,
   amostra toda 1280×720, script e prévias no repo).
 - Servidor de teste: `Done (0.752s)`, **0 exceções**, `RP Tag 5.10.0` na lista.
