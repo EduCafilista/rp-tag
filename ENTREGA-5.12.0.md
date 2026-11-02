@@ -5,7 +5,9 @@
 > TERREMOTO** · melhorar a animação de engolir (protótipo `uKqjYudD.java`) · portal/8 fragmentos para
 > voltar do vazio sem admin · tirar o aviso de SANGUE da tela · a animação de saída tem que aparecer*.
 
-**Jar:** `rptag-5.12.0.jar` · 69.324.468 B · sha256 e md5 na release
+**Release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.12.0 (id 431881060)
+**Download:** https://github.com/EduCafilista/rp-tag/releases/download/v5.12.0/rptag-5.12.0.jar
+**Jar:** `rptag-5.12.0.jar` · 69.324.541 B · md5 `26ff0cc8f2cec02fe26367217aec3bc9` · sha256 `ebf63a67de0d016ebf9548380aaa06cc64ddec07f7025088402b6c21f2cd65cd`
 **Prévia:** `previa/engolir_5.12.0.png` (3 quadros da animação nova)
 
 ---
