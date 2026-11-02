@@ -17,6 +17,31 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 
+def _tam_jpg(caminho):
+    """(largura, altura) lidas do marcador SOF do JPEG."""
+    import struct
+    with open(caminho, 'rb') as f:
+        if f.read(2) != b'\xff\xd8':
+            return None
+        while True:
+            b = f.read(1)
+            if not b:
+                return None
+            if b != b'\xff':
+                continue
+            m = f.read(1)
+            while m == b'\xff':
+                m = f.read(1)
+            if m in (b'\xd8', b'\xd9') or not m:
+                continue
+            tam = struct.unpack('>H', f.read(2))[0]
+            if m[0] in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB):
+                f.read(1)
+                h, w = struct.unpack('>HH', f.read(4))
+                return (w, h)
+            f.seek(tam - 2, 1)
+
+
 def _tam_png(caminho):
     import struct
     with open(caminho, 'rb') as f:
@@ -24,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.9.0'
+VER = '5.10.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1828,8 +1853,8 @@ _tvf = rd(C + '/TabletVideoFundo.java')
 _vfl = rd(C + '/VideoFrameLoader.java')
 _vad = rd(C + '/VazioAuraDarkFx.java')
 _nfx = rd(C + '/NeptuneFx.java')
-check('5.7.1: BUG do CONHECIMENTO corrigido (array do olho estourava no meio do aviso)',
-      'float[] px = new float[N * 2 + 1]' in _conh and 'ArrayIndexOutOfBounds' in _conh)
+check('5.7.1/5.10.0: BUG do CONHECIMENTO corrigido (array do olho dimensionado 2n+1, não estoura)',
+      'new float[n * 2 + 1]' in _conh and 'px[n + i] = cx' in _conh)
 check('5.7.1: quando um FX falha, o log mostra a excecao inteira (pra achar a causa)',
       'aviso CONHECIMENTO desligado", t)' in _conh)
 check('5.7.1: video do tablet com os quadros SEM marca d agua (delogo + corte do rodape)',
@@ -2116,6 +2141,58 @@ check('5.8.0: a textura é pintada nas MESMAS coordenadas (u,v) da malha',
       'def uv_de' in rd(_ger) and 'rel = relevo(u, v)' in rd(_ger))
 check('5.8.0: a prévia da máscara está em previa/ (pra o dono ver antes de testar)',
       os.path.exists('previa/mascara_58.png') and os.path.getsize('previa/mascara_58.png') > 40_000)
+
+# ============ 5.10.0: CONHECIMENTO novo (memórias, balança) + mod mais leve ============
+_conh = rd(C + '/ConhecimentoAvisoFx.java')
+check('5.10.0: o aviso CONHECIMENTO é o protótipo NOVO (4 memórias penduradas em cordas)',
+      'MEM_X' in _conh and 'MEM_Y' in _conh and 'cordas(' in _conh
+      and 'quadBez(' in _conh and 'memoria(' in _conh)
+check('5.10.0: as 4 VERDADES do protótipo estão lá (texto de cada memória)',
+      all(t in _conh for t in ('Você já esteve', 'Seu nome não foi',
+                               'Alguém lembra de você', 'As vozes sempre')))
+check('5.10.0: a BALANÇA SANIDADE × CONHECIMENTO e o contador VERDADES',
+      'geomBalanca(' in _conh and 'SANIDADE' in _conh and 'CONHECIMENTO' in _conh
+      and 'VERDADES' in _conh and 'nRev' in _conh)
+check('5.10.0: o sigilo geométrico (estrela de 6 pontas, quadrados, 2 bandas de runas)',
+      'poligono(' in _conh and 'runeBand(' in _conh and 'scripts(' in _conh)
+check('5.10.0: SEM MOUSE — a revelação das memórias é por TEMPO (barra enchendo sozinha)',
+      'T_REVELA' in _conh and 'REVELA_PASSO' in _conh and 'PROG[i] = Math.max(PROG[i], p)' in _conh
+      and 'Minecraft.getWindow' not in _conh and 'mouseHandler' not in _conh)
+check('5.10.0: com as 4 verdades o texto TROCA (STAGE1 do protótipo)',
+      'Agora você sabe.' in _conh and 'E não pode deixar de saber.' in _conh
+      and 'finalReveal(' in _conh)
+
+_fxdir = A + '/fx'
+_total = 0
+_quadros = 0
+_maior = 0
+for _d in sorted(os.listdir(_fxdir)):
+    _fd = os.path.join(_fxdir, _d, 'frames')
+    if not os.path.isdir(_fd):
+        continue
+    for _n in os.listdir(_fd):
+        _caminho = os.path.join(_fd, _n)
+        _t = os.path.getsize(_caminho)
+        _total += _t
+        _quadros += 1
+        _maior = max(_maior, _t)
+check('5.10.0: os quadros de vídeo foram OTIMIZADOS (menos de 80 MB no total)',
+      _total < 80 * 1024 * 1024)
+check('5.10.0: nenhum quadro ficou grande (o maior tem menos de 200 KB)',
+      0 < _maior < 200 * 1024)
+check('5.10.0: a otimização NÃO mudou resolução (amostra: todas 1280x720)',
+      all(_tam_jpg(os.path.join(_fxdir, _d, 'frames', _f)) == (1280, 720)
+          for _d in sorted(os.listdir(_fxdir))
+          if os.path.isdir(os.path.join(_fxdir, _d, 'frames'))
+          for _f in sorted(os.listdir(os.path.join(_fxdir, _d, 'frames')))[::57]
+          if _f.endswith('.jpg')))
+check('5.10.0: o script da otimização está no repo (dá pra rodar de novo)',
+      os.path.exists('arte/otimizar_frames.py')
+      and 'def recompressao(' in rd('arte/otimizar_frames.py'))
+check('5.10.0: as prévias do aviso e da otimização estão em previa/',
+      os.path.exists('previa/conhecimento_5.10.0.png')
+      and os.path.getsize('previa/conhecimento_5.10.0.png') > 200_000
+      and os.path.exists('previa/otimizacao_5.10.0.png'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

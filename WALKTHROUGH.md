@@ -13,6 +13,53 @@
 
 ---
 
+## 5.10.0 (2026-11-02): CONHECIMENTO novo + mod 30 MB mais leve
+
+> Dois pedidos do dono na mesma mensagem: trocar o aviso CONHECIMENTO pelo
+> protótipo novo (`https://n.uguu.se/YUkBZTyA.java`) e **diminuir o tamanho do mod**.
+
+### Aviso CONHECIMENTO: o protótipo novo (não é o antigo "repaginado")
+- O `ConhecimentoAvisoFx.java` foi **reescrito** (652 → ~1010 linhas) seguindo o
+  `AvisoConhecimento` do JavaFX: 960×640, centro (480,300), CPS 22, cores
+  `GOLD #FFD046` / `AMBER #EB9619` / `PALE #FFF6C8` / `WHITE #FFFCF0`.
+- **A adaptação que importa**: o protótipo revela as 4 memórias **passando o mouse**
+  (1 s de hover). No jogo **não existe mouse** — a solução foi o **tempo**:
+  `T_REVELA = 4,3 s` e `REVELA_PASSO = 1,9 s`; a barra de progresso da memória
+  **enche sozinha** e, enquanto enche, **o olho olha pra ela** (o `PROG[i]` também
+  acelera o pulso da corda). Nada de tecla, nada de clique: roda sozinho.
+- Estrutura do desenho (ordem dos `preparar`/`Buf`, igual ao protótipo):
+  fundo (degradê radial de verdade, 8 anéis × 36 setores — **3 discos empilhados
+  faziam um ANEL visível**) → runas das bordas → sigilo → cordas → memórias →
+  olho → poeira → ondas → balança → contador → ícone → rodapé → textos.
+- **Coordenadas herdadas do protótipo e ajustadas**: as memórias 1 e 2 desceram
+  (`MEM_Y = {212, 196, 372, 366}` em vez de `{168, 160, …}`) porque a **balança**
+  (canto de 118,92) e o **contador VERDADES** (topo direito, y=108) **ficavam por
+  cima delas** e escondiam a verdade escrita. É a única divergência de layout.
+- A balança usa a função `geomBalanca(ox, oy, s)` — o **mesmo** cálculo alimenta o
+  desenho e os rótulos de texto (senão o texto descola do prato quando inclina).
+
+### Otimização (o "mod pesado")
+- Diagnóstico medido: `assets/rptag/fx` = **95,5 MB** de JPEG; o resto do mod
+  (classes, sons, texturas, geos) dá ~10 MB. Ou seja, **o peso era 100% quadro de vídeo**.
+- `arte/otimizar_frames.py`: recomprime **no lugar**, sem mudar resolução, nome ou
+  formato — cor q72 + progressivo, alpha q55, e **só grava se ficar menor**.
+- **95,5 → 65,0 MB (−32%)**; jar **99,9 → 66,0 MB**; erro médio 1,6–2,9/255.
+- **Não mexer na resolução** foi decisão do dono (opção "leve"). Se um dia quiser
+  mais, o caminho é 960×540 (perde ~20 MB a mais), mas exige mexer em
+  `FxTimeline.LARGURA/ALTURA` + `VideoFx.blit` + todos os `fx.json`.
+- **Lição**: recomprimir com `optimize=True, progressive=True` só compensa em
+  imagens com degradê/ruído (gelo caiu 40%); em imagem chapada o progressivo pode
+  ficar **maior** — por isso o script compara e mantém o original.
+
+### Como testar (cliente)
+1. `/rp admin avisar @a conhecimento` → o sigilo se forma, as cordas crescem e a
+   1ª memória começa a encher sozinha aos ~3,2 s.
+2. As 4 verdades aparecem em 4,3 / 6,2 / 8,1 / 10,0 s; a balança inclina e o
+   contador acende.
+3. Com a 4ª, o clarão dispara e o texto troca para *"Agora você sabe."*.
+4. Se algo der errado no render, o aviso **desliga sozinho** e o log mostra
+   `aviso CONHECIMENTO desligado` — nunca o jogo.
+
 ## 5.9.0 (2026-11-02): TÍTULOS com cor modificável (TAB, chat, nametag)
 
 > O dono: *"você fez o set dos títulos pra os players? no TAB e em cima da

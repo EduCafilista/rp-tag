@@ -1,5 +1,73 @@
 # Changelog
 
+## 5.10.0 — CONHECIMENTO novo (memórias, balança) + mod 30 MB mais leve — 2026-11-02
+
+> O dono mandou dois pedidos juntos: *"troque o aviso conhecimento para esse"*
+> (protótipo novo em `n.uguu.se/YUkBZTyA.java`) e *"o mod está começando a ficar
+> bem pesado, será que você consegue dar uma otimizada nele para diminuir o
+> tamanho?"*
+
+### 1) Aviso CONHECIMENTO (estilo 16) refeito pelo protótipo NOVO
+O aviso antigo (o olho dourado com 3 anéis de runas e 12 olhinhos) era o porte de
+um protótipo **anterior**. O novo é **calmo e geométrico**, como o Conhecimento
+de Ordem Paranormal: sigilo, olho, memórias e balança.
+
+- **O sigilo**: 24 fios radiais, anéis 172/178/146, os 72 tracinhos do aro, a
+  **estrela de seis pontas** (dois triângulos girando em sentidos opostos), dois
+  **quadrados** sobrepostos, anéis internos 92/72 e **duas bandas de runas**
+  (48 no aro de 159 e 30 no de 82) — o alfabeto de 28 runas é o mesmo (semente 21).
+- **As 4 MEMÓRIAS penduradas em cordas** (foto sépia com vultos, moldura dourada,
+  alfinete), ligadas ao anel por **cordas curvas** (Bézier quadrática) que
+  balançam; pulsos de luz sobem da memória pro olho.
+- **A revelação**: no protótipo era passar o mouse ~1 s em cima da memória.
+  **No jogo não tem mouse** — então a barra de progresso **enche sozinha** (1,9 s
+  por memória, a partir de 4,3 s) e **o olho olha para a memória que está sendo
+  revelada**. Quando enche, a foto escurece no pé e a **VERDADE** aparece digitada:
+  - *"Você já esteve aqui antes."*
+  - *"Seu nome não foi escolha sua."*
+  - *"Alguém lembra de você. Você não lembra."*
+  - *"As vozes sempre foram uma só."*
+- **A BALANÇA SANIDADE × CONHECIMENTO** (canto superior esquerdo, com os dois
+  pratos e os brilhos): `conhecimento = nRev/4 × 0,72 + 0,28 × ease((t−4)/22)`,
+  `sanidade = 100 − 0,45 × conhecimento`. Ela **inclina** conforme o conhecimento
+  pesa.
+- **Contador VERDADES**: 4 losangos no topo direito; cada verdade acende um.
+- **4 colunas de runas** nas bordas da tela (subindo/descendo, com umas que
+  brilham de vez em quando) — como no protótipo, mas presas à borda REAL da
+  janela, não à moldura 960×640.
+- **Olho**: lente com degradê, íris com **44 fibras radiais**, pupila que respira,
+  piscada a cada 7,5 s, brilho aditivo em volta.
+- **Com as 4 verdades**: onda grande, clarão e o texto **troca** para o STAGE1
+  (*"Agora você sabe. E não pode deixar de saber."*).
+- 10 sussurros nas laterais (*"tudo tem uma regra"*, *"a verdade tem um preço"*…),
+  70 poeiras douradas, faixa escura no rodapé, ícone de perigo + **AVISO**.
+- Duração: **17 s** (antes 13,5 s), porque agora tem 4 revelações + a troca de texto.
+- **Nada de mouse, nada de tecla**: o aviso roda sozinho do começo ao fim.
+
+### 2) Otimização: 105 MB → 75 MB de recursos (jar 99,9 MB → 66,0 MB)
+- **Onde estava o peso**: `assets/rptag/fx` = **95,5 MB** de quadros JPEG
+  (gelo 30,9 / egipcio 21,8 / void 15,1 / inferno 13,5 / morte 9,1 / tablet_fundo
+  5,1). Cada quadro é um par `NNNN_c.jpg` (cor) + `NNNN_a.jpg` (máscara).
+- **O que foi feito** (`arte/otimizar_frames.py`): **recompressão**, nada mais.
+  - mesmo **1280×720**, mesmo nome, mesmo formato, mesmo caminho;
+  - cor em **qualidade 72** + Huffman otimizado + **progressivo**;
+  - alpha em **55** (é máscara: borda macia, metade do peso);
+  - **se o arquivo novo ficasse maior que o original, o original ficava**.
+- Resultado: **95,5 MB → 65,0 MB (−32%)**, 1.428 quadros trocados, 324 mantidos.
+  Erro médio medido nos quadros de teste: **1,6 a 2,9 de 255** (invisível a 1:1;
+  a prévia `previa/otimizacao_5.10.0.png` mostra antes × depois no pixel).
+- **Por que não reduzi a resolução**: o `FxTimeline` recusa qualquer coisa que não
+  seja 1280×720 e o `VideoFrameLoader` tem caminho rápido que depende disso — o
+  dono escolheu o nível **leve** (*"só recomprimir"*), então a resolução ficou.
+- O script fica no repo: dá pra rodar de novo (`--medir` só mede).
+
+### Verificação
+- `check.py`: **769 PASS / 0 FAIL** (12 checks novos: memórias, verdades, balança,
+  sigilo, revelação por tempo, STAGE1, teto de 80 MB, maior quadro < 200 KB,
+  amostra toda 1280×720, script e prévias no repo).
+- Servidor de teste: `Done (0.752s)`, **0 exceções**, `RP Tag 5.10.0` na lista.
+- Jar: **69.292.343 B** (66,0 MB), 1.752 quadros dentro (nenhum perdido).
+
 ## 5.9.0 — TÍTULOS com COR MODIFICÁVEL (TAB, chat e nametag) — 2026-11-02
 
 > O dono perguntou: *"você fez o set dos 'títulos' para os players? que vai ficar
