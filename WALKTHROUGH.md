@@ -13,6 +13,58 @@
 
 ---
 
+## 5.9.0 (2026-11-02): TÍTULOS com cor modificável (TAB, chat, nametag)
+
+> O dono: *"você fez o set dos títulos pra os players? no TAB e em cima da
+> cabeça, como os Chronos? e tem que ser modificável a cor."*
+
+### Lição (a que quase fez estrago): `git reset --hard` NÃO apaga arquivo não rastreado
+- O snapshot do workspace regrediu **de novo** e o clone de `/home/user/rp-tag`
+  voltou pra `437bb48` (3.84.0), que é o commit do monorepo com a árvore ANTIGA
+  ainda "presente" no working tree. O `git log` mentia: o tree que estava no
+  disco era o **3.84.0** com os arquivos novos como **não rastreados**
+  (`Titulos.java`, `ClientTitulos.java`, `MedoOpAvisoFx.java`…).
+- O `git reset --hard ddbca84` reformou o tree **rastreado** — e os **não
+  rastreados de 3.84.0 continuaram lá**, misturados com os de 5.8.1. O compilador
+  passou, mas o `jar` sairia com classe velha dentro.
+- Receita que funciona: `git reset --hard <commit do GitHub>` e **logo depois
+  `git clean -fd src/main/java`** (conferindo `git status` vazio e
+  `ls src/main/java/dev/rptag` sem arquivo que não exista no commit). Antes de
+  qualquer build: `git rev-parse HEAD`, `git status --porcelain` e
+  `git ls-tree -r HEAD --name-only | grep <arquivo>`.
+- **Corolário:** o `git fetch gh main` + `git ls-tree gh/main` é a forma mais
+  rápida de saber o que o GitHub REALMENTE tem (o working tree pode estar
+  mentindo). O remote `origin` do clone não existe — criar `gh` com o PAT inline.
+
+### Feito
+- **Já existia (5.7.2)**: títulos no TAB (`TabListNameFormat`), chat
+  (`NameFormat`) e nametag (`NameplateRenderer.onRenderNameTagTitulo` com o
+  pacote `sync_titulo`), paleta de 12 etiquetas, salvo em `rptag_titulos`.
+- **Faltava a cor.** Entrou:
+  - `Titulos.CORES_NOMEADAS` (25 nomes pt/en) + `Titulos.corDeTexto(...)`
+    (`ouro`, `#FFD700`, `FFD700`, `#FFF`, `padrao` → `null` avisa);
+  - `Titulo` ganhou o 4º campo `corPessoal` e o "sem cor" passou de `0` para
+    **`-1`** (senão preto puro virava cor de fábrica);
+  - `/titulo cor [pessoal] <jogadores> <cor>` (greedyString — `#FFD700` sem
+    aspas não fecha mais o argumento) + TAB que sugere as cores;
+  - `/titulo definir` e `/titulo limpar` aceitam **vários jogadores**;
+  - `/titulo ver` mostra as duas cores em HEX;
+  - canal **v12** (`sync_titulo` ganhou `corPessoal`).
+- `arte/previa_titulos.py` → `previa/titulos_5.9.0.png` (TAB + nametag + chat +
+  paleta + comandos).
+- Apagada a pasta órfã `assets/rptag/fx/divino/` (só `fx.json`, vídeo saiu na
+  4.9.1) — era o que dava 2 falhas no `arte/validar.py` desde então.
+
+### Números
+- `check.py`: **765 PASS / 0 FAIL** (+10 do 5.9.0; 6 checks de protocolo
+  atualizados de v11 → v12).
+- `VerificaTitulos` (classe de teste fora do repo): `ouro → #FFAA00`,
+  `#FFD700 → #FFD700`, `fff → #FFFFFF`, `preto → #000000`, `xyz → NULL`,
+  `Chronos` de fábrica `#C9A6FF`, pessoal branco `#FFFFFF`.
+- servidor 5.9.0: `Done (0.732s)`, **0 exceptions**; `/titulo paleta` ok;
+  `/titulo definir @a Chronos`, `/titulo cor @a #FFD700`,
+  `/titulo cor pessoal @a ouro` parseiam (sem player online: "No player was found").
+
 ## 5.8.1 (2026-11-02): aviso MEDOOP (estilo 22) — protótipo AvisoMedo do dono
 
 > O dono mandou `https://d.uguu.se/oymNvtcE.java` com a legenda **"avisar (medoop)"**.

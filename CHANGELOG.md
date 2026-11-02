@@ -1,5 +1,58 @@
 # Changelog
 
+## 5.9.0 — TÍTULOS com COR MODIFICÁVEL (TAB, chat e nametag) — 2026-11-02
+
+> O dono perguntou: *"você fez o set dos 'títulos' para os players? que vai ficar
+> no TAB e em cima da cabeça do player? como os Chronos? e lembrando que tem que
+> ser modificável a cor."*
+
+### O que já existia (5.7.2) e o que faltava
+- **Já existia** o sistema de títulos: `[Chronos] Nephisto [O Ferreiro]` no **TAB**,
+  no **chat** e no **nametag acima da cabeça**, salvo no mundo (`rptag_titulos`),
+  com a paleta de 12 etiquetas (`/titulo paleta`).
+- **Faltava a COR modificável** — a etiqueta só podia usar a cor de fábrica da
+  paleta e o título pessoal era sempre branco.
+
+### O que entrou na 5.9.0
+- **`/titulo cor <jogadores> <cor>`** — pinta a ETIQUETA (o `[Chronos]`).
+- **`/titulo cor pessoal <jogadores> <cor>`** — pinta o título pessoal (o `[O Ferreiro]`).
+- **Cor por nome** (português e inglês): `ouro`, `dourado`, `amarelo`, `vermelho`,
+  `vermelho-escuro`, `verde`, `verde-escuro`, `menta`, `ciano`, `aqua`, `azul`,
+  `azul-escuro`, `roxo`, `lilas`, `rosa`, `laranja`, `branco`, `preto`, `cinza`,
+  `cinza-escuro`… e **HEX livre**: `FFD700`, `#FFD700` ou curto `#FFF`.
+- **`padrao`** volta pra cor de fábrica da etiqueta; cor **desconhecida não pinta
+  nada** — o comando reclama (`"xyz"` não pinta de preto sem avisar).
+- **TAB do comando sugere as cores** (`/titulo cor @a <TAB>`).
+- **`/titulo definir` e `/titulo limpar` aceitam vários jogadores** (`@a`, lista).
+- **`/titulo ver <jogador>`** mostra as duas cores em HEX ("de fábrica" / "escolhida").
+- A cor da etiqueta **sobrevive a redefinir a mesma etiqueta** (só volta pra
+  fábrica quando a etiqueta muda).
+- **Preto puro (`#000000`) funciona** — antes o campo `cor == 0` era lido como
+  "sem cor" e voltava pra paleta (agora o "sem cor" é `-1`).
+- **Canal do mod subiu pra v12** (`sync_titulo` ganhou a cor do título pessoal):
+  cliente 5.8.1/menor é recusado com a mensagem de versão de sempre.
+
+### Onde cada coisa é montada
+| lugar | quem monta |
+|---|---|
+| TAB | `ServerEvents.onTabListNameFormat` → `Titulos.aplicar(...)` |
+| chat | `ServerEvents.onNameFormat` → `Titulos.aplicar(...)` |
+| acima da cabeça | `NameplateRenderer.onRenderNameTagTitulo` → `ClientTitulos.aplicar(...)` (pacote `sync_titulo`) |
+
+### Verificação
+- `check.py`: **765 PASS / 0 FAIL** (10 checks novos do 5.9.0 + os de protocolo atualizados para v12)
+- `VerificaTitulos`: `ouro → #FFAA00`, `#FFD700 → #FFD700`, `fff → #FFFFFF`,
+  `preto → #000000`, `xyz → NULL` (avisa), `Chronos` de fábrica `#C9A6FF`.
+- servidor 5.9.0: `Done (0.732s)`, **0 exceptions**; `/titulo paleta` responde a
+  paleta completa e `/titulo cor @a #FFD700`, `/titulo cor pessoal @a ouro`,
+  `/titulo definir @a Chronos` **parseiam** ("No player was found" = sem ninguém online).
+- `previa/titulos_5.9.0.png` — prévia dos 3 lugares + paleta + comandos.
+
+### Limpeza
+- a pasta `src/main/resources/assets/rptag/fx/divino/` (só um `fx.json` órfão,
+  o vídeo saiu do mod na 4.9.1) foi **apagada** — era o que deixava 2 falhas no
+  `arte/validar.py`.
+
 ## 5.8.1 — AVISO "MEDOOP" (o protótipo AvisoMedo do dono) — 2026-11-02
 
 > O dono mandou o protótipo JavaFX `AvisoMedo` (arquivo `oymNvtcE.java`) com a

@@ -71,6 +71,97 @@ public final class Titulos {
     /** Cor usada quando a etiqueta não está na paleta. */
     public static final int COR_PADRAO = 0xD8D8D8;
 
+    /** (5.9.0) cor padrão do TÍTULO PESSOAL (o "[O Ferreiro]" depois do nome). */
+    public static final int COR_PESSOAL_PADRAO = 0xFFFFFF;
+
+    /**
+     * (5.9.0) CORES COM NOME — o que dá pra escrever no {@code /titulo cor}.
+     * Aceita português e inglês. Hex livre: {@code FFD700} ou {@code "#FFD700"}.
+     */
+    public static final java.util.Map<String, Integer> CORES_NOMEADAS = new java.util.LinkedHashMap<>();
+
+    static {
+        CORES_NOMEADAS.put("branco", 0xFFFFFF);
+        CORES_NOMEADAS.put("white", 0xFFFFFF);
+        CORES_NOMEADAS.put("preto", 0x000000);
+        CORES_NOMEADAS.put("black", 0x000000);
+        CORES_NOMEADAS.put("cinza", 0xAAAAAA);
+        CORES_NOMEADAS.put("gray", 0xAAAAAA);
+        CORES_NOMEADAS.put("cinza-escuro", 0x555555);
+        CORES_NOMEADAS.put("dark_gray", 0x555555);
+        CORES_NOMEADAS.put("vermelho", 0xFF5555);
+        CORES_NOMEADAS.put("red", 0xFF5555);
+        CORES_NOMEADAS.put("vermelho-escuro", 0xAA0000);
+        CORES_NOMEADAS.put("dark_red", 0xAA0000);
+        CORES_NOMEADAS.put("ouro", 0xFFAA00);
+        CORES_NOMEADAS.put("dourado", 0xFFAA00);
+        CORES_NOMEADAS.put("gold", 0xFFAA00);
+        CORES_NOMEADAS.put("amarelo", 0xFFFF55);
+        CORES_NOMEADAS.put("yellow", 0xFFFF55);
+        CORES_NOMEADAS.put("verde", 0x55FF55);
+        CORES_NOMEADAS.put("green", 0x55FF55);
+        CORES_NOMEADAS.put("verde-escuro", 0x00AA00);
+        CORES_NOMEADAS.put("dark_green", 0x00AA00);
+        CORES_NOMEADAS.put("menta", 0x38E0A6);
+        CORES_NOMEADAS.put("mint", 0x38E0A6);
+        CORES_NOMEADAS.put("ciano", 0x55FFFF);
+        CORES_NOMEADAS.put("aqua", 0x55FFFF);
+        CORES_NOMEADAS.put("ciano-escuro", 0x00AAAA);
+        CORES_NOMEADAS.put("dark_aqua", 0x00AAAA);
+        CORES_NOMEADAS.put("azul", 0x5555FF);
+        CORES_NOMEADAS.put("blue", 0x5555FF);
+        CORES_NOMEADAS.put("azul-escuro", 0x0000AA);
+        CORES_NOMEADAS.put("dark_blue", 0x0000AA);
+        CORES_NOMEADAS.put("roxo", 0xFF55FF);
+        CORES_NOMEADAS.put("lilas", 0xFF55FF);
+        CORES_NOMEADAS.put("light_purple", 0xFF55FF);
+        CORES_NOMEADAS.put("roxo-escuro", 0xAA00AA);
+        CORES_NOMEADAS.put("dark_purple", 0xAA00AA);
+        CORES_NOMEADAS.put("laranja", 0xFF8C00);
+        CORES_NOMEADAS.put("orange", 0xFF8C00);
+        CORES_NOMEADAS.put("rosa", 0xFF9ACD);
+        CORES_NOMEADAS.put("pink", 0xFF9ACD);
+    }
+
+    /** Nomes de cor pro TAB do comando. */
+    public static String[] nomesDeCor() {
+        return CORES_NOMEADAS.keySet().toArray(new String[0]);
+    }
+
+    /**
+     * (5.9.0) Lê uma cor escrita pelo admin.
+     *
+     * @return o RGB; {@code null} se não reconheceu (aí o comando reclama em vez
+     *         de pintar de preto sem avisar).
+     */
+    public static Integer corDeTexto(String texto) {
+        if (texto == null) {
+            return null;
+        }
+        String t = texto.trim().toLowerCase(java.util.Locale.ROOT);
+        if (t.startsWith("#")) {
+            t = t.substring(1);
+        }
+        if (t.matches("[0-9a-f]{6}")) {
+            try {
+                return Integer.parseInt(t, 16) & 0xFFFFFF;
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        if (t.matches("[0-9a-f]{3}")) { // #FFF = #FFFFFF
+            try {
+                int r = Integer.parseInt(t.substring(0, 1), 16);
+                int g = Integer.parseInt(t.substring(1, 2), 16);
+                int b = Integer.parseInt(t.substring(2, 3), 16);
+                return (r * 17 << 16) | (g * 17 << 8) | (b * 17);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return CORES_NOMEADAS.get(t);
+    }
+
     /** Teto de caracteres de cada campo (nada de título gigante quebrando a tela). */
     public static final int MAX_ETIQUETA = 16;
     public static final int MAX_PERSONALIZADO = 24;
@@ -94,17 +185,38 @@ public final class Titulos {
     }
 
     // ------------------------------------------------------------------ dados
-    /** O título de um jogador. Campos vazios = sem etiqueta / sem título extra. */
-    public record Titulo(String etiqueta, int cor, String personalizado) {
+    /**
+     * O título de um jogador. Campos vazios = sem etiqueta / sem título extra.
+     *
+     * @param etiqueta      o {@code [Chronos]} da frente
+     * @param cor           cor da ETIQUETA (5.9.0: qualquer uma, via {@code /titulo cor})
+     * @param personalizado o {@code [O Ferreiro]} depois do nome
+     * @param corPessoal    (5.9.0) cor do título pessoal
+     */
+    public record Titulo(String etiqueta, int cor, String personalizado, int corPessoal) {
 
-        public static final Titulo VAZIO = new Titulo("", COR_PADRAO, "");
+        public static final Titulo VAZIO = new Titulo("", -1, "", -1);
+
+        /** Atalho das versões antigas (cor pessoal = branco). */
+        public Titulo(String etiqueta, int cor, String personalizado) {
+            this(etiqueta, cor, personalizado, -1);
+        }
 
         public Titulo {
             etiqueta = limpar(etiqueta, MAX_ETIQUETA);
             personalizado = limpar(personalizado, MAX_PERSONALIZADO);
-            if (cor == 0) {
+            // -1 = "cor de fábrica da etiqueta" (aceita preto 0x000000 de verdade)
+            if (cor < 0) {
                 cor = corDe(etiqueta);
             }
+            if (corPessoal < 0) {
+                corPessoal = COR_PESSOAL_PADRAO;
+            }
+        }
+
+        /** @return a cor da etiqueta é a de fábrica (ninguém escolheu na mão)? */
+        public boolean corDeFabrica() {
+            return cor == corDe(etiqueta);
         }
 
         public boolean vazio() {
@@ -116,11 +228,16 @@ public final class Titulos {
             t.putString("Etiqueta", etiqueta);
             t.putInt("Cor", cor);
             t.putString("Titulo", personalizado);
+            t.putInt("CorPessoal", corPessoal); // (5.9.0)
             return t;
         }
 
         public static Titulo load(net.minecraft.nbt.CompoundTag t) {
-            return new Titulo(t.getString("Etiqueta"), t.getInt("Cor"), t.getString("Titulo"));
+            // saves antigos (5.7.x) não têm "CorPessoal": cai no branco
+            return new Titulo(t.getString("Etiqueta"),
+                    t.contains("Cor") ? t.getInt("Cor") : -1,
+                    t.getString("Titulo"),
+                    t.contains("CorPessoal") ? t.getInt("CorPessoal") : -1);
         }
     }
 
@@ -230,7 +347,7 @@ public final class Titulos {
     public static void avisar(MinecraftServer server, UUID id) {
         try {
             Titulo t = Dados.get(server).de(id);
-            TituloSyncPayload pacote = new TituloSyncPayload(id, t.etiqueta(), t.cor(), t.personalizado());
+            TituloSyncPayload pacote = new TituloSyncPayload(id, t.etiqueta(), t.cor(), t.personalizado(), t.corPessoal());
             for (ServerPlayer p : server.getPlayerList().getPlayers()) {
                 PacketDistributor.sendToPlayer(p, pacote);
             }
@@ -246,7 +363,7 @@ public final class Titulos {
             for (Map.Entry<UUID, Titulo> e : Dados.get(server).lista()) {
                 Titulo t = e.getValue();
                 PacketDistributor.sendToPlayer(para,
-                        new TituloSyncPayload(e.getKey(), t.etiqueta(), t.cor(), t.personalizado()));
+                        new TituloSyncPayload(e.getKey(), t.etiqueta(), t.cor(), t.personalizado(), t.corPessoal()));
             }
         } catch (Throwable erro) {
             RPTagMod.LOGGER.warn("RP Tag: nao consegui enviar os titulos no login", erro);
@@ -270,9 +387,10 @@ public final class Titulos {
             }
             out.append(nome);
             if (!t.personalizado().isEmpty()) {
-                // (como na print: o título pessoal vem DEPOIS do nome, em branco)
+                // (como na print: o título pessoal vem DEPOIS do nome)
+                // (5.9.0) a cor dele agora também é escolhida: /titulo cor pessoal
                 out.append(Component.literal(" [" + t.personalizado() + "]")
-                        .withStyle(ChatFormatting.WHITE));
+                        .withStyle(s -> s.withColor(TextColor.fromRgb(t.corPessoal()))));
             }
             return out;
         } catch (Throwable erro) {

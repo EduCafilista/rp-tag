@@ -15,7 +15,8 @@ import net.minecraft.resources.ResourceLocation;
  * <p>É o que faz o título aparecer também no NAMETAG acima da cabeça — o TAB e
  * o chat quem monta é o servidor.
  */
-public record TituloSyncPayload(UUID playerId, String etiqueta, int cor, String personalizado)
+public record TituloSyncPayload(UUID playerId, String etiqueta, int cor, String personalizado,
+        int corPessoal)
         implements CustomPacketPayload {
 
     public static final Type<TituloSyncPayload> TYPE =
@@ -28,12 +29,14 @@ public record TituloSyncPayload(UUID playerId, String etiqueta, int cor, String 
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.etiqueta() == null ? "" : p.etiqueta());
                         ByteBufCodecs.VAR_INT.encode(buf, p.cor());
                         ByteBufCodecs.STRING_UTF8.encode(buf, p.personalizado() == null ? "" : p.personalizado());
+                        ByteBufCodecs.VAR_INT.encode(buf, p.corPessoal());
                     },
                     buf -> new TituloSyncPayload(
                             net.minecraft.core.UUIDUtil.STREAM_CODEC.decode(buf),
                             ByteBufCodecs.STRING_UTF8.decode(buf),
                             ByteBufCodecs.VAR_INT.decode(buf),
-                            ByteBufCodecs.STRING_UTF8.decode(buf)));
+                            ByteBufCodecs.STRING_UTF8.decode(buf),
+                            ByteBufCodecs.VAR_INT.decode(buf)));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

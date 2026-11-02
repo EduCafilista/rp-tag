@@ -44,7 +44,8 @@ public final class ClientPayloadHandler {
     public static void handleTitulo(final dev.rptag.TituloSyncPayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             try {
-                ClientTitulos.set(payload.playerId(), payload.etiqueta(), payload.cor(), payload.personalizado());
+                ClientTitulos.set(payload.playerId(), payload.etiqueta(), payload.cor(),
+                        payload.personalizado(), payload.corPessoal());
                 Minecraft minecraft = Minecraft.getInstance();
                 if (minecraft.level != null) {
                     Player player = minecraft.level.getPlayerByUUID(payload.playerId());

@@ -20,7 +20,7 @@ import net.minecraft.network.chat.TextColor;
 public final class ClientTitulos {
 
     /** Um título: etiqueta colorida na frente + texto pessoal depois do nome. */
-    public record Titulo(String etiqueta, int cor, String personalizado) {
+    public record Titulo(String etiqueta, int cor, String personalizado, int corPessoal) {
 
         public boolean vazio() {
             return (etiqueta == null || etiqueta.isEmpty())
@@ -33,9 +33,10 @@ public final class ClientTitulos {
     private ClientTitulos() {
     }
 
-    public static void set(UUID id, String etiqueta, int cor, String personalizado) {
+    public static void set(UUID id, String etiqueta, int cor, String personalizado, int corPessoal) {
         Titulo t = new Titulo(etiqueta == null ? "" : etiqueta, cor,
-                personalizado == null ? "" : personalizado);
+                personalizado == null ? "" : personalizado,
+                corPessoal < 0 ? 0xFFFFFF : corPessoal);
         if (t.vazio()) {
             TITULOS.remove(id);
         } else {
@@ -66,8 +67,9 @@ public final class ClientTitulos {
             }
             out.append(nome);
             if (!t.personalizado().isEmpty()) {
+                // (5.9.0) cor do título pessoal escolhida no /titulo cor pessoal
                 out.append(Component.literal(" [" + t.personalizado() + "]")
-                        .withStyle(ChatFormatting.WHITE));
+                        .withStyle(s -> s.withColor(TextColor.fromRgb(t.corPessoal()))));
             }
             return out;
         } catch (Throwable erro) {

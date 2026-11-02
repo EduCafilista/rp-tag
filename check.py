@@ -24,7 +24,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.8.1'
+VER = '5.9.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -45,7 +45,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("11")' in mn)
+check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("12")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -172,7 +172,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo atual (3 payloads de musica)', 'registrar("11")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo atual (3 payloads de musica)', 'registrar("12")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -1054,11 +1054,11 @@ _mn9 = rd(R + '/ModNetworking.java')
 check('5.2.0: canais novos tablet_sync/tablet_update no lugar dos antigos ficha_*',
       'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9
       and 'tablet_sync' in rd(R + '/TabletSyncPayload.java') and 'tablet_update' in rd(R + '/TabletUpdatePayload.java'))
-check('5.2.0/5.4.0: protocolo subiu para v9 e agora v10 (cliente v8 e recusado)',
-      'registrar("9")' not in _mn9 and 'registrar("11")' in _mn9 and 'registrar("8")' not in _mn9)
+check('5.2.0/5.4.0: protocolo subiu para v9, v10, v11 e agora v12 (cliente antigo e recusado)',
+      'registrar("9")' not in _mn9 and 'registrar("12")' in _mn9 and 'registrar("8")' not in _mn9)
 # (5.7.2) o canal subiu de novo: TITULOS entrou, cliente 5.7.1 e recusado
-check('5.7.2: protocolo v10 (agora v11) com o pacote de TITULOS',
-      'event.registrar("11")' in rd(R + '/ModNetworking.java')
+check('5.7.2: protocolo v10 (agora v12) com o pacote de TITULOS',
+      'event.registrar("12")' in rd(R + '/ModNetworking.java')
       and 'TituloSyncPayload.TYPE' in rd(R + '/ModNetworking.java'))
 check('5.2.0: o tablet e entregue no login', 'PlayerLoggedInEvent' in rd(R + '/TabletService.java'))
 check('5.2.0: /tablet existe e /ficha nao voltou',
@@ -1354,7 +1354,7 @@ check('5.2.0: item rptag:tablet registrado (stacksTo 1)', 'ITEMS.register("table
       and 'stacksTo(1)' in rd(R + '/RPTagMod.java'))
 check('5.2.0: tabela de limites da ficha 32/5/240/600/3000', 'LIMITES = {32, 5, 240, 600, 3000}' in _fp)
 check('5.2.0: protocolo com os 2 payloads do tablet',
-      'registrar("11")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
+      'registrar("12")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
 check('5.2.0: handler do cliente registrado', 'handleTablet' in rd(C + '/ClientPayloadHandler.java'))
 check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID antes do load',
       'tag.put("TabletSheets", sheets)' in _rw and 'hasUUID("Id")' in _rw
@@ -1536,8 +1536,8 @@ check('5.4.0: blur REAL no pulso travado (processBlurEffect) com fallback',
       'processBlurEffect' in rd(_NX) and 'catch (Throwable ignorado)' in rd(_NX))
 check('5.4.0: texto do vazio no chat com a frase do dono',
       'NeptunePackets' in rd(_NPk) and 'neptune_saida' in rd(_NPk))
-check('5.4.0: canal v9 (agora v11) registra os 5 pacotes novos',
-      'event.registrar("11")' in rd('src/main/java/dev/rptag/ModNetworking.java')
+check('5.4.0: canal v9 (agora v12) registra os 5 pacotes novos',
+      'event.registrar("12")' in rd('src/main/java/dev/rptag/ModNetworking.java')
       and rd('src/main/java/dev/rptag/ModNetworking.java').count('NeptunePackets') >= 5)
 check('5.4.0: comandos /terremoto, /vazio, /bicho e /neptune so pra OP',
       all(k in rd(_NC) for k in ['literal("terremoto")', 'literal("vazio")', 'literal("bicho")', 'literal("neptune")'])
@@ -1710,8 +1710,8 @@ check('5.7.4: o pacote AURA leva o UUID de quem e o vazio (todos os clientes vee
 check('5.7.4: trovao grave pros outros (medo) perto do vazio',
       'proximoTrovao' in rd(R + '/NeptuneEventos.java')
       and 'LIGHTNING_BOLT_THUNDER' in rd(R + '/NeptuneEventos.java'))
-check('5.7.4: canal v11 (o Aura mudou de formato)',
-      'event.registrar("11")' in rd(R + '/ModNetworking.java'))
+check('5.7.4: canal v11 (o Aura mudou de formato; agora v12 com a cor dos titulos)',
+      'event.registrar("12")' in rd(R + '/ModNetworking.java'))
 
 # ============ 5.7.3: bicho na tela, música única, som do terremoto ============
 check('5.7.3: BICHO pula na tela de quem esta em CRIATIVO (era o bug do dono)',
@@ -2000,6 +2000,45 @@ check('5.7.9: nomes no comando — onefallall, morteop, sangueop (com TAB)',
 check('5.7.9: FxDraw (triangulo, linha, anel, arco, disco em degrade) pros avisos novos',
       'class FxDraw' in _fxd and 'public static void discoGrad' in _fxd
       and 'public static void anel' in _fxd and 'public static void texto' in _fxd)
+
+# ============ 5.9.0: TÍTULOS (tab, nametag) com COR MODIFICÁVEL ============
+_tit = rd(R + '/Titulos.java')
+_tcmd = rd(R + '/TituloCommands.java')
+_tpay = rd(R + '/TituloSyncPayload.java')
+_ctit = rd(C + '/ClientTitulos.java')
+_cph = rd(C + '/ClientPayloadHandler.java')
+_sev = rd(R + '/ServerEvents.java')
+_npr = rd(C + '/NameplateRenderer.java')
+_net = rd(R + '/ModNetworking.java')
+check('5.9.0: sistema de TÍTULOS presente (etiqueta + título pessoal, salvo no mundo)',
+      'class Titulos' in _tit and 'rptag_titulos' in _tit
+      and 'record Titulo(' in _tit and 'para o TAB' not in _tit)
+check('5.9.0: a paleta pronta tem as 12 etiquetas (incluindo Chronos)',
+      'Chronos' in _tit and 'Warden' in _tit and 'Sagrado' in _tit
+      and '0xC9A6FF' in _tit)
+check('5.9.0: o título entra no NOME (chat + TAB) e no NAMETAG acima da cabeça',
+      'Titulos.aplicar' in _sev and 'TabListNameFormat' in _sev
+      and 'onRenderNameTagTitulo' in _npr and 'event.setContent' in _npr
+      and 'ClientTitulos.aplicar' in _npr)
+check('5.9.0: o cliente recebe os títulos (pacote + login)',
+      'sync_titulo' in _tpay and 'handleTitulo' in _cph
+      and 'Titulos.enviarTodos' in _sev and 'Titulos.avisar' in _sev)
+check('5.9.0: COR MODIFICÁVEL — /titulo cor e /titulo cor pessoal',
+      'literal("cor")' in _tcmd and 'literal("pessoal")' in _tcmd
+      and 'corDoTitulo' in _tcmd and '/titulo cor pessoal' in _tcmd)
+check('5.9.0: cores por NOME (ouro, vermelho, ciano...) e HEX (FFD700 / #FFD700)',
+      'CORES_NOMEADAS' in _tit and '"ouro"' in _tit and 'corDeTexto' in _tit
+      and '"#"' in _tit and 'Integer.parseInt(t, 16)' in _tit)
+check('5.9.0: dá pra voltar pra cor de fábrica (padrao) e a cor fica salva no mundo',
+      'corDeFabrica' in _tit and '"padrao"' in _tcmd and 'putInt("CorPessoal"' in _tit
+      and 'getInt("CorPessoal")' in _tit)
+check('5.9.0: o título pessoal também tem cor própria (pacote v12)',
+      'corPessoal' in _tpay and 'corPessoal' in _ctit
+      and 'event.registrar("12")' in _net)
+check('5.9.0: /titulo definir e /titulo limpar aceitam VÁRIOS jogadores (@a)',
+      'EntityArgument.players()' in _tcmd and 'getPlayers(ctx, "jogadores")' in _tcmd)
+check('5.9.0: TAB do comando sugere as cores',
+      'sugereCor' in _tcmd and 'nomesDeCor()' in _tcmd and '.suggests(sugereCor)' in _tcmd)
 
 # ============ 5.8.1: AVISO MEDOOP (protótipo AvisoMedo do dono) ============
 _medo = rd(C + '/MedoOpAvisoFx.java')
