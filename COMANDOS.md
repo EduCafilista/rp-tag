@@ -1,4 +1,4 @@
-# RP Tag — todos os comandos (5.11.0)
+# RP Tag — todos os comandos (5.11.1)
 
 > Lista rápida. No jogo, `/rp ajuda` mostra isso no chat (a parte de admin só aparece para quem é OP).
 
@@ -92,7 +92,7 @@ Alvos: nomes (aceita lista `Ana,Beto`) ou `@a`.
 | `/terremoto engolir <jogador>` | o chão leva a pessoa |
 | `/terremoto fenda [<jogador>]` · `/terremoto fechar` | abre/fecha fendas no chão |
 | `/terremoto status` | estado do evento |
-| `/vazio ligar` · `/vazio desligar` | **Deus do Vazio**: aura de PEDRA + trilha + medo (agora fica salvo no mundo) |
+| `/vazio ligar` · `/vazio desligar` | **Deus do Vazio**: raios vermelhos saindo do corpo (funciona voando) + trilha + medo — fica salvo no mundo |
 | `/vazio apagar <jogador>` | apaga da existência |
 | `/vazio exilar <jogador>` · `/vazio soltar <jogador>` | manda pro exílio / solta num lugar aleatório |
 | `/vazio entrar` | o admin entra no exílio para testar |

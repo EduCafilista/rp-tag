@@ -13,6 +13,42 @@
 
 ---
 
+## 5.11.1 (2026-11-02): RAIOS VERMELHOS de volta (a pedra foi um desvio)
+
+> **REGRA QUE NASCEU AQUI (vale pro resto do projeto):** *"não mude a ideia sem me
+> consultar"*. Na 5.11.0 eu troquei os raios vermelhos por tentáculos de pedra
+> porque o pedido era "mais concreto que partícula" — mas o pedido **não** autorizava
+> trocar o conceito. Se for mudar o **conceito** (não o acabamento), **perguntar antes**.
+
+### O que o dono queria (e está de volta)
+- **raios vermelhos saindo dele** — é a aura do "deus do vazio";
+- tem que funcionar **voando** (a aura não pode depender do chão);
+- tem que ser **bizarro** em volta do corpo.
+
+### Como ficou (`client/RaiosVazioFx.java`, reescrito)
+- **`RenderType.debugQuads()`** — `POSITION_COLOR` + QUADS, `TRANSLUCENT_TRANSPARENCY`
+  (`SRC_ALPHA, ONE_MINUS_SRC_ALPHA`) + `COLOR_DEPTH_WRITE`. **Nunca** `lightning()`
+  de novo: é aditivo (`ONE`), soma luz e some em pack claro.
+- **3 passadas** por segmento, deslocadas em direção à câmera (`paraCam.scale(0.012/0.024)`),
+  não no plano da tela: capa escura (2,35×) → corpo vermelho → núcleo quente (0,38×).
+  Sem z-fighting; o núcleo sempre por cima.
+- **Tudo relativo ao corpo**: `r.origem` = 0,10 / 1,05 / 1,85 (pé, peito, cabeça).
+  Direção sorteada em 3D (`cos(el)`, `sin(el)`), então **voando funciona igual**.
+- Duas famílias: `LONGOS = 10` (1,6–6 blocos) + `CERDAS = 20` (0,35–1,1 bloco).
+  O serrilhado é re-sorteado a cada `ESTALO = 110 ms` (`proxEstalo`), e `giro`
+  roda o conjunto devagar.
+- `surtoAte`: nos 2,5 s seguintes ao `/vazio ligar` tudo fica 1,28× comprido e
+  1,4× grosso (a transformação).
+- F1 do próprio: raio que aponta pra câmera (`dot > 0,30`) é encurtado a 30%.
+- Saíram `TentaculosVazioFx` (apagado) e as referências; `NeptuneFx` volta a
+  chamar `RaiosVazioFx.definir`, `ClientEvents` volta a chamar `RaiosVazioFx.desligar`.
+
+### Servidor (`NeptuneEventos.surtoTransformacao`)
+Voltou a rajada de **28 raios vermelhos** (`fogo`/`brasa`/`negro`) + aro de brasa
+no chão + **lascas de pedra** (`BlockParticleOption`) levantando com o impacto.
+As partículas da aura em si continuam **pétreas** (é o que o dono pediu em
+5.11.0 e não foi revogado).
+
 ## 5.11.0 (2026-11-02): VAZIO de pedra — o que "sumia" e por quê
 
 > Dono: "os tentáculos vermelhos pararam de aparecer", "não aparecem com shader,

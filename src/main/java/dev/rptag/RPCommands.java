@@ -790,7 +790,7 @@ public final class RPCommands {
                     + "/terremoto iniciar [s] \u00a77\u2014 a terra colapsa (som + tremor + lentid\u00e3o em pulsos)\u00a7c\n"
                     + "/terremoto sair [jogador|todos] \u00a77\u2014 sa\u00edda em luz verde (kick em 4 s)\u00a7c\n"
                     + "/terremoto parar \u00a77\u2014 desliga o evento\u00a7c\n"
-                    + "/vazio ligar|desligar \u00a77\u2014 o Deus do Vazio (aura de PEDRA + trilha + medo)\u00a7c\n"
+                    + "/vazio ligar|desligar \u00a77\u2014 o Deus do Vazio (raios vermelhos + trilha + medo)\u00a7c\n"
                     + "/vazio apagar|exilar <jogador> \u00a77\u2014 apaga da exist\u00eancia / manda pra dimens\u00e3o\u00a7c\n"
                     + "/bicho aqui \u00a77\u2014 caixinha de m\u00fasica (o bicho pula quando algu\u00e9m chega)\u00a7c\n"
                     + "/neptune \u00a77\u2014 resumo de todos esses comandos"), false);

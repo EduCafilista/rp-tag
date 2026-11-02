@@ -1,5 +1,47 @@
 # Changelog
 
+## 5.11.1 — os RAIOS VERMELHOS voltaram (e aparecem com shader, voando também) — 2026-11-02
+
+> Correção de rumo pedida pelo dono: *"não quero tentáculos de pedra, quero os raios
+> vermelhos saindo de deus, se não como vai funcionar quando ele estiver voando?
+> quero essa aura em volta dele para ser algo bizarro, não mude a ideia sem me
+> consultar"*.
+
+### O que volta
+- **Raios vermelhos saindo do corpo** (`RaiosVazioFx` de volta, em geometria 3D),
+  **presos no jogador** — nada é medido a partir do chão, então **voando,
+  caindo, na água ou no exílio os raios vão junto**.
+- A **transformação** do `/vazio ligar` volta a ser rajada de **28 raios
+  vermelhos** + onda de choque + lascas de pedra levantando.
+
+### O que NÃO volta (o bug continua consertado)
+- O raio **não usa mais** `RenderType.lightning()` (blend aditivo, que somava luz
+  e desaparecia em pack de shader claro). Agora é `RenderType.debugQuads()`:
+  **blend normal** (`SRC_ALPHA, ONE_MINUS_SRC_ALPHA`) + **profundidade**. O
+  vermelho mancha a tela em vez de somar — **aparece com Iris/Sodium e no puro**.
+- 3 passadas por raio, deslocadas **na direção da câmera** (sem z-fighting):
+  - **capa** vermelho-escura, 2,35× de largura, alpha 0,50;
+  - **corpo** vermelho vivo, alpha 0,92;
+  - **núcleo** laranja-quente, 0,38× de largura, quase opaco.
+- Continua tudo o que impedia a aura de "sumir": **salva no mundo** (`Vazios`) e
+  **reenviada a cada 3 s / no login**.
+
+### "Bizarro"
+- **10 raios longos** (1,6 a 6 blocos) em 360° pra cima e pra baixo;
+- **20 cerdas curtas** (0,35 a 1,1 bloco) grudadas no corpo — a coisa "ferve";
+- o serrilhado é **re-sorteado a cada ~110 ms** (estala sem parar, não é desenho
+  congelado);
+- o conjunto **gira devagar** em volta do corpo;
+- quem **é** o vazio vê 2/3 dos raios e mais fino; no F1 do próprio nada
+  atravessa a mira.
+
+### Partículas do servidor
+Continuam **pétreas** (pedaços de `stone`/`cobblestone`/`deepslate`, poeira de
+pedra, rastro de cascalho) — o que saiu foi só o **tentáculo de pedra**, que era
+geometria e substituía os raios.
+
+**Verificação:** `check.py` **798 PASS / 0 FAIL**; servidor sobe com 0 ERROR.
+
 ## 5.11.0 — o VAZIO virou PEDRA (e nunca mais "some") — 2026-11-02
 
 > O dono: *"depois de um tempo os tentáculos vermelhos pararam de aparecer em volta

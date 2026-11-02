@@ -179,10 +179,10 @@ public final class NeptuneFx {
         boolean eu = p.euSou();
         souDeus = eu;
         trilhaOn = p.trilha();
-        // (5.11.0) TENTÁCULOS DE PEDRA em volta de QUEM É O VAZIO (todos veem).
-        // Antes eram raios vermelhos em RenderType.lightning() (blend aditivo):
-        // com shader o vermelho lavava e sumia. Pedra é geometria opaca — aparece.
-        TentaculosVazioFx.definir(p.alvo(), eu);
+        // (5.11.1) RAIOS VERMELHOS em geometria 3D em volta de QUEM É O VAZIO.
+        // Voltaram os raios (pedido do dono) — mas em blend NORMAL
+        // (RenderType.debugQuads), não no aditivo que sumia com shader.
+        RaiosVazioFx.definir(p.alvo(), eu);
         // o acabamento de TELA é só pro próprio vazio (é ele que está dentro)
         if (eu) {
             VazioAuraDarkFx.ligar();

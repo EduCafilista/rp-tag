@@ -930,78 +930,58 @@ public final class NeptuneEventos {
     }
 
     /**
-     * (5.11.0) A TRANSFORMAÇÃO — AGORA DE PEDRA.
+     * (5.11.1) A TRANSFORMAÇÃO — RAIOS VERMELHOS saindo do corpo.
      *
-     * <p>Na 5.7.6 ela era uma rajada de raios VERMELHOS. O dono pediu para tirar
-     * a partícula vermelha de tudo que é aura, então a abertura virou uma
-     * <b>explosão de pedra</b>: lascas de STONE/COBBLESTONE/DEEPSLATE arremessadas
-     * do corpo em 360°, um anel de cascalho levantando do chão e poeira de pedra.
-     * Combina com os tentáculos de pedra do cliente (é o chão cedendo e
-     * subindo em volta de quem virou o vazio).
+     * <p>Na 5.11.0 ela tinha virado explosão de pedra; o dono pediu os raios
+     * vermelhos de volta ("quero os raios vermelhos saindo de deus"). Então:
+     * 28 raios vermelhos de verdade (linhas grossas de dust saindo do peito em
+     * 360°, e também pra cima) + uma onda de choque no chão + lascas de pedra
+     * levantando. É o "abre o corpo" de quando ele vira o vazio.
      */
     private static void surtoTransformacao(ServerLevel nv, ServerPlayer p) {
         try {
             Vec3 pos = p.position();
+            DustParticleOptions fogo = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.06f, 0.02f), 1.9f);
+            DustParticleOptions brasa = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.35f, 0.08f), 1.3f);
+            DustParticleOptions negro = new DustParticleOptions(new org.joml.Vector3f(0.02f, 0.0f, 0.03f), 2.4f);
             BlockState pedra = Blocks.STONE.defaultBlockState();
             BlockState quebrada = Blocks.COBBLESTONE.defaultBlockState();
-            BlockState ardosia = Blocks.DEEPSLATE.defaultBlockState();
-            DustParticleOptions poeira = new DustParticleOptions(new org.joml.Vector3f(0.48f, 0.48f, 0.52f), 1.6f);
-            DustParticleOptions poeiraEscura = new DustParticleOptions(new org.joml.Vector3f(0.26f, 0.26f, 0.30f), 2.0f);
-            DustParticleOptions negro = new DustParticleOptions(new org.joml.Vector3f(0.02f, 0.0f, 0.03f), 2.4f);
 
-            // (1) as LASCAS DE PEDRA em 360° (e algumas pra cima)
-            for (int r = 0; r < 26; r++) {
-                double az = (r / 26.0) * Math.PI * 2 + Math.random() * 0.12;
+            // (1) os RAIOS vermelhos em 360° (e alguns pra cima)
+            for (int r = 0; r < 28; r++) {
+                double az = (r / 28.0) * Math.PI * 2 + Math.random() * 0.12;
                 boolean alto = r % 4 == 0;
                 double incl = alto ? 1.05 + Math.random() * 0.5 : (Math.random() - 0.5) * 0.45;
-                double alcance = 2.6 + Math.random() * 3.4;
+                double alcance = 3.2 + Math.random() * 4.2;
                 double y0 = pos.y + 1.0;
-                BlockState qual = switch (r % 3) {
-                    case 0 -> quebrada;
-                    case 1 -> ardosia;
-                    default -> pedra;
-                };
-                for (int k = 1; k <= 10; k++) {
-                    double f = k / 10.0;
-                    double serr = (Math.random() - 0.5) * 0.22 * f;
+                for (int k = 1; k <= 14; k++) {
+                    double f = k / 14.0;
+                    double serr = (Math.random() - 0.5) * 0.20 * f;
                     double x = pos.x + Math.cos(az) * Math.cos(incl) * alcance * f + serr;
                     double z = pos.z + Math.sin(az) * Math.cos(incl) * alcance * f + serr;
                     double y = y0 + Math.sin(incl) * alcance * f;
-                    // o "corpo" do estilhaço é pedra de verdade (com gravidade)
-                    nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
-                            ParticleTypes.BLOCK, qual), x, y, z, 1, 0.01, 0.01, 0.01, 0.28);
-                    if (k % 3 == 0) {
-                        nv.sendParticles((k % 6 == 0) ? poeira : poeiraEscura, x, y, z,
-                                1, 0.02, 0.02, 0.02, 0.01);
-                    }
-                    if (k == 10) {
-                        nv.sendParticles(negro, x, y, z, 1, 0.05, 0.05, 0.05, 0.0);
+                    nv.sendParticles(f > 0.35 ? brasa : fogo, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+                    if (k % 4 == 0) {
+                        nv.sendParticles(negro, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
                     }
                 }
             }
-            // (2) o ANEL DE CASCALHO levantando do chão (onde nascem os tentáculos)
-            for (int a = 0; a < 56; a++) {
-                double ang = (a / 56.0) * Math.PI * 2;
-                double rr = 1.1 + Math.random() * 1.6;
-                double x = pos.x + Math.cos(ang) * rr;
-                double z = pos.z + Math.sin(ang) * rr;
-                nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
-                        ParticleTypes.BLOCK, (a % 4 == 0) ? ardosia : quebrada),
-                        x, pos.y + 0.06, z, 1, 0.02, 0.10, 0.02, 0.10);
-                nv.sendParticles((a % 5 == 0) ? poeira : poeiraEscura, x, pos.y + 0.05, z,
-                        1, 0.02, 0.02, 0.02, 0.0);
+            // (2) a onda de choque rente ao chão (aro de brasa abrindo)
+            for (int a = 0; a < 64; a++) {
+                double ang = (a / 64.0) * Math.PI * 2;
+                double rr = 2.6;
+                nv.sendParticles(brasa, pos.x + Math.cos(ang) * rr, pos.y + 0.08,
+                        pos.z + Math.sin(ang) * rr, 1, 0.0, 0.0, 0.0, 0.0);
             }
-            // (3) o "peso" da pedra: uma nuvem de poeira baixa abrindo
-            for (int i = 0; i < 24; i++) {
+            // (3) as lascas de PEDRA levantando com o impacto (o chão cede)
+            for (int a = 0; a < 30; a++) {
                 double ang = Math.random() * Math.PI * 2;
-                double rr = 1.4 + Math.random() * 3.0;
-                nv.sendParticles(poeiraEscura, pos.x + Math.cos(ang) * rr, pos.y + 0.12,
-                        pos.z + Math.sin(ang) * rr, 1, 0.12, 0.02, 0.12, 0.0);
+                double rr = 1.2 + Math.random() * 2.6;
+                nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                ParticleTypes.BLOCK, (a % 3 == 0) ? quebrada : pedra),
+                        pos.x + Math.cos(ang) * rr, pos.y + 0.10,
+                        pos.z + Math.sin(ang) * rr, 1, 0.02, 0.10, 0.02, 0.16);
             }
-            // (5.7.7) SAIU o som que EU tinha posto aqui (WITHER_SPAWN): o dono
-            // disse "tira esse som que você adicionou no vazio... ficou
-            // estranho; deixa apenas aquele que eu te mandei". A transformação
-            // agora é só VISUAL — o som fica por conta do SOM_VAZIO original.
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: surto de transformacao falhou (o jogo segue)", t);
         }
@@ -1160,10 +1140,14 @@ public final class NeptuneEventos {
         // brasa, rastro). O que sobrou de vermelho são os DOIS OLHOS no rosto —
         // eles não são aura, são a cara do vazio.
         //
-        // E o "concreto" agora é de verdade: além da poeira, o servidor manda
-        // PEDAÇOS DE BLOCO (STONE/COBBLESTONE/DEEPSLATE) com gravidade, e o
-        // cliente desenha TENTÁCULOS de pedra em geometria sólida
-        // (TentaculosVazioFx).
+        // E o "concreto" é de verdade: além da poeira, o servidor manda
+        // PEDAÇOS DE BLOCO (STONE/COBBLESTONE/DEEPSLATE) com gravidade.
+        //
+        // (5.11.1) O dono pediu os RAIOS VERMELHOS de volta: "quero os raios
+        // vermelhos saindo de deus... quero essa aura em volta dele para ser
+        // algo bizarro". Os raios voltaram como GEOMETRIA no cliente
+        // (RaiosVazioFx, em blend NORMAL — o que sumia com shader era o blend
+        // aditivo). As partículas do servidor continuam PÉTREAS.
         BlockState pedra = Blocks.STONE.defaultBlockState();
         BlockState pedraQuebrada = Blocks.COBBLESTONE.defaultBlockState();
         BlockState ardosia = Blocks.DEEPSLATE.defaultBlockState();
