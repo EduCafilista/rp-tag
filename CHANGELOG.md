@@ -1,5 +1,69 @@
 # Changelog
 
+## 5.8.1 — AVISO "MEDOOP" (o protótipo AvisoMedo do dono) — 2026-11-02
+
+> O dono mandou o protótipo JavaFX `AvisoMedo` (arquivo `oymNvtcE.java`) com a
+> legenda **"avisar (medoop)"** — o medo de Ordem Paranormal: a membrana entre a
+> realidade e o outro lado racha quando alguém sente medo.
+
+### Novo estilo 22 `medoop`
+`/rp admin avisar <alvo> medoop <texto>` — com TAB (aparece ao lado de
+`onefallall`, `morteop` e `sangueop`), aceita `@a` e vários nomes. Dura **16 s**.
+
+O que aparece na tela:
+- **parede de tijolos** escura com **pichações** (*NÃO OLHE, ELE ESTÁ AQUI,
+  SAIA, NÃO DURMA, ELE OUVE, CORRA, NÃO ESTÁ SOZINHO*) e **mãos ensanguentadas**;
+- **lanterna** que abre um buraco de visão (o resto é escuridão quase total);
+  ela passeia sozinha (lissajous — no jogo não existe mouse) e **pisca** de vez
+  em quando; o raio **encolhe de 210 → 115 px** conforme o medo sobe;
+- **8 olhos** soltos no escuro que **somem quando a luz chega perto** (e o
+  jogador nunca os vê apagarem: eles reaparecem em outro canto);
+- **6 apagões** (2,4 s / 4,0 s / 5,4 s / 6,7 s / 7,9 s / 9,0 s): a tela apaga, a
+  câmera treme e a **silhueta alta fica mais perto e maior** a cada um (ela vai
+  de 150 px a 430 px de altura, do canto até o centro);
+- **9 rachaduras** da membrana com galhos, **crescendo junto com o medo**,
+  pulsando na batida do coração;
+- **medidor MEMBRANA** no canto (0 → 100 %);
+- **sussurros** nas beiradas (*"não olhe", "está atrás de você", "você ouviu
+  isso?", "ele sabe que você viu", "continue andando", "não pare", "está mais
+  perto", "não vire"*);
+- no fim, **"ELE ESTÁ ATRÁS DE VOCÊ"** com aberração cromática (azul de um lado,
+  vermelho do outro);
+- vinheta preta que **pulsa com a batida**, e o rodapé escuro onde entra o texto
+  digitado: **MEDO** + *"A membrana só se rompe quando você sente medo."* +
+  *"Não olhe para trás."*.
+
+### Decisões do porte (o que mudou em relação ao protótipo)
+- **Não existe mouse no aviso do jogo** → a lanterna anda sozinha em lissajous
+  lento (250·sen(0,37t), 120·cos(0,29t)) e a "câmera" treme nos apagões.
+- **Escuridão em leque radial de 5 anéis** (64 fatias, **cor por vértice**).
+  Anel preenchido por cima de anel **soma alfa** e o buraco da luz fechava
+  (virou um borrão cinza) — já tinha acontecido no 5.7.x.
+- **A silhueta é desenhada POR CIMA** do escuro e das rachaduras, com um
+  **contorno frio** (0x3A4760 a 45 %). Silhueta 100 % preta em fundo preto
+  simplesmente não existe na tela.
+- Rachaduras **mais curtas e mais finas** que a primeira tentativa: o leque de
+  9 troncos com 430 px de comprimento virava uma teia branca cobrindo tudo.
+- Reaproveita o `AvisoFxUtil.Buf` (triângulos POSITION_COLOR) e o
+  `FxDraw.discoGrad` dos avisos 19/20/21; `try/catch` que **desliga só o aviso**,
+  nunca o jogo.
+
+### Arquivos
+- `client/MedoOpAvisoFx.java` (novo, camada `rptag:aviso_medo_op`)
+- `RPCommands.java` — `case "medoop" -> 22`, literal `medoop` no TAB, `nomeEstilo`
+  (22 = MEDOOP; aproveitei e completei 18..21, que faltavam) e a lista do `/rp ajuda`
+- `ClientEffects.java` — estilo 22 → `MedoOpAvisoFx.iniciar(...)`
+- `ClientGuiLayers.java` — `MedoOpAvisoFx.registrar(event)`
+- `arte/previa_medo.py` → `previa/medo_5.8.1.png` (4 momentos, mesma matemática)
+
+### Verificação
+- `check.py`: **755 PASS / 0 FAIL** (10 checks novos do 22)
+- servidor 5.8.1: `Done (0.726s)`, **0 exceptions**;
+  `/rp admin avisar @a medoop a membrana rasgou` → *"No player was found"*
+  (o comando existe e parseia; não havia ninguém online)
+- `/rp ajuda` lista `… onefallall, morteop, sangueop, medoop`
+
+## 5.8.0 — MÁSCARA DE PEDRA REFEITA (malha nova + textura com rosto) — 2026-11-01
 ## 5.8.0 — MÁSCARA DE PEDRA REFEITA (malha nova + textura com rosto) — 2026-11-01
 
 > O dono: *"a máscara está horrível até o momento"*.

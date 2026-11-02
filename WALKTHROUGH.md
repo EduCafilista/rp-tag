@@ -13,6 +13,69 @@
 
 ---
 
+## 5.8.1 (2026-11-02): aviso MEDOOP (estilo 22) — protótipo AvisoMedo do dono
+
+> O dono mandou `https://d.uguu.se/oymNvtcE.java` com a legenda **"avisar (medoop)"**.
+
+### Lições
+- **O snapshot do workspace REGRIDE.** O clone local `/home/user/rp-tag` estava em
+  **4.9.6** (`VERSION` no `RPTagMod.java`) com `git` apontando para 3.84.0 e
+  **sem remote**: nem `f3248e6` nem `da34162` existiam como objeto. O que salvou
+  foi o **GitHub** (os commits da 5.8.0 estão lá). Regra prática: antes de
+  editar, `grep VERSION` **e** `git log --oneline -3` + `git remote -v`; se o
+  clone estiver velho, **reclone do GitHub** (`git clone` com o PAT inline) em
+  vez de tentar consertar a árvore no lugar.
+- **Classpath do `javac` (a pegadinha do dia):** `-cp "$(cat /var/tmp/cp.txt)"`
+  **não funciona** — o `cat` devolve linhas e o javac trata a string inteira como
+  um único caminho, então dá "package net.minecraft.core does not exist" para
+  TUDO. Tem que ser `CP=$(tr '\n' ':' < /var/tmp/cp.txt)`. Com o `:` o projeto
+  compila com **0 erros** (158 jars).
+- **`/var/tmp` some entre turnos** → o JDK 21 + o NeoForge + o cp.txt foram
+  refeitos (`--installServer` no `run/`, `--installClient` com
+  `launcher_profiles.json` falso, LWJGL 3.3.3 do Maven Central).
+- **O classpath precisa dos jars `net/neoforged/neoforge/*-client.jar`,
+  `*-server.jar` e `*-universal.jar`** (o client já traz o Minecraft com os
+  patches e as sobrecargas `float` do `GuiGraphics`). Só `client-srg` não serve:
+  o `MinecraftServer` dela vem mutilado (`getPlayerList()` não existe). E os
+  jars `-slim`, `-extra` e `-unpacked` têm que ficar FORA.
+- **Nos avisos, o desenho vem do `AvisoFxUtil.Buf`** (`tri/quad/rect/seg/elipse/
+  brilho/anel/vinheta/flush`, cor por vértice) e do `FxDraw` (`linha/disco/
+  discoGrad/texto/hash/ease`). Escrever um aviso "de cabeça" com um `FxDraw.*`
+  imaginário dá 40 erros de símbolo — conferir as assinaturas ANTES.
+- **Silhueta 100 % preta não aparece em fundo preto.** No escuro o corpo sumia
+  por completo; a solução foi desenhar um **contorno frio** (o mesmo corpo em
+  `0x3A4760` a 45 %, 10 % maior) **por baixo** do preto, e desenhar a figura
+  **depois** da escuridão e das rachaduras (ordem: parede → mãos → escuro →
+  rachaduras → **silhueta** → olhos).
+- **Rachadura demais vira teia.** 9 troncos de 430–630 px com halo de `w*5`
+  cobriam a tela de branco. Ficou: troncos de **300–450 px**, halo `w*3` a 10 %
+  e núcleo `w*0,8` a 55 %.
+- **Escuridão: nunca anel preenchido por cima de anel** — o alfa soma e o furo
+  da lanterna fecha. Leque radial de 5 raios × 64 fatias com **cor por vértice**.
+- **Prévia antes de entregar** (`arte/previa_medo.py`, mesma matemática do Java
+  em PIL) pegou 4 problemas que o código "compilando" não mostrava: teia de
+  rachaduras, "bolhas" no lugar dos olhos, figura fora da tela e figura
+  invisível. **Sempre renderizar 4 momentos (começo/meio/fim) antes do jar.**
+
+### Feito
+- `client/MedoOpAvisoFx.java` (~640 linhas): parede + pichações + mãos,
+  lanterna lissajous com raio 210→115, escuridão em leque, 8 olhos que somem
+  perto da luz, 6 apagões que aproximam a silhueta (150→430 px), 9 rachaduras
+  com galhos crescendo com o medo, medidor MEMBRANA, sussurros, vinheta pulsando,
+  **"ELE ESTÁ ATRÁS DE VOCÊ"**, texto digitado e `try/catch` que desliga só o aviso.
+- `RPCommands`: `case "medoop" -> 22`, literal `medoop` (TAB), `nomeEstilo`
+  22 = MEDOOP (18–21 estavam faltando — completei) e `/rp ajuda`.
+- `ClientEffects`: estilo 22 → `MedoOpAvisoFx.iniciar`. `ClientGuiLayers`:
+  camada `rptag:aviso_medo_op`.
+- `arte/previa_medo.py` + `previa/medo_5.8.1.png` (4 momentos).
+- `check.py`: `VER = 5.8.1` e **10 checks novos** do 22 → **755 PASS / 0 FAIL**.
+
+### Números
+- servidor 5.8.1: `Done (0.726s)`, **0 exceptions**;
+  `/rp admin avisar @a medoop a membrana rasgou` → *"No player was found"*
+  (comando existe; ninguém online) e `/rp ajuda` lista `… sangueop, medoop`.
+- jar: **99.927.034 B**, md5 **bd4a2c4636bdaa3997540ef999337a1f**.
+
 ## 5.8.0 (2026-11-01): a máscara de pedra refeita (malha e textura novas)
 
 > O dono: *"a máscara está horrível até o momento"*.

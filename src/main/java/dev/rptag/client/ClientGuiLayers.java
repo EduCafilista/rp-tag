@@ -76,6 +76,8 @@ public final class ClientGuiLayers {
         SolAvisoFx.registrar(event);
         MorteOpAvisoFx.registrar(event);
         SangueOpAvisoFx.registrar(event);
+        // (5.8.1) 22 = MEDOOP (a membrana, a lanterna e a silhueta alta)
+        MedoOpAvisoFx.registrar(event);
         // (5.7.0) ANIMAÇÃO DE SAÍDA do jogador (sprite dissolvendo em código)
         SaidaPlayerFx.registrar(event);
         // (5.7.2) SOMBRA DA MORTE: a escuridão saindo do corpo de quem morre

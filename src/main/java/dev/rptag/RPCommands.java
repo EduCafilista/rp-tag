@@ -380,6 +380,7 @@ public final class RPCommands {
             case "onefallall" -> 19;  // (5.7.9) protótipo AvisoSol: o sol dourado
             case "morteop" -> 20;     // (5.7.9) protótipo AvisoMorte: relógio + crânio
             case "sangueop" -> 21;    // (5.7.9) protótipo AvisoSangue: batida + veias
+            case "medoop" -> 22;       // (5.8.1) protótipo AvisoMedo: membrana + lanterna
             default -> 0;
         };
         // (4.7.3) Grafia "egipcio" (sem o "i"): nao tem literal proprio, para nao
@@ -430,6 +431,11 @@ public final class RPCommands {
             case 15 -> "ENERGIA";   // (5.5.0) anomalia de entropia
             case 16 -> "CONHECIMENTO";   // (5.7.0) o olho que sabe
             case 17 -> "ALLFORONE";   // (5.7.0) as vozes têm forma
+            case 18 -> "SAIDA";   // (5.7.0) animacao de saida do jogador
+            case 19 -> "ONEFALLALL";   // (5.7.9) o sol dourado
+            case 20 -> "MORTEOP";   // (5.7.9) relogio + cranio
+            case 21 -> "SANGUEOP";   // (5.7.9) batida + veias
+            case 22 -> "MEDOOP";   // (5.8.1) a membrana rachando
             default -> "classico";
         };
     }
@@ -757,7 +763,7 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos: nomes ou @a), onefallall, morteop, sangueop\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos: nomes ou @a), onefallall, morteop, sangueop, medoop\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
                     + "/rp admin saidafx on|off \u00a77\u2014 animacao de saida dos jogadores (quem fica ve)\u00a7c\n"
@@ -1104,6 +1110,15 @@ public final class RPCommands {
                                                     var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                                     avisar(ctx, alvos, "sangueop", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.8.1) MEDOOP: a membrana rachando no escuro
+                                .then(Commands.literal("medoop")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "medoop", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))))
                 .then(Commands.literal("avisozona")

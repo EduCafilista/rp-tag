@@ -98,6 +98,7 @@ public final class ClientEffects {
         SolAvisoFx.parar();
         MorteOpAvisoFx.parar();
         SangueOpAvisoFx.parar();
+        MedoOpAvisoFx.parar();
         EnergiaAvisoFx.parar();
         ConhecimentoAvisoFx.parar();
         AllForOneAvisoFx.parar();
@@ -124,6 +125,13 @@ public final class ClientEffects {
             String limpoG = text.replaceAll("\u00a7.", "");
             SangueOpAvisoFx.iniciar(limpoG);
             RPTagMod.LOGGER.info("RP Tag: aviso SANGUE OP iniciado");
+            return;
+        }
+        // (5.8.1) estilo 22 = MEDOOP: a membrana, a lanterna e a silhueta.
+        if (style == 22) {
+            String limpoMedo = text.replaceAll("\u00a7.", "");
+            MedoOpAvisoFx.iniciar(limpoMedo);
+            RPTagMod.LOGGER.info("RP Tag: aviso MEDO OP iniciado");
             return;
         }
         // (3.94.0) estilo 10 = DEMONIACO: o FX proprio (Chamado do Abismo:

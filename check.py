@@ -24,7 +24,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.8.0'
+VER = '5.8.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2000,6 +2000,42 @@ check('5.7.9: nomes no comando — onefallall, morteop, sangueop (com TAB)',
 check('5.7.9: FxDraw (triangulo, linha, anel, arco, disco em degrade) pros avisos novos',
       'class FxDraw' in _fxd and 'public static void discoGrad' in _fxd
       and 'public static void anel' in _fxd and 'public static void texto' in _fxd)
+
+# ============ 5.8.1: AVISO MEDOOP (protótipo AvisoMedo do dono) ============
+_medo = rd(C + '/MedoOpAvisoFx.java')
+_cmds = rd(R + '/RPCommands.java')
+check('5.8.1: aviso MEDOOP existe (a membrana, a lanterna, os olhos, a silhueta)',
+      'class MedoOpAvisoFx' in _medo and 'aviso_medo_op' in _medo
+      and 'MEMBRANA' in _medo and 'ELE EST\u00c1 ATR\u00c1S DE VOC\u00ca' in _medo
+      and 'A membrana s\u00f3 se rompe quando voc\u00ea sente medo.' in _medo
+      and 'N\u00c3O OLHE' in _medo)
+check('5.8.1: medo — a silhueta CHEGA MAIS PERTO a cada apagao (ADV de 6 degraus)',
+      'ADV = { 2.4F, 4.0F, 5.4F, 6.7F, 7.9F, 9.0F }' in _medo
+      and 'private static float figLargura()' in _medo
+      and 'private static float figAltura()' in _medo
+      and 'corpo(b, x, pe, s * 1.10F' in _medo)
+check('5.8.1: medo — a lanterna encolhe com o medo (raioLuz 210 -> 115)',
+      '210F - 95F * medo' in _medo and 'desenhaEscuridao' in _medo)
+check('5.8.1: medo — escuridao em LEQUE RADIAL (cor por vertice, sem somar alfa)',
+      'float[] raios = { 0F, R * 0.45F, R * 0.85F, R * 1.15F, longe }' in _medo
+      and 'int fatias = 64' in _medo and 'b.quad(x0, y0, ca, x1, y1, ca, x2, y2, cb, x3, y3, cb)' in _medo)
+check('5.8.1: medo — 9 rachaduras com galhos que crescem com o medo',
+      'for (int i = 0; i < 9; i++)' in _medo and 'crescer(r, CX, 230F, ang' in _medo
+      and 'float revela = medo * rachaMax * 1.05F' in _medo
+      and '300F + r.nextFloat() * 150F' in _medo)
+check('5.8.1: medo — olhos somem quando a luz chega perto (0.8 * raio)',
+      'float lr = raioLuz() * 0.8F' in _medo and 'reposiciona(i)' in _medo)
+check('5.8.1: medo — parede com pichacoes e maos de sangue',
+      'desenhaParede' in _medo and 'desenhaMaos' in _medo
+      and 'N\u00c3O DURMA' in _medo and 'SANGRIA' in _medo)
+check('5.8.1: medo — erro desliga SO o aviso (try/catch com falhou)',
+      'falhou = true;' in _medo and 'catch (Throwable erro)' in _medo
+      and 'RPTagMod.LOGGER.error' in _medo)
+check('5.8.1: medo — registrado como camada e ligado ao estilo 22',
+      'MedoOpAvisoFx.registrar(event)' in _cgl and 'style == 22' in _fxp)
+check('5.8.1: medo — nome medoop no comando (com TAB)',
+      'case "medoop" -> 22' in _cmds and 'literal("medoop")' in _cmds
+      and 'case 22 -> "MEDOOP"' in _cmds)
 
 # ============ 5.8.0: MÁSCARA DE PEDRA REFEITA (malha + textura novas) ========
 _bin58 = 'src/main/resources/assets/rptag/geo/mascara_58.bin'
