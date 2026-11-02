@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.13.1'
+VER = '5.13.2'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2355,8 +2355,11 @@ check('5.12.0: o Nebulosa(5, true) que escurecia a tela de TODOS no exílio saiu
       'new NeptunePackets.Nebulosa(5, true)' not in _nev)
 check('5.12.0: a nebulosa não faz mais disco preto (miolo 0,62 / lavagem 0,16)',
       '0.62f * pico' in _nfx and '0.16f * pico * forca' in _nfx)
-check('5.12.0: a cortina do exílio baixou de 0,70 para 0,50',
-      '0.50F + 0.03F * respira' in _nfx)
+# (5.13.2) O DONO: "A DIMENSAO PAROU DE FUNCIONAR? PQ TA TUDO PRETO, NAO VEJO NEM
+# MINHA HOTBAR MAIS". A cortina de 50% + nebulosa SAIA da tela e cobria a hotbar.
+check('5.13.2: SEM cortina preta na tela dentro do vazio (não cobre a hotbar)',
+      'desenharExilio(g);' not in _nfx
+      and 'g.fill(0, 0, w, h, (int) ((0.50F' not in _nfx)
 
 # 6) animação de ENGOLIR (protótipo uKqjYudD / SwallowedByDarkness)
 check('5.12.0: EngolirFx existe e é o protótipo do dono (poça, olhos, braços)',
@@ -2430,8 +2433,34 @@ check('5.13.1 (pedido 51): cada portal tem o SEU relogio de abertura (chavePorta
 check('5.13.1 (pedido 51): a cidade morta nasce sozinha (ruinas, predios, quarteiroes)',
       'private static void ruinaAutomatica' in _vr and 'enfileirarQuarteirao' in _vr
       and 'enfileirarRuinaBaixa' in _vr and 'proximaRuina' in _vr)
-check('5.13.1 (pedido 51): neblina cinza-azulada (nao preta) no cliente',
-      '0.052F' in rd(C + '/VazioNeblina.java') and '190F' in rd(C + '/VazioNeblina.java'))
+check('5.13.2: neblina de cidade morta LEGÍVEL (0,13 / 0,12 / 0,16, horizonte 210)',
+      '0.130F' in rd(C + '/VazioNeblina.java')
+      and '0.165F' in rd(C + '/VazioNeblina.java')
+      and '210F' in rd(C + '/VazioNeblina.java'))
+check('5.13.2: passo do deus só com o pé no chão (voando não faz barulho de andar)',
+      'boolean peNoChao;' in _ne2 and 'p.onGround() && !p.getAbilities().flying' in _ne2
+      and 'if (peNoChao) {' in _ne2)
+check('5.13.2: ESCURIDÃO é um bloco de verdade (não é black concrete)',
+      os.path.exists(R + '/EscuridaoBlock.java')
+      and 'ESCURIDAO' in rd(R + '/RPTagMod.java')
+      and 'BLACK_CONCRETE' not in rd(R + '/VazioReino.java')
+      and os.path.exists(A + '/blockstates/escuridao.json')
+      and os.path.exists(A + '/textures/block/escuridao.png')
+      and 'escuridao' in rd(A + '/lang/pt_br.json'))
+check('5.13.2: a escuridão volta em GEOMETRIA no corpo (coluna, sem quadradão)',
+      'private static void desenharSombra(' in _rvz and 'lados = 10' in _rvz)
+check('5.13.2: rastro de ESCURIDÃO no chão atrás do deus (mancha + lascas)',
+      'private static void sombra(VertexConsumer vc' in rd(C + '/RastroVazioFx.java'))
+check('5.13.2: um portal por dimensão (o antigo é desmontado, não fica espalhado)',
+      'private static void desmontarPortal(' in _vr and 'RPWorldData.Portal antigo' in _vr)
+check('5.13.2: /vazio abrir sem aviso no chat (pedido: só a animação, sem mensagem)',
+      'VazioReino.abrirPortal(nv, null);' in _nec
+      and 'está abrindo — de baixo para cima' not in _nec)
+check('5.13.2: portal animado também FORA do vazio (vórtice no overworld)',
+      'dimPortal' in rd(C + '/VazioPortalFx.java')
+      and 'envioEstado(nv, p, dados, base);' in _vr)
+check('5.13.2: cidade morta já de pé na chegada (anel inicial de ruínas)',
+      'private static void anelInicial(' in _vr and 'anelFeito' in _vr)
 check('5.13.1: pacote do portal registrado (canal 13)',
       'VazioPortalPayload.TYPE' in _net and 'event.registrar("13")' in _net
       and 'VazioPortalPayload' in _pay)

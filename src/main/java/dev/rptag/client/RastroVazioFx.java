@@ -159,6 +159,9 @@ public final class RastroVazioFx {
                         anterior = m;
                         continue;
                     }
+                    // (5.13.2) "eu ainda quero o rastro de ESCURIDÃO atrás do deus":
+                    // cada marca ganha uma mancha escura irregular por baixo das lascas.
+                    sombra(vc, mat, m, cor(0.02F, 0.01F, 0.035F, 0.85F * forca2));
                     desenharRachadura(vc, mat, m, quente, frio);
                     if (anterior != null && Math.hypot(m.x - anterior.x, m.z - anterior.z) < 2.5) {
                         costura(vc, mat, anterior, m, cor(0.45F * força, 0.03F * força,
@@ -175,6 +178,32 @@ public final class RastroVazioFx {
         } catch (Throwable erro) {
             limpar();
             RPTagMod.LOGGER.warn("RP Tag: rastro do vazio desligado nesta sessao", erro);
+        }
+    }
+
+    /**
+     * (5.13.2) A MANCHA DE ESCURIDÃO — o rastro do vazio é PRETO.
+     *
+     * <p>Um leque de 12 triângulos achatados no chão, com raio irregular (nunca um
+     * quadrado). O centro é quase opaco e a borda dissolve em alpha 0, então a
+     * mancha "se espalha" em vez de ter contorno — é o que faz ler como sombra e
+     * não como adesivo. Alpha acompanha a idade (esfria junto com a rachadura).
+     */
+    private static void sombra(VertexConsumer vc, org.joml.Matrix4f mat, Marca m, int cor) {
+        int fatias = 12;
+        float cx = (float) m.x, cy = (float) m.y + 0.012F, cz = (float) m.z;
+        int nucleo = (cor & 0x00FFFFFF) | (Math.min(255, ((cor >> 24) & 0xFF)) << 24);
+        for (int i = 0; i < fatias; i++) {
+            double a0 = m.giro * 0.5 + i * (Mth.TWO_PI / fatias);
+            double a1 = m.giro * 0.5 + (i + 1) * (Mth.TWO_PI / fatias);
+            float r0 = m.tamanho * (1.35F + 0.55F * Math.abs(Mth.sin(i * 2.7F + m.giro)));
+            float r1 = m.tamanho * (1.35F + 0.55F * Math.abs(Mth.sin((i + 1) * 2.7F + m.giro)));
+            vc.addVertex(mat, cx, cy, cz).setColor(nucleo);
+            vc.addVertex(mat, cx + (float) Math.cos(a0) * r0, cy, cz + (float) Math.sin(a0) * r0)
+                    .setColor(cor & 0x00FFFFFF);
+            vc.addVertex(mat, cx + (float) Math.cos(a1) * r1, cy, cz + (float) Math.sin(a1) * r1)
+                    .setColor(cor & 0x00FFFFFF);
+            vc.addVertex(mat, cx, cy, cz).setColor(nucleo);
         }
     }
 

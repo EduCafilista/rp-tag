@@ -292,11 +292,11 @@ public final class NeptuneFx {
             nebOff = true;
             RPTagMod.LOGGER.error("RP Tag: camada da nebulosa desligada", t);
         }
-        try {
-            desenharExilio(g);
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.error("RP Tag: camada do exilio desligada", t);
-        }
+        // (5.13.2) A CORTINA PRETA DO VAZIO SAIU. Pedido 51/52: "A DIMENSÃO PAROU DE
+        // FUNCIONAR? PQ TA TUDO PRETO, NAO VEJO NEM MINHA HOTBAR MAIS". Era isso:
+        // este overlay pintava 50% de preto + uma nebulosa 55% POR CIMA DA HOTBAR,
+        // em TODO lugar da dimensão. A escuridão do vazio agora é do MUNDO (névoa
+        // do VazioNeblina + luz da dimensão), nunca de uma camada por cima da tela.
         try {
             desenharAuraDeus(g);
         } catch (Throwable t) {
@@ -946,35 +946,13 @@ public final class NeptuneFx {
         }
     }
 
-    // ---- EXÍLIO (5.5.0): quem está em rptag:exilio vê TUDO PRETO.
-    // A dimensão já é escura por dados (sem céu, meia-noite fixa, luz 0), mas
-    // o céu do End ainda desenha estrelas — aqui a tela fecha num preto macio
-    // pra não sobrar nada. É só o que o dono pediu: "tudo preto e sem nada lá".
+    // ---- EXÍLIO: (5.13.2) SEM cortina na tela.
+    // Histórico: na 5.5.0 o dono pediu "tudo preto e sem nada lá" e isso virou um
+    // `g.fill` de 50% + nebulosa em cima — só que com o mundo de novo iluminado o
+    // resultado era a tela preta POR CIMA DA HOTBAR, parecendo jogo travado. A
+    // escuridão do vazio é do próprio MUNDO (dimension_type + VazioNeblina).
     private static void desenharExilio(GuiGraphics g) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || !DIM_EXILIO.equals(mc.level.dimension().location())) {
-            return;
-        }
-        int w = g.guiWidth();
-        int h = g.guiHeight();
-        long now = System.currentTimeMillis();
-        float respira = 0.5F + 0.5F * (float) Math.sin(now * 0.0009);
-        com.mojang.blaze3d.systems.RenderSystem.enableBlend();
-        com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
-        // (5.12.0) era 0,70 de preto cheio: baixou pra 0,50 (o exílio continua
-        // pesado, mas sem aquela cortina preta na cara durante o terremoto).
-        g.fill(0, 0, w, h, (int) ((0.50F + 0.03F * respira) * 255) << 24 | 0x0A0512);
-        // vinheta macia (canto sem borda dura)
-        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(0, 0, 0, 0.55F + 0.10F * respira);
-        int lado = (int) (Math.max(w, h) * 1.35F);
-        g.blit(NEBULOSA, w / 2 - lado / 2, h / 2 - lado / 2, 0, 0, lado, lado, lado, lado);
-        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
-        // quase nada de texto, e bem apagado — só pra não parecer travado
-        if ((now / 7000L) % 2 == 0) {
-            String frase = "não há nada aqui";
-            int larg = mc.font.width(frase);
-            g.drawString(mc.font, frase, (w - larg) / 2, (int) (h * 0.84F), 0x22000000 | 0x1A0E24, false);
-        }
+        // de propósito: nada. Não desenhe preto por cima do HUD do jogador.
     }
 
     // ---- AURA do deus: escurece as bordas de quem está perto dele?

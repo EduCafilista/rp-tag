@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.13.1";
+    public static final String VERSION = "5.13.2";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -168,7 +168,20 @@ public final class RPTagMod {
             TabletItem> TABLET = ITEMS.register("tablet",
                     () -> new TabletItem(new Item.Properties().stacksTo(1)));
 
-    /** (5.13.1) FRAGMENTO DO VAZIO — item que abre o portal negro do exílio. */
+    /**
+     * (5.13.2) ESCURIDÃO — o bloco NEGRO do portal (pedido do dono: "não quero que
+     * seja black concrete, crie um bloco preto... um bloco negro chamado escuridão").
+     * Colisão cheia e indestrutível: o portal se usa, não se atravessa.
+     */
+    public static final Supplier<EscuridaoBlock> ESCURIDAO = BLOCKS.register("escuridao",
+            () -> new EscuridaoBlock(BlockBehaviour.Properties.of()
+                    .strength(-1.0F, 3600000.0F)
+                    .sound(SoundType.SCULK)
+                    .lightLevel(st -> 1)));
+    public static final Supplier<Item> ESCURIDAO_ITEM = ITEMS.register("escuridao",
+            () -> new BlockItem(ESCURIDAO.get(), new Item.Properties()));
+
+    /** (5.13.2) FRAGMENTO DO VAZIO — item que abre o portal negro do exílio. */
     public static final Supplier<FragmentoItem> FRAGMENTO_VAZIO = ITEMS.register("fragmento_vazio",
             () -> new FragmentoItem(new Item.Properties().stacksTo(8)
                     .rarity(net.minecraft.world.item.Rarity.RARE)));

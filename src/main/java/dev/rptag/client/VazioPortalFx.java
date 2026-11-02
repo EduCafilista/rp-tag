@@ -75,10 +75,25 @@ public final class VazioPortalFx {
     /** quando ESTE cliente viu a abertura começar (ms). */
     private static long abriuEm;
 
+    /**
+     * (5.13.2) DIMENSÃO em que este portal foi visto. O pacote só chega para quem
+     * está na dimensão do portal, então guardar a dimensão na hora de receber é
+     * suficiente para desenhar o portal do overworld sem mudar o protocolo.
+     */
+    private static net.minecraft.resources.ResourceLocation dimPortal;
+
     private static long ultimoQuadro;
 
     /** o servidor mandou o estado (1x por segundo). */
     public static void receber(VazioPortalPayload payload) {
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null) {
+                dimPortal = mc.level.dimension().location();
+            }
+        } catch (Throwable ignorado) {
+            dimPortal = null;
+        }
         boolean eraZero = estado == 0;
         if (payload.estado() == 1 && eraZero) {
             abriuEm = System.currentTimeMillis();     // começa a animação local
@@ -131,7 +146,11 @@ public final class VazioPortalFx {
             if (mc.level == null || mc.player == null) {
                 return;
             }
-            if (!mc.level.dimension().equals(EXILIO)) {
+            // (5.13.2) o portal animado vale em QUALQUER dimensão (o do overworld
+            // é o mesmo desenho). Só o desenho da praça/pedestais é que é do vazio.
+            boolean noVazio = mc.level.dimension().equals(EXILIO);
+            if (!noVazio && (dimPortal == null
+                    || !mc.level.dimension().location().equals(dimPortal))) {
                 return;
             }
             long agora = System.currentTimeMillis();
@@ -158,7 +177,7 @@ public final class VazioPortalFx {
                 }
             }
             double dPraca = cam.distanceTo(new Vec3(0.5, py + 1.0, 0.5));
-            if (dPraca < 150.0) {
+            if (noVazio && dPraca < 150.0) {
                 try {
                     desenharPedestais(vc, mat, cam, agora);
                 } catch (Throwable ignorado) {

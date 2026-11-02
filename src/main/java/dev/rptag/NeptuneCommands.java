@@ -289,9 +289,9 @@ public final class NeptuneCommands {
                 ctx.getSource().sendFailure(Component.literal("\u00a7cA dimensão não carregou."));
                 return 0;
             }
-            VazioReino.abrirPortal(nv, ctx.getSource().getPlayer());
-            ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a75O portal do vazio está abrindo — de baixo para cima."), true);
+            // (5.13.2) sem aviso no chat: o /vazio abrir só faz o portal abrir
+            // (o dono: "esse aviso não precisa aparecer que o portal está sendo aberto").
+            VazioReino.abrirPortal(nv, null);
             return Command.SINGLE_SUCCESS;
         }));
 

@@ -1,5 +1,64 @@
 # Changelog
 
+## 5.13.2 — pedido 52 (a tela preta do vazio, o bloco `escuridao` e o portal animado) — 2026-11-02
+
+> Pedido do dono, depois de jogar a 5.13.1: **"a dimensão é o bug nº1, tá tudo preto, não vejo
+> nem minha hotbar"** · **"mesmo voando fica fazendo som de pisar no chão"** · **"não quero que
+> seja black concrete, crie um bloco preto chamado escuridão"** · **"o portal é animação, não
+> construção física"** · **"esse aviso não precisa aparecer que o portal está sendo aberto"** ·
+> **"não tem nada preto mais nos efeitos em volta dele"** · **"eu ainda quero o rastro de
+> escuridão atrás do deus"** · **"a dimensão precisa de cidade já na chegada"**.
+
+### A dimensão preta (bug nº 1)
+
+- **Saiu a cortina do cliente**: `NeptuneFx.desenharExilio` virou no-op. Ela pintava `0,50` de
+  preto + a nebulosa a `0,55` **por cima da hotbar**, em toda a dimensão — era isso o "tudo preto,
+  não vejo nem minha hotbar". A escuridão agora vem só do **mundo** (névoa + luz da dimensão).
+- **`client/VazioNeblina`** subiu de quase-preto para **0,130 / 0,120 / 0,165** (roxo-acinzentado,
+  com pulso lento) e o horizonte abriu de 190 para **210** blocos (perto 26). `y < 0` continua
+  fechado (2 / 30) — lá embaixo o breu é proposital.
+
+### O portal: bloco próprio, animação e silêncio
+
+- **Bloco novo `rptag:escuridao`** (`EscuridaoBlock`): preto, **sólido** (colisão cheia — "não pode
+  passar para trás o bloco"), `SoundType.SCULK`, `strength(-1, 3600000)` e luz 1. Substituiu o
+  `black_concrete` no miolo **e** no fundo do portal, no overworld e no vazio.
+- **Usar o portal**: clique direito no miolo ou **encostar** nele por 0,7 s (`interagirPortal` /
+  `dentroDoPortal`). O miolo anima de **baixo para cima** e o cliente desenha o **vórtice**
+  (`VazioPortalFx`) em cima do bloco — moldura de obsidiana, rachaduras vermelhas, estrelas roxas,
+  brasas.
+- **`/vazio abrir` é silencioso**: nada no chat. Garante a moldura, apaga o miolo e reabre do zero
+  (mesmo se já estava aberto). **`/vazio portal`** desmonta o portal anterior antes de levantar o
+  novo — nunca fica portal espalhado pelo mundo.
+- **Vórtice fora do vazio**: `VazioPortalFx` guarda a **dimensão** que mandou o pacote
+  (`dimPortal`) e `tickPortaisInvocados` manda `envioEstado` a cada tick para quem está na
+  dimensão do portal. Antes só o portal do vazio era desenhado.
+
+### A aura: o preto voltou (sem quadrado)
+
+- **`RaiosVazioFx.desenharSombra`**: cilindro de **10 faixas verticais** em volta do corpo, mais
+  opaco no pé e transparente na cabeça, girando devagar — o preto que faltava, sem os "quadrados
+  grandes" que o dono vetou (nada de *billboard* virado para a câmera).
+- **`RastroVazioFx.sombra`**: cada marca do rastro ganhou uma **mancha preta** de 12 triângulos
+  achatados, raio irregular e borda que dissolve em alpha 0.
+- Os **raios vermelhos** e os **dois olhos** continuam como estavam.
+
+### O som do passo
+
+- `WARDEN_STEP` só toca com o **pé no chão**: `onGround()` e **não** voando, **não** de elytra,
+  **não** em barco/montaria, **não** nadando, **não** espectador. Voando, o limiar sobe de 0,9
+  para 2,2 e o som simplesmente não sai.
+
+### A cidade na chegada e a volta ao ponto de entrada
+
+- **`anelInicial`**: 14 construções erguidas **de uma vez** quando a dimensão abre, num anel de
+  26–78 blocos em volta da praça (torre, ruína baixa, quarteirão), pulando o raio da praça e o
+  caminho do portal. Antes a primeira ruína caía a 34+ blocos e a chegada parecia vazia.
+- **`voltarParaEntrada`** é agora o **único caminho de saída** (portal, `/vazio soltar`, morte):
+  volta às coordenadas **exatas** gravadas em `RPWorldData.Volta` e limpa a marca. Quem entrou por
+  **portal ou comando** também tem o ponto gravado (`levarProExilio`), não só quem levou
+  `/vazio exilar`.
+
 ## 5.13.1 — pedido 51 (a aura sem lixo, o vazio claro de novo, o portal que aparece) — 2026-11-02
 
 > Pedido do dono, depois de jogar a 5.13.0: **"tira as partículas cinzas do vazio ligar, as

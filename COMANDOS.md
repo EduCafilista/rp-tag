@@ -97,13 +97,14 @@ Alvos: nomes (aceita lista `Ana,Beto`) ou `@a`.
 | `/vazio exilar <jogador>` · `/vazio soltar <jogador>` | manda pro exílio / solta num lugar aleatório |
 | `/vazio entrar` | o admin entra no exílio para testar |
 | `/vazio fragmentos [jogador]` | (5.13.0) dá os 8 **itens** `fragmento_vazio` — testa o portal sem caçar altar |
-| `/vazio portal` | (5.13.0) **INVOCA** o portal onde você está olhando e **abre de baixo para cima** (portal invocado é livre: não cobra fragmento) |
+| `/vazio portal` | (5.13.0/5.13.2) **INVOCA** o portal onde você está olhando e **abre de baixo para cima** (portal invocado é livre: não cobra fragmento). O portal anterior é **desmontado** antes — nunca fica portal espalhado |
 | `/vazio portal <jogador>` | (5.13.0) invoca o portal na frente do jogador |
 | `/vazio portal <x> <y> <z>` | (5.13.1) invoca numa posição exata — **funciona em qualquer dimensão, inclusive no overworld** (era o "invoquei e não apareceu") |
 | `/vazio portal ir` | (5.13.0) te leva até o portal que já existe (praça, ao norte) |
-| `/vazio abrir` · `/vazio fechar` | (5.13.0) abre/fecha o portal na marra (vídeo/prévia) |
+| `/vazio abrir` · `/vazio fechar` | (5.13.0/5.13.2) abre/fecha o portal na marra (vídeo/prévia). **Sem mensagem no chat** desde a 5.13.2: `abrir` reconstrói a moldura, esvazia o miolo e anima de baixo para cima (reabre do zero se já estava aberto) |
 | `/vazio construir` | (5.13.0) refaz praça, 8 pedestais, 8 altares e o portal na hora |
 | `/vazio pedestais` | (5.13.0) quantos pedestais/altares você tem + onde está o portal |
+| `/give @s rptag:escuridao` | (5.13.2) o **bloco do portal** (preto, sólido, indestrutível) — clique nele usa o portal; encostar 0,7 s também |
 | `/bicho aqui` · `/bicho <pos>` · `/bicho limpar` | caixinha de música (o bicho pula quando alguém chega) |
 
 ## Vanilla (não é do mod)

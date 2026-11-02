@@ -203,6 +203,15 @@ public final class RaiosVazioFx {
             // melhore isso". Eram 12 "nuvens" desenhadas como quads virados para a câmera —
             // de perto viravam caixas pretas flutuando em volta do corpo. A aura agora é
             // SÓ o que ele aprovou: os raios vermelhos (e o rastro no chão, RastroVazioFx).
+            // (5.13.2) "não tem nada preto mais nos efeitos em volta dele, está quase
+            // lá": volta a ESCURIDÃO no corpo — mas em geometria VERTICAL em volta dele
+            // (cilindro de 10 lados), nunca quadrado virado pra câmera.
+            try {
+                desenharSombra(vc, pose.last().pose(), base, cam, agora);
+            } catch (Throwable ignorado) {
+                // sombra é enfeite: se falhar, os raios seguem
+            }
+
             int idx = 0;
             for (Raio r : LISTA) {
                 idx++;
@@ -222,6 +231,48 @@ public final class RaiosVazioFx {
         } catch (Throwable erro) {
             ativo = false;
             RPTagMod.LOGGER.error("RP Tag: raios do vazio desligados nesta sessao", erro);
+        }
+    }
+
+    /**
+     * (5.13.2) A ESCURIDÃO DO CORPO — o "manto" que o dono sentiu falta, feito do jeito
+     * que não dá quadrado na cara.
+     *
+     * <p>Dez faixas <b>verticais</b> em volta do jogador (como as tábuas de um barril):
+     * cada faixa nasce no pé, sobe até a cabeça e é mais opaca embaixo. Girando devagar,
+     * com alpha baixo (0,10–0,22), elas leem como uma coluna de fumaça preta em volta
+     * do corpo — e, por serem verticais e coladas nele, nunca viram aqueles quadrados
+     * grandes que apareciam no F5.
+     */
+    private static void desenharSombra(VertexConsumer vc, org.joml.Matrix4f mat,
+            Vec3 base, Vec3 cam, long agora) {
+        int lados = 10;
+        float altura = 1.95F;
+        float raio = 0.62F + 0.06F * Mth.sin(agora * 0.0025F);
+        float pulso = 0.5F + 0.5F * Mth.sin(agora * 0.0017F);
+        int escuro = cor(0.015F, 0.010F, 0.03F, 0.16F + 0.08F * pulso);
+        int some = cor(0.02F, 0.015F, 0.04F, 0.0F);
+        for (int i = 0; i < lados; i++) {
+            double a0 = giro * 0.6 + i * (Mth.TWO_PI / lados);
+            double a1 = giro * 0.6 + (i + 1) * (Mth.TWO_PI / lados);
+            float r0 = raio * (0.85F + 0.3F * Math.abs(Mth.sin(i * 1.7F + giro)));
+            float r1 = raio * (0.85F + 0.3F * Math.abs(Mth.sin((i + 1) * 1.7F + giro)));
+            float x0 = (float) (base.x + Math.cos(a0) * r0);
+            float z0 = (float) (base.z + Math.sin(a0) * r0);
+            float x1 = (float) (base.x + Math.cos(a1) * r1);
+            float z1 = (float) (base.z + Math.sin(a1) * r1);
+            float y0 = (float) base.y - 0.05F;
+            float y1 = (float) base.y + altura;
+            // base escura -> topo transparente
+            vc.addVertex(mat, x0, y0, z0).setColor(escuro);
+            vc.addVertex(mat, x1, y0, z1).setColor(escuro);
+            vc.addVertex(mat, x1, y1, z1).setColor(some);
+            vc.addVertex(mat, x0, y1, z0).setColor(some);
+            // e o mesmo par invertido (visível dos dois lados)
+            vc.addVertex(mat, x1, y0, z1).setColor(escuro);
+            vc.addVertex(mat, x0, y0, z0).setColor(escuro);
+            vc.addVertex(mat, x0, y1, z0).setColor(some);
+            vc.addVertex(mat, x1, y1, z1).setColor(some);
         }
     }
 

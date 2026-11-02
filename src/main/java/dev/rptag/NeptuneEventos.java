@@ -1096,7 +1096,18 @@ public final class NeptuneEventos {
             }
             double andou = Math.hypot(pos.x - st[0], pos.z - st[1]);
             boolean tocando = st[3] == 1;
-            if (andou >= 0.9) {
+            // (5.13.2) "mesmo voando fica fazendo som de pisar no chão": o passo só
+            // existe com o pé NO CHÃO. Voando, caindo, nadando, de barco ou em
+            // criativo (voo) o WARDEN_STEP não toca mais.
+            boolean peNoChao;
+            try {
+                peNoChao = p.onGround() && !p.getAbilities().flying && !p.isFallFlying()
+                        && !p.isPassenger() && !p.isInWater() && !p.isInLava()
+                        && !p.isSpectator();
+            } catch (Throwable t) {
+                peNoChao = false;
+            }
+            if (andou >= (peNoChao ? 0.9 : 2.2)) {
                 st[0] = (long) pos.x;
                 st[1] = (long) pos.z;
                 st[2] = agora;
@@ -1104,9 +1115,11 @@ public final class NeptuneEventos {
                 // Volume saiu de 1,0 -> 2,6 (o dobro e meio: alcance e volume)
                 // e CADA passo agora bate um WARDEN_STEP grave embaixo dele,
                 // então o andar é ouvido como passos de uma coisa enorme.
-                nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.WARDEN_STEP,
-                        SoundSource.HOSTILE, 1.35F,
-                        0.55F + (float) Math.random() * 0.12F);
+                if (peNoChao) {
+                    nv.playSound(null, p.blockPosition(), net.minecraft.sounds.SoundEvents.WARDEN_STEP,
+                            SoundSource.HOSTILE, 1.35F,
+                            0.55F + (float) Math.random() * 0.12F);
+                }
                 if (!tocando) {
                     st[3] = 1;
                     nv.playSound(null, p.blockPosition(), RPTagMod.SOM_TRILHA_DEUS.get(),
@@ -2269,6 +2282,19 @@ public final class NeptuneEventos {
             // O teleporte era pra y=1.0 — DENTRO da pedra (a superfície é y≈9),
             // então a pessoa nascia sufocada no escuro, sem andar e sem ver.
             // Agora a chegada é na superfície da praça, com o chão garantido.
+            // (5.13.2) ANTES de sair do mundo, grava o ponto de entrada. Se este
+            // caminho não passou pelo `exilar` (ex.: portal, comando, script), a pessoa
+            // voltaria para um lugar sorteado — e o dono já avisou três vezes que
+            // "na hora que sair ele deve continuar no mesmo local que ele sumiu".
+            try {
+                if (RPWorldData.get(alvo.getServer()).getVolta(alvo.getUUID()) == null) {
+                    RPWorldData.get(alvo.getServer()).setVolta(alvo.getUUID(), new RPWorldData.Volta(
+                            alvo.level().dimension().location().toString(),
+                            alvo.getX(), alvo.getY(), alvo.getZ(), alvo.getYRot(), alvo.getXRot()));
+                }
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: nao consegui gravar o ponto de entrada", t);
+            }
             Vec3 chegada = chegadaNoExilio(destino);
             alvo.teleportTo(destino, chegada.x, chegada.y, chegada.z,
                     java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
@@ -2289,8 +2315,53 @@ public final class NeptuneEventos {
      * <p>Segurança: procura a SUPERFÍCIE (heightmap), rejeita água/lava/ar e
      * tenta 24 vezes antes de desistir; se nada der certo, cai no spawn.
      */
+    /**
+     * (5.13.2) DEVOLVE AO PONTO DE ENTRADA (o lugar exato de onde a pessoa sumiu).
+     *
+     * <p>É o pedido repetido do dono: <i>"para onde a pessoa entrar na dimensão, na hora
+     * que sair ele deve continuar no mesmo local que ele sumiu"</i>. Vale para TODA saída
+     * do vazio — portal, /vazio soltar ou morte — porque todas passam por aqui.
+     *
+     * @return true se havia um ponto gravado e o teleporte aconteceu.
+     */
+    public static boolean voltarParaEntrada(ServerPlayer alvo) {
+        try {
+            RPWorldData dados = RPWorldData.get(alvo.getServer());
+            RPWorldData.Volta volta = dados.getVolta(alvo.getUUID());
+            if (volta == null) {
+                return false;
+            }
+            var chave = net.minecraft.resources.ResourceKey.create(
+                    net.minecraft.core.registries.Registries.DIMENSION,
+                    net.minecraft.resources.ResourceLocation.parse(volta.dimensao()));
+            ServerLevel destino = alvo.getServer().getLevel(chave);
+            if (destino == null) {
+                return false;
+            }
+            dados.setVolta(alvo.getUUID(), null);
+            ORIGEM.remove(alvo.getUUID());
+            destino.getChunk((int) Math.floor(volta.x()) >> 4, (int) Math.floor(volta.z()) >> 4);
+            alvo.teleportTo(destino, volta.x(), volta.y(), volta.z(),
+                    java.util.Set.of(), volta.yaw(), volta.pitch());
+            destino.playSound(null, alvo.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
+                    SoundSource.HOSTILE, 1.0F, 0.9F);
+            alvo.displayClientMessage(Component.literal(
+                    "\u00a75\u00a7lO PORTAL TE DEVOLVEU.\n"
+                    + "\u00a78Exatamente onde você estava. Ninguém te tirou de lá."), false);
+            return true;
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: volta ao ponto de entrada falhou (o jogo segue)", t);
+            return false;
+        }
+    }
+
     private static void devolverAleatorio(ServerPlayer alvo) {
         try {
+            // (5.13.2) PRIMEIRO o lugar de onde ele entrou — o "aleatório" é só o
+            // último recurso de quem se perdeu sem registro nenhum.
+            if (voltarParaEntrada(alvo)) {
+                return;
+            }
             ORIGEM.remove(alvo.getUUID());
             ServerLevel mundo = alvo.getServer().overworld();
             java.util.Random sorte = new java.util.Random();

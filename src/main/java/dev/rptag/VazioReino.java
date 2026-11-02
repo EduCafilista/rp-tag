@@ -101,6 +101,8 @@ public final class VazioReino {
     private static long proximoMundo;
     private static long proximaRuina;
     private static int contadorRuinas;
+    /** (5.13.2) o anel de ruínas em volta da praça já foi erguido? */
+    private static boolean anelFeito;
 
     /** último envio do estado do portal para cada jogador (ms). */
     private static final Map<UUID, Long> ULTIMO_SYNC = new HashMap<>();
@@ -250,10 +252,18 @@ public final class VazioReino {
                 garantirPortais(nv);
                 garantirUmSantuario(nv);
             }
-            // (5.13.1) a cidade morta cresce sozinha: uma ruína a cada 3 s em volta da
+            // (5.13.2) AO CHEGAR já tem cidade: 14 ruínas num anel de 26 a 78 blocos,
+            // uma vez por sessão. Antes a primeira ruína automática caía a 34+ blocos,
+            // e com a névoa fechada o dono entrava e não via NADA ("a dimensão não tem
+            // nada").
+            if (!anelFeito) {
+                anelFeito = true;
+                anelInicial(nv);
+            }
+            // (5.13.1) a cidade morta cresce sozinha: uma ruína a cada 2 s em volta da
             // praça (o dono: "a dimensão tem que ter mais coisas... prédios, ruínas")
             if (agora >= proximaRuina) {
-                proximaRuina = agora + 3000L;
+                proximaRuina = agora + 2000L;
                 ruinaAutomatica(nv);
             }
             animarAbertura(nv, agora);
@@ -521,8 +531,8 @@ public final class VazioReino {
                     }
                     filaForte(pos, st);
                 } else {
-                    // miolo: ar (fechado) — fica só o fundo preto atrás
-                    filaForte(pos.offset(0, 0, 1), Blocks.BLACK_CONCRETE.defaultBlockState());
+                    // miolo: ar (fechado) — atrás fica o fundo de ESCURIDÃO
+                    filaForte(pos.offset(0, 0, 1), RPTagMod.ESCURIDAO.get().defaultBlockState());
                     if (!nv.getBlockState(pos).isAir()) {
                         filaForte(pos, Blocks.AIR.defaultBlockState());
                     }
@@ -539,26 +549,35 @@ public final class VazioReino {
     /** abre o portal de baixo para cima (chamado quando o 8º fragmento é encaixado). */
     public static void abrirPortal(ServerLevel nv, ServerPlayer p) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
-        if (dados.isPortalAberto()) {
+        BlockPos base = ancoraPortal(nv);
+        if (base == null) {
             return;
         }
+        // (5.13.2) "esse aviso não precisa aparecer que o portal está sendo aberto":
+        // o /vazio abrir agora só FAZ — som e animação, nada de mensagem no chat.
+        // E se já estava aberto, ele REABRE do zero (é assim que o dono grava vídeo).
+        // (5.13.2) "o portal mesmo eu dando o comando para abrir, não aparece ele":
+        // garante a MOLDURA também (se o chunk tinha sido apagado/regerado, o comando
+        // sozinho abre um portal que não existia).
+        enfileirarPortal(nv, base);
+        while (!FILA.isEmpty()) {
+            colocarFila(nv);
+        }
         dados.setPortalAberto(true);
-        BlockPos base = ancoraPortal(nv);
         ABERTURA.put(chavePortal(nv, base), System.currentTimeMillis());
         LINHAS.put(chavePortal(nv, base), 0);
         nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
+        for (int y = 0; y < VazioGeometria.ALTURA_MIOLO; y++) {
+            for (int x = -VazioGeometria.LARGURA_MIOLO / 2; x <= VazioGeometria.LARGURA_MIOLO / 2; x++) {
+                nv.setBlock(base.offset(x, y, 0), Blocks.AIR.defaultBlockState(), 2);
+            }
+        }
         nv.playSound(null, base, SoundEvents.PORTAL_TRIGGER, SoundSource.AMBIENT, 1.2F, 0.5F);
         nv.playSound(null, base, SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 0.5F, 1.7F);
         if (p != null) {
+            // só o 8º fragmento avisa (é conquista do jogador, não comando de admin)
             p.displayClientMessage(Component.literal(
-                    "\u00a75\u00a7lOS OITO FRAGMENTOS ESTÃO NO LUGAR.\n"
-                    + "\u00a77O portal está abrindo — de baixo para cima. \u00a7fNÃO olhe por muito tempo."), false);
-        }
-        for (ServerPlayer outro : nv.players()) {
-            if (outro != p) {
-                outro.displayClientMessage(Component.literal(
-                        "\u00a75\u00a7lAlguma coisa abriu no norte da praça. \u00a77O ar ficou mais pesado."), true);
-            }
+                    "\u00a75\u00a7lOS OITO FRAGMENTOS ESTÃO NO LUGAR."), true);
         }
     }
 
@@ -614,7 +633,9 @@ public final class VazioReino {
         while (colocadas < devidas) {
             int y = colocadas;
             for (int x = -VazioGeometria.LARGURA_MIOLO / 2; x <= VazioGeometria.LARGURA_MIOLO / 2; x++) {
-                nv.setBlock(base.offset(x, y, 0), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+                // (5.13.2) o miolo do portal é o bloco ESCURIDÃO (pedido do dono),
+                // não concreto preto: colisão cheia, ninguém passa "para trás".
+                nv.setBlock(base.offset(x, y, 0), RPTagMod.ESCURIDAO.get().defaultBlockState(), 2);
             }
             nv.playSound(null, base.offset(0, y, 0), SoundEvents.SCULK_CATALYST_BLOOM,
                     SoundSource.AMBIENT, 0.55F, 0.6F + y * 0.06F);
@@ -689,6 +710,9 @@ public final class VazioReino {
                 animarAbertura(nv, agora);
                 for (ServerPlayer p : nv.players()) {
                     try {
+                        // (5.13.2) o cliente precisa saber que ESTE portal existe para
+                        // desenhar o vórtice animado (antes só o do vazio recebia).
+                        envioEstado(nv, p, dados, base);
                         boolean dentro = (dados.isPortalAberto() || portalInvocado(nv))
                                 && dentroDoPortal(p, base);
                         if (!dentro) {
@@ -740,9 +764,12 @@ public final class VazioReino {
 
     /** o jogador está dentro do miolo do portal? */
     private static boolean dentroDoPortal(ServerPlayer p, BlockPos base) {
+        // (5.13.2) o miolo é o bloco ESCURIDÃO (sólido): não existe mais "entrar
+        // andando". Então vale quem está ENCOSTADO na boca do portal — a hitbox do
+        // jogador fica a ~0,5 bloco do plano do miolo.
         int meiaL = VazioGeometria.LARGURA_MIOLO / 2;
-        return Math.abs(p.getX() - (base.getX() + 0.5)) <= meiaL + 0.4
-                && Math.abs(p.getZ() - (base.getZ() + 0.5)) <= 1.6
+        return Math.abs(p.getX() - (base.getX() + 0.5)) <= meiaL + 0.5
+                && Math.abs(p.getZ() - (base.getZ() + 0.5)) <= 1.25
                 && p.getY() >= base.getY() - 1.2
                 && p.getY() <= base.getY() + VazioGeometria.ALTURA_MIOLO - 0.5;
     }
@@ -757,6 +784,10 @@ public final class VazioReino {
         try {
             if (!(p.level() instanceof ServerLevel nv)) {
                 return false;
+            }
+            // (5.13.2) o bloco ESCURIDÃO do portal responde em qualquer dimensão
+            if (p.level().getBlockState(pos).is(RPTagMod.ESCURIDAO.get())) {
+                return interagirPortal(p, nv, pos);
             }
             // (5.13.1) fora do vazio o único clique nosso é no portal invocado
             boolean noVazio = ehVazio(nv);
@@ -795,6 +826,34 @@ public final class VazioReino {
             return false;
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: interacao do vazio falhou", t);
+            return false;
+        }
+    }
+
+    /**
+     * (5.13.2) CLIQUE NO BLOCO DE ESCURIDÃO — o portal é usado, não atravessado.
+     *
+     * <p>Como o miolo é sólido (pedido: <i>"não pode passar para trás o bloco"</i>), quem
+     * entra no vazio é quem <b>usa</b> o portal: clique direito ou ficar encostado nele
+     * por 0,7 s. Aqui só filtramos se o bloco clicado é mesmo do miolo deste portal.
+     */
+    public static boolean interagirPortal(ServerPlayer p, ServerLevel nv, BlockPos pos) {
+        try {
+            RPWorldData dados = RPWorldData.get(p.getServer());
+            BlockPos portal = ancoraPortal(nv);
+            if (portal == null) {
+                return false;
+            }
+            boolean dentro = Math.abs(pos.getX() - portal.getX()) <= VazioGeometria.LARGURA_MIOLO
+                    && Math.abs(pos.getZ() - portal.getZ()) <= 2
+                    && pos.getY() >= portal.getY() - 2
+                    && pos.getY() <= portal.getY() + VazioGeometria.ALTURA_MIOLO;
+            if (!dentro) {
+                return false;
+            }
+            return usarPortal(p, nv, portal, dados);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: interacao do portal falhou", t);
             return false;
         }
     }
@@ -958,6 +1017,14 @@ public final class VazioReino {
      */
     public static String invocarPortalEm(ServerLevel nv, int x, int y, int z, ServerPlayer quem) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
+        // (5.13.2) UM PORTAL POR DIMENSÃO. O dono: "não é para aparecer em qualquer
+        // canto do mundo mais, eu já te avisei isso e continua acontecendo". Antes cada
+        // /vazio portal deixava mais uma moldura plantada onde ele estivesse olhando.
+        // Agora o portal ANTERIOR desta dimensão é desmontado na hora.
+        RPWorldData.Portal antigo = dados.getPortalInvocado(dim(nv));
+        if (antigo != null && (antigo.x() != x || antigo.y() != y || antigo.z() != z)) {
+            desmontarPortal(nv, new BlockPos(antigo.x(), antigo.y(), antigo.z()));
+        }
         dados.setPortalInvocado(dim(nv), x, y, z);
         if (ehVazio(nv)) {
             dados.setVazioY(Y_PORTAL, y);
@@ -1006,6 +1073,38 @@ public final class VazioReino {
         RPTagMod.LOGGER.info("RP Tag: portal invocado em {} ({}, {}, {})", dim(nv), x, y, z);
         return "\u00a75Portal invocado em \u00a7f" + x + ", " + y + ", " + z + "\u00a75 ("
                 + (ehVazio(nv) ? "vazio → mundo" : "mundo → vazio") + ").";
+    }
+
+    /**
+     * (5.13.2) DESMONTA uma moldura antiga (o portal anterior da dimensão).
+     * Só a moldura sai — não mexe em terreno, não mexe em construção de jogador
+     * além dos blocos que o próprio portal colocou (obsidiana/crying/verga/esc. do miolo).
+     */
+    private static void desmontarPortal(ServerLevel nv, BlockPos base) {
+        try {
+            if (!nv.isLoaded(base)) {
+                nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
+            }
+            int meia = VazioGeometria.LARGURA_MIOLO / 2 + VazioGeometria.BORDA;
+            for (int dx = -meia; dx <= meia; dx++) {
+                for (int dy = -2; dy <= VazioGeometria.ALTURA_MIOLO + 1; dy++) {
+                    for (int dz = 0; dz <= 1; dz++) {
+                        BlockPos pos = base.offset(dx, dy, dz);
+                        BlockState st = nv.getBlockState(pos);
+                        if (st.is(RPTagMod.ESCURIDAO.get()) || st.is(Blocks.OBSIDIAN)
+                                || st.is(Blocks.CRYING_OBSIDIAN) || st.is(Blocks.POLISHED_BLACKSTONE)) {
+                            nv.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+                        }
+                    }
+                }
+            }
+            ABERTURA.remove(chavePortal(nv, base));
+            LINHAS.remove(chavePortal(nv, base));
+            RPTagMod.LOGGER.info("RP Tag: portal anterior desmontado em {} ({}, {}, {})",
+                    dim(nv), base.getX(), base.getY(), base.getZ());
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui desmontar o portal antigo", t);
+        }
     }
 
     // ================================================== O VAZIO QUE MATA DEVAGAR
@@ -1086,6 +1185,7 @@ public final class VazioReino {
         PREDIOS_FEITOS.clear();
         FILA.clear();
         pracaFeita = false;
+        anelFeito = false;
     }
 
     /** @return true se o nível é a dimensão do vazio. */
@@ -1396,6 +1496,44 @@ public final class VazioReino {
      * blocos da praça: não ficam enfileiradas, não se sobrepõem e cobrem o anel inteiro.
      * Cada célula de 96 blocos só recebe uma construção (a mesma trava do `tentarPredio`).
      */
+    /**
+     * (5.13.2) O ANEL INICIAL — a cidade que já está de pé quando alguém chega.
+     *
+     * <p>14 construções em volta da praça (raio 26 a 78, ângulo de ouro), todas
+     * determinísticas: 2 quarteirões, o resto ruína baixa e uma torre. São as silhuetas
+     * que aparecem no horizonte do spawn — e nenhuma encosta no anel dos pedestais.
+     */
+    private static void anelInicial(ServerLevel nv) {
+        try {
+            for (int i = 0; i < 14; i++) {
+                double ang = i * 2.399963 + 0.7;
+                double raio = 26 + (i * 11 % 52);
+                int x = (int) Math.round(Math.cos(ang) * raio);
+                int z = (int) Math.round(Math.sin(ang) * raio);
+                if (Math.hypot(x, z) < RAIO_PRACA + 6) {
+                    continue;                     // nunca em cima da praça
+                }
+                int cx = Math.floorDiv(x, 96);
+                int cz = Math.floorDiv(z, 96);
+                long k = (long) cx * 100_003L + cz;
+                if (!PREDIOS_FEITOS.add(k)) {
+                    continue;
+                }
+                nv.getChunk(x >> 4, z >> 4);
+                if (i % 7 == 3) {
+                    enfileirarQuarteirao(nv, x, z, cx, cz);
+                } else if (i == 5) {
+                    enfileirarPredio(nv, x, z, cx, cz);
+                } else {
+                    enfileirarRuinaBaixa(nv, x, z, cx, cz);
+                }
+            }
+            RPTagMod.LOGGER.info("RP Tag: anel de ruinas em volta da praca erguido (14 construcoes)");
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: anel inicial de ruinas falhou (o jogo segue)", t);
+        }
+    }
+
     private static void ruinaAutomatica(ServerLevel nv) {
         for (int tentativa = 0; tentativa < 12; tentativa++) {
             int i = contadorRuinas++;

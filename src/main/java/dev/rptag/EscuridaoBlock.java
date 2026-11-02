@@ -1,0 +1,57 @@
+package dev.rptag;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+
+/**
+ * (5.13.2) ESCURIDÃO — o bloco negro do PORTAL do vazio.
+ *
+ * <h2>O que o dono pediu</h2>
+ * <i>"não quero que seja black concrete, crie um bloco preto e não pode passar para
+ * trás o bloco, continue arrumando e melhorando, um bloco negro chamado escuridão"</i>.
+ *
+ * <p>Então: o miolo do portal não é mais concreto preto — é este bloco, com nome
+ * próprio (<b>Escuridão</b>), textura preta com veios violeta e <b>colisão cheia</b>
+ * (ninguém atravessa o portal andando para o outro lado e cai atrás dele; quem passa
+ * é porque <i>usou</i> o portal — clique ou encostar).
+ *
+ * <ul>
+ *   <li><b>indestrutível</b> em survival (`strength(-1, 3600000)`) — o portal não é
+ *       quebrado por acidente (nem por explosão);</li>
+ *   <li>clique direito usa o portal (o {@link VazioReino} decide para onde levar);</li>
+ *   <li>é o mesmo bloco no overworld e no vazio, então dá para construir o portal
+ *       em qualquer lugar com {@code /setblock}.</li>
+ * </ul>
+ */
+public class EscuridaoBlock extends Block {
+
+    public EscuridaoBlock(Properties props) {
+        super(props);
+    }
+
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
+            Player player, BlockHitResult hit) {
+        if (level.isClientSide) {
+            return InteractionResult.SUCCESS;        // não deixa o braço "bater" no bloco
+        }
+        if (level instanceof ServerLevel sl && player instanceof ServerPlayer sp) {
+            boolean usado = VazioReino.interagirPortal(sp, sl, pos);
+            if (usado) {
+                return InteractionResult.CONSUME;
+            }
+            sp.displayClientMessage(Component.literal(
+                    "\u00a78Esta escuridão está morta. \u00a77O portal só responde perto de quem o abriu."),
+                    true);
+        }
+        return InteractionResult.CONSUME;
+    }
+}
