@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.10.0'
+VER = '5.10.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1773,8 +1773,8 @@ check('5.7.2: TITULOS - etiqueta colorida na frente do nome ([Sagrado] Nome)',
       'ETIQUETAS' in _tit and 'CORES' in _tit and '"Sagrado"' in _tit
       and '"Warden"' in _tit and '"Gelo"' in _tit and '"Fragmento"' in _tit
       and '"Almas"' in _tit and '"Chronos"' in _tit)
-check('5.7.2: TITULOS - titulo pessoal depois do nome (Nephisto [O Ferreiro])',
-      'personalizado' in _tit and 'out.append(Component.literal(" [" + t.personalizado() + "]")' in _tit)
+check('5.7.2/5.10.1: TITULOS - titulo pessoal depois do nome (Nephisto [O Ferreiro])',
+      'personalizado' in _tit and 'out.append(TituloEstilo.pessoal(t.personalizado(), t.corPessoal()))' in _tit)
 check('5.7.2: TITULOS - salvos no mundo (SavedData rptag_titulos)',
       'rptag_titulos' in _tit and 'extends SavedData' in _tit)
 check('5.7.2: TITULOS - aparecem no TAB, no chat e no nametag',
@@ -2193,6 +2193,47 @@ check('5.10.0: as prévias do aviso e da otimização estão em previa/',
       os.path.exists('previa/conhecimento_5.10.0.png')
       and os.path.getsize('previa/conhecimento_5.10.0.png') > 200_000
       and os.path.exists('previa/otimizacao_5.10.0.png'))
+
+# ============ 5.10.1: TÍTULO BONITO (gradiente, colchete apagado) + /title fora ============
+_est = rd(R + '/TituloEstilo.java')
+_ctit = rd(C + '/ClientTitulos.java')
+check('5.10.1: o estilo do título é uma classe só (servidor e cliente usam a MESMA)',
+      'class TituloEstilo' in _est and 'TituloEstilo.etiqueta(' in _tit
+      and 'TituloEstilo.pessoal(' in _tit and 'dev.rptag.TituloEstilo.etiqueta(' in _ctit)
+check('5.10.1: gradiente LETRA POR LETRA (tom()/gradiente() por caractere)',
+      'public static MutableComponent gradiente(' in _est
+      and 'for (int i = 0; i < n; i++)' in _est and 'static int tom(int cor, float u)' in _est)
+check('5.10.1: cor escura não some (rampa mistura com branco quando a luminância < 0.30)',
+      'lum < 0.30f' in _est and 'misturar(cor, 0xFFFFFF' in _est)
+check('5.10.1: colchetes apagados (55% da cor, sem negrito) e etiqueta em NEGRITO',
+      'COLCHETE = 0.55f' in _est and 'escurecer(cor, COLCHETE)' in _est and 'withBold(true)' in _est)
+check('5.10.1: título pessoal em ITÁLICO (a etiqueta é o "selo", o pessoal é o apelido)',
+      'withItalic(true)' in _est and 'new TituloEstilo.pessoal' not in _est)
+check('5.10.1: o nome do jogador NÃO é tocado pelo estilo (só a etiqueta e o pessoal)',
+      'out.append(nome);' in _tit and 'out.append(nome);' in _ctit)
+check('5.10.1: hover na etiqueta mostra a classe e o HEX (no chat/TAB)',
+      'HoverEvent.Action.SHOW_TEXT' in _est)
+
+_tvan = rd(R + '/TituloVanilla.java')
+check('5.10.1: o /title VANILLA é removido do jogo (não é comando do mod)',
+      'class TituloVanilla' in _tvan and 'TitleCommand.register(dispatcher, contexto)' in _tvan
+      and 'getChildren().removeIf(n -> n.getName().equals("title"))' in _tvan)
+check('5.10.1: e é removido do mapa LITERALS também (é ele que o parser lê, não o children)',
+      '"literals"' in _tvan and 'getDeclaredField(campo)' in _tvan
+      and 'removerDoMapa(raiz, "literals", "title")' in _tvan)
+check('5.10.1: sem sondas de diagnóstico no código que vai pra release', 
+      '[sonda]' not in _tvan and 'ServerTickEvent' not in _tvan
+      and 'literal("sonda")' not in rd(R + '/RPCommands.java'))
+check('5.10.1: e tem VOLTA (/rp admin titlevanilla on|off, salvo no mundo)',
+      'comandoTitleVanilla' in rd(R + '/RPWorldData.java')
+      and '"titlevanilla"' in rd(R + '/RPCommands.java')
+      and 'TitleCommand.register' in _tvan)
+check('5.10.1: o /titulo do mod continua de pé (definir, cor, personalizado, paleta)',
+      'literal("paleta")' in rd(R + '/TituloCommands.java')
+      and 'literal("definir")' in rd(R + '/TituloCommands.java'))
+check('5.10.1: a prévia do título novo está em previa/ (antes × depois + paleta)',
+      os.path.exists('previa/titulos_5.10.1.png')
+      and os.path.getsize('previa/titulos_5.10.1.png') > 60_000)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

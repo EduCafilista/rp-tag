@@ -13,6 +13,43 @@
 
 ---
 
+## 5.10.1 (2026-11-02): título com relevo + `/title` vanilla fora do jogo
+
+> Pedidos: *"bonitinho, não apenas as letras naquela cor"* e *"o /title é do mod? apaga"*.
+
+### O título (TituloEstilo.java)
+- **Uma classe só** (`dev.rptag.TituloEstilo`) usada pelo `Titulos` (TAB/chat) **e** pelo
+  `ClientTitulos` (nametag). Nunca mais duplicar a regra nos dois lados.
+- `gradiente(texto, cor)`: **cor por caractere** — `tom(cor, u) = cor × (1,55 − 1,02·u)`,
+  `u = i/(n−1)`; `limitar` nos canais. É o máximo que o vanilla permite (sem shader).
+- `COLCHETE = 0.55f`: `[` e `]` a 55 % e **sem negrito** (moldura, não letra).
+- Etiqueta **negrito**, pessoal **itálico** e com espaço antes; **nome do jogador intocado**.
+- `tom()` com **lum < 0,30 mistura branco** `0,68·(1−0,88u)` — resolve `Sombra`/`Vazio`/
+  `Morto` sumindo no TAB.
+- Hover `Classe: X  #RRGGBB` na etiqueta (chat/TAB).
+
+### O `/title` (TituloVanilla.java) — **a lição que não pode ser esquecida**
+- `/title` é **VANILLA** (`net.minecraft.server.commands.TitleCommand`). O do mod é `/titulo`.
+- Sai do jogo por padrão; volta com `/rp admin titlevanilla on` (flag `comandoTitleVanilla`
+  em `RPWorldData`, salva no mundo, padrão `false`).
+- **O PULO DO GATO**: o Brigadier guarda os filhos da raiz em **três** mapas — `children`,
+  `literals`, `arguments`. `getChildren()` devolve a view do `children`, mas quem o parser
+  consulta é o **`literals`** (`CommandNode.getRelevantNodes`). Por isso remover só com
+  `getChildren().removeIf(...)` deixava o log dizendo `title=false`, `getChild("title")`
+  nulo, e o `title @a times 20 60 20` **continuava executando** (gastou 3 rodadas de teste!).
+  Agora `tirar()` limpa `children` **e** `literals` via `getDeclaredField(...)+setAccessible`
+  (o Brigadier não tem `removeChild`). `getChild()` só olha `children` — **não confie nele
+  como prova** de que o comando saiu; o teste de verdade é executar o comando.
+- **Teste de verdade** (RCON, servidor de pé):
+  `title @a times 20 60 20` → `Unknown or incomplete command`; `help title` → `Unknown command`;
+  `rp admin titlevanilla on` → `No player was found` (executa); `off` → volta a `Unknown`.
+- `title`/`titulo` **sozinhos** dão "Unknown or incomplete command" mesmo quando existem —
+  não servem de teste. Sempre com argumentos.
+- Antes de tudo isso, o `@EventBusSubscriber` **não era escaneado** nessa classe: o registro
+  é **manual** (`NeoForge.EVENT_BUS.register(TituloVanilla.class)` no construtor do `RPTagMod`).
+- Hipótese descartada: "o dispatcher do `RegisterCommandsEvent` é outro". **É o mesmo**
+  (`dEvento == dServidor`), estável no tick 200 — não repetir essa teoria.
+
 ## 5.10.0 (2026-11-02): CONHECIMENTO novo + mod 30 MB mais leve
 
 > Dois pedidos do dono na mesma mensagem: trocar o aviso CONHECIMENTO pelo

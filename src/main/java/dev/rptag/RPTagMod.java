@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.10.0";
+    public static final String VERSION = "5.10.1";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -190,5 +190,9 @@ public final class RPTagMod {
         // nao consegue serializar a arvore de comandos e o cliente cai com
         // "Invalid player data" (IllegalArgumentException em ArgumentTypeInfos.byClass).
         RpArgumentTypes.ARGUMENT_TYPES.register(modEventBus);
+        // (5.10.1) /title VANILLA fora do jogo. Registrado NA MAO: o scan de
+        // @EventBusSubscriber não pegou esta classe (as outras pegou), e aqui
+        // não dá pra depender de sorte — o registro explícito é determinístico.
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(TituloVanilla.class);
     }
 }

@@ -767,6 +767,7 @@ public final class RPCommands {
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
                     + "/rp admin saidafx on|off \u00a77\u2014 animacao de saida dos jogadores (quem fica ve)\u00a7c\n"
+                    + "/rp admin titlevanilla on|off \u00a77\u2014 o /title do Minecraft puro (padrao: fora; fica so o /titulo)\u00a7c\n"
                     + "/rp admin bolha <jogador> on|off \u00a77\u2014 modo balao de outro\u00a7c\n"
                     + "/rp admin balao <jogador> on|off \u00a77\u2014 libera/bloqueia o balao\u00a7c\n"
                     + "/rp admin balaolist \u00a77\u2014 quem tem balao liberado\u00a7c\n"
@@ -1147,6 +1148,30 @@ public final class RPCommands {
                             boolean on = RPWorldData.get(ctx.getSource().getServer()).saidaFx();
                             ctx.getSource().sendSuccess(() -> Component.literal(
                                     "Animação de saída está " + (on ? "LIGADA" : "DESLIGADA") + " (use on|off)."), false);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                // (5.10.1) /rp admin titlevanilla on|off — o /title é comando VANILLA
+                // (não é do mod). Padrão: sem ele, só o /titulo do RP Tag.
+                .then(Commands.literal("titlevanilla")
+                        .then(Commands.literal("on").executes(ctx -> {
+                            TituloVanilla.aplicar(ctx.getSource().getServer(), true);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "O /title (comando VANILLA do Minecraft, nao e do mod) esta de volta."),
+                                    true);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .then(Commands.literal("off").executes(ctx -> {
+                            TituloVanilla.aplicar(ctx.getSource().getServer(), false);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "O /title (vanilla) foi REMOVIDO — agora so existe o /titulo do mod."),
+                                    true);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .executes(ctx -> {
+                            boolean on = RPWorldData.get(ctx.getSource().getServer()).comandoTitleVanilla();
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "O /title (vanilla) esta " + (on ? "LIGADO" : "DESLIGADO")
+                                            + " (use on|off). O /titulo do mod sempre funciona."), false);
                             return Command.SINGLE_SUCCESS;
                         }))
                 .then(Commands.literal("chatlocal")

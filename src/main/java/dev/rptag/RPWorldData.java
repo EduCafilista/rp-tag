@@ -57,6 +57,9 @@ public final class RPWorldData extends SavedData {
     /** (5.7.0) ANIMAÇÃO DE SAÍDA dos jogadores (quem fica vê o bonequinho se
      * desfazendo em código). Padrão LIGADO; /rp admin saidafx on|off. */
     private boolean saidaFx = true;
+    /** (5.10.1) comando /title (VANILLA) de volta? Padrão NÃO — o dono pediu
+     * "deixa só o /titulo". /rp admin titlevanilla on|off. */
+    private boolean comandoTitleVanilla = false;
 
     // ==== (4.5.0) REGRAS EM RP (padrao: tudo LIBERADO) ====
     /** PvP permitido em RP (false = bloqueia; vale se qualquer lado estiver em RP). */
@@ -167,6 +170,15 @@ public final class RPWorldData extends SavedData {
     /** (5.7.0) animação de saída dos jogadores (quem FICA vê). */
     public boolean saidaFx() {
         return saidaFx;
+    }
+
+    public boolean comandoTitleVanilla() {
+        return comandoTitleVanilla;
+    }
+
+    public void setComandoTitleVanilla(boolean manter) {
+        comandoTitleVanilla = manter;
+        setDirty();
     }
 
     public void setSaidaFx(boolean on) {
@@ -420,6 +432,7 @@ public final class RPWorldData extends SavedData {
         tag.putBoolean("ChatLocal", chatLocal);
         tag.putBoolean("BubblesOn", bubblesOn);
         tag.putBoolean("SaidaFx", saidaFx);
+        tag.putBoolean("ComandoTitleVanilla", comandoTitleVanilla); // (5.10.1)
         // (4.9.0) as 3 flags de "regra em RP" sairam junto com o /rp admin regra
         tag.putInt("AfkTimeout", afkTimeout);
         // (4.5.0) recados de vida de quem estava offline
@@ -511,6 +524,7 @@ public final class RPWorldData extends SavedData {
         data.bubblesOn = !tag.contains("BubblesOn") || tag.getBoolean("BubblesOn");
         // (5.7.0) save antigo nao tem a chave -> padrao LIGADO
         data.saidaFx = !tag.contains("SaidaFx") || tag.getBoolean("SaidaFx");
+        data.comandoTitleVanilla = tag.contains("ComandoTitleVanilla") && tag.getBoolean("ComandoTitleVanilla");
 
         // (4.5.0) mesmo cuidado: save antigo nao tem as chaves -> padrao LIBERADO
         data.afkTimeout = tag.contains("AfkTimeout") ? tag.getInt("AfkTimeout") : AfkSistema.TIMEOUT_PADRAO_S;

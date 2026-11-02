@@ -1,5 +1,36 @@
 # Changelog
 
+## 5.10.1 — título com relevo (gradiente, moldura, selo) + `/title` vanilla fora do jogo — 2026-11-02
+
+> Dois pedidos do dono: *"quero que seja bonitinho [o título], não apenas as letras
+> naquela cor"* e *"esse /title é do mod? se for, apaga e deixa só o /titulo"*.
+
+### 1) O título ganhou desenho (TAB, chat e nametag)
+- **Classe única** `TituloEstilo` — servidor (`Titulos`) e cliente (`ClientTitulos`)
+  usam a MESMA regra. Antes o cliente tinha a própria cópia e os dois podiam divergir.
+- **Gradiente letra por letra**: `tom = cor × (1,55 − 1,02·u)`, `u = i/(n−1)` — claro no
+  começo, cor cheia no fim. É o "relevo de metal" que o Minecraft consegue fazer (cor
+  por caractere, sem shader).
+- **Colchetes a 55 % e sem negrito** → viram moldura.
+- **Etiqueta em NEGRITO** (selo), **título pessoal em ITÁLICO** (apelido) com espaço antes.
+- **Nome do jogador intocado.**
+- **Cor escura** (luminância < 0,30) mistura branco `0,68·(1−0,88u)`, senão `Sombra`,
+  `Vazio` e `Morto` desapareciam no fundo escuro do TAB.
+- **Hover** na etiqueta: `Classe: Chronos  #C9A6FF` (chat e TAB; no nametag não há mouse).
+
+### 2) `/title` sai do jogo por padrão
+- O `/title` **não é do mod**: é comando **vanilla** (`TitleCommand`). Mesmo assim sai do
+  jogo pra não confundir com `/titulo`; volta com `/rp admin titlevanilla on` (salvo no mundo).
+- **O bug que custou três rodadas**: o Brigadier guarda os filhos da raiz em `children`,
+  `literals` e `arguments`; `getChildren()` é só a view do `children` e **o parser lê o
+  `literals`**. Remover só pelo `getChildren()` deixava `title=false` no log e o `/title`
+  executando. Agora `tirar()` limpa `children` **e** `literals`.
+- Sem reiniciar: tira/devolve na hora e reenvia a árvore pros jogadores online.
+- Rede de segurança no login (cobre `/reload` que remonte a árvore).
+
+**Verificação:** `check.py` **789 PASS / 0 FAIL**; testes por RCON com o servidor de pé
+(`title` bloqueado → `on` → `title` executando → `off` → `title` bloqueado).
+
 ## 5.10.0 — CONHECIMENTO novo (memórias, balança) + mod 30 MB mais leve — 2026-11-02
 
 > O dono mandou dois pedidos juntos: *"troque o aviso conhecimento para esse"*

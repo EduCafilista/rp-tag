@@ -62,14 +62,15 @@ public final class ClientTitulos {
             }
             MutableComponent out = Component.empty();
             if (!t.etiqueta().isEmpty()) {
-                out.append(Component.literal("[" + t.etiqueta() + "] ")
-                        .withStyle(s -> s.withColor(TextColor.fromRgb(t.cor()))));
+                // (5.10.1) o MESMO TituloEstilo do servidor: o nametag fica
+                // idêntico ao chat/TAB (gradiente + colchetes apagados)
+                out.append(dev.rptag.TituloEstilo.etiqueta(t.etiqueta(), t.cor()));
+                out.append(Component.literal(" "));
             }
             out.append(nome);
             if (!t.personalizado().isEmpty()) {
                 // (5.9.0) cor do título pessoal escolhida no /titulo cor pessoal
-                out.append(Component.literal(" [" + t.personalizado() + "]")
-                        .withStyle(s -> s.withColor(TextColor.fromRgb(t.corPessoal()))));
+                out.append(dev.rptag.TituloEstilo.pessoal(t.personalizado(), t.corPessoal()));
             }
             return out;
         } catch (Throwable erro) {

@@ -382,15 +382,16 @@ public final class Titulos {
             }
             MutableComponent out = Component.empty();
             if (!t.etiqueta().isEmpty()) {
-                out.append(Component.literal("[" + t.etiqueta() + "] ")
-                        .withStyle(s -> s.withColor(TextColor.fromRgb(t.cor()))));
+                // (5.10.1) [Chronos] com gradiente metálico e colchetes apagados
+                out.append(TituloEstilo.etiqueta(t.etiqueta(), t.cor()));
+                out.append(Component.literal(" "));
             }
             out.append(nome);
             if (!t.personalizado().isEmpty()) {
                 // (como na print: o título pessoal vem DEPOIS do nome)
                 // (5.9.0) a cor dele agora também é escolhida: /titulo cor pessoal
-                out.append(Component.literal(" [" + t.personalizado() + "]")
-                        .withStyle(s -> s.withColor(TextColor.fromRgb(t.corPessoal()))));
+                // (5.10.1) em itálico, com o mesmo gradiente
+                out.append(TituloEstilo.pessoal(t.personalizado(), t.corPessoal()));
             }
             return out;
         } catch (Throwable erro) {
