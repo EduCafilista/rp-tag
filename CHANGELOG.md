@@ -1,5 +1,53 @@
 # Changelog
 
+## 5.13.1 — pedido 51 (a aura sem lixo, o vazio claro de novo, o portal que aparece) — 2026-11-02
+
+> Pedido do dono, depois de jogar a 5.13.0: **"tira as partículas cinzas do vazio ligar, as
+> partículas pretas"** · **"esses quadrados grandes ficaram esquisitos, melhore isso"** · **"os
+> raios vermelhos ficaram daoras, continue melhorando o rastro dele"** · **"o vazio deve ser como
+> antes, pq agora ta tudo preto na dimensao"** · **"onde a pessoa entrar na dimensão, na hora que
+> sair ele deve continuar no mesmo local que ele sumiu"** · **"invoquei o portal no overworld e ele
+> não apareceu"** · **"a dimensão ter mais coisas, builda uns prédios, ruínas apagadas"**.
+
+### A aura: menos é mais
+
+- **Saíram de vez** `SQUID_INK`, `LARGE_SMOKE`, `ASH`/`WHITE_ASH` e o **manto de 12 nuvens** — eram
+  eles a "fumaça cinza", a "partícula preta" e os **"quadrados grandes esquisitos"**.
+- **Ficaram** os **dois olhos vermelhos**, os **raios vermelhos** (o dono aprovou: "ficaram daoras")
+  e entraram **estilhaços de pedra** que se soltam do corpo.
+- **Rastro novo** (`client/RastroVazioFx`): rachaduras finas vermelho-sangue abertas no chão por onde
+  a pessoa passa, esfriando até cinza-carvao e apagando em 22 s — geometria, não partícula.
+- Saiu também a **poeira preta nos pés** que caía na dimensão inteira.
+
+### O vazio deixou de ser preto
+
+- `dimension_type/exilio.json` voltou aos valores de `9938159`: `ambient_light 0.42`,
+  `has_skylight true`, `has_ceiling false`, céu do `overworld` às 6 h.
+- `client/VazioNeblina`: cor **cinza-azulada** (0,052 / 0,048 / 0,070) e horizonte de **190 blocos**
+  (era 96 e quase preto).
+
+### O portal invocado (dois bugs, um atrás do outro)
+
+- **O relógio da abertura era global**: `aberturaInicio`/`linhasColocadas` eram estáticos e únicos,
+  então o primeiro portal a abrir (o do vazio) **gastava as 7 linhas** e o portal invocado depois
+  ficava com o **miolo em ar**. Agora é **por portal** (`ABERTURA`/`LINHAS` com
+  `chavePortal = dimensão + x,y,z`).
+- **O portal invocado exigia os 8 fragmentos**: `animarAbertura`/`estadoPortal`/`usarPortal` só
+  agiam com `isPortalAberto()` (estado do portal do vazio). Num mundo sem pedestal cheio, o portal
+  do overworld **nunca abria**. Novo `aberto(nv, dados) = isPortalAberto() || portalInvocado(nv)`.
+
+### A volta ao ponto de entrada
+
+- O lugar de onde a pessoa entrou fica **no save** (`RPWorldData.Volta`, por jogador) e o portal
+  devolve **nas coordenadas exatas**, com yaw/pitch, zerando a marca na saída.
+
+### A cidade morta
+
+- `ruinaAutomatica`: **uma ruína a cada 3 s** em espiral de ouro em volta da praça (raio 34–104),
+  em 3 tipos — **torre**, **ruína baixa** e **quarteirão** — com paleta **apagada**
+  (`deepslate_tiles`, `cracked_deepslate_bricks`, `tuff`, `gray_concrete`, basalto queimado),
+  telhado caído num canto e 24–40 escombros por construção.
+
 ## 5.13.0 — pedido 50 (tablet por jogador + o portal negro do vazio) — 2026-11-02
 
 > Pedido do dono: **tablet um para cada jogador** (pegar o de outro mostra **a ficha do outro**) ·

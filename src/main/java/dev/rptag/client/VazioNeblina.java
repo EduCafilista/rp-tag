@@ -42,12 +42,16 @@ public final class VazioNeblina {
         if (!noVazio()) {
             return;
         }
-        // respira muito de leve (0,008..0,018) — dá vida sem clarear
+        // (5.13.1) "o vazio deve ser como antes, pq agora tá tudo preto na dimensão".
+        // A neblina era quase PRETA (#050308) e fechava em 96 blocos — o dono via um
+        // breu sem horizonte e achou que a dimensão estava vazia. Agora ela é cinza-azul
+        // de cidade morta ao entardecer (#2A2833–#33303F): dá para ver longe, e o clima
+        // continua sendo o de um lugar sem sol.
         float t = (System.currentTimeMillis() % 20000L) / 20000F;
         float pulso = 0.006F + 0.006F * (float) Math.sin(t * 6.2831853F);
-        e.setRed(0.020F + pulso);
-        e.setGreen(0.014F + pulso * 0.6F);
-        e.setBlue(0.032F + pulso);
+        e.setRed(0.052F + pulso);
+        e.setGreen(0.048F + pulso);
+        e.setBlue(0.070F + pulso * 1.2F);
     }
 
     /** a neblina fecha perto: o que é longe é breu. */
@@ -58,9 +62,10 @@ public final class VazioNeblina {
         }
         Minecraft mc = Minecraft.getInstance();
         float y = mc.player == null ? 0F : (float) mc.player.getY();
-        // caindo no vazio: a neblina engole mais rápido ainda
-        float perto = y < 0 ? 2F : 9F;
-        float longe = y < 0 ? 26F : 96F;
+        // (5.13.1) horizonte visível: 190 blocos (era 96). Caindo no vazio, a neblina
+        // volta a engolir rápido — é o único lugar onde o breu é proposital.
+        float perto = y < 0 ? 2F : 22F;
+        float longe = y < 0 ? 30F : 190F;
         e.setNearPlaneDistance(perto);
         e.setFarPlaneDistance(longe);
         e.setCanceled(true);

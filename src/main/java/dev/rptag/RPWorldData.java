@@ -67,9 +67,8 @@ public final class RPWorldData extends SavedData {
     /** (5.12.0) FRAGMENTOS DO VAZIO que cada jogador já recolheu (0..8).
      *  Persiste no mundo: quem morre no vazio NÃO perde o que achou. */
     private final Map<UUID, Integer> fragmentos = new HashMap<>();
-    /** (5.13.0) lugar do portal invocado + se ele está aberto. */
-    private int portalX, portalY, portalZ;
-    private boolean portalInvocado, portalAberto;
+    /** (5.13.0) se o portal do vazio está aberto. */
+    private boolean portalAberto;
     private final Map<UUID, BubbleStyle> styles = new HashMap<>();
     private boolean chatLocal = true;
     private boolean bubblesOn = true;
@@ -273,43 +272,34 @@ public final class RPWorldData extends SavedData {
         }
     }
 
-    // ---- (5.13.0) O PORTAL NEGRO: onde ele está e se está aberto ----
-    // O portal do vazio nasce em volta da praça (0, -22), mas o /vazio portal
-    // pode INVOCAR um onde o admin estiver olhando — aí o lugar fica salvo aqui.
+    // ---- (5.13.0/5.13.1) O PORTAL NEGRO: onde ele está e se está aberto ----
+    // (5.13.1) O portal invocado agora é POR DIMENSÃO: o dono invocou no overworld e o
+    // código antigo só aceitava dentro do vazio (respondia "você precisa estar na
+    // dimensão do vazio"). Com o mapa abaixo, cada dimensão pode ter o seu portal.
 
-    /** o portal foi invocado por comando (senão vale o lugar fixo da praça)? */
-    public boolean isPortalInvocado() {
-        return portalInvocado;
+    /** porta invocada de uma dimensão: x, y, z. */
+    public record Portal(int x, int y, int z) {
     }
 
-    /** grava o lugar do portal invocado (e marca que ele é o portal do mundo). */
-    public void setPortalInvocado(int x, int y, int z) {
-        this.portalInvocado = true;
-        this.portalX = x;
-        this.portalY = y;
-        this.portalZ = z;
+    private final Map<String, Portal> portaisInvocados = new HashMap<>();
+
+    /** o portal invocado desta dimensão (null = não tem; no vazio vale o da praça). */
+    public Portal getPortalInvocado(String dimensao) {
+        return portaisInvocados.get(dimensao);
+    }
+
+    /** grava o portal invocado de uma dimensão. */
+    public void setPortalInvocado(String dimensao, int x, int y, int z) {
+        portaisInvocados.put(dimensao, new Portal(x, y, z));
         setDirty();
     }
 
-    /** tira o portal invocado (volta a valer o portal da praça). */
-    public void limparPortalInvocado() {
-        this.portalInvocado = false;
-        setDirty();
+    /** todas as dimensões que têm portal invocado. */
+    public Map<String, Portal> getPortaisInvocados() {
+        return portaisInvocados;
     }
 
-    public int getPortalX() {
-        return portalX;
-    }
-
-    public int getPortalY() {
-        return portalY;
-    }
-
-    public int getPortalZ() {
-        return portalZ;
-    }
-
-    /** o portal está aberto agora? (os 8 fragmentos já foram encaixados) */
+    /** o portal do vazio está aberto agora? (os 8 fragmentos foram encaixados) */
     public boolean isPortalAberto() {
         return portalAberto;
     }
@@ -649,11 +639,17 @@ public final class RPWorldData extends SavedData {
 
         // (5.12.0) alturas das construções do vazio
         tag.putIntArray("VazioYs", vazioYs);
-        tag.putBoolean("VazioPortalInvocado", portalInvocado);
-        tag.putInt("VazioPortalX", portalX);
-        tag.putInt("VazioPortalY", portalY);
-        tag.putInt("VazioPortalZ", portalZ);
         tag.putBoolean("VazioPortalAberto", portalAberto);
+        ListTag portaisList = new ListTag();
+        for (Map.Entry<String, Portal> en : portaisInvocados.entrySet()) {
+            CompoundTag e = new CompoundTag();
+            e.putString("Dim", en.getKey());
+            e.putInt("X", en.getValue().x());
+            e.putInt("Y", en.getValue().y());
+            e.putInt("Z", en.getValue().z());
+            portaisList.add(e);
+        }
+        tag.put("VazioPortais", portaisList);
 
         // (5.13.0) lugar de onde cada um foi exilado
         ListTag voltasList = new ListTag();
@@ -776,11 +772,13 @@ public final class RPWorldData extends SavedData {
         }
 
         int[] ys = tag.getIntArray("VazioYs");
-        data.portalInvocado = tag.getBoolean("VazioPortalInvocado");
-        data.portalX = tag.getInt("VazioPortalX");
-        data.portalY = tag.getInt("VazioPortalY");
-        data.portalZ = tag.getInt("VazioPortalZ");
         data.portalAberto = tag.getBoolean("VazioPortalAberto");
+        ListTag portaisList = tag.getList("VazioPortais", Tag.TAG_COMPOUND);
+        for (int i = 0; i < portaisList.size(); i++) {
+            CompoundTag e = portaisList.getCompound(i);
+            data.portaisInvocados.put(e.getString("Dim"),
+                    new Portal(e.getInt("X"), e.getInt("Y"), e.getInt("Z")));
+        }
         for (int i = 0; i < Math.min(ys.length, data.vazioYs.length); i++) {
             data.vazioYs[i] = ys[i];
         }

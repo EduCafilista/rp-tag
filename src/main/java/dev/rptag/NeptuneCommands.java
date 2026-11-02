@@ -248,7 +248,23 @@ public final class NeptuneCommands {
                     ctx.getSource().sendSuccess(() -> Component.literal(
                             "\u00a75" + alvo.getName().getString() + "\u00a78: " + r), false);
                     return Command.SINGLE_SUCCESS;
-                })));
+                }))
+                // (5.13.1) /vazio portal <x> <y> <z> — invoca numa posição exata (funciona
+                // do console também; é assim que o dono testa sem entrar na dimensão)
+                .then(Commands.argument("x", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                        .then(Commands.argument("y", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                                .then(Commands.argument("z",
+                                                com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                                        .executes(ctx -> {
+                                            var src = ctx.getSource();
+                                            var nv = src.getLevel();
+                                            int x = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "x");
+                                            int y = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "y");
+                                            int z = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "z");
+                                            String r = VazioReino.invocarPortalEm(nv, x, y, z, src.getPlayer());
+                                            src.sendSuccess(() -> Component.literal(r), true);
+                                            return Command.SINGLE_SUCCESS;
+                                        })))));
 
         // (5.13.0) /vazio construir — refaz praça, pedestais, altares e portal na hora
         vazio.then(Commands.literal("construir").executes(ctx -> {

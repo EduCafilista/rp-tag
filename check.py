@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Suite de verificações do RP Tag — roda ANTES de entregar um ciclo."""
-import io, os, sys, zipfile
+import io, os, re, sys, zipfile
 
 OK, FAIL = 0, 0
 def check(nome, cond):
@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.13.0'
+VER = '5.13.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1386,7 +1386,7 @@ check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID an
       and 'ficha do tablet descartada' in _rw)
 check('5.2.0: entrega automatica no login + /tablet', 'PlayerLoggedInEvent' in _ts and 'tryGiveTablet' in _ts
       and 'Commands.literal("tablet")' in _ts)
-check('5.2.0/5.13.0: /tablet ver, dar e liberar exigem permissao 2',
+check('5.2.0/5.13.1: /tablet ver, dar e liberar exigem permissao 2',
       _ts.count('hasPermission(2)') >= 2)
 check('5.2.0: /persona criar|idade|desc|off bloqueados apos confirmar (e leitura liberada)',
       'personaLocked' in rd(R + '/PersonaCommands.java')
@@ -1407,7 +1407,7 @@ check('5.2.0: status desenhado fora do campo (bottomBar - 20)',
       'layoutBottom - 20' in _tn)
 check('5.2.0: abertura curta (1100 ms) e clicavel para pular',
       'opened >= 1100' in _tn and 'if (boot) { skipBoot(); return true; }' in _tn)
-check('5.2.0/5.13.0: item explica como abrir (tooltip) e entrega avisa no chat',
+check('5.2.0/5.13.1: item explica como abrir (tooltip) e entrega avisa no chat',
       'Clique direito para abrir SUA ficha' in _ti and 'clique direito para preencher sua ficha' in _ts)
 check('5.2.0: /rp ajuda lista /tablet e os comandos de admin',
       '/tablet \\u00a77\\u2014 abre seu TABLET' in _hl and '/tablet liberar <jogador>' in _hl)
@@ -1627,11 +1627,15 @@ check('5.5.0: dimensao do EXILIO existe (rptag:exilio) com chao (5.7.8: camadas 
 # "o vazio tem que ser mais escuro, mais preto" (pedido 49). O check antigo
 # virou este aqui — continua verificando que a dimensao esta configurada,
 # so que no tom novo (luz 0, sem ceu, teto) e com a neblina do cliente.
-check('5.7.9 -> 5.12.0: o exilio agora e PRETO (pedido 49) e continua configurado',
-      '"ambient_light": 0.0' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and '"has_skylight": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and '"has_ceiling": true' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+# (5.13.1) O DONO VOLTOU ATRAS: o vazio NAO pode ser tudo preto ("o vazio deve
+# ser como antes, pq agora ta tudo preto na dimensao"). Voltaram os valores de
+# 9938159: luz ambiente 0,42, ceu ligado, sem teto e o CEU DO OVERWORLD.
+check('5.13.1 (pedido 51): o vazio voltou a ser ILUMINADO (luz 0,42 + ceu do overworld)',
+      '"ambient_light": 0.42' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"has_skylight": true' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"has_ceiling": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and '"fixed_time": 6000' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and 'minecraft:overworld' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and os.path.exists(C + '/VazioNeblina.java'))
 check('5.7.9: exilar POUSA na SUPERFICIE (y=1 era dentro da pedra: nao andava nem via)',
       '"exilio"' in _ne2 and 'chegadaNoExilio(destino)' in _ne2
@@ -1646,11 +1650,18 @@ check('5.5.0: /vazio soltar tira o jogador do exilio',
 check('5.7.3: aura do vazio = escuridao saindo do player (5.11.1: raios vermelhos)',
       'auraVazio(' in _ne2 and 'DustParticleOptions' in _ne2
       and 'negro' in _ne2)
-check('5.7.3: a aura tem COLUNA de escuridao em volta do corpo (visible no F5)',
-      '(A) O MANTO' in _ne2 and 'LARGE_SMOKE' in _ne2
-      and 'SQUID_INK' in _ne2)
-check('5.7.2: as rachaduras serpenteiam (as faixas vermelhas se mexem)',
-      'fase * 1.6' in _ne2 and 'lateral' in _ne2)
+# (5.13.1) pedido 51: "tira as particulas cinzas do vazio ligar, as particulas
+# pretas". O manto (nuvem cinza) morreu de vez.
+_aura_bruto = (_ne2.split('private static void auraVazio')[1].split('\n    private static ')[0]
+               if 'private static void auraVazio' in _ne2 else '')
+_aura = re.sub(r'/\*.*?\*/', '', _aura_bruto, flags=re.S)              # sem /* */
+_aura = "\n".join(l.split('//')[0] for l in _aura.splitlines())         # sem //
+check('5.13.1 (pedido 51): SEM particula cinza/preta na aura (SQUID_INK, LARGE_SMOKE, ASH)',
+      _aura != '' and 'SQUID_INK' not in _aura and 'LARGE_SMOKE' not in _aura
+      and 'ParticleTypes.ASH' not in _aura and 'SMOKE' not in _aura)
+check('5.13.1: RASTRO de caos em geometria no cliente (RastroVazioFx, sem quadradoes)',
+      os.path.exists(C + '/RastroVazioFx.java')
+      and 'RenderLevelStageEvent' in rd(C + '/RastroVazioFx.java'))
 check('5.5.0: SAIU a particula que ficava NA CABEÇA (SCULK_SOUL em y+2,1)',
       'ParticleTypes.SCULK_SOUL' not in _ne2 and 'pos.y + 2.1' not in _ne2)
 check('5.5.0: o apagar/exilar nao desenha mais o QUADRADO PRETO (g.fill no centro)',
@@ -1905,9 +1916,9 @@ check('5.7.6: a ORIGEM de quem foi exilado fica guardada (5.7.8: solta aleatorio
       'ORIGEM.put(' in _ne2 and 'devolverAleatorio' in _ne2 and 'ORIGEM.remove(' in _ne2)
 check('5.7.6: na tela, escuridao do exilio (indo) e da volta (abrindo)',
       'desenharExilioCena' in _nfx and 'CENA_EXILIO' in _nfx and 'CENA_VOLTA' in _nfx)
-check('5.7.6: aura do vazio BEM mais preta (manto cobre o corpo, rosto poupado)',
-      'boolean rosto =' in _ne2 and 'continue;                        // poupa o rosto' in _ne2
-      and 'os OLHOS' in _ne2)
+check('5.13.1 (pedido 51): a aura sao DOIS OLHOS vermelhos + estilhacos de pedra',
+      'os OLHOS' in _ne2 and 'BlockParticleOption' in _ne2
+      and 'auraPart(' in _ne2)
 check('5.7.6: RASTRO DE CAOS no chao por onde o vazio passa (22 s)',
       'private record Mancha(' in _ne2 and 'tickManchas' in _ne2 and '22_000L' in _ne2)
 check('5.7.6: TRANSFORMACAO = rajada que abre o corpo (5.11.1: raios vermelhos de volta)',
@@ -1955,9 +1966,9 @@ check('5.7.7: CODIGOS VERDES em volta do player na saida (3D, no mundo)',
 check('5.7.3: SAIU o borrao de fumaca/rachadura DESENHADO na tela (era o que ficava esquisito no F5)',
       'fumaca(' not in _vad and 'rachadura(' not in _vad and 'tentaculo(' not in _vad
       and _vad.count('b.vinheta(') >= 1 and 'granula' in _vad.lower())
-check('5.7.3: a aura do vazio agora e NO MUNDO (manto preto + pedra no corpo)',
-      '(A) O MANTO' in _ne2 and 'class VazioAuraDarkFx' in _vad
-      and 'vinheta' in _vad.lower())
+check('5.13.1 (pedido 51): aura NO MUNDO sem tela e sem manto (raios + rastro)',
+      'desenharManto' not in _rvz and os.path.exists(C + '/RastroVazioFx.java')
+      and 'quadPequeno' in _rvz)
 check('5.7.3: som novo do terremoto com corpo (nao so zumbido grave)',
       os.path.getsize(A + '/sounds/rumble_terremoto.ogg') > 100_000
       and os.path.getsize(A + '/sounds/terremoto_colapso.ogg') > 300_000)
@@ -2007,10 +2018,10 @@ check('5.7.9: /terremoto parar CALA o som (StopSound por jogador, como no /vazio
 check('5.7.9: o cliente tambem para na mao quando chega o pacote de "desligado"',
       'getSoundManager()' in _nfx2 and 'sm.stop(' in _nfx2)
 _vrp = rd(R + '/VazioReino.java')
-check('5.7.9/5.13.0: exilio com praca larga e superficie plana (agora no VazioReino)',
+check('5.7.9/5.13.1: exilio com praca larga e superficie plana (agora no VazioReino)',
       'prepararPraca(' in _ne2 and 'CHISELED_POLISHED_BLACKSTONE' in _vrp
       and 'POLISHED_DEEPSLATE' in _vrp and 'RAIO_PRACA' in _vrp)
-check('5.7.9/5.13.0: a praca tem luz (colunas de obsidiana com lanterna de alma)',
+check('5.7.9/5.13.1: a praca tem luz (colunas de obsidiana com lanterna de alma)',
       'for (int i = 0; i < 8; i++)' in _vrp and 'SOUL_LANTERN' in _vrp)
 check('5.7.9: ANIMACAO DE SAIDA automatica quando o player sai do jogo',
       'saidaAutomatica' in rd(R + '/ServerEvents.java') and 'sombraChuva' in _ne2
@@ -2320,9 +2331,9 @@ check('5.12.0: CADA passo do deus bate um WARDEN_STEP grave',
       'SoundEvents.WARDEN_STEP' in _nev and 'SoundSource.HOSTILE, 1.35F' in _nev)
 
 # 3) vazio mais preto + prédios perdidos
-check('5.12.0: a dimensão do exílio ficou PRETA (luz ambiente 0, sem céu, céu do End)',
-      '"ambient_light": 0.0' in _dim and '"has_skylight": false' in _dim
-      and 'minecraft:the_end' in _dim)
+check('5.13.1 (pedido 51): a dimensao NAO e mais preta (luz 0,42, ceu, ceu do overworld)',
+      '"ambient_light": 0.42' in _dim and '"has_skylight": true' in _dim
+      and 'minecraft:overworld' in _dim)
 check('5.12.0: neblina do vazio quase preta no cliente (VazioNeblina)',
       os.path.exists(C + '/VazioNeblina.java')
       and 'ViewportEvent.ComputeFogColor' in rd(C + '/VazioNeblina.java')
@@ -2370,48 +2381,58 @@ _rays = rd(C + '/RaiosVazioFx.java')
 _pay = rd(R + '/VazioPortalPayload.java')
 _net = rd(R + '/ModNetworking.java')
 
-check('5.13.0: 8 pedestais num ANEL em volta do centro do spawn (raio 13)',
+check('5.13.1: 8 pedestais num ANEL em volta do centro do spawn (raio 13)',
       'public static final int RAIO_PEDESTAL = 13' in _geo
       and 'public static int[] pedestal(int i)' in _geo
       and 'ancoraPedestal' in _vr and 'centroY(nv)' in _vr)
-check('5.13.0: o desenho antigo morreu (nada de pedestal a 470 blocos / portal em 780)',
+check('5.13.1: o desenho antigo morreu (nada de pedestal a 470 blocos / portal em 780)',
       'PORTAL_X = 780' not in _vr and '{ 210,   40 }' not in _vr
       and 'public static final int[] PORTAL = { 0, -22 }' in _geo)
-check('5.13.0: o fragmento é ITEM de verdade (registrado, modelo e textura)',
+check('5.13.1: o fragmento é ITEM de verdade (registrado, modelo e textura)',
       'FRAGMENTO_VAZIO = ITEMS.register("fragmento_vazio"' in rd(R + '/RPTagMod.java')
       and 'class FragmentoItem extends Item' in _frag
       and os.path.exists('src/main/resources/assets/rptag/models/item/fragmento_vazio.json')
       and os.path.exists('src/main/resources/assets/rptag/textures/item/fragmento_vazio.png'))
-check('5.13.0: o pedestal só enche com o fragmento NA MÃO (item consumido)',
+check('5.13.1: o pedestal só enche com o fragmento NA MÃO (item consumido)',
       'p.getMainHandItem()' in _vr and '.shrink(1)' in _vr
       and 'encaixarNoPedestal' in _vr)
-check('5.13.0: os 8 altares espalhados guardam o fragmento (1 por jogador)',
+check('5.13.1: os 8 altares espalhados guardam o fragmento (1 por jogador)',
       'SANTUARIOS = 8' in _geo and 'public static int[] santuario(int i)' in _geo
       and 'usarSantuario' in _vr and 'marcarSantuario' in _vr
       and 'new ItemStack(RPTagMod.FRAGMENTO_VAZIO.get())' in _vr)
-check('5.13.0: os 8 encaixados ABREM o portal sozinhos',
+check('5.13.1: os 8 encaixados ABREM o portal sozinhos',
       'if (cheios >= TOTAL_FRAGMENTOS)' in _vr and 'abrirPortal(nv, p)' in _vr
       and 'public boolean temOsOito(UUID id)' in _rwd)
-check('5.13.0: o portal abre de BAIXO PARA CIMA (linha por linha, 6 s)',
-      'ABERTURA_MS = 6000L' in _geo and 'linhasColocadas' in _vr
-      and 'while (linhasColocadas < devidas)' in _vr)
-check('5.13.0: comando para INVOCAR o portal (/vazio portal [jogador])',
+check('5.13.1: o portal abre de BAIXO PARA CIMA (linha por linha, 6 s)',
+      'ABERTURA_MS = 6000L' in _geo and 'LINHAS.get(k)' in _vr
+      and 'while (colocadas < devidas)' in _vr and 'aberturaInicio' not in _vr)
+check('5.13.1: comando para INVOCAR o portal (/vazio portal [jogador])',
       'public static String invocarPortal(ServerPlayer p)' in _vr
       and 'VazioReino.invocarPortal(quem)' in _nec)
-check('5.13.0: atravessar o portal devolve ao LUGAR DE ONDE ENTROU (salvo no mundo)',
+check('5.13.1: atravessar o portal devolve ao LUGAR DE ONDE ENTROU (salvo no mundo)',
       'record Volta(' in _rwd and 'getVolta' in _rwd
       and 'setVolta(alvo.getUUID()' in _nev and 'dados.getVolta(alvo.getUUID())' in _nev)
-check('5.13.0: preferir teletransporte pelo portal: entrar andando ou clicando',
+check('5.13.1: preferir teletransporte pelo portal: entrar andando ou clicando',
       'dentroDoPortal(p, base)' in _vr and 'usarPortal(p, nv, base, dados)' in _vr)
-check('5.13.0: WAYSTONE bloqueada dentro do vazio (bloco e item na mão)',
+check('5.13.1: WAYSTONE bloqueada dentro do vazio (bloco e item na mão)',
       'bloquearWaystone' in _sev2 and 'waystone' in _sev2
       and 'PlayerInteractEvent.RightClickItem' in _sev2)
-check('5.13.0: o portal e as colunas de luz são GEOMETRIA no cliente (não partícula)',
+check('5.13.1: o portal e as colunas de luz são GEOMETRIA no cliente (não partícula)',
       'RenderType.debugQuads()' in _fx and 'RenderLevelStageEvent' in _fx
       and 'desenharPedestais' in _fx and 'VazioPortalPayload' in _fx)
-check('5.13.0: a aura do vazio continua visível com partículas desligadas (manto)',
-      'desenharManto' in _rays and 'quadFrenteCam' in _rays)
-check('5.13.0: pacote do portal registrado (canal 13)',
+check('5.13.1: a aura aparece MESMO com particulas desligadas (geometria no cliente)',
+      'class RaiosVazioFx' in _rays and os.path.exists(C + '/RastroVazioFx.java'))
+check('5.13.1 (pedido 51): portal INVOCADO abre mesmo sem os 8 fragmentos (aberto())',
+      'private static boolean aberto(ServerLevel nv, RPWorldData dados)' in _vr
+      and 'dados.isPortalAberto() || portalInvocado(nv)' in _vr)
+check('5.13.1 (pedido 51): cada portal tem o SEU relogio de abertura (chavePortal)',
+      'chavePortal(nv, base)' in _vr and 'private static final Map<String, Long> ABERTURA' in _vr)
+check('5.13.1 (pedido 51): a cidade morta nasce sozinha (ruinas, predios, quarteiroes)',
+      'private static void ruinaAutomatica' in _vr and 'enfileirarQuarteirao' in _vr
+      and 'enfileirarRuinaBaixa' in _vr and 'proximaRuina' in _vr)
+check('5.13.1 (pedido 51): neblina cinza-azulada (nao preta) no cliente',
+      '0.052F' in rd(C + '/VazioNeblina.java') and '190F' in rd(C + '/VazioNeblina.java'))
+check('5.13.1: pacote do portal registrado (canal 13)',
       'VazioPortalPayload.TYPE' in _net and 'event.registrar("13")' in _net
       and 'VazioPortalPayload' in _pay)
 check('5.12.0: a volta pelo portal não depende de admin (voltarPeloPortal)',

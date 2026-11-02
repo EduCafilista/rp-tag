@@ -80,15 +80,27 @@ public final class VazioReino {
     /** jogadores dentro do portal aberto: uuid -> desde quando (ms). */
     private static final Map<UUID, Long> NO_PORTAL = new HashMap<>();
 
-    /** quando começou a abertura do portal (ms, 0 = fechado). */
-    private static long aberturaInicio = 0L;
-    /** quantas linhas do miolo já foram colocadas (abertura de baixo para cima). */
-    private static int linhasColocadas = 0;
+    /**
+     * (5.13.1) O RELÓGIO DA ABERTURA É POR PORTAL.
+     *
+     * <p>Antes era um contador só para o jogo inteiro: invocar um portal no overworld fazia o
+     * portal do vazio "gastar" as 7 linhas da animação e o do overworld ficava sem miolo. A
+     * chave é a dimensão + a posição da moldura.
+     */
+    private static final Map<String, Long> ABERTURA = new HashMap<>();
+    private static final Map<String, Integer> LINHAS = new HashMap<>();
+
+    /** chave do portal (dimensão + posição). */
+    private static String chavePortal(ServerLevel nv, BlockPos base) {
+        return dim(nv) + ":" + base.getX() + "," + base.getY() + "," + base.getZ();
+    }
 
     private static boolean pracaFeita;
     private static long proximaDica;
     private static long proximoPredio;
     private static long proximoMundo;
+    private static long proximaRuina;
+    private static int contadorRuinas;
 
     /** último envio do estado do portal para cada jogador (ms). */
     private static final Map<UUID, Long> ULTIMO_SYNC = new HashMap<>();
@@ -149,11 +161,37 @@ public final class VazioReino {
      */
     public static BlockPos ancoraPortal(ServerLevel nv) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
-        if (dados.isPortalInvocado()) {
-            return new BlockPos(dados.getPortalX(), dados.getPortalY(), dados.getPortalZ());
+        // (5.13.1) cada dimensão pode ter o seu portal invocado (o dono invocou no
+        // overworld e nada aparecia porque o código só olhava o do vazio).
+        RPWorldData.Portal invocado = dados.getPortalInvocado(dim(nv));
+        if (invocado != null) {
+            return new BlockPos(invocado.x(), invocado.y(), invocado.z());
+        }
+        if (!ehVazio(nv)) {
+            return null;                 // fora do vazio, sem invocação: não há portal
         }
         int[] p = VazioGeometria.PORTAL;
         return new BlockPos(p[0], centroY(nv), p[1]);
+    }
+
+    /** chave da dimensão (para guardar o portal invocado de cada uma). */
+    private static String dim(ServerLevel nv) {
+        return nv.dimension().location().toString();
+    }
+
+    /** (5.13.1) o portal desta dimensão foi INVOCADO por comando? (aí ele é livre) */
+    public static boolean portalInvocado(ServerLevel nv) {
+        return RPWorldData.get(nv.getServer()).getPortalInvocado(dim(nv)) != null;
+    }
+
+    /**
+     * (5.13.1) O PORTAL ESTA ABERTO? Sim se os 8 fragmentos abriram o do vazio OU se ele foi
+     * invocado por comando. Antes o {@code /vazio portal} do overworld montava a moldura e
+     * deixava o miolo em AR num mundo sem os 8 pedestais ("invoquei o portal e ele nao
+     * apareceu") — o portao invocado e de teste, entao ele abre sozinho.
+     */
+    private static boolean aberto(ServerLevel nv, RPWorldData dados) {
+        return dados.isPortalAberto() || portalInvocado(nv);
     }
 
     // =============================================================== tick geral
@@ -185,7 +223,7 @@ public final class VazioReino {
 
             // 5) PRÉDIOS PERDIDOS: nasce um a cada ~3 s, longe da praça
             if (agora >= proximoPredio) {
-                proximoPredio = agora + 3500L + (long) (Math.random() * 2500);
+                proximoPredio = agora + 2200L + (long) (Math.random() * 1800);
                 tentarPredio(nv, p);
             }
 
@@ -211,6 +249,12 @@ public final class VazioReino {
                 garantirPedestais(nv, null);
                 garantirPortais(nv);
                 garantirUmSantuario(nv);
+            }
+            // (5.13.1) a cidade morta cresce sozinha: uma ruína a cada 3 s em volta da
+            // praça (o dono: "a dimensão tem que ter mais coisas... prédios, ruínas")
+            if (agora >= proximaRuina) {
+                proximaRuina = agora + 3000L;
+                ruinaAutomatica(nv);
             }
             animarAbertura(nv, agora);
             colocarFila(nv);
@@ -499,9 +543,9 @@ public final class VazioReino {
             return;
         }
         dados.setPortalAberto(true);
-        aberturaInicio = System.currentTimeMillis();
-        linhasColocadas = 0;
         BlockPos base = ancoraPortal(nv);
+        ABERTURA.put(chavePortal(nv, base), System.currentTimeMillis());
+        LINHAS.put(chavePortal(nv, base), 0);
         nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
         nv.playSound(null, base, SoundEvents.PORTAL_TRIGGER, SoundSource.AMBIENT, 1.2F, 0.5F);
         nv.playSound(null, base, SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 0.5F, 1.7F);
@@ -522,9 +566,12 @@ public final class VazioReino {
     public static void fecharPortal(ServerLevel nv) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
         dados.setPortalAberto(false);
-        aberturaInicio = 0L;
-        linhasColocadas = 0;
         BlockPos base = ancoraPortal(nv);
+        if (base == null) {
+            return;
+        }
+        ABERTURA.remove(chavePortal(nv, base));
+        LINHAS.remove(chavePortal(nv, base));
         if (!nv.isLoaded(base)) {
             return;
         }
@@ -542,13 +589,17 @@ public final class VazioReino {
      */
     private static void animarAbertura(ServerLevel nv, long agora) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
-        if (!dados.isPortalAberto()) {
+        if (!aberto(nv, dados)) {
             return;
         }
         BlockPos base = ancoraPortal(nv);
-        if (aberturaInicio == 0L) {
-            aberturaInicio = agora;              // continuou aberto depois de um restart
+        if (base == null) {
+            return;
         }
+        String k = chavePortal(nv, base);
+        ABERTURA.putIfAbsent(k, agora);          // continuou aberto depois de um restart
+        LINHAS.putIfAbsent(k, 0);
+        long inicio = ABERTURA.get(k);
         if (!nv.isLoaded(base)) {
             nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
             if (!nv.isLoaded(base)) {
@@ -557,16 +608,18 @@ public final class VazioReino {
         }
         int alt = VazioGeometria.ALTURA_MIOLO;
         float progresso = Math.min(1.0F,
-                (agora - aberturaInicio) / (float) VazioGeometria.ABERTURA_MS);
+                (agora - inicio) / (float) VazioGeometria.ABERTURA_MS);
         int devidas = Math.min(alt, (int) Math.floor(progresso * alt + 1e-4F));
-        while (linhasColocadas < devidas) {
-            int y = linhasColocadas;
+        int colocadas = LINHAS.get(k);
+        while (colocadas < devidas) {
+            int y = colocadas;
             for (int x = -VazioGeometria.LARGURA_MIOLO / 2; x <= VazioGeometria.LARGURA_MIOLO / 2; x++) {
                 nv.setBlock(base.offset(x, y, 0), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
             }
             nv.playSound(null, base.offset(0, y, 0), SoundEvents.SCULK_CATALYST_BLOOM,
                     SoundSource.AMBIENT, 0.55F, 0.6F + y * 0.06F);
-            linhasColocadas++;
+            colocadas++;
+            LINHAS.put(k, colocadas);
         }
     }
 
@@ -574,12 +627,18 @@ public final class VazioReino {
     private static void tickPortal(ServerLevel nv, ServerPlayer p, long agora) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
         BlockPos base = ancoraPortal(nv);
+        if (base == null) {
+            return;
+        }
 
         // --- animação de abertura (compartilhada com o tickMundo)
         animarAbertura(nv, agora);
 
-        // --- atravessar andando (sem clique): 0,7 s dentro do miolo
-        boolean dentro = dados.isPortalAberto() && dentroDoPortal(p, base) && dados.temOsOito(p.getUUID());
+        // --- atravessar andando (sem clique): 0,7 s dentro do miolo.
+        //     (5.13.1) portal INVOCADO por comando é livre: não cobra fragmento.
+        boolean livre = portalInvocado(nv);
+        boolean dentro = (livre || dados.isPortalAberto()) && dentroDoPortal(p, base)
+                && (livre || dados.temOsOito(p.getUUID()));
         if (!dentro) {
             NO_PORTAL.remove(p.getUUID());
         } else {
@@ -599,16 +658,70 @@ public final class VazioReino {
         }
     }
 
+    /**
+     * (5.13.1) O PORTAL FORA DO VAZIO, tick a tick.
+     *
+     * <p>Rodado do tick do servidor: para cada dimensão que tem um portal invocado, anima a
+     * abertura (que também vale no overworld) e deixa quem entrar atravessar. Sem jogador por
+     * perto, o custo é dois `if` — nada de varrer o mundo.
+     */
+    public static void tickPortaisInvocados(net.minecraft.server.MinecraftServer server, long agora) {
+        try {
+            RPWorldData dados = RPWorldData.get(server);
+            if (dados.getPortaisInvocados().isEmpty()) {
+                return;
+            }
+            for (Map.Entry<String, RPWorldData.Portal> en : dados.getPortaisInvocados().entrySet()) {
+                var chave = net.minecraft.resources.ResourceKey.create(
+                        net.minecraft.core.registries.Registries.DIMENSION,
+                        net.minecraft.resources.ResourceLocation.parse(en.getKey()));
+                ServerLevel nv = server.getLevel(chave);
+                if (nv == null || ehVazio(nv)) {
+                    continue;                     // o do vazio já é tratado no tick do reino
+                }
+                BlockPos base = ancoraPortal(nv);
+                if (base == null) {
+                    continue;
+                }
+                if (!nv.isLoaded(base)) {
+                    continue;                     // ninguém por perto: nem carrega o chunk
+                }
+                animarAbertura(nv, agora);
+                for (ServerPlayer p : nv.players()) {
+                    try {
+                        boolean dentro = (dados.isPortalAberto() || portalInvocado(nv))
+                                && dentroDoPortal(p, base);
+                        if (!dentro) {
+                            NO_PORTAL.remove(p.getUUID());
+                            continue;
+                        }
+                        long desde = NO_PORTAL.computeIfAbsent(p.getUUID(), k -> agora);
+                        if (agora - desde > 700L) {
+                            NO_PORTAL.remove(p.getUUID());
+                            usarPortal(p, nv, base, dados);
+                        }
+                    } catch (Throwable t) {
+                        RPTagMod.LOGGER.warn("RP Tag: portal invocado falhou para um jogador", t);
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: tick dos portais invocados falhou", t);
+        }
+    }
+
     /** cálculo barato do estado do portal (0 fechado, 1 abrindo, 2 aberto). */
     public static int estadoPortal(ServerLevel nv) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
-        if (!dados.isPortalAberto()) {
+        if (!aberto(nv, dados)) {
             return 0;
         }
-        if (aberturaInicio <= 0L) {
+        BlockPos base = ancoraPortal(nv);
+        Long inicio = base == null ? null : ABERTURA.get(chavePortal(nv, base));
+        if (inicio == null || inicio <= 0L) {
             return 2;
         }
-        long dt = System.currentTimeMillis() - aberturaInicio;
+        long dt = System.currentTimeMillis() - inicio;
         return dt >= VazioGeometria.ABERTURA_MS ? 2 : 1;
     }
 
@@ -642,12 +755,17 @@ public final class VazioReino {
      */
     public static boolean interagir(ServerPlayer p, BlockPos pos) {
         try {
-            if (!(p.level() instanceof ServerLevel nv) || !ehVazio(nv)) {
+            if (!(p.level() instanceof ServerLevel nv)) {
+                return false;
+            }
+            // (5.13.1) fora do vazio o único clique nosso é no portal invocado
+            boolean noVazio = ehVazio(nv);
+            if (!noVazio && !portalInvocado(nv)) {
                 return false;
             }
             RPWorldData dados = RPWorldData.get(p.getServer());
             // --- pedestal (anel em volta da praça)
-            for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
+            for (int i = 0; noVazio && i < TOTAL_FRAGMENTOS; i++) {
                 BlockPos a = ancoraPedestal(nv, i);
                 if (Math.hypot(pos.getX() - a.getX(), pos.getZ() - a.getZ()) <= 3.0
                         && pos.getY() >= a.getY() - 1 && pos.getY() <= a.getY() + 4) {
@@ -655,7 +773,7 @@ public final class VazioReino {
                 }
             }
             // --- santuário (onde o fragmento nasce)
-            for (int i = 0; i < VazioGeometria.SANTUARIOS; i++) {
+            for (int i = 0; noVazio && i < VazioGeometria.SANTUARIOS; i++) {
                 BlockPos a = ancoraSantuario(nv, i);
                 if (a == null) {
                     continue;
@@ -667,7 +785,8 @@ public final class VazioReino {
             }
             // --- portal
             BlockPos portal = ancoraPortal(nv);
-            if (Math.abs(pos.getX() - portal.getX()) <= VazioGeometria.LARGURA_MIOLO
+            if (portal != null
+                    && Math.abs(pos.getX() - portal.getX()) <= VazioGeometria.LARGURA_MIOLO
                     && Math.abs(pos.getZ() - portal.getZ()) <= 2
                     && pos.getY() >= portal.getY() - 2
                     && pos.getY() <= portal.getY() + VazioGeometria.ALTURA_MIOLO) {
@@ -757,7 +876,8 @@ public final class VazioReino {
 
     /** clique (ou 0,7 s parado) no portal: volta pro lugar de onde ele entrou. */
     private static boolean usarPortal(ServerPlayer p, ServerLevel nv, BlockPos base, RPWorldData dados) {
-        if (!dados.isPortalAberto()) {
+        boolean livre = portalInvocado(nv);
+        if (!livre && !dados.isPortalAberto()) {
             nv.playSound(null, base, SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.AMBIENT, 0.8F, 0.5F);
             p.displayClientMessage(Component.literal(
                     "\u00a78O portal está morto. \u00a77Encaixe os \u00a7f8 FRAGMENTOS\u00a77 nos "
@@ -765,7 +885,7 @@ public final class VazioReino {
                     + "/8\u00a77)."), false);
             return true;
         }
-        if (!dados.temOsOito(p.getUUID())) {
+        if (!livre && !dados.temOsOito(p.getUUID())) {
             nv.playSound(null, base, SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.AMBIENT, 0.9F, 0.5F);
             p.displayClientMessage(Component.literal(
                     "\u00a74O portal não te reconhece. \u00a77Você precisa \u00a7fENCAIXAR\u00a77 os 8 "
@@ -773,12 +893,26 @@ public final class VazioReino {
                     + "/8\u00a77)."), false);
             return true;
         }
+
+        // ---------------- (5.13.1) FORA DO VAZIO: o portal leva PARA o vazio
+        if (!ehVazio(nv)) {
+            nv.playSound(null, base, SoundEvents.PORTAL_TRAVEL, SoundSource.AMBIENT, 1.0F, 0.7F);
+            p.displayClientMessage(Component.literal(
+                    "\u00a75\u00a7lA PORTA SE ABRE PARA O OUTRO LADO.\n"
+                    + "\u00a78Você vai voltar exatamente para aqui quando sair."), false);
+            // entrarNoExilio já guarda o lugar de onde ele saiu (RPWorldData.Volta)
+            NeptuneEventos.entrarNoExilio(p);
+            return true;
+        }
+
+        // ---------------- NO VAZIO: devolve ao ponto de entrada
         dados.limparPedestais(p.getUUID());
         nv.playSound(null, base, SoundEvents.PORTAL_TRAVEL, SoundSource.AMBIENT, 1.0F, 0.7F);
-        // apaga o miolo (o portal fecha atrás de quem passa)
         fecharPortal(nv);
-        for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
-            nv.setBlock(ancoraPedestal(nv, i).offset(0, 2, 0), Blocks.SCULK.defaultBlockState(), 2);
+        if (!livre) {
+            for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
+                nv.setBlock(ancoraPedestal(nv, i).offset(0, 2, 0), Blocks.SCULK.defaultBlockState(), 2);
+            }
         }
         for (ServerPlayer outro : nv.players()) {
             outro.displayClientMessage(Component.literal(
@@ -796,30 +930,57 @@ public final class VazioReino {
      * frente para o jogador (até 12 blocos, no chão) e já abre — é ferramenta de teste/demonstração.
      */
     public static String invocarPortal(ServerPlayer p) {
-        if (!(p.level() instanceof ServerLevel nv) || !ehVazio(nv)) {
-            return "\u00a7cVocê precisa estar na dimensão do vazio (rptag:exilio) para invocar o portal.";
+        if (!(p.level() instanceof ServerLevel nv)) {
+            return "\u00a7cSem dimensão? Isso não devia acontecer.";
         }
-        // olha para frente e acha o chão
         var olhar = p.getLookAngle();
         int x = (int) Math.floor(p.getX() + olhar.x * 6.0);
         int z = (int) Math.floor(p.getZ() + olhar.z * 6.0);
         nv.getChunk(x >> 4, z >> 4);
         int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
         if (y <= nv.getMinBuildHeight() + 2) {
-            y = centroY(nv);
+            y = (int) Math.max(nv.getMinBuildHeight() + 2, Math.floor(p.getY()));
         }
+        return invocarPortalEm(nv, x, y, z, p);
+    }
+
+    /**
+     * (5.13.1) ERGUE O PORTAL NEGRO EM QUALQUER DIMENSÃO, numa posição dada.
+     *
+     * <p>Pedido do dono: <i>"invoquei o portal no overworld e ele não apareceu"</i>. O portal
+     * invocado por comando é uma <b>porta de admin</b>: sai pronta e <b>aberta</b> (sem exigir os
+     * 8 fragmentos) e liga os dois lados —
+     * <ul>
+     *   <li>invocado <b>fora do vazio</b> → atravessar leva a pessoa <b>para o vazio</b> (e guarda
+     *       o lugar de onde ela saiu, para voltar nele depois);</li>
+     *   <li>invocado <b>no vazio</b> → atravessar <b>devolve ao lugar de onde entrou</b>.</li>
+     * </ul>
+     */
+    public static String invocarPortalEm(ServerLevel nv, int x, int y, int z, ServerPlayer quem) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
-        dados.setPortalInvocado(x, y, z);
-        dados.setVazioY(Y_PORTAL, y);
-        // limpa o lugar onde a moldura vai ficar
+        dados.setPortalInvocado(dim(nv), x, y, z);
+        if (ehVazio(nv)) {
+            dados.setVazioY(Y_PORTAL, y);
+        }
+        // limpa o lugar onde a moldura vai ficar (não ergue dentro de uma árvore/morro)
         int meia = VazioGeometria.LARGURA_MIOLO / 2 + VazioGeometria.BORDA;
-        for (int dx = -meia; dx <= meia; dx++) {
-            for (int dy = -1; dy <= VazioGeometria.ALTURA_MIOLO + 2; dy++) {
-                for (int dz = -1; dz <= 1; dz++) {
+        for (int dx = -meia - 1; dx <= meia + 1; dx++) {
+            for (int dy = -2; dy <= VazioGeometria.ALTURA_MIOLO + 3; dy++) {
+                for (int dz = -2; dz <= 2; dz++) {
                     BlockPos pos = new BlockPos(x + dx, y + dy, z + dz);
                     if (!nv.getBlockState(pos).isAir()) {
                         nv.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
                     }
+                }
+            }
+        }
+        // piso firme embaixo (no overworld pode ser areia, água ou ar)
+        for (int dx = -meia; dx <= meia; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                BlockPos chao = new BlockPos(x + dx, y - 2, z + dz);
+                BlockState atual = nv.getBlockState(chao);
+                if (atual.isAir() || !atual.getFluidState().isEmpty()) {
+                    nv.setBlock(chao, Blocks.POLISHED_BLACKSTONE.defaultBlockState(), 2);
                 }
             }
         }
@@ -829,19 +990,22 @@ public final class VazioReino {
         while (!FILA.isEmpty()) {
             colocarFila(nv);          // a moldura sai na hora (comando de admin)
         }
-        dados.setPortalAberto(false);
-        aberturaInicio = 0L;
-        linhasColocadas = 0;
-        if (dados.temOsOito(p.getUUID())) {
-            abrirPortal(nv, p);
-        } else {
-            nv.playSound(null, base, SoundEvents.RESPAWN_ANCHOR_SET_SPAWN, SoundSource.BLOCKS, 1.0F, 0.5F);
-            p.displayClientMessage(Component.literal(
-                    "\u00a78Porta erguida em \u00a7f" + x + ", " + y + ", " + z
-                    + "\u00a78. \u00a77Encaixe os 8 fragmentos para ela abrir "
-                    + "(\u00a7f/vazio fragmentos\u00a77 dá os 8 pra testar)."), false);
+        // abre na marra: portal de comando é porta, não quebra-cabeça
+        dados.setPortalAberto(true);
+        String chaveNovo = chavePortal(nv, base);
+        ABERTURA.put(chaveNovo, System.currentTimeMillis());
+        LINHAS.put(chaveNovo, 0);
+        animarAbertura(nv, System.currentTimeMillis());
+        nv.playSound(null, base, SoundEvents.PORTAL_TRIGGER, SoundSource.AMBIENT, 1.0F, 0.6F);
+        if (quem != null) {
+            quem.displayClientMessage(Component.literal(
+                    "\u00a75\u00a7lPORTAL ERGUIDO\u00a7r \u00a78em \u00a7f" + x + ", " + y + ", " + z
+                    + "\n\u00a77Ele está \u00a7fABERTO\u00a77. Atravesse para ir "
+                    + (ehVazio(nv) ? "de volta ao mundo." : "para o VAZIO.")), false);
         }
-        return "\u00a75Portal invocado em \u00a7f" + x + ", " + y + ", " + z + "\u00a75.";
+        RPTagMod.LOGGER.info("RP Tag: portal invocado em {} ({}, {}, {})", dim(nv), x, y, z);
+        return "\u00a75Portal invocado em \u00a7f" + x + ", " + y + ", " + z + "\u00a75 ("
+                + (ehVazio(nv) ? "vazio → mundo" : "mundo → vazio") + ").";
     }
 
     // ================================================== O VAZIO QUE MATA DEVAGAR
@@ -1012,8 +1176,8 @@ public final class VazioReino {
     /** (5.13.0) chamado quando o mundo do vazio carrega: a praça volta a ser construída. */
     public static void acordar(ServerLevel nv) {
         esquecerConstrucoes();
-        aberturaInicio = 0L;
-        linhasColocadas = 0;
+        ABERTURA.clear();
+        LINHAS.clear();
     }
 
     // ---------------------------------------------------------------- fila
@@ -1061,7 +1225,207 @@ public final class VazioReino {
         }
     }
 
+    // ===================================================== RUÍNAS APAGADAS (5.13.1)
+    /**
+     * CASA/PRÉDIO BAIXO EM RUÍNAS — a "ruína apagada" da cidade morta.
+     *
+     * <p>Pedido do dono: <i>"lembra que pedi para a dimensão ter mais coisas, builda uns prédios,
+     * ruínas apagadas, coisas assim"</i>. Eram 22–63 blocos de torre e nada mais. Agora, além das
+     * torres, nascem prédios de 4 a 11 andares de altura com:
+     * <ul>
+     *   <li>paredes furadas (janelas quebradas, buracos de tamanhos diferentes);</li>
+     *   <li>telhado desabado (só um canto em pé);</li>
+     *   <li>piso de entulho por dentro e uma <b>marca de fogo</b> (basalto/carvão) onde alguma
+     *       coisa queimou.</li>
+     * </ul>
+     */
+    private static void enfileirarRuinaBaixa(ServerLevel nv, int x, int z, int cx, int cz) {
+        RandomSource r = RandomSource.create(cx * 51_331L + cz * 77_017L + 11L);
+        int y0 = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        if (y0 <= nv.getMinBuildHeight() + 2) {
+            return;
+        }
+        int larg = 7 + r.nextInt(7);          // 7..13
+        int prof = 7 + r.nextInt(7);
+        int alt = 5 + r.nextInt(8);           // 5..12
+        BlockState[] paleta = {
+                Blocks.DEEPSLATE_TILES.defaultBlockState(),
+                Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState(),
+                Blocks.BLACKSTONE.defaultBlockState(),
+                Blocks.GRAY_CONCRETE.defaultBlockState(),
+                Blocks.TUFF.defaultBlockState(),
+                Blocks.POLISHED_DEEPSLATE.defaultBlockState()
+        };
+        BlockState queimado = Blocks.BASALT.defaultBlockState();
+        BlockState carvao = Blocks.COAL_BLOCK.defaultBlockState();
+        int x0 = x - larg / 2, z0 = z - prof / 2;
+
+        // piso por dentro (entulho + chão queimado)
+        for (int dx = 0; dx < larg; dx++) {
+            for (int dz = 0; dz < prof; dz++) {
+                boolean dentro = dx > 0 && dz > 0 && dx < larg - 1 && dz < prof - 1;
+                if (!dentro) {
+                    continue;
+                }
+                float sorte = r.nextFloat();
+                if (sorte < 0.18F) {
+                    fila(new BlockPos(x0 + dx, y0 - 1, z0 + dz), queimado);
+                } else if (sorte < 0.30F) {
+                    fila(new BlockPos(x0 + dx, y0 - 1, z0 + dz), carvao);
+                }
+            }
+        }
+        // paredes
+        for (int y = 0; y < alt; y++) {
+            float desmancha = 0.12F + 0.5F * (y / (float) alt);
+            for (int dx = 0; dx < larg; dx++) {
+                for (int dz = 0; dz < prof; dz++) {
+                    boolean borda = dx == 0 || dz == 0 || dx == larg - 1 || dz == prof - 1;
+                    if (!borda) {
+                        continue;
+                    }
+                    if (r.nextFloat() < desmancha) {
+                        continue;                        // buraco na parede
+                    }
+                    // janelas: faixa no meio da parede, quebradas
+                    boolean janela = (y % 3 == 1) && !(dx == 0 && dz == 0)
+                            && (r.nextFloat() < 0.55F);
+                    if (janela) {
+                        continue;
+                    }
+                    fila(new BlockPos(x0 + dx, y0 + y, z0 + dz), paleta[r.nextInt(paleta.length)]);
+                }
+            }
+        }
+        // telhado desabado: só um canto continua em pé
+        int cantoX = r.nextBoolean() ? 0 : larg - 1;
+        int cantoZ = r.nextBoolean() ? 0 : prof - 1;
+        for (int dx = 0; dx < larg; dx++) {
+            for (int dz = 0; dz < prof; dz++) {
+                double distCanto = Math.hypot(dx - cantoX, dz - cantoZ);
+                if (distCanto < Math.max(2.0, larg * 0.35) && r.nextFloat() < 0.85F) {
+                    fila(new BlockPos(x0 + dx, y0 + alt, z0 + dz), paleta[r.nextInt(paleta.length)]);
+                }
+            }
+        }
+        // entulho em volta (pedaços que caíram das paredes)
+        for (int i = 0; i < 24; i++) {
+            int px = x0 + r.nextInt(larg + 6) - 3;
+            int pz = z0 + r.nextInt(prof + 6) - 3;
+            int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, px, pz);
+            if (y <= nv.getMinBuildHeight() + 1) {
+                continue;
+            }
+            fila(new BlockPos(px, y, pz), r.nextFloat() < 0.2F ? carvao
+                    : paleta[r.nextInt(paleta.length)]);
+        }
+    }
+
+    /**
+     * QUARTEIRÃO MORTO — muros caídos, postes de luz apagados e entulho.
+     *
+     * <p>É o "recheio" entre os prédios: sem isso, o vazio eram torres soltas num descampado. O
+     * quarteirão desenha duas paredes de muro com buracos, dois postes tortos e uma pilha de
+     * escombros — a cidade que existia ali antes.
+     */
+    private static void enfileirarQuarteirao(ServerLevel nv, int x, int z, int cx, int cz) {
+        RandomSource r = RandomSource.create(cx * 91_117L + cz * 41_903L + 29L);
+        int y0 = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        if (y0 <= nv.getMinBuildHeight() + 2) {
+            return;
+        }
+        BlockState muro = Blocks.DEEPSLATE_TILES.defaultBlockState();
+        BlockState muroQuebrado = Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState();
+        BlockState poste = Blocks.POLISHED_BASALT.defaultBlockState();
+        BlockState lampada = Blocks.LANTERN.defaultBlockState();
+        int comp = 8 + r.nextInt(10);
+
+        // dois muros em L, com buracos
+        for (int i = 0; i < comp; i++) {
+            int altura = 1 + r.nextInt(3);
+            for (int y = 0; y < altura; y++) {
+                if (r.nextFloat() < 0.15F) {
+                    continue;
+                }
+                fila(new BlockPos(x + i, y0 + y, z), r.nextFloat() < 0.35F ? muroQuebrado : muro);
+            }
+            if (r.nextFloat() < 0.75F) {
+                int altura2 = 1 + r.nextInt(3);
+                for (int y = 0; y < altura2; y++) {
+                    fila(new BlockPos(x, y0 + y, z + i), muro);
+                }
+            }
+        }
+        // dois postes tortos com lanterna (a luz da rua que não acende mais)
+        for (int i = 0; i < 2; i++) {
+            int px = x + r.nextInt(comp);
+            int pz = z + r.nextInt(comp) - comp / 2;
+            int altura = 3 + r.nextInt(3);
+            for (int y = 0; y < altura; y++) {
+                fila(new BlockPos(px, y0 + y, pz), poste);
+            }
+            if (r.nextFloat() < 0.5F) {
+                fila(new BlockPos(px, y0 + altura, pz), lampada);
+            }
+        }
+        // escombros
+        for (int i = 0; i < 40; i++) {
+            int px = x + r.nextInt(comp + 8) - 4;
+            int pz = z + r.nextInt(comp + 8) - 4;
+            int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, px, pz);
+            if (y <= nv.getMinBuildHeight() + 1) {
+                continue;
+            }
+            fila(new PosEscombro(px, y, pz).pos(),
+                    r.nextFloat() < 0.3F ? muroQuebrado : muro);
+        }
+    }
+
+    /** só um atalho de legibilidade (evita três new BlockPos aninhados acima). */
+    private record PosEscombro(int x, int y, int z) {
+        BlockPos pos() {
+            return new BlockPos(x, y, z);
+        }
+    }
+
     // =============================================================== PRÉDIOS
+    /**
+     * (5.13.1) UMA RUÍNA AUTOMÁTICA — a cidade morta se constrói sem ninguém dentro.
+     *
+     * <p>Posições em <b>espiral de ouro</b> (ângulo 137,5° + raio crescente) entre 34 e 105
+     * blocos da praça: não ficam enfileiradas, não se sobrepõem e cobrem o anel inteiro.
+     * Cada célula de 96 blocos só recebe uma construção (a mesma trava do `tentarPredio`).
+     */
+    private static void ruinaAutomatica(ServerLevel nv) {
+        for (int tentativa = 0; tentativa < 12; tentativa++) {
+            int i = contadorRuinas++;
+            double ang = i * 2.399963;                       // espiral de ouro
+            double raio = 34 + (i * 13 % 71);                // 34..104
+            int x = (int) Math.round(Math.cos(ang) * raio);
+            int z = (int) Math.round(Math.sin(ang) * raio);
+            int cx = Math.floorDiv(x, 96);
+            int cz = Math.floorDiv(z, 96);
+            long k = (long) cx * 100_003L + cz;
+            if (PREDIOS_FEITOS.contains(k)) {
+                continue;
+            }
+            if (Math.hypot(x, z) < RAIO_PRACA + 8) {
+                continue;
+            }
+            PREDIOS_FEITOS.add(k);
+            nv.getChunk(x >> 4, z >> 4);
+            int tipo = Math.floorMod(i * 37, 10);
+            if (tipo < 2) {
+                enfileirarPredio(nv, x, z, cx, cz);
+            } else if (tipo < 7) {
+                enfileirarRuinaBaixa(nv, x, z, cx, cz);
+            } else {
+                enfileirarQuarteirao(nv, x, z, cx, cz);
+            }
+            return;
+        }
+    }
+
     /** ruínas de arranha-céus no breu — o "vazio mais escuro" com cara de cidade morta. */
     private static void tentarPredio(ServerLevel nv, ServerPlayer p) {
         int celX = (int) Math.floor(p.getX() / 96.0);
@@ -1076,10 +1440,12 @@ public final class VazioReino {
             }
             int x = cx * 96 + 48, z = cz * 96 + 48;
             double d = Math.hypot(x - p.getX(), z - p.getZ());
-            if (d < 55 || d > 190) {
+            // (5.13.1) MAIS PERTO: 30–130 blocos. Antes era 55–190 e, com a névoa
+            // fechando em 96, o dono andava e não via ruína nenhuma.
+            if (d < 30 || d > 130) {
                 continue;
             }
-            if (Math.hypot(x, z) < RAIO_PRACA + 40) {
+            if (Math.hypot(x, z) < RAIO_PRACA + 12) {
                 continue;                       // a praça fica limpa
             }
             nv.getChunk(x >> 4, z >> 4);
@@ -1089,7 +1455,15 @@ public final class VazioReino {
             if (topo - viz > 8) {
                 continue;
             }
-            enfileirarPredio(nv, x, z, cx, cz);
+            // três tipos de construção: torre quebrada, casa apagada e quarteirão
+            int tipo = r.nextInt(10);
+            if (tipo < 3) {
+                enfileirarPredio(nv, x, z, cx, cz);           // arranha-céu
+            } else if (tipo < 8) {
+                enfileirarRuinaBaixa(nv, x, z, cx, cz);       // casa/prédio baixo
+            } else {
+                enfileirarQuarteirao(nv, x, z, cx, cz);       // muros, postes, entulho
+            }
             return;
         }
     }
