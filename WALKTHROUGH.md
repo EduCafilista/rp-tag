@@ -75,6 +75,9 @@
   `/rp admin avisar @a medoop a membrana rasgou` → *"No player was found"*
   (comando existe; ninguém online) e `/rp ajuda` lista `… sangueop, medoop`.
 - jar: **99.927.034 B**, md5 **bd4a2c4636bdaa3997540ef999337a1f**.
+- commit **`3c0b035`** (main) · **release 431162197** (`v5.8.1`) · asset
+  **700867776** — rebaixado de volta e conferido (md5 igual, 1 `MedoOpAvisoFx`
+  no jar).
 
 ## 5.8.0 (2026-11-01): a máscara de pedra refeita (malha e textura novas)
 

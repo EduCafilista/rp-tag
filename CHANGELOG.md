@@ -63,6 +63,11 @@ O que aparece na tela:
   (o comando existe e parseia; não havia ninguém online)
 - `/rp ajuda` lista `… onefallall, morteop, sangueop, medoop`
 
+### Publicação
+- commit `3c0b035` (main) · **release 431162197** (`v5.8.1`) · asset **700867776**
+  (`rptag-5.8.1.jar`, 99.927.034 B, md5 `bd4a2c4636bdaa3997540ef999337a1f`)
+- https://github.com/EduCafilista/rp-tag/releases/download/v5.8.1/rptag-5.8.1.jar
+
 ## 5.8.0 — MÁSCARA DE PEDRA REFEITA (malha nova + textura com rosto) — 2026-11-01
 ## 5.8.0 — MÁSCARA DE PEDRA REFEITA (malha nova + textura com rosto) — 2026-11-01
 
