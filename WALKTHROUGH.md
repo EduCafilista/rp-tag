@@ -64,6 +64,8 @@
 - servidor 5.9.0: `Done (0.732s)`, **0 exceptions**; `/titulo paleta` ok;
   `/titulo definir @a Chronos`, `/titulo cor @a #FFD700`,
   `/titulo cor pessoal @a ouro` parseiam (sem player online: "No player was found").
+- commit **`7084ebd`** · release **431675712** · asset **702344889**
+  (jar 99.930.695 B · md5 `6e9f6f3cdbb6df1678209bd2e33fc05d`, rebaixado e conferido).
 
 ## 5.8.1 (2026-11-02): aviso MEDOOP (estilo 22) — protótipo AvisoMedo do dono
 

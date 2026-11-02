@@ -48,6 +48,11 @@
   `/titulo definir @a Chronos` **parseiam** ("No player was found" = sem ninguém online).
 - `previa/titulos_5.9.0.png` — prévia dos 3 lugares + paleta + comandos.
 
+### Publicação
+- commit `7084ebd` (main) · **release 431675712** (`v5.9.0`) · asset **702344889**
+  (`rptag-5.9.0.jar`, 99.930.695 B, md5 `6e9f6f3cdbb6df1678209bd2e33fc05d`)
+- https://github.com/EduCafilista/rp-tag/releases/download/v5.9.0/rptag-5.9.0.jar
+
 ### Limpeza
 - a pasta `src/main/resources/assets/rptag/fx/divino/` (só um `fx.json` órfão,
   o vídeo saiu do mod na 4.9.1) foi **apagada** — era o que deixava 2 falhas no
