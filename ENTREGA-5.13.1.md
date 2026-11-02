@@ -6,6 +6,7 @@
 · `sha256 6193278561e4cf1efe5ba0943ca3199eba6960f2785be9609d2641e80599ce67`
 
 **Página da release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.13.1
+(release `432013740`, asset `703310681`)
 
 > **Troque o jar no servidor E no cliente.** O canal de rede continua o **v13** da 5.13.0
 > (nada novo em pacote), mas **a aura, o rastro e a neblina são desenhados no cliente** — com o jar
@@ -55,6 +56,13 @@ Eram **dois** bugs, um escondido atrás do outro:
    partículas cinzas/pretas ............... NENHUMA
    cidade ................................. ruínas nascendo sozinhas, 1 a cada 3 s
 ```
+
+![o vazio 5.13.1 — mapa real, gerado dos arquivos de região do servidor](previa/vazio_5.13.1_mapa.png)
+
+*Mapa **de verdade**, não desenho: cada ponto é a altura do terreno lida do save do servidor depois de
+alguns minutos de jogo. Os retângulos claros são as ruínas (paredes em pé, miolo vazio). O anel
+amarelo é a praça (raio 17), o círculo vermelho é o limite dos pedestais (raio 34 do anel de
+ruínas) e o retângulo roxo é o **portal**, 22 blocos ao norte.*
 
 ```
                         A CIDADE MORTA (espiral de ouro em volta da praça)
