@@ -72,7 +72,7 @@ public final class TabletScreen extends Screen {
         int bottom = layout.bottomBar();
         layoutBottom = bottom;
         // (5.2.0) tela baixa: a pergunta grande sai de cena para o campo nao encostar nos botoes
-        int titleHeight = h < 168 ? 0 : Math.min(2, font.split(Component.literal(state.readOnly() ? "Sua ficha" : QUESTIONS[step]), formW).size()) * 11 + 9;
+        int titleHeight = h < 168 ? 0 : Math.min(2, font.split(Component.literal(state.readOnly() ? state.titulo() : QUESTIONS[step]), formW).size()) * 11 + 9;
         fieldY = layout.fieldTop(titleHeight);
         int fieldHeight = layout.fieldHeight(titleHeight);
         if (state.readOnly() || step == 5) {
@@ -238,16 +238,19 @@ public final class TabletScreen extends Screen {
             g.drawCenteredString(font, font.plainSubstrByWidth(name,leftWidth-8), x+leftWidth/2+8, y+h-21, 0xffd4cddc);
         }
         }
-        String stage = state.readOnly() ? "CONSULTA DE FICHA" : (state.etapa()+1) + " / 6   " + LABELS[state.etapa()].toUpperCase(java.util.Locale.ROOT);
+        String stage = state.deOutro() ? "TABLET DE OUTRA PESSOA \u2014 SÓ LEITURA"
+                : state.readOnly() ? "CONSULTA DE FICHA"
+                : (state.etapa()+1) + " / 6   " + LABELS[state.etapa()].toUpperCase(java.util.Locale.ROOT);
         g.drawString(font, stage, formX, y+34, 0xffb8a6c7, false);
         if (h >= 168) {
-            List<FormattedCharSequence> title = font.split(Component.literal(state.readOnly() ? "Sua ficha" : QUESTIONS[state.etapa()]),formW);
+            List<FormattedCharSequence> title = font.split(Component.literal(state.readOnly() ? state.titulo() : QUESTIONS[state.etapa()]),formW);
             int ty = y+50;
             for (FormattedCharSequence line:title) { g.drawString(font,line,formX,ty,0xfff0eaf5,false); ty+=11; }
         }
         if (!state.readOnly() && state.etapa()<5) g.drawString(font,LABELS[state.etapa()],formX,fieldY,0xffc6bdcf,false);
         if (answer instanceof EditBox) drawField(g,formX,fieldY+11,formW,26,answer.isFocused());
         String status = !localError.isEmpty() ? localError : !state.error().isEmpty() ? state.error()
+                : state.deOutro() ? "Você roubou este tablet: a ficha é dele, não sua."
                 : state.readOnly() ? "Alterações precisam de liberação administrativa." : state.pending() ? "Salvando…" : state.dirty() ? "Alterações pendentes" : "Salvo no servidor";
         List<FormattedCharSequence> statusLines = font.split(Component.literal(status),formW);
         {

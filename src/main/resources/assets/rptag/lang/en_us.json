@@ -7,5 +7,6 @@
   "item.rptag.tablet": "QuiralOS Tablet",
   "tablet.rptag.title": "Neptune SMP Character Sheet",
   "block.rptag.caixa_bicho": "Music Box",
-  "item.rptag.caixa_bicho": "Music Box"
+  "item.rptag.caixa_bicho": "Music Box",
+  "item.rptag.fragmento_vazio": "Void Fragment"
 }

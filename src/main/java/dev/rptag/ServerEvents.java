@@ -58,6 +58,16 @@ public final class ServerEvents {
             return;
         }
         try {
+            // (5.13.0) WAYSTONE PROIBIDA NO VAZIO — pedido 50. Sem isso o exílio era
+            // uma piada: a pessoa colocava a waystone e saía em 2 segundos.
+            if (bloquearWaystone(p, event.getLevel().getBlockState(event.getPos())
+                    .getBlock().builtInRegistryHolder().key().location().toString(), event.getItemStack())) {
+                event.setCanceled(true);
+                event.setUseBlock(net.neoforged.neoforge.common.util.TriState.FALSE);
+                event.setUseItem(net.neoforged.neoforge.common.util.TriState.FALSE);
+                event.setCancellationResult(net.minecraft.world.InteractionResult.FAIL);
+                return;
+            }
             if (VazioReino.interagir(p, event.getPos())) {
                 event.setCanceled(true);          // não abre baú/usa item à toa
                 event.setUseBlock(net.neoforged.neoforge.common.util.TriState.FALSE);
@@ -66,6 +76,62 @@ public final class ServerEvents {
             }
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: clique no pedestal falhou (o jogo segue)", t);
+        }
+    }
+
+    /** (5.13.0) clicar com a waystone/warp stone NA MÃO dentro do vazio. */
+    @SubscribeEvent
+    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        if (!(event.getEntity() instanceof ServerPlayer p)) {
+            return;
+        }
+        try {
+            String id = event.getItemStack().getItem().builtInRegistryHolder().key().location().toString();
+            if (bloquearWaystone(p, id, event.getItemStack())) {
+                event.setCanceled(true);
+                event.setCancellationResult(net.minecraft.world.InteractionResult.FAIL);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: bloqueio de waystone (mao) falhou", t);
+        }
+    }
+
+    /**
+     * (5.13.0) A WAYSTONE NÃO FUNCIONA NO VAZIO.
+     *
+     * <p>Pedido 50: <i>"não pode usar waystone na dimensão do vazio"</i>. Olhamos o
+     * <b>id de registro</b> (não a classe): qualquer bloco/item de mod de teleporte com
+     * "waystone", "warp" ou "portstone" no nome é barrado dentro de {@code rptag:exilio}.
+     * Se o mod nem estiver instalado, isto nunca dispara — não quebra nada.
+     *
+     * @return true se o clique foi barrado (aí o jogo não faz mais nada com ele)
+     */
+    private static boolean bloquearWaystone(ServerPlayer p, String id, net.minecraft.world.item.ItemStack naMao) {
+        try {
+            if (id == null || id.isEmpty()) {
+                return false;
+            }
+            if (!p.level().dimension().equals(NeptuneEventos.CHAVE_EXILIO_PUBLICA)) {
+                return false;
+            }
+            String alvo = id.toLowerCase(java.util.Locale.ROOT);
+            String mao = naMao == null ? ""
+                    : naMao.getItem().builtInRegistryHolder().key().location().toString().toLowerCase(java.util.Locale.ROOT);
+            boolean eh = alvo.contains("waystone") || alvo.contains("warp_stone")
+                    || alvo.contains("warpstone") || alvo.contains("portstone")
+                    || alvo.contains("warp_plate") || alvo.contains("sharestone")
+                    || mao.contains("waystone") || mao.contains("warp_stone")
+                    || mao.contains("warpstone") || mao.contains("portstone");
+            if (!eh) {
+                return false;
+            }
+            p.playNotifySound(RPTagMod.SOM_VAZIO.get(), net.minecraft.sounds.SoundSource.HOSTILE, 0.9F, 0.6F);
+            p.displayClientMessage(Component.literal(
+                    "\u00a74A pedra está morta aqui.\u00a7r \u00a78Não há caminho que atravesse o vazio\n"
+                    + "\u00a78— só o portal negro, e ele cobra os 8 fragmentos."), true);
+            return true;
+        } catch (Throwable t) {
+            return false;
         }
     }
 

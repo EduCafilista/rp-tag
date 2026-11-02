@@ -32,9 +32,13 @@ public final class ModNetworking {
         // (5.7.2) v10: TITULOS (sync_titulo) — cliente 5.7.1 nao tem o canal
         // (5.7.4) v11: o pacote AURA ganhou o UUID de quem e o vazio (raios 3D)
         // (5.9.0) v12: sync_titulo ganhou a COR do titulo pessoal
-        PayloadRegistrar registrar = event.registrar("12");
+        // (5.13.0) v13: VAZIO_PORTAL (posicao + estado do portal negro, pedestais)
+        PayloadRegistrar registrar = event.registrar("13");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
+        // (5.13.0) o portal negro do vazio (posicao, pedestais, estado da abertura)
+        registrar.playToClient(VazioPortalPayload.TYPE, VazioPortalPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleVazioPortal);
         registrar.playToServer(TabletUpdatePayload.TYPE, TabletUpdatePayload.STREAM_CODEC,
                 TabletService::handleUpdate);
         registrar.playToClient(SyncRPStatePayload.TYPE, SyncRPStatePayload.STREAM_CODEC,

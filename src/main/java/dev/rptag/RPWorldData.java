@@ -60,11 +60,16 @@ public final class RPWorldData extends SavedData {
      * reconstruída em cima dela mesma depois de um restart (o heightmap subiria
      * a cada boot e o pedestal viraria uma torre).
      */
-    private final int[] vazioYs = new int[9];
+    // (5.13.0) 0..7 = altura dos PEDESTAIS, 8 = PORTAL, 9 = PRAÇA (o nível do
+    // chão da chegada) e 10..17 = os 8 SANTUÁRIOS (onde o fragmento nasce).
+    private final int[] vazioYs = new int[18];
 
     /** (5.12.0) FRAGMENTOS DO VAZIO que cada jogador já recolheu (0..8).
      *  Persiste no mundo: quem morre no vazio NÃO perde o que achou. */
     private final Map<UUID, Integer> fragmentos = new HashMap<>();
+    /** (5.13.0) lugar do portal invocado + se ele está aberto. */
+    private int portalX, portalY, portalZ;
+    private boolean portalInvocado, portalAberto;
     private final Map<UUID, BubbleStyle> styles = new HashMap<>();
     private boolean chatLocal = true;
     private boolean bubblesOn = true;
@@ -268,46 +273,163 @@ public final class RPWorldData extends SavedData {
         }
     }
 
-    // ==== (5.12.0) FRAGMENTOS DO VAZIO (a saída do exílio pelo portal) ====
-    // Um int por jogador guarda as duas coisas: os 4 bits de baixo = quantos
-    // fragmentos ele tem (0..8) e o resto = a MÁSCARA de quais pedestais já
-    // foram usados (bit i = pedestal i). Assim ninguém farma o mesmo pedestal.
+    // ---- (5.13.0) O PORTAL NEGRO: onde ele está e se está aberto ----
+    // O portal do vazio nasce em volta da praça (0, -22), mas o /vazio portal
+    // pode INVOCAR um onde o admin estiver olhando — aí o lugar fica salvo aqui.
 
-    /** quantos fragmentos do vazio o jogador já recolheu (0..8). */
-    public int getFragmentos(UUID id) {
-        int v = fragmentos.getOrDefault(id, 0);
-        return Math.max(0, Math.min(VazioReino.TOTAL_FRAGMENTOS, v & 0xF));
+    /** o portal foi invocado por comando (senão vale o lugar fixo da praça)? */
+    public boolean isPortalInvocado() {
+        return portalInvocado;
     }
 
-    /** máscara dos pedestais já usados por este jogador. */
+    /** grava o lugar do portal invocado (e marca que ele é o portal do mundo). */
+    public void setPortalInvocado(int x, int y, int z) {
+        this.portalInvocado = true;
+        this.portalX = x;
+        this.portalY = y;
+        this.portalZ = z;
+        setDirty();
+    }
+
+    /** tira o portal invocado (volta a valer o portal da praça). */
+    public void limparPortalInvocado() {
+        this.portalInvocado = false;
+        setDirty();
+    }
+
+    public int getPortalX() {
+        return portalX;
+    }
+
+    public int getPortalY() {
+        return portalY;
+    }
+
+    public int getPortalZ() {
+        return portalZ;
+    }
+
+    /** o portal está aberto agora? (os 8 fragmentos já foram encaixados) */
+    public boolean isPortalAberto() {
+        return portalAberto;
+    }
+
+    public void setPortalAberto(boolean aberto) {
+        this.portalAberto = aberto;
+        setDirty();
+    }
+
+    // ==== (5.13.0) O VAZIO: SANTUÁRIOS, PEDESTAIS E O LUGAR DE VOLTA ====
+    // Um int por jogador guarda duas máscaras de 8 bits:
+    //   bits 0..7  = quais SANTUÁRIOS ele já esvaziou (o fragmento que ele pegou)
+    //   bits 8..15 = quais PEDESTAIS ele já encheu (o fragmento que ele encaixou)
+    // Pedido 50: os 8 fragmentos vão nos 8 pedestais em volta da praça e aí o
+    // portal negro abre. Guardar no mundo significa que ninguém perde progresso
+    // ao deslogar/morrer.
+
+    /** máscara dos santuários já esvaziados (bits 0..7). */
+    public int getSantuarios(UUID id) {
+        return fragmentos.getOrDefault(id, 0) & 0xFF;
+    }
+
+    /** máscara dos pedestais já cheios (bits 8..15). */
     public int getPedestais(UUID id) {
-        return fragmentos.getOrDefault(id, 0) >>> 4;
+        return (fragmentos.getOrDefault(id, 0) >>> 8) & 0xFF;
     }
 
-    /** este jogador já pegou o fragmento do pedestal {@code indice}? */
-    public boolean jaPegouPedestal(UUID id, int indice) {
-        return (getPedestais(id) & (1 << indice)) != 0;
+    /** quantos pedestais ele já encheu (0..8). */
+    public int quantosPedestais(UUID id) {
+        return Integer.bitCount(getPedestais(id));
+    }
+
+    /** ele já esvaziou o santuário {@code i}? */
+    public boolean jaPegouSantuario(UUID id, int i) {
+        return (getSantuarios(id) & (1 << i)) != 0;
+    }
+
+    /** marca o santuário como esvaziado. */
+    public void marcarSantuario(UUID id, int i) {
+        int v = fragmentos.getOrDefault(id, 0);
+        fragmentos.put(id, v | (1 << i));
+        setDirty();
+    }
+
+    /** este pedestal já está cheio para ele? */
+    public boolean pedestalCheio(UUID id, int i) {
+        return (getPedestais(id) & (1 << i)) != 0;
     }
 
     /**
-     * Tenta pegar o fragmento de um pedestal. Devolve o total novo, ou -1 se
-     * ele já tinha pegado esse (aí não conta de novo).
+     * Encaixa um fragmento no pedestal {@code i}.
+     *
+     * @return true se encaixou agora (false = já estava cheio)
      */
-    public int pegarFragmento(UUID id, int indice) {
-        int mascara = getPedestais(id);
-        if ((mascara & (1 << indice)) != 0) {
-            return -1;
+    public boolean encaixarNoPedestal(UUID id, int i) {
+        int v = fragmentos.getOrDefault(id, 0);
+        int mascara = (v >>> 8) & 0xFF;
+        if ((mascara & (1 << i)) != 0) {
+            return false;
         }
-        int total = Math.min(VazioReino.TOTAL_FRAGMENTOS, getFragmentos(id) + 1);
-        fragmentos.put(id, (mascara | (1 << indice)) << 4 | total);
+        fragmentos.put(id, (v & 0xFF) | ((mascara | (1 << i)) << 8));
         setDirty();
-        return total;
+        return true;
     }
 
-    /** zera os fragmentos (usado quando ele atravessa o portal). */
-    public void limparFragmentos(UUID id) {
-        fragmentos.remove(id);
+    /** ele tem os 8 pedestais cheios? */
+    public boolean temOsOito(UUID id) {
+        return getPedestais(id) == 0xFF;
+    }
+
+    /** zera os pedestais (o portal consumiu os fragmentos). */
+    public void limparPedestais(UUID id) {
+        int v = fragmentos.getOrDefault(id, 0);
+        fragmentos.put(id, v & 0xFF);
         setDirty();
+    }
+
+    /** quantos fragmentos ele já colocou (atalho usado nas mensagens). */
+    public int getFragmentos(UUID id) {
+        return quantosPedestais(id);
+    }
+
+    // ---- (5.13.0) O LUGAR DE ONDE ELE ENTROU NO VAZIO (persistido) ----
+    // Antes (5.12.0) isso vivia num mapa em memória: um restart do servidor
+    // fazia o jogador voltar para um lugar aleatório. Agora vai pro save.
+
+    /** de onde o jogador saiu quando foi exilado. */
+    public record Volta(String dimensao, double x, double y, double z, float yaw, float pitch) {
+        public CompoundTag save() {
+            CompoundTag tag = new CompoundTag();
+            tag.putString("Dim", dimensao);
+            tag.putDouble("X", x);
+            tag.putDouble("Y", y);
+            tag.putDouble("Z", z);
+            tag.putFloat("Yaw", yaw);
+            tag.putFloat("Pitch", pitch);
+            return tag;
+        }
+
+        public static Volta load(CompoundTag tag) {
+            return new Volta(tag.getString("Dim"), tag.getDouble("X"), tag.getDouble("Y"),
+                    tag.getDouble("Z"), tag.getFloat("Yaw"), tag.getFloat("Pitch"));
+        }
+    }
+
+    private final Map<UUID, Volta> voltas = new HashMap<>();
+
+    /** guarda o lugar de onde ele foi exilado (o portal devolve ele pra lá). */
+    public void setVolta(UUID id, Volta volta) {
+        if (volta == null) {
+            voltas.remove(id);
+        } else {
+            voltas.put(id, volta);
+        }
+        setDirty();
+    }
+
+    /** o lugar de onde ele foi exilado (null = não tem). */
+    public Volta getVolta(UUID id) {
+        return voltas.get(id);
     }
 
     public boolean isTypewriter(UUID id) {
@@ -527,6 +649,21 @@ public final class RPWorldData extends SavedData {
 
         // (5.12.0) alturas das construções do vazio
         tag.putIntArray("VazioYs", vazioYs);
+        tag.putBoolean("VazioPortalInvocado", portalInvocado);
+        tag.putInt("VazioPortalX", portalX);
+        tag.putInt("VazioPortalY", portalY);
+        tag.putInt("VazioPortalZ", portalZ);
+        tag.putBoolean("VazioPortalAberto", portalAberto);
+
+        // (5.13.0) lugar de onde cada um foi exilado
+        ListTag voltasList = new ListTag();
+        for (Map.Entry<UUID, Volta> en : voltas.entrySet()) {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", en.getKey());
+            e.put("Volta", en.getValue().save());
+            voltasList.add(e);
+        }
+        tag.put("VazioVoltas", voltasList);
 
         // (5.12.0) fragmentos do vazio
         ListTag fragList = new ListTag();
@@ -639,8 +776,19 @@ public final class RPWorldData extends SavedData {
         }
 
         int[] ys = tag.getIntArray("VazioYs");
+        data.portalInvocado = tag.getBoolean("VazioPortalInvocado");
+        data.portalX = tag.getInt("VazioPortalX");
+        data.portalY = tag.getInt("VazioPortalY");
+        data.portalZ = tag.getInt("VazioPortalZ");
+        data.portalAberto = tag.getBoolean("VazioPortalAberto");
         for (int i = 0; i < Math.min(ys.length, data.vazioYs.length); i++) {
             data.vazioYs[i] = ys[i];
+        }
+
+        ListTag voltasList = tag.getList("VazioVoltas", Tag.TAG_COMPOUND);
+        for (int i = 0; i < voltasList.size(); i++) {
+            CompoundTag e = voltasList.getCompound(i);
+            data.voltas.put(e.getUUID("Id"), Volta.load(e.getCompound("Volta")));
         }
 
         ListTag fragList = tag.getList("VazioFragmentos", Tag.TAG_COMPOUND);

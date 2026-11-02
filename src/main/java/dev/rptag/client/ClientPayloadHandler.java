@@ -25,6 +25,18 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> TabletClientEvents.receive(payload));
     }
 
+    /** (5.13.0) estado do portal do vazio: o cliente desenha o vórtice e as colunas. */
+    public static void handleVazioPortal(final dev.rptag.VazioPortalPayload payload,
+                                         final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                VazioPortalFx.receber(payload);
+            } catch (Throwable erro) {
+                dev.rptag.RPTagMod.LOGGER.warn("RP Tag: estado do portal do vazio falhou", erro);
+            }
+        });
+    }
+
     public static void handleSync(final SyncRPStatePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             ClientRPStates.set(payload.playerId(), payload.inRp());

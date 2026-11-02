@@ -144,6 +144,16 @@ public final class RaiosVazioFx {
         return ativo && alvo != null;
     }
 
+    /** (5.13.0) quem é o vazio (o manto de escuridão usa o mesmo alvo dos raios). */
+    public static UUID alvoUuid() {
+        return ativo ? alvo : null;
+    }
+
+    /** (5.13.0) o surto da transformação ainda está de pé? */
+    public static boolean emSurto() {
+        return System.currentTimeMillis() < surtoAte;
+    }
+
     // ------------------------------------------------------------- render
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
@@ -188,6 +198,15 @@ public final class RaiosVazioFx {
 
             pose.pushPose();
             pose.translate(base.x - cam.x, base.y - cam.y, base.z - cam.z);
+
+            // (5.13.0) O MANTO — pedido 50: "se o player desativar as partículas, os
+            // efeitos somem". A escuridão em volta do corpo era partícula do servidor;
+            // agora ela é desenhada aqui, em geometria, e aparece sempre.
+            try {
+                desenharManto(vc, pose.last().pose(), cam, agora);
+            } catch (Throwable ignorado) {
+                // sem manto, os raios continuam
+            }
 
             int idx = 0;
             for (Raio r : LISTA) {
@@ -389,6 +408,94 @@ public final class RaiosVazioFx {
         vc.addVertex(mat, x, y, z - t).setColor(c);
         vc.addVertex(mat, x, y + t, z).setColor(c);
         vc.addVertex(mat, x, y, z + t).setColor(c);
+    }
+
+    // ================================================================ O MANTO
+    /**
+     * O MANTO DE ESCURIDÃO em volta do corpo — geometria, não partícula.
+     *
+     * <p>É o que faz a aura continuar existindo com as partículas do jogador no mínimo
+     * (pedido 50). São duas camadas que se movem em sentidos contrários: nuvens escuras
+     * (quase pretas, azul-violeta) girando devagar em volta do tronco e brasas subindo —
+     * violeta ({@code #8a3fd0}) e sangue ({@code #c0182c}).
+     */
+    private static void desenharManto(VertexConsumer vc, org.joml.Matrix4f mat, Vec3 cam, long agora) {
+        float t = (agora % 60_000L) / 1000.0F;
+        float surto = emSurto() ? 1.45F : 1.0F;
+
+        // ---- 1) nuvens de escuridão: 12 quads de frente pra câmera, girando
+        for (int i = 0; i < 12; i++) {
+            double ang = i * Math.PI * 2 / 12 + t * 0.55 * (i % 2 == 0 ? 1 : -1);
+            float raio = (0.62F + 0.16F * Mth.sin(t * 1.3F + i)) * surto;
+            float y = 0.35F + (i % 4) * 0.52F + 0.10F * Mth.sin(t * 0.9F + i * 1.7F);
+            float cx = (float) Math.cos(ang) * raio;
+            float cz = (float) Math.sin(ang) * raio;
+            float tamanho = 0.55F + 0.22F * Mth.sin(t * 1.1F + i * 2.1F);
+            tamanho *= surto;
+            float a = 0.30F + 0.10F * Mth.sin(t * 1.7F + i);
+            // bem escuro, puxando pro violeta
+            quadFrenteCam(vc, mat, cx, y, cz, tamanho, cor(0.02F, 0.01F, 0.04F, a));
+            quadFrenteCam(vc, mat, cx, y + 0.05F, cz, tamanho * 0.62F,
+                    cor(0.12F, 0.04F, 0.18F, a * 0.55F));
+        }
+
+        // ---- 2) brasas subindo (violeta e sangue)
+        for (int i = 0; i < 18; i++) {
+            float fase = (t * 0.30F + i / 18.0F) % 1.0F;
+            double ang = i * 2.399963 + t * 0.35;          // espiral de ouro
+            float raio = 0.35F + 0.30F * fase;
+            float cx = (float) Math.cos(ang) * raio;
+            float cz = (float) Math.sin(ang) * raio;
+            float y = fase * 2.5F;
+            float tamanho = (0.030F + 0.022F * (1.0F - fase)) * (surto > 1.0F ? 1.25F : 1.0F);
+            int c = (i % 4 == 0) ? cor(0.54F, 0.25F, 0.82F, 0.75F * (1.0F - fase))
+                    : cor(0.75F, 0.06F, 0.12F, 0.70F * (1.0F - fase));
+            losangoManto(vc, mat, cx, y, cz, tamanho, c);
+        }
+
+        // ---- 3) o "chão" da aura: um disco escuro entre os pés (mesmo voando é só um
+        //          véu de 12 lados em volta do corpo — não depende do chão do mundo)
+        float yPes = 0.02F;
+        int disco = cor(0.03F, 0.01F, 0.05F, 0.42F);
+        int seg = 12;
+        for (int i = 0; i < seg; i++) {
+            double a0 = i * Math.PI * 2 / seg + t * 0.2;
+            double a1 = (i + 1) * Math.PI * 2 / seg + t * 0.2;
+            float r = 0.85F * surto;
+            float x0 = (float) Math.cos(a0) * r, z0 = (float) Math.sin(a0) * r;
+            float x1 = (float) Math.cos(a1) * r, z1 = (float) Math.sin(a1) * r;
+            vc.addVertex(mat, 0.0F, yPes, 0.0F).setColor(disco);
+            vc.addVertex(mat, x0, yPes, z0).setColor(disco);
+            vc.addVertex(mat, x1, yPes, z1).setColor(disco);
+            vc.addVertex(mat, 0.0F, yPes, 0.0F).setColor(disco);
+        }
+    }
+
+    /** um quad virado para a câmera (o "molho" de fumaça não tem lado certo). */
+    private static void quadFrenteCam(VertexConsumer vc, org.joml.Matrix4f mat,
+            float cx, float cy, float cz, float t, int cor) {
+        vc.addVertex(mat, cx - t, cy - t, cz).setColor(cor);
+        vc.addVertex(mat, cx + t, cy - t, cz).setColor(cor);
+        vc.addVertex(mat, cx + t, cy + t, cz).setColor(cor);
+        vc.addVertex(mat, cx - t, cy + t, cz).setColor(cor);
+        // segundo quad em cruz (dá volume sem precisar de billboard de verdade)
+        vc.addVertex(mat, cx, cy - t, cz - t).setColor(cor);
+        vc.addVertex(mat, cx, cy - t, cz + t).setColor(cor);
+        vc.addVertex(mat, cx, cy + t, cz + t).setColor(cor);
+        vc.addVertex(mat, cx, cy + t, cz - t).setColor(cor);
+    }
+
+    /** losango pequeno (brasa). */
+    private static void losangoManto(VertexConsumer vc, org.joml.Matrix4f mat,
+            float x, float y, float z, float t, int cor) {
+        vc.addVertex(mat, x - t, y, z).setColor(cor);
+        vc.addVertex(mat, x, y, z - t).setColor(cor);
+        vc.addVertex(mat, x + t, y, z).setColor(cor);
+        vc.addVertex(mat, x, y, z + t).setColor(cor);
+        vc.addVertex(mat, x, y - t, z).setColor(cor);
+        vc.addVertex(mat, x, y, z - t).setColor(cor);
+        vc.addVertex(mat, x, y + t, z).setColor(cor);
+        vc.addVertex(mat, x, y, z + t).setColor(cor);
     }
 
     /** cor ARGB a partir de floats 0..1. */

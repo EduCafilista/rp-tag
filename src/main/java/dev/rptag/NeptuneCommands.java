@@ -211,8 +211,9 @@ public final class NeptuneCommands {
                     ServerPlayer quem = ctx.getSource().getPlayerOrException();
                     VazioReino.darTudo(quem);
                     ctx.getSource().sendSuccess(() -> Component.literal(
-                            "\u00a75Voc\u00ea tem os 8 fragmentos do vazio. "
-                                    + "\u00a77V\u00e1 at\u00e9 o PORTAL (\u00a7f/vazio portal\u00a77) e toque no miolo."), true);
+                            "\u00a75Voc\u00ea tem os 8 FRAGMENTOS DO VAZIO na mochila. "
+                                    + "\u00a77Encaixe um em cada pedestal em volta da praça "
+                                    + "(\u00a7f/vazio pedestais\u00a77) e o portal abre sozinho."), true);
                     return Command.SINGLE_SUCCESS;
                 })
                 .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
@@ -223,22 +224,86 @@ public final class NeptuneCommands {
                     return Command.SINGLE_SUCCESS;
                 })));
 
-        vazio.then(Commands.literal("portal").executes(ctx -> {
+        // (5.13.0) /vazio portal            -> INVOCA o portal onde você está olhando
+        //          /vazio portal ir         -> só te leva até o portal que já existe
+        //          /vazio portal <jogador>  -> invoca na frente do jogador
+        // Pedido 50: "preciso também de um comando para invocar o portal".
+        vazio.then(Commands.literal("portal")
+                .executes(ctx -> {
+                    ServerPlayer quem = ctx.getSource().getPlayerOrException();
+                    String r = VazioReino.invocarPortal(quem);
+                    ctx.getSource().sendSuccess(() -> Component.literal(r), true);
+                    return Command.SINGLE_SUCCESS;
+                })
+                .then(Commands.literal("ir").executes(ctx -> {
+                    ServerPlayer quem = ctx.getSource().getPlayerOrException();
+                    NeptuneEventos.irAoPortal(quem);
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a78Levado ao portal do vazio."), true);
+                    return Command.SINGLE_SUCCESS;
+                }))
+                .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
+                    ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                    String r = VazioReino.invocarPortal(alvo);
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a75" + alvo.getName().getString() + "\u00a78: " + r), false);
+                    return Command.SINGLE_SUCCESS;
+                })));
+
+        // (5.13.0) /vazio construir — refaz praça, pedestais, altares e portal na hora
+        vazio.then(Commands.literal("construir").executes(ctx -> {
             ServerPlayer quem = ctx.getSource().getPlayerOrException();
-            NeptuneEventos.irAoPortal(quem);
+            if (!(quem.level() instanceof net.minecraft.server.level.ServerLevel nv)
+                    || !VazioReino.ehVazio(nv)) {
+                ctx.getSource().sendFailure(Component.literal(
+                        "\u00a7cSó funciona dentro de rptag:exilio."));
+                return 0;
+            }
+            VazioReino.construirTudo(nv, quem);
             ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a78Levado ao portal do vazio. Toque no miolo de sculk com os 8 fragmentos."), true);
+                    "\u00a7aVazio reconstruído: praça, 8 pedestais, 8 altares e o portal."), true);
+            return Command.SINGLE_SUCCESS;
+        }));
+
+        // (5.13.0) /vazio abrir | fechar — abre e fecha o portal NA MARRA (preview/vídeo)
+        vazio.then(Commands.literal("abrir").executes(ctx -> {
+            net.minecraft.server.level.ServerLevel nv = ctx.getSource().getServer()
+                    .getLevel(NeptuneEventos.CHAVE_EXILIO_PUBLICA);
+            if (nv == null) {
+                ctx.getSource().sendFailure(Component.literal("\u00a7cA dimensão não carregou."));
+                return 0;
+            }
+            VazioReino.abrirPortal(nv, ctx.getSource().getPlayer());
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a75O portal do vazio está abrindo — de baixo para cima."), true);
+            return Command.SINGLE_SUCCESS;
+        }));
+
+        vazio.then(Commands.literal("fechar").executes(ctx -> {
+            net.minecraft.server.level.ServerLevel nv = ctx.getSource().getServer()
+                    .getLevel(NeptuneEventos.CHAVE_EXILIO_PUBLICA);
+            if (nv == null) {
+                ctx.getSource().sendFailure(Component.literal("\u00a7cA dimensão não carregou."));
+                return 0;
+            }
+            VazioReino.fecharPortal(nv);
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a78Portal fechado."), true);
             return Command.SINGLE_SUCCESS;
         }));
 
         vazio.then(Commands.literal("pedestais").executes(ctx -> {
             ServerPlayer quem = ctx.getSource().getPlayerOrException();
-            int tem = RPWorldData.get(quem.getServer()).getFragmentos(quem.getUUID());
+            RPWorldData dados = RPWorldData.get(quem.getServer());
             ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a75Fragmentos do vazio: \u00a7f" + tem + "/8\n\u00a78"
-                            + VazioReino.listaPedestais()
-                            + "\n\u00a78portal: \u00a7f780, 40 \u00a78(fila de constru\u00e7\u00e3o: "
-                            + VazioReino.construindo() + ")"), false);
+                    "\u00a75Pedestais: \u00a7f" + dados.quantosPedestais(quem.getUUID()) + "/8"
+                            + "\u00a78 · altares esvaziados: \u00a7f"
+                            + Integer.bitCount(dados.getSantuarios(quem.getUUID())) + "/8\n"
+                            + "\u00a78anel em volta da praça: " + VazioReino.listaPedestais()
+                            + "\n\u00a78portal: " + VazioReino.ancoraPortal(
+                                    (net.minecraft.server.level.ServerLevel) quem.level())
+                            + "\u00a78 · aberto: \u00a7f" + dados.isPortalAberto()
+                            + "\u00a78 · fila: " + VazioReino.construindo()), false);
             return Command.SINGLE_SUCCESS;
         }));
 

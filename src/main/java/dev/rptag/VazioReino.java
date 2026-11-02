@@ -1,49 +1,55 @@
 package dev.rptag;
 
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * (5.12.0) O REINO DO VAZIO — a saída do exílio SEM ADMIN.
+ * (5.13.0) O REINO DO VAZIO — tudo em volta do CENTRO, como o dono pediu.
  *
- * <p>Pedido do dono (49): <i>"na dimensão do vazio: portal muito longe, animado
- * e bonito, OU reunir pedestais para abrir o portal e voltar — sem admin tirar
- * o jogador; 8 fragmentos do vazio"</i>. Foi feito TUDO junto:
+ * <h2>O pedido 50, palavra por palavra</h2>
+ * <i>"ter fragmentos do vazio, ter pedestais em volta do centro aonde spawna na dimensão, e
+ * assim que ele colocar os 8 fragmentos nos pedestais, abre um portal negro"</i>
  *
- * <ul>
- *   <li><b>8 pedestais</b> espalhados pelo vazio (de 220 a 620 blocos da praça
- *       de chegada). Cada um tem uma <b>coluna de luz</b> visível de longe e um
- *       <b>fragmento do vazio</b> em cima. Clique com o botão direito para
- *       pegar — um por pedestal, por jogador.</li>
- *   <li><b>O PORTAL</b> fica a <b>780 blocos</b> a leste da chegada: dois
- *       pilares de obsidiana chorando, 14 de altura, com o miolo de sculk. Ele
- *       fica dormindo (apagado) e <b>acende</b> quando quem chega carrega os
- *       8 fragmentos — aí é só clicar no miolo para voltar ao mundo.</li>
- *   <li><b>PRÉDIOS PERDIDOS</b>: ruínas de arranha-céus nascem no breu em volta
- *       de quem anda (paleta preta: deepslate, blackstone, tufo, concreto
- *       cinza), com buracos, andares quebrados e entulho. É o "vazio mais
- *       escuro" com silhueta de cidade morta.</li>
- * </ul>
+ * <p>Então a versão antiga (pedestais a 200–470 blocos e o portal a 780) <b>morreu</b>. Agora:
  *
- * <p>Tudo é construído <b>sob demanda</b> (só perto de jogador) e em fatias de
- * 240 blocos por tick — nada de travar o servidor carregando o vazio inteiro.
+ * <ol>
+ *   <li><b>8 SANTUÁRIOS</b> espalhados entre 55 e 135 blocos da praça: altares quebrados, cada um
+ *       com um {@code fragmento_vazio} em cima. Clique com o botão direito para <b>pegar o item de
+ *       verdade</b> — ele entra no inventário, pode ser roubado, dropado e perdido.</li>
+ *   <li><b>8 PEDESTAIS</b> num círculo de {@value VazioGeometria#RAIO_PEDESTAL} blocos em volta do
+ *       ponto de spawn, no chão da praça. Com o fragmento na mão, clique direito: o fragmento é
+ *       <b>encaixado</b> e o pedestal acende (deixa de ser sculk morto e vira catalisador).</li>
+ *   <li><b>O PORTAL NEGRO</b> fica logo ao norte da praça (5 de largura por 7 de altura). Com os 8
+ *       encaixados ele <b>abre de baixo para cima</b> (6 s, preenchendo o miolo linha por linha),
+ *       exatamente como o protótipo {@code KfElheRr.java} do dono: moldura de obsidiana, vórtice
+ *       vazio girando e brasas subindo. É só atravessar (ou clicar) para voltar.</li>
+ *   <li>Quem atravessa volta para <b>o lugar de onde entrou</b> — gravado no save
+ *       ({@link RPWorldData.Volta}), então nem restart perde.</li>
+ * </ol>
+ *
+ * <p>O desenho do portal e das colunas de luz <b>não depende de partícula</b>: quem manda no visual
+ * é geometria no cliente ({@code VazioPortalFx}), que continua aparecendo com partículas no
+ * mínimo — pedido 50.
  */
 public final class VazioReino {
 
@@ -52,454 +58,619 @@ public final class VazioReino {
 
     // ------------------------------------------------------------------ números
     /** quantos fragmentos abrem o portal. */
-    public static final int TOTAL_FRAGMENTOS = 8;
-    /** raio (blocos) da chegada em que NADA é construído (a praça). */
-    private static final int RUA_PRAÇA = 26;
-    /** o portal: 780 blocos a leste da praça ("muito longe"). */
-    private static final int PORTAL_X = 780, PORTAL_Z = 40;
+    public static final int TOTAL_FRAGMENTOS = VazioGeometria.TOTAL;
 
-    /** posições (x,z) dos 8 pedestais — um em cada rumo, longe da praça. */
-    private static final int[][] PED = {
-            { 210,   40 }, {  60,  290 }, { -190, 210 }, { -300, -120 },
-            { -140, -330 }, {  120, -410 }, {  380, -230 }, {  470,  180 }
-    };
+    /** raio (blocos) da praça em volta do spawn. */
+    public static final int RAIO_PRACA = 17;
 
-    private static final Set<Long> PED_FEITOS = new HashSet<>();
-    private static final Set<Long> PREDIOS_FEITOS = new HashSet<>();
-    private static boolean portalFeito;
-    private static long[][] portalTopo;              // {x, y, z} do miolo
+    /** índice no banco de alturas: 0..7 pedestais, 8 portal, 9 praça, 10..17 santuários. */
+    private static final int Y_PORTAL = 8, Y_PRACA = 9, Y_SANTUARIO = 10;
 
-    /** fila de blocos a colocar (pos, estado) — 240 por tick. */
+    /** fila de blocos a colocar — 400 por tick. */
     private static final ArrayDeque<Object[]> FILA = new ArrayDeque<>();
-    private static final int POR_TICK = 240;
+    private static final int POR_TICK = 400;
+
+    /** construções já enfileiradas nesta sessão. */
+    private static final Set<Long> FEITOS = new HashSet<>();
+    private static final Set<Long> PREDIOS_FEITOS = new HashSet<>();
 
     /** jogadores caindo no vazio: uuid -> quando morre (ms). */
-    private static final java.util.Map<UUID, Long> CAINDO = new java.util.HashMap<>();
+    private static final Map<UUID, Long> CAINDO = new HashMap<>();
+
+    /** jogadores dentro do portal aberto: uuid -> desde quando (ms). */
+    private static final Map<UUID, Long> NO_PORTAL = new HashMap<>();
+
+    /** quando começou a abertura do portal (ms, 0 = fechado). */
+    private static long aberturaInicio = 0L;
+    /** quantas linhas do miolo já foram colocadas (abertura de baixo para cima). */
+    private static int linhasColocadas = 0;
+
+    private static boolean pracaFeita;
     private static long proximaDica;
+    private static long proximoPredio;
+    private static long proximoMundo;
+
+    /** último envio do estado do portal para cada jogador (ms). */
+    private static final Map<UUID, Long> ULTIMO_SYNC = new HashMap<>();
+
+    // =============================================================== níveis
+    /**
+     * A altura do CHÃO DA PRAÇA — e de tudo o que fica nela.
+     *
+     * <p>Guardar no save é o que impede o bug de "pedestal virando torre": sem isso o heightmap
+     * subia a cada restart e a construção era empilhada em cima de si mesma.
+     */
+    public static int centroY(ServerLevel nv) {
+        RPWorldData dados = RPWorldData.get(nv.getServer());
+        int salvo = dados.getVazioY(Y_PRACA);
+        if (salvo > nv.getMinBuildHeight() + 1) {
+            return salvo;
+        }
+        nv.getChunk(0, 0);
+        int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0);
+        if (y <= nv.getMinBuildHeight() + 2) {
+            y = 12;
+        }
+        dados.setVazioY(Y_PRACA, y);
+        dados.setVazioY(Y_PORTAL, y);
+        for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
+            dados.setVazioY(i, y);          // pedestais no MESMO nível da praça
+        }
+        return y;
+    }
+
+    /** base do pedestal {@code i} (no anel em volta da praça). */
+    public static BlockPos ancoraPedestal(ServerLevel nv, int i) {
+        int[] p = VazioGeometria.pedestal(i);
+        return new BlockPos(p[0], centroY(nv), p[1]);
+    }
+
+    /** base (chão) do santuário {@code i}. */
+    public static BlockPos ancoraSantuario(ServerLevel nv, int i) {
+        int[] p = VazioGeometria.santuario(i);
+        int chave = Y_SANTUARIO + i;
+        RPWorldData dados = RPWorldData.get(nv.getServer());
+        int salvo = dados.getVazioY(chave);
+        if (salvo > nv.getMinBuildHeight() + 1) {
+            return new BlockPos(p[0], salvo, p[1]);
+        }
+        nv.getChunk(p[0] >> 4, p[1] >> 4);
+        int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, p[0], p[1]);
+        if (y <= nv.getMinBuildHeight() + 2) {
+            return null;
+        }
+        dados.setVazioY(chave, y);
+        return new BlockPos(p[0], y, p[1]);
+    }
+
+    /**
+     * Onde o portal está: o invocado pelo {@code /vazio portal} (se houver) ou o da praça, a
+     * {@value VazioGeometria#PORTAL}<code>[1]</code> blocos ao norte do centro.
+     */
+    public static BlockPos ancoraPortal(ServerLevel nv) {
+        RPWorldData dados = RPWorldData.get(nv.getServer());
+        if (dados.isPortalInvocado()) {
+            return new BlockPos(dados.getPortalX(), dados.getPortalY(), dados.getPortalZ());
+        }
+        int[] p = VazioGeometria.PORTAL;
+        return new BlockPos(p[0], centroY(nv), p[1]);
+    }
 
     // =============================================================== tick geral
-    /** chamado do tickExilioMundo (NeptuneEventos) 20x por segundo. */
-    public static void tick(ServerLevel exilio, ServerPlayer p, long agora) {
+    /** chamado do tick do exílio (20x por segundo). */
+    public static void tick(ServerLevel nv, ServerPlayer p, long agora) {
         try {
-            // 1) a fila de construção anda SEMPRE (mesmo com o jogador parado)
-            colocarFila(exilio);
+            // 1) a praça e a fila andam SEMPRE (mesmo com o jogador parado)
+            prepararPraca(nv);
+            colocarFila(nv);
 
-            // 2) pedestais e portal perto dele: constrói (uma vez) e acende.
-            //    A distância é medida pelos PONTOS FIXOS (barato); só força o
-            //    chunk quando ele está perto de verdade.
-            for (int i = 0; i < PED.length; i++) {
-                double d = Math.hypot(p.getX() - PED[i][0], p.getZ() - PED[i][1]);
-                if (d > 175) {
-                    continue;
-                }
-                if (!PED_FEITOS.contains(chave(i))) {
-                    exilio.getChunk(PED[i][0] >> 4, PED[i][1] >> 4);
-                    BlockPos ancora = ancoraPedestal(exilio, i);
-                    if (ancora != null) {
-                        // se o mundo já tem essa construção salva, NÃO refaz
-                        boolean existe = exilio.getBlockState(ancora.offset(0, 4, 0))
-                                .is(Blocks.SOUL_LANTERN)
-                                || exilio.getBlockState(ancora.offset(0, 5, 0))
-                                        .is(Blocks.SCULK_SHRIEKER);
-                        if (!existe) {
-                            enfileirarPedestal(exilio, i, ancora);
-                        }
-                        PED_FEITOS.add(chave(i));
-                    }
-                }
-                if (d < 150) {
-                    BlockPos ancora = ancoraPedestal(exilio, i);
-                    if (ancora != null) {
-                        colunaDeLuz(exilio, ancora, i, p);
-                    }
-                }
+            // 2) perto da praça: pedestais, santuários e o portal existem
+            double dCentro = Math.hypot(p.getX(), p.getZ());
+            if (dCentro < 190) {
+                garantirPedestais(nv, p);
+                garantirPortais(nv);
             }
-            double dp = Math.hypot(p.getX() - PORTAL_X, p.getZ() - PORTAL_Z);
-            if (dp < 265) {
-                if (!portalFeito) {
-                    exilio.getChunk(PORTAL_X >> 4, PORTAL_Z >> 4);
-                    BlockPos portal = ancoraPortal(exilio);
-                    if (portal != null) {
-                        boolean existe = exilio.getBlockState(portal.offset(0, 0, 0))
-                                .is(Blocks.SCULK_CATALYST);
-                        if (!existe) {
-                            enfileirarPortal(exilio, portal);
-                        }
-                        portalFeito = true;
-                    }
-                }
-                if (dp < 90) {
-                    BlockPos portal = ancoraPortal(exilio);
-                    if (portal != null) {
-                        animarPortal(exilio, portal, p);
-                    }
-                }
+            if (dCentro < 150 || distanciaSantuario(nv, p) < 90) {
+                garantirSantuarios(nv);
             }
 
-            // 3) PRÉDIOS PERDIDOS: nasce um a cada ~3 s, 60–190 blocos de quem anda
-            if (agora >= proximoPredio) {
-                proximoPredio = agora + 3000L
-                        + (long) (Math.random() * 2500);
-                tentarPredio(exilio, p);
-            }
+            // 3) o portal: animação de abertura e o "atravessar"
+            tickPortal(nv, p, agora);
 
-            // 4) dicas no actionbar (sem admin, ele tem que se achar)
+            // 4) a dica da barra de ação
             if (agora >= proximaDica) {
-                proximaDica = agora + 25_000L;
-                int tem = RPWorldData.get(p.getServer()).getFragmentos(p.getUUID());
-                if (tem < TOTAL_FRAGMENTOS) {
-                    p.displayClientMessage(Component.literal(
-                            "\u00a78\u00a7oOs fragmentos do vazio: \u00a7c" + tem + "/8\u00a78\u00a7o — "
-                            + "procure as colunas de luz. O portal dorme a \u00a7fLESTE\u00a78\u00a7o."), true);
-                } else {
-                    p.displayClientMessage(Component.literal(
-                            "\u00a75\u00a7lO PORTAL ESTÁ ACESO. \u00a77Corra para o \u00a7fLESTE\u00a77 e toque no miolo."), true);
-                }
+                proximaDica = agora + 30_000L;
+                dica(p, RPWorldData.get(p.getServer()));
             }
 
-            // 5) o vazio que MATA devagar (pedido 49: "dá um tempo e depois mata")
-            tickCaindo(exilio, p, agora);
+            // 5) PRÉDIOS PERDIDOS: nasce um a cada ~3 s, longe da praça
+            if (agora >= proximoPredio) {
+                proximoPredio = agora + 3500L + (long) (Math.random() * 2500);
+                tentarPredio(nv, p);
+            }
+
+            // 6) o vazio que MATA devagar (pedido 49)
+            tickCaindo(nv, p, agora);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: reino do vazio falhou (o jogo segue)", t);
         }
     }
 
-    /** próximo prédio (ms). */
-    private static long proximoPredio;
-
-    private static long chave(int i) {
-        return 0x5A0000L + i;
-    }
-
-    // ============================================================== PEDESTAIS
     /**
-     * Base do pedestal i — <b>na altura salva no mundo</b> (ou na altura do
-     * terreno quando é a primeira vez). Salvar é essencial: sem isso o
-     * heightmap subia a cada restart e o pedestal era construído em cima dele
-     * mesmo, virando uma torre infinita.
+     * (5.13.0) O REINO SEM NINGUÉM DENTRO — a dimensão se prepara sozinha.
+     *
+     * <p>Antes (5.12.0) a praça, os pedestais e o portal só nasciam quando um jogador entrava,
+     * e quem chegava via o mundo se montando na frente dele. Agora, se a dimensão está rodando,
+     * a praça e o anel de pedestais já estão de pé antes de qualquer um ser exilado.
      */
-    public static BlockPos ancoraPedestal(ServerLevel exilio, int i) {
+    public static void tickMundo(ServerLevel nv, long agora) {
         try {
-            int x = PED[i][0], z = PED[i][1];
-            if (!exilio.isLoaded(new BlockPos(x, 12, z))) {
-                return null;
+            prepararPraca(nv);
+            if (agora >= proximoMundo) {
+                proximoMundo = agora + 5000L;
+                garantirPedestais(nv, null);
+                garantirPortais(nv);
+                garantirUmSantuario(nv);
             }
-            int salvo = RPWorldData.get(exilio.getServer()).getVazioY(i);
-            if (salvo > exilio.getMinBuildHeight() + 1) {
-                return new BlockPos(x, salvo, z);
-            }
-            int y = exilio.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            if (y <= exilio.getMinBuildHeight() + 2) {
-                return null;
-            }
-            RPWorldData.get(exilio.getServer()).setVazioY(i, y);
-            return new BlockPos(x, y, z);
+            animarAbertura(nv, agora);
+            colocarFila(nv);
         } catch (Throwable t) {
-            return null;
+            RPTagMod.LOGGER.warn("RP Tag: reino do vazio (mundo) falhou", t);
         }
     }
 
-    /** o miolo do portal — também na altura SALVA no mundo. */
-    public static BlockPos ancoraPortal(ServerLevel exilio) {
-        try {
-            if (!exilio.isLoaded(new BlockPos(PORTAL_X, 12, PORTAL_Z))) {
-                return null;
-            }
-            RPWorldData dados = RPWorldData.get(exilio.getServer());
-            int salvo = dados.getVazioY(8);
-            if (salvo > exilio.getMinBuildHeight() + 1) {
-                return new BlockPos(PORTAL_X, salvo, PORTAL_Z);
-            }
-            int y = exilio.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, PORTAL_X, PORTAL_Z);
-            if (y <= exilio.getMinBuildHeight() + 2) {
-                return null;
-            }
-            dados.setVazioY(8, y);
-            return new BlockPos(PORTAL_X, y, PORTAL_Z);
-        } catch (Throwable t) {
-            return null;
+    /** a mensagem da barra de ação — agora aponta para a PRAÇA, não para o leste. */
+    private static void dica(ServerPlayer p, RPWorldData dados) {
+        int cheios = dados.quantosPedestais(p.getUUID());
+        if (dados.temOsOito(p.getUUID())) {
+            p.displayClientMessage(Component.literal(
+                    "\u00a75\u00a7lO PORTAL ESTÁ ABERTO. \u00a77Ele é logo ao \u00a7fNORTE\u00a77 da praça."), true);
+            return;
         }
+        int sant = Integer.bitCount(dados.getSantuarios(p.getUUID()));
+        String linha = sant < TOTAL_FRAGMENTOS
+                ? "\u00a78\u00a7oFragmento: \u00a7c" + sant + "/8\u00a78\u00a7o — procure as colunas de luz no breu."
+                : "\u00a78\u00a7oVocê tem os 8. Encaixe cada um num pedestal em volta da praça.";
+        p.displayClientMessage(Component.literal(
+                "\u00a78\u00a7oPedestais: \u00a7d" + cheios + "/8\u00a78\u00a7o · " + linha), true);
     }
 
-
-    private static void enfileirarPedestal(ServerLevel nv, int i, BlockPos base) {
-        // base 3x3 de blackstone polido + 4 de obsidiana + lanterna de alma
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                fila(base.offset(dx, -1, dz), Blocks.POLISHED_BLACKSTONE.defaultBlockState());
-                if (dx == 0 && dz == 0) {
-                    for (int k = 0; k < 4; k++) {
-                        fila(base.offset(0, k, 0), (k == 1
-                                ? Blocks.CRYING_OBSIDIAN
-                                : Blocks.OBSIDIAN).defaultBlockState());
+    // ================================================================ A PRAÇA
+    /** o chão da praça: anel de blackstone, lajes no meio e o caminho até o portal. */
+    private static void prepararPraca(ServerLevel nv) {
+        if (pracaFeita) {
+            return;
+        }
+        pracaFeita = true;
+        try {
+            int y = centroY(nv);
+            final int r = RAIO_PRACA;
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    double d = Math.hypot(dx, dz);
+                    if (d > r) {
+                        continue;
                     }
-                    fila(base.offset(0, 4, 0), Blocks.SOUL_LANTERN.defaultBlockState());
-                    // o "fragmento" físico em cima: um shrieker de sculk girando luz
-                    fila(base.offset(0, 5, 0), Blocks.SCULK_SHRIEKER.defaultBlockState());
-                } else {
-                    fila(base.offset(dx, 0, dz), Blocks.DEEPSLATE_TILES.defaultBlockState());
+                    BlockPos chao = new BlockPos(dx, y - 1, dz);
+                    BlockState bloco;
+                    if (d < 2.2) {
+                        bloco = Blocks.CHISELED_POLISHED_BLACKSTONE.defaultBlockState();
+                    } else if (d > r - 1.6) {
+                        bloco = Blocks.POLISHED_BLACKSTONE.defaultBlockState();
+                    } else if (Math.abs(dx) <= 1 || Math.abs(dz) <= 1) {
+                        bloco = Blocks.POLISHED_DEEPSLATE.defaultBlockState();
+                    } else {
+                        bloco = Blocks.DEEPSLATE_TILES.defaultBlockState();
+                    }
+                    if (d <= 4.02F) {
+                        nv.setBlockAndUpdate(chao, bloco);      // núcleo: na hora
+                    } else {
+                        filaForte(chao, bloco);
+                    }
+                    for (int dy = 0; dy <= 7; dy++) {
+                        BlockPos ar = chao.offset(0, 1 + dy, 0);
+                        if (!nv.getBlockState(ar).isAir()) {
+                            filaForte(ar, Blocks.AIR.defaultBlockState());
+                        }
+                    }
                 }
             }
-        }
-        // 4 pontas de obsidiana em volta (a marca de quem já foi tocado)
-        for (int k = 0; k < 4; k++) {
-            double a = k * Math.PI * 0.5;
-            int px = (int) Math.round(Math.cos(a) * 3);
-            int pz = (int) Math.round(Math.sin(a) * 3);
-            fila(base.offset(px, 0, pz), Blocks.CRYING_OBSIDIAN.defaultBlockState());
-        }
-        nv.playSound(null, base, SoundEvents.RESPAWN_ANCHOR_SET_SPAWN, SoundSource.BLOCKS, 0.4F, 0.6F);
-        RPTagMod.LOGGER.info("RP Tag: pedestal do vazio {} construído em {}", i + 1, base);
-    }
-
-    /** a coluna de luz que se vê de longe (END_ROD subindo). */
-    private static void colunaDeLuz(ServerLevel nv, BlockPos base, int i, ServerPlayer p) {
-        boolean pego = RPWorldData.get(p.getServer()).jaPegouPedestal(p.getUUID(), i);
-        double x = base.getX() + 0.5, y = base.getY() + 6, z = base.getZ() + 0.5;
-        for (int k = 0; k < 14; k++) {
-            nv.sendParticles(pego ? ParticleTypes.SOUL : ParticleTypes.END_ROD,
-                    x, y + k * 1.6, z, 1, 0.06, 0.05, 0.06, 0.0);
-        }
-        if ((nv.getGameTime() % 12L) == 0L) {
-            nv.sendParticles(ParticleTypes.PORTAL, x, y + 4, z, 6, 0.4, 1.2, 0.4, 0.05);
-            if (!pego && ((nv.getGameTime() % 60L) == 0L)) {
-                p.playNotifySound(SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.AMBIENT, 0.35F, 0.7F);
-            }
-        }
-    }
-
-    // ================================================================ PORTAL
-    private static void enfileirarPortal(ServerLevel nv, BlockPos base) {
-        int alt = 16;
-        // dois pilares de obsidiana chorando, 3 de largura
-        for (int lado = -1; lado <= 1; lado += 2) {
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int y = 0; y < alt; y++) {
-                    BlockState st = (y % 4 == 0)
-                            ? Blocks.CRYING_OBSIDIAN.defaultBlockState()
-                            : Blocks.OBSIDIAN.defaultBlockState();
-                    fila(base.offset(lado * 5 + dx, y, 0), st);
+            // caminho de laje preta até o portal (a pessoa tem que ACHAR a saída) e o
+            // terreno ABERTO em volta dele — o portal tem 9 de altura e não pode ficar
+            // enterrado num morro
+            int zPortal = VazioGeometria.PORTAL[1];
+            for (int dz = -2; dz >= zPortal - 3; dz--) {
+                int raioCaminho = (dz <= zPortal + 1) ? 5 : 2;
+                for (int dx = -raioCaminho; dx <= raioCaminho; dx++) {
+                    filaForte(new BlockPos(dx, y - 1, dz), Blocks.POLISHED_BLACKSTONE.defaultBlockState());
+                    for (int dy = 0; dy <= 10; dy++) {
+                        BlockPos ar = new BlockPos(dx, y + dy, dz);
+                        if (!nv.getBlockState(ar).isAir()) {
+                            filaForte(ar, Blocks.AIR.defaultBlockState());
+                        }
+                    }
                 }
             }
+            // (5.13.0) 8 colunas de obsidiana com lanterna de alma na BORDA da praça
+            // (fora do anel dos pedestais, que é em r=13): a praça é o único lugar
+            // iluminado do vazio — é por isso que ela é vista de longe.
+            for (int i = 0; i < 8; i++) {
+                double a = i * Math.PI * 2 / 8 + Math.PI / 8;
+                int cxp = (int) Math.round(Math.cos(a) * (RAIO_PRACA - 2));
+                int czp = (int) Math.round(Math.sin(a) * (RAIO_PRACA - 2));
+                filaForte(new BlockPos(cxp, y - 1, czp), Blocks.OBSIDIAN.defaultBlockState());
+                filaForte(new BlockPos(cxp, y, czp), Blocks.CRYING_OBSIDIAN.defaultBlockState());
+                filaForte(new BlockPos(cxp, y + 1, czp), Blocks.OBSIDIAN.defaultBlockState());
+                filaForte(new BlockPos(cxp, y + 2, czp), Blocks.SOUL_LANTERN.defaultBlockState());
+            }
+            RPTagMod.LOGGER.info("RP Tag: praça do vazio nivelada em y={}", y);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: praça do vazio falhou", t);
         }
-        // verga em cima + base
-        for (int x = -5; x <= 5; x++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                fila(base.offset(x, alt, dz), Blocks.BLACKSTONE.defaultBlockState());
-                fila(base.offset(x, -1, dz), Blocks.POLISHED_BLACKSTONE.defaultBlockState());
+    }
+
+    /** (5.13.0) o ponto de chegada: o CENTRO da praça, no nível do chão. */
+    public static net.minecraft.world.phys.Vec3 chegada(ServerLevel nv) {
+        prepararPraca(nv);
+        int y = centroY(nv);
+        nv.getChunk(0, 0);
+        nv.setBlockAndUpdate(new BlockPos(0, y - 1, 0), Blocks.CHISELED_POLISHED_BLACKSTONE.defaultBlockState());
+        for (int dy = 0; dy <= 3; dy++) {
+            if (!nv.getBlockState(new BlockPos(0, y + dy, 0)).isAir()) {
+                nv.setBlockAndUpdate(new BlockPos(0, y + dy, 0), Blocks.AIR.defaultBlockState());
             }
         }
-        // o miolo: catalisador (o "coração" que acende) PRIMEIRO e o sculk em
-        // volta. A ordem importa: a fila não sobrescreve bloco que já existe,
-        // então o catalisador tem que entrar antes do sculk.
-        fila(base.offset(0, 0, 0), Blocks.SCULK_CATALYST.defaultBlockState());
-        for (int x = -3; x <= 3; x++) {
-            if (x == 0) {
+        return new net.minecraft.world.phys.Vec3(0.5, y, 0.5);
+    }
+
+    // ================================================================ PEDESTAIS
+    /** constrói (uma vez) os 8 pedestais em volta da praça. */
+    private static void garantirPedestais(ServerLevel nv, ServerPlayer p) {
+        for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
+            if (FEITOS.contains(chave('P', i))) {
                 continue;
             }
-            fila(base.offset(x, 0, 0), Blocks.SCULK.defaultBlockState());
+            FEITOS.add(chave('P', i));
+            BlockPos base = ancoraPedestal(nv, i);
+            nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
+            enfileirarPedestal(nv, i, base);
         }
-        portalTopo = new long[][]{ { base.getX(), base.getY(), base.getZ() } };
+    }
+
+    /**
+     * Um pedestal: base 3x3 de blackstone, coluna de obsidiana, e em cima a "tomada" de sculk (que
+     * vira catalisador quando o fragmento é encaixado).
+     */
+    private static void enfileirarPedestal(ServerLevel nv, int i, BlockPos base) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                filaForte(base.offset(dx, -1, dz), Blocks.POLISHED_BLACKSTONE.defaultBlockState());
+                if (dx == 0 && dz == 0) {
+                    filaForte(base, Blocks.CHISELED_POLISHED_BLACKSTONE.defaultBlockState());
+                    filaForte(base.offset(0, 1, 0), Blocks.OBSIDIAN.defaultBlockState());
+                    // a tomada: enquanto vazia é sculk morto; cheia vira catalisador
+                    boolean cheio = nv.getBlockState(base.offset(0, 2, 0)).is(Blocks.SCULK_CATALYST);
+                    filaForte(base.offset(0, 2, 0), (cheio
+                            ? Blocks.SCULK_CATALYST
+                            : Blocks.SCULK).defaultBlockState());
+                } else {
+                    filaForte(base.offset(dx, 0, dz), Blocks.DEEPSLATE_TILES.defaultBlockState());
+                }
+            }
+        }
+        // 4 pontas de obsidiana chorando nas diagonais (a marca do anel)
+        int[][] cantos = { { -2, -2 }, { 2, -2 }, { -2, 2 }, { 2, 2 } };
+        for (int[] c : cantos) {
+            filaForte(base.offset(c[0], -1, c[1]), Blocks.CRYING_OBSIDIAN.defaultBlockState());
+        }
+        RPTagMod.LOGGER.info("RP Tag: pedestal do vazio {} em {}", i + 1, base);
+    }
+
+    // =============================================================== SANTUÁRIOS
+    /** constrói (uma vez) os 8 altares onde nasce o fragmento. */
+    private static void garantirSantuarios(ServerLevel nv) {
+        for (int i = 0; i < VazioGeometria.SANTUARIOS; i++) {
+            if (FEITOS.contains(chave('S', i))) {
+                continue;
+            }
+            FEITOS.add(chave('S', i));
+            BlockPos base = ancoraSantuario(nv, i);
+            if (base == null) {
+                continue;
+            }
+            enfileirarSantuario(nv, base);
+        }
+    }
+
+    /**
+     * (5.13.0) um altar por vez, a cada 5 s, mesmo sem jogador dentro: assim quem é
+     * exilado não assiste o mundo se montando na frente dele (e o custo é diluído).
+     */
+    private static int proximoSantuario;
+
+    private static void garantirUmSantuario(ServerLevel nv) {
+        for (int tentativa = 0; tentativa < VazioGeometria.SANTUARIOS; tentativa++) {
+            int i = proximoSantuario % VazioGeometria.SANTUARIOS;
+            proximoSantuario++;
+            if (FEITOS.contains(chave('S', i))) {
+                continue;
+            }
+            FEITOS.add(chave('S', i));
+            BlockPos base = ancoraSantuario(nv, i);
+            if (base == null) {
+                continue;
+            }
+            enfileirarSantuario(nv, base);
+            return;
+        }
+    }
+
+    /** era o mais perto dos santuários (para só construir quando ele chega perto). */
+    private static double distanciaSantuario(ServerLevel nv, ServerPlayer p) {
+        double menor = Double.MAX_VALUE;
+        for (int i = 0; i < VazioGeometria.SANTUARIOS; i++) {
+            int[] s = VazioGeometria.santuario(i);
+            menor = Math.min(menor, Math.hypot(p.getX() - s[0], p.getZ() - s[1]));
+        }
+        return menor;
+    }
+
+    private static void enfileirarSantuario(ServerLevel nv, BlockPos base) {
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                double d = Math.hypot(dx, dz);
+                if (d > 2.4) {
+                    continue;
+                }
+                boolean meio = Math.abs(dx) <= 1 && Math.abs(dz) <= 1;
+                filaForte(base.offset(dx, -1, dz),
+                        (meio ? Blocks.POLISHED_BLACKSTONE : Blocks.DEEPSLATE_BRICKS).defaultBlockState());
+                if (meio && (dx != 0 || dz != 0)) {
+                    filaForte(base.offset(dx, 0, dz), Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState());
+                }
+            }
+        }
+        // pilar quebrado + a tomada do fragmento (shrieker = tem fragmento)
+        filaForte(base.offset(-1, 0, -1), Blocks.OBSIDIAN.defaultBlockState());
+        filaForte(base.offset(-1, 1, -1), Blocks.CRYING_OBSIDIAN.defaultBlockState());
+        filaForte(base.offset(0, 0, 0), Blocks.DEEPSLATE_TILES.defaultBlockState());
+        filaForte(base.offset(0, 1, 0), Blocks.OBSIDIAN.defaultBlockState());
+        filaForte(base.offset(0, 2, 0), Blocks.SCULK_SHRIEKER.defaultBlockState());
+        filaForte(base.offset(1, 0, 1), Blocks.SOUL_LANTERN.defaultBlockState());
+        nv.playSound(null, base, SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.AMBIENT, 0.5F, 0.55F);
+        RPTagMod.LOGGER.info("RP Tag: santuário do vazio em {}", base);
+    }
+
+    // ================================================================== PORTAL
+    /** o portal nunca era construído se ninguém passasse perto: aqui ele nasce com a praça. */
+    private static void garantirPortais(ServerLevel nv) {
+        if (FEITOS.contains(chave('N', 0))) {
+            return;
+        }
+        FEITOS.add(chave('N', 0));
+        BlockPos base = ancoraPortal(nv);
+        nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
+        enfileirarPortal(nv, base);
+    }
+
+    /**
+     * A moldura do portal: 7 de largura por 9 de altura (miolo 5x7).
+     *
+     * <p>É a mesma proporção do protótipo do dono ({@code KfElheRr.java}: moldura de obsidiana em
+     * volta de um vórtice vazio), só que em blocos. O miolo fica VAZIO até a abertura — quem
+     * preenche é {@link #abrirPortal} linha por linha, de baixo para cima.
+     */
+    private static void enfileirarPortal(ServerLevel nv, BlockPos base) {
+        int larg = VazioGeometria.LARGURA_MIOLO;              // 5
+        int alt = VazioGeometria.ALTURA_MIOLO;                // 7
+        int meia = larg / 2 + VazioGeometria.BORDA;           // 3
+        for (int x = -meia; x <= meia; x++) {
+            for (int y = -1; y <= alt; y++) {
+                boolean borda = Math.abs(x) == meia || y == -1 || y == alt;
+                BlockPos pos = base.offset(x, y, 0);
+                if (borda) {
+                    BlockState st = (y % 3 == 0)
+                            ? Blocks.CRYING_OBSIDIAN.defaultBlockState()
+                            : Blocks.OBSIDIAN.defaultBlockState();
+                    if (y == alt) {
+                        st = Blocks.POLISHED_BLACKSTONE.defaultBlockState();
+                    }
+                    filaForte(pos, st);
+                } else {
+                    // miolo: ar (fechado) — fica só o fundo preto atrás
+                    filaForte(pos.offset(0, 0, 1), Blocks.BLACK_CONCRETE.defaultBlockState());
+                    if (!nv.getBlockState(pos).isAir()) {
+                        filaForte(pos, Blocks.AIR.defaultBlockState());
+                    }
+                }
+            }
+        }
+        // degraus na frente (a pessoa entra andando)
+        for (int x = -meia; x <= meia; x++) {
+            filaForte(base.offset(x, -2, 1), Blocks.POLISHED_BLACKSTONE.defaultBlockState());
+        }
         RPTagMod.LOGGER.info("RP Tag: portal do vazio construído em {}", base);
     }
 
-    /** quando alguém com os 8 fragmentos chega perto: o portal respira. */
-    private static void animarPortal(ServerLevel nv, BlockPos base, ServerPlayer p) {
-        int tem = RPWorldData.get(p.getServer()).getFragmentos(p.getUUID());
-        boolean aceso = tem >= TOTAL_FRAGMENTOS;
-        long t = nv.getGameTime();
-        double cx = base.getX() + 0.5, cy = base.getY(), cz = base.getZ() + 0.5;
-        if (aceso) {
-            // vórtice: espiral subindo dentro do arco
-            for (int i = 0; i < 26; i++) {
-                double a = t * 0.22 + i * 0.24;
-                double r = 2.4 - (i / 26.0) * 1.4;
-                double y = cy + 0.6 + (i / 26.0) * 14.0;
-                nv.sendParticles(i % 3 == 0 ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.END_ROD,
-                        cx + Math.cos(a) * r, y, cz + Math.sin(a) * r,
-                        1, 0.0, 0.02, 0.0, 0.0);
+    /** abre o portal de baixo para cima (chamado quando o 8º fragmento é encaixado). */
+    public static void abrirPortal(ServerLevel nv, ServerPlayer p) {
+        RPWorldData dados = RPWorldData.get(nv.getServer());
+        if (dados.isPortalAberto()) {
+            return;
+        }
+        dados.setPortalAberto(true);
+        aberturaInicio = System.currentTimeMillis();
+        linhasColocadas = 0;
+        BlockPos base = ancoraPortal(nv);
+        nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
+        nv.playSound(null, base, SoundEvents.PORTAL_TRIGGER, SoundSource.AMBIENT, 1.2F, 0.5F);
+        nv.playSound(null, base, SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 0.5F, 1.7F);
+        if (p != null) {
+            p.displayClientMessage(Component.literal(
+                    "\u00a75\u00a7lOS OITO FRAGMENTOS ESTÃO NO LUGAR.\n"
+                    + "\u00a77O portal está abrindo — de baixo para cima. \u00a7fNÃO olhe por muito tempo."), false);
+        }
+        for (ServerPlayer outro : nv.players()) {
+            if (outro != p) {
+                outro.displayClientMessage(Component.literal(
+                        "\u00a75\u00a7lAlguma coisa abriu no norte da praça. \u00a77O ar ficou mais pesado."), true);
             }
-            if ((t % 10L) == 0L) {
-                nv.sendParticles(ParticleTypes.PORTAL, cx, cy + 6, cz, 24, 2.2, 6.0, 0.6, 0.12);
-                nv.playSound(null, base, SoundEvents.PORTAL_AMBIENT, SoundSource.AMBIENT, 0.9F, 0.6F);
+        }
+    }
+
+    /** (5.13.0) fecha o portal e apaga o miolo (usado pelo /vazio fechar). */
+    public static void fecharPortal(ServerLevel nv) {
+        RPWorldData dados = RPWorldData.get(nv.getServer());
+        dados.setPortalAberto(false);
+        aberturaInicio = 0L;
+        linhasColocadas = 0;
+        BlockPos base = ancoraPortal(nv);
+        if (!nv.isLoaded(base)) {
+            return;
+        }
+        for (int y = 0; y < VazioGeometria.ALTURA_MIOLO; y++) {
+            for (int x = -VazioGeometria.LARGURA_MIOLO / 2; x <= VazioGeometria.LARGURA_MIOLO / 2; x++) {
+                nv.setBlock(base.offset(x, y, 0), Blocks.AIR.defaultBlockState(), 2);
             }
+        }
+        nv.playSound(null, base, SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.AMBIENT, 0.8F, 0.4F);
+    }
+
+    /**
+     * (5.13.0) A ABERTURA DE BAIXO PARA CIMA — roda em {@link #tick} (com jogador) e em
+     * {@link #tickMundo} (sem ninguém), então o /vazio abrir do admin também anima.
+     */
+    private static void animarAbertura(ServerLevel nv, long agora) {
+        RPWorldData dados = RPWorldData.get(nv.getServer());
+        if (!dados.isPortalAberto()) {
+            return;
+        }
+        BlockPos base = ancoraPortal(nv);
+        if (aberturaInicio == 0L) {
+            aberturaInicio = agora;              // continuou aberto depois de um restart
+        }
+        if (!nv.isLoaded(base)) {
+            nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
+            if (!nv.isLoaded(base)) {
+                return;
+            }
+        }
+        int alt = VazioGeometria.ALTURA_MIOLO;
+        float progresso = Math.min(1.0F,
+                (agora - aberturaInicio) / (float) VazioGeometria.ABERTURA_MS);
+        int devidas = Math.min(alt, (int) Math.floor(progresso * alt + 1e-4F));
+        while (linhasColocadas < devidas) {
+            int y = linhasColocadas;
+            for (int x = -VazioGeometria.LARGURA_MIOLO / 2; x <= VazioGeometria.LARGURA_MIOLO / 2; x++) {
+                nv.setBlock(base.offset(x, y, 0), Blocks.BLACK_CONCRETE.defaultBlockState(), 2);
+            }
+            nv.playSound(null, base.offset(0, y, 0), SoundEvents.SCULK_CATALYST_BLOOM,
+                    SoundSource.AMBIENT, 0.55F, 0.6F + y * 0.06F);
+            linhasColocadas++;
+        }
+    }
+
+    /** a cada tick: preenche o miolo de baixo para cima e leva quem entrar. */
+    private static void tickPortal(ServerLevel nv, ServerPlayer p, long agora) {
+        RPWorldData dados = RPWorldData.get(nv.getServer());
+        BlockPos base = ancoraPortal(nv);
+
+        // --- animação de abertura (compartilhada com o tickMundo)
+        animarAbertura(nv, agora);
+
+        // --- atravessar andando (sem clique): 0,7 s dentro do miolo
+        boolean dentro = dados.isPortalAberto() && dentroDoPortal(p, base) && dados.temOsOito(p.getUUID());
+        if (!dentro) {
+            NO_PORTAL.remove(p.getUUID());
         } else {
-            // dormindo: brasa fraca no miolo e um sussurro a cada 3 s
-            nv.sendParticles(ParticleTypes.SMOKE, cx, cy + 1.2, cz, 2, 1.6, 0.2, 0.3, 0.01);
-            if ((t % 60L) == 0L) {
-                nv.playSound(null, base, SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.AMBIENT, 0.35F, 0.5F);
+            long desde = NO_PORTAL.computeIfAbsent(p.getUUID(), k -> agora);
+            if (agora - desde > 700L) {
+                NO_PORTAL.remove(p.getUUID());
+                usarPortal(p, nv, base, dados);
+                return;
             }
+        }
+
+        // --- manda o estado do portal para o cliente desenhar (1x por segundo)
+        long ultimo = ULTIMO_SYNC.getOrDefault(p.getUUID(), 0L);
+        if (agora - ultimo > 1000L) {
+            ULTIMO_SYNC.put(p.getUUID(), agora);
+            envioEstado(nv, p, dados, base);
         }
     }
 
-    // ========================================================= PRÉDIOS PERDIDOS
-    private static void tentarPredio(ServerLevel nv, ServerPlayer p) {
-        int celX = (int) Math.floor(p.getX() / 96.0);
-        int celZ = (int) Math.floor(p.getZ() / 96.0);
-        RandomSource r = RandomSource.create(celX * 34187L + celZ * 132897L + 17L);
-        // anda até 3 células na direção sorteada: nunca constrói em cima do jogador
-        for (int tentativa = 0; tentativa < 6; tentativa++) {
-            int ox = r.nextInt(5) - 2, oz = r.nextInt(5) - 2;
-            int cx = celX + ox, cz = celZ + oz;
-            long k = (long) cx * 100_003L + cz;
-            if (PREDIOS_FEITOS.contains(k)) {
-                continue;
-            }
-            int x = cx * 96 + 48, z = cz * 96 + 48;
-            double d = Math.hypot(x - p.getX(), z - p.getZ());
-            if (d < 55 || d > 190) {
-                continue;
-            }
-            if (Math.hypot(x, z) < RUA_PRAÇA + 40) {
-                continue;                       // a praça fica limpa
-            }
-            if (!nv.isLoaded(new BlockPos(x, 12, z))) {
-                nv.getChunk(x >> 4, z >> 4);
-            }
-            // já tem prédio aí? compara a altura do centro com a de 24 blocos
-            // ao lado: se o centro é MUITO mais alto, é uma torre de antes.
-            int topo = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            int viz = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x + 24, z);
-            PREDIOS_FEITOS.add(k);
-            if (topo - viz > 8) {
-                continue;
-            }
-            enfileirarPredio(nv, x, z, cx, cz);
-            return;
+    /** cálculo barato do estado do portal (0 fechado, 1 abrindo, 2 aberto). */
+    public static int estadoPortal(ServerLevel nv) {
+        RPWorldData dados = RPWorldData.get(nv.getServer());
+        if (!dados.isPortalAberto()) {
+            return 0;
+        }
+        if (aberturaInicio <= 0L) {
+            return 2;
+        }
+        long dt = System.currentTimeMillis() - aberturaInicio;
+        return dt >= VazioGeometria.ABERTURA_MS ? 2 : 1;
+    }
+
+    /** manda posição + estado para o cliente desenhar o vórtice e as colunas de luz. */
+    public static void envioEstado(ServerLevel nv, ServerPlayer p, RPWorldData dados, BlockPos base) {
+        try {
+            PacketDistributor.sendToPlayer(p, new VazioPortalPayload(
+                    base.getX(), base.getY(), base.getZ(),
+                    dados.getPedestais(p.getUUID()),
+                    Integer.bitCount(dados.getSantuarios(p.getUUID())),
+                    estadoPortal(nv)));
+        } catch (Throwable t) {
+            // pacote é cosmético: se falhar, o jogo segue
         }
     }
 
-    /** ruína de arranha-céu: casca com buracos, andares quebrados e entulho. */
-    private static void enfileirarPredio(ServerLevel nv, int x, int z, int cx, int cz) {
-        RandomSource r = RandomSource.create(cx * 71_771L + cz * 91_213L + 3L);
-        int y0 = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-        if (y0 <= nv.getMinBuildHeight() + 2) {
-            return;
-        }
-        int larg = 9 + r.nextInt(9);          // 9..17
-        int prof = 9 + r.nextInt(9);
-        int alt = 22 + r.nextInt(42);         // 22..63 de altura
-        BlockState[] paleta = {
-                Blocks.DEEPSLATE.defaultBlockState(),
-                Blocks.BLACKSTONE.defaultBlockState(),
-                Blocks.TUFF.defaultBlockState(),
-                Blocks.GRAY_CONCRETE.defaultBlockState(),
-                Blocks.POLISHED_DEEPSLATE.defaultBlockState(),
-                Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState(),
-                Blocks.DEEPSLATE_TILES.defaultBlockState()
-        };
-        int x0 = x - larg / 2, z0 = z - prof / 2;
-        int andarH = 6 + r.nextInt(4);
-        for (int y = 0; y < alt; y++) {
-            // o topo vai desmanchando (quanto mais alto, menos bloco sobra)
-            float desmancha = 0.15F + 0.55F * (y / (float) alt);
-            boolean casca = (y % andarH == 0);
-            for (int dx = 0; dx < larg; dx++) {
-                for (int dz = 0; dz < prof; dz++) {
-                    boolean borda = dx == 0 || dz == 0 || dx == larg - 1 || dz == prof - 1;
-                    if (borda) {
-                        if (r.nextFloat() < desmancha) {
-                            continue;                       // buraco na parede
-                        }
-                        if (r.nextFloat() < 0.06F) {
-                            continue;                       // janela
-                        }
-                        fila(new BlockPos(x0 + dx, y0 + y, z0 + dz),
-                                paleta[r.nextInt(paleta.length)]);
-                    } else if (casca) {
-                        // laje de andar: só metade (o resto desabou)
-                        if (r.nextFloat() < 0.55F) {
-                            fila(new BlockPos(x0 + dx, y0 + y, z0 + dz),
-                                    paleta[r.nextInt(paleta.length)]);
-                        }
-                    }
-                }
-            }
-        }
-        // entulho em volta da base (pedaços caídos)
-        for (int i = 0; i < 70; i++) {
-            int dx = r.nextInt(larg + 10) - 5;
-            int dz = r.nextInt(prof + 10) - 5;
-            int px = x0 + dx, pz = z0 + dz;
-            int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, px, pz);
-            if (y <= nv.getMinBuildHeight() + 1) {
-                continue;
-            }
-            fila(new BlockPos(px, y, pz), paleta[r.nextInt(paleta.length)]);
-        }
-    }
-
-    // ------------------------------------------------------------------ fila
-    private static void fila(BlockPos pos, BlockState st) {
-        if (FILA.size() > 26_000) {
-            return;                              // trava de segurança
-        }
-        FILA.add(new Object[]{ pos, st });
-    }
-
-    /** (debug) o que tem na fila (posição/estado do primeiro item). */
-    public static String espiarFila(ServerLevel nv) {
-        Object[] e = FILA.peek();
-        if (e == null) {
-            return "vazia";
-        }
-        BlockPos pos = (BlockPos) e[0];
-        return pos + " -> " + e[1] + " | carregado=" + nv.isLoaded(pos)
-                + " | atual=" + nv.getBlockState(pos);
-    }
-
-    /** (debug) força o andamento da fila (usado pelo /devvazio). */
-    public static void drenar(ServerLevel nv) {
-        colocarFila(nv);
-    }
-
-    private static void colocarFila(ServerLevel nv) {
-        int n = 0;
-        while (!FILA.isEmpty() && n < POR_TICK) {
-            Object[] e = FILA.poll();
-            BlockPos pos = (BlockPos) e[0];
-            BlockState st = (BlockState) e[1];
-            if (!nv.isLoaded(pos)) {
-                continue;
-            }
-            BlockState atual = nv.getBlockState(pos);
-            if (!atual.isAir() && !atual.canBeReplaced()) {
-                continue;                        // não estraga o que já existe
-            }
-            nv.setBlock(pos, st, 2);
-            n++;
-        }
+    /** o jogador está dentro do miolo do portal? */
+    private static boolean dentroDoPortal(ServerPlayer p, BlockPos base) {
+        int meiaL = VazioGeometria.LARGURA_MIOLO / 2;
+        return Math.abs(p.getX() - (base.getX() + 0.5)) <= meiaL + 0.4
+                && Math.abs(p.getZ() - (base.getZ() + 0.5)) <= 1.6
+                && p.getY() >= base.getY() - 1.2
+                && p.getY() <= base.getY() + VazioGeometria.ALTURA_MIOLO - 0.5;
     }
 
     // ============================================================== INTERAÇÃO
     /**
-     * Clique direito num pedestal ou no miolo do portal.
+     * Clique direito num pedestal, num santuário ou no portal.
      *
      * @return true se o clique era nosso (aí o jogo não abre/fecha nada).
      */
     public static boolean interagir(ServerPlayer p, BlockPos pos) {
         try {
-            if (!(p.level() instanceof ServerLevel nv)
-                    || !p.level().dimension().equals(NeptuneEventos.CHAVE_EXILIO_PUBLICA)) {
+            if (!(p.level() instanceof ServerLevel nv) || !ehVazio(nv)) {
                 return false;
             }
             RPWorldData dados = RPWorldData.get(p.getServer());
-            // --- pedestal?
-            for (int i = 0; i < PED.length; i++) {
+            // --- pedestal (anel em volta da praça)
+            for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
                 BlockPos a = ancoraPedestal(nv, i);
-                if (a == null) {
-                    continue;
-                }
-                if (Math.hypot(pos.getX() - a.getX(), pos.getZ() - a.getZ()) <= 3.5
-                        && pos.getY() >= a.getY() - 1 && pos.getY() <= a.getY() + 6) {
+                if (Math.hypot(pos.getX() - a.getX(), pos.getZ() - a.getZ()) <= 3.0
+                        && pos.getY() >= a.getY() - 1 && pos.getY() <= a.getY() + 4) {
                     return usarPedestal(p, nv, a, i, dados);
                 }
             }
-            // --- portal?
+            // --- santuário (onde o fragmento nasce)
+            for (int i = 0; i < VazioGeometria.SANTUARIOS; i++) {
+                BlockPos a = ancoraSantuario(nv, i);
+                if (a == null) {
+                    continue;
+                }
+                if (Math.hypot(pos.getX() - a.getX(), pos.getZ() - a.getZ()) <= 3.0
+                        && pos.getY() >= a.getY() - 1 && pos.getY() <= a.getY() + 4) {
+                    return usarSantuario(p, nv, a, i, dados);
+                }
+            }
+            // --- portal
             BlockPos portal = ancoraPortal(nv);
-            if (portal != null
-                    && Math.hypot(pos.getX() - portal.getX(), pos.getZ() - portal.getZ()) <= 6.5
-                    && pos.getY() >= portal.getY() - 1 && pos.getY() <= portal.getY() + 3) {
+            if (Math.abs(pos.getX() - portal.getX()) <= VazioGeometria.LARGURA_MIOLO
+                    && Math.abs(pos.getZ() - portal.getZ()) <= 2
+                    && pos.getY() >= portal.getY() - 2
+                    && pos.getY() <= portal.getY() + VazioGeometria.ALTURA_MIOLO) {
                 return usarPortal(p, nv, portal, dados);
             }
             return false;
@@ -509,50 +680,106 @@ public final class VazioReino {
         }
     }
 
+    /** clique no pedestal: encaixa o fragmento que está na mão. */
     private static boolean usarPedestal(ServerPlayer p, ServerLevel nv, BlockPos base,
             int i, RPWorldData dados) {
-        int total = dados.pegarFragmento(p.getUUID(), i);
-        if (total < 0) {
+        UUID id = p.getUUID();
+        if (dados.pedestalCheio(id, i)) {
             p.displayClientMessage(Component.literal(
-                    "\u00a78Este pedestal está vazio. O fragmento já é seu."), true);
+                    "\u00a78Este pedestal já está cheio. \u00a77Faltam \u00a7f"
+                    + (TOTAL_FRAGMENTOS - dados.quantosPedestais(id)) + "\u00a77."), true);
             return true;
         }
+        // tem o fragmento na mão? (principal ou sekundária)
+        ItemStack principal = p.getMainHandItem();
+        ItemStack secundaria = p.getOffhandItem();
+        boolean temItem = principal.is(RPTagMod.FRAGMENTO_VAZIO.get())
+                || secundaria.is(RPTagMod.FRAGMENTO_VAZIO.get());
+        // fallback: se ele esvaziou santuário e não colocou, o vazio "lembra" do fragmento
+        int santuarios = Integer.bitCount(dados.getSantuarios(id));
+        int colocados = dados.quantosPedestais(id);
+        if (!temItem && santuarios <= colocados) {
+            nv.playSound(null, base, SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.AMBIENT, 0.6F, 0.5F);
+            p.displayClientMessage(Component.literal(
+                    "\u00a78O pedestal está vazio e você também.\n\u00a77Traga um \u00a7fFRAGMENTO DO VAZIO"
+                    + "\u00a77 — eles ficam nos altares com coluna de luz."), true);
+            return true;
+        }
+        if (temItem) {
+            (principal.is(RPTagMod.FRAGMENTO_VAZIO.get()) ? principal : secundaria).shrink(1);
+        }
+        dados.encaixarNoPedestal(id, i);
+        int cheios = dados.quantosPedestais(id);
+        // acende o pedestal (bloco compartilhado: quem chega depois vê aceso)
+        nv.setBlock(base.offset(0, 2, 0), Blocks.SCULK_CATALYST.defaultBlockState(), 2);
         nv.playSound(null, base, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 1.0F, 0.7F);
         p.playNotifySound(SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.6F, 0.6F);
-        nv.sendParticles(ParticleTypes.SOUL, base.getX() + 0.5, base.getY() + 5.5, base.getZ() + 0.5,
+        nv.sendParticles(ParticleTypes.SOUL, base.getX() + 0.5, base.getY() + 2.5, base.getZ() + 0.5,
                 40, 0.6, 0.8, 0.6, 0.06);
-        nv.sendParticles(ParticleTypes.END_ROD, base.getX() + 0.5, base.getY() + 5.0, base.getZ() + 0.5,
+        nv.sendParticles(ParticleTypes.END_ROD, base.getX() + 0.5, base.getY() + 2.0, base.getZ() + 0.5,
                 24, 0.4, 0.6, 0.4, 0.04);
-        // o pedestal apaga (fica só a lanterna de alma)
-        nv.setBlock(base.offset(0, 5, 0), Blocks.SOUL_LANTERN.defaultBlockState(), 2);
         p.displayClientMessage(Component.literal(
-                "\u00a75\u00a7lFRAGMENTO DO VAZIO \u00a7f" + total + "\u00a77/\u00a7f"
-                + TOTAL_FRAGMENTOS
-                + (total >= TOTAL_FRAGMENTOS
-                        ? "\u00a75 — O PORTAL ACORDOU. Ele fica a LESTE."
-                        : "\u00a78 — ainda faltam " + (TOTAL_FRAGMENTOS - total) + ".")), true);
-        if (total >= TOTAL_FRAGMENTOS) {
-            nv.playSound(null, base, SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 0.5F, 1.6F);
-            for (ServerPlayer outro : nv.players()) {
-                outro.displayClientMessage(Component.literal(
-                        "\u00a75\u00a7lAs oito peças se juntaram. \u00a77Alguma coisa acordou no leste."), true);
-            }
+                "\u00a75\u00a7lFRAGMENTO ENCAIXADO \u00a7f" + cheios + "\u00a77/\u00a7f" + TOTAL_FRAGMENTOS
+                + (cheios >= TOTAL_FRAGMENTOS
+                        ? "\u00a75 — O PORTAL ESTÁ ABRINDO."
+                        : "\u00a78 — faltam " + (TOTAL_FRAGMENTOS - cheios) + ".")), true);
+        if (cheios >= TOTAL_FRAGMENTOS) {
+            abrirPortal(nv, p);
         }
         return true;
     }
 
-    private static boolean usarPortal(ServerPlayer p, ServerLevel nv, BlockPos base, RPWorldData dados) {
-        int tem = dados.getFragmentos(p.getUUID());
-        if (tem < TOTAL_FRAGMENTOS) {
-            nv.playSound(null, base, SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.AMBIENT, 0.8F, 0.5F);
+    /** clique no altar: leva o fragmento (uma vez por santuário, por jogador). */
+    private static boolean usarSantuario(ServerPlayer p, ServerLevel nv, BlockPos base,
+            int i, RPWorldData dados) {
+        UUID id = p.getUUID();
+        if (dados.jaPegouSantuario(id, i)) {
             p.displayClientMessage(Component.literal(
-                    "\u00a78O portal está morto. \u00a77Faltam \u00a7f"
-                    + (TOTAL_FRAGMENTOS - tem) + "\u00a77 fragmentos do vazio ("
-                    + tem + "/8).\u00a78 Procure as colunas de luz."), false);
+                    "\u00a78Este altar já foi esvaziado por você."), true);
             return true;
         }
-        dados.limparFragmentos(p.getUUID());
+        dados.marcarSantuario(id, i);
+        ItemStack item = new ItemStack(RPTagMod.FRAGMENTO_VAZIO.get());
+        if (!p.getInventory().add(item)) {
+            p.drop(item, false);
+        }
+        nv.setBlock(base.offset(0, 2, 0), Blocks.SOUL_LANTERN.defaultBlockState(), 2);
+        nv.playSound(null, base, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 0.55F);
+        p.playNotifySound(SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 1.0F, 0.6F);
+        nv.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, base.getX() + 0.5, base.getY() + 2.6,
+                base.getZ() + 0.5, 30, 0.4, 0.6, 0.4, 0.04);
+        int sant = Integer.bitCount(dados.getSantuarios(id));
+        p.displayClientMessage(Component.literal(
+                "\u00a75\u00a7lFRAGMENTO DO VAZIO \u00a7r\u00a78(" + sant + "/8 recolhidos)\n"
+                + "\u00a77Leve até um \u00a7fPEDESTAL\u00a77 em volta da praça e clique com ele na mão."), false);
+        return true;
+    }
+
+    /** clique (ou 0,7 s parado) no portal: volta pro lugar de onde ele entrou. */
+    private static boolean usarPortal(ServerPlayer p, ServerLevel nv, BlockPos base, RPWorldData dados) {
+        if (!dados.isPortalAberto()) {
+            nv.playSound(null, base, SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.AMBIENT, 0.8F, 0.5F);
+            p.displayClientMessage(Component.literal(
+                    "\u00a78O portal está morto. \u00a77Encaixe os \u00a7f8 FRAGMENTOS\u00a77 nos "
+                    + "pedestais em volta da praça (\u00a7f" + dados.quantosPedestais(p.getUUID())
+                    + "/8\u00a77)."), false);
+            return true;
+        }
+        if (!dados.temOsOito(p.getUUID())) {
+            nv.playSound(null, base, SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.AMBIENT, 0.9F, 0.5F);
+            p.displayClientMessage(Component.literal(
+                    "\u00a74O portal não te reconhece. \u00a77Você precisa \u00a7fENCAIXAR\u00a77 os 8 "
+                    + "fragmentos nos pedestais (\u00a7f" + dados.quantosPedestais(p.getUUID())
+                    + "/8\u00a77)."), false);
+            return true;
+        }
+        dados.limparPedestais(p.getUUID());
         nv.playSound(null, base, SoundEvents.PORTAL_TRAVEL, SoundSource.AMBIENT, 1.0F, 0.7F);
+        // apaga o miolo (o portal fecha atrás de quem passa)
+        fecharPortal(nv);
+        for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
+            nv.setBlock(ancoraPedestal(nv, i).offset(0, 2, 0), Blocks.SCULK.defaultBlockState(), 2);
+        }
         for (ServerPlayer outro : nv.players()) {
             outro.displayClientMessage(Component.literal(
                     "\u00a75\u00a7l" + p.getName().getString().toUpperCase()
@@ -562,11 +789,66 @@ public final class VazioReino {
         return true;
     }
 
+    /**
+     * (5.13.0) {@code /vazio portal}: INVOCA o portal bem na frente de quem chamou.
+     *
+     * <p>Pedido 50: <i>"preciso também de um comando para invocar o portal"</i>. Ele nasce de
+     * frente para o jogador (até 12 blocos, no chão) e já abre — é ferramenta de teste/demonstração.
+     */
+    public static String invocarPortal(ServerPlayer p) {
+        if (!(p.level() instanceof ServerLevel nv) || !ehVazio(nv)) {
+            return "\u00a7cVocê precisa estar na dimensão do vazio (rptag:exilio) para invocar o portal.";
+        }
+        // olha para frente e acha o chão
+        var olhar = p.getLookAngle();
+        int x = (int) Math.floor(p.getX() + olhar.x * 6.0);
+        int z = (int) Math.floor(p.getZ() + olhar.z * 6.0);
+        nv.getChunk(x >> 4, z >> 4);
+        int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        if (y <= nv.getMinBuildHeight() + 2) {
+            y = centroY(nv);
+        }
+        RPWorldData dados = RPWorldData.get(nv.getServer());
+        dados.setPortalInvocado(x, y, z);
+        dados.setVazioY(Y_PORTAL, y);
+        // limpa o lugar onde a moldura vai ficar
+        int meia = VazioGeometria.LARGURA_MIOLO / 2 + VazioGeometria.BORDA;
+        for (int dx = -meia; dx <= meia; dx++) {
+            for (int dy = -1; dy <= VazioGeometria.ALTURA_MIOLO + 2; dy++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    BlockPos pos = new BlockPos(x + dx, y + dy, z + dz);
+                    if (!nv.getBlockState(pos).isAir()) {
+                        nv.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+                    }
+                }
+            }
+        }
+        FEITOS.remove(chave('N', 0));
+        BlockPos base = new BlockPos(x, y, z);
+        enfileirarPortal(nv, base);
+        while (!FILA.isEmpty()) {
+            colocarFila(nv);          // a moldura sai na hora (comando de admin)
+        }
+        dados.setPortalAberto(false);
+        aberturaInicio = 0L;
+        linhasColocadas = 0;
+        if (dados.temOsOito(p.getUUID())) {
+            abrirPortal(nv, p);
+        } else {
+            nv.playSound(null, base, SoundEvents.RESPAWN_ANCHOR_SET_SPAWN, SoundSource.BLOCKS, 1.0F, 0.5F);
+            p.displayClientMessage(Component.literal(
+                    "\u00a78Porta erguida em \u00a7f" + x + ", " + y + ", " + z
+                    + "\u00a78. \u00a77Encaixe os 8 fragmentos para ela abrir "
+                    + "(\u00a7f/vazio fragmentos\u00a77 dá os 8 pra testar)."), false);
+        }
+        return "\u00a75Portal invocado em \u00a7f" + x + ", " + y + ", " + z + "\u00a75.";
+    }
+
     // ================================================== O VAZIO QUE MATA DEVAGAR
     /** quanto tempo (ms) o vazio segura a pessoa antes de matar. */
     private static final long ESPERA_MORTE = 12_000L;
 
-    private static void tickCaindo(ServerLevel exilio, ServerPlayer p, long agora) {
+    private static void tickCaindo(ServerLevel nv, ServerPlayer p, long agora) {
         Long fim = CAINDO.get(p.getUUID());
         if (fim == null) {
             if (p.getY() < -4.0) {
@@ -592,24 +874,23 @@ public final class VazioReino {
             }
             return;
         }
-        // segura a queda (gravidade zero) e conta
         if (p.getY() < -2.0) {
             p.teleportTo(p.getX(), -2.0, p.getZ());
         }
         p.setDeltaMovement(0, 0, 0);
         p.fallDistance = 0;
         long seg = (restam + 999L) / 1000L;
-        if ((exilio.getGameTime() % 10L) == 0L) {
+        if ((nv.getGameTime() % 10L) == 0L) {
             p.displayClientMessage(Component.literal(
                     "\u00a74\u00a7lO VAZIO TE CHAMA \u00a7c" + seg + "\u00a78s"), true);
-            exilio.sendParticles(ParticleTypes.SQUID_INK, p.getX(), p.getY() + 1.0, p.getZ(),
+            nv.sendParticles(ParticleTypes.SQUID_INK, p.getX(), p.getY() + 1.0, p.getZ(),
                     12, 0.7, 0.8, 0.7, 0.02);
             p.playNotifySound(SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.AMBIENT,
                     0.4F, 1.5F - 0.05F * (12 - seg));
         }
     }
 
-    /** (5.12.0) este jogador está no tempo de espera do vazio que mata? */
+    /** este jogador está no tempo de espera do vazio que mata? */
     public static boolean estaCaindo(UUID id) {
         return CAINDO.containsKey(id);
     }
@@ -617,38 +898,47 @@ public final class VazioReino {
     /** limpa o estado de quem saiu do vazio (chamado ao voltar). */
     public static void limparCaindo(UUID id) {
         CAINDO.remove(id);
+        NO_PORTAL.remove(id);
     }
 
-    /** usado pelo /vazio fragmentos (debug do dono). */
+    // =========================================================== utilidades
+    /** dá os 8 fragmentos físicos + marca os santuários (teste do dono). */
     public static void darTudo(ServerPlayer p) {
         RPWorldData dados = RPWorldData.get(p.getServer());
+        for (int i = 0; i < VazioGeometria.SANTUARIOS; i++) {
+            dados.marcarSantuario(p.getUUID(), i);
+        }
         for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
-            dados.pegarFragmento(p.getUUID(), i);
+            ItemStack item = new ItemStack(RPTagMod.FRAGMENTO_VAZIO.get());
+            if (!p.getInventory().add(item)) {
+                p.drop(item, false);
+            }
         }
     }
 
     /** reinicia o reino (some com as construções marcadas e refaz). */
     public static void esquecerConstrucoes() {
-        PED_FEITOS.clear();
+        FEITOS.clear();
         PREDIOS_FEITOS.clear();
-        portalFeito = false;
         FILA.clear();
+        pracaFeita = false;
     }
 
-    /** @return a chave da dimensão (atalho). */
+    /** @return true se o nível é a dimensão do vazio. */
     public static boolean ehVazio(Level level) {
         return level.dimension().equals(NeptuneEventos.CHAVE_EXILIO_PUBLICA);
     }
 
-    /** lista dos 8 pontos dos pedestais (usada pelas dicas e pelo /vazio). */
+    /** lista dos 8 pedestais (usada pelo /vazio pedestais). */
     public static String listaPedestais() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < PED.length; i++) {
+        for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
+            int[] p = VazioGeometria.pedestal(i);
             if (i > 0) {
                 sb.append("\u00a78 · ");
             }
-            sb.append("\u00a7f").append(i + 1).append("\u00a78 (").append(PED[i][0])
-                    .append(", ").append(PED[i][1]).append(")");
+            sb.append("\u00a7f").append(i + 1).append("\u00a78 (").append(p[0])
+                    .append(", ").append(p[1]).append(")");
         }
         return sb.toString();
     }
@@ -659,50 +949,46 @@ public final class VazioReino {
         nv.getChunk(x >> 4, z >> 4);
         enfileirarPredio(nv, x, z, celX, celZ);
         int fila = FILA.size();
-        while (FILA.size() > 0) {
+        while (!FILA.isEmpty()) {
             colocarFila(nv);
         }
         int topo = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-        StringBuilder sb = new StringBuilder("predio em " + x + "," + z + " fila=" + fila + " topo=" + topo);
-        for (int dy = 1; dy <= 30; dy += 5) {
-            sb.append(" y").append(topo - dy).append("=")
-                    .append(nv.getBlockState(new BlockPos(x, topo - dy, z)).getBlock().toString()
-                            .replace("Block{", "").replace("}", ""));
-            sb.append(" x").append(x - 5).append("=")
-                    .append(nv.getBlockState(new BlockPos(x - 5, topo - dy, z)).getBlock().toString()
-                            .replace("Block{", "").replace("}", ""));
-        }
-        return sb.toString();
+        return "predio em " + x + "," + z + " fila=" + fila + " topo=" + topo;
     }
 
-    /** itera a fila de construção (para o /vazio construir tudo de uma vez). */
+    /** quantos blocos esperam na fila de construção. */
     public static int construindo() {
         return FILA.size();
     }
 
     /** força a construção de tudo em volta do jogador (debug). */
     public static int construirTudo(ServerLevel nv, ServerPlayer p) {
-        int n = 0;
-        for (int i = 0; i < PED.length; i++) {
-            nv.getChunk(PED[i][0] >> 4, PED[i][1] >> 4);
-            BlockPos a = ancoraPedestal(nv, i);
-            if (a == null) {
-                continue;
-            }
-            if (!PED_FEITOS.contains(chave(i))) {
-                enfileirarPedestal(nv, i, a);
-                PED_FEITOS.add(chave(i));
-                n++;
-            }
+        esquecerConstrucoes();
+        int antes = FILA.size();
+        prepararPraca(nv);
+        garantirPedestais(nv, p);
+        garantirSantuarios(nv);
+        garantirPortais(nv);
+        while (!FILA.isEmpty()) {
+            colocarFila(nv);
         }
-        nv.getChunk(PORTAL_X >> 4, PORTAL_Z >> 4);
-        BlockPos portal = ancoraPortal(nv);
-        if (portal != null && !portalFeito) {
-            enfileirarPortal(nv, portal);
-            portalFeito = true;
-            n++;
+        return FILA.size() - antes + construindo();
+    }
+
+    /** (debug) o que tem na fila (posição/estado do primeiro item). */
+    public static String espiarFila(ServerLevel nv) {
+        Object[] e = FILA.peek();
+        if (e == null) {
+            return "vazia";
         }
-        return n;
+        BlockPos pos = (BlockPos) e[0];
+        return pos + " -> " + e[1] + " | carregado=" + nv.isLoaded(pos)
+                + " | atual=" + nv.getBlockState(pos);
+    }
+
+    /** (debug) força o andamento da fila. */
+    public static void drenar(ServerLevel nv) {
+        colocarFila(nv);
     }
 
     /** religa a gravidade de quem estava caindo (na saída do servidor). */
@@ -710,6 +996,7 @@ public final class VazioReino {
         if (CAINDO.remove(p.getUUID()) != null) {
             p.setNoGravity(false);
         }
+        NO_PORTAL.remove(p.getUUID());
     }
 
     /** varre a lista de quem caiu (limpeza de jogadores deslogados). */
@@ -719,6 +1006,140 @@ public final class VazioReino {
             if (server.getPlayerList().getPlayer(it.next()) == null) {
                 it.remove();
             }
+        }
+    }
+
+    /** (5.13.0) chamado quando o mundo do vazio carrega: a praça volta a ser construída. */
+    public static void acordar(ServerLevel nv) {
+        esquecerConstrucoes();
+        aberturaInicio = 0L;
+        linhasColocadas = 0;
+    }
+
+    // ---------------------------------------------------------------- fila
+    private static long chave(char tipo, int i) {
+        return (long) tipo * 1000L + i;
+    }
+
+    private static void fila(BlockPos pos, BlockState st) {
+        if (FILA.size() > 40_000) {
+            return;
+        }
+        FILA.add(new Object[]{ pos, st, Boolean.FALSE });
+    }
+
+    /** variação da fila que PODE sobrescrever (chão da praça, ar, moldura do portal). */
+    private static void filaForte(BlockPos pos, BlockState st) {
+        if (FILA.size() > 40_000) {
+            return;
+        }
+        FILA.add(new Object[]{ pos, st, Boolean.TRUE });
+    }
+
+    private static void colocarFila(ServerLevel nv) {
+        int n = 0;
+        while (!FILA.isEmpty() && n < POR_TICK) {
+            Object[] e = FILA.poll();
+            BlockPos pos = (BlockPos) e[0];
+            BlockState st = (BlockState) e[1];
+            boolean forte = Boolean.TRUE.equals(e[2]);
+            // (5.13.0) a fila CARREGA o chunk: antes, com ninguém dentro da dimensão,
+            // o bloco era descartado ("chunk não carregado") e a praça/altar nunca
+            // aparecia. Agora a construção sempre chega ao mundo.
+            if (!nv.isLoaded(pos)) {
+                nv.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
+            }
+            BlockState atual = nv.getBlockState(pos);
+            if (!forte && !atual.isAir() && !atual.canBeReplaced()) {
+                continue;                      // não estraga o que já existe
+            }
+            if (forte && atual == st) {
+                continue;                      // já está assim
+            }
+            nv.setBlock(pos, st, 2);
+            n++;
+        }
+    }
+
+    // =============================================================== PRÉDIOS
+    /** ruínas de arranha-céus no breu — o "vazio mais escuro" com cara de cidade morta. */
+    private static void tentarPredio(ServerLevel nv, ServerPlayer p) {
+        int celX = (int) Math.floor(p.getX() / 96.0);
+        int celZ = (int) Math.floor(p.getZ() / 96.0);
+        RandomSource r = RandomSource.create(celX * 34187L + celZ * 132897L + 17L);
+        for (int tentativa = 0; tentativa < 6; tentativa++) {
+            int ox = r.nextInt(5) - 2, oz = r.nextInt(5) - 2;
+            int cx = celX + ox, cz = celZ + oz;
+            long k = (long) cx * 100_003L + cz;
+            if (PREDIOS_FEITOS.contains(k)) {
+                continue;
+            }
+            int x = cx * 96 + 48, z = cz * 96 + 48;
+            double d = Math.hypot(x - p.getX(), z - p.getZ());
+            if (d < 55 || d > 190) {
+                continue;
+            }
+            if (Math.hypot(x, z) < RAIO_PRACA + 40) {
+                continue;                       // a praça fica limpa
+            }
+            nv.getChunk(x >> 4, z >> 4);
+            int topo = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            int viz = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x + 24, z);
+            PREDIOS_FEITOS.add(k);
+            if (topo - viz > 8) {
+                continue;
+            }
+            enfileirarPredio(nv, x, z, cx, cz);
+            return;
+        }
+    }
+
+    /** ruína de arranha-céu: casca com buracos, andares quebrados e entulho. */
+    private static void enfileirarPredio(ServerLevel nv, int x, int z, int cx, int cz) {
+        RandomSource r = RandomSource.create(cx * 71_771L + cz * 91_213L + 3L);
+        int y0 = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        if (y0 <= nv.getMinBuildHeight() + 2) {
+            return;
+        }
+        int larg = 9 + r.nextInt(9);
+        int prof = 9 + r.nextInt(9);
+        int alt = 22 + r.nextInt(42);
+        BlockState[] paleta = {
+                Blocks.DEEPSLATE.defaultBlockState(),
+                Blocks.BLACKSTONE.defaultBlockState(),
+                Blocks.TUFF.defaultBlockState(),
+                Blocks.GRAY_CONCRETE.defaultBlockState(),
+                Blocks.POLISHED_DEEPSLATE.defaultBlockState(),
+                Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState(),
+                Blocks.DEEPSLATE_TILES.defaultBlockState()
+        };
+        int x0 = x - larg / 2, z0 = z - prof / 2;
+        int andarH = 6 + r.nextInt(4);
+        for (int y = 0; y < alt; y++) {
+            float desmancha = 0.15F + 0.55F * (y / (float) alt);
+            boolean casca = (y % andarH == 0);
+            for (int dx = 0; dx < larg; dx++) {
+                for (int dz = 0; dz < prof; dz++) {
+                    boolean borda = dx == 0 || dz == 0 || dx == larg - 1 || dz == prof - 1;
+                    if (borda) {
+                        if (r.nextFloat() < desmancha || r.nextFloat() < 0.06F) {
+                            continue;
+                        }
+                        fila(new BlockPos(x0 + dx, y0 + y, z0 + dz), paleta[r.nextInt(paleta.length)]);
+                    } else if (casca && r.nextFloat() < 0.55F) {
+                        fila(new BlockPos(x0 + dx, y0 + y, z0 + dz), paleta[r.nextInt(paleta.length)]);
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < 70; i++) {
+            int px = x0 + r.nextInt(larg + 10) - 5;
+            int pz = z0 + r.nextInt(prof + 10) - 5;
+            int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, px, pz);
+            if (y <= nv.getMinBuildHeight() + 1) {
+                continue;
+            }
+            fila(new BlockPos(px, y, pz), paleta[r.nextInt(paleta.length)]);
         }
     }
 }

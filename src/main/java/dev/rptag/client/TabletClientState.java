@@ -8,6 +8,10 @@ import java.util.function.LongSupplier;
 /** Uma solicitação por vez; o texto local não depende do ciclo de vida da tela. */
 public final class TabletClientState {
     private final UUID target;
+    /** (5.13.0) nome do DONO do tablet aberto (vazio = sem nome). */
+    private String dono = "";
+    /** (5.13.0) true quando o tablet aberto é de OUTRA pessoa (só leitura). */
+    private boolean deOutro;
     private final Consumer<TabletUpdatePayload> send;
     private final LongSupplier clock;
     private FichaRegistro server;
@@ -25,11 +29,25 @@ public final class TabletClientState {
         this.clock = clock;
         server = initial.registro();
         readOnly = initial.readOnly();
+        dono = initial.dono() == null ? "" : initial.dono();
+        deOutro = initial.deOutro();
         local = readOnly && server.confirmada() != null ? server.confirmada() : server.rascunho();
         step = server.etapa();
     }
 
     public UUID target() { return target; }
+    /** (5.13.0) nome de quem é o tablet (aparece no topo quando é roubado). */
+    public String dono() { return dono == null ? "" : dono; }
+    /** (5.13.0) o tablet é de outra pessoa? */
+    public boolean deOutro() { return deOutro; }
+
+    /** (5.13.0) título do topo: "SUA FICHA" ou "FICHA DE <NOME>". */
+    public String titulo() {
+        if (!deOutro) {
+            return readOnly ? "Sua ficha" : "Sua ficha";
+        }
+        return dono.isEmpty() ? "Ficha de outro jogador" : "Ficha de " + dono;
+    }
     public FichaPersonagem respostas() { return local; }
     public int etapa() { return step; }
     public boolean readOnly() { return readOnly; }
@@ -85,6 +103,8 @@ public final class TabletClientState {
         boolean wasConfirmation = pending != null && pending.confirmar();
         server = response.registro();
         readOnly = response.readOnly();
+        if (response.dono() != null && !response.dono().isBlank()) dono = response.dono();
+        deOutro = response.deOutro();
         if (!unsolicited) {
             pending = null;
             if (response.error().isEmpty()) savedGeneration = sentGeneration;

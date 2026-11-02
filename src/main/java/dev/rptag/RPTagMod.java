@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.12.0";
+    public static final String VERSION = "5.13.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -167,6 +167,11 @@ public final class RPTagMod {
     public static final net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.world.item.Item,
             TabletItem> TABLET = ITEMS.register("tablet",
                     () -> new TabletItem(new Item.Properties().stacksTo(1)));
+
+    /** (5.13.0) FRAGMENTO DO VAZIO — item que abre o portal negro do exílio. */
+    public static final Supplier<FragmentoItem> FRAGMENTO_VAZIO = ITEMS.register("fragmento_vazio",
+            () -> new FragmentoItem(new Item.Properties().stacksTo(8)
+                    .rarity(net.minecraft.world.item.Rarity.RARE)));
 
     /** (5.2.0) máscara de pedra — item de cabeça (camada 3D em CamadaMascara). */
     public static final Supplier<

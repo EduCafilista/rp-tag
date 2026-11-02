@@ -13,6 +13,49 @@
 
 ---
 
+## 5.13.0 (2026-11-02): pedido 50 — tablet por jogador + o portal negro em volta do centro
+
+- **A planta do vazio agora é um arquivo só de números** (`VazioGeometria`): 8 pedestais em anel de
+  **13 blocos** em volta do centro do spawn (`PED[][]`), 8 santuários entre **55 e 135** blocos
+  (`SANTUARIO[][]`), portal em **`PORTAL = { 0, -22 }`** com miolo **5×7** e abertura de **6 s**
+  (`ABERTURA_MS`). Se mudar um número aqui, servidor e cliente mudam juntos.
+- **Nada mais mora longe**: `PORTAL_X = 780` e os pedestais de 210–470 blocos foram apagados.
+  `VazioReino.PED[8]` / `PORTAL_X` não existem mais — qualquer código novo tem que usar
+  `VazioGeometria`.
+- **Alturas no save**: `RPWorldData.vazioYs` passou de 9 para **18** posições (0..7 pedestais,
+  8 portal, 9 praça, 10..17 altares). `centroY()` grava a altura da praça e empurra ela para os
+  pedestais — é o que impede o bug histórico de "pedestal virando torre" no restart.
+- **Fragmento é ITEM** (`FragmentoItem`, `RPTagMod.FRAGMENTO_VAZIO`, `assets/rptag/.../fragmento_vazio`):
+  o pedestal **consome** o item (`shrink(1)`); sem item e sem crédito de altar, a mensagem ensina
+  onde achar. `RPWorldData` guarda duas máscaras de 8 bits num int por jogador:
+  `bits 0..7 = altares esvaziados`, `bits 8..15 = pedestais cheios`.
+- **Abertura do portal** (`animarAbertura`): roda no `tick` (com jogador) **e** no `tickMundo` (sem
+  ninguém) — é por isso que `/vazio abrir` anima pelo console. Coloca uma linha de 5 blocos
+  (`BLACK_CONCRETE`) por fatia de 6 s/7 e toca `SCULK_CATALYST_BLOOM` com tom subindo.
+  Teste por RCON: `/vazio abrir` → 2 s: linhas 0–1 · 4 s: 0–3 · 6 s: 0–6 (confirmado no servidor
+  de teste, y=10 a 16).
+- **`tickMundo`**: a praça, os pedestais e o portal se constroem **sem jogador na dimensão**; os
+  altares entram **um a cada 5 s**. `colocarFila` agora **carrega o chunk** antes de colocar o
+  bloco — antes a construção era descartada em silêncio quando não havia jogador por perto.
+- **Volta pelo portal**: `RPWorldData.Volta` (dimensão + x/y/z + yaw/pitch) é gravado no `exilar()`
+  e no `/vazio entrar`, e lido em `voltarPeloPortal` **antes** do mapa em memória `ORIGEM`.
+- **Waystone**: `ServerEvents.bloquearWaystone` (RightClickBlock + RightClickItem) barra por
+  **id de registro** (`waystone`, `warp_stone`, `portstone`, `warp_plate`, `sharestone`) dentro de
+  `rptag:exilio`. Não depende do mod estar instalado.
+- **Partículas desligadas**: `VazioPortalFx` (cliente, `RenderLevelStageEvent.AFTER_PARTICLES` +
+  `RenderType.debugQuads()`) desenha o vórtice (15×21 subcélulas, paleta `#000000→#5a1a74`),
+  brasas, a moldura acesa, as colunas dos 8 pedestais e os anéis no chão. `RaiosVazioFx.desenharManto`
+  desenha o manto de escuridão do Deus do Vazio (12 nuvens + 18 brasas + disco).
+  **Regra: efeito de lore = geometria; partícula é enfeite opcional.**
+- **Rede v13**: `VazioPortalPayload` (x,y,z, máscara de pedestais, altares, estado 0/1/2), mandado
+  1× por segundo para quem está no vazio.
+- **Tablet por jogador**: dono no `custom_data` do item (`TabletDono`/`TabletNome`); abrir o de outro
+  ⇒ `readOnly` + `deOutro`, com "Ficha de <NOME>" no topo e a faixa "TABLET DE OUTRA PESSOA — SÓ
+  LEITURA". `/tablet dar|meus|ver`.
+- **Falta testar com jogador de verdade** (RCON não cobre): clique no pedestal consumindo o item,
+  abertura automática no 8º, atravessar voltando ao ponto de entrada, waystone barrada e o desenho
+  do vórtice no cliente.
+
 ## 5.12.0 (2026-11-02): pedido 49 — engolir, vazio preto, morte selada e portal
 
 - **Dois bugs de número/estilo explicavam metade do pedido**: `saidaAutomatica()` mandava

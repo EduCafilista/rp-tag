@@ -96,9 +96,13 @@ Alvos: nomes (aceita lista `Ana,Beto`) ou `@a`.
 | `/vazio apagar <jogador>` | apaga da existência |
 | `/vazio exilar <jogador>` · `/vazio soltar <jogador>` | manda pro exílio / solta num lugar aleatório |
 | `/vazio entrar` | o admin entra no exílio para testar |
-| `/vazio fragmentos [jogador]` | (5.12.0) dá os 8 fragmentos do vazio — testa o portal sem caçar pedestal |
-| `/vazio portal` | (5.12.0) leva até o portal do vazio (780, 40) |
-| `/vazio pedestais` | (5.12.0) lista os 8 pedestais e quantos fragmentos você tem |
+| `/vazio fragmentos [jogador]` | (5.13.0) dá os 8 **itens** `fragmento_vazio` — testa o portal sem caçar altar |
+| `/vazio portal` | (5.13.0) **INVOCA** o portal onde você está olhando (e abre se tiver 8/8) |
+| `/vazio portal <jogador>` | (5.13.0) invoca o portal na frente do jogador |
+| `/vazio portal ir` | (5.13.0) te leva até o portal que já existe (praça, ao norte) |
+| `/vazio abrir` · `/vazio fechar` | (5.13.0) abre/fecha o portal na marra (vídeo/prévia) |
+| `/vazio construir` | (5.13.0) refaz praça, 8 pedestais, 8 altares e o portal na hora |
+| `/vazio pedestais` | (5.13.0) quantos pedestais/altares você tem + onde está o portal |
 | `/bicho aqui` · `/bicho <pos>` · `/bicho limpar` | caixinha de música (o bicho pula quando alguém chega) |
 
 ## Vanilla (não é do mod)

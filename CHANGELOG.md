@@ -1,5 +1,66 @@
 # Changelog
 
+## 5.13.0 — pedido 50 (tablet por jogador + o portal negro do vazio) — 2026-11-02
+
+> Pedido do dono: **tablet um para cada jogador** (pegar o de outro mostra **a ficha do outro**) ·
+> **fragmentos do vazio** com **pedestais em volta do centro do spawn** · com **8/8 abre um PORTAL
+> NEGRO** (protótipo `KfElheRr.java`) **de baixo para cima** · **comando para invocar o portal** ·
+> o portal **devolve ao lugar de onde entrou** · **waystone proibida** no vazio · **os efeitos não
+> podem sumir com as partículas desligadas** · a **aura** do vazio tem que aparecer.
+
+### O vazio inteiro foi refeito em volta do CENTRO (o que estava errado)
+
+- **Pedestais a 210–470 blocos e portal a 780**: era uma caminhada de 10 minutos no breu, sem
+  referência de nada. Agora os **8 pedestais ficam num anel de 13 blocos em volta do ponto onde o
+  jogador spawna**, e o **portal fica a 22 blocos ao norte** da praça, no fim de um caminho de laje.
+- **O fragmento não existia como item**: era um número no save (`pegarFragmento`). Agora é o item
+  **`rptag:fragmento_vazio`** — entra no inventário, pode ser roubado, dropado, perdido.
+- **O fragmento nasce nos SANTUÁRIOS**: 8 altares espalhados entre 55 e 135 blocos da praça, cada um
+  com uma coluna de luz, um shrieker de sculk e o fragmento na tomada. Clique direito → o item vai
+  para a mão. Um altar por jogador (ninguém farma o mesmo altar).
+- **O pedestal só enche com o fragmento NA MÃO** (`encaixarNoPedestal`): o item é consumido, o
+  pedestal acende (sculk → catalisador) e a tomada vira uma coluna violeta. Fallback: se a pessoa
+  esvaziou altares e não encaixou, o vazio "lembra" do fragmento (para nunca ficar preso).
+- **8/8 abre o portal sozinho** (`abrirPortal`): o miolo de 5×7 preenche **linha por linha, de baixo
+  para cima**, em 6 s, com som subindo de tom — é o protótipo `KfElheRr.java` do dono em blocos
+  (moldura de obsidiana, vórtice vazio na paleta `#000000→#5a1a74`, brasas `#c0182c`/`#8a3fd0`).
+
+### O portal
+
+- **Comando para invocar**: `/vazio portal` ergue o portal **onde você está olhando** (6 blocos à
+  frente, no chão) e abre se você tiver os 8; `/vazio portal <jogador>` faz na frente dele;
+  `/vazio portal ir` só te leva até o portal que já existe.
+- **Atravessa andando** (0,7 s dentro do miolo) **ou clicando** — e volta para **o lugar de onde
+  entrou**: agora isso é gravado no save (`RPWorldData.Volta`), então nem restart do servidor faz a
+  pessoa voltar num ponto sorteado do mundo.
+- **Waystone PROIBIDA no vazio**: bloco e item na mão são barrados em `rptag:exilio` (checagem por
+  nome de registro: `waystone`, `warp_stone`, `portstone`, `warp_plate`, `sharestone`). O jogador vê
+  *"A pedra está morta aqui."* e ouve o som do vazio.
+- `/vazio abrir` e `/vazio fechar` (admin) abrem/fecham o portal na marra — para gravar vídeo/prévia.
+
+### Partículas desligadas (o pedido que parecia bug de outro mod)
+
+- **O portal, as colunas de luz dos pedestais e os anéis no chão agora são GEOMETRIA no cliente**
+  (`VazioPortalFx`, `RenderLevelStageEvent` + `RenderType.debugQuads()`), não partícula do servidor.
+  Aparecem com partículas no mínimo, com Iris/Sodium e no jogo puro.
+- **A aura do Deus do Vazio ganhou um MANTO desenhado** (`RaiosVazioFx.desenharManto`): 12 nuvens de
+  escuridão girando + 18 brasas violeta/sangue + disco de névoa nos pés. Junto com os raios
+  vermelhos (que já eram geometria), a aura **nunca mais desaparece** por causa da configuração
+  de partículas do jogador.
+- Canal de rede **v13** (novo `vazio_portal`: posição, pedestais e estado da abertura).
+
+### Tablet: um por jogador, e roubar mostra a ficha do outro
+
+- **O dono vai no item** (`custom_data` `TabletDono`/`TabletNome`): `TabletItem.dono()`,
+  `batizar()`, `ehDo()`. Soltar/dar/perder o tablet não perde a ficha nem o dono.
+- **Abrir o tablet de outra pessoa mostra a FICHA DELE, em leitura**: topo "Ficha de <NOME>", faixa
+  vermelha "TABLET DE OUTRA PESSOA — SÓ LEITURA" e rodapé "Você roubou este tablet…". É a lore do
+  roubo de tablet para arrancar informação.
+- Comandos: `/tablet dar <jogador> [dono]`, `/tablet meus`, `/tablet ver <jogador>`.
+- **O reino se constrói sozinho**: a praça, os pedestais, o portal e os altares (um a cada 5 s) já
+  estão de pé quando alguém é exilado — e a fila de construção agora **carrega o chunk** antes de
+  colocar o bloco (antes, sem jogador na dimensão, a construção era descartada em silêncio).
+
 ## 5.12.0 — pedido 49 (terremoto, vazio e morte de verdade) — 2026-11-02
 
 > Pedido do dono: som do andar do deus · vazio mais escuro com prédios perdidos · `/apagar`

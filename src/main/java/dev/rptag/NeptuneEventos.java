@@ -1434,6 +1434,10 @@ public final class NeptuneEventos {
         if (agora % 2000L < 50L) {
             VazioReino.limparOffline(server);
         }
+        // (5.13.0) a praça e o anel de pedestais ficam prontos MESMO sem ninguém dentro:
+        // quem é exilado já chega num lugar construído (e o /vazio construir do admin
+        // trabalha em cima de uma base pronta).
+        VazioReino.tickMundo(exilio, agora);
         boolean podeMonolito = agora >= proximoMonolito;
         boolean podeSussurro = agora >= proximoSussurro;
         if (podeMonolito) {
@@ -2092,6 +2096,16 @@ public final class NeptuneEventos {
         // guarda de ONDE ele saiu (a volta devolve pro mesmo lugar)
         ORIGEM.put(alvo.getUUID(), new Object[]{ alvo.level().dimension(),
                 alvo.getX(), alvo.getY(), alvo.getZ(), alvo.getYRot(), alvo.getXRot() });
+        // (5.13.0) e agora TAMBÉM no save: pedido 50 — "sair pelo portal devolve ao
+        // local de onde entrou". Em memória só, um restart no meio do exílio jogava a
+        // pessoa num lugar sorteado do mundo.
+        try {
+            RPWorldData.get(alvo.getServer()).setVolta(alvo.getUUID(), new RPWorldData.Volta(
+                    alvo.level().dimension().location().toString(),
+                    alvo.getX(), alvo.getY(), alvo.getZ(), alvo.getYRot(), alvo.getXRot()));
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui salvar o lugar de volta", t);
+        }
         long agora = System.currentTimeMillis();
         // (5.12.0) A ANIMAÇÃO DE ENGOLIR (estilo 23, o protótipo SwallowedByDarkness
         // do dono) roda na tela dele E na de todo mundo por perto. Ele fica
@@ -2120,8 +2134,9 @@ public final class NeptuneEventos {
         alvo.displayClientMessage(Component.literal(
                 "\u00a74\u00a7lVOC\u00ca FOI EXPULSO DO MUNDO.\n"
                 + "\u00a78Uma cidade morta no breu até onde a vista alcança.\n"
-                + "\u00a77Para VOLTAR sozinho: ache os \u00a7f8 FRAGMENTOS DO VAZIO\u00a77 nos pedestais\n"
-                + "\u00a77(as colunas de luz) e leve-os até o PORTAL, a leste.\n"
+                + "\u00a77Para VOLTAR sozinho: ache os \u00a7f8 FRAGMENTOS DO VAZIO\u00a77 nos altares\n"
+                + "\u00a77(as colunas de luz no breu) e encaixe cada um num PEDESTAL em volta da praça.\n"
+                + "\u00a77Com os 8 no lugar, o \u00a7fPORTAL NEGRO\u00a77 (ao norte) abre de baixo para cima.\n"
                 + "\u00a78Ninguém precisa de admin para te tirar."), false);
     }
 
@@ -2129,13 +2144,9 @@ public final class NeptuneEventos {
     /** (5.7.9) ponto de chegada: SUPERFÍCIE da praça (nunca mais dentro da pedra). */
     private static Vec3 chegadaNoExilio(ServerLevel exilio) {
         exilio.getChunk(0, 0);                    // garante o chunk carregado
-        prepararPraca(exilio);
-        int y = exilio.getHeight(
-                net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0);
-        if (y <= exilio.getMinBuildHeight() + 2) {
-            y = 12;
-        }
-        return new Vec3(0.5, y + 0.25, 0.5);
+        // (5.13.0) a praça agora é do VazioReino (pedestais em volta do centro e o
+        // caminho de laje até o portal) — aqui só pedimos a chegada.
+        return VazioReino.chegada(exilio);
     }
 
     /** (5.7.9) a PRAÇA da chegada: chão firme, 8 colunas com lanterna de alma e a
@@ -2143,69 +2154,9 @@ public final class NeptuneEventos {
     private static boolean pracaFeita = false;
 
     private static void prepararPraca(ServerLevel exilio) {
-        if (pracaFeita) {
-            return;
-        }
-        pracaFeita = true;
-        try {
-            exilio.getChunk(0, 0);
-            int y = exilio.getHeight(
-                    net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, 0);
-            if (y <= exilio.getMinBuildHeight() + 2) {
-                y = 12;
-            }
-            final int R = 15;
-            for (int dx = -R; dx <= R; dx++) {
-                for (int dz = -R; dz <= R; dz++) {
-                    double d = Math.hypot(dx, dz);
-                    if (d > R) {
-                        continue;
-                    }
-                    BlockPos chao = new BlockPos(dx, y - 1, dz);
-                    BlockState bloco;
-                    if (d < 2.2) {
-                        bloco = Blocks.CHISELED_POLISHED_BLACKSTONE.defaultBlockState();
-                    } else if (d > R - 1.5) {
-                        bloco = Blocks.POLISHED_BLACKSTONE.defaultBlockState();
-                    } else if (Math.abs(dx) <= 1 || Math.abs(dz) <= 1) {
-                        bloco = Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState();
-                    } else {
-                        bloco = Blocks.POLISHED_DEEPSLATE.defaultBlockState();
-                    }
-                    exilio.setBlockAndUpdate(chao, bloco);
-                    // tira o que estiver em cima (nada de teto, nada de parede)
-                    for (int dy = 0; dy <= 6; dy++) {
-                        BlockPos ar = chao.above(1 + dy);
-                        if (!exilio.getBlockState(ar).isAir()) {
-                            exilio.setBlockAndUpdate(ar, Blocks.AIR.defaultBlockState());
-                        }
-                    }
-                }
-            }
-            // 8 colunas de obsidiana com lanterna de alma (luz no meio do nada)
-            for (int i = 0; i < 8; i++) {
-                double a = i * Math.PI * 2 / 8;
-                int px = (int) Math.round(Math.cos(a) * (R - 2));
-                int pz = (int) Math.round(Math.sin(a) * (R - 2));
-                for (int k = 0; k < 4; k++) {
-                    exilio.setBlockAndUpdate(new BlockPos(px, y + k, pz),
-                            Blocks.OBSIDIAN.defaultBlockState());
-                }
-                exilio.setBlockAndUpdate(new BlockPos(px, y + 4, pz),
-                        Blocks.SOUL_LANTERN.defaultBlockState());
-            }
-            // a marca do centro: cruz de lanternas apontando os 4 rumos
-            for (int i = 0; i < 4; i++) {
-                double a = i * Math.PI * 0.5;
-                int px = (int) Math.round(Math.cos(a) * 4);
-                int pz = (int) Math.round(Math.sin(a) * 4);
-                exilio.setBlockAndUpdate(new BlockPos(px, y, pz),
-                        Blocks.SOUL_LANTERN.defaultBlockState());
-            }
-            RPTagMod.LOGGER.info("RP Tag: praça do exílio pronta (y={})", y);
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: praça do exílio falhou (a dimensão segue andável)", t);
-        }
+        // (5.13.0) a praça virou responsabilidade do VazioReino (é ela que sabe o
+        // nível do chão, o anel dos 8 pedestais e o caminho até o portal).
+        VazioReino.chegada(exilio);
     }
 
     /** (5.7.8) admin entra no exílio pra testar o ambiente (sem punir ninguém). */
@@ -2215,6 +2166,14 @@ public final class NeptuneEventos {
             quem.sendSystemMessage(Component.literal(
                     "\u00a7cA dimensão rptag:exilio não carregou."));
             return;
+        }
+        // (5.13.0) o admin também ganha o "de onde entrou" — o portal devolve ele
+        try {
+            RPWorldData.get(quem.getServer()).setVolta(quem.getUUID(), new RPWorldData.Volta(
+                    quem.level().dimension().location().toString(),
+                    quem.getX(), quem.getY(), quem.getZ(), quem.getYRot(), quem.getXRot()));
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui salvar o lugar de volta (admin)", t);
         }
         PacketDistributor.sendToPlayer(quem, new NeptunePackets.Cena(
                 NeptunePackets.Cena.CENA_EXILIO, 1.0F, 2600, System.nanoTime()));
@@ -2462,6 +2421,28 @@ public final class NeptuneEventos {
             VazioReino.soltarCaindo(alvo);
             PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
                     NeptunePackets.Cena.CENA_VOLTA, 1.0F, 2600, System.nanoTime()));
+            // (5.13.0) PRIMEIRO o lugar gravado no save (pedido 50: "sair pelo portal
+            // devolve ao local de onde entrou"); a memória é só a rede de segurança.
+            RPWorldData dados = RPWorldData.get(alvo.getServer());
+            RPWorldData.Volta volta = dados.getVolta(alvo.getUUID());
+            if (volta != null) {
+                dados.setVolta(alvo.getUUID(), null);
+                ORIGEM.remove(alvo.getUUID());
+                var chaveSalva = net.minecraft.resources.ResourceKey.create(
+                        net.minecraft.core.registries.Registries.DIMENSION,
+                        net.minecraft.resources.ResourceLocation.parse(volta.dimensao()));
+                ServerLevel destinoSalvo = alvo.getServer().getLevel(chaveSalva);
+                if (destinoSalvo != null) {
+                    alvo.teleportTo(destinoSalvo, volta.x(), volta.y(), volta.z(),
+                            java.util.Set.of(), volta.yaw(), volta.pitch());
+                    destinoSalvo.playSound(null, alvo.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
+                            SoundSource.HOSTILE, 1.0F, 0.9F);
+                    alvo.displayClientMessage(Component.literal(
+                            "\u00a75\u00a7lO PORTAL TE DEVOLVEU.\n"
+                            + "\u00a78Exatamente onde você estava. Ninguém te tirou de lá."), false);
+                    return;
+                }
+            }
             Object[] o = ORIGEM.remove(alvo.getUUID());
             if (o != null && o[0] instanceof net.minecraft.resources.ResourceKey<?> chaveBruta) {
                 @SuppressWarnings("unchecked")
@@ -2497,11 +2478,11 @@ public final class NeptuneEventos {
                         "\u00a7cA dimensão rptag:exilio não carregou."), false);
                 return;
             }
-            int x = 780, z = 40;
-            destino.getChunk(x >> 4, z >> 4);
-            int y = destino.getHeight(
-                    net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-            p.teleportTo(destino, x + 0.5, y + 1.0, z + 14.5,
+            // (5.13.0) o portal agora fica ao NORTE da praça (ou onde o /vazio portal
+            // invocou): a gente para 6 blocos na frente dele, olhando para o miolo.
+            BlockPos base = VazioReino.ancoraPortal(destino);
+            destino.getChunk(base.getX() >> 4, base.getZ() >> 4);
+            p.teleportTo(destino, base.getX() + 0.5, base.getY() + 0.2, base.getZ() + 6.5,
                     java.util.Set.of(), 180.0F, 0.0F);
             destino.playSound(null, p.blockPosition(), RPTagMod.SOM_VAZIO.get(),
                     SoundSource.AMBIENT, 0.8F, 0.8F);

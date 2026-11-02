@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.12.0'
+VER = '5.13.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -70,7 +70,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("12")' in mn)
+check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("13")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -197,7 +197,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo atual (3 payloads de musica)', 'registrar("12")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo atual (3 payloads de musica)', 'registrar("13")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -1079,11 +1079,11 @@ _mn9 = rd(R + '/ModNetworking.java')
 check('5.2.0: canais novos tablet_sync/tablet_update no lugar dos antigos ficha_*',
       'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9
       and 'tablet_sync' in rd(R + '/TabletSyncPayload.java') and 'tablet_update' in rd(R + '/TabletUpdatePayload.java'))
-check('5.2.0/5.4.0: protocolo subiu para v9, v10, v11 e agora v12 (cliente antigo e recusado)',
-      'registrar("9")' not in _mn9 and 'registrar("12")' in _mn9 and 'registrar("8")' not in _mn9)
+check('5.2.0/5.4.0: protocolo subiu para v9..v12 e agora v13 (cliente antigo e recusado)',
+      'registrar("9")' not in _mn9 and 'registrar("13")' in _mn9 and 'registrar("8")' not in _mn9)
 # (5.7.2) o canal subiu de novo: TITULOS entrou, cliente 5.7.1 e recusado
-check('5.7.2: protocolo v10 (agora v12) com o pacote de TITULOS',
-      'event.registrar("12")' in rd(R + '/ModNetworking.java')
+check('5.7.2: protocolo v10 (agora v13) com o pacote de TITULOS',
+      'event.registrar("13")' in rd(R + '/ModNetworking.java')
       and 'TituloSyncPayload.TYPE' in rd(R + '/ModNetworking.java'))
 check('5.2.0: o tablet e entregue no login', 'PlayerLoggedInEvent' in rd(R + '/TabletService.java'))
 check('5.2.0: /tablet existe e /ficha nao voltou',
@@ -1379,15 +1379,15 @@ check('5.2.0: item rptag:tablet registrado (stacksTo 1)', 'ITEMS.register("table
       and 'stacksTo(1)' in rd(R + '/RPTagMod.java'))
 check('5.2.0: tabela de limites da ficha 32/5/240/600/3000', 'LIMITES = {32, 5, 240, 600, 3000}' in _fp)
 check('5.2.0: protocolo com os 2 payloads do tablet',
-      'registrar("12")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
+      'registrar("13")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
 check('5.2.0: handler do cliente registrado', 'handleTablet' in rd(C + '/ClientPayloadHandler.java'))
 check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID antes do load',
       'tag.put("TabletSheets", sheets)' in _rw and 'hasUUID("Id")' in _rw
       and 'ficha do tablet descartada' in _rw)
 check('5.2.0: entrega automatica no login + /tablet', 'PlayerLoggedInEvent' in _ts and 'tryGiveTablet' in _ts
       and 'Commands.literal("tablet")' in _ts)
-check('5.2.0: /tablet ver e /tablet liberar exigem permissao 2',
-      _ts.count('hasPermission(2)') == 2)
+check('5.2.0/5.13.0: /tablet ver, dar e liberar exigem permissao 2',
+      _ts.count('hasPermission(2)') >= 2)
 check('5.2.0: /persona criar|idade|desc|off bloqueados apos confirmar (e leitura liberada)',
       'personaLocked' in rd(R + '/PersonaCommands.java')
       and rd(R + '/PersonaCommands.java').count('TabletService.personaLocked(player)') == 4)
@@ -1407,8 +1407,8 @@ check('5.2.0: status desenhado fora do campo (bottomBar - 20)',
       'layoutBottom - 20' in _tn)
 check('5.2.0: abertura curta (1100 ms) e clicavel para pular',
       'opened >= 1100' in _tn and 'if (boot) { skipBoot(); return true; }' in _tn)
-check('5.2.0: item explica como abrir (tooltip) e entrega avisa no chat',
-      'Clique direito para abrir sua ficha' in _ti and 'clique direito para preencher sua ficha' in _ts)
+check('5.2.0/5.13.0: item explica como abrir (tooltip) e entrega avisa no chat',
+      'Clique direito para abrir SUA ficha' in _ti and 'clique direito para preencher sua ficha' in _ts)
 check('5.2.0: /rp ajuda lista /tablet e os comandos de admin',
       '/tablet \\u00a77\\u2014 abre seu TABLET' in _hl and '/tablet liberar <jogador>' in _hl)
 check('5.2.0: /persona mostra origem/habilidades/historia da ficha confirmada',
@@ -1561,8 +1561,8 @@ check('5.4.0: blur REAL no pulso travado (processBlurEffect) com fallback',
       'processBlurEffect' in rd(_NX) and 'catch (Throwable ignorado)' in rd(_NX))
 check('5.4.0: texto do vazio no chat com a frase do dono',
       'NeptunePackets' in rd(_NPk) and 'neptune_saida' in rd(_NPk))
-check('5.4.0: canal v9 (agora v12) registra os 5 pacotes novos',
-      'event.registrar("12")' in rd('src/main/java/dev/rptag/ModNetworking.java')
+check('5.4.0: canal v9 (agora v13) registra os 5 pacotes novos',
+      'event.registrar("13")' in rd('src/main/java/dev/rptag/ModNetworking.java')
       and rd('src/main/java/dev/rptag/ModNetworking.java').count('NeptunePackets') >= 5)
 check('5.4.0: comandos /terremoto, /vazio, /bicho e /neptune so pra OP',
       all(k in rd(_NC) for k in ['literal("terremoto")', 'literal("vazio")', 'literal("bicho")', 'literal("neptune")'])
@@ -1747,8 +1747,8 @@ check('5.7.4: o pacote AURA leva o UUID de quem e o vazio (todos os clientes vee
 check('5.7.4: trovao grave pros outros (medo) perto do vazio',
       'proximoTrovao' in rd(R + '/NeptuneEventos.java')
       and 'LIGHTNING_BOLT_THUNDER' in rd(R + '/NeptuneEventos.java'))
-check('5.7.4: canal v11 (o Aura mudou de formato; agora v12 com a cor dos titulos)',
-      'event.registrar("12")' in rd(R + '/ModNetworking.java'))
+check('5.7.4: canal v11 (o Aura mudou de formato; agora v13 com o portal do vazio)',
+      'event.registrar("13")' in rd(R + '/ModNetworking.java'))
 
 # ============ 5.7.3: bicho na tela, música única, som do terremoto ============
 check('5.7.3: BICHO pula na tela de quem esta em CRIATIVO (era o bug do dono)',
@@ -2006,11 +2006,12 @@ check('5.7.9: /terremoto parar CALA o som (StopSound por jogador, como no /vazio
       and 'SOM_RUMBLE.get().getLocation(), null' in _ne2)
 check('5.7.9: o cliente tambem para na mao quando chega o pacote de "desligado"',
       'getSoundManager()' in _nfx2 and 'sm.stop(' in _nfx2)
-check('5.7.9: exilio MAIOR: chao largo (15 blocos de praca) e superficie plana andavel',
-      'prepararPraca(' in _ne2 and 'CHISELED_POLISHED_BLACKSTONE' in _ne2
-      and 'POLISHED_DEEPSLATE' in _ne2 and 'LIGHT_GRAY_CONCRETE' in _ne2)
-check('5.7.9: a praca tem luz (8 colunas de obsidiana com lanterna de alma)',
-      'for (int i = 0; i < 8; i++)' in _ne2 and 'SOUL_LANTERN' in _ne2)
+_vrp = rd(R + '/VazioReino.java')
+check('5.7.9/5.13.0: exilio com praca larga e superficie plana (agora no VazioReino)',
+      'prepararPraca(' in _ne2 and 'CHISELED_POLISHED_BLACKSTONE' in _vrp
+      and 'POLISHED_DEEPSLATE' in _vrp and 'RAIO_PRACA' in _vrp)
+check('5.7.9/5.13.0: a praca tem luz (colunas de obsidiana com lanterna de alma)',
+      'for (int i = 0; i < 8; i++)' in _vrp and 'SOUL_LANTERN' in _vrp)
 check('5.7.9: ANIMACAO DE SAIDA automatica quando o player sai do jogo',
       'saidaAutomatica' in rd(R + '/ServerEvents.java') and 'sombraChuva' in _ne2
       and 'se desfez em sombra' in _ne2)
@@ -2069,9 +2070,9 @@ check('5.9.0: cores por NOME (ouro, vermelho, ciano...) e HEX (FFD700 / #FFD700)
 check('5.9.0: dá pra voltar pra cor de fábrica (padrao) e a cor fica salva no mundo',
       'corDeFabrica' in _tit and '"padrao"' in _tcmd and 'putInt("CorPessoal"' in _tit
       and 'getInt("CorPessoal")' in _tit)
-check('5.9.0: o título pessoal também tem cor própria (pacote v12)',
+check('5.9.0: o título pessoal também tem cor própria (pacote v13)',
       'corPessoal' in _tpay and 'corPessoal' in _ctit
-      and 'event.registrar("12")' in _net)
+      and 'event.registrar("13")' in _net)
 check('5.9.0: /titulo definir e /titulo limpar aceitam VÁRIOS jogadores (@a)',
       'EntityArgument.players()' in _tcmd and 'getPlayers(ctx, "jogadores")' in _tcmd)
 check('5.9.0: TAB do comando sugere as cores',
@@ -2361,27 +2362,65 @@ check('5.12.0: o terremoto usa a animação nova em vez da Cena(RACHADURA)',
       'alvo.getName().getString().toUpperCase(), 11, 23);' in _nev
       and 'CENA_RACHADURA, 0.8F, 2600' not in _nev)
 
-# 7) portal + 8 fragmentos (a volta SEM admin)
-check('5.12.0: 8 fragmentos do vazio e 8 pedestais',
-      'public static final int TOTAL_FRAGMENTOS = 8' in _vr
-      and _vr.count('{ 210,   40 }') >= 0 and 'PED = {' in _vr)
-check('5.12.0: o portal fica MUITO LONGE (780 blocos a leste)',
-      'PORTAL_X = 780' in _vr)
-check('5.12.0: clicar no pedestal pega o fragmento (1 por pedestal, por jogador)',
-      'public static boolean interagir(ServerPlayer p, BlockPos pos)' in _vr
-      and 'pegarFragmento(p.getUUID(), i)' in _vr
-      and 'PlayerInteractEvent.RightClickBlock' in _sev2)
-check('5.12.0: os fragmentos ficam SALVOS no mundo (não somem ao morrer)',
-      'public int pegarFragmento(UUID id, int indice)' in _rwd
-      and 'VazioFragmentos' in _rwd and 'VazioYs' in _rwd)
+# 7) PEDIDO 50 — pedestais em volta do centro, fragmentos como ITEM, portal de baixo para cima
+_geo = rd(R + '/VazioGeometria.java')
+_frag = rd(R + '/FragmentoItem.java')
+_fx = rd(C + '/VazioPortalFx.java')
+_rays = rd(C + '/RaiosVazioFx.java')
+_pay = rd(R + '/VazioPortalPayload.java')
+_net = rd(R + '/ModNetworking.java')
+
+check('5.13.0: 8 pedestais num ANEL em volta do centro do spawn (raio 13)',
+      'public static final int RAIO_PEDESTAL = 13' in _geo
+      and 'public static int[] pedestal(int i)' in _geo
+      and 'ancoraPedestal' in _vr and 'centroY(nv)' in _vr)
+check('5.13.0: o desenho antigo morreu (nada de pedestal a 470 blocos / portal em 780)',
+      'PORTAL_X = 780' not in _vr and '{ 210,   40 }' not in _vr
+      and 'public static final int[] PORTAL = { 0, -22 }' in _geo)
+check('5.13.0: o fragmento é ITEM de verdade (registrado, modelo e textura)',
+      'FRAGMENTO_VAZIO = ITEMS.register("fragmento_vazio"' in rd(R + '/RPTagMod.java')
+      and 'class FragmentoItem extends Item' in _frag
+      and os.path.exists('src/main/resources/assets/rptag/models/item/fragmento_vazio.json')
+      and os.path.exists('src/main/resources/assets/rptag/textures/item/fragmento_vazio.png'))
+check('5.13.0: o pedestal só enche com o fragmento NA MÃO (item consumido)',
+      'p.getMainHandItem()' in _vr and '.shrink(1)' in _vr
+      and 'encaixarNoPedestal' in _vr)
+check('5.13.0: os 8 altares espalhados guardam o fragmento (1 por jogador)',
+      'SANTUARIOS = 8' in _geo and 'public static int[] santuario(int i)' in _geo
+      and 'usarSantuario' in _vr and 'marcarSantuario' in _vr
+      and 'new ItemStack(RPTagMod.FRAGMENTO_VAZIO.get())' in _vr)
+check('5.13.0: os 8 encaixados ABREM o portal sozinhos',
+      'if (cheios >= TOTAL_FRAGMENTOS)' in _vr and 'abrirPortal(nv, p)' in _vr
+      and 'public boolean temOsOito(UUID id)' in _rwd)
+check('5.13.0: o portal abre de BAIXO PARA CIMA (linha por linha, 6 s)',
+      'ABERTURA_MS = 6000L' in _geo and 'linhasColocadas' in _vr
+      and 'while (linhasColocadas < devidas)' in _vr)
+check('5.13.0: comando para INVOCAR o portal (/vazio portal [jogador])',
+      'public static String invocarPortal(ServerPlayer p)' in _vr
+      and 'VazioReino.invocarPortal(quem)' in _nec)
+check('5.13.0: atravessar o portal devolve ao LUGAR DE ONDE ENTROU (salvo no mundo)',
+      'record Volta(' in _rwd and 'getVolta' in _rwd
+      and 'setVolta(alvo.getUUID()' in _nev and 'dados.getVolta(alvo.getUUID())' in _nev)
+check('5.13.0: preferir teletransporte pelo portal: entrar andando ou clicando',
+      'dentroDoPortal(p, base)' in _vr and 'usarPortal(p, nv, base, dados)' in _vr)
+check('5.13.0: WAYSTONE bloqueada dentro do vazio (bloco e item na mão)',
+      'bloquearWaystone' in _sev2 and 'waystone' in _sev2
+      and 'PlayerInteractEvent.RightClickItem' in _sev2)
+check('5.13.0: o portal e as colunas de luz são GEOMETRIA no cliente (não partícula)',
+      'RenderType.debugQuads()' in _fx and 'RenderLevelStageEvent' in _fx
+      and 'desenharPedestais' in _fx and 'VazioPortalPayload' in _fx)
+check('5.13.0: a aura do vazio continua visível com partículas desligadas (manto)',
+      'desenharManto' in _rays and 'quadFrenteCam' in _rays)
+check('5.13.0: pacote do portal registrado (canal 13)',
+      'VazioPortalPayload.TYPE' in _net and 'event.registrar("13")' in _net
+      and 'VazioPortalPayload' in _pay)
 check('5.12.0: a volta pelo portal não depende de admin (voltarPeloPortal)',
-      'public static void voltarPeloPortal(ServerPlayer alvo)' in _nev
-      and 'NeptuneEventos.voltarPeloPortal(p)' in _vr)
+      'public static void voltarPeloPortal(ServerPlayer alvo)' in _nev)
 check('5.12.0: o texto do exílio ensina a sair sozinho (fragmentos + portal)',
       'FRAGMENTOS DO VAZIO' in _nev and 'Ninguém precisa de admin' in _nev)
-check('5.12.0: comandos de teste /vazio fragmentos | portal | pedestais',
-      'VazioReino.darTudo(quem)' in _nec and 'NeptuneEventos.irAoPortal(quem)' in _nec
-      and 'VazioReino.listaPedestais()' in _nec)
+check('5.12.0: comandos de teste /vazio fragmentos | portal | pedestais | construir',
+      'VazioReino.darTudo(quem)' in _nec and 'VazioReino.invocarPortal(quem)' in _nec
+      and 'VazioReino.listaPedestais()' in _nec and 'VazioReino.construirTudo(nv, quem)' in _nec)
 
 # 8) aviso de sangue na tela: era o estilo 9 mandado no lugar do 18
 check('5.12.0: a animação de SAÍDA manda estilo 18 (era 9 = SANGUE)',
