@@ -27,6 +27,10 @@ de Ordem Paranormal: sigilo, olho, memórias e balança.
   - *"Seu nome não foi escolha sua."*
   - *"Alguém lembra de você. Você não lembra."*
   - *"As vozes sempre foram uma só."*
+- **Brilhos que somam de verdade**: `Buf` só desenha no `flush()`, então o blend
+  do momento do flush é o que vale — os trechos aditivos (luz do fundo, feixes,
+  pulsos das cordas, poeira, pratos da balança, halo do olho/ícone) agora abrem
+  o **próprio Buf** (`somar`/`voltar`). Antes o brilho saía como "fumaça" opaca.
 - **A BALANÇA SANIDADE × CONHECIMENTO** (canto superior esquerdo, com os dois
   pratos e os brilhos): `conhecimento = nRev/4 × 0,72 + 0,28 × ease((t−4)/22)`,
   `sanidade = 100 − 0,45 × conhecimento`. Ela **inclina** conforme o conhecimento
