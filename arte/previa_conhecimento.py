@@ -172,11 +172,12 @@ def memoria(img, i, t, revelada, prog):
     d = ImageDraw.Draw(foto, 'RGBA')
     # a foto sépia
     fx0, fy0 = 5 * S, 5 * S
+    # foto sépia ESCURA (a clara demais "apagava" a moldura dourada)
     for k in range(MEM_H):
         v = k / MEM_H
-        tinta = int(110 + 70 * (1 - abs(v - 0.5) * 1.6))
+        tinta = int(58 + 46 * (1 - abs(v - 0.5) * 1.6) + 30 * p)
         d.line([(fx0, fy0 + k * S), (fx0 + MEM_W * S, fy0 + k * S)],
-               fill=(int(tinta * 1.32), int(tinta * 1.05), int(tinta * 0.72), 255))
+               fill=(int(tinta * 1.45), int(tinta * 1.12), int(tinta * 0.72), 255))
     brilho(foto, fx0 + MEM_W * S / 2, fy0 + MEM_H * S / 2, MEM_W * S * 0.62,
            (216, 180, 120), 0.55)
     # vultos
