@@ -79,7 +79,7 @@ public final class ClientEvents {
         ClientPersonaCache.clear();
         ClientBubbleCache.clear();
         ClientTitulos.limpar(); // (5.7.2) título do mundo anterior não vale aqui
-        RaiosVazioFx.desligar(); // (5.7.4) nada de raio do vazio sobrando no proximo mundo
+        TentaculosVazioFx.desligar(); // (5.11.0) nada de tentaculo do vazio no proximo mundo
         VideoFx.fechar(); // (4.2.0) nada de video sobrando no proximo mundo
         // (4.5.0) e nenhum aviso em video "volta" se o jogador reentrar em menos de 6 s
         MorteAvisoFx.parar();

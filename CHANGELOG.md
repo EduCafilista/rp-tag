@@ -1,5 +1,42 @@
 # Changelog
 
+## 5.11.0 — o VAZIO virou PEDRA (e nunca mais "some") — 2026-11-02
+
+> O dono: *"depois de um tempo os tentáculos vermelhos pararam de aparecer em volta
+> do vazio, por quê?"*, *"os tentáculos não aparecem para quem estiver usando
+> shaders, fica muito claro"*, *"não quero mais aquelas partículas vermelhas em
+> volta do personagem, quero apenas partículas pétreas"* e *"melhora as partículas
+> para ser algo mais concreto do que apenas partículas"*.
+
+### Por que a aura "parava" (três causas, três consertos)
+1. **Blend aditivo**: os raios usavam `RenderType.lightning()` (`SRC_ALPHA, ONE`),
+   que **soma luz**. Com shader/pack claro o vermelho estourava em branco e
+   desaparecia. Agora a aura é **geometria opaca** (`RenderType.debugQuads()`:
+   blend normal + profundidade).
+2. **Estado só na memória**: o `HashMap` de "deuses" zerava no restart e o
+   `/vazio ligar` se perdia. Agora fica **salvo no mundo** (tag `Vazios`) e volta
+   no `ServerStartedEvent` (`restaurarDeuses`).
+3. **Pacote enviado uma única vez**: quem entrava depois do `/vazio ligar` nunca
+   recebia a aura. Agora o servidor **reenvia a cada 3 s** e **no login**
+   (`reenviarAura`).
+
+### A aura agora é de pedra (nada de partícula vermelha)
+- **`TentaculosVazioFx` (novo, cliente)**: 9 tentáculos de pedra em geometria
+  sólida — tubo de seção quadrada (4 faces por segmento), sombra por face, "nós",
+  veios escuros, bico na ponta e pedrinhas na base. Brotam do chão (0,8 s), ficam
+  4–9 s e afundam (0,7 s) — reciclam sozinhos, nunca congelam.
+- **`RaiosVazioFx` apagado** (eram as fitas vermelhas aditivas de 5.7.4).
+- **Servidor**: poeira de pedra no lugar dos veios roxos; **estilhaços de BLOCO**
+  (`stone`/`cobblestone`/`deepslate`) com gravidade no lugar dos raios de dust;
+  rachaduras do chão e rastro de caos em **cascalho + poeira cinza**; a
+  transformação do `/vazio ligar` virou **explosão de lascas de pedra**.
+- **Vermelho**: só os **dois olhos** no rosto (não é aura, é a cara do vazio).
+- Quem **é** o vazio vê 2/3 dos tentáculos e mais baixos; no F1 do próprio os que
+  atravessariam a mira somem.
+
+**Verificação:** `check.py` **796 PASS / 0 FAIL**; servidor sobe com 0 ERROR;
+`/neptune` e `/rp ajuda` atualizados ("aura de PEDRA").
+
 ## 5.10.1 — título com relevo (gradiente, moldura, selo) + `/title` vanilla fora do jogo — 2026-11-02
 
 > Dois pedidos do dono: *"quero que seja bonitinho [o título], não apenas as letras

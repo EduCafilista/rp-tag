@@ -1,7 +1,10 @@
 package dev.rptag;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.core.HolderLookup;
@@ -60,6 +63,13 @@ public final class RPWorldData extends SavedData {
     /** (5.10.1) comando /title (VANILLA) de volta? Padrão NÃO — o dono pediu
      * "deixa só o /titulo". /rp admin titlevanilla on|off. */
     private boolean comandoTitleVanilla = false;
+    /** (5.11.0) QUEM É O DEUS DO VAZIO (/vazio ligar).
+     *
+     * <p>Antes isso vivia só num {@code HashMap} da memória: quando o servidor
+     * reiniciava, o modo vazio desligava sozinho e o dono ficava sem a aura sem
+     * entender por quê ("depois de um tempo os tentáculos pararam de aparecer").
+     * Agora fica salvo no mundo, junto do resto. */
+    private final Set<UUID> vazios = new HashSet<>();
 
     // ==== (4.5.0) REGRAS EM RP (padrao: tudo LIBERADO) ====
     /** PvP permitido em RP (false = bloqueia; vale se qualquer lado estiver em RP). */
@@ -174,6 +184,26 @@ public final class RPWorldData extends SavedData {
 
     public boolean comandoTitleVanilla() {
         return comandoTitleVanilla;
+    }
+
+    /** (5.11.0) este jogador é o Deus do Vazio? (salvo no mundo) */
+    public boolean ehVazio(UUID id) {
+        return vazios.contains(id);
+    }
+
+    /** (5.11.0) liga/desliga o modo vazio e salva. */
+    public void setVazio(UUID id, boolean ligado) {
+        if (ligado) {
+            vazios.add(id);
+        } else {
+            vazios.remove(id);
+        }
+        setDirty();
+    }
+
+    /** (5.11.0) todos os vazios salvos (pro boot devolver a aura). */
+    public Set<UUID> vaziosIds() {
+        return Collections.unmodifiableSet(vazios);
     }
 
     public void setComandoTitleVanilla(boolean manter) {
@@ -444,11 +474,29 @@ public final class RPWorldData extends SavedData {
             recados.add(e);
         }
         tag.put("RecadosVida", recados);
+
+        // (5.11.0) quem é o Deus do Vazio (sobrevive ao restart)
+        ListTag vaziosTag = new ListTag();
+        for (UUID id : vazios) {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", id);
+            vaziosTag.add(e);
+        }
+        tag.put("Vazios", vaziosTag);
         return tag;
     }
 
     public static RPWorldData load(CompoundTag tag, HolderLookup.Provider registries) {
         RPWorldData data = new RPWorldData();
+
+        // (5.11.0) o modo vazio volta junto com o mundo
+        ListTag vaziosTag = tag.getList("Vazios", Tag.TAG_COMPOUND);
+        for (int i = 0; i < vaziosTag.size(); i++) {
+            CompoundTag e = vaziosTag.getCompound(i);
+            if (e.hasUUID("Id")) {
+                data.vazios.add(e.getUUID("Id"));
+            }
+        }
 
         ListTag states = tag.getList("States", Tag.TAG_COMPOUND);
         for (int i = 0; i < states.size(); i++) {

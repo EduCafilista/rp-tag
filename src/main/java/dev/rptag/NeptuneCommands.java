@@ -149,7 +149,8 @@ public final class NeptuneCommands {
             ServerPlayer p = ctx.getSource().getPlayerOrException();
             NeptuneEventos.ligarDeus(p);
             ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a75\u2588 VOCÊ É O VAZIO. \u00a77Aura ligada, trilha ao andar, medo em quem chega perto.\n"
+                    "\u00a75\u2588 VOCÊ É O VAZIO. \u00a77Aura de PEDRA ligada (tentáculos no mundo), "
+                    + "trilha ao andar, medo em quem chega perto.\n"
                     + "\u00a77Use /vazio apagar <jogador> ou /vazio exilar <jogador>."), false);
             return Command.SINGLE_SUCCESS;
         }));
@@ -252,7 +253,7 @@ public final class NeptuneCommands {
                     + "\u00a7e/terremoto iniciar [s] \u00a77— a terra colapsa (som do colapso + tremor + lentidão em pulsos)\n"
                     + "\u00a7e/terremoto sair [jogador|todos] \u00a77— a pessoa some nas sombras (kick em 4 s)\n"
                     + "\u00a7e/terremoto parar \u00a77— desliga\n"
-                    + "\u00a7e/vazio ligar|desligar \u00a77— aura + trilha + medo (o Deus do Vazio)\n"
+                    + "\u00a7e/vazio ligar|desligar \u00a77— aura de PEDRA (tentáculos) + trilha + medo\n"
                     + "\u00a7e/vazio apagar <jogador> \u00a77— apaga da existência\n"
                     + "\u00a7e/vazio exilar <jogador> \u00a77— manda pra rptag:exilio (tudo preto e vazio)\n"
                     + "\u00a7e/vazio soltar <jogador> \u00a77— solta ele num lugar ALEATÓRIO do mundo\n"

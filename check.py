@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.10.1'
+VER = '5.11.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1638,9 +1638,9 @@ check('5.5.0: /vazio soltar tira o jogador do exilio',
 # acompanham o player (ancoradas no mundo) em vez de aneis em volta do corpo.
 # (5.7.3) o dono pediu AURA DE ESCURIDAO + RAIOS saindo do player (a versao
 # so-de-rachaduras-no-chao virou coadjuvante)
-check('5.7.3: aura do vazio = escuridao + RAIOS negros/vermelhos saindo do player',
+check('5.7.3: aura do vazio = escuridao saindo do player (5.11.0: virou PEDRA)',
       'auraVazio(' in _ne2 and 'DustParticleOptions' in _ne2
-      and 'negro' in _ne2 and 'RAIOS NEGROS E VERMELHOS' in _ne2)
+      and 'negro' in _ne2)
 check('5.7.3: a aura tem COLUNA de escuridao em volta do corpo (visible no F5)',
       '(A) O MANTO' in _ne2 and 'LARGE_SMOKE' in _ne2
       and 'SQUID_INK' in _ne2)
@@ -1718,20 +1718,24 @@ check('5.6.0: detritos caindo pela tela durante o terremoto',
 
 
 
-# ============ 5.7.4: RAIOS 3D DO VAZIO (animação, não partícula) ============
-_rv = rd(C + '/RaiosVazioFx.java') if __import__('os').path.exists(C + '/RaiosVazioFx.java') else ''
-check('5.7.4: RAIOS do vazio sao GEOMETRIA 3D no mundo (RenderType.lightning)',
-      'RenderLevelStageEvent' in _rv and 'RenderType.lightning()' in _rv
-      and 'addVertex(mat' in _rv)
-check('5.7.4: raios para TODO LADO (360 graus + pra cima e pra baixo)',
-      'TOOD' not in _rv and 'Mth.TWO_PI' in _rv and 'r.ay = Mth.sin(el)' in _rv)
-check('5.7.4: raio negro por dentro e VERMELHO por fora (2 passadas)',
-      'capa VERMELHA' in _rv or ('0.55F, 0.02F, 0.03F' in _rv and '0.02F, 0.0F, 0.03F' in _rv))
-check('5.7.4: nao atrapalha quem E o vazio (metade dos raios + raios menores)',
-      'suave && (idx++ % 2 == 1)' in _rv and 'f1Proprio' in _rv)
+# ============ 5.11.0: o VAZIO agora é de PEDRA (tentáculos sólidos, sem vermelho) ====
+_tvz = rd(C + '/TentaculosVazioFx.java')
+check('5.11.0: os raios vermelhos ADITIVOS saíram (eram invisíveis com shader)',
+      not os.path.exists(C + '/RaiosVazioFx.java')
+      and 'RenderType.lightning()' not in _tvz)
+check('5.11.0: tentáculos de PEDRA em GEOMETRIA sólida (blend normal + profundidade)',
+      'RenderLevelStageEvent' in _tvz and 'RenderType.debugQuads()' in _tvz
+      and 'addVertex(mat' in _tvz and 'endBatch(RenderType.debugQuads())' in _tvz)
+check('5.11.0: pedra tem VOLUME (4 faces por segmento + bico + pedras na base)',
+      'as 4 faces de cada segmento' in _tvz and 'o bico de pedra da ponta' in _tvz
+      and 'pedras soltas em volta da base' in _tvz)
+check('5.11.0: brota do chão, fica de pé e afunda (nunca fica parado)',
+      'float crescido(' in _tvz and 'reciclar(' in _tvz and '4200L' in _tvz)
+check('5.11.0: cores de PEDRA (cinza), nada de vermelho no tentáculo',
+      'private static int cinza(' in _tvz and '0.40F' in _tvz and '0.92F, 0.02F, 0.03F' not in _tvz)
 check('5.7.4: o pacote AURA leva o UUID de quem e o vazio (todos os clientes veem)',
       'record Aura(java.util.UUID alvo' in rd(R + '/NeptunePackets.java')
-      and 'RaiosVazioFx.definir' in _nf3)
+      and 'TentaculosVazioFx.definir' in _nf3)
 check('5.7.4: trovao grave pros outros (medo) perto do vazio',
       'proximoTrovao' in rd(R + '/NeptuneEventos.java')
       and 'LIGHTNING_BOLT_THUNDER' in rd(R + '/NeptuneEventos.java'))
@@ -1872,7 +1876,6 @@ check('5.7.1: AURA DO VAZIO (/vazio ligar) = prototipo VoidAuraDark do dono',
 # ============ 5.7.6: exílio animado, aura preta, rastro, terremoto andável ====
 _ncmd = rd(R + '/NeptuneCommands.java')
 _npk = rd(R + '/NeptunePackets.java')
-_rvfx = rd(C + '/RaiosVazioFx.java')
 _cb = rd(R + '/CaixaBichoBlock.java')
 check('5.7.6: TERREMOTO deixa o player ANDAR (peso, nao imobilizar)',
       'private static void pesado(' in _ne2 and 'pesado(p, true);' in _ne2
@@ -1899,8 +1902,9 @@ check('5.7.6: aura do vazio BEM mais preta (manto cobre o corpo, rosto poupado)'
       and 'os OLHOS' in _ne2)
 check('5.7.6: RASTRO DE CAOS no chao por onde o vazio passa (22 s)',
       'private record Mancha(' in _ne2 and 'tickManchas' in _ne2 and '22_000L' in _ne2)
-check('5.7.6: TRANSFORMACAO = rajada de raios vermelhos intensos',
-      'surtoTransformacao' in _ne2 and 'surtoAte' in _rvfx and 'surto ? 3.4F : 2.6F' in _rvfx)
+check('5.7.6: TRANSFORMACAO = rajada que abre o corpo (5.11.0: agora de PEDRA)',
+      'private static void surtoTransformacao' in _ne2
+      and 'BlockParticleOption' in _ne2.split('private static void surtoTransformacao')[1][:2600])
 check('5.7.6: /terremoto engolir (o chao leva a pessoa, os outros veem)',
       'engolirNoTerremoto' in _ne2 and 'literal("engolir")' in _ncmd)
 check('5.7.9: o /saida SAIU (o dono nao quer comando; a animacao roda no logout)',
@@ -1943,8 +1947,8 @@ check('5.7.7: CODIGOS VERDES em volta do player na saida (3D, no mundo)',
 check('5.7.3: SAIU o borrao de fumaca/rachadura DESENHADO na tela (era o que ficava esquisito no F5)',
       'fumaca(' not in _vad and 'rachadura(' not in _vad and 'tentaculo(' not in _vad
       and _vad.count('b.vinheta(') >= 1 and 'granula' in _vad.lower())
-check('5.7.3: a aura do vazio agora e NO MUNDO (raios negros e vermelhos saindo do player)',
-      'RAIOS NEGROS E VERMELHOS' in _ne2 and 'class VazioAuraDarkFx' in _vad
+check('5.7.3: a aura do vazio agora e NO MUNDO (manto preto + pedra no corpo)',
+      '(A) O MANTO' in _ne2 and 'class VazioAuraDarkFx' in _vad
       and 'vinheta' in _vad.lower())
 check('5.7.3: som novo do terremoto com corpo (nao so zumbido grave)',
       os.path.getsize(A + '/sounds/rumble_terremoto.ogg') > 100_000
@@ -2234,6 +2238,30 @@ check('5.10.1: o /titulo do mod continua de pé (definir, cor, personalizado, pa
 check('5.10.1: a prévia do título novo está em previa/ (antes × depois + paleta)',
       os.path.exists('previa/titulos_5.10.1.png')
       and os.path.getsize('previa/titulos_5.10.1.png') > 60_000)
+
+# ============ 5.11.0: O VAZIO É DE PEDRA (e nunca mais "some") ================
+_rpwd = rd(R + '/RPWorldData.java')
+_sev = rd(R + '/ServerEvents.java')
+_aura = _ne2.split('private static void auraVazio')[1].split('private static void tickApagando')[0]
+check('5.11.0: aura SEM raio de partícula vermelha (o corpo só tem preto + pedra)',
+      'DustParticleOptions brasa' not in _ne2 and 'DustParticleOptions sangue' not in _ne2
+      and 'ESTILHAÇOS DE PEDRA' in _aura)
+check('5.11.0: partículas PÉTREAS de verdade (pedaços de BLOCO, não poeira colorida)',
+      _aura.count('BlockParticleOption') >= 2 and 'Blocks.DEEPSLATE' in _aura
+      and 'Blocks.COBBLESTONE' in _aura)
+check('5.11.0: o vermelho que sobrou é só o OLHO no rosto (não a aura)',
+      'pos.y + 1.62' in _aura and _aura.count('DustParticleOptions vermelho') == 1
+      and 'auraPart(nv, p, vermelho, pos.x + ox + lx * s2, olhoY' in _aura)
+check('5.11.0: o modo vazio fica SALVO no mundo (Vazios) e volta no boot',
+      'private final Set<UUID> vazios' in _rpwd and 'tag.put("Vazios"' in _rpwd
+      and 'getList("Vazios"' in _rpwd and 'restaurarDeuses' in _ne2
+      and 'restaurarDeuses' in _sev)
+check('5.11.0: a aura é REENVIADA (quem entra depois do /vazio ligar também vê)',
+      'public static void reenviarAura' in _ne2 and 'reenviarAura(server)' in _sev
+      and 'proximaAura = agora + 3000L' in _ne2)
+check('5.11.0: a prévia do vazio de pedra está em previa/', 
+      os.path.exists('previa/vazio_5.11.0.png')
+      and os.path.getsize('previa/vazio_5.11.0.png') > 60_000)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

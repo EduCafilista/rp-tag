@@ -848,8 +848,68 @@ public final class NeptuneEventos {
         return DEUSES.getOrDefault(id, false);
     }
 
+    /**
+     * (5.11.0) DEVOLVE O MODO VAZIO NO BOOT.
+     *
+     * <p>Chamado no {@code ServerStartedEvent}. O estado verdadeiro fica no
+     * {@link RPWorldData} ("Vazios"); aqui só recarregamos pra memória. A aura
+     * em si é reenviada quando o jogador entra (e de novo a cada 3 s, ver
+     * {@link #tickDeus}), então não tem como "ficar sem" por causa de ordem de
+     * login.
+     */
+    public static void restaurarDeuses(MinecraftServer server) {
+        try {
+            DEUSES.clear();
+            for (UUID id : RPWorldData.get(server).vaziosIds()) {
+                DEUSES.put(id, true);
+            }
+            if (!DEUSES.isEmpty()) {
+                RPTagMod.LOGGER.info("RP Tag: {} jogador(es) continuam como vazio (salvo no mundo)",
+                        DEUSES.size());
+            }
+        } catch (Throwable erro) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui restaurar o modo vazio", erro);
+        }
+    }
+
+    /**
+     * (5.11.0) REENVIA a aura pra todo mundo.
+     *
+     * <p>O pacote de aura era enviado UMA vez, no {@code /vazio ligar}. Quem
+     * entrava depois (ou dava F3+T / trocava de mundo) nunca recebia e ficava
+     * sem ver nada — mais uma causa do "sumiu". Agora o servidor reenvia de
+     * tempos em tempos e no login.
+     */
+    public static void reenviarAura(MinecraftServer server) {
+        ServerPlayer deus = null;
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            if (ehDeus(p.getUUID())) {
+                deus = p;
+                break;
+            }
+        }
+        if (deus == null) {
+            return;
+        }
+        for (ServerPlayer o : server.getPlayerList().getPlayers()) {
+            try {
+                PacketDistributor.sendToPlayer(o,
+                        new NeptunePackets.Aura(deus.getUUID(), o == deus, o == deus));
+            } catch (Throwable ignorado) {
+                // um cliente com problema não derruba o reenvio dos outros
+            }
+        }
+    }
+
     public static void ligarDeus(ServerPlayer p) {
         DEUSES.put(p.getUUID(), true);
+        // (5.11.0) fica SALVO no mundo: reiniciar o servidor não apaga mais o
+        // modo vazio (era a causa do "depois de um tempo a aura parou")
+        try {
+            RPWorldData.get(p.getServer()).setVazio(p.getUUID(), true);
+        } catch (Throwable erro) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui salvar o modo vazio (segue em memoria)", erro);
+        }
         TRILHA.remove(p.getUUID());
         // (5.7.4) a aura vai pra TODO MUNDO com o UUID de quem é o vazio: é
         // assim que os outros clientes desenham os raios 3D em volta dele.
@@ -870,44 +930,73 @@ public final class NeptuneEventos {
     }
 
     /**
-     * (5.7.6) A TRANSFORMAÇÃO — "as particulas vermelhas devem virar raios
-     * vermelhos mais intensos, para dar uma diferenciada na transformação".
+     * (5.11.0) A TRANSFORMAÇÃO — AGORA DE PEDRA.
      *
-     * <p>Quando o admin liga o modo vazio, o corpo dele abre: 28 raios
-     * vermelhos de verdade (linhas grossas de partícula saindo do peito em
-     * 360°, e também pra cima), uma onda de choque rente ao chão e um boom.
-     * Depois disso entra a aura normal — agora bem mais preta.
+     * <p>Na 5.7.6 ela era uma rajada de raios VERMELHOS. O dono pediu para tirar
+     * a partícula vermelha de tudo que é aura, então a abertura virou uma
+     * <b>explosão de pedra</b>: lascas de STONE/COBBLESTONE/DEEPSLATE arremessadas
+     * do corpo em 360°, um anel de cascalho levantando do chão e poeira de pedra.
+     * Combina com os tentáculos de pedra do cliente (é o chão cedendo e
+     * subindo em volta de quem virou o vazio).
      */
     private static void surtoTransformacao(ServerLevel nv, ServerPlayer p) {
         try {
             Vec3 pos = p.position();
-            DustParticleOptions fogo = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.06f, 0.02f), 1.9f);
-            DustParticleOptions brasa = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.35f, 0.08f), 1.3f);
+            BlockState pedra = Blocks.STONE.defaultBlockState();
+            BlockState quebrada = Blocks.COBBLESTONE.defaultBlockState();
+            BlockState ardosia = Blocks.DEEPSLATE.defaultBlockState();
+            DustParticleOptions poeira = new DustParticleOptions(new org.joml.Vector3f(0.48f, 0.48f, 0.52f), 1.6f);
+            DustParticleOptions poeiraEscura = new DustParticleOptions(new org.joml.Vector3f(0.26f, 0.26f, 0.30f), 2.0f);
             DustParticleOptions negro = new DustParticleOptions(new org.joml.Vector3f(0.02f, 0.0f, 0.03f), 2.4f);
-            for (int r = 0; r < 28; r++) {
-                double az = (r / 28.0) * Math.PI * 2 + Math.random() * 0.12;
+
+            // (1) as LASCAS DE PEDRA em 360° (e algumas pra cima)
+            for (int r = 0; r < 26; r++) {
+                double az = (r / 26.0) * Math.PI * 2 + Math.random() * 0.12;
                 boolean alto = r % 4 == 0;
                 double incl = alto ? 1.05 + Math.random() * 0.5 : (Math.random() - 0.5) * 0.45;
-                double alcance = 3.2 + Math.random() * 4.2;
+                double alcance = 2.6 + Math.random() * 3.4;
                 double y0 = pos.y + 1.0;
-                for (int k = 1; k <= 14; k++) {
-                    double f = k / 14.0;
-                    double serr = (Math.random() - 0.5) * 0.20 * f;
+                BlockState qual = switch (r % 3) {
+                    case 0 -> quebrada;
+                    case 1 -> ardosia;
+                    default -> pedra;
+                };
+                for (int k = 1; k <= 10; k++) {
+                    double f = k / 10.0;
+                    double serr = (Math.random() - 0.5) * 0.22 * f;
                     double x = pos.x + Math.cos(az) * Math.cos(incl) * alcance * f + serr;
                     double z = pos.z + Math.sin(az) * Math.cos(incl) * alcance * f + serr;
                     double y = y0 + Math.sin(incl) * alcance * f;
-                    nv.sendParticles(f > 0.35 ? brasa : fogo, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
-                    if (k % 4 == 0) {
-                        nv.sendParticles(negro, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
+                    // o "corpo" do estilhaço é pedra de verdade (com gravidade)
+                    nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                            ParticleTypes.BLOCK, qual), x, y, z, 1, 0.01, 0.01, 0.01, 0.28);
+                    if (k % 3 == 0) {
+                        nv.sendParticles((k % 6 == 0) ? poeira : poeiraEscura, x, y, z,
+                                1, 0.02, 0.02, 0.02, 0.01);
+                    }
+                    if (k == 10) {
+                        nv.sendParticles(negro, x, y, z, 1, 0.05, 0.05, 0.05, 0.0);
                     }
                 }
             }
-            // onda de choque rente ao chão (aro de brasa abrindo)
-            for (int a = 0; a < 64; a++) {
-                double ang = (a / 64.0) * Math.PI * 2;
-                double rr = 2.6;
-                nv.sendParticles(brasa, pos.x + Math.cos(ang) * rr, pos.y + 0.08,
-                        pos.z + Math.sin(ang) * rr, 1, 0.0, 0.0, 0.0, 0.0);
+            // (2) o ANEL DE CASCALHO levantando do chão (onde nascem os tentáculos)
+            for (int a = 0; a < 56; a++) {
+                double ang = (a / 56.0) * Math.PI * 2;
+                double rr = 1.1 + Math.random() * 1.6;
+                double x = pos.x + Math.cos(ang) * rr;
+                double z = pos.z + Math.sin(ang) * rr;
+                nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                        ParticleTypes.BLOCK, (a % 4 == 0) ? ardosia : quebrada),
+                        x, pos.y + 0.06, z, 1, 0.02, 0.10, 0.02, 0.10);
+                nv.sendParticles((a % 5 == 0) ? poeira : poeiraEscura, x, pos.y + 0.05, z,
+                        1, 0.02, 0.02, 0.02, 0.0);
+            }
+            // (3) o "peso" da pedra: uma nuvem de poeira baixa abrindo
+            for (int i = 0; i < 24; i++) {
+                double ang = Math.random() * Math.PI * 2;
+                double rr = 1.4 + Math.random() * 3.0;
+                nv.sendParticles(poeiraEscura, pos.x + Math.cos(ang) * rr, pos.y + 0.12,
+                        pos.z + Math.sin(ang) * rr, 1, 0.12, 0.02, 0.12, 0.0);
             }
             // (5.7.7) SAIU o som que EU tinha posto aqui (WITHER_SPAWN): o dono
             // disse "tira esse som que você adicionou no vazio... ficou
@@ -920,6 +1009,11 @@ public final class NeptuneEventos {
 
     public static void desligarDeus(ServerPlayer p) {
         DEUSES.remove(p.getUUID());
+        try {
+            RPWorldData.get(p.getServer()).setVazio(p.getUUID(), false);
+        } catch (Throwable erro) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui tirar o modo vazio do mundo", erro);
+        }
         TRILHA.remove(p.getUUID());
         for (ServerPlayer outro : p.getServer().getPlayerList().getPlayers()) {
             PacketDistributor.sendToPlayer(outro, NeptunePackets.Aura.desligada());
@@ -943,8 +1037,18 @@ public final class NeptuneEventos {
     /** (5.7.4) próximo trovão grave que os OUTROS vão ouvir (medo). */
     private static long proximoTrovao = 0L;
 
+    /** (5.11.0) próximo reenvio do pacote de aura (ms). */
+    private static long proximaAura = 0L;
+
     private static void tickDeus(MinecraftServer server) {
         long agora = System.currentTimeMillis();
+
+        // (5.11.0) rede de segurança da aura: reenvia o pacote a cada 3 s. Cobre
+        // quem entrou depois do /vazio ligar, quem deu F3+T e quem trocou de mundo.
+        if (agora >= proximaAura) {
+            proximaAura = agora + 3000L;
+            reenviarAura(server);
+        }
         // ---- TROVÃO DO VAZIO: quem está perto ouve o raio estalar no corpo
         // dele (grave e distante — não é para ser um trovão de tempestade).
         if (agora >= proximoTrovao) {
@@ -1047,31 +1151,39 @@ public final class NeptuneEventos {
         }
         double fase = agora / 1000.0;
 
-        // ---- as CORES. O "preto" do raio não pode ser dust 0,0,0 (some no
-        // escuro): usa um roxo-escuro quase preto, que o jogo desenha visível.
-        DustParticleOptions vermelho = new DustParticleOptions(new org.joml.Vector3f(0.92f, 0.02f, 0.03f), 1.5f);
-        DustParticleOptions sangue = new DustParticleOptions(new org.joml.Vector3f(0.45f, 0.0f, 0.02f), 1.7f);
+        // ============ (5.11.0) AS CORES AGORA SÃO PEDRA ============
+        // O dono: "não quero mais aquelas partículas vermelhas em volta do
+        // personagem, quero apenas partículas pétreas" e "melhora as partículas
+        // para ser algo mais concreto do que apenas partículas".
+        //
+        // Então o VERMELHO saiu de tudo que circula o corpo (raios, rachaduras,
+        // brasa, rastro). O que sobrou de vermelho são os DOIS OLHOS no rosto —
+        // eles não são aura, são a cara do vazio.
+        //
+        // E o "concreto" agora é de verdade: além da poeira, o servidor manda
+        // PEDAÇOS DE BLOCO (STONE/COBBLESTONE/DEEPSLATE) com gravidade, e o
+        // cliente desenha TENTÁCULOS de pedra em geometria sólida
+        // (TentaculosVazioFx).
+        BlockState pedra = Blocks.STONE.defaultBlockState();
+        BlockState pedraQuebrada = Blocks.COBBLESTONE.defaultBlockState();
+        BlockState ardosia = Blocks.DEEPSLATE.defaultBlockState();
+        DustParticleOptions poeira = new DustParticleOptions(new org.joml.Vector3f(0.46f, 0.46f, 0.50f), 1.30f);
+        DustParticleOptions poeiraEscura = new DustParticleOptions(new org.joml.Vector3f(0.25f, 0.25f, 0.28f), 1.55f);
         DustParticleOptions negro = new DustParticleOptions(new org.joml.Vector3f(0.03f, 0.0f, 0.05f), 2.1f);
         DustParticleOptions sombra = new DustParticleOptions(new org.joml.Vector3f(0.10f, 0.01f, 0.15f), 1.8f);
-        DustParticleOptions brasa = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.12f, 0.05f), 1.2f);
+        // (só no rosto) o olho do vazio
+        DustParticleOptions vermelho = new DustParticleOptions(new org.joml.Vector3f(0.92f, 0.02f, 0.03f), 1.5f);
 
-        // ============ (A) O MANTO: O CORPO Some DENTRO DA ESCURIDÃO ============
+        // ============ (A) O MANTO: O CORPO SOME DENTRO DA ESCURIDÃO ============
         // (5.7.6) O dono: "escureça mais a parte de partículas, quero o preto
-        // principalmente ficando bizarro, que de certa maneira nem ver o corpo
-        // da entidade os players consigam, apenas o rosto se possível".
-        //
-        // Então agora são 3 camadas de PRETO bem juntas (SQUID_INK + fumaça
-        // grande + dust quase preto) subindo em espiral, de 0,05 a 2,35 de
-        // altura. Na faixa do ROSTO (1,52 a 1,98) a densidade cai pela metade
-        // e entram dois pontos vermelhos (os olhos) — o corpo vira silhueta e
-        // o rosto é a única coisa que dá pra enxergar.
+        // principalmente ficando bizarro... nem ver o corpo da entidade, apenas
+        // o rosto se possível". O preto continua protagonista.
         for (int i = 0; i < 16; i++) {
             double a = (i / 16.0) * Math.PI * 2 + fase * 1.15;              // gira
             double r = 0.32 + 0.20 * Math.sin(fase * 1.7 + i * 0.9);        // colado
             double h = ((fase * 0.62 + i * 0.29) % 1.0);                    // sobe
             double y = pos.y + 0.05 + h * 2.30;
-            // fecha em cima (cone) e abre na base: é um manto, não um tubo
-            double raio = r * (1.0 + 0.55 * (1.0 - h));
+            double raio = r * (1.0 + 0.55 * (1.0 - h));                     // cone
             double x = pos.x + Math.cos(a) * raio;
             double z = pos.z + Math.sin(a) * raio;
             boolean rosto = y > pos.y + 1.52 && y < pos.y + 1.98;
@@ -1082,6 +1194,10 @@ public final class NeptuneEventos {
             auraPart(nv, p, negro, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
             if (i % 3 == 0) {
                 auraPart(nv, p, ParticleTypes.LARGE_SMOKE, x, y, z, 1, 0.03, 0.03, 0.03, 0.0);
+            }
+            // (5.11.0) no lugar do veio roxo, POEIRA DE PEDRA subindo com o manto
+            if (i % 4 == 1) {
+                auraPart(nv, p, (i % 8 == 1) ? poeira : poeiraEscura, x, y, z, 1, 0.01, 0.01, 0.01, 0.0);
             }
             if (i % 5 == 0) {
                 auraPart(nv, p, sombra, x, y, z, 1, 0.01, 0.01, 0.01, 0.0);
@@ -1097,12 +1213,8 @@ public final class NeptuneEventos {
         for (int s2 = -1; s2 <= 1; s2 += 2) {
             auraPart(nv, p, vermelho, pos.x + ox + lx * s2, olhoY, pos.z + oz + lz * s2,
                     1, 0.012, 0.012, 0.012, 0.0);
-            if (agora % 9 == 0) {
-                auraPart(nv, p, brasa, pos.x + ox + lx * s2, olhoY, pos.z + oz + lz * s2,
-                        1, 0.03, 0.03, 0.03, 0.0);
-            }
         }
-        // base: a escuridão "pesada" no chão, em volta dos pés
+        // base: a escuridão "pesada" no chão + pedrinhas em volta dos pés
         if (agora % 6 == 0) {
             for (int i = 0; i < 8; i++) {
                 double a = Math.random() * Math.PI * 2;
@@ -1111,52 +1223,41 @@ public final class NeptuneEventos {
                         pos.x + Math.cos(a) * r, pos.y + 0.06, pos.z + Math.sin(a) * r,
                         1, 0.02, 0.0, 0.02, 0.0);
             }
-        }
-
-        // ================= (B) RAIOS NEGROS E VERMELHOS =================
-        // (5.7.7) O dono: "quero que seja tipo uma aura de escuridão e raios
-        // negros e vermelhos saindo do player". Agora são 4 raios por disparo
-        // (antes 2), mais compridos e mais grossos, saindo do PEITO, dos PÉS e
-        // também do ALTO da cabeça — em todas as direções, inclusive pra cima.
-        // O miolo é NEGRO (SQUID_INK, que aparece no escuro) e a ponta é
-        // VERMELHA viva, com brasa estalando: lê como raio, não como poeira.
-        if (agora % 4 == 0) {
-            for (int n = 0; n < 4; n++) {
-                double ang = Math.random() * Math.PI * 2;
-                double alcance = 2.6 + Math.random() * 3.6;
-                int pontos = 12 + (int) (Math.random() * 6);
-                boolean doPe = n == 1;
-                boolean doAlto = n == 3;
-                double x0 = pos.x;
-                double y0 = doPe ? pos.y + 0.1 : (doAlto ? pos.y + 2.0 : pos.y + 1.0);
-                double z0 = pos.z;
-                double dx = Math.cos(ang);
-                double dz = Math.sin(ang);
-                double subida = doPe ? 0.55 : (doAlto ? 1.15 : 0.25);
-                double x, y, z;
-                for (int k = 1; k <= pontos; k++) {
-                    double f = k / (double) pontos;
-                    double serrilhado = (Math.random() - 0.5) * 0.42;
-                    x = x0 + dx * alcance * f - dz * serrilhado;
-                    z = z0 + dz * alcance * f + dx * serrilhado;
-                    y = y0 + subida * f * alcance * 0.5 + (Math.random() - 0.5) * 0.16;
-                    boolean ponta = f > 0.45;
-                    auraPart(nv, p, ponta ? (k % 2 == 0 ? vermelho : brasa) : negro,
-                            x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
-                    // o NEGRO precisa de volume: SQUID_INK em cima do dust
-                    if (!ponta) {
-                        auraPart(nv, p, ParticleTypes.SQUID_INK, x, y, z,
-                                1, 0.02, 0.02, 0.02, 0.0);
-                    }
-                    if (k % 3 == 0) {
-                        auraPart(nv, p, ponta ? brasa : ParticleTypes.SMOKE,
-                                x, y, z, 1, 0.01, 0.01, 0.01, 0.0);
-                    }
-                }
+            for (int i = 0; i < 3; i++) {
+                double a = Math.random() * Math.PI * 2;
+                double r = 0.35 + Math.random() * 1.2;
+                auraPart(nv, p, new net.minecraft.core.particles.BlockParticleOption(
+                                ParticleTypes.BLOCK, i == 0 ? pedraQuebrada : pedra),
+                        pos.x + Math.cos(a) * r, pos.y + 0.10 + Math.random() * 0.25,
+                        pos.z + Math.sin(a) * r, 1, 0.02, 0.04, 0.02, 0.02);
             }
         }
 
-        // ================= (C) RACHADURAS NO CHÃO (discretas) =================
+        // ============ (B) ESTILHAÇOS DE PEDRA (no lugar dos raios vermelhos) ============
+        // (5.11.0) AQUI eram 4 raios de DUST vermelho por disparo ("os
+        // tentáculos vermelhos"). O dono não quer mais partícula vermelha em
+        // volta do corpo, e o raio de verdade agora é a GEOMETRIA de pedra do
+        // cliente. No servidor fica o "material": pedaços de pedra que se soltam
+        // do corpo e caem — volume, não fumaça colorida.
+        if (agora % 7 == 0) {
+            for (int n = 0; n < 3; n++) {
+                double ang = Math.random() * Math.PI * 2;
+                double alcance = 0.45 + Math.random() * 1.15;
+                double y = pos.y + 0.35 + Math.random() * 1.75;
+                double x = pos.x + Math.cos(ang) * alcance;
+                double z = pos.z + Math.sin(ang) * alcance;
+                BlockState qual = switch (n) {
+                    case 0 -> pedraQuebrada;
+                    case 1 -> ardosia;
+                    default -> pedra;
+                };
+                auraPart(nv, p, new net.minecraft.core.particles.BlockParticleOption(
+                        ParticleTypes.BLOCK, qual), x, y, z, 1, 0.01, 0.06, 0.01, 0.035);
+            }
+            auraPart(nv, p, poeira, pos.x, pos.y + 1.0, pos.z, 2, 0.30, 0.55, 0.30, 0.01);
+        }
+
+        // ============ (C) RACHADURAS NO CHÃO (agora PÉTREAS) ============
         double chaoY = pos.y;
         var bp = p.blockPosition();
         for (int dy = 0; dy <= 5; dy++) {
@@ -1175,7 +1276,14 @@ public final class NeptuneEventos {
                 double lateral = Math.sin(fase * 1.6 + r * 2.3 + k * 0.9) * 0.24 * f;
                 double x = pos.x + Math.cos(ang) * comp * f - Math.sin(ang) * lateral;
                 double z = pos.z + Math.sin(ang) * comp * f + Math.cos(ang) * lateral;
-                nv.sendParticles((k % 3 == 0) ? sangue : vermelho, x, chaoY + 0.02, z, 1, 0.01, 0.0, 0.01, 0.0);
+                nv.sendParticles((k % 3 == 0) ? poeiraEscura : poeira, x, chaoY + 0.02, z,
+                        1, 0.01, 0.0, 0.01, 0.0);
+                // a fenda "cospe" um pedacinho de pedra de vez em quando
+                if (k == 2 && Math.random() < 0.45) {
+                    nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                    ParticleTypes.BLOCK, (Math.random() < 0.5) ? pedraQuebrada : ardosia),
+                            x, chaoY + 0.04, z, 1, 0.02, 0.03, 0.02, 0.02);
+                }
             }
         }
         // cinza subindo bem devagar, colada no corpo (não na tela)
@@ -1183,7 +1291,7 @@ public final class NeptuneEventos {
             nv.sendParticles(ParticleTypes.ASH, pos.x, pos.y + 0.1, pos.z, 3, 0.35, 0.30, 0.35, 0.0);
         }
 
-        // ================= (D) RASTRO DE CAOS =================
+        // ============ (D) RASTRO DE CAOS ============
         // (5.7.6) "faça que por onde ele passar, ficar um rastro de caos e
         // destruição (apenas efeito das partículas ficando pelo local)".
         // Cada 6 ticks, se ele andou pelo menos meio bloco, deixa uma MANCHA
@@ -1265,8 +1373,9 @@ public final class NeptuneEventos {
             return;
         }
         long agora = System.currentTimeMillis();
-        DustParticleOptions brasa = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.15f, 0.05f), 1.1f);
-        DustParticleOptions sangue = new DustParticleOptions(new org.joml.Vector3f(0.55f, 0.02f, 0.02f), 1.6f);
+        // (5.11.0) o rastro também virou PEDRA (o dono tirou o vermelho da aura)
+        DustParticleOptions poeira = new DustParticleOptions(new org.joml.Vector3f(0.46f, 0.46f, 0.50f), 1.3f);
+        DustParticleOptions poeiraEscura = new DustParticleOptions(new org.joml.Vector3f(0.24f, 0.24f, 0.27f), 1.6f);
         Iterator<Mancha> it = MANCHAS.iterator();
         while (it.hasNext()) {
             Mancha m = it.next();
@@ -1288,8 +1397,16 @@ public final class NeptuneEventos {
                 double z = m.z() + Math.sin(a) * r;
                 nivel.sendParticles(ParticleTypes.SQUID_INK, x, m.y() + 0.05, z, 1, 0.01, 0.01, 0.01, 0.0);
                 if (Math.random() < 0.5) {
-                    nivel.sendParticles(Math.random() < 0.5 ? brasa : sangue,
+                    nivel.sendParticles(Math.random() < 0.5 ? poeira : poeiraEscura,
                             x, m.y() + 0.03, z, 1, 0.01, 0.0, 0.01, 0.0);
+                }
+                // a mancha deixou de ser "brasa" e virou CASCALHO no chão
+                if (Math.random() < 0.18) {
+                    nivel.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                                    ParticleTypes.BLOCK, (Math.random() < 0.5)
+                                            ? Blocks.COBBLESTONE.defaultBlockState()
+                                            : Blocks.DEEPSLATE.defaultBlockState()),
+                            x, m.y() + 0.04, z, 1, 0.02, 0.02, 0.02, 0.02);
                 }
                 if (Math.random() < 0.25) {
                     nivel.sendParticles(ParticleTypes.ASH, x, m.y() + 0.35, z, 1, 0.05, 0.15, 0.05, 0.0);

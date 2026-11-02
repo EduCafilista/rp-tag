@@ -13,6 +13,46 @@
 
 ---
 
+## 5.11.0 (2026-11-02): VAZIO de pedra — o que "sumia" e por quê
+
+> Dono: "os tentáculos vermelhos pararam de aparecer", "não aparecem com shader,
+> fica muito claro", "quero só partículas pétreas, mais concreto que partícula".
+
+### As 3 causas do sumiço (não repetir o diagnóstico errado)
+1. **`RenderType.lightning()` é ADITIVO** (`SRC_ALPHA, ONE`): soma luz. Pack de
+   shader claro → vermelho satura em branco → some. Qualquer efeito que precise
+   aparecer com shader **não pode** usar esse RenderType.
+2. **`DEUSES` era `HashMap` em memória** (`NeptuneEventos`): restart do servidor
+   zerava e o `/vazio ligar` não voltava. Agora `RPWorldData` guarda `Vazios`
+   (save/load por lista de UUID) e `ServerEvents.onServerStarted` chama
+   `NeptuneEventos.restaurarDeuses`.
+3. **Pacote `Aura` enviado só no ligar**: quem entrava depois nunca recebia.
+   Agora `reenviarAura(server)` roda a cada 3 s no `tickDeus` e no login.
+
+### O novo desenho (`client/TentaculosVazioFx.java`)
+- `RenderType.debugQuads()`: blend normal (`TRANSLUCENT_TRANSPARENCY`) +
+  `COLOR_DEPTH_WRITE`, sem textura, sem lightmap. Pedra opaca de verdade.
+- Cada tentáculo = tubo de **seção quadrada**: para cada segmento, 4 quads com
+  `luz[] = {0.72, 0.90, 1.00, 0.58}` (sombreado por face) × `tomT` × `veio`
+  (0.52 quando cai no veio). Ponta = 4 triângulos (quads com vértice repetido).
+- Ciclo: `crescido()` = `min(brota 800ms, afunda 700ms)` com `easeOutQuad`;
+  ao vencer a vida (4,2–9 s) `reciclar()` sorteia ângulo/raio/altura de novo.
+- `euSou` (quem é o vazio): pula 1 em cada 3 (`idx++ % 3 == 2`), alturas ×0,78,
+  e ignora tentáculo a menos de 1,3 bloco da câmera; F1 do próprio = nada.
+- **Nunca** usar cor vermelha aqui: o dono tirou o vermelho da aura (só os olhos
+  do rosto ficaram).
+
+### Servidor (`NeptuneEventos.auraVazio`)
+- Mantém o **manto preto** (SQUID_INK + dust negro + LARGE_SMOKE) — preto é
+  protagonista desde 5.7.6 — e troca o veio roxo por **poeira de pedra**.
+- **(B)** saíram os 4 raios de dust vermelho por disparo; entram **estilhaços de
+  BLOCO** (`BlockParticleOption` de stone/cobblestone/deepslate) com gravidade.
+- **(C)** rachaduras do chão em poeira cinza + pedacinho de pedra.
+- **(D)** `tickManchas`: poeira cinza + cascalho (saiu brasa/sangue).
+- `surtoTransformacao`: lascas de pedra em 360° + anel de cascalho (antes raios
+  vermelhos).
+- **Olhos**: dois pontos vermelhos em `y + 1,62` — os únicos vermelhos da aura.
+
 ## 5.10.1 (2026-11-02): título com relevo + `/title` vanilla fora do jogo
 
 > Pedidos: *"bonitinho, não apenas as letras naquela cor"* e *"o /title é do mod? apaga"*.

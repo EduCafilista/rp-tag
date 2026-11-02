@@ -37,6 +37,12 @@ public final class ServerEvents {
         return RPWorldData.get(player.server).getPersona(player.getUUID());
     }
 
+    // ---- (5.11.0) o DEUS DO VAZIO volta com o servidor ----
+    @SubscribeEvent
+    public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
+        NeptuneEventos.restaurarDeuses(event.getServer());
+    }
+
     // ---- (5.4.0) tick do evento NEPTUNE (terremoto, deus, bicho, saidas) ----
     @SubscribeEvent
     public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
@@ -126,6 +132,8 @@ public final class ServerEvents {
         // quem já estava online do título DELE (senão o nametag fica sem).
         Titulos.enviarTodos(joined);
         Titulos.avisar(server, joined.getUUID());
+        // (5.11.0) quem entra depois do /vazio ligar também precisa da aura
+        NeptuneEventos.reenviarAura(server);
     }
 
     /**
