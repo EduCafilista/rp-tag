@@ -13,6 +13,25 @@
 
 ---
 
+## 5.11.2 (2026-11-02): o título no CHAT
+
+- **Causa**: o título entrava só pelo `PlayerEvent.NameFormat` (TAB + nametag).
+  O **chat local** (padrão do servidor) é montado à mão em `RPChat.displayName()`
+  e não passava por `Titulos.aplicar` — então o chat mostrava só `persona + (ʀᴘ)`.
+- **Conserto**: `RPChat.montarNome(server, uuid, nomeBruto, inRp)` (novo) →
+  `Titulos.aplicar(...).copy().append(RPTags.tag(inRp))`; `displayName(player)`
+  delega pra ele. Todos os canais (`/g`, `/s`, `/w`, `/pensar`, `/me`, chat
+  local) usam `displayName`, então todos ganharam o título de uma vez.
+- **Ordem** (igual ao TAB): `[Etiqueta] Nome [Título pessoal] (ʀᴘ)`.
+- **Como testar sem cliente**: comando temporário `/rp admin testechat` que monta
+  a linha com um UUID aleatório e um título escrito na `SavedData`
+  (`Titulos.definir`), e devolve no RCON. Saída real:
+  `CHAT: <[Sagrado] Seraphiel [O Ferreiro]● ʀᴘ> a lamina nao mente.`
+  **O comando foi removido antes da release** (não fica no jar).
+- **Lição**: qualquer texto que mostre o nome do jogador fora do `NameFormat`
+  (chat, broadcasts, TAB custom) tem que chamar `RPChat.displayName` ou
+  `Titulos.aplicar` — senão sai sem título (foi exatamente o bug).
+
 ## 5.11.1 (2026-11-02): RAIOS VERMELHOS de volta (a pedra foi um desvio)
 
 > **REGRA QUE NASCEU AQUI (vale pro resto do projeto):** *"não mude a ideia sem me

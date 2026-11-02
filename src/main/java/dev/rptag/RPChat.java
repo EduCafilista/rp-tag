@@ -18,18 +18,41 @@ public final class RPChat {
     }
 
     /**
-     * @return o nome "exibivel" do jogador: nome do personagem (se houver
-     *         persona) ou o nick, seguido da tag (ʀᴘ)/(ᴏꜰꜰ ʀᴘ).
+     * @return o nome "exibivel" do jogador no CHAT: título (etiqueta + título
+     *         pessoal), o nome do personagem (se houver persona) ou o nick, e a
+     *         tag (ʀᴘ)/(ᴏꜰꜰ ʀᴘ).
+     *
+     * <p>(5.11.2) O TÍTULO ENTRA NO CHAT. Antes ele só aparecia no TAB e em cima
+     * da cabeça: o {@code PlayerEvent.NameFormat} montava o nome com o título,
+     * mas o chat por proximidade (o padrão do servidor) é montado AQUI, na mão,
+     * e usava só {@code persona + tag}. Resultado: o mesmo jogador aparecia com
+     * {@code [Sagrado] Seraphiel [O Ferreiro]} no TAB e só {@code Seraphiel} no
+     * chat. Agora os três lugares usam a MESMA montagem ({@link Titulos#aplicar}),
+     * então nunca mais divergem.
      */
     public static MutableComponent displayName(ServerPlayer player) {
         RPWorldData data = RPWorldData.get(player.server);
         Persona persona = data.getPersona(player.getUUID());
         boolean inRp = data.isInRp(player.getUUID());
 
-        MutableComponent base = persona.isEmpty()
-                ? Component.literal(player.getName().getString())
-                : Component.literal(persona.name());
-        return base.append(RPTags.tag(inRp));
+        String nomeBruto = persona.isEmpty() ? player.getName().getString() : persona.name();
+        return montarNome(player.server, player.getUUID(), nomeBruto, inRp);
+    }
+
+    /**
+     * (5.11.2) Monta a linha do nome como ela sai NO CHAT:
+     * {@code [Etiqueta] Nome [Título pessoal] (ʀᴘ)}.
+     *
+     * <p>É a MESMA ordem do TAB e do nametag (os três passam por
+     * {@link Titulos#aplicar}); separado do {@code ServerPlayer} pra poder ser
+     * testado (e usado) sem um jogador online.
+     */
+    public static MutableComponent montarNome(MinecraftServer server, java.util.UUID id,
+            String nomeBruto, boolean inRp) {
+        MutableComponent base = Component.literal(nomeBruto);
+        // título na frente do nome, e o título pessoal depois dele
+        MutableComponent comTitulo = Titulos.aplicar(server, id, base).copy();
+        return comTitulo.append(RPTags.tag(inRp));
     }
 
     /** @return o estilo da mensagem com a cor pessoal do jogador (se definida). */

@@ -1,5 +1,44 @@
 # Changelog
 
+## 5.11.2 — o TÍTULO aparece no CHAT — 2026-11-02
+
+> Pedido: *"o título deve aparecer no chat, veja e altere isso para mim"*.
+
+### O que estava acontecendo
+O título (etiqueta + título pessoal) era aplicado em `PlayerEvent.NameFormat`,
+que é o que o **TAB** e o **nametag** usam. Mas o **chat por proximidade** — que é
+o padrão do servidor (`chatLocal = true`) — é montado à mão em
+`RPChat.displayName()`, e essa função só juntava **persona + tag RP**. Resultado:
+
+- no TAB: `[Sagrado] Seraphiel [O Ferreiro] ● ʀᴘ`
+- no chat: `Seraphiel ● ʀᴘ` ← sem título
+
+### O conserto
+`RPChat.displayName()` agora passa pelo mesmo caminho do TAB
+(`Titulos.aplicar`), via um método novo `RPChat.montarNome(server, uuid, nome, inRp)`.
+Como **todos** os canais usam `displayName`, o título passou a sair em todos:
+
+| canal | comando |
+|---|---|
+| chat local (o padrão) | digitar no chat |
+| global | `/g` |
+| grito | `/s` |
+| sussurro | `/w` |
+| pensamento | `/pensar` |
+| ação RP | `/me` |
+| chat vanilla (quando o chat local está desligado) | já vinha pelo `NameFormat` |
+
+### Como ficou (testado no servidor)
+```
+CHAT: <[Sagrado] Seraphiel [O Ferreiro]● ʀᴘ> a lamina nao mente.
+```
+Mesma ordem do TAB: **etiqueta na frente, título pessoal depois do nome**, e a
+tag RP no fim. O gradiente letra por letra, o negrito da etiqueta e o itálico do
+título pessoal continuam valendo no chat.
+
+**Verificação:** `check.py` **801 PASS / 0 FAIL**; servidor sobe com 0 ERROR;
+linha do chat conferida no jogo (via comando de teste temporário, já removido).
+
 ## 5.11.1 — os RAIOS VERMELHOS voltaram (e aparecem com shader, voando também) — 2026-11-02
 
 > Correção de rumo pedida pelo dono: *"não quero tentáculos de pedra, quero os raios

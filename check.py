@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.11.1'
+VER = '5.11.2'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2268,6 +2268,18 @@ check('5.11.1: a aura é REENVIADA (quem entra depois do /vazio ligar também v�
 check('5.11.1: a prévia dos raios vermelhos está em previa/',
       os.path.exists('previa/vazio_5.11.1.png')
       and os.path.getsize('previa/vazio_5.11.1.png') > 60_000)
+
+# ============ 5.11.2: o TÍTULO aparece no CHAT ==================================
+_rpc = rd(R + '/RPChat.java')
+check('5.11.2: o nome do CHAT passa pelo título (montarNome -> Titulos.aplicar)',
+      'public static MutableComponent montarNome(MinecraftServer server, java.util.UUID id' in _rpc
+      and 'Titulos.aplicar(server, id, base)' in _rpc
+      and 'return montarNome(player.server, player.getUUID(), nomeBruto, inRp);' in _rpc)
+check('5.11.2: TODOS os canais usam o mesmo nome (g, s, w, pensar, me, chat local)',
+      _rpc.count('displayName(from)') >= 1
+      and rd(R + '/ChatCommands.java').count('RPChat.displayName(player)') >= 4)
+check('5.11.2: a ordem é a mesma do TAB — [Etiqueta] Nome [Pessoal] (ʀᴘ)',
+      'comTitulo.append(RPTags.tag(inRp))' in _rpc)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
