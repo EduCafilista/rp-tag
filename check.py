@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.13.2'
+VER = '5.13.3'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2485,6 +2485,32 @@ check('5.12.0: SaidaPlayerFx segue registrado e é disparado pelo estilo 18',
 check('5.12.0: o logout automático continua chamando saidaAutomatica',
       'saidaAutomatica(saiu)' in _sev2)
 check('5.12.0: sem classe de debug na entrega', not os.path.exists(R + '/DebugVazio.java'))
+
+# 10) 5.13.3 — o portal dos 8 fragmentos TEM que ser o da praca e abrir sozinho
+check('5.13.3: o portal dos 8 pedestais e o da PRACA (nao o invocado)',
+      'public static BlockPos ancoraPortalPraca(ServerLevel nv)' in _vr
+      and 'BlockPos base = ancoraPortalPraca(nv);' in _vr)
+check('5.13.3: quem tem os 8 nos pedestais abre o portal sem clique (rede de seguranca)',
+      '!dados.isPortalAberto() && dados.temOsOito(p.getUUID())' in _vr
+      and 'abrirPortal(nv, p);' in _vr)
+check('5.13.3: o reparo do miolo espera a animacao terminar (nao mata a abertura)',
+      'VazioGeometria.ABERTURA_MS + 4000L' in _vr)
+check('5.13.3: miolo aberto se repara sozinho (chunk descarregado no meio da animacao)',
+      'private static void repararMiolo(ServerLevel nv)' in _vr
+      and 'proximoReparo' in _vr and 'repararMiolo(nv);' in _vr)
+check('5.13.3: /vazio pedestais encher enche os 8 e abre o portal (teste do dono)',
+      'public static int encherPedestais(ServerPlayer p)' in _vr
+      and 'Commands.literal("encher")' in _nec and 'VazioReino.encherPedestais(quem)' in _nec)
+check('5.13.3: praca e portal invocado animam cada um por si (baseAberta por base)',
+      'private static boolean baseAberta(ServerLevel nv, RPWorldData dados, BlockPos base)' in _vr
+      and 'private static void animarAbertura(ServerLevel nv, long agora, BlockPos base)' in _vr
+      and 'public static int estadoPortal(ServerLevel nv, BlockPos base)' in _vr)
+check('5.13.3: atravessar vale para a praca (8 fragmentos) e para o invocado (livre)',
+      'private static boolean esperarNoMiolo(ServerPlayer p, ServerLevel nv, RPWorldData dados,' in _vr
+      and 'atravessou = esperarNoMiolo(p, nv, dados, praca, agora);' in _vr)
+check('5.13.3: /vazio pedestais mostra o relatorio do portal (praca, miolo, aberto, invocado)',
+      'public static String relatorioPortal(ServerLevel nv, java.util.UUID id)' in _vr
+      and 'VazioReino.relatorioPortal(nv, quem.getUUID())' in _nec)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

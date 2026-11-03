@@ -1,5 +1,34 @@
 # Changelog
 
+## 5.13.3 — o portal dos 8 pedestais abria no lugar errado (ou não abria) — 2026-11-02
+
+> Dono: **"mesmo ativando os 8 pedestais não abriu o portal animado aonde eu te pedi, um portal
+> para o player que for preso sair"** e **"o 5.10.1 ainda funciona a dimensão, o pessoal
+> conseguindo usar — era só melhorar o que eu te pedi"**.
+
+### A causa
+
+`abrirPortal` pegava a posição por `ancoraPortal(nv)`, que devolve **o portal invocado primeiro**.
+Qualquer `/vazio portal` feito dentro do vazio gravava um portal no save **para sempre**: os 8
+fragmentos abriam aquele (longe, dentro de parede) e nunca o da praça.
+
+### As correções
+
+- **`ancoraPortalPraca`**: o caminho dos 8 fragmentos é sempre o portal da **praça**.
+- **Rede de segurança**: com os 8 nos pedestais e a praça fechada, o portal **abre sozinho no
+  tick** (não depende do clique acertar o bloco).
+- **Reparo automático do miolo** a cada 5 s — e ele **espera a animação terminar** (antes enchia
+  as 7 linhas no 1º segundo e matava a abertura de baixo para cima).
+- **Praça e invocado animam cada um por si** (`baseAberta`, `animarAbertura(…, base)`,
+  `estadoPortal(nv, base)`), e atravessar vale para os dois (`esperarNoMiolo`).
+- **`/vazio pedestais encher`** (enche os 8 e abre na hora) e **`/vazio pedestais`** com
+  `relatorioPortal` (praça, miolo x/35, aberto, 8 fragmentos, portal invocado).
+
+### Testado no servidor
+
+- Abertura: 2 linhas em 2 s → 7 linhas em 10 s. Reparo: bloco apagado voltou em ~5 s.
+- `javac` 0 erros · `check.py` **862 PASS / 0 FAIL** · log sem exceção.
+
 ## 5.13.2 — pedido 52 (a tela preta do vazio, o bloco `escuridao` e o portal animado) — 2026-11-02
 
 > Pedido do dono, depois de jogar a 5.13.1: **"a dimensão é o bug nº1, tá tudo preto, não vejo

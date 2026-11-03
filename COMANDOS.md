@@ -103,7 +103,8 @@ Alvos: nomes (aceita lista `Ana,Beto`) ou `@a`.
 | `/vazio portal ir` | (5.13.0) te leva até o portal que já existe (praça, ao norte) |
 | `/vazio abrir` · `/vazio fechar` | (5.13.0/5.13.2) abre/fecha o portal na marra (vídeo/prévia). **Sem mensagem no chat** desde a 5.13.2: `abrir` reconstrói a moldura, esvazia o miolo e anima de baixo para cima (reabre do zero se já estava aberto) |
 | `/vazio construir` | (5.13.0) refaz praça, 8 pedestais, 8 altares e o portal na hora |
-| `/vazio pedestais` | (5.13.0) quantos pedestais/altares você tem + onde está o portal |
+| `/vazio pedestais` | (5.13.0/5.13.3) quantos pedestais/altares você tem + **relatório do portal**: praça, miolo (x/35), aberto, 8 fragmentos, portal invocado |
+| `/vazio pedestais encher` | (5.13.3) **TESTE**: enche os 8 pedestais na hora e abre o portal da praça (se isso não abrir, o relatório diz onde falhou) |
 | `/give @s rptag:escuridao` | (5.13.2) o **bloco do portal** (preto, sólido, indestrutível) — clique nele usa o portal; encostar 0,7 s também |
 | `/bicho aqui` · `/bicho <pos>` · `/bicho limpar` | caixinha de música (o bicho pula quando alguém chega) |
 

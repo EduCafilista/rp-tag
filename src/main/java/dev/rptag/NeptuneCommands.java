@@ -308,20 +308,37 @@ public final class NeptuneCommands {
             return Command.SINGLE_SUCCESS;
         }));
 
-        vazio.then(Commands.literal("pedestais").executes(ctx -> {
-            ServerPlayer quem = ctx.getSource().getPlayerOrException();
-            RPWorldData dados = RPWorldData.get(quem.getServer());
-            ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a75Pedestais: \u00a7f" + dados.quantosPedestais(quem.getUUID()) + "/8"
-                            + "\u00a78 · altares esvaziados: \u00a7f"
-                            + Integer.bitCount(dados.getSantuarios(quem.getUUID())) + "/8\n"
-                            + "\u00a78anel em volta da praça: " + VazioReino.listaPedestais()
-                            + "\n\u00a78portal: " + VazioReino.ancoraPortal(
-                                    (net.minecraft.server.level.ServerLevel) quem.level())
-                            + "\u00a78 · aberto: \u00a7f" + dados.isPortalAberto()
-                            + "\u00a78 · fila: " + VazioReino.construindo()), false);
-            return Command.SINGLE_SUCCESS;
-        }));
+        vazio.then(Commands.literal("pedestais")
+                .executes(ctx -> {
+                    ServerPlayer quem = ctx.getSource().getPlayerOrException();
+                    RPWorldData dados = RPWorldData.get(quem.getServer());
+                    net.minecraft.server.level.ServerLevel nv = (net.minecraft.server.level.ServerLevel) quem.level();
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a75Pedestais: \u00a7f" + dados.quantosPedestais(quem.getUUID()) + "/8"
+                                    + "\u00a78 · altares esvaziados: \u00a7f"
+                                    + Integer.bitCount(dados.getSantuarios(quem.getUUID())) + "/8\n"
+                                    + "\u00a78anel em volta da praça: " + VazioReino.listaPedestais()
+                                    + "\n" + VazioReino.relatorioPortal(nv, quem.getUUID())
+                                    + "\n\u00a78fila: " + VazioReino.construindo()), false);
+                    return Command.SINGLE_SUCCESS;
+                })
+                // (5.13.3) TESTE: enche os 8 na hora e abre o portal da praça.
+                // O dono ficou preso no vazio porque o portal não abria com os 8
+                // fragmentos — este comando isola a causa em 1 segundo.
+                .then(Commands.literal("encher").executes(ctx -> {
+                    ServerPlayer quem = ctx.getSource().getPlayerOrException();
+                    int cheios = VazioReino.encherPedestais(quem);
+                    if (cheios < 0) {
+                        ctx.getSource().sendFailure(Component.literal(
+                                "\u00a7cSó funciona dentro de rptag:exilio."));
+                        return 0;
+                    }
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a75Pedestais cheios: \u00a7f" + cheios + "/8\u00a78 — o portal da "
+                                    + "praça foi aberto na marra (5,5 s de animação).\n"
+                                    + "\u00a78Confira com \u00a7f/vazio pedestais\u00a78."), false);
+                    return Command.SINGLE_SUCCESS;
+                })));
 
         // ------------------------------------------------------- /saida: MORREU
         // (5.7.9) O dono recusou o comando: "não quero essa /saida, quero que a

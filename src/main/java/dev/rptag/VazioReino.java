@@ -100,6 +100,8 @@ public final class VazioReino {
     private static long proximoPredio;
     private static long proximoMundo;
     private static long proximaRuina;
+    /** (5.13.3) quando o miolo do portal é conferido de novo (reparo automático). */
+    private static long proximoReparo;
     private static int contadorRuinas;
     /** (5.13.2) o anel de ruínas em volta da praça já foi erguido? */
     private static boolean anelFeito;
@@ -171,6 +173,24 @@ public final class VazioReino {
         }
         if (!ehVazio(nv)) {
             return null;                 // fora do vazio, sem invocação: não há portal
+        }
+        int[] p = VazioGeometria.PORTAL;
+        return new BlockPos(p[0], centroY(nv), p[1]);
+    }
+
+    /**
+     * (5.13.3) A BASE DO PORTAL DA PRAÇA — ignora portal invocado.
+     *
+     * <p>Bug do dono (pedido 52): <i>"mesmo ativando os 8 pedestais não abriu o portal
+     * animado"</i>. O {@link #ancoraPortal} devolve o portal INVOCADO quando existe um
+     * (de qualquer `/vazio portal` antigo feito no vazio); então os 8 fragmentos abriam
+     * um portal que não era o da praça — ou nenhum, se o invocado tinha sido desmontado
+     * e o registro ficou para trás. Agora o caminho dos 8 fragmentos é sempre o portal
+     * da praça.
+     */
+    public static BlockPos ancoraPortalPraca(ServerLevel nv) {
+        if (!ehVazio(nv)) {
+            return null;
         }
         int[] p = VazioGeometria.PORTAL;
         return new BlockPos(p[0], centroY(nv), p[1]);
@@ -267,6 +287,13 @@ public final class VazioReino {
                 ruinaAutomatica(nv);
             }
             animarAbertura(nv, agora);
+            // (5.13.3) o miolo aberto tem que CONTINUAR aberto: se um chunk foi
+            // descarregado no meio da animação (ou alguém quebrou o bloco), ele
+            // repara sozinho — sem depender de ninguém clicar em nada.
+            if (agora >= proximoReparo) {
+                proximoReparo = agora + 5000L;
+                repararMiolo(nv);
+            }
             colocarFila(nv);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: reino do vazio (mundo) falhou", t);
@@ -549,10 +576,16 @@ public final class VazioReino {
     /** abre o portal de baixo para cima (chamado quando o 8º fragmento é encaixado). */
     public static void abrirPortal(ServerLevel nv, ServerPlayer p) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
-        BlockPos base = ancoraPortal(nv);
+        // (5.13.3) o portal dos 8 fragmentos é SEMPRE o da praça
+        BlockPos base = ancoraPortalPraca(nv);
+        if (base == null) {
+            base = ancoraPortal(nv);
+        }
         if (base == null) {
             return;
         }
+        RPTagMod.LOGGER.info("RP Tag: abrindo o portal da praca em {} (pedestais de {})",
+                base, p == null ? "comando" : p.getName().getString());
         // (5.13.2) "esse aviso não precisa aparecer que o portal está sendo aberto":
         // o /vazio abrir agora só FAZ — som e animação, nada de mensagem no chat.
         // E se já estava aberto, ele REABRE do zero (é assim que o dono grava vídeo).
@@ -607,12 +640,31 @@ public final class VazioReino {
      * {@link #tickMundo} (sem ninguém), então o /vazio abrir do admin também anima.
      */
     private static void animarAbertura(ServerLevel nv, long agora) {
-        RPWorldData dados = RPWorldData.get(nv.getServer());
-        if (!aberto(nv, dados)) {
-            return;
+        // (5.13.3) a praça e o portal invocado animam cada um por si: antes, se existia
+        // um invocado, a animação só olhava para ele e a praça (a saída do preso) nunca
+        // ficava pronta.
+        BlockPos praca = ancoraPortalPraca(nv);
+        if (praca != null) {
+            animarAbertura(nv, agora, praca);
         }
-        BlockPos base = ancoraPortal(nv);
-        if (base == null) {
+        BlockPos outro = ancoraPortal(nv);
+        if (outro != null && !outro.equals(praca)) {
+            animarAbertura(nv, agora, outro);
+        }
+    }
+
+    /** (5.13.3) este portal está autorizado a abrir? (praça = 8 fragmentos; invocado = livre) */
+    private static boolean baseAberta(ServerLevel nv, RPWorldData dados, BlockPos base) {
+        BlockPos praca = ancoraPortalPraca(nv);
+        if (praca != null && praca.equals(base)) {
+            return dados.isPortalAberto();
+        }
+        return portalInvocado(nv);
+    }
+
+    private static void animarAbertura(ServerLevel nv, long agora, BlockPos base) {
+        RPWorldData dados = RPWorldData.get(nv.getServer());
+        if (base == null || !baseAberta(nv, dados, base)) {
             return;
         }
         String k = chavePortal(nv, base);
@@ -647,36 +699,73 @@ public final class VazioReino {
     /** a cada tick: preenche o miolo de baixo para cima e leva quem entrar. */
     private static void tickPortal(ServerLevel nv, ServerPlayer p, long agora) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
-        BlockPos base = ancoraPortal(nv);
+        // (5.13.3) a PRAÇA manda: é por ela que o preso sai. Um portal invocado
+        // (ferramenta de teste) nunca mais tira a vez dela.
+        BlockPos praca = ancoraPortalPraca(nv);
+        BlockPos base = praca != null ? praca : ancoraPortal(nv);
         if (base == null) {
             return;
         }
 
-        // --- animação de abertura (compartilhada com o tickMundo)
+        // (5.13.3) REDE DE SEGURANÇA: se ele já tem os 8 nos pedestais e o portal da
+        // praça está fechado, abre AGORA — mesmo que o 8º clique tenha se perdido
+        // (chunk descarregado, cliente antigo, clique no bloco errado). Antes, quem
+        // enchia os 8 e não via nada ficava preso no vazio para sempre.
+        try {
+            if (praca != null && !dados.isPortalAberto() && dados.temOsOito(p.getUUID())) {
+                abrirPortal(nv, p);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: auto-abertura do portal falhou", t);
+        }
+
+        // --- animação de abertura (da praça E do invocado, se houver os dois)
         animarAbertura(nv, agora);
 
         // --- atravessar andando (sem clique): 0,7 s dentro do miolo.
-        //     (5.13.1) portal INVOCADO por comando é livre: não cobra fragmento.
-        boolean livre = portalInvocado(nv);
-        boolean dentro = (livre || dados.isPortalAberto()) && dentroDoPortal(p, base)
-                && (livre || dados.temOsOito(p.getUUID()));
-        if (!dentro) {
-            NO_PORTAL.remove(p.getUUID());
-        } else {
-            long desde = NO_PORTAL.computeIfAbsent(p.getUUID(), k -> agora);
-            if (agora - desde > 700L) {
-                NO_PORTAL.remove(p.getUUID());
-                usarPortal(p, nv, base, dados);
-                return;
+        //     · praça: cobra os 8 fragmentos;
+        //     · invocado: livre (é ferramenta de teste).
+        boolean atravessou = false;
+        if (praca != null && dados.isPortalAberto() && dados.temOsOito(p.getUUID())
+                && dentroDoPortal(p, praca)) {
+            atravessou = esperarNoMiolo(p, nv, dados, praca, agora);
+        }
+        if (!atravessou) {
+            BlockPos invocado = portalInvocado(nv) ? ancoraPortal(nv) : null;
+            if (invocado != null && !invocado.equals(praca) && dentroDoPortal(p, invocado)) {
+                atravessou = esperarNoMiolo(p, nv, dados, invocado, agora);
             }
+        }
+        if (!atravessou) {
+            NO_PORTAL.remove(p.getUUID());
         }
 
         // --- manda o estado do portal para o cliente desenhar (1x por segundo)
         long ultimo = ULTIMO_SYNC.getOrDefault(p.getUUID(), 0L);
         if (agora - ultimo > 1000L) {
             ULTIMO_SYNC.put(p.getUUID(), agora);
-            envioEstado(nv, p, dados, base);
+            if (praca != null && dados.isPortalAberto()) {
+                envioEstado(nv, p, dados, praca);
+            } else if (praca != null) {
+                // portal fechado: manda o da praça (para as colunas dos pedestais e o
+                // vinco vermelho), mas sem estado de abertura
+                envioEstado(nv, p, dados, praca);
+            } else {
+                envioEstado(nv, p, dados, base);
+            }
         }
+    }
+
+    /** (5.13.3) 0,7 s encostado no miolo = atravessou. */
+    private static boolean esperarNoMiolo(ServerPlayer p, ServerLevel nv, RPWorldData dados,
+            BlockPos base, long agora) {
+        long desde = NO_PORTAL.computeIfAbsent(p.getUUID(), k -> agora);
+        if (agora - desde > 700L) {
+            NO_PORTAL.remove(p.getUUID());
+            usarPortal(p, nv, base, dados);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -734,14 +823,64 @@ public final class VazioReino {
         }
     }
 
+    /**
+     * (5.13.3) O MIOLO ABERTO SE REPARA SOZINHO.
+     *
+     * <p>Se o portal está aberto e alguma linha do miolo não é {@code escuridao} (chunk
+     * descarregado durante a animação, bloco quebrado em criativo, `/fill` de teste),
+     * ele recoloca a linha. Roda a cada 5 s no tick do mundo — custa 35 leituras.
+     */
+    private static void repararMiolo(ServerLevel nv) {
+        try {
+            RPWorldData dados = RPWorldData.get(nv.getServer());
+            if (!dados.isPortalAberto()) {
+                return;
+            }
+            BlockPos base = ancoraPortalPraca(nv);
+            if (base == null || !nv.isLoaded(base)) {
+                return;
+            }
+            // (5.13.3) NUNCA durante a animação: o miolo é AR de propósito enquanto as
+            // linhas sobem (o reparo já chegou a encher os 35 blocos no 1º segundo e
+            // matou a abertura de baixo para cima).
+            Long inicio = ABERTURA.get(chavePortal(nv, base));
+            if (inicio != null && System.currentTimeMillis() - inicio
+                    < VazioGeometria.ABERTURA_MS + 4000L) {
+                return;
+            }
+            int faltando = 0;
+            for (int y = 0; y < VazioGeometria.ALTURA_MIOLO; y++) {
+                for (int x = -VazioGeometria.LARGURA_MIOLO / 2;
+                        x <= VazioGeometria.LARGURA_MIOLO / 2; x++) {
+                    if (!nv.getBlockState(base.offset(x, y, 0)).is(RPTagMod.ESCURIDAO.get())) {
+                        faltando++;
+                    }
+                }
+            }
+            if (faltando == 0) {
+                return;
+            }
+            for (int y = 0; y < VazioGeometria.ALTURA_MIOLO; y++) {
+                for (int x = -VazioGeometria.LARGURA_MIOLO / 2;
+                        x <= VazioGeometria.LARGURA_MIOLO / 2; x++) {
+                    nv.setBlock(base.offset(x, y, 0),
+                            RPTagMod.ESCURIDAO.get().defaultBlockState(), 2);
+                }
+            }
+            RPTagMod.LOGGER.info("RP Tag: miolo do portal reparado ({} blocos faltando em {})",
+                    faltando, base);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: reparo do portal falhou", t);
+        }
+    }
+
     /** cálculo barato do estado do portal (0 fechado, 1 abrindo, 2 aberto). */
-    public static int estadoPortal(ServerLevel nv) {
+    public static int estadoPortal(ServerLevel nv, BlockPos base) {
         RPWorldData dados = RPWorldData.get(nv.getServer());
-        if (!aberto(nv, dados)) {
+        if (base == null || !baseAberta(nv, dados, base)) {
             return 0;
         }
-        BlockPos base = ancoraPortal(nv);
-        Long inicio = base == null ? null : ABERTURA.get(chavePortal(nv, base));
+        Long inicio = ABERTURA.get(chavePortal(nv, base));
         if (inicio == null || inicio <= 0L) {
             return 2;
         }
@@ -756,7 +895,7 @@ public final class VazioReino {
                     base.getX(), base.getY(), base.getZ(),
                     dados.getPedestais(p.getUUID()),
                     Integer.bitCount(dados.getSantuarios(p.getUUID())),
-                    estadoPortal(nv)));
+                    estadoPortal(nv, base)));
         } catch (Throwable t) {
             // pacote é cosmético: se falhar, o jogo segue
         }
@@ -905,6 +1044,66 @@ public final class VazioReino {
             abrirPortal(nv, p);
         }
         return true;
+    }
+
+    /**
+     * (5.13.3) `/vazio pedestais encher` — enche os 8 pedestais na hora e abre o portal.
+     *
+     * <p>É ferramenta de teste/demonstração: o dono já ficou preso no vazio esperando o
+     * portal que os 8 fragmentos deveriam abrir. Com isso, um comando mostra na hora se
+     * o portal da praça abre (e, se não abrir, o problema é outro — dá para ver no
+     * relatório do {@code /vazio pedestais}).
+     *
+     * @return quantos pedestais ficaram cheios, ou -1 se não estava no vazio.
+     */
+    public static int encherPedestais(ServerPlayer p) {
+        if (!(p.level() instanceof ServerLevel nv) || !ehVazio(nv)) {
+            return -1;
+        }
+        RPWorldData dados = RPWorldData.get(p.getServer());
+        for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
+            dados.encaixarNoPedestal(p.getUUID(), i);
+            BlockPos a = ancoraPedestal(nv, i);
+            nv.getChunk(a.getX() >> 4, a.getZ() >> 4);
+            nv.setBlock(a.offset(0, 2, 0), Blocks.SCULK_CATALYST.defaultBlockState(), 2);
+        }
+        abrirPortal(nv, p);
+        return dados.quantosPedestais(p.getUUID());
+    }
+
+    /**
+     * (5.13.3) RELATÓRIO DO PORTAL — uma linha para o dono mandar quando "não abre".
+     *
+     * <p>Diz onde o portal da praça deveria estar, quantos blocos de escuridão existem no
+     * miolo (0/35 = fechado, 35/35 = aberto), se o mundo acha que ele está aberto, se o
+     * jogador tem os 8 e se existe algum portal invocado atrapalhando.
+     */
+    public static String relatorioPortal(ServerLevel nv, java.util.UUID id) {
+        try {
+            RPWorldData dados = RPWorldData.get(nv.getServer());
+            BlockPos praca = ancoraPortalPraca(nv);
+            int escuros = 0;
+            if (praca != null && nv.isLoaded(praca)) {
+                for (int y = 0; y < VazioGeometria.ALTURA_MIOLO; y++) {
+                    for (int x = -VazioGeometria.LARGURA_MIOLO / 2;
+                            x <= VazioGeometria.LARGURA_MIOLO / 2; x++) {
+                        if (nv.getBlockState(praca.offset(x, y, 0))
+                                .is(RPTagMod.ESCURIDAO.get())) {
+                            escuros++;
+                        }
+                    }
+                }
+            }
+            BlockPos invocado = portalInvocado(nv) ? ancoraPortal(nv) : null;
+            return "\u00a78praca: \u00a7f" + (praca == null ? "fora do vazio" : praca)
+                    + "\u00a78 · miolo: \u00a7f" + escuros + "/" + (VazioGeometria.ALTURA_MIOLO
+                            * VazioGeometria.LARGURA_MIOLO)
+                    + "\u00a78 · aberto: \u00a7f" + dados.isPortalAberto()
+                    + "\u00a78 · 8 fragmentos: \u00a7f" + dados.temOsOito(id)
+                    + "\u00a78 · invocado: \u00a7f" + (invocado == null ? "nao" : invocado);
+        } catch (Throwable t) {
+            return "\u00a7crelatorio falhou: " + t;
+        }
     }
 
     /** clique no altar: leva o fragmento (uma vez por santuário, por jogador). */
