@@ -2130,8 +2130,9 @@ public final class NeptuneEventos {
         EXILIOS.add(new Object[]{ agora + 2400L, alvo.getUUID(), 1, agora });
         PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
                 NeptunePackets.Cena.CENA_VOLTA, 1.0F, 2800, System.nanoTime()));
-        // (5.13.4) saiu do vazio: aviso em LETRAS PRETAS (foi tirado)
-        avisoSaidaDoVazio(alvo, false);
+        // (5.13.5) O AVISO SAIU DAQUI: ele aparecia com o jogador AINDA no vazio (e de novo
+        // na hora do teleporte — duas vezes). Agora o único aviso é o que o
+        // irParaSpawn() manda, na hora em que ele realmente pisa no spawn ("foi tirado").
     }
 
     /**
@@ -2167,7 +2168,7 @@ public final class NeptuneEventos {
             if (tipo == 0) {
                 levarProExilio(p);
             } else {
-                devolverAleatorio(p);
+                devolverAoSpawn(p);
             }
         }
     }
@@ -2321,140 +2322,107 @@ public final class NeptuneEventos {
      * tenta 24 vezes antes de desistir; se nada der certo, cai no spawn.
      */
     /**
-     * (5.13.2) DEVOLVE AO PONTO DE ENTRADA (o lugar exato de onde a pessoa sumiu).
+     * (5.13.5) A SAÍDA DO VAZIO É NO <b>SPAWN DO JOGADOR</b> — pedido 55.
      *
-     * <p>É o pedido repetido do dono: <i>"para onde a pessoa entrar na dimensão, na hora
-     * que sair ele deve continuar no mesmo local que ele sumiu"</i>. Vale para TODA saída
-     * do vazio — portal, /vazio soltar ou morte — porque todas passam por aqui.
+     * <p>O dono, duas vezes: <i>"dnovo voce nao conseguiu arrumar o negocio de sair do
+     * vazio e voltar em qualquer lugar do mapa, tem que ser no SPAWN dele"</i>. Então o
+     * portal (e o /vazio soltar, e a morte no vazio) deixaram de devolver "onde a pessoa
+     * entrou": agora devolvem no <b>spawn dela</b> —
+     * <ol>
+     *   <li>a <b>cama / âncora de renascimento</b> em que ela renasceria se morresse;</li>
+     *   <li>se ela não tiver nenhuma, o <b>spawn do mundo</b>.</li>
+     * </ol>
      *
-     * @return true se havia um ponto gravado e o teleporte aconteceu.
+     * <p>O lugar de onde ela entrou continua sendo gravado no save ({@code RPWorldData.Volta})
+     * só como registro histórico — a saída não usa mais.
+     *
+     * @param escapou true = saiu pelo portal sozinho ("VOCÊ ESCAPOU DO VAZIO");
+     *                false = foi tirado por admin ("VOCÊ FOI TIRADO DO VAZIO").
      */
-    public static boolean voltarParaEntrada(ServerPlayer alvo) {
+    public static boolean irParaSpawn(ServerPlayer alvo, boolean escapou) {
         try {
             RPWorldData dados = RPWorldData.get(alvo.getServer());
-            RPWorldData.Volta volta = dados.getVolta(alvo.getUUID());
-            if (volta == null) {
-                return false;
-            }
-            var chave = net.minecraft.resources.ResourceKey.create(
-                    net.minecraft.core.registries.Registries.DIMENSION,
-                    net.minecraft.resources.ResourceLocation.parse(volta.dimensao()));
-            ServerLevel destino = alvo.getServer().getLevel(chave);
-            if (destino == null) {
-                return false;
-            }
             dados.setVolta(alvo.getUUID(), null);
             ORIGEM.remove(alvo.getUUID());
-            destino.getChunk((int) Math.floor(volta.x()) >> 4, (int) Math.floor(volta.z()) >> 4);
-            alvo.teleportTo(destino, volta.x(), volta.y(), volta.z(),
-                    java.util.Set.of(), volta.yaw(), volta.pitch());
-            destino.playSound(null, alvo.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
-                    SoundSource.HOSTILE, 1.0F, 0.9F);
-            // (5.13.4) saiu pelo portal: aviso em LETRAS PRETAS (escapou)
-            avisoSaidaDoVazio(alvo, true);
+
+            // 1) o spawn DELE: a cama / âncora de renascimento
+            BlockPos cama = alvo.getRespawnPosition();
+            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> chaveCama =
+                    alvo.getRespawnDimension();
+            ServerLevel mundoCama = chaveCama == null ? null : alvo.getServer().getLevel(chaveCama);
+            if (mundoCama != null && cama != null) {
+                mundoCama.getChunk(cama.getX() >> 4, cama.getZ() >> 4);
+                pousar(mundoCama, alvo, cama.getX() + 0.5, cama.getY() + 1.0, cama.getZ() + 0.5,
+                        alvo.getRespawnAngle());
+                avisoSaidaDoVazio(alvo, escapou);
+                RPTagMod.LOGGER.info("RP Tag: {} saiu do vazio no spawn dele {} ({})",
+                        alvo.getName().getString(), cama, chaveCama.location());
+                return true;
+            }
+
+            // 2) sem cama: o SPAWN DO MUNDO (no chão, nunca dentro da pedra)
+            ServerLevel principal = alvo.getServer().overworld();
+            BlockPos sp = principal.getSharedSpawnPos();
+            principal.getChunk(sp.getX() >> 4, sp.getZ() >> 4);
+            int chao = principal.getHeight(
+                    net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                    sp.getX(), sp.getZ());
+            double y = Math.max(chao, sp.getY()) + 0.1;
+            pousar(principal, alvo, sp.getX() + 0.5, y, sp.getZ() + 0.5,
+                    principal.getSharedSpawnAngle());
+            avisoSaidaDoVazio(alvo, escapou);
+            RPTagMod.LOGGER.info("RP Tag: {} saiu do vazio no spawn do mundo {}",
+                    alvo.getName().getString(), sp);
             return true;
         } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: volta ao ponto de entrada falhou (o jogo segue)", t);
+            RPTagMod.LOGGER.warn("RP Tag: voltar ao spawn do jogador falhou (o jogo segue)", t);
             return false;
         }
     }
 
-    private static void devolverAleatorio(ServerPlayer alvo) {
-        try {
-            // (5.13.2) PRIMEIRO o lugar de onde ele entrou — o "aleatório" é só o
-            // último recurso de quem se perdeu sem registro nenhum.
-            if (voltarParaEntrada(alvo)) {
-                return;
-            }
-            ORIGEM.remove(alvo.getUUID());
-            ServerLevel mundo = alvo.getServer().overworld();
-            java.util.Random sorte = new java.util.Random();
-            BlockPos alvoPos = null;
-            for (int tentativa = 0; tentativa < 24 && alvoPos == null; tentativa++) {
-                int x = sorte.nextInt(RAIO_SOLTURA * 2 + 1) - RAIO_SOLTURA;
-                int z = sorte.nextInt(RAIO_SOLTURA * 2 + 1) - RAIO_SOLTURA;
-                if (Math.hypot(x, z) < 120) {
-                    continue;                        // não solta colado no spawn
-                }
-                // garante que o chunk existe antes de perguntar a altura
-                mundo.getChunk(x >> 4, z >> 4);
-                int y = mundo.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                BlockPos p = new BlockPos(x, y, z);
-                BlockState chao = mundo.getBlockState(p.below());
-                BlockState ar = mundo.getBlockState(p);
-                boolean ruim = chao.isAir() || !chao.getFluidState().isEmpty()
-                        || chao.is(Blocks.LAVA) || chao.is(Blocks.WATER)
-                        || !ar.getFluidState().isEmpty();
-                if (!ruim) {
-                    alvoPos = p;
-                }
-            }
-            if (alvoPos == null) {
-                alvoPos = mundo.getSharedSpawnPos();
-            }
-            alvo.teleportTo(mundo, alvoPos.getX() + 0.5, alvoPos.getY() + 1.0, alvoPos.getZ() + 0.5,
-                    java.util.Set.of(), sorte.nextFloat() * 360.0F, 0.0F);
-            mundo.playSound(null, alvoPos, RPTagMod.SOM_EXPULSAO.get(), SoundSource.HOSTILE, 1.0F, 0.9F);
-            PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
-                    NeptunePackets.Cena.CENA_VOLTA, 1.0F, 2200, System.nanoTime()));
-            // (5.13.4) sem mensagem no chat: só o aviso em letras pretas
-            avisoSaidaDoVazio(alvo, false);
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: volta do exilio falhou (o jogo segue)", t);
-        }
+    /** o teleporte em si: teleporta, toca o som da expulsão e limpa a queda. */
+    private static void pousar(ServerLevel mundo, ServerPlayer alvo, double x, double y, double z,
+            float yaw) {
+        VazioReino.soltarCaindo(alvo);
+        alvo.teleportTo(mundo, x, y, z, java.util.Set.of(), yaw, 0.0F);
+        mundo.playSound(null, alvo.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
+                SoundSource.HOSTILE, 1.0F, 0.9F);
     }
 
     /**
      * (5.12.0) A VOLTA PELO PORTAL — o jogador sai do vazio SOZINHO.
      *
-     * <p>Pedido 49: <i>"sem nenhum adm precisar tirar ele"</i>. Quem juntou os
-     * 8 fragmentos e tocou no miolo do portal volta pro lugar de onde foi
-     * expulso (o {@code ORIGEM}); se não houver origem guardada (servidor
-     * reiniciou, por exemplo), cai num ponto sorteado do mundo.
+     * <p>Pedido 49: <i>"sem nenhum adm precisar tirar ele"</i>. Quem juntou os 8
+     * fragmentos e atravessou o portal cai — desde a 5.13.5 — no <b>spawn dele</b>
+     * (ver {@link #irParaSpawn}).
      */
     public static void voltarPeloPortal(ServerPlayer alvo) {
         try {
             VazioReino.soltarCaindo(alvo);
             PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
                     NeptunePackets.Cena.CENA_VOLTA, 1.0F, 2600, System.nanoTime()));
-            // (5.13.0) PRIMEIRO o lugar gravado no save (pedido 50: "sair pelo portal
-            // devolve ao local de onde entrou"); a memória é só a rede de segurança.
-            RPWorldData dados = RPWorldData.get(alvo.getServer());
-            RPWorldData.Volta volta = dados.getVolta(alvo.getUUID());
-            if (volta != null) {
-                dados.setVolta(alvo.getUUID(), null);
-                ORIGEM.remove(alvo.getUUID());
-                var chaveSalva = net.minecraft.resources.ResourceKey.create(
-                        net.minecraft.core.registries.Registries.DIMENSION,
-                        net.minecraft.resources.ResourceLocation.parse(volta.dimensao()));
-                ServerLevel destinoSalvo = alvo.getServer().getLevel(chaveSalva);
-                if (destinoSalvo != null) {
-                    alvo.teleportTo(destinoSalvo, volta.x(), volta.y(), volta.z(),
-                            java.util.Set.of(), volta.yaw(), volta.pitch());
-                    destinoSalvo.playSound(null, alvo.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
-                            SoundSource.HOSTILE, 1.0F, 0.9F);
-                    avisoSaidaDoVazio(alvo, true);
-                    return;
-                }
-            }
-            Object[] o = ORIGEM.remove(alvo.getUUID());
-            if (o != null && o[0] instanceof net.minecraft.resources.ResourceKey<?> chaveBruta) {
-                @SuppressWarnings("unchecked")
-                net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> chave =
-                        (net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>) chaveBruta;
-                ServerLevel destino = alvo.getServer().getLevel(chave);
-                if (destino != null) {
-                    alvo.teleportTo(destino, (Double) o[1], (Double) o[2], (Double) o[3],
-                            java.util.Set.of(), (Float) o[4], (Float) o[5]);
-                    destino.playSound(null, alvo.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
-                            SoundSource.HOSTILE, 1.0F, 0.9F);
-                    avisoSaidaDoVazio(alvo, true);
-                    return;
-                }
-            }
-            devolverAleatorio(alvo);
+            irParaSpawn(alvo, true);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: volta pelo portal falhou (o jogo segue)", t);
+        }
+    }
+
+    /**
+     * (5.7.6) devolve quem foi solto / quem morreu no vazio — também no SPAWN dele.
+     * (5.13.5) deixou de ser "aleatório": o dono quer o spawn, ponto.
+     */
+    private static void devolverAoSpawn(ServerPlayer alvo) {
+        try {
+            if (!irParaSpawn(alvo, false)) {
+                // rede de segurança: se nem o spawn do mundo carregou, vai pro overworld
+                ServerLevel mundo = alvo.getServer().overworld();
+                pousar(mundo, alvo, 0.5, mundo.getHeight(
+                        net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                        0, 0) + 0.1, 0.5, 0.0F);
+                avisoSaidaDoVazio(alvo, false);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: volta do exilio falhou (o jogo segue)", t);
         }
     }
 

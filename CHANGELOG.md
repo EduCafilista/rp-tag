@@ -1,5 +1,59 @@
 # Changelog
 
+## 5.13.5 — a saída é no SPAWN, o portal se atravessa e o vazio escureceu — 2026-11-02
+
+> Dono: **"quando o player sair... nao é para ter nenhum rp admin avisar na tela do player"**,
+> **"sair do vazio e voltar em qualquer lugar do mapa, tem que ser no SPAWN dele"**,
+> **"nao quero que o portal seja bloco fisico, quero que o player possa passar, atravessar ele
+> mesmo, como um portal"**, **"pode deixar a dimensao mais escura dnovo"** e a pergunta dos mods
+> de mapa.
+
+### A saída é no spawn do jogador
+
+- `NeptuneEventos.irParaSpawn(alvo, escapou)` substitui o "volta de onde entrou" e o sorteio:
+  **cama/âncora de renascimento** do jogador; sem cama, o **spawn do mundo** (altura do heightmap,
+  chunk carregado antes do teleporte).
+- `voltarPeloPortal` → `irParaSpawn(alvo, true)`; `devolverAleatorio` virou `devolverAoSpawn` →
+  `irParaSpawn(alvo, false)`; `voltarParaEntrada` (que lia `RPWorldData.Volta`) foi removida do
+  caminho de saída. `ORIGEM`/`Volta` continuam sendo gravados só como histórico.
+- **O "VOCÊ FOI TIRADO DO VAZIO" indevido**: quem saía pelo portal sem registro de origem caía no
+  caminho de reserva e recebia a frase do admin. Agora saída pelo portal = sempre "ESCAPOU"; a
+  frase "TIRADO" só existe no `/vazio soltar`.
+
+### Nenhum aviso de admin na tela do jogador
+
+- `/vazio soltar`, `/vazio exilar` e `/vazio entrar` deixaram de fazer **broadcast** (`sendSuccess
+  (…, true)` → `false`): só quem digitou vê a confirmação.
+- `soltarDoExilio` não manda mais o aviso antes de sair (aparecia duas vezes).
+- Atravessar o portal não manda mais a barra de ação "X atravessou o portal" para os outros.
+
+### Portal atravessável
+
+- `EscuridaoBlock` registrado com **`noCollission()`**: dá para andar por dentro do miolo.
+- `dentroDoPortal` usa agora a caixa do próprio miolo (|z| ≤ 0,48 do plano, 5 de largura, 7 de
+  altura) e o tempo dentro caiu de **0,7 s para 0,12 s** — passa andando (~0,22 s dentro) e
+  correndo (~0,17 s), e quem encosta na beirada não é levado. O clique continua valendo.
+
+### Dimensão mais escura
+
+- `dimension_type/exilio.json`: `ambient_light 0.42 → 0.14` e `fixed_time 6000 → 18000`
+  (meia-noite: acabou o "meio-dia" da dimensão).
+- `VazioNeblina`: cor 0,130/0,120/0,165 → **0,058/0,052/0,080**; horizonte 210 → **150** blocos.
+
+### Mods de mapa
+
+- `lang/pt_br` e `lang/en_us` ganharam **`dimension.rptag.exilio`** ("O Vazio" / "The Void") e
+  `dimension.rptag.vazio`. A dimensão já é registrada como `rptag:exilio`, então aparece como
+  dimensão própria em Xaero's/JourneyMap/VoxelMap.
+
+### Testado
+
+- 1º boot: praça, 8 pedestais, portal, anel de 14 construções, relevo (103.399 blocos),
+  **0 exceptions**; `0 12 -22` = `escuridao` no vazio e nada fora dele; `0 9 -22` = piso.
+- `javac` 0 erros · `check.py` **883 PASS / 0 FAIL**.
+- O andar-para-dentro e o teleporte ao spawn dependem de jogador e ficam para o teste do dono
+  (o ambiente de build não roda cliente).
+
 ## 5.13.4 — o vazio cala a boca e para de se reconstruir — 2026-11-02
 
 > Dono: **"tirar os avisos de tela quando entra e quando sai"**, **"um aviso com letras pretas

@@ -48,14 +48,17 @@ public final class VazioNeblina {
         // de cidade morta ao entardecer (#2A2833–#33303F): dá para ver longe, e o clima
         // continua sendo o de um lugar sem sol.
         // (5.13.2) "TA TUDO PRETO, NAO VEJO NEM MINHA HOTBAR" — a neblina era
-        // quase preta (0,05) e o dono lia a dimensão como tela travada. Agora é
-        // o cinza-azul de cidade morta ao ANOITECER (0,13 / 0,12 / 0,16): dá para
-        // ver o chão, as ruínas e o horizonte, e ainda é um lugar sem sol.
+        // quase preta (0,05) e o dono lia a dimensão como tela travada. Ficou o
+        // cinza-azul de cidade morta ao ANOITECER (0,13 / 0,12 / 0,16).
+        // (5.13.5) "pode deixar a dimensao mais escura dnovo": escureceu DE VERDADE,
+        // mas sem virar o breu de 5.13.1 — a neblina agora é chumbo-azulada
+        // (0,058 / 0,052 / 0,080), o suficiente para ver o chão e as ruínas perto e
+        // para o horizonte sumir. O que ilumina o resto são as lanternas de alma.
         float t = (System.currentTimeMillis() % 20000L) / 20000F;
-        float pulso = 0.008F + 0.008F * (float) Math.sin(t * 6.2831853F);
-        e.setRed(0.130F + pulso);
-        e.setGreen(0.120F + pulso);
-        e.setBlue(0.165F + pulso * 1.2F);
+        float pulso = 0.004F + 0.004F * (float) Math.sin(t * 6.2831853F);
+        e.setRed(0.058F + pulso);
+        e.setGreen(0.052F + pulso);
+        e.setBlue(0.080F + pulso * 1.2F);
     }
 
     /** a neblina fecha perto: o que é longe é breu. */
@@ -68,8 +71,10 @@ public final class VazioNeblina {
         float y = mc.player == null ? 0F : (float) mc.player.getY();
         // (5.13.1) horizonte visível: 190 blocos (era 96). Caindo no vazio, a neblina
         // volta a engolir rápido — é o único lugar onde o breu é proposital.
-        float perto = y < 0 ? 2F : 26F;
-        float longe = y < 0 ? 30F : 210F;
+        // (5.13.5) "mais escura": o horizonte fecha em 150 (era 210) e começa em 20 —
+        // a cidade morta aparece como silhueta, do jeito que o dono pediu.
+        float perto = y < 0 ? 2F : 20F;
+        float longe = y < 0 ? 30F : 150F;
         e.setNearPlaneDistance(perto);
         e.setFarPlaneDistance(longe);
         e.setCanceled(true);

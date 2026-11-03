@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.13.4'
+VER = '5.13.5'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1631,11 +1631,11 @@ check('5.5.0: dimensao do EXILIO existe (rptag:exilio) com chao (5.7.8: camadas 
 # (5.13.1) O DONO VOLTOU ATRAS: o vazio NAO pode ser tudo preto ("o vazio deve
 # ser como antes, pq agora ta tudo preto na dimensao"). Voltaram os valores de
 # 9938159: luz ambiente 0,42, ceu ligado, sem teto e o CEU DO OVERWORLD.
-check('5.13.1 (pedido 51): o vazio voltou a ser ILUMINADO (luz 0,42 + ceu do overworld)',
-      '"ambient_light": 0.42' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+check('5.13.5 (pedido 55): o vazio voltou a ser ESCURO (luz 0,14 + meia-noite fixa)',
+      '"ambient_light": 0.14' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"fixed_time": 18000' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and '"has_skylight": true' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and '"has_ceiling": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and '"fixed_time": 6000' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and 'minecraft:overworld' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and os.path.exists(C + '/VazioNeblina.java'))
 check('5.7.9: exilar POUSA na SUPERFICIE (y=1 era dentro da pedra: nao andava nem via)',
@@ -1913,8 +1913,8 @@ check('5.7.6: som NOVO do terremoto (gravacao CC0 real + estalos + sub)',
 check('5.7.6: EXILIO com animacao no mundo (particulas + sucção + raios)',
       'tickExilios' in _ne2 and 'particulasExilio' in _ne2
       and 'CENA_EXILIO' in _npk and 'CENA_VOLTA' in _npk)
-check('5.7.6: a ORIGEM de quem foi exilado fica guardada (5.7.8: solta aleatorio)',
-      'ORIGEM.put(' in _ne2 and 'devolverAleatorio' in _ne2 and 'ORIGEM.remove(' in _ne2)
+check('5.7.6: a ORIGEM de quem foi exilado fica guardada (5.13.5: sai no SPAWN)',
+      'ORIGEM.put(' in _ne2 and 'devolverAoSpawn' in _ne2 and 'ORIGEM.remove(' in _ne2)
 check('5.7.6: na tela, escuridao do exilio (indo) e da volta (abrindo)',
       'desenharExilioCena' in _nfx and 'CENA_EXILIO' in _nfx and 'CENA_VOLTA' in _nfx)
 check('5.13.1 (pedido 51): a aura sao DOIS OLHOS vermelhos + estilhacos de pedra',
@@ -1984,9 +1984,9 @@ check('5.7.8: som NOVO de expulsão (o que o dono mandou) no jogo',
       and 'expulsao' in rd('src/main/resources/assets/rptag/sounds.json'))
 check('5.7.8: o som toca quando jogam a pessoa pra fora do mapa e no /terremoto sair',
       _ne2.count('SOM_EXPULSAO.get()') >= 3)
-check('5.7.8: /vazio soltar devolve num lugar ALEATORIO do mundo',
-      'devolverAleatorio' in _ne2 and 'RAIO_SOLTURA = 4000' in _ne2
-      and 'MOTION_BLOCKING_NO_LEAVES' in _ne2)
+check('5.13.5: /vazio soltar devolve no SPAWN do jogador (nao mais aleatorio)',
+      'devolverAoSpawn' in _ne2 and 'irParaSpawn(' in _ne2
+      and 'getSharedSpawnPos()' in _ne2 and 'getRespawnPosition()' in _ne2)
 check('5.7.8: a dimensao do exilio tem chao de verdade e da pra ANDAR no escuro',
       'blackstone' in rd('src/main/resources/data/rptag/dimension/exilio.json')
       and 'sculk' in rd('src/main/resources/data/rptag/dimension/exilio.json')
@@ -2332,8 +2332,8 @@ check('5.12.0: CADA passo do deus bate um WARDEN_STEP grave',
       'SoundEvents.WARDEN_STEP' in _nev and 'SoundSource.HOSTILE, 1.35F' in _nev)
 
 # 3) vazio mais preto + prédios perdidos
-check('5.13.1 (pedido 51): a dimensao NAO e mais preta (luz 0,42, ceu, ceu do overworld)',
-      '"ambient_light": 0.42' in _dim and '"has_skylight": true' in _dim
+check('5.13.5 (pedido 55): a dimensao esta mais ESCURA de novo (luz 0,14, noite fixa)',
+      '"ambient_light": 0.14' in _dim and '"fixed_time": 18000' in _dim
       and 'minecraft:overworld' in _dim)
 check('5.12.0: neblina do vazio quase preta no cliente (VazioNeblina)',
       os.path.exists(C + '/VazioNeblina.java')
@@ -2413,9 +2413,10 @@ check('5.13.1: o portal abre de BAIXO PARA CIMA (linha por linha, 6 s)',
 check('5.13.1: comando para INVOCAR o portal (/vazio portal [jogador])',
       'public static String invocarPortal(ServerPlayer p)' in _vr
       and 'VazioReino.invocarPortal(quem)' in _nec)
-check('5.13.1: atravessar o portal devolve ao LUGAR DE ONDE ENTROU (salvo no mundo)',
-      'record Volta(' in _rwd and 'getVolta' in _rwd
-      and 'setVolta(alvo.getUUID()' in _nev and 'dados.getVolta(alvo.getUUID())' in _nev)
+check('5.13.5: atravessar o portal devolve no SPAWN (cama/ancora ou spawn do mundo)',
+      'irParaSpawn(alvo, true)' in _nev and 'getRespawnPosition()' in _nev
+      and 'getRespawnDimension()' in _nev and 'getSharedSpawnPos()' in _nev
+      and 'dados.setVolta(alvo.getUUID(), null)' in _nev)
 check('5.13.1: preferir teletransporte pelo portal: entrar andando ou clicando',
       'dentroDoPortal(p, base)' in _vr and 'usarPortal(p, nv, base, dados)' in _vr)
 check('5.13.1: WAYSTONE bloqueada dentro do vazio (bloco e item na mão)',
@@ -2434,10 +2435,10 @@ check('5.13.1 (pedido 51): cada portal tem o SEU relogio de abertura (chavePorta
 check('5.13.1 (pedido 51): a cidade morta nasce sozinha (ruinas, predios, quarteiroes)',
       'private static void ruinaAutomatica' in _vr and 'enfileirarQuarteirao' in _vr
       and 'enfileirarRuinaBaixa' in _vr and 'proximaRuina' in _vr)
-check('5.13.2: neblina de cidade morta LEGÍVEL (0,13 / 0,12 / 0,16, horizonte 210)',
-      '0.130F' in rd(C + '/VazioNeblina.java')
-      and '0.165F' in rd(C + '/VazioNeblina.java')
-      and '210F' in rd(C + '/VazioNeblina.java'))
+check('5.13.5: neblina mais ESCURA (0,058 / 0,052 / 0,080, horizonte 150)',
+      '0.058F' in rd(C + '/VazioNeblina.java')
+      and '0.080F' in rd(C + '/VazioNeblina.java')
+      and '150F' in rd(C + '/VazioNeblina.java'))
 check('5.13.2: passo do deus só com o pé no chão (voando não faz barulho de andar)',
       'boolean peNoChao;' in _ne2 and 'p.onGround() && !p.getAbilities().flying' in _ne2
       and 'if (peNoChao) {' in _ne2)
@@ -2497,10 +2498,29 @@ check('5.13.4: aviso da SAIDA com LETRAS PRETAS (estilo 20, faixa clara)',
       and '0xEFEAD9' in _ce and '0xFF0A0A0A' in _ce)
 check('5.13.4: VOCE ESCAPOU DO VAZIO / VOCE FOI TIRADO DO VAZIO',
       'ESCAPOU DO VAZIO' in _nev and 'TIRADO DO VAZIO' in _nev
-      and 'avisoSaidaDoVazio(alvo, true)' in _nev
-      and 'avisoSaidaDoVazio(alvo, false)' in _nev)
+      and 'avisoSaidaDoVazio(alvo, escapou)' in _nev
+      and 'irParaSpawn(alvo, true)' in _nev
+      and 'irParaSpawn(alvo, false)' in _nev)
 check('5.13.4: nada de aviso automatico na barra de acao dentro do vazio',
       'dica(p, RPWorldData.get(p.getServer()));' not in _vr)
+check('5.13.5 (pedido 55): a ESCURIDAO nao tem colisao (da para ATRAVESSAR o portal)',
+      '.noCollission()' in rtm and 'ATRAVESSÁVEL' in rd(R + '/EscuridaoBlock.java'))
+check('5.13.5: atravessar andando dispara em 0,12 s (o miolo e 1 bloco de fundo)',
+      'agora - desde > 120L' in _vr and '<= 0.48' in _vr)
+check('5.13.5: SEM aviso na tela dos outros ao atravessar o portal',
+      'atravessou o portal' not in _vr and 'O vazio ficou mais vazio' not in _vr)
+check('5.13.5 (pedido 55): o /vazio soltar NAO avisa a tela de todo mundo',
+      'SPAWN dele' in _nec and 'no lugar aleat' not in _nec)
+check('5.13.5 (pedido 55): a saida e no SPAWN dele (cama/ancora ou spawn do mundo)',
+      'alvo.getRespawnPosition()' in _nev and 'alvo.getRespawnDimension()' in _nev
+      and 'getSharedSpawnPos()' in _nev and 'getSharedSpawnAngle()' in _nev
+      and 'private static void pousar(' in _nev)
+check('5.13.5 (pedido 55): a dimensao mais escura nao virou tela preta (neblina 0,05x)',
+      '0.058F' in rd(C + '/VazioNeblina.java')
+      and '"ambient_light": 0.14' in _dim)
+check('5.13.5: mods de mapa mostram o nome da dimensao (lang dimension.rptag.exilio)',
+      'dimension.rptag.exilio' in rd('src/main/resources/assets/rptag/lang/pt_br.json')
+      and 'dimension.rptag.exilio' in rd('src/main/resources/assets/rptag/lang/en_us.json'))
 check('5.13.4: construcoes do vazio ficam marcadas NO SAVE (spawna uma vez so)',
       'private final java.util.Set<String> construcoes' in _rwd
       and 'public boolean marcarConstrucao(String chave)' in _rwd

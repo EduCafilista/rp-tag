@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.13.4";
+    public static final String VERSION = "5.13.5";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -171,12 +171,17 @@ public final class RPTagMod {
     /**
      * (5.13.2) ESCURIDÃO — o bloco NEGRO do portal (pedido do dono: "não quero que
      * seja black concrete, crie um bloco preto... um bloco negro chamado escuridão").
-     * Colisão cheia e indestrutível: o portal se usa, não se atravessa.
+     *
+     * <p>(5.13.5) <b>SEM COLISÃO</b> — pedido 55: <i>"não quero que o portal seja bloco
+     * físico, quero que o player possa passar, atravessar ele mesmo, como um portal"</i>.
+     * O bloco continua preto, indestrutível, com a animação e com o clique, mas o
+     * jogador ATRAVESSA andando (e é aí que ele teleporta).
      */
     public static final Supplier<EscuridaoBlock> ESCURIDAO = BLOCKS.register("escuridao",
             () -> new EscuridaoBlock(BlockBehaviour.Properties.of()
                     .strength(-1.0F, 3600000.0F)
                     .sound(SoundType.SCULK)
+                    .noCollission()
                     .lightLevel(st -> 1)));
     public static final Supplier<Item> ESCURIDAO_ITEM = ITEMS.register("escuridao",
             () -> new BlockItem(ESCURIDAO.get(), new Item.Properties()));

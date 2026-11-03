@@ -177,8 +177,12 @@ public final class NeptuneCommands {
                 .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
                     ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
                     NeptuneEventos.soltarDoExilio(alvo);
+                    // (5.13.5) o aviso é SÓ para quem digitou (era broadcast: o jogador via
+                    // "rp admin" avisando na tela dele) e o texto agora diz a verdade —
+                    // a saída é no SPAWN dele, não num lugar aleatório.
                     ctx.getSource().sendSuccess(() -> Component.literal(
-                            "\u00a7a" + alvo.getName().getString() + " voltou do ex\u00edlio (num lugar aleat\u00f3rio do mundo)."), true);
+                            "\u00a7a" + alvo.getName().getString()
+                                    + " vai voltar do ex\u00edlio no SPAWN dele."), false);
                     return Command.SINGLE_SUCCESS;
                 })));
 
@@ -187,10 +191,12 @@ public final class NeptuneCommands {
         vazio.then(Commands.literal("entrar").executes(ctx -> {
             ServerPlayer quem = ctx.getSource().getPlayerOrException();
             NeptuneEventos.entrarNoExilio(quem);
+            // (5.13.5) feedback SÓ para quem digitou: o dono não quer mensagem de admin
+            // aparecendo na tela dos outros jogadores.
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a78Voc\u00ea est\u00e1 no ex\u00edlio: d\u00e1 pra andar, construir e usar "
                             + "comando normalmente.\n\u00a78Pra sair: \u00a7f/vazio soltar "
-                            + quem.getName().getString()), true);
+                            + quem.getName().getString()), false);
             return Command.SINGLE_SUCCESS;
         }));
 
@@ -200,7 +206,7 @@ public final class NeptuneCommands {
                     ServerPlayer quem = ctx.getSource().getPlayer();
                     NeptuneEventos.exilar(alvo, quem);
                     ctx.getSource().sendSuccess(() -> Component.literal(
-                            "\u00a78Exilado no vazio: \u00a75" + alvo.getName().getString()), true);
+                            "\u00a78Exilado no vazio: \u00a75" + alvo.getName().getString()), false);
                     return Command.SINGLE_SUCCESS;
                 })));
 

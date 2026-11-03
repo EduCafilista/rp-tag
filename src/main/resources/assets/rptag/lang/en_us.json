@@ -9,5 +9,7 @@
   "block.rptag.caixa_bicho": "Music Box",
   "item.rptag.caixa_bicho": "Music Box",
   "item.rptag.fragmento_vazio": "Void Fragment",
-  "block.rptag.escuridao": "Darkness"
+  "block.rptag.escuridao": "Darkness",
+  "dimension.rptag.exilio": "The Void",
+  "dimension.rptag.vazio": "The Void"
 }

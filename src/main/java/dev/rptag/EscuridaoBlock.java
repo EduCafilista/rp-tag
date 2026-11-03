@@ -19,9 +19,13 @@ import net.minecraft.world.phys.BlockHitResult;
  * trás o bloco, continue arrumando e melhorando, um bloco negro chamado escuridão"</i>.
  *
  * <p>Então: o miolo do portal não é mais concreto preto — é este bloco, com nome
- * próprio (<b>Escuridão</b>), textura preta com veios violeta e <b>colisão cheia</b>
- * (ninguém atravessa o portal andando para o outro lado e cai atrás dele; quem passa
- * é porque <i>usou</i> o portal — clique ou encostar).
+ * próprio (<b>Escuridão</b>), textura preta com veios violeta.
+ *
+ * <p>(5.13.5) <b>ATRAVESSÁVEL</b> — pedido 55: <i>"não quero que o portal seja bloco
+ * físico, quero que o player possa passar, atravessar ele mesmo, como um portal"</i>.
+ * O bloco perdeu a colisão ({@code noCollission}): dá para ANDAR por dentro dele, e
+ * ficar dentro por um instante já leva a pessoa para o outro lado — como o portal do
+ * Nether, mas com o clique funcionando também (nada de precisar clicar).
  *
  * <ul>
  *   <li><b>indestrutível</b> em survival (`strength(-1, 3600000)`) — o portal não é
@@ -36,6 +40,7 @@ public class EscuridaoBlock extends Block {
     public EscuridaoBlock(Properties props) {
         super(props);
     }
+
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,

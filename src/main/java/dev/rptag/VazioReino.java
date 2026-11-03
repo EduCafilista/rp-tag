@@ -1097,11 +1097,19 @@ public final class VazioReino {
         }
     }
 
-    /** (5.13.3) 0,7 s encostado no miolo = atravessou. */
+    /**
+     * (5.13.3) ficar DENTRO do miolo = atravessou.
+     *
+     * <p>(5.13.5) eram 0,7 s porque o miolo era sólido e o jogador só conseguia ficar
+     * ENCOSTADO nele; agora ele ATRAVESSA o bloco andando. A conta: dentro do miolo
+     * (0,96 bloco de profundidade útil) ele fica ~0,22 s ANDANDO e ~0,17 s CORRENDO —
+     * então o tempo caiu para 0,12 s: passa andando, passa correndo, e quem só encosta
+     * na beirada não é levado.
+     */
     private static boolean esperarNoMiolo(ServerPlayer p, ServerLevel nv, RPWorldData dados,
             BlockPos base, long agora) {
         long desde = NO_PORTAL.computeIfAbsent(p.getUUID(), k -> agora);
-        if (agora - desde > 700L) {
+        if (agora - desde > 120L) {
             NO_PORTAL.remove(p.getUUID());
             usarPortal(p, nv, base, dados);
             return true;
@@ -1244,14 +1252,18 @@ public final class VazioReino {
 
     /** o jogador está dentro do miolo do portal? */
     private static boolean dentroDoPortal(ServerPlayer p, BlockPos base) {
-        // (5.13.2) o miolo é o bloco ESCURIDÃO (sólido): não existe mais "entrar
-        // andando". Então vale quem está ENCOSTADO na boca do portal — a hitbox do
-        // jogador fica a ~0,5 bloco do plano do miolo.
+        // (5.13.5) O MIOLO AGORA É ATRAVESSÁVEL (pedido 55): o jogador ENTRA andando no
+        // bloco de escuridão. A caixa é a do próprio miolo (5 de largura, 7 de altura,
+        // 1 de profundidade) com a folga da hitbox — quem passa na frente, sem entrar,
+        // não dispara.
         int meiaL = VazioGeometria.LARGURA_MIOLO / 2;
         return Math.abs(p.getX() - (base.getX() + 0.5)) <= meiaL + 0.5
-                && Math.abs(p.getZ() - (base.getZ() + 0.5)) <= 1.25
-                && p.getY() >= base.getY() - 1.2
-                && p.getY() <= base.getY() + VazioGeometria.ALTURA_MIOLO - 0.5;
+                // 0,48 = o miolo tem 1 de profundidade: quem está a menos de meio bloco
+                // do plano está DENTRO do portal (a hitbox já encosta). Parado na frente,
+                // na beirada, não dispara.
+                && Math.abs(p.getZ() - (base.getZ() + 0.5)) <= 0.48
+                && p.getY() >= base.getY() - 0.6
+                && p.getY() <= base.getY() + VazioGeometria.ALTURA_MIOLO - 0.4;
     }
 
     // ============================================================== INTERAÇÃO
@@ -1511,11 +1523,8 @@ public final class VazioReino {
                 nv.setBlock(ancoraPedestal(nv, i).offset(0, 2, 0), Blocks.SCULK.defaultBlockState(), 2);
             }
         }
-        for (ServerPlayer outro : nv.players()) {
-            outro.displayClientMessage(Component.literal(
-                    "\u00a75\u00a7l" + p.getName().getString().toUpperCase()
-                    + " \u00a77atravessou o portal. O vazio ficou mais vazio."), true);
-        }
+        // (5.13.5) SEM aviso na tela de ninguém: o dono não quer texto nenhum no vazio
+        // ("nenhum rp admin avisar na tela do player"). Só a animação e o som.
         NeptuneEventos.voltarPeloPortal(p);
         return true;
     }
