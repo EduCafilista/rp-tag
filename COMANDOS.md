@@ -1,4 +1,4 @@
-# RP Tag — todos os comandos (5.11.1)
+# RP Tag — todos os comandos (5.13.4)
 
 > Lista rápida. No jogo, `/rp ajuda` mostra isso no chat (a parte de admin só aparece para quem é OP).
 
@@ -105,6 +105,9 @@ Alvos: nomes (aceita lista `Ana,Beto`) ou `@a`.
 | `/vazio construir` | (5.13.0) refaz praça, 8 pedestais, 8 altares e o portal na hora |
 | `/vazio pedestais` | (5.13.0/5.13.3) quantos pedestais/altares você tem + **relatório do portal**: praça, miolo (x/35), aberto, 8 fragmentos, portal invocado |
 | `/vazio pedestais encher` | (5.13.3) **TESTE**: enche os 8 pedestais na hora e abre o portal da praça (se isso não abrir, o relatório diz onde falhou) |
+| (5.13.4) **sem aviso na entrada/saída** | a dimensão não manda mais texto automático: nem ao entrar, nem ao sair, nem ao cair no void. O único aviso é o de fuga — faixa **creme com letras pretas**: **"VOCÊ ESCAPOU DO VAZIO"** (saiu sozinho) ou **"VOCÊ FOI TIRADO DO VAZIO"** (`/vazio soltar`) |
+| (5.13.4) **baús do vazio** | cada ruína/prédio tem baú: **comum** (sucata) · **raro** (1 fragmento do vazio) · **mítico** (2 fragmentos + diamantes + echo shard) |
+| (5.13.4) **nada se reconstrói** | praça, pedestais, altares, portal, ruínas e relevo ficam marcados **no save** — reentrar não refaz nada. Para refazer de propósito: `/vazio construir` |
 | `/give @s rptag:escuridao` | (5.13.2) o **bloco do portal** (preto, sólido, indestrutível) — clique nele usa o portal; encostar 0,7 s também |
 | `/bicho aqui` · `/bicho <pos>` · `/bicho limpar` | caixinha de música (o bicho pula quando alguém chega) |
 

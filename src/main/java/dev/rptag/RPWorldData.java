@@ -69,6 +69,47 @@ public final class RPWorldData extends SavedData {
     private final Map<UUID, Integer> fragmentos = new HashMap<>();
     /** (5.13.0) se o portal do vazio está aberto. */
     private boolean portalAberto;
+
+    /**
+     * (5.13.4) O QUE JÁ FOI CONSTRUÍDO NO VAZIO — gravado no save.
+     *
+     * <p>Pedido 53 do dono: <i>"toda vez que entro novamente no void, spawna de novo a
+     * estrutura... as lanternas ficam quebrando; corrija para só spawnar uma vez"</i>.
+     * Antes disso o controle era um {@code Set} estático (memória): cada restart do
+     * servidor (ou reload) reconstruía praça, pedestais, altares e portal POR CIMA do que
+     * já existia — e a reconstrução devolvia o bloco original no lugar da lanterna que o
+     * jogador tinha trocado. Agora a marca é do MUNDO: constrói uma vez e nunca mais.
+     */
+    private final java.util.Set<String> construcoes = new java.util.HashSet<>();
+
+    /** (5.13.4) já foi construído (chave tipo "praca", "P3", "S7", "portal", "R:12,-4")? */
+    public boolean temConstrucao(String chave) {
+        return construcoes.contains(chave);
+    }
+
+    /**
+     * (5.13.4) marca como construído.
+     *
+     * @return true se marcou AGORA (false = já estava marcado, então não construa de novo)
+     */
+    public boolean marcarConstrucao(String chave) {
+        if (construcoes.add(chave)) {
+            setDirty();
+            return true;
+        }
+        return false;
+    }
+
+    /** (5.13.4) quantas construções estão marcadas (relatório). */
+    public int quantasConstrucoes() {
+        return construcoes.size();
+    }
+
+    /** (5.13.4) esquece tudo (usado SÓ pelo /vazio construir, que quer refazer na marra). */
+    public void esquecerConstrucoes() {
+        construcoes.clear();
+        setDirty();
+    }
     private final Map<UUID, BubbleStyle> styles = new HashMap<>();
     private boolean chatLocal = true;
     private boolean bubblesOn = true;
@@ -651,6 +692,13 @@ public final class RPWorldData extends SavedData {
         }
         tag.put("VazioPortais", portaisList);
 
+        // (5.13.4) o que já foi construído no vazio (constrói uma vez, nunca mais)
+        ListTag constrList = new ListTag();
+        for (String k : construcoes) {
+            constrList.add(net.minecraft.nbt.StringTag.valueOf(k));
+        }
+        tag.put("VazioConstrucoes", constrList);
+
         // (5.13.0) lugar de onde cada um foi exilado
         ListTag voltasList = new ListTag();
         for (Map.Entry<UUID, Volta> en : voltas.entrySet()) {
@@ -773,6 +821,11 @@ public final class RPWorldData extends SavedData {
 
         int[] ys = tag.getIntArray("VazioYs");
         data.portalAberto = tag.getBoolean("VazioPortalAberto");
+        // (5.13.4) o que já foi construído no vazio
+        ListTag constrList = tag.getList("VazioConstrucoes", Tag.TAG_STRING);
+        for (int i = 0; i < constrList.size(); i++) {
+            data.construcoes.add(constrList.getString(i));
+        }
         ListTag portaisList = tag.getList("VazioPortais", Tag.TAG_COMPOUND);
         for (int i = 0; i < portaisList.size(); i++) {
             CompoundTag e = portaisList.getCompound(i);

@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.13.3'
+VER = '5.13.4'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -340,7 +340,7 @@ check('assets do coração completos (estado/modelo/item/textura)', _os.path.exi
 check('protecao NÃO some no logout (relog nao burla)', 'PROTECAO_ATE é de propósito NÃO limpa' in cl)
 check('status mostra X/5', '+ "/5"' in rp)
 check('status mostra as vidas canônicas', 'Vidas canônicas:' in rp)
-check('estilo 4 TEXTURIZADO estático (letras não mexem)', 'desenhaTextoTexturizado' in ce and 'Math.min(12, textStyle)' in ce)
+check('estilo 4 TEXTURIZADO estático (letras não mexem)', 'desenhaTextoTexturizado' in ce and 'Math.min(24, textStyle)' in ce)
 check('pesadelo: sway + ghost + fase por char', 'sin(now * 0.0008' in ce and 'GHOST' in ce and 'seed % 7L' in ce)
 check('cursor de digitação piscando', 'digitando' in ce and '"_"' in ce)
 check('caixa ancorada acima do hotbar', 'h - 70 - boxH' in ce)
@@ -406,7 +406,8 @@ check('4.4: giro por relogio de parede (nao trava, nao pula) + batida tum-tum',
       'System.nanoTime()' in ccr and 'Axis.YP.rotationDegrees' in ccr
       and 'Math.exp(-bt * 18.0)' in ccr and 'getBlockPos().getX() * 37' in ccr)
 ce = rd(C + '/ClientEffects.java')
-check('3.98/4.5: client aceita estilos ate 12 (egipicio)', 'Math.min(12, textStyle)' in ce)
+check('3.98/4.5: client aceita estilos ate 24 (egipicio + saida do vazio)',
+      'Math.min(24, textStyle)' in ce)
 check('3.86/3.91: INFERNO aura (fundo + brasa)', '0x140301' in ce and '0xFFC080' in ce)
 check('3.86: GELO (cristais/losango)', '0x081523' in ce and 'desenhaLosango' in ce)
 check('3.86/3.87: DIVINO celestial (raios + ouro)', '0x120D03' in ce and '0xE8C765' in ce)
@@ -509,7 +510,7 @@ check('3.92: camada do FX registrada', 'DivinoAvisoFx.registrar(event)' in cgl)
 ce = rd(C + '/ClientEffects.java')
 check('3.95: startScreenText roteia estilo 7 (divino) pro FX',
       'style == 7' in ce and 'DivinoAvisoFx.iniciar("AVISO", limpo7)' in ce
-      and 'Math.min(12, textStyle)' in ce)
+      and 'Math.min(24, textStyle)' in ce)
 rp = rd(R + '/RPCommands.java')
 check('3.95/3.98: estilo ascensao REMOVIDO (case 11 = pesadelo2)',
       'case "ascensao"' not in rp and 'ASCENSAO' not in rp
@@ -540,7 +541,7 @@ check('3.93: camada do FX registrada', 'DemoniacoAvisoFx.registrar(event)' in cg
 ce = rd(C + '/ClientEffects.java')
 check('3.93: startScreenText roteia estilo 10 pro FX (ordem do prot\u00f3tipo)',
       'style == 10' in ce and 'DemoniacoAvisoFx.iniciar("AVISO", limpoD)' in ce
-      and 'Math.min(12, textStyle)' in ce)
+      and 'Math.min(24, textStyle)' in ce)
 rp = rd(R + '/RPCommands.java')
 check('3.93: somAviso case 10 = particulasAbismo (server-safe)',
       'case 10 -> particulasAbismo(alvo)' in rp
@@ -565,8 +566,8 @@ check('3.95: somAviso case 7 = particulasAscensao (server-safe)',
 check('3.95: somAviso case 9 = particulasSangue (server-safe)',
       'case 9 -> particulasSangue(alvo)' in rp and 'REDSTONE_BLOCK' in rp
       and 'class SangueAvisoFx' not in rp)
-check('3.98/4.5: clamp de estilo max 12 (ClientEffects + LoreZones \u00d72)',
-      'Math.min(12, textStyle)' in ce and lz.count('Math.min(12') == 2)
+check('3.98/4.5: clamp de estilo max 12 no LoreZones (x2) e 24 no ClientEffects',
+      'Math.min(24, textStyle)' in ce and lz.count('Math.min(12') == 2)
 
 # ---- 3.96.0: VOID = "Queda Sem Fundo" + PESADELO = "Sono Sem Descanso"
 # (arquivos do user) ----
@@ -2339,7 +2340,7 @@ check('5.12.0: neblina do vazio quase preta no cliente (VazioNeblina)',
       and 'ViewportEvent.ComputeFogColor' in rd(C + '/VazioNeblina.java')
       and 'ViewportEvent.RenderFog' in rd(C + '/VazioNeblina.java'))
 check('5.12.0: PRÉDIOS PERDIDOS nascem no vazio (ruínas de arranha-céu)',
-      'private static void enfileirarPredio' in _vr and 'PREDIOS_FEITOS' in _vr
+      'private static void enfileirarPredio' in _vr and 'marcar(nv, "B:"' in _vr
       and 'CRACKED_DEEPSLATE_BRICKS' in _vr)
 
 # 4) o vazio que mata dá tempo e depois mata
@@ -2372,9 +2373,9 @@ check('5.12.0: a cobertura da tela é ORGÂNICA e limitada a 0,80 (sem tela pret
 check('5.12.0: estilo 23 = ENGOLIR no cliente e na camada de GUI',
       'if (style == 23)' in _ce and 'EngolirFx.iniciar(limpo23)' in _ce
       and 'EngolirFx.registrar(event)' in _ngl)
-check('5.12.0: o terremoto usa a animação nova em vez da Cena(RACHADURA)',
-      'alvo.getName().getString().toUpperCase(), 11, 23);' in _nev
-      and 'CENA_RACHADURA, 0.8F, 2600' not in _nev)
+check('5.12.0/5.13.4: o terremoto anima no MUNDO e a entrada no vazio nao manda aviso de tela',
+      'CENA_RACHADURA, 0.8F, 2600' not in _nev
+      and ', 11, 23);' not in _nev)
 
 # 7) PEDIDO 50 — pedestais em volta do centro, fragmentos como ITEM, portal de baixo para cima
 _geo = rd(R + '/VazioGeometria.java')
@@ -2460,14 +2461,16 @@ check('5.13.2: portal animado também FORA do vazio (vórtice no overworld)',
       'dimPortal' in rd(C + '/VazioPortalFx.java')
       and 'envioEstado(nv, p, dados, base);' in _vr)
 check('5.13.2: cidade morta já de pé na chegada (anel inicial de ruínas)',
-      'private static void anelInicial(' in _vr and 'anelFeito' in _vr)
+      'private static void anelInicial(' in _vr and 'marcar(nv, "anel")' in _vr)
 check('5.13.1: pacote do portal registrado (canal 13)',
       'VazioPortalPayload.TYPE' in _net and 'event.registrar("13")' in _net
       and 'VazioPortalPayload' in _pay)
 check('5.12.0: a volta pelo portal não depende de admin (voltarPeloPortal)',
       'public static void voltarPeloPortal(ServerPlayer alvo)' in _nev)
-check('5.12.0: o texto do exílio ensina a sair sozinho (fragmentos + portal)',
-      'FRAGMENTOS DO VAZIO' in _nev and 'Ninguém precisa de admin' in _nev)
+check('5.13.4: a ENTRADA no vazio é silenciosa (sem texto na tela nem no chat)',
+      'VOC\u00ca FOI EXPULSO DO MUNDO' not in _nev
+      and 'Um lugar sem céu' not in _nev
+      and 'para fora do universo' not in _nev)
 check('5.12.0: comandos de teste /vazio fragmentos | portal | pedestais | construir',
       'VazioReino.darTudo(quem)' in _nec and 'VazioReino.invocarPortal(quem)' in _nec
       and 'VazioReino.listaPedestais()' in _nec and 'VazioReino.construirTudo(nv, quem)' in _nec)
@@ -2477,7 +2480,7 @@ check('5.12.0: a animação de SAÍDA manda estilo 18 (era 9 = SANGUE)',
       'new ScreenTextPayload(nome, 9, 18)' in _nev
       and 'new ScreenTextPayload(nome, 18, 9)' not in _nev)
 check('5.12.0: o exilar não manda mais nada de sangue pra quem fica',
-      'SangueAvisoFx.iniciar' in _ce and '11, 23' in _nev)
+      'SangueAvisoFx.iniciar' in _ce and '11, 23' not in _nev)
 
 # 9) a animação de saída roda mesmo (registro + camada)
 check('5.12.0: SaidaPlayerFx segue registrado e é disparado pelo estilo 18',
@@ -2485,6 +2488,56 @@ check('5.12.0: SaidaPlayerFx segue registrado e é disparado pelo estilo 18',
 check('5.12.0: o logout automático continua chamando saidaAutomatica',
       'saidaAutomatica(saiu)' in _sev2)
 check('5.12.0: sem classe de debug na entrega', not os.path.exists(R + '/DebugVazio.java'))
+
+# 11) 5.13.4 — PEDIDO 53
+check('5.13.4: aviso da SAIDA com LETRAS PRETAS (estilo 20, faixa clara)',
+      'public static void avisoSaidaDoVazio(ServerPlayer p, boolean escapou)' in _nev
+      and 'new ScreenTextPayload(texto, 6, 20)' in _nev
+      and 'desenhaAvisoSaidaVazio' in _ce and 'if (style == 20)' in _ce
+      and '0xEFEAD9' in _ce and '0xFF0A0A0A' in _ce)
+check('5.13.4: VOCE ESCAPOU DO VAZIO / VOCE FOI TIRADO DO VAZIO',
+      'ESCAPOU DO VAZIO' in _nev and 'TIRADO DO VAZIO' in _nev
+      and 'avisoSaidaDoVazio(alvo, true)' in _nev
+      and 'avisoSaidaDoVazio(alvo, false)' in _nev)
+check('5.13.4: nada de aviso automatico na barra de acao dentro do vazio',
+      'dica(p, RPWorldData.get(p.getServer()));' not in _vr)
+check('5.13.4: construcoes do vazio ficam marcadas NO SAVE (spawna uma vez so)',
+      'private final java.util.Set<String> construcoes' in _rwd
+      and 'public boolean marcarConstrucao(String chave)' in _rwd
+      and 'VazioConstrucoes' in _rwd
+      and 'private static boolean marcar(ServerLevel nv, String k)' in _vr
+      and 'if (!marcar(nv, "praca"))' in _vr
+      and 'if (!marcar(nv, "N"))' in _vr)
+check('5.13.4: portal NO NIVEL DO CHAO (piso + alicerce de blackstone embaixo)',
+      'O PORTAL NO NÍVEL DO CHÃO' in _vr and 'BlockPos piso = base.offset(x, -1, dz);' in _vr
+      and 'for (int y = -2; y >= -6; y--)' in _vr)
+check('5.13.4: fundo do portal fica ATRAS (nao tapa o vortice de quem chega)',
+      'filaForte(pos.offset(0, 0, -1), RPTagMod.ESCURIDAO.get().defaultBlockState());' in _vr)
+check('5.13.4: relevo na dimensao (montes, crateras, pedras soltas)',
+      'private static void relevoTick(ServerLevel nv, long agora)' in _vr
+      and 'private static double relevoAltura(int x, int z)' in _vr
+      and 'private static void esculpirChunk(ServerLevel nv, int cx, int cz)' in _vr
+      and 'marcar(nv, "R:" + cx + "," + cz)' in _vr)
+check('5.13.4: relevo reconhece o piso da dimensao (concreto cinza-claro + sculk)',
+      'st.is(Blocks.LIGHT_GRAY_CONCRETE)' in _vr and 'st.is(Blocks.SCULK)' in _vr)
+check('5.13.4: relevo carrega o chunk ANTES de esculpir (chunk cru = relevo sumido)',
+      'nv.getChunk(cx, cz)' in _vr)
+check('5.13.4: relevo despeja a fila na hora (o teto de 40 mil engolia o terreno)',
+      'despejarFila(nv)' in _vr and 'private static void despejarFila(' in _vr)
+check('5.13.4: relevo tem rampa na borda (sem paredao de 5 blocos na praca)',
+      'double rampa = Math.min(1.0' in _vr)
+check('5.13.4: baus com RARIDADE e fragmento do vazio dentro',
+      'private static void colocarBau(ServerLevel nv, int x, int y, int z, RandomSource r)' in _vr
+      and 'boolean raro = sorte >= 82 && sorte < 97;' in _vr
+      and 'RPTagMod.FRAGMENTO_VAZIO.get(), mitico ? 2 : 1' in _vr
+      and 'colocarBau(nv, bx, y0, bz, r);' in _vr)
+check('5.13.4: sem slime no vazio (spawn cancelado + varredura de bichos)',
+      'event.setSpawnCancelled(true);' in _sev
+      and 'private static void limparBichos(ServerLevel nv)' in _vr
+      and 'EntityType.ENDERMAN' in _vr and 'EntityType.WARDEN' in _vr)
+check('5.13.4: nada de PREDIOS_FEITOS/FEITOS em memoria (era o bug do respawn)',
+      'FEITOS' not in _vr and 'PREDIOS_FEITOS' not in _vr
+      and 'pracaFeita' not in _vr and 'anelFeito' not in _vr)
 
 # 10) 5.13.3 — o portal dos 8 fragmentos TEM que ser o da praca e abrir sozinho
 check('5.13.3: o portal dos 8 pedestais e o da PRACA (nao o invocado)',

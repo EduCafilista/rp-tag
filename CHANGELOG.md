@@ -1,5 +1,61 @@
 # Changelog
 
+## 5.13.4 — o vazio cala a boca e para de se reconstruir — 2026-11-02
+
+> Dono: **"tirar os avisos de tela quando entra e quando sai"**, **"um aviso com letras pretas
+> dizendo que conseguiu escapar do vazio — ou que foi tirado"**, **"o portal deve ficar no nível
+> do chão"**, **"tirar o aviso que toca quando cai no void"**, **"toda vez que entra no void a
+> estrutura spawna de novo, as lanternas ficam quebrando"**, **"fazer relevos: prédios caídos,
+> ruínas, coisas que evidenciem o vazio"**, **"não spawnar slime; se for spawnar bicho, que seja
+> completamente preto"**, **"baús com raridade pros players acharem os fragmentos do void"**.
+
+### Avisos de tela
+
+- **Entrada e saída mudas**: sumiram todos os avisos automáticos da dimensão (inclusive o que
+  sobrou no `usarPortal`, "A PORTA SE ABRE PARA O OUTRO LADO…" — ficou só o som do portal).
+  A dica da barra de ação não dispara mais sozinha no tick.
+- **Aviso de saída com letras pretas**: faixa `0xEFEAD9` (creme) com texto `0xFF0A0A0A` (preto
+  puro), 6 s, fonte até 2,6× desenhada duas vezes (peso de tinta). `avisoSaidaDoVazio(p, true)`
+  → **"VOCÊ ESCAPOU DO VAZIO"**; `(p, false)` → **"VOCÊ FOI TIRADO DO VAZIO"**. Novo estilo 20 do
+  `ScreenTextPayload`, tratado no `ClientEffects`.
+- **Cair no vazio não avisa mais nada** (a morte devagar continua).
+
+### Construção única (o bug das lanternas quebrando)
+
+- `RPWorldData.construcoes` (persistido em `rptag_states.dat`) + `marcarConstrucao` /
+  `jaConstruido` / `esquecerConstrucoes`. Toda construção do vazio passa por `marcar(...)`:
+  `praca`, `P{i}`, `S{i}`, `N` (santuário automático), `I:x,y,z` (portal invocado), `anel`,
+  `B:{cx},{cz}` (baús) e `R:{cx},{cz}` (relevo).
+- Reentrar / reiniciar **não reconstrói nada**; `/vazio construir` limpa as marcas e refaz.
+
+### Portal no chão
+
+- O portal da praça fica com o **piso no nível do chão** (`polished_blackstone` em `y-1`) e o
+  miolo começando em `y`; o fundo de `escuridao` atrás do miolo não bloqueia o vórtice.
+
+### Relevo
+
+- `relevoTick` + `montarMapaRelevo` (184 chunks num anel de 45–130 blocos) + `esculpirChunk`
+  (montes, crateras, cascalho solto, blackstone e tijolo rachado caídos) — **~103 mil blocos**.
+- **Rampa de amplitude** por distância (0 na borda da praça, 1 a ~70 blocos): sem paredão.
+- Dois bugs de servidor consertados: `natural()` não conhecia o piso da dimensão
+  (`LIGHT_GRAY_CONCRETE`/`SCULK`) e o relevo estourava o teto de 40.000 da fila de blocos
+  (agora `despejarFila` despeja por chunk) — os dois deixavam a dimensão chapada.
+- O chunk é **carregado antes de esculpir** (`nv.getChunk`).
+
+### Bichos e baús
+
+- `onFinalizeSpawn` cancela **qualquer** bicho no vazio que não seja Enderman/Warden (slime
+  incluso); `limparBichos` varre a cada 4 s.
+- `colocarBau` em cada ruína: **comum** 82 % (2–4 sucata) · **raro** 15 % (1 `FRAGMENTO_VAZIO`) ·
+  **mítico** 3 % (2 fragmentos + 2–4 diamantes + 1–2 echo shard); 55 % ganham um item bom extra.
+
+### Testado
+
+- 1º boot: praça, 8 pedestais, portal no chão (`0 9 -22` = piso), anel de 14 construções e relevo
+  pronto em ~13 s. 2º boot: **nada reconstruído**, 0 exceptions.
+- `javac` 0 erros · `check.py` **876 PASS / 0 FAIL**.
+
 ## 5.13.3 — o portal dos 8 pedestais abria no lugar errado (ou não abria) — 2026-11-02
 
 > Dono: **"mesmo ativando os 8 pedestais não abriu o portal animado aonde eu te pedi, um portal

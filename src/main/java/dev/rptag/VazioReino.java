@@ -18,7 +18,10 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -70,9 +73,21 @@ public final class VazioReino {
     private static final ArrayDeque<Object[]> FILA = new ArrayDeque<>();
     private static final int POR_TICK = 400;
 
-    /** construções já enfileiradas nesta sessão. */
-    private static final Set<Long> FEITOS = new HashSet<>();
-    private static final Set<Long> PREDIOS_FEITOS = new HashSet<>();
+    /**
+     * (5.13.4) "JÁ FOI CONSTRUÍDO?" — agora mora no SAVE do mundo, não na memória.
+     *
+     * <p>Pedido 53: <i>"toda vez que entro novamente no void spawna de novo a estrutura,
+     * as lanternas ficam quebrando — corrija para só spawnar uma vez"</i>. Estes dois
+     * helpers são a única porta para as marcas (ver {@link RPWorldData#marcarConstrucao}).
+     */
+    private static boolean marcado(ServerLevel nv, String k) {
+        return RPWorldData.get(nv.getServer()).temConstrucao(k);
+    }
+
+    /** @return true se marcou AGORA (ou seja: ainda não existia, pode construir). */
+    private static boolean marcar(ServerLevel nv, String k) {
+        return RPWorldData.get(nv.getServer()).marcarConstrucao(k);
+    }
 
     /** jogadores caindo no vazio: uuid -> quando morre (ms). */
     private static final Map<UUID, Long> CAINDO = new HashMap<>();
@@ -95,16 +110,26 @@ public final class VazioReino {
         return dim(nv) + ":" + base.getX() + "," + base.getY() + "," + base.getZ();
     }
 
-    private static boolean pracaFeita;
     private static long proximaDica;
     private static long proximoPredio;
     private static long proximoMundo;
     private static long proximaRuina;
     /** (5.13.3) quando o miolo do portal é conferido de novo (reparo automático). */
     private static long proximoReparo;
+
+    // --------------------------------------------------------- RELEVO (5.13.4)
+    /** fila de chunks que ainda vão receber relevo (x,z em coordenadas de chunk). */
+    private static final ArrayDeque<int[]> RELEVO = new ArrayDeque<>();
+    private static long proximoRelevo;
+    /** (5.13.4) quando os bichos do vazio são varridos de novo. */
+    private static long proximoLimpeza;
+    /** onde já existe construção (o relevo não passa por cima). */
+    private static final java.util.List<int[]> CASAS = new java.util.ArrayList<>();
     private static int contadorRuinas;
-    /** (5.13.2) o anel de ruínas em volta da praça já foi erguido? */
-    private static boolean anelFeito;
+    /** (5.13.4) quando o relevo é puxado do mapa (uma vez). */
+    private static boolean relevoMapaFeito;
+    /** quantos blocos o relevo já assentou nesta vida do servidor (só para o log). */
+    private static int relevoBlocos;
 
     /** último envio do estado do portal para cada jogador (ms). */
     private static final Map<UUID, Long> ULTIMO_SYNC = new HashMap<>();
@@ -237,11 +262,10 @@ public final class VazioReino {
             // 3) o portal: animação de abertura e o "atravessar"
             tickPortal(nv, p, agora);
 
-            // 4) a dica da barra de ação
-            if (agora >= proximaDica) {
-                proximaDica = agora + 30_000L;
-                dica(p, RPWorldData.get(p.getServer()));
-            }
+            // 4) (5.13.4) SEM dica automática na barra de ação.
+            // Pedido 53: "tira esses avisos quando entrar na dimensão da tela do
+            // player". Nada de "Pedestais 3/8" pipocando na tela — quem quiser o
+            // progresso pergunta com /vazio pedestais.
 
             // 5) PRÉDIOS PERDIDOS: nasce um a cada ~3 s, longe da praça
             if (agora >= proximoPredio) {
@@ -276,10 +300,11 @@ public final class VazioReino {
             // uma vez por sessão. Antes a primeira ruína automática caía a 34+ blocos,
             // e com a névoa fechada o dono entrava e não via NADA ("a dimensão não tem
             // nada").
-            if (!anelFeito) {
-                anelFeito = true;
+            // (5.13.4) só uma vez NA VIDA DO MUNDO (a marca está no save)
+            if (marcar(nv, "anel")) {
                 anelInicial(nv);
             }
+            relevoTick(nv, agora);
             // (5.13.1) a cidade morta cresce sozinha: uma ruína a cada 2 s em volta da
             // praça (o dono: "a dimensão tem que ter mais coisas... prédios, ruínas")
             if (agora >= proximaRuina) {
@@ -287,6 +312,11 @@ public final class VazioReino {
                 ruinaAutomatica(nv);
             }
             animarAbertura(nv, agora);
+            // (5.13.4) NADA DE SLIME (e nada de bicho que não seja PRETO)
+            if (agora >= proximoLimpeza) {
+                proximoLimpeza = agora + 4000L;
+                limparBichos(nv);
+            }
             // (5.13.3) o miolo aberto tem que CONTINUAR aberto: se um chunk foi
             // descarregado no meio da animação (ou alguém quebrou o bloco), ele
             // repara sozinho — sem depender de ninguém clicar em nada.
@@ -319,10 +349,10 @@ public final class VazioReino {
     // ================================================================ A PRAÇA
     /** o chão da praça: anel de blackstone, lajes no meio e o caminho até o portal. */
     private static void prepararPraca(ServerLevel nv) {
-        if (pracaFeita) {
+        // (5.13.4) constrói UMA VEZ na vida do mundo (a marca vai pro save)
+        if (!marcar(nv, "praca")) {
             return;
         }
-        pracaFeita = true;
         try {
             int y = centroY(nv);
             final int r = RAIO_PRACA;
@@ -404,14 +434,305 @@ public final class VazioReino {
         return new net.minecraft.world.phys.Vec3(0.5, y, 0.5);
     }
 
+    // ======================================================= BICHOS (5.13.4)
+    /**
+     * (5.13.4) O VAZIO NÃO CRIA SLIME — pedido 53.
+     *
+     * <p><i>"não deixe spawnar slimes, se for para spawnar um bicho completamente
+     * preto"</i>. Então: nenhum slime (nem os que já existiam: a varredura remove), e
+     * dos bichos só fica o que é PRETO de verdade — o <b>Enderman</b> e o <b>Warden</b>.
+     * Todo o resto é descartado a cada 4 s (o spawn natural já é cancelado em
+     * {@code ServerEvents}).
+     */
+    private static void limparBichos(ServerLevel nv) {
+        try {
+            int removidos = 0;
+            for (net.minecraft.world.entity.Entity e : nv.getAllEntities()) {
+                if (e instanceof ServerPlayer || e instanceof net.minecraft.world.entity.item.ItemEntity
+                        || e instanceof net.minecraft.world.entity.decoration.ArmorStand
+                        || e instanceof net.minecraft.world.entity.decoration.ItemFrame) {
+                    continue;
+                }
+                if (!(e instanceof net.minecraft.world.entity.Mob)) {
+                    continue;
+                }
+                boolean preto = e.getType() == net.minecraft.world.entity.EntityType.ENDERMAN
+                        || e.getType() == net.minecraft.world.entity.EntityType.WARDEN;
+                if (preto) {
+                    continue;
+                }
+                e.discard();
+                removidos++;
+            }
+            if (removidos > 0) {
+                RPTagMod.LOGGER.info("RP Tag: vazio limpou {} bicho(s) que nao sao pretos", removidos);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: limpeza de bichos do vazio falhou", t);
+        }
+    }
+
+    // ============================================================ BAÚS (5.13.4)
+    /**
+     * (5.13.4) O BAÚ DA RUÍNA — pedido 53: <i>"faça baús dentro da dimensão com raridade
+     * para os players encontrarem os fragmentos do void"</i>.
+     *
+     * <p>Cada construção erguida pela cidade morta tem chance de ganhar um baú. O sorteio
+     * é por RARIDADE (os pesos estão na tabela abaixo): o comum é sucata que qualquer
+     * ruína teria; o <b>raro</b> é um FRAGMENTO DO VAZIO — a alternativa de quem não quer
+     * caçar os 8 altares; o <b>mítico</b> é o fragmento + um tesouro de verdade.
+     *
+     * <p>Os itens são escritos direto no baú (nada de loot table): assim não há risco de
+     * o arquivo de loot faltar no jar e o baú abrir vazio.
+     */
+    private static void colocarBau(ServerLevel nv, int x, int y, int z, RandomSource r) {
+        try {
+            if (y <= nv.getMinBuildHeight() + 1) {
+                return;
+            }
+            BlockPos pos = new BlockPos(x, y, z);
+            BlockState atual = nv.getBlockState(pos);
+            if (!atual.isAir() && !atual.canBeReplaced()) {
+                return;                              // não estraga o que já existe
+            }
+            // encosta o baú na parede mais próxima (visual de ruína saqueada)
+            var facing = net.minecraft.core.Direction.Plane.HORIZONTAL.getRandomDirection(r);
+            nv.setBlockAndUpdate(pos, Blocks.CHEST.defaultBlockState()
+                    .setValue(ChestBlock.FACING, facing));
+            if (!(nv.getBlockEntity(pos) instanceof ChestBlockEntity bau)) {
+                return;
+            }
+            // ---- RARIDADE (0..99) ----
+            int sorte = r.nextInt(100);
+            boolean raro = sorte >= 82 && sorte < 97;     // 15%: 1 fragmento
+            boolean mitico = sorte >= 97;                 //  3%: 2 fragmentos + tesouro
+            int comuns = 2 + r.nextInt(3);
+            for (int i = 0; i < comuns; i++) {
+                bau.setItem(r.nextInt(27), sucata(r));
+            }
+            if (raro || mitico) {
+                bau.setItem(r.nextInt(27),
+                        new ItemStack(RPTagMod.FRAGMENTO_VAZIO.get(), mitico ? 2 : 1));
+            }
+            if (sorte >= 55) {                            // 45%: um item "bom"
+                bau.setItem(r.nextInt(27), bomItem(r));
+            }
+            if (mitico) {
+                bau.setItem(r.nextInt(27), new ItemStack(Items.DIAMOND, 2 + r.nextInt(3)));
+                bau.setItem(r.nextInt(27), new ItemStack(Items.ECHO_SHARD, 1 + r.nextInt(2)));
+            }
+        } catch (Throwable t) {
+            // baú é enfeite/tesouro: se falhar, a ruína continua de pé
+        }
+    }
+
+    /** o que se acha em qualquer ruína do vazio (sucata). */
+    private static ItemStack sucata(RandomSource r) {
+        return switch (r.nextInt(10)) {
+            case 0 -> new ItemStack(Items.BONE, 1 + r.nextInt(4));
+            case 1 -> new ItemStack(Items.ROTTEN_FLESH, 1 + r.nextInt(3));
+            case 2 -> new ItemStack(Items.COAL, 1 + r.nextInt(6));
+            case 3 -> new ItemStack(Items.TUFF, 2 + r.nextInt(8));
+            case 4 -> new ItemStack(Items.GRAVEL, 2 + r.nextInt(8));
+            case 5 -> new ItemStack(Items.DEEPSLATE, 2 + r.nextInt(6));
+            case 6 -> new ItemStack(Items.IRON_NUGGET, 1 + r.nextInt(5));
+            case 7 -> new ItemStack(Items.STRING, 1 + r.nextInt(3));
+            case 8 -> new ItemStack(Items.SCULK_VEIN, 1 + r.nextInt(3));
+            default -> new ItemStack(Items.ROTTEN_FLESH, 2);
+        };
+    }
+
+    /** o "bom" (a parte que faz valer a pena entrar na ruína). */
+    private static ItemStack bomItem(RandomSource r) {
+        return switch (r.nextInt(9)) {
+            case 0 -> new ItemStack(Items.IRON_INGOT, 1 + r.nextInt(4));
+            case 1 -> new ItemStack(Items.GOLD_INGOT, 1 + r.nextInt(3));
+            case 2 -> new ItemStack(Items.SOUL_TORCH, 2 + r.nextInt(4));
+            case 3 -> new ItemStack(Items.SOUL_LANTERN, 1);
+            case 4 -> new ItemStack(Items.ECHO_SHARD, 1);
+            case 5 -> new ItemStack(Items.SCULK_CATALYST, 1);
+            case 6 -> new ItemStack(Items.AMETHYST_SHARD, 2 + r.nextInt(4));
+            case 7 -> new ItemStack(Items.EXPERIENCE_BOTTLE, 1 + r.nextInt(3));
+            default -> new ItemStack(Items.OBSIDIAN, 2 + r.nextInt(4));
+        };
+    }
+
+    // ================================================================ RELEVO
+    /**
+     * (5.13.4) RELEVOS NA DIMENSÃO — pedido 53: <i>"faça relevos na dimensão, quero
+     * prédios caídos, ruínas, coisas que evidencie o vazio"</i>.
+     *
+     * <p>O chão do vazio era uma laje infinita. Agora, num anel de 45 a 130 blocos em
+     * volta da praça, o terreno sobe em lombo e desce em cratera (valor-noise suave,
+     * determinístico): montes de deepslate/tuff/cascalho, valas, pedras soltas. É feito
+     * <b>uma vez por chunk</b> ({@code R:cx,cz} no save), 2 chunks por tick, e nunca por
+     * cima de construção — só mexe em bloco NATURAL.
+     */
+    private static void relevoTick(ServerLevel nv, long agora) {
+        try {
+            if (!relevoMapaFeito) {
+                relevoMapaFeito = true;
+                montarMapaRelevo();
+            }
+            if (agora < proximoRelevo) {
+                return;
+            }
+            proximoRelevo = agora + 100L;             // ~2 chunks/tick, diluído
+            int feitos = 0;
+            while (!RELEVO.isEmpty() && feitos < 2) {
+                int[] c = RELEVO.poll();
+                int cx = c[0], cz = c[1];
+                if (!marcar(nv, "R:" + cx + "," + cz)) {
+                    continue;
+                }
+                // (5.13.4) o chunk TEM de existir antes de esculpir: getHeight num chunk
+                // que nunca foi gerado devolvia o chão do vazio errado e o relevo sumia.
+                nv.getChunk(cx, cz);
+                esculpirChunk(nv, cx, cz);
+                // (5.13.4) e a fila é despejada NA HORA: ela tem teto de 40.000 blocos e,
+                // com o relevo despejando ~1.400 por tick contra 400 drenados, o que
+                // passava do teto era JOGADO FORA (metade da dimensão ficava chapada).
+                despejarFila(nv);
+                feitos++;
+            }
+            if (RELEVO.isEmpty() && relevoBlocos > 0) {
+                RPTagMod.LOGGER.info("RP Tag: relevo do vazio pronto ({} blocos assentados)",
+                        relevoBlocos);
+                relevoBlocos = 0;
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: relevo do vazio falhou (o jogo segue)", t);
+        }
+    }
+
+    /** monta a fila de chunks do relevo (anel de 45 a 130 blocos em volta da praça). */
+    private static void montarMapaRelevo() {
+        RELEVO.clear();
+        int min = 45, max = 130;
+        for (int cx = -(max >> 4) - 1; cx <= (max >> 4) + 1; cx++) {
+            for (int cz = -(max >> 4) - 1; cz <= (max >> 4) + 1; cz++) {
+                double d = Math.hypot(cx * 16 + 8, cz * 16 + 8);
+                if (d < min || d > max) {
+                    continue;
+                }
+                RELEVO.add(new int[]{ cx, cz });
+            }
+        }
+        RPTagMod.LOGGER.info("RP Tag: relevo do vazio agendado ({} chunks)", RELEVO.size());
+    }
+
+    /** altura do relevo (blocos, negativo = cratera) — ruído suave e determinístico. */
+    private static double relevoAltura(int x, int z) {
+        double a = Math.sin(x * 0.041 + 1.7) * Math.cos(z * 0.037 - 0.4);
+        double b = Math.sin((x + z) * 0.017 - 2.1) * Math.cos((x - z) * 0.023 + 0.9);
+        double c = Math.sin(x * 0.101 - z * 0.087 + 3.3);
+        return (a * 3.4 + b * 2.6 + c * 1.1) * 1.15;
+    }
+
+    /** o bloco é terreno natural? (o relevo só mexe no que é natural) */
+    private static boolean natural(BlockState st) {
+        // (5.13.4) a LAJE do vazio (data/rptag/dimension/exilio.json) é, de baixo para
+        // cima: bedrock, deepslate, blackstone, tuff, sculk e CONCRETO CINZA-CLARO —
+        // sem o concreto, o relevo não via "terreno natural" em lugar nenhum e não
+        // esculpia nada (bug pego no teste do servidor).
+        return st.is(Blocks.DEEPSLATE) || st.is(Blocks.STONE) || st.is(Blocks.TUFF)
+                || st.is(Blocks.GRAVEL) || st.is(Blocks.DIRT) || st.is(Blocks.BLACKSTONE)
+                || st.is(Blocks.BASALT) || st.is(Blocks.COBBLED_DEEPSLATE)
+                || st.is(Blocks.DEEPSLATE_COAL_ORE) || st.is(Blocks.COAL_ORE)
+                || st.is(Blocks.SMOOTH_BASALT) || st.is(Blocks.CLAY)
+                || st.is(Blocks.SCULK) || st.is(Blocks.LIGHT_GRAY_CONCRETE)
+                || st.is(Blocks.GRAY_CONCRETE);
+    }
+
+    /** esculpe UM chunk de relevo (montes, crateras, pedras soltas). */
+    private static void esculpirChunk(ServerLevel nv, int cx, int cz) {
+        RandomSource r = RandomSource.create(cx * 34_133L + cz * 71_117L + 5L);
+        for (int dx = 0; dx < 16; dx++) {
+            for (int dz = 0; dz < 16; dz++) {
+                int x = cx * 16 + dx, z = cz * 16 + dz;
+                double dist = Math.hypot(x, z);
+                if (dist < RAIO_PRACA + 12) {
+                    continue;                          // praça intacta
+                }
+                if (Math.abs(x) <= 10 && z > -36 && z < 8) {
+                    continue;                          // caminho do portal
+                }
+                boolean pertoDeCasa = false;
+                for (int[] casa : CASAS) {
+                    if (Math.hypot(x - casa[0], z - casa[1]) < 15) {
+                        pertoDeCasa = true;
+                        break;
+                    }
+                }
+                if (pertoDeCasa) {
+                    continue;
+                }
+                int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                if (y <= nv.getMinBuildHeight() + 4) {
+                    continue;
+                }
+                BlockPos topo = new BlockPos(x, y - 1, z);
+                if (!natural(nv.getBlockState(topo))) {
+                    continue;                          // construção ou já mexido
+                }
+                // (5.13.4) a amplitude CRESCE com a distância: sem essa rampa o relevo
+                // caía 5 blocos de uma vez na borda do anel e parecia terreno quebrado.
+                double rampa = Math.min(1.0, Math.max(0.0, (dist - (RAIO_PRACA + 12)) / 40.0));
+                int h = (int) Math.round(relevoAltura(x, z) * rampa);
+                relevoBlocos += Math.abs(h);
+                if (h > 0) {
+                    for (int i = 0; i < h; i++) {
+                        BlockPos p = new BlockPos(x, y + i, z);
+                        BlockState st;
+                        float s = r.nextFloat();
+                        if (s < 0.40F) {
+                            st = Blocks.TUFF.defaultBlockState();
+                        } else if (s < 0.68F) {
+                            st = Blocks.DEEPSLATE.defaultBlockState();
+                        } else if (s < 0.86F) {
+                            st = Blocks.GRAVEL.defaultBlockState();
+                        } else if (s < 0.96F) {
+                            st = Blocks.COBBLED_DEEPSLATE.defaultBlockState();
+                        } else {
+                            st = Blocks.DEEPSLATE_COAL_ORE.defaultBlockState();
+                        }
+                        filaForte(p, st);
+                    }
+                } else if (h < 0) {
+                    for (int i = 0; i < -h; i++) {
+                        BlockPos p = new BlockPos(x, y - 1 - i, z);
+                        if (p.getY() <= nv.getMinBuildHeight() + 2
+                                || !natural(nv.getBlockState(p))) {
+                            break;
+                        }
+                        filaForte(p, Blocks.AIR.defaultBlockState());
+                    }
+                    // fundo da cratera: cascalho solto
+                    if (r.nextFloat() < 0.35F) {
+                        filaForte(new BlockPos(x, y - 1 + h, z),
+                                Blocks.GRAVEL.defaultBlockState());
+                    }
+                }
+                // pedras soltas e blocos caídos (a marca do vazio)
+                if (r.nextFloat() < 0.04F) {
+                    int py = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                    if (py > nv.getMinBuildHeight() + 3) {
+                        filaForte(new BlockPos(x, py, z), r.nextBoolean()
+                                ? Blocks.BLACKSTONE.defaultBlockState()
+                                : Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState());
+                    }
+                }
+            }
+        }
+    }
+
     // ================================================================ PEDESTAIS
     /** constrói (uma vez) os 8 pedestais em volta da praça. */
     private static void garantirPedestais(ServerLevel nv, ServerPlayer p) {
         for (int i = 0; i < TOTAL_FRAGMENTOS; i++) {
-            if (FEITOS.contains(chave('P', i))) {
+            if (!marcar(nv, "P" + i)) {
                 continue;
             }
-            FEITOS.add(chave('P', i));
             BlockPos base = ancoraPedestal(nv, i);
             nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
             enfileirarPedestal(nv, i, base);
@@ -451,10 +772,9 @@ public final class VazioReino {
     /** constrói (uma vez) os 8 altares onde nasce o fragmento. */
     private static void garantirSantuarios(ServerLevel nv) {
         for (int i = 0; i < VazioGeometria.SANTUARIOS; i++) {
-            if (FEITOS.contains(chave('S', i))) {
+            if (!marcar(nv, "S" + i)) {
                 continue;
             }
-            FEITOS.add(chave('S', i));
             BlockPos base = ancoraSantuario(nv, i);
             if (base == null) {
                 continue;
@@ -473,10 +793,9 @@ public final class VazioReino {
         for (int tentativa = 0; tentativa < VazioGeometria.SANTUARIOS; tentativa++) {
             int i = proximoSantuario % VazioGeometria.SANTUARIOS;
             proximoSantuario++;
-            if (FEITOS.contains(chave('S', i))) {
+            if (!marcar(nv, "S" + i)) {
                 continue;
             }
-            FEITOS.add(chave('S', i));
             BlockPos base = ancoraSantuario(nv, i);
             if (base == null) {
                 continue;
@@ -525,10 +844,9 @@ public final class VazioReino {
     // ================================================================== PORTAL
     /** o portal nunca era construído se ninguém passasse perto: aqui ele nasce com a praça. */
     private static void garantirPortais(ServerLevel nv) {
-        if (FEITOS.contains(chave('N', 0))) {
+        if (!marcar(nv, "N")) {
             return;
         }
-        FEITOS.add(chave('N', 0));
         BlockPos base = ancoraPortal(nv);
         nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
         enfileirarPortal(nv, base);
@@ -558,17 +876,40 @@ public final class VazioReino {
                     }
                     filaForte(pos, st);
                 } else {
-                    // miolo: ar (fechado) — atrás fica o fundo de ESCURIDÃO
-                    filaForte(pos.offset(0, 0, 1), RPTagMod.ESCURIDAO.get().defaultBlockState());
+                    // miolo: o cliente desenha o vórtice; o FUNDO de escuridão fica
+                    // ATRÁS (lado -z, oposto ao caminho que vem da praça).
+                    // (5.13.4) antes o fundo era em +z = o lado de QUEM CHEGA: o
+                    // jogador via a parede preta e o vórtice ficava escondido nela.
+                    filaForte(pos.offset(0, 0, -1), RPTagMod.ESCURIDAO.get().defaultBlockState());
                     if (!nv.getBlockState(pos).isAir()) {
                         filaForte(pos, Blocks.AIR.defaultBlockState());
                     }
                 }
             }
         }
-        // degraus na frente (a pessoa entra andando)
-        for (int x = -meia; x <= meia; x++) {
-            filaForte(base.offset(x, -2, 1), Blocks.POLISHED_BLACKSTONE.defaultBlockState());
+        // (5.13.4) O PORTAL NO NÍVEL DO CHÃO — pedido 53.
+        // Antes, se o terreno em volta era mais baixo que a praça, a moldura ficava
+        // FLUTUANDO com um degrau solto embaixo. Agora o portal ganha um piso de
+        // blackstone na altura do miolo e um alicerce que desce até o chão: ele sempre
+        // encosta no chão, sem degrau no ar.
+        for (int x = -meia - 1; x <= meia + 1; x++) {
+            for (int dz = -1; dz <= 2; dz++) {
+                BlockPos piso = base.offset(x, -1, dz);
+                filaForte(piso, Blocks.POLISHED_BLACKSTONE.defaultBlockState());
+                // alicerce (esconde o vão até o terreno)
+                for (int y = -2; y >= -6; y--) {
+                    filaForte(base.offset(x, y, dz), Blocks.DEEPSLATE_TILES.defaultBlockState());
+                }
+                // e o ar livre em volta de quem chega, para não ter parede na cara
+                if (dz >= 1) {
+                    for (int y = 0; y <= 2; y++) {
+                        BlockPos ar = base.offset(x, y, dz);
+                        if (!nv.getBlockState(ar).isAir()) {
+                            filaForte(ar, Blocks.AIR.defaultBlockState());
+                        }
+                    }
+                }
+            }
         }
         RPTagMod.LOGGER.info("RP Tag: portal do vazio construído em {}", base);
     }
@@ -1155,9 +1496,7 @@ public final class VazioReino {
         // ---------------- (5.13.1) FORA DO VAZIO: o portal leva PARA o vazio
         if (!ehVazio(nv)) {
             nv.playSound(null, base, SoundEvents.PORTAL_TRAVEL, SoundSource.AMBIENT, 1.0F, 0.7F);
-            p.displayClientMessage(Component.literal(
-                    "\u00a75\u00a7lA PORTA SE ABRE PARA O OUTRO LADO.\n"
-                    + "\u00a78Você vai voltar exatamente para aqui quando sair."), false);
+            // (5.13.4) SEM aviso na entrada (pedido 53) — só o som do portal.
             // entrarNoExilio já guarda o lugar de onde ele saiu (RPWorldData.Volta)
             NeptuneEventos.entrarNoExilio(p);
             return true;
@@ -1250,7 +1589,8 @@ public final class VazioReino {
                 }
             }
         }
-        FEITOS.remove(chave('N', 0));
+        // (5.13.4) o portal invocado tem marca própria no save ("I:" + posição)
+        marcar(nv, "I:" + x + "," + y + "," + z);
         BlockPos base = new BlockPos(x, y, z);
         enfileirarPortal(nv, base);
         while (!FILA.isEmpty()) {
@@ -1378,13 +1718,14 @@ public final class VazioReino {
         }
     }
 
-    /** reinicia o reino (some com as construções marcadas e refaz). */
-    public static void esquecerConstrucoes() {
-        FEITOS.clear();
-        PREDIOS_FEITOS.clear();
+    /**
+     * (5.13.4) REINICIA O REINO — só para o {@code /vazio construir} (que quer refazer na
+     * marra). Nada no jogo normal chama isto: as construções são "uma vez por mundo".
+     */
+    public static void esquecerConstrucoes(ServerLevel nv) {
+        RPWorldData.get(nv.getServer()).esquecerConstrucoes();
         FILA.clear();
-        pracaFeita = false;
-        anelFeito = false;
+        relevoMapaFeito = false;
     }
 
     /** @return true se o nível é a dimensão do vazio. */
@@ -1426,7 +1767,7 @@ public final class VazioReino {
 
     /** força a construção de tudo em volta do jogador (debug). */
     public static int construirTudo(ServerLevel nv, ServerPlayer p) {
-        esquecerConstrucoes();
+        esquecerConstrucoes(nv);
         int antes = FILA.size();
         prepararPraca(nv);
         garantirPedestais(nv, p);
@@ -1472,11 +1813,28 @@ public final class VazioReino {
         }
     }
 
-    /** (5.13.0) chamado quando o mundo do vazio carrega: a praça volta a ser construída. */
+    /**
+     * (5.13.4) chamado quando o mundo do vazio carrega.
+     *
+     * <p>NÃO reconstrói mais nada: o que já foi construído está marcado no save
+     * (pedido 53: "só spawnar uma vez"). Aqui só se ajusta o relógio da animação do
+     * portal para ele não "reabrir" do zero a cada boot.
+     */
     public static void acordar(ServerLevel nv) {
-        esquecerConstrucoes();
         ABERTURA.clear();
         LINHAS.clear();
+        try {
+            RPWorldData dados = RPWorldData.get(nv.getServer());
+            BlockPos base = ancoraPortalPraca(nv);
+            if (base != null && dados.isPortalAberto()) {
+                // aberto e estável: a animação já aconteceu, não repete
+                ABERTURA.put(chavePortal(nv, base),
+                        System.currentTimeMillis() - VazioGeometria.ABERTURA_MS - 1000L);
+                LINHAS.put(chavePortal(nv, base), VazioGeometria.ALTURA_MIOLO);
+            }
+        } catch (Throwable ignorado) {
+            // sem portal, sem problema
+        }
     }
 
     // ---------------------------------------------------------------- fila
@@ -1497,6 +1855,18 @@ public final class VazioReino {
             return;
         }
         FILA.add(new Object[]{ pos, st, Boolean.TRUE });
+    }
+
+    /** (5.13.4) despeja a fila INTEIRA (o relevo não pode depender do gotejo de 400/tick). */
+    private static void despejarFila(ServerLevel nv) {
+        int guarda = 0;
+        while (!FILA.isEmpty() && guarda++ < 4000) {
+            int antes = FILA.size();
+            colocarFila(nv);
+            if (FILA.size() == antes) {
+                break;
+            }
+        }
     }
 
     private static void colocarFila(ServerLevel nv) {
@@ -1618,6 +1988,13 @@ public final class VazioReino {
             fila(new BlockPos(px, y, pz), r.nextFloat() < 0.2F ? carvao
                     : paleta[r.nextInt(paleta.length)]);
         }
+        // (5.13.4) o baú da ruína (raro = fragmento do vazio) + o relevo desvia dela
+        CASAS.add(new int[]{ x, z });
+        if (r.nextFloat() < 0.75F) {
+            int bx = x0 + 1 + r.nextInt(Math.max(1, larg - 2));
+            int bz = z0 + 1 + r.nextInt(Math.max(1, prof - 2));
+            colocarBau(nv, bx, y0, bz, r);
+        }
     }
 
     /**
@@ -1678,6 +2055,12 @@ public final class VazioReino {
             fila(new PosEscombro(px, y, pz).pos(),
                     r.nextFloat() < 0.3F ? muroQuebrado : muro);
         }
+        // (5.13.4) baú do quarteirão (o relevo desvia do lugar)
+        CASAS.add(new int[]{ x, z });
+        if (r.nextFloat() < 0.55F) {
+            colocarBau(nv, x + r.nextInt(comp) - comp / 2, y0,
+                    z + r.nextInt(comp) - comp / 2, r);
+        }
     }
 
     /** só um atalho de legibilidade (evita três new BlockPos aninhados acima). */
@@ -1714,8 +2097,7 @@ public final class VazioReino {
                 }
                 int cx = Math.floorDiv(x, 96);
                 int cz = Math.floorDiv(z, 96);
-                long k = (long) cx * 100_003L + cz;
-                if (!PREDIOS_FEITOS.add(k)) {
+                if (!marcar(nv, "B:" + cx + "," + cz)) {
                     continue;
                 }
                 nv.getChunk(x >> 4, z >> 4);
@@ -1742,14 +2124,12 @@ public final class VazioReino {
             int z = (int) Math.round(Math.sin(ang) * raio);
             int cx = Math.floorDiv(x, 96);
             int cz = Math.floorDiv(z, 96);
-            long k = (long) cx * 100_003L + cz;
-            if (PREDIOS_FEITOS.contains(k)) {
-                continue;
-            }
             if (Math.hypot(x, z) < RAIO_PRACA + 8) {
                 continue;
             }
-            PREDIOS_FEITOS.add(k);
+            if (!marcar(nv, "B:" + cx + "," + cz)) {
+                continue;
+            }
             nv.getChunk(x >> 4, z >> 4);
             int tipo = Math.floorMod(i * 37, 10);
             if (tipo < 2) {
@@ -1771,10 +2151,6 @@ public final class VazioReino {
         for (int tentativa = 0; tentativa < 6; tentativa++) {
             int ox = r.nextInt(5) - 2, oz = r.nextInt(5) - 2;
             int cx = celX + ox, cz = celZ + oz;
-            long k = (long) cx * 100_003L + cz;
-            if (PREDIOS_FEITOS.contains(k)) {
-                continue;
-            }
             int x = cx * 96 + 48, z = cz * 96 + 48;
             double d = Math.hypot(x - p.getX(), z - p.getZ());
             // (5.13.1) MAIS PERTO: 30–130 blocos. Antes era 55–190 e, com a névoa
@@ -1788,7 +2164,9 @@ public final class VazioReino {
             nv.getChunk(x >> 4, z >> 4);
             int topo = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
             int viz = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x + 24, z);
-            PREDIOS_FEITOS.add(k);
+            if (!marcar(nv, "B:" + cx + "," + cz)) {
+                continue;
+            }
             if (topo - viz > 8) {
                 continue;
             }
@@ -1851,6 +2229,16 @@ public final class VazioReino {
                 continue;
             }
             fila(new BlockPos(px, y, pz), paleta[r.nextInt(paleta.length)]);
+        }
+        // (5.13.4) o baú do prédio caído (mais fundo, mais raro — e mais gordo)
+        CASAS.add(new int[]{ x, z });
+        if (r.nextFloat() < 0.85F) {
+            colocarBau(nv, x0 + 1 + r.nextInt(Math.max(1, larg - 2)), y0,
+                    z0 + 1 + r.nextInt(Math.max(1, prof - 2)), r);
+            if (r.nextFloat() < 0.35F) {              // segundo baú no prédio grande
+                colocarBau(nv, x0 + 1 + r.nextInt(Math.max(1, larg - 2)), y0 + andarH,
+                        z0 + 1 + r.nextInt(Math.max(1, prof - 2)), r);
+            }
         }
     }
 }

@@ -645,7 +645,8 @@ public final class ClientEffects {
             screenText = null;
             return;
         }
-        int style = Math.max(0, Math.min(12, textStyle));   // (4.5.0) 12 = egipicio
+        // (5.13.4) 20 = SAÍDA DO VAZIO (faixa clara, letras PRETAS)
+        int style = Math.max(0, Math.min(24, textStyle));   // (4.5.0) 12 = egipicio
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
         int w = g.guiWidth();
@@ -654,6 +655,11 @@ public final class ClientEffects {
         // DEPOIS as letras sao escritas, estilo "Sniper: eu vou atras de
         // voces hein") — caminho proprio; pesadelo/runico/real seguem o
         // desenho GRANDE central de sempre.
+        if (style == 20) {
+            // (5.13.4) SAÍDA DO VAZIO — o aviso que o dono pediu: letras PRETAS
+            desenhaAvisoSaidaVazio(g, font, w, h, text, elapsed);
+            return;
+        }
         if (style == 0) {
             desenhaAvisoCaixa(g, font, w, h, text, elapsed);
             return;
@@ -1166,6 +1172,59 @@ public final class ClientEffects {
      * voces hein": o CAMPO aparece primeiro (pop + fade rapido, tamanho ja
      * final) e DEPOIS as letras vao sendo escritas (30 ms/char) com o
      * cursor piscando; o nome (texto antes do ":") fica AZUL. */
+    /**
+     * (5.13.4) O AVISO DA SAÍDA DO VAZIO — LETRAS PRETAS.
+     *
+     * <p>Pedido 53: <i>"coloque um aviso com letras pretas falando que ele conseguiu
+     * escapar do vazio, ou que ele foi tirado"</i>. Não é o aviso dramático de sempre:
+     * é uma <b>faixa clara</b> (papel envelhecido) no centro da tela com o texto em
+     * <b>preto</b> — contraste forte, leitura imediata, e nada de cobrir a HUD.
+     */
+    private static void desenhaAvisoSaidaVazio(GuiGraphics g, Font font, int w, int h,
+            String text, float elapsed) {
+        String bruto = text.replaceAll("\u00a7.", "");
+        String[] linhas = bruto.split("\n");
+        float entra = Math.min(1.0F, elapsed / 220.0F);
+        float sai = Math.min(1.0F, (textDuration - elapsed) / 650.0F);
+        float vis = Math.min(entra, sai);
+        if (vis <= 0.0F) {
+            return;
+        }
+        float escala = Math.min(2.6F, (w - 80.0F) / Math.max(1, font.width(linhas[0])));
+        int largTexto = 0;
+        for (String l : linhas) {
+            largTexto = Math.max(largTexto, font.width(l));
+        }
+        int lw = (int) (largTexto * escala) + 64;
+        int lh = (int) (font.lineHeight * escala * linhas.length) + 30;
+        int x0 = (w - lw) / 2;
+        int y0 = h / 2 - lh / 2 + (int) ((1.0F - entra) * 8.0F);
+        int a = (int) (vis * 235.0F);
+        // sombra da faixa (dá volume sem escurecer a tela toda)
+        g.fill(x0 + 4, y0 + 4, x0 + lw + 4, y0 + lh + 4, ((int) (a * 0.45F) << 24));
+        // a faixa (clara) e o filete preto
+        g.fill(x0, y0, x0 + lw, y0 + lh, (a << 24) | 0xEFEAD9);
+        int preto = (Math.min(255, (int) (vis * 255.0F)) << 24);
+        g.fill(x0, y0, x0 + lw, y0 + 2, preto);
+        g.fill(x0, y0 + lh - 2, x0 + lw, y0 + lh, preto);
+        g.fill(x0, y0, x0 + 2, y0 + lh, preto);
+        g.fill(x0 + lw - 2, y0, x0 + lw, y0 + lh, preto);
+        // as LETRAS PRETAS
+        g.pose().pushPose();
+        g.pose().translate(w / 2.0F, y0 + 15 + font.lineHeight * escala / 2.0F, 0.0F);
+        g.pose().scale(escala, escala, 1.0F);
+        for (int i = 0; i < linhas.length; i++) {
+            int tx = -font.width(linhas[i]) / 2;
+            int ty = i * (font.lineHeight + 2) - font.lineHeight / 2;
+            g.drawString(font, linhas[i], tx, ty, 0xFF0A0A0A, false);
+            // uma segunda passada de meio pixel = letra "cheia" (peso de serio)
+            g.drawString(font, linhas[i], tx, ty + 1, 0xFF0A0A0A, false);
+        }
+        g.pose().popPose();
+        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        com.mojang.blaze3d.systems.RenderSystem.disableBlend();
+    }
+
     private static void desenhaAvisoCaixa(GuiGraphics g, Font font, int w, int h,
             String text, float elapsed) {
         long tAtraso = 220L; // as letras so comecam DEPOIS do campo pronto

@@ -79,6 +79,33 @@ public final class ServerEvents {
         }
     }
 
+    /**
+     * (5.13.4) O VAZIO NÃO CRIA BICHO — pedido 53.
+     *
+     * <p><i>"não deixe spawnar slimes, se for para spawnar um bicho completamente
+     * preto"</i>. Aqui o spawn natural é <b>cancelado</b> em regra; passa só o que é
+     * preto de verdade (Enderman e Warden). Slime nunca — nem em slime chunk, nem em
+     * lua cheia, nem divisão de slime grande.
+     */
+    @SubscribeEvent
+    public static void onFinalizeSpawn(
+            net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent event) {
+        try {
+            if (!(event.getLevel() instanceof net.minecraft.server.level.ServerLevel sl)
+                    || !VazioReino.ehVazio(sl)) {
+                return;
+            }
+            var tipo = event.getEntity().getType();
+            boolean preto = tipo == net.minecraft.world.entity.EntityType.ENDERMAN
+                    || tipo == net.minecraft.world.entity.EntityType.WARDEN;
+            if (!preto) {
+                event.setSpawnCancelled(true);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: bloqueio de spawn no vazio falhou (o jogo segue)", t);
+        }
+    }
+
     /** (5.13.0) clicar com a waystone/warp stone NA MÃO dentro do vazio. */
     @SubscribeEvent
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {

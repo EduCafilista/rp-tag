@@ -2007,6 +2007,33 @@ public final class NeptuneEventos {
 
     // ================================================================ EXÍLIO
     /**
+     * (5.13.4) O AVISO DA SAÍDA — LETRAS PRETAS. Pedido 53 do dono:
+     * <i>"tira esses avisos quando entrar na dimensão da tela do player, quando sair
+     * também; coloque um aviso com letras pretas falando que ele conseguiu escapar do
+     * vazio, ou que ele foi tirado"</i>.
+     *
+     * <p>Na ENTRADA não aparece mais nada (nem no chat, nem na tela). Na SAÍDA, este
+     * aviso: faixa clara com letras <b>pretas</b> — "VOCÊ ESCAPOU DO VAZIO" para quem
+     * atravessou o portal, "VOCÊ FOI TIRADO DO VAZIO" para quem foi solto por admin,
+     * morreu ou caiu no sorteio.
+     *
+     * <p>É o estilo 20 do {@link ScreenTextPayload} (desenhado em
+     * {@code ClientEffects.desenhaAvisoSaidaVazio}). Se o cliente for antigo, o pior que
+     * acontece é não aparecer nada — nada de erro.
+     */
+    public static void avisoSaidaDoVazio(ServerPlayer p, boolean escapou) {
+        if (p == null) {
+            return;
+        }
+        try {
+            String texto = escapou ? "VOC\u00ca ESCAPOU DO VAZIO" : "VOC\u00ca FOI TIRADO DO VAZIO";
+            PacketDistributor.sendToPlayer(p, new ScreenTextPayload(texto, 6, 20));
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: aviso de saida do vazio falhou", t);
+        }
+    }
+
+    /**
      * (5.7.6) O EXÍLIO COM ANIMAÇÃO — "deve ter uma animação do player sendo
      * exilado para a dimensão do vazio".
      *
@@ -2046,33 +2073,12 @@ public final class NeptuneEventos {
         // do dono) roda na tela dele E na de todo mundo por perto. Ele fica
         // 5,2 s sendo puxado pra baixo e só então é teleportado.
         EXILIOS.add(new Object[]{ agora + 5200L, alvo.getUUID(), 0, agora });
-        ScreenTextPayload engolir = new ScreenTextPayload(
-                alvo.getName().getString().toUpperCase(), 11, 23);
-        PacketDistributor.sendToPlayer(alvo, engolir);
-        // (5.12.0) SAIU o Nebulosa(5, true) que ia pra TODO MUNDO: era ele o
-        // "disco preto" na tela durante o terremoto (o dono vetou tela preta).
-        for (ServerPlayer p : alvo.getServer().getPlayerList().getPlayers()) {
-            if (p != alvo && p.level() == alvo.level()
-                    && p.position().distanceTo(alvo.position()) <= 64) {
-                PacketDistributor.sendToPlayer(p, engolir);
-                p.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 0.85F);
-            }
-        }
-        alvo.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 0.75F);
-        alvo.getServer().getPlayerList().broadcastSystemMessage(
-                Component.literal("---- vazio --- lançou ")
-                        .withStyle(ChatFormatting.DARK_GRAY)
-                        .append(Component.literal("\"" + alvo.getName().getString() + "\"")
-                                .withStyle(ChatFormatting.DARK_PURPLE))
-                        .append(Component.literal(" para fora do universo").withStyle(ChatFormatting.DARK_GRAY)),
-                false);
-        alvo.displayClientMessage(Component.literal(
-                "\u00a74\u00a7lVOC\u00ca FOI EXPULSO DO MUNDO.\n"
-                + "\u00a78Uma cidade morta no breu até onde a vista alcança.\n"
-                + "\u00a77Para VOLTAR sozinho: ache os \u00a7f8 FRAGMENTOS DO VAZIO\u00a77 nos altares\n"
-                + "\u00a77(as colunas de luz no breu) e encaixe cada um num PEDESTAL em volta da praça.\n"
-                + "\u00a77Com os 8 no lugar, o \u00a7fPORTAL NEGRO\u00a77 (ao norte) abre de baixo para cima.\n"
-                + "\u00a78Ninguém precisa de admin para te tirar."), false);
+        // (5.13.4) ENTRADA SILENCIOSA — pedido 53: nada de aviso na tela nem no chat.
+        // Saíram o ScreenTextPayload de ENGOLIR (o dono: "tira esse aviso que tocou
+        // quando entrei no void"), o SOM_VAZIO de notificação e o broadcast
+        // o broadcast antigo que anunciava o exilado no chat global. Fica só a
+        // animação NO MUNDO
+        // (tickExilios), que o dono aprovou.
     }
 
     // ============================================================ EXÍLIO 5.7.9
@@ -2114,8 +2120,7 @@ public final class NeptuneEventos {
                 NeptunePackets.Cena.CENA_EXILIO, 1.0F, 2600, System.nanoTime()));
         EXILIOS.add(new Object[]{ System.currentTimeMillis() + 2400L, quem.getUUID(), 0,
                 System.currentTimeMillis() });
-        quem.displayClientMessage(Component.literal(
-                "\u00a78Um lugar sem céu. Sem norte. Só o que você conseguir lembrar."), false);
+        // (5.13.4) sem mensagem na entrada (pedido 53)
     }
 
     /** (5.5.0/5.7.6) tira alguém do exílio: animação de escuridão + volta pro lugar de origem. */
@@ -2125,8 +2130,8 @@ public final class NeptuneEventos {
         EXILIOS.add(new Object[]{ agora + 2400L, alvo.getUUID(), 1, agora });
         PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
                 NeptunePackets.Cena.CENA_VOLTA, 1.0F, 2800, System.nanoTime()));
-        alvo.displayClientMessage(Component.literal(
-                "\u00a77A escuridão te devolve. Não conte o que viu."), false);
+        // (5.13.4) saiu do vazio: aviso em LETRAS PRETAS (foi tirado)
+        avisoSaidaDoVazio(alvo, false);
     }
 
     /**
@@ -2345,9 +2350,8 @@ public final class NeptuneEventos {
                     java.util.Set.of(), volta.yaw(), volta.pitch());
             destino.playSound(null, alvo.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
                     SoundSource.HOSTILE, 1.0F, 0.9F);
-            alvo.displayClientMessage(Component.literal(
-                    "\u00a75\u00a7lO PORTAL TE DEVOLVEU.\n"
-                    + "\u00a78Exatamente onde você estava. Ninguém te tirou de lá."), false);
+            // (5.13.4) saiu pelo portal: aviso em LETRAS PRETAS (escapou)
+            avisoSaidaDoVazio(alvo, true);
             return true;
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: volta ao ponto de entrada falhou (o jogo segue)", t);
@@ -2393,9 +2397,8 @@ public final class NeptuneEventos {
             mundo.playSound(null, alvoPos, RPTagMod.SOM_EXPULSAO.get(), SoundSource.HOSTILE, 1.0F, 0.9F);
             PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
                     NeptunePackets.Cena.CENA_VOLTA, 1.0F, 2200, System.nanoTime()));
-            alvo.displayClientMessage(Component.literal(
-                    "\u00a78A escuridão te cuspiu em algum lugar do mundo. "
-                    + "Boa sorte achando o caminho de volta."), false);
+            // (5.13.4) sem mensagem no chat: só o aviso em letras pretas
+            avisoSaidaDoVazio(alvo, false);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: volta do exilio falhou (o jogo segue)", t);
         }
@@ -2430,9 +2433,7 @@ public final class NeptuneEventos {
                             java.util.Set.of(), volta.yaw(), volta.pitch());
                     destinoSalvo.playSound(null, alvo.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
                             SoundSource.HOSTILE, 1.0F, 0.9F);
-                    alvo.displayClientMessage(Component.literal(
-                            "\u00a75\u00a7lO PORTAL TE DEVOLVEU.\n"
-                            + "\u00a78Exatamente onde você estava. Ninguém te tirou de lá."), false);
+                    avisoSaidaDoVazio(alvo, true);
                     return;
                 }
             }
@@ -2447,16 +2448,11 @@ public final class NeptuneEventos {
                             java.util.Set.of(), (Float) o[4], (Float) o[5]);
                     destino.playSound(null, alvo.blockPosition(), RPTagMod.SOM_EXPULSAO.get(),
                             SoundSource.HOSTILE, 1.0F, 0.9F);
-                    alvo.displayClientMessage(Component.literal(
-                            "\u00a75\u00a7lO PORTAL TE DEVOLVEU.\n"
-                            + "\u00a78O mundo está onde você deixou. Ninguém te tirou de lá."), false);
+                    avisoSaidaDoVazio(alvo, true);
                     return;
                 }
             }
             devolverAleatorio(alvo);
-            alvo.displayClientMessage(Component.literal(
-                    "\u00a75\u00a7lO PORTAL TE DEVOLVEU.\n"
-                    + "\u00a78A escuridão te cuspiu em algum lugar do mundo."), false);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: volta pelo portal falhou (o jogo segue)", t);
         }
