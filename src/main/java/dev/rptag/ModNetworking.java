@@ -33,12 +33,16 @@ public final class ModNetworking {
         // (5.7.4) v11: o pacote AURA ganhou o UUID de quem e o vazio (raios 3D)
         // (5.9.0) v12: sync_titulo ganhou a COR do titulo pessoal
         // (5.13.0) v13: VAZIO_PORTAL (posicao + estado do portal negro, pedestais)
-        PayloadRegistrar registrar = event.registrar("13");
+        // (5.13.6) v14: VAZIO_ALMAS (posicao das almas vazias, desenhadas por geometria)
+        PayloadRegistrar registrar = event.registrar("14");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         // (5.13.0) o portal negro do vazio (posicao, pedestais, estado da abertura)
         registrar.playToClient(VazioPortalPayload.TYPE, VazioPortalPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleVazioPortal);
+        // (5.13.6) as almas vazias perdidas na dimensão
+        registrar.playToClient(VazioAlmasPayload.TYPE, VazioAlmasPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleVazioAlmas);
         registrar.playToServer(TabletUpdatePayload.TYPE, TabletUpdatePayload.STREAM_CODEC,
                 TabletService::handleUpdate);
         registrar.playToClient(SyncRPStatePayload.TYPE, SyncRPStatePayload.STREAM_CODEC,

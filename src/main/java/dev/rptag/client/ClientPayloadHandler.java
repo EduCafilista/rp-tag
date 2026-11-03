@@ -37,6 +37,18 @@ public final class ClientPayloadHandler {
         });
     }
 
+    /** (5.13.6) posições das almas vazias: o cliente desenha o corpo delas. */
+    public static void handleVazioAlmas(final dev.rptag.VazioAlmasPayload payload,
+                                        final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                VazioAlmasFx.receber(payload);
+            } catch (Throwable erro) {
+                dev.rptag.RPTagMod.LOGGER.warn("RP Tag: almas do vazio falharam", erro);
+            }
+        });
+    }
+
     public static void handleSync(final SyncRPStatePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             ClientRPStates.set(payload.playerId(), payload.inRp());

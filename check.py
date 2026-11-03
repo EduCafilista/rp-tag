@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.13.5'
+VER = '5.13.6'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -70,7 +70,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("13")' in mn)
+check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("14")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -197,7 +197,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo atual (3 payloads de musica)', 'registrar("13")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo atual (3 payloads de musica)', 'registrar("14")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -1080,11 +1080,11 @@ _mn9 = rd(R + '/ModNetworking.java')
 check('5.2.0: canais novos tablet_sync/tablet_update no lugar dos antigos ficha_*',
       'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9
       and 'tablet_sync' in rd(R + '/TabletSyncPayload.java') and 'tablet_update' in rd(R + '/TabletUpdatePayload.java'))
-check('5.2.0/5.4.0: protocolo subiu para v9..v12 e agora v13 (cliente antigo e recusado)',
-      'registrar("9")' not in _mn9 and 'registrar("13")' in _mn9 and 'registrar("8")' not in _mn9)
+check('5.2.0/5.4.0: protocolo subiu para v9..v12 e agora v14 (cliente antigo e recusado)',
+      'registrar("9")' not in _mn9 and 'registrar("14")' in _mn9 and 'registrar("8")' not in _mn9)
 # (5.7.2) o canal subiu de novo: TITULOS entrou, cliente 5.7.1 e recusado
-check('5.7.2: protocolo v10 (agora v13) com o pacote de TITULOS',
-      'event.registrar("13")' in rd(R + '/ModNetworking.java')
+check('5.7.2: protocolo v10 (agora v14) com o pacote de TITULOS',
+      'event.registrar("14")' in rd(R + '/ModNetworking.java')
       and 'TituloSyncPayload.TYPE' in rd(R + '/ModNetworking.java'))
 check('5.2.0: o tablet e entregue no login', 'PlayerLoggedInEvent' in rd(R + '/TabletService.java'))
 check('5.2.0: /tablet existe e /ficha nao voltou',
@@ -1380,7 +1380,7 @@ check('5.2.0: item rptag:tablet registrado (stacksTo 1)', 'ITEMS.register("table
       and 'stacksTo(1)' in rd(R + '/RPTagMod.java'))
 check('5.2.0: tabela de limites da ficha 32/5/240/600/3000', 'LIMITES = {32, 5, 240, 600, 3000}' in _fp)
 check('5.2.0: protocolo com os 2 payloads do tablet',
-      'registrar("13")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
+      'registrar("14")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
 check('5.2.0: handler do cliente registrado', 'handleTablet' in rd(C + '/ClientPayloadHandler.java'))
 check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID antes do load',
       'tag.put("TabletSheets", sheets)' in _rw and 'hasUUID("Id")' in _rw
@@ -1562,8 +1562,8 @@ check('5.4.0: blur REAL no pulso travado (processBlurEffect) com fallback',
       'processBlurEffect' in rd(_NX) and 'catch (Throwable ignorado)' in rd(_NX))
 check('5.4.0: texto do vazio no chat com a frase do dono',
       'NeptunePackets' in rd(_NPk) and 'neptune_saida' in rd(_NPk))
-check('5.4.0: canal v9 (agora v13) registra os 5 pacotes novos',
-      'event.registrar("13")' in rd('src/main/java/dev/rptag/ModNetworking.java')
+check('5.4.0: canal v9 (agora v14) registra os 5 pacotes novos',
+      'event.registrar("14")' in rd('src/main/java/dev/rptag/ModNetworking.java')
       and rd('src/main/java/dev/rptag/ModNetworking.java').count('NeptunePackets') >= 5)
 check('5.4.0: comandos /terremoto, /vazio, /bicho e /neptune so pra OP',
       all(k in rd(_NC) for k in ['literal("terremoto")', 'literal("vazio")', 'literal("bicho")', 'literal("neptune")'])
@@ -1759,8 +1759,8 @@ check('5.7.4: o pacote AURA leva o UUID de quem e o vazio (todos os clientes vee
 check('5.7.4: trovao grave pros outros (medo) perto do vazio',
       'proximoTrovao' in rd(R + '/NeptuneEventos.java')
       and 'LIGHTNING_BOLT_THUNDER' in rd(R + '/NeptuneEventos.java'))
-check('5.7.4: canal v11 (o Aura mudou de formato; agora v13 com o portal do vazio)',
-      'event.registrar("13")' in rd(R + '/ModNetworking.java'))
+check('5.7.4: canal v11 (o Aura mudou de formato; agora v14 com o portal e as almas do vazio)',
+      'event.registrar("14")' in rd(R + '/ModNetworking.java'))
 
 # ============ 5.7.3: bicho na tela, música única, som do terremoto ============
 check('5.7.3: BICHO pula na tela de quem esta em CRIATIVO (era o bug do dono)',
@@ -2082,9 +2082,9 @@ check('5.9.0: cores por NOME (ouro, vermelho, ciano...) e HEX (FFD700 / #FFD700)
 check('5.9.0: dá pra voltar pra cor de fábrica (padrao) e a cor fica salva no mundo',
       'corDeFabrica' in _tit and '"padrao"' in _tcmd and 'putInt("CorPessoal"' in _tit
       and 'getInt("CorPessoal")' in _tit)
-check('5.9.0: o título pessoal também tem cor própria (pacote v13)',
+check('5.9.0: o título pessoal também tem cor própria (pacote v14)',
       'corPessoal' in _tpay and 'corPessoal' in _ctit
-      and 'event.registrar("13")' in _net)
+      and 'event.registrar("14")' in _net)
 check('5.9.0: /titulo definir e /titulo limpar aceitam VÁRIOS jogadores (@a)',
       'EntityArgument.players()' in _tcmd and 'getPlayers(ctx, "jogadores")' in _tcmd)
 check('5.9.0: TAB do comando sugere as cores',
@@ -2464,7 +2464,7 @@ check('5.13.2: portal animado também FORA do vazio (vórtice no overworld)',
 check('5.13.2: cidade morta já de pé na chegada (anel inicial de ruínas)',
       'private static void anelInicial(' in _vr and 'marcar(nv, "anel")' in _vr)
 check('5.13.1: pacote do portal registrado (canal 13)',
-      'VazioPortalPayload.TYPE' in _net and 'event.registrar("13")' in _net
+      'VazioPortalPayload.TYPE' in _net and 'event.registrar("14")' in _net
       and 'VazioPortalPayload' in _pay)
 check('5.12.0: a volta pelo portal não depende de admin (voltarPeloPortal)',
       'public static void voltarPeloPortal(ServerPlayer alvo)' in _nev)
@@ -2503,6 +2503,55 @@ check('5.13.4: VOCE ESCAPOU DO VAZIO / VOCE FOI TIRADO DO VAZIO',
       and 'irParaSpawn(alvo, false)' in _nev)
 check('5.13.4: nada de aviso automatico na barra de acao dentro do vazio',
       'dica(p, RPWorldData.get(p.getServer()));' not in _vr)
+def _tex_escuridao():
+    """(largura, altura) do PNG da escuridão lidos do cabeçalho IHDR (sem PIL)."""
+    try:
+        with open(A + '/textures/block/escuridao.png', 'rb') as f:
+            d = f.read(24)
+        if d[:8] != b'\x89PNG\r\n\x1a\n':
+            return (0, 0)
+        w = int.from_bytes(d[16:20], 'big')
+        h = int.from_bytes(d[20:24], 'big')
+        return (w, h)
+    except Exception:
+        return (0, 0)
+
+check('5.13.6 (pedido 56): MONTANHAS no relevo (ridged + cinto de serras no horizonte)',
+      'double serra = Math.sin((x + z * 0.35) * 0.0062 + 0.4)' in _vr
+      and 'double cinto = Math.max(0.0, 1.0 - Math.abs(d - 118.0) / 26.0)' in _vr
+      and 'Math.abs(Math.sin(x * 0.147 + z * 0.131 + 2.1))' in _vr
+      and 'Math.min(40.0, pico * 46.0)' in _vr)
+check('5.13.6: montanha tem ESTRATO de pedra (pedraDoMonte), nao sorteio por bloco',
+      'private static BlockState pedraDoMonte(' in _vr
+      and 'pedraDoMonte(r, i, h, x, y + i, z)' in _vr
+      and 'SMOOTH_BASALT.defaultBlockState()' in _vr
+      and 'CRYING_OBSIDIAN.defaultBlockState()' in _vr)
+check('5.13.6: relevo respeita os 8 altares (fragmento nao fica soterrado)',
+      'boolean pertoDeAltar = false;' in _vr and 'for (int[] alt : VazioGeometria.SANTUARIO)' in _vr)
+check('5.13.6 (pedido 56): ALMAS VAZIAS perdidas na dimensao (virtuais, sem entidade)',
+      'private static void nascerAlmas(ServerLevel nv)' in _vr
+      and 'private static void tickAlmas(ServerLevel nv, long agora)' in _vr
+      and 'ALMAS_CASAS' in _vr and 'ALMAS_ESTADO' in _vr
+      and 'ArmorStand' not in _vr.split('limparBichos')[1].split('colocarBau')[0]
+      and 'VazioAlmasPayload' in _vr)
+check('5.13.6: a alma se vira e se aproxima de quem chega (e sussurra)',
+      'menor < 9.0 && agora - ALMA_FALOU[i] > 6000L' in _vr
+      and 'SoundEvents.SOUL_ESCAPE.value()' in _vr
+      and 'if (perto != null && menor > 2.6)' in _vr)
+check('5.13.6: o CORPO da alma e GEOMETRIA no cliente (funciona com particula desligada)',
+      os.path.exists(C + '/VazioAlmasFx.java')
+      and 'RenderType.debugQuads()' in rd(C + '/VazioAlmasFx.java')
+      and 'private static void desenharAlma(' in rd(C + '/VazioAlmasFx.java')
+      and os.path.exists(R + '/VazioAlmasPayload.java'))
+check('5.13.6: pacote das almas registrado (canal 14 + handler do cliente)',
+      'event.registrar("14")' in rd(R + '/ModNetworking.java')
+      and 'VazioAlmasPayload.STREAM_CODEC' in rd(R + '/ModNetworking.java')
+      and 'handleVazioAlmas' in rd(C + '/ClientPayloadHandler.java'))
+check('5.13.6 (pedido 56): textura da ESCURIDAO ANIMADA (4 quadros, 32x32, sem emenda)',
+      os.path.exists(A + '/textures/block/escuridao.png')
+      and os.path.exists(A + '/textures/block/escuridao.png.mcmeta')
+      and '"frametime": 8' in rd(A + '/textures/block/escuridao.png.mcmeta')
+      and _tex_escuridao()[0] == 32 and _tex_escuridao()[1] == 128)
 check('5.13.5 (pedido 55): a ESCURIDAO nao tem colisao (da para ATRAVESSAR o portal)',
       '.noCollission()' in rtm and 'ATRAVESSÁVEL' in rd(R + '/EscuridaoBlock.java'))
 check('5.13.5: atravessar andando dispara em 0,12 s (o miolo e 1 bloco de fundo)',

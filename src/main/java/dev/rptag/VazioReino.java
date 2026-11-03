@@ -131,6 +131,36 @@ public final class VazioReino {
     /** quantos blocos o relevo já assentou nesta vida do servidor (só para o log). */
     private static int relevoBlocos;
 
+    // ============================================== ALMAS VAZIAS (5.13.6)
+    /**
+     * (5.13.6) AS ALMAS VAZIAS — pedido do dono: <i>"faça almas vazias que ficaram perdidas
+     * naquele local"</i>.
+     *
+     * <p>Elas <b>não são bicho</b> (a primeira tentativa usou suporte de armadura invisível e o
+     * servidor duplicava as almas quando o chunk descarregava). O servidor guarda só a posição e
+     * calcula o movimento; o <b>corpo</b> é desenhado pelo cliente em geometria
+     * ({@code VazioAlmasFx}) — pelo mesmo motivo do portal: partícula desligada não pode sumir
+     * com o bicho.
+     *
+     * <p>Elas ficam <b>perdidas</b>: vagam devagar em volta de onde morreram e, quando alguém
+     * chega perto, <b>se viram para a pessoa e se aproximam</b> — devagar, sem tocar, sussurrando.
+     * Nada de dano: alma vazia só assusta.
+     */
+    /** posição ATUAL de cada alma (x, y, z). */
+    private static final float[] ALMAS_ESTADO = new float[12 * 3];
+    private static boolean almasAcordadas;
+
+    /** onde cada alma ficou perdida (x, z) — perto da praça e nos ermos, nas montanhas. */
+    private static final int[][] ALMAS_CASAS = {
+            { 26, -31 }, { -33, 19 }, { 14, 43 }, { -19, -46 },
+            { 63, 66 }, { -78, 37 }, { 99, -72 }, { -44, -101 }, { 124, 86 }, { -113, -24 },
+            { 41, -104 }, { -96, 96 }
+    };
+
+    /** última vez que cada alma sussurrou (para o sussurro não virar metralhadora). */
+    private static final long[] ALMA_FALOU = new long[12];
+    private static long proximaAlma;
+
     /** último envio do estado do portal para cada jogador (ms). */
     private static final Map<UUID, Long> ULTIMO_SYNC = new HashMap<>();
 
@@ -305,6 +335,8 @@ public final class VazioReino {
                 anelInicial(nv);
             }
             relevoTick(nv, agora);
+            // (5.13.6) as almas vazias (são virtuais: posição + desenho no cliente)
+            tickAlmas(nv, agora);
             // (5.13.1) a cidade morta cresce sozinha: uma ruína a cada 2 s em volta da
             // praça (o dono: "a dimensão tem que ter mais coisas... prédios, ruínas")
             if (agora >= proximaRuina) {
@@ -621,12 +653,51 @@ public final class VazioReino {
         RPTagMod.LOGGER.info("RP Tag: relevo do vazio agendado ({} chunks)", RELEVO.size());
     }
 
-    /** altura do relevo (blocos, negativo = cratera) — ruído suave e determinístico. */
+    /**
+     * (5.13.6) A ALTURA DO RELEVO — agora com MONTANHAS de verdade.
+     *
+     * <p>O dono: <i>"coloca uns relevos na dimensão, umas montanhas, coisas assim"</i>. Antes
+     * existia só a ondulação (no máximo ±8 blocos: parecia chapa amassada). Agora são duas
+     * coisas somadas:
+     * <ol>
+     *   <li>a <b>ondulação</b> de sempre (vales, montinhos, crateras);</li>
+     *   <li>uma <b>cordilheira</b> de serras de até ~34 blocos, que só nasce <b>depois de 62
+     *       blocos da praça</b> (praça e caminho do portal intactos) e cresce suave até 102 —
+     *       nada de paredão na cara de quem chega;</li>
+     *   <li>o <b>cinto de serras</b> a ~118 blocos: é o horizonte do vazio.</li>
+     * </ol>
+     *
+     * <p>É tudo seno de posição: o mesmo mundo gera sempre a mesma montanha, sem guardar
+     * altura nenhuma no save.
+     */
     private static double relevoAltura(int x, int z) {
+        // 1) a ondulação (a de sempre)
         double a = Math.sin(x * 0.041 + 1.7) * Math.cos(z * 0.037 - 0.4);
         double b = Math.sin((x + z) * 0.017 - 2.1) * Math.cos((x - z) * 0.023 + 0.9);
         double c = Math.sin(x * 0.101 - z * 0.087 + 3.3);
-        return (a * 3.4 + b * 2.6 + c * 1.1) * 1.15;
+        double base = (a * 3.4 + b * 2.6 + c * 1.1) * 1.15;
+
+        // 2) as MONTANHAS (só longe da praça)
+        double d = Math.hypot(x, z);
+        double longe = Math.min(1.0, Math.max(0.0, (d - 62.0) / 40.0));
+        if (longe <= 0.0) {
+            return base;
+        }
+        // (5.13.6) RIDGED NOISE: "1 - |seno|" dá CRISTA (quina) em vez de lomba redonda —
+        // é o que separa serra de monte de areia. Três escalas: a serra larga (~270
+        // blocos), o contraforte (~100) e a agulha (~40, que dá relevo dentro do chunk).
+        double serra = Math.sin((x + z * 0.35) * 0.0062 + 0.4);            // a cordilheira
+        double largo = 0.5 + 0.5 * serra;
+        double r1 = 1.0 - Math.abs(Math.sin(x * 0.023 + 0.7) * Math.cos(z * 0.019 - 0.4));
+        double r2 = 1.0 - Math.abs(Math.sin(x * 0.061 - z * 0.052 + 1.3));
+        double r3 = 1.0 - Math.abs(Math.sin(x * 0.147 + z * 0.131 + 2.1));
+        double pico = largo * (r1 * 0.58 + r2 * 0.28 + r3 * 0.14);
+        pico = Math.pow(pico, 1.8);                                        // afina as pontas
+        double altura = Math.min(40.0, pico * 46.0);
+        // 3) o cinturão de serras no horizonte — o "fim do mundo" do vazio
+        double cinto = Math.max(0.0, 1.0 - Math.abs(d - 118.0) / 26.0);
+        altura = Math.max(altura, cinto * (6.0 + 10.0 * largo));
+        return base + altura * longe;
     }
 
     /** o bloco é terreno natural? (o relevo só mexe no que é natural) */
@@ -642,6 +713,161 @@ public final class VazioReino {
                 || st.is(Blocks.SMOOTH_BASALT) || st.is(Blocks.CLAY)
                 || st.is(Blocks.SCULK) || st.is(Blocks.LIGHT_GRAY_CONCRETE)
                 || st.is(Blocks.GRAY_CONCRETE);
+    }
+
+    // ============================================== ALMAS VAZIAS (5.13.6)
+    /** acorda as almas (uma vez por sessão): cada uma no lugar onde ficou perdida. */
+    private static void nascerAlmas(ServerLevel nv) {
+        for (int i = 0; i < ALMAS_CASAS.length; i++) {
+            ALMAS_ESTADO[i * 3] = ALMAS_CASAS[i][0] + 0.5F;
+            ALMAS_ESTADO[i * 3 + 1] = 12.0F;           // o chão de verdade vem no primeiro tick
+            ALMAS_ESTADO[i * 3 + 2] = ALMAS_CASAS[i][1] + 0.5F;
+        }
+        almasAcordadas = true;
+        RPTagMod.LOGGER.info("RP Tag: {} almas vazias perdidas no vazio", ALMAS_CASAS.length);
+    }
+
+    /**
+     * o que as almas fazem a cada meio segundo: vagam em volta de onde morreram e, quando alguém
+     * chega perto, se viram para a pessoa e se aproximam devagar, sussurrando. Sem dano.
+     */
+    private static void tickAlmas(ServerLevel nv, long agora) {
+        if (agora < proximaAlma) {
+            return;
+        }
+        proximaAlma = agora + 500L;
+        try {
+            if (!almasAcordadas) {
+                nascerAlmas(nv);
+            }
+            float[] pontos = new float[ALMAS_CASAS.length * 3];
+            long t = agora / 1000L;
+            for (int i = 0; i < ALMAS_CASAS.length; i++) {
+                int[] casa = ALMAS_CASAS[i];
+                float ax = ALMAS_ESTADO[i * 3];
+                float ay = ALMAS_ESTADO[i * 3 + 1];
+                float az = ALMAS_ESTADO[i * 3 + 2];
+
+                // ---- quem está por perto? (medido contra a POSIÇÃO da alma)
+                ServerPlayer perto = null;
+                double menor = 42.0;
+                for (ServerPlayer p : nv.players()) {
+                    double d = p.distanceToSqr(ax, ay, az);
+                    if (d < menor * menor) {
+                        menor = Math.sqrt(d);
+                        perto = p;
+                    }
+                }
+
+                double alvoX, alvoZ;
+                if (perto != null && menor > 2.6) {
+                    // vem na direção da pessoa, de leve (0,9 bloco por segundo)
+                    double dx = perto.getX() - ax;
+                    double dz = perto.getZ() - az;
+                    double tam = Math.max(0.001, Math.hypot(dx, dz));
+                    alvoX = ax + dx / tam * 0.9;
+                    alvoZ = az + dz / tam * 0.9;
+                    if (menor < 9.0 && agora - ALMA_FALOU[i] > 6000L) {
+                        ALMA_FALOU[i] = agora;
+                        nv.playSound(null, BlockPos.containing(ax, ay, az),
+                                SoundEvents.SOUL_ESCAPE.value(), SoundSource.AMBIENT,
+                                0.35F, 0.55F + (float) Math.random() * 0.2F);
+                        nv.playSound(null, BlockPos.containing(ax, ay, az),
+                                SoundEvents.AMBIENT_CAVE.value(), SoundSource.AMBIENT, 0.22F, 0.7F);
+                    }
+                } else if (perto != null) {
+                    alvoX = ax;                            // colou na pessoa: para e a encara
+                    alvoZ = az;
+                } else {
+                    // perdida: dá voltas lentas em volta do lugar onde morreu
+                    double ang = (t * 0.10 + i * 1.9) % (Math.PI * 2);
+                    double raio = 2.5 + 1.2 * Math.sin(t * 0.11 + i);
+                    alvoX = casa[0] + 0.5 + Math.cos(ang) * raio;
+                    alvoZ = casa[1] + 0.5 + Math.sin(ang) * raio;
+                }
+
+                // ---- a alma acompanha o chão (montanha, cratera, ruína)
+                int bx = (int) Math.floor(alvoX), bz = (int) Math.floor(alvoZ);
+                if (nv.isLoaded(new BlockPos(bx, (int) ay, bz))) {
+                    int chao = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, bx, bz);
+                    if (chao > nv.getMinBuildHeight() + 2) {
+                        ay = chao + 0.4F;
+                    }
+                }
+
+                ALMAS_ESTADO[i * 3] = (float) alvoX;
+                ALMAS_ESTADO[i * 3 + 1] = ay;
+                ALMAS_ESTADO[i * 3 + 2] = (float) alvoZ;
+                pontos[i * 3] = (float) alvoX;
+                pontos[i * 3 + 1] = ay;
+                pontos[i * 3 + 2] = (float) alvoZ;
+
+                // ---- poeira da alma (a partícula é enfeite; o corpo é do cliente)
+                if (perto != null && menor < 40.0 && Math.random() < 0.5) {
+                    nv.sendParticles(ParticleTypes.SOUL, alvoX, ay + 1.0, alvoZ,
+                            1, 0.12, 0.22, 0.12, 0.005);
+                }
+            }
+            // manda as posições para quem está no vazio (2x por segundo)
+            VazioAlmasPayload pacote = new VazioAlmasPayload(pontos);
+            for (ServerPlayer p : nv.players()) {
+                if (p.distanceToSqr(0.5, p.getY(), 0.5) < 260.0 * 260.0) {
+                    PacketDistributor.sendToPlayer(p, pacote);
+                }
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: almas do vazio falharam (o jogo segue)", t);
+        }
+    }
+
+    /**
+     * (5.13.6) A PEDRA DA MONTANHA, por ESTRATO.
+     *
+     * <p>De baixo para cima: pé (deepslate/tuff) → contraforte (tuff/cobbled deepslate) →
+     * parede (blackstone) → cume (smooth basalt). Veios: carvão no miolo, obsidiana chorando
+     * nas paredes altas e um fio de sculk no cume — o vazio subindo pela pedra.
+     */
+    private static BlockState pedraDoMonte(RandomSource r, int i, int h, int x, int y, int z) {
+        double f = h <= 1 ? 1.0 : i / (double) (h - 1);        // 0 = pé, 1 = cume
+        float s = r.nextFloat();
+        if (f > 0.86) {                                        // cume
+            if (s < 0.62F) {
+                return Blocks.SMOOTH_BASALT.defaultBlockState();
+            }
+            if (s < 0.80F) {
+                return Blocks.BLACKSTONE.defaultBlockState();
+            }
+            if (s < 0.90F) {
+                return Blocks.SCULK.defaultBlockState();
+            }
+            return Blocks.CRYING_OBSIDIAN.defaultBlockState();
+        }
+        if (f > 0.55) {                                        // parede
+            if (s < 0.55F) {
+                return Blocks.BLACKSTONE.defaultBlockState();
+            }
+            if (s < 0.78F) {
+                return Blocks.TUFF.defaultBlockState();
+            }
+            if (s < 0.92F) {
+                return Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState();
+            }
+            return Blocks.DEEPSLATE_COAL_ORE.defaultBlockState();
+        }
+        if (f > 0.18) {                                        // contraforte
+            if (s < 0.46F) {
+                return Blocks.TUFF.defaultBlockState();
+            }
+            if (s < 0.74F) {
+                return Blocks.DEEPSLATE.defaultBlockState();
+            }
+            if (s < 0.90F) {
+                return Blocks.COBBLED_DEEPSLATE.defaultBlockState();
+            }
+            return Blocks.GRAVEL.defaultBlockState();
+        }
+        return s < 0.62F ? Blocks.DEEPSLATE.defaultBlockState()
+                : Blocks.TUFF.defaultBlockState();             // pé
     }
 
     /** esculpe UM chunk de relevo (montes, crateras, pedras soltas). */
@@ -667,6 +893,18 @@ public final class VazioReino {
                 if (pertoDeCasa) {
                     continue;
                 }
+                // (5.13.6) e NADA de montanha em cima dos 8 altares: o fragmento do vazio nasce
+                // numa coluna de luz, e se o relevo crescer por cima ele fica soterrado.
+                boolean pertoDeAltar = false;
+                for (int[] alt : VazioGeometria.SANTUARIO) {
+                    if (Math.hypot(x - alt[0], z - alt[1]) < 16) {
+                        pertoDeAltar = true;
+                        break;
+                    }
+                }
+                if (pertoDeAltar) {
+                    continue;
+                }
                 int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                 if (y <= nv.getMinBuildHeight() + 4) {
                     continue;
@@ -681,22 +919,24 @@ public final class VazioReino {
                 int h = (int) Math.round(relevoAltura(x, z) * rampa);
                 relevoBlocos += Math.abs(h);
                 if (h > 0) {
+                    // (5.13.6) montanha tem ESTRATO, não sorteio por bloco
                     for (int i = 0; i < h; i++) {
-                        BlockPos p = new BlockPos(x, y + i, z);
-                        BlockState st;
-                        float s = r.nextFloat();
-                        if (s < 0.40F) {
-                            st = Blocks.TUFF.defaultBlockState();
-                        } else if (s < 0.68F) {
-                            st = Blocks.DEEPSLATE.defaultBlockState();
-                        } else if (s < 0.86F) {
-                            st = Blocks.GRAVEL.defaultBlockState();
-                        } else if (s < 0.96F) {
-                            st = Blocks.COBBLED_DEEPSLATE.defaultBlockState();
-                        } else {
-                            st = Blocks.DEEPSLATE_COAL_ORE.defaultBlockState();
+                        filaForte(new BlockPos(x, y + i, z), pedraDoMonte(r, i, h, x, y + i, z));
+                    }
+                    // entulho no pé da serra: pedra solta caindo pelo barranco
+                    if (h >= 10 && r.nextFloat() < 0.30F) {
+                        int quantas = 1 + r.nextInt(3);
+                        for (int k = 0; k < quantas; k++) {
+                            int ox = r.nextInt(5) - 2, oz = r.nextInt(5) - 2;
+                            int py = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                                    x + ox, z + oz);
+                            if (py > nv.getMinBuildHeight() + 3) {
+                                filaForte(new BlockPos(x + ox, py, z + oz),
+                                        r.nextBoolean()
+                                                ? Blocks.COBBLED_DEEPSLATE.defaultBlockState()
+                                                : Blocks.GRAVEL.defaultBlockState());
+                            }
                         }
-                        filaForte(p, st);
                     }
                 } else if (h < 0) {
                     for (int i = 0; i < -h; i++) {
