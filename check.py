@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.13.6'
+VER = '5.14.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2633,6 +2633,46 @@ check('5.13.3: atravessar vale para a praca (8 fragmentos) e para o invocado (li
 check('5.13.3: /vazio pedestais mostra o relatorio do portal (praca, miolo, aberto, invocado)',
       'public static String relatorioPortal(ServerLevel nv, java.util.UUID id)' in _vr
       and 'VazioReino.relatorioPortal(nv, quem.getUUID())' in _nec)
+
+# ---------------------------------------------------------------- 5.14.0 (pedido 57): os tres avisos
+_lou = rd(C + '/LoucoAvisoFx.java')
+_mar = rd(C + '/MarinheiroAvisoFx.java')
+_esp = rd(C + '/EspectadorAvisoFx.java')
+_rit = rd(C + '/AvisoRitual.java')
+_rgc = rd(C + '/ClientEffects.java')
+_fxc = rd(C + '/FxComando.java')
+
+check('5.14.0: os TRES avisos novos existem e sao FX proprio (nao video, nao particula)',
+      'class LoucoAvisoFx' in _lou and 'class MarinheiroAvisoFx' in _mar and 'class EspectadorAvisoFx' in _esp
+      and 'ParticleTypes' not in _lou + _mar + _esp and 'VideoFx' not in _lou + _mar + _esp)
+check('5.14.0: REGISTRADOS na tela (registerAboveAll dos tres)',
+      'aviso_louco' in _lou and 'aviso_marinheiro' in _mar and 'aviso_espectador' in _esp)
+check('5.14.0: estilo 25/26/27 ligado no avisar() e no teste do cliente',
+      'case "louco" -> 25' in _rp and 'case "marinheiro" -> 26' in _rp
+      and 'case "espectador", "justica" -> 27' in _rp
+      and 'if (style == 25)' in _rgc and 'if (style == 26)' in _rgc and 'if (style == 27)' in _rgc
+      and 'case "louco" -> 25' in _fxc and 'case "marinheiro" -> 26' in _fxc)
+check('5.14.0: /rp admin avisar louco|marinheiro|espectador existem como LITERAIS',
+      'Commands.literal("louco")' in _rp and 'Commands.literal("marinheiro")' in _rp
+      and 'Commands.literal("espectador")' in _rp)
+check('5.14.0: LOUCO = nevoa cinzenta + 22 caminhos + relogio + carta + lua carmesim',
+      'SUSSURROS' in _lou and 'for (int i = 0; i < 22; i++)' in _lou
+      and 'Math.floor(T)' in _lou and 'CARMESIM' in _lou and 'AVISO' in _lou)
+check('5.14.0: MARINHEIRO = tempestade com raio ramificado + mar + leme + bola de raio',
+      'AGENDA' in _mar and 'gera um raio por deslocamento de ponto' in _mar and 'leme de navio' in _mar
+      and 'bolas de raio' in _mar and 'LIGHTNING_BOLT_THUNDER' in _mar)
+check('5.14.0: ESPECTADOR = aurora + espiral + balanca + anel de olhos + petalas',
+      'aurora' in _esp and 'espiral' in _esp and 'a balan' in _esp
+      and 'anel de olhos' in _esp and 'petalas' in _esp)
+check('5.14.0: os avisos novos se ENCERRAM (parar()) quando outro aviso chega',
+      'LoucoAvisoFx.parar();' in _rgc and 'MarinheiroAvisoFx.parar();' in _rgc
+      and 'EspectadorAvisoFx.parar();' in _rgc)
+check('5.14.0: AvisoRitual da o que o JavaFX tinha e o GUI nao (halo, poligono, arco, texto)',
+      'public static void halo(' in _rit and 'public static void poligono(' in _rit
+      and 'public static void arco(' in _rit and 'public static void texto(' in _rit)
+check('5.14.0: nenhum aviso novo escreve na tela do admin (so o alvo recebe)',
+      'sendSuccess' not in _lou + _mar + _esp and 'broadcast' not in _lou + _mar + _esp)
+
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

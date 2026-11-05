@@ -316,7 +316,10 @@ public final class LoreZoneCommands {
             java.util.Map.entry("demoniaco", 10), java.util.Map.entry("pesadelo2", 11),
             // (5.7.9) os três avisos dos protótipos novos do dono
             java.util.Map.entry("onefallall", 19), java.util.Map.entry("morteop", 20),
-            java.util.Map.entry("sangueop", 21));
+            java.util.Map.entry("sangueop", 21),
+            // (5.14.0) os tres avisos novos do dono
+            java.util.Map.entry("louco", 25), java.util.Map.entry("marinheiro", 26),
+            java.util.Map.entry("espectador", 27));
 
     /** (3.85.0) nome do estilo pra exibir no /lorezone listar. */
     private static String nomeEstilo(int e) {
@@ -335,6 +338,9 @@ public final class LoreZoneCommands {
             case 19 -> "onefallall";
             case 20 -> "morteop";
             case 21 -> "sangueop";
+            case 25 -> "louco";
+            case 26 -> "marinheiro";
+            case 27 -> "espectador";
             default -> "classico";
         };
     }

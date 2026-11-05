@@ -94,6 +94,9 @@ public final class ClientEffects {
         RealAvisoFx.parar();
         ExpurgoAvisoFx.parar();
         CiberpsicoseAvisoFx.parar();
+        LoucoAvisoFx.parar();
+        MarinheiroAvisoFx.parar();
+        EspectadorAvisoFx.parar();
         // (5.7.9) os três avisos novos dos protótipos do dono
         SolAvisoFx.parar();
         MorteOpAvisoFx.parar();
@@ -139,6 +142,27 @@ public final class ClientEffects {
         // (3.94.0) estilo 10 = DEMONIACO: o FX proprio (Chamado do Abismo:
         // mandibulas, fissuras, pentagrama, olho de fenda) assume. Codigos
         // & sao ignorados.
+        // (5.14.0) 15 = LOUCO, 16 = MARINHEIRO (Enforcado), 17 = ESPECTADOR (Justica).
+        // Os tres desenham o proprio texto (titulo + a mensagem digitada), entao aqui
+        // so se limpa o codigo de cor e se entrega a mensagem.
+        if (style == 25) {
+            String limpoL = text.replaceAll("\u00a7.", "");
+            LoucoAvisoFx.iniciar(limpoL);
+            RPTagMod.LOGGER.info("RP Tag: AVISO DO LOUCO iniciado (FX proprio)");
+            return;
+        }
+        if (style == 26) {
+            String limpoM = text.replaceAll("\u00a7.", "");
+            MarinheiroAvisoFx.iniciar(limpoM);
+            RPTagMod.LOGGER.info("RP Tag: AVISO DO MARINHEIRO iniciado (FX proprio)");
+            return;
+        }
+        if (style == 27) {
+            String limpoE = text.replaceAll("\u00a7.", "");
+            EspectadorAvisoFx.iniciar(limpoE);
+            RPTagMod.LOGGER.info("RP Tag: AVISO DO ESPECTADOR iniciado (FX proprio)");
+            return;
+        }
         if (style == 10) {
             String limpoD = text.replaceAll("\\u00a7.", "");
             DemoniacoAvisoFx.iniciar("AVISO", limpoD);

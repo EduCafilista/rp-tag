@@ -374,6 +374,9 @@ public final class RPCommands {
             case "egipicio", "egipcio" -> 12;   // (4.5.0) O Olho de Horus
             case "expurgo" -> 13;   // (4.9.2) Hora do Expurgo (TV de emergencia)
             case "ciberpsicose", "ciber" -> 14;   // (4.9.3) Alerta de Ciberpsicose (glitch)
+            case "louco" -> 25;   // (5.14.0) O Louco (nevoa cinzenta, sigilo, relogio)
+            case "marinheiro" -> 26;   // (5.14.0) O Marinheiro / Enforcado (tempestade, mar, leme)
+            case "espectador", "justica" -> 27;   // (5.14.0) O Espectador / Justica (sonho, balanca, olhos)
             case "energia" -> 15;   // (5.5.0) ENERGIA — anomalia de entropia
             case "conhecimento" -> 16;   // (5.7.0) CONHECIMENTO — o olho que sabe
             case "allforone" -> 17;   // (5.7.0) ALLFORONE — as vozes têm forma
@@ -1058,6 +1061,33 @@ public final class RPCommands {
                                                     var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                                     avisar(ctx, alvos, "ciberpsicose", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.14.0) O LOUCO: nevoa cinzenta, sigilo de 22 caminhos, relogio, carta
+                                .then(Commands.literal("louco")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "louco", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.14.0) O MARINHEIRO (Enforcado): tempestade, mar revolto, leme
+                                .then(Commands.literal("marinheiro")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "marinheiro", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.14.0) O ESPECTADOR (Justica): ceu de sonho, balanca, anel de olhos
+                                .then(Commands.literal("espectador")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "espectador", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))
                                 .then(Commands.literal("energia")
