@@ -118,7 +118,7 @@ O **texto do comando** entra no meio, digitado, e o resto do aviso continua rola
 ## 6) Conferido antes de publicar
 
 - `javac` (Java 21, NeoForge 21.1.249): **0 erros**;
-- `check.py`: **899 PASS / 0 FAIL**;
+- `check.py`: **906 PASS / 0 FAIL**;
 - servidor de teste com o jar novo: **0 exceções**;
 - `/rp admin avisar @a louco teste`, `... marinheiro teste`, `... espectador teste`:
   os três responderam (com 0 jogador online, "No player was found" — é o servidor reclamando
