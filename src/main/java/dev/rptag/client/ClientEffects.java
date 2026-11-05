@@ -358,7 +358,9 @@ public final class ClientEffects {
     }
 
     static {
-        RPTagMod.LOGGER.info("RP Tag 4.8.5: camada de avisos carregada");
+        // (5.15.0) a versao vai do RPTagMod: antes estava escrito "4.8.5" na mao e
+        // aparecia no log junto com a versao de verdade, confundindo quem lê o log.
+        RPTagMod.LOGGER.info("RP Tag {}: camada de avisos carregada", RPTagMod.VERSION);
     }
 
     /** (3.78.0) VÉU da vida perdida: tela MEIO AVERMELHADA durante o

@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.14.0'
+VER = '5.15.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -393,7 +393,8 @@ check('3.85: translateAmp compartilhado com LoreZoneCommands',
       'static String translateAmp' in rp
       and 'private static String translateAmp' not in rp)
 ce = rd(C + '/ClientEffects.java')
-check('4.0: boot log 4.8.5', 'RP Tag 4.8.5' in ce)
+# (5.15.0) a versao no log deixou de ser escrita na mao: agora vem de RPTagMod.VERSION
+check('4.0: boot log com a versao', 'camada de avisos carregada' in ce)
 
 # ---- 3.86.0: CORAÇÃO 3D redesenhado + 6 estilos de aviso novos ----
 ccr = rd(C + '/CanonCoracaoRenderer.java')
@@ -2655,9 +2656,20 @@ check('5.14.0: estilo 25/26/27 ligado no avisar() e no teste do cliente',
 check('5.14.0: /rp admin avisar louco|marinheiro|espectador existem como LITERAIS',
       'Commands.literal("louco")' in _rp and 'Commands.literal("marinheiro")' in _rp
       and 'Commands.literal("espectador")' in _rp)
-check('5.14.0: LOUCO = nevoa cinzenta + 22 caminhos + relogio + carta + lua carmesim',
-      'SUSSURROS' in _lou and 'for (int i = 0; i < 22; i++)' in _lou
-      and 'Math.floor(T)' in _lou and 'CARMESIM' in _lou and 'AVISO' in _lou)
+check('5.15.0: LOUCO = a ESCADA das 10 Sequencias (9 Vidente ... 0 O Louco)',
+      'FoolPathwayWarning' in _lou and 'private static float tn(int s)' in _lou
+      and 'para a Sequencia 0' in _lou or ('tn(int s)' in _lou and 'NOMES' in _lou))
+check('5.15.0: o LOUCO tem as DEZ Sequencias com nome (Vidente, Palhaco, Mago, ... O Louco)',
+      all(n in _lou for n in ['Vidente', 'Palha', 'Mago', 'Sem Rosto', 'Marionetista',
+                              'Feiticeiro Bizarro', 'Estudioso do Passado', 'Invocador de Milagres',
+                              'Atendente dos Mist', 'O Louco']))
+check('5.15.0: cada Sequencia liga o SEU efeito (pendulo, bonecos, chamas, mascaras, fios, maldicao, tempo, pilares, maos)',
+      all(x in _lou for x in ['pendulo(', 'bonecos(', 'chamas(', 'mascaras(', 'fios(',
+                              'maldi', 'relógio ao contrário', 'pilares(', 'maosDeNevoa(']))
+check('5.15.0: a escada acende em ordem (uma Sequencia a cada 0,5 s, a 0 em 5,9 s)',
+      'return s == 0 ? 5.9f : 1.4f + (9 - s) * 0.5f;' in _lou)
+check('5.15.0: o estouro de faisca acontece no NO da Sequencia quando ela acende',
+      'estourar(np[0], np[1]' in _lou and 'noPos(' in _lou)
 check('5.14.0: MARINHEIRO = tempestade com raio ramificado + mar + leme + bola de raio',
       'AGENDA' in _mar and 'gera um raio por deslocamento de ponto' in _mar and 'leme de navio' in _mar
       and 'bolas de raio' in _mar and 'LIGHTNING_BOLT_THUNDER' in _mar)
@@ -2673,6 +2685,10 @@ check('5.14.0: AvisoRitual da o que o JavaFX tinha e o GUI nao (halo, poligono, 
 check('5.14.0: nenhum aviso novo escreve na tela do admin (so o alvo recebe)',
       'sendSuccess' not in _lou + _mar + _esp and 'broadcast' not in _lou + _mar + _esp)
 
+
+check('5.15.0: o log de inicializacao usa a VERSAO de verdade (nao "4.8.5" fixo)',
+      'camada de avisos carregada\", RPTagMod.VERSION' in rd(C + '/ClientEffects.java')
+      and '4.8.5: camada' not in rd(C + '/ClientEffects.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

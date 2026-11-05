@@ -1,146 +1,129 @@
-# Guia de manutenção do RP Tag
+# RP Tag 5.15.0 — O LOUCO AGORA É O CAMINHO INTEIRO (a escada das 10 Sequências)
 
-Este documento apresenta o estado do código, a arquitetura e as convenções
-necessárias para dar continuidade ao projeto.
+**O arquivo para baixar:**
+[rptag-5.15.0.jar](https://github.com/EduCafilista/rp-tag/releases/download/v5.15.0/rptag-5.15.0.jar)
+· 69.424.900 bytes · `md5 5d76d93afd85a26a6c02823d1eaca3fe`
+· `sha256 c3112a24467d7229f1a427699c375683e22f171af8ab0363bfcb2b0122df32a6`
 
-## Estado do código
+**Página da release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.15.0
 
-| Item | Referência |
-| --- | --- |
-| Versão do RP Tag | 4.7.3 |
-| Minecraft | 1.21.1 |
-| NeoForge de desenvolvimento | 21.1.249 |
-| Java | 21 |
-| Artefato de build | `build/libs/rptag-4.7.3.jar` |
-| Portais da Lore | 1.3.2; desenvolvimento suspenso |
+> **Troque o jar no servidor E no cliente.** O desenho é do cliente; o comando é do servidor.
 
-A versão publicada deve ser confirmada na página de releases. Planos em
-`docs/superpowers/` podem descrever trabalhos futuros; não são evidência de
-funcionalidade implementada.
+---
 
-## Organização da documentação
+## Como usar
 
-- [README.md](README.md): instalação e recursos para usuários e administradores.
-- [COMO-EDITAR.md](COMO-EDITAR.md): ambiente, build e testes.
-- [PUBLICAR.md](PUBLICAR.md): preparação e publicação de versões.
-- [CHANGELOG.md](CHANGELOG.md): alterações por versão.
-- [WALKTHROUGH.md](WALKTHROUGH.md): histórico técnico detalhado.
-- [arte/README.md](arte/README.md): produção de assets e prévias.
-
-## Funcionalidades e persistência
-
-O servidor controla estado RP, personas, canais de chat, permissões, zonas de
-lore e vidas canônicas. Os dados persistentes são mantidos no mundo. O cliente
-renderiza nomes, balões, efeitos de tela, animações e visualização administrativa
-das zonas.
-
-A identidade de personagem é administrada por `/persona`; a ajuda principal está
-em `/rp ajuda`. O sistema de balões depende da liberação administrativa. As zonas
-suportam faixa vertical, avisos, som e música. O modo canônico começa com cinco
-vidas por jogador e inclui proteção de cinco minutos contra perdas sucessivas.
-Mortes causadas por um jogador em OFF RP não descontam vidas canônicas.
-
-## Arquitetura
-
-### Raiz (`dev/rptag/`)
-| Arquivo | Papel |
-|---|---|
-| `RPTagMod.java` | Registro do mod, `VERSION`, itens (varinha, coração), sons |
-| `RPTags.java` | Texto/cores da tag (`ʀᴘ` / `ᴏꜰꜰ ʀᴘ`), small caps |
-| `RPWorldData.java` | **Persistência NBT** (tag RP, persona, chatLocal, balões, vidas, estilo, typewriter) |
-| `ServerEvents.java` | Estado RP/persona, nomes no chat/TAB |
-| `RPChat.java` | Canais RP + `spawnBubble` (gates + anti-flood 250 ms) |
-| `ChatCommands.java` | `/g /s /w /me /do` |
-| `RPCommands.java` | `/rp` + `/rp admin` (avisos, medo, canon, balões) |
-| `PersonaCommands.java` / `RollCommands.java` | `/persona`, `/roll` |
-| `CanonLife.java` | **Vidas canônicas**: respawn, congelamento, ritual, morte OFF RP |
-| `CanonCoracaoBlock(+Entity).java` | Coração canônico 3D (bloco + item) |
-| `LoreZones.java` | Zonas (esfera + **faixa vertical minY/maxY**), aviso único, som/música, aviso na entrada |
-| `LoreZoneCommands.java` | `/lorezone ...` (criar, vertical, mostrar, esconder, varinha, avisos, som, musica, listar) |
-| `LorezoneWand.java` | Item da varinha (permissão 2, clique direito, dedupe 250 ms) |
-| `MusicSync.java` | Envio de arquivos de música ao cliente em partes |
-| `RPEffects.java` | Efeito `rptag:medo` |
-| `Stickers.java` | 80 emojis Noto (atlas POT, codepoints 0xE000+) |
-| `*Payload.java` | Rede: `ScreenTextPayload`, `FearPayload`, `ChatBubblePayload`, `ZoneShowPayload`, `LorezoneMusicPayload`, `MusicFile*Payload`, `CanonBannerPayload`, `PersonaSyncPayload`, `SyncRPStatePayload`, `TypewriterPayload`, etc. |
-
-### `client/`
-| Arquivo | Papel |
-|---|---|
-| `AvisoFxUtil.java` | **Motor compartilhado** dos FX: `Buf` (tri/quad/rect/seg/circ/anel/vinheta/brilho), `preparar/normal/aditivo`, `tocar`, utilitários de cor e easing |
-| `*AvisoFx.java` (9) | `Divino`, `Demoniaco`, `Sangue`, `Void`, `Pesadelo`, `PesadeloAntigo`, `Inferno`, `Gelo`, `Runico` |
-| `MorteAvisoFx.java` | FX "Linha Reta" (estilo 4) — desde a 4.2.0 compõe cinza → **vídeo** → texto/sons, com fallback procedural |
-| `VideoFx.java` / `VideoFrameLoader.java` | **Player dos avisos em vídeo** (4.2.0): quadro pelo relógio, uma textura 1280x720, thread `rptag-fx-loader` |
-| `VideoEstado` / `FxTimeline` / `FxCor` / `FxJpeg` / `MorteTempos` | Java puro com JUnit: estados do player, `fx.json`, cor+alfa, leitura estrita do JPEG, tempos do MORTE |
-| `FxVideoPolitica.java` | Vídeo só com `fxVideo` ligado e fora do modo reduzido (4.5.0) |
-| `FxConfig.java` / `FxComando.java` | `config/rptag/cliente.properties` (`fxVideo`) + `/rpfx status\|on\|off` |
-| `ClientEffects.java` | **Central dos avisos**: encaminha cada estilo ao efeito correspondente, véu do canon, banner, áudio da lore |
-| `ClientGuiLayers.java` | Registra as camadas com `registerAboveAll` (com shaders, por cima de tudo) |
-| `BubbleRenderer.java` | Coração visual do balão (pílula = tamanho exato do texto; âncora na base) |
-| `BubbleStyleScreen.java` | Tela `/balao` (menu cartoon, preview igual ao mundo, emoji picker) |
-| `ClientBubbleCache.java` / `BubbleSink.java` / `BubbleGeometry.java` / `BubbleBackgrounds.java` | Pilha, fila, geometria e cores derivadas dos balões |
-| `ZoneVisualizer.java` | **Barreira** da lorezone (`RenderLevelStageEvent`, `RenderType.lines()`) — 4.0.0 |
-| `CanonCoracaoRenderer.java` | Coração 3D (batida + flutuação + balanço) |
-| `MusicaCustom.java` | Música custom por streaming/arquivo, com **tempo máximo** |
-| `ClientPayloadHandler.java` | Handlers de todos os pacotes no cliente |
-| `NameplateRenderer.java` / `ClientRenderers.java` / `ClientEvents.java` | Nametag, renderers, eventos |
-
-## Renderização e animações
-
-O código 4.7.3 integra vídeos de Morte, Inferno, Divino e Egípcio (Void e Gelo voltaram aos procedurais, por escolha do dono). O player utiliza uma
-textura dinâmica e decodificação em segundo plano. A classe de cada aviso mantém
-texto, sons e o efeito procedural alternativo. O fallback deve continuar no mesmo
-instante da animação, sem repetir sons nem reiniciar a mensagem.
-
-`config/rptag/cliente.properties` controla `fxVideo`; os comandos do cliente são
-`/rpfx status`, `/rpfx on` e `/rpfx off`. O modo reduzido deve respeitar a política
-de seleção de efeitos definida no código.
-
-As propostas visuais e os conceitos em `arte/` não devem ser tratados como
-aprovação para substituir efeitos existentes. Mudanças artísticas exigem uma
-referência visual aprovada pelo responsável.
-
-## Convenções de implementação
-
-1. Não incluir telemetria ou coleta de dados.
-2. Preservar o comportamento aprovado ao trabalhar em componentes relacionados.
-3. Manter o tamanho do balão associado ao texto e a âncora na base; adesivos
-   permanecem na borda e não devem sobrepor as letras.
-4. Renderizar adesivos com o atlas colorido, sem aplicar tintura indevida.
-5. Manter balões sujeitos às permissões administrativas; o modo desativado deve
-   produzir efeito imediato.
-6. Tratar falhas de renderização sem encerrar o jogo e liberar recursos de
-   animação quando o aviso termina ou o jogador sai do mundo.
-7. Manter o título do aviso e a mensagem separados. A mensagem fica abaixo do
-   título, conforme o layout existente em cada efeito.
-8. Registrar efeitos de tela nas camadas oficiais do cliente, preservando a
-   compatibilidade com shaders e o comportamento do modo reduzido.
-9. `/me` e `/do` são ações de chat; não devem criar balões de fala.
-10. Preservar as restrições conhecidas de texturas, atlas e telas de configuração
-    registradas no histórico técnico. Mudanças nessas áreas exigem teste visual.
-11. Utilizar decodificação pelo raster para os quadros JPEG. Tratar quadros
-    corrompidos como erro de vídeo e acionar o fallback.
-12. Não versionar arquivos JAR de distribuição, senhas ou configurações do ambiente local.
-
-## Verificação e entrega
-
-Utilize `gradlew.bat` no Windows e `./gradlew` em Linux ou macOS.
-
-```powershell
-.\gradlew.bat clean build
-python check.py
-python -m unittest discover -s arte/tests -v
+```
+/rp admin avisar @a louco Um grande perigo se aproxima.
 ```
 
-Confirme o resultado das execuções e teste no jogo as alterações de comportamento
-ou renderização. Registre limitações e verificações pendentes de forma explícita.
-As contagens históricas de testes não substituem um resultado atual.
+(qualquer seletor: nome, lista ou `@a`; aceita **texto livre**, que aparece digitado na tela)
 
-O servidor de desenvolvimento utiliza `run-server/`; o cliente utiliza `run/`.
-O aceite do EULA, quando necessário, pertence ao responsável pelo ambiente.
-A receita de compilação manual registrada no walkthrough é uma referência
-histórica; o Gradle Wrapper é o procedimento de desenvolvimento recomendado.
+**Para testar sozinho, sem passar pelo servidor:** `/rpfx teste louco`
+— se aqui aparece e no comando de admin não, o problema é rede/comando, não o desenho.
 
-Antes de uma entrega, revise o diff, mantenha a versão coerente nos metadados,
-atualize os documentos afetados e inclua no commit apenas os arquivos pertinentes.
-As mensagens de commit não devem conter trailers de ferramentas. A distribuição
-segue o procedimento de [PUBLICAR.md](PUBLICAR.md).
+**Nos avisos por zona:** `/lorezone aviso <id> louco <segundos> <texto>`.
+
+---
+
+## 1. O que mudou nesta versão
+
+Saí o aviso antigo do Louco (névoa cinzenta + sigilo de 22 caminhos + relógio + lua carmesim).
+**Entrou o protótipo definitivo do dono, o `FoolPathwayWarning`**: um aviso só, de 16 segundos,
+em que **a escada das Sequências sobe de 9 até 0** e **cada Sequência acende o seu próprio efeito**.
+
+A carta do Louco é o último degrau — é ela que fecha o aviso.
+
+Nada mais mudou no resto do mod: o Marinheiro (26) e o Espectador (27) continuam exatamente
+como na 5.14.0.
+
+---
+
+## 2. A escada das Sequências (o coração do aviso)
+
+Dez nós em círculo. O nó **9** acende em 1,4 s e cada seguinte acende **0,5 s** depois;
+o nó **0 (O Louco)** acende em **5,9 s** — junto com o clarão pálido, e é aí que a carta termina
+de subir e começa a virar.
+
+Cada nó acende com um **estouro de faíscas** na cor dele, e o nome aparece ao lado de fora.
+
+| # | Sequência | o que liga quando ela acende |
+|---|---|---|
+| 9 | **Vidente** | o **pêndulo** — peso de pedra balançando do alto, com rastro e brilho |
+| 8 | **Palhaço** | quatro **bonecos de papel** balançando nas bordas, moles, sem parar |
+| 7 | **Mago** | **chamas** nas duas bordas da tela, tremendo e soltando brasa |
+| 6 | **Sem Rosto** | cinco **máscaras** orbitando: metade passa **na frente** da carta, metade **atrás** |
+| 5 | **Marionetista** | **fios espirituais** descendo do alto até a carta |
+| 4 | **Feiticeiro Bizarro** | o **anel de maldição** em volta do centro, com as marcas em X e brasas subindo |
+| 3 | **Estudioso do Passado** | o **tempo corre ao contrário**: dois relógios girando para trás e os **ecos** da carta |
+| 2 | **Invocador de Milagres** | **pilares de luz** subindo das laterais |
+| 1 | **Atendente dos Mistérios** | duas **mãos de névoa** subindo das bordas de baixo |
+| 0 | **O Louco** | **a carta** — sobe, vira, e é o clarão que fecha a escada |
+
+Os nós já acesos ficam **brilhando** (e o nome deles fica claro); os que ainda não acenderam
+ficam apagados, quase invisíveis. Dá para "ler" a escada subindo na tela.
+
+---
+
+## 3. A linha do tempo (16 s, roda inteiro sozinho)
+
+| tempo | o que acontece |
+|---|---|
+| 0,0 s | escurece; a névoa de fundo abre |
+| 1,0 s | a **carta** começa a subir do rodapé |
+| 1,4 s | acende a **Sequência 9 (Vidente)** — e o pêndulo entra |
+| 1,9 s → 5,4 s | acendem as Sequências **8, 7, 6, 5, 4, 3, 2, 1**, uma a cada 0,5 s |
+| 2,4 s | a carta terminou de subir e fica flutuando |
+| 5,9 s | **clarão pálido** + acende a **Sequência 0 (O Louco)** |
+| 5,9 – 6,8 s | a carta **vira** (virada em 3D, sem sumir) |
+| 7,0 s | **clarão carmesim** + entra o **título** |
+| 8,2 s | 1ª fala (escrita letra por letra) |
+| 9,5 s | 2ª fala |
+| 11,0 s | 3ª fala — a frase final |
+| 14,4 s | começa a escurecer |
+| 16,0 s | fecha |
+
+**As falas** (as do protótipo, as mesmas do texto-base):
+
+- *"Todo fio leva ao mesmo lugar: ao Louco."*
+- (o seu texto, o que você escreveu no comando, digitado)
+- *"Você já era uma marionete."*
+
+O **texto do comando** entra no meio, digitado, e o resto do aviso continua rolando por trás dele.
+
+---
+
+## 4. O que se mantém das regras que você pediu
+
+- **sem partícula** — nada de partícula por perto; tudo é desenhado na tela;
+- **sem vídeo** — não usa quadro de vídeo, é tudo vetor (por isso o mod continua leve);
+- **só o alvo vê** — o pacote vai para quem foi escolhido no seletor;
+- **respeita o modo reduzido** — com os efeitos reduzidos ligados, o aviso desenha mais leve
+  (menos faíscas, menos fios, sem os brilhos extras) e o texto continua igual;
+- **letras claras sobre o escuro** (aqui o aviso é escuro de propósito, então o texto é branco —
+  é o único aviso do mod que não usa letra preta, porque o fundo dele não é claro).
+
+---
+
+## 5. Correções menores que entraram junto
+
+- O log do cliente dizia **"RP Tag 4.8.5: camada de avisos carregada"** (texto velho, escrito
+  na mão). Agora ele diz **a versão de verdade** — `RP Tag 5.15.0: camada de avisos carregada`.
+- `check.py` atualizado: as réguas do Louco agora verificam **a escada das 10 Sequências**
+  (os dez nomes, os nove efeitos, o relógio de acendimento e o estouro de faísca no nó),
+  e não mais a névoa/relógio da versão antiga.
+
+---
+
+## 6) Conferido antes de publicar
+
+- `javac` (Java 21, NeoForge 21.1.249): **0 erros**;
+- `check.py`: **899 PASS / 0 FAIL**;
+- servidor de teste com o jar novo: **0 exceções**;
+- `/rp admin avisar @a louco teste`, `... marinheiro teste`, `... espectador teste`:
+  os três responderam (com 0 jogador online, "No player was found" — é o servidor reclamando
+  que não há ninguém, não o comando falhando).
+
+---
+
+**Arquivos:** `rptag-5.15.0.jar` (instalar em `mods/` do servidor **e** do cliente).
