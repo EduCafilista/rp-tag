@@ -535,16 +535,19 @@ public final class VazioReino {
                 return;
             }
             // ---- RARIDADE (0..99) ----
+            // (5.16.3) FRAGMENTO NAO APARECE EM BAU — o dono: "os fragmentos nao devem
+            // aparecer em baus". Achou o fragmento é só nos 8 altares/pedestais; o baú
+            // continua com sucata e tesouro (o raro virou tesouro bom, o mítico virou
+            // tesouro bom + diamante/echo).
             int sorte = r.nextInt(100);
-            boolean raro = sorte >= 82 && sorte < 97;     // 15%: 1 fragmento
-            boolean mitico = sorte >= 97;                 //  3%: 2 fragmentos + tesouro
+            boolean raro = sorte >= 82 && sorte < 97;     // 15%: tesouro bom
+            boolean mitico = sorte >= 97;                 //  3%: tesouro bom + diamante/echo
             int comuns = 2 + r.nextInt(3);
             for (int i = 0; i < comuns; i++) {
                 bau.setItem(r.nextInt(27), sucata(r));
             }
             if (raro || mitico) {
-                bau.setItem(r.nextInt(27),
-                        new ItemStack(RPTagMod.FRAGMENTO_VAZIO.get(), mitico ? 2 : 1));
+                bau.setItem(r.nextInt(27), bomItem(r));
             }
             if (sorte >= 55) {                            // 45%: um item "bom"
                 bau.setItem(r.nextInt(27), bomItem(r));

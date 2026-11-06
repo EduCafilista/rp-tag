@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Suite de verificações do RP Tag — roda ANTES de entregar um ciclo."""
 import io, os, re, sys, zipfile
+import json as _json
 
 OK, FAIL = 0, 0
 def check(nome, cond):
@@ -49,7 +50,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.16.2'
+VER = '5.16.3'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1223,113 +1224,6 @@ check('4.9.3: particulas do servidor (faisca eletrica, fumaca, end rod)',
 check('4.9.3: /rpfx teste ciberpsicose (cliente, sem servidor)',
       '"ciberpsicose"' in rd(C + '/FxComando.java') and '-> 14;' in rd(C + '/FxComando.java'))
 
-# ---- mascara de pedra
-def _pil_size(caminho):
-    """(largura, altura) do PNG sem precisar de PIL."""
-    with open(caminho, 'rb') as f:
-        d = f.read(33)
-    if d[:8] != b'\x89PNG\r\n\x1a\n':
-        return (0, 0)
-    import struct
-    w, h = struct.unpack('>II', d[16:24])
-    return (w, h)
-
-
-def _pil_mode(caminho):
-    """'RGBA' se o byte de tipo de cor do IHDR for 6 (RGBA)."""
-    with open(caminho, 'rb') as f:
-        d = f.read(26)
-    return 'RGBA' if d[25] == 6 else 'RGB'
-
-
-_mi = rd(R + '/MascaraPedraItem.java')
-check('4.9.3: MascaraPedraItem e item de CABECA (EquipmentSlot.HEAD)',
-      'class MascaraPedraItem extends Item' in _mi and 'return EquipmentSlot.HEAD;' in _mi)
-check('4.9.3: item rptag:mascara_pedra registrado',
-      'ITEMS.register("mascara_pedra"' in rd(R + '/RPTagMod.java'))
-check('5.1.0: o ITEM e 3D pelo renderer (nenhum sprite item/generated sobrou)',
-      'item/generated' not in rd(A + '/models/item/mascara_pedra.json')
-      and 'builtin/entity' in rd(A + '/models/item/mascara_pedra.json')
-      and 'elements' not in rd(A + '/models/item/mascara_pedra.json'))
-check('5.1.0/5.2.1: o ITEM desenha a MALHA DO MODELO (RenderItemMascara + geo/mascara_glb.bin)',
-      os.path.exists(C + '/RenderItemMascara.java')
-      and 'BlockEntityWithoutLevelRenderer' in rd(C + '/RenderItemMascara.java')
-      and 'mascara_bb.bin' in rd(C + '/RenderItemMascara.java')
-      and os.path.exists(A + '/geo/mascara_bb.bin')
-      and os.path.getsize(A + '/geo/mascara_bb.bin') > 100000)
-check('5.1.0: renderer 3D registrado no item (initializeClient/getCustomRenderer)',
-      'getCustomRenderer' in rd(R + '/MascaraPedraItem.java')
-      and 'RenderItemMascara.get()' in rd(R + '/MascaraPedraItem.java'))
-check('5.1.0: modelos do item apontam pro renderer (builtin/entity)',
-      'builtin/entity' in rd(A + '/models/item/mascara_pedra.json'))
-check('5.1.0: leitor unico da malha binaria (MalhaBin, big-endian + planar)',
-      os.path.exists(C + '/MalhaBin.java') and "f.write" not in rd(C + '/MalhaBin.java')
-      and 'DataInputStream' in rd(C + '/MalhaBin.java'))
-check('5.1.0: eixo da cabeca CERTO (+Y pra baixo) — espelha Y e usa caixa explicita',
-      'espelha_y' in rd('arte/importar_glb.py') and 'ROSTO_Y_TOPO = -7.45' in rd('arte/importar_glb.py')
-      and 'ROSTO_Y_BASE = -0.45' in rd('arte/importar_glb.py'))
-check('5.1.0: mascara encostada no rosto (z -5.05..-3.75) e largura 5,4',
-      'ROSTO_Z_FUNDO = -3.75' in rd('arte/importar_glb.py') and 'ROSTO_X = 2.70' in rd('arte/importar_glb.py'))
-check('5.1.0/5.8.0: CamadaMascara desenha a malha do MalhaBin (agora a da 5.8.0)',
-      'MalhaBin m = malhaGlb;' in rd(C + '/CamadaMascara.java')
-      and 'MalhaBin.carregar(ARQ_MALHA)' in rd(C + '/CamadaMascara.java')
-      and 'MalhaBin.carregar(ARQ_MALHA_BB)' in rd(C + '/CamadaMascara.java'))
-check('4.9.3: modelo + textura do item no jar',
-      os.path.exists(A + '/models/item/mascara_pedra.json')
-      and os.path.exists(A + '/textures/item/mascara_pedra.png'))
-check('4.9.3: nome do item no lang (pt_br e en_us)',
-      'item.rptag.mascara_pedra' in rd(A + '/lang/pt_br.json')
-      and 'item.rptag.mascara_pedra' in rd(A + '/lang/en_us.json'))
-_cm = rd(C + '/CamadaMascara.java')
-check('4.9.5: a camada 3D e MALHA (ponto/normal/relevo/largura)',
-      'class CamadaMascara extends RenderLayer' in _cm
-      and 'static void ponto(' in _cm and 'static void normal(' in _cm
-      and 'static float relevo(' in _cm and 'static float largura(' in _cm
-      and 'painel(pose' not in _cm)
-check('4.9.7: EIXO Y CORRIGIDO (queixo embaixo, testa em cima)',
-      'Y_BASE = -4.35f' in _cm and 'Y_TOPO = 4.15f' in _cm and 'Y_TOPO = -8.55f' not in _cm)
-check('4.9.7: VOLUME FECHADO (casca externa + interna + aba) - 100% 3D',
-      'ESPESSURA = 0.62f' in _cm and 'private static void tira(' in _cm
-      and 'grade(1.0f, false)' in _cm and 'grade(0.0f, true)' in _cm
-      and 'private static float[][] borda(' in _cm)
-check('4.9.7: silhueta de ESCUDO do modelo do Sketchfab (tabela de largura)',
-      'V_LARG' in _cm and 'W_LARG' in _cm and '0.70f, 1.70f, 2.45f' in _cm)
-check('4.9.7: tracos do modelo (testa em Y, orbitas em fenda, focinho, presas)',
-      'TESTA em Y' in _cm and 'ÓRBITAS: fenda funda e fina' in _cm and 'focinho' in _cm)
-check('4.9.7: malha 29x25 com normal por diferenca finita',
-      'COLS = 29;' in _cm and 'ROWS = 25;' in _cm and 'diferença finita' in _cm)
-# ---- 5.0.0: a mascara agora E o modelo do dono (GLB), nao mais a malha gerada
-_GEO = A + '/geo/mascara_bb.bin'
-check('5.0.0/5.3.0: malha do MODELO do dono no jar (geo/mascara_bb.bin, 4176 vertices)',
-      os.path.exists(_GEO) and os.path.getsize(_GEO) > 100000)
-check('5.1.0: leitura do .bin centralizada no MalhaBin (magic RPTM + DataInputStream)',
-      'RPTM' in rd(C + '/MalhaBin.java') and 'DataInputStream' in rd(C + '/MalhaBin.java')
-      and 'MalhaBin.carregar' in rd(C + '/CamadaMascara.java'))
-check('5.0.0: MAXV comporta a malha do GLB (24042 vertices expandidos)',
-      'MAXV = 26000' in rd(C + '/CamadaMascara.java'))
-check('5.0.0/5.3.0: textura do modelo (entity/mascara_bb.png) no repo',
-      os.path.exists(A + '/textures/entity/mascara_bb.png')
-      and os.path.getsize(A + '/textures/entity/mascara_bb.png') > 8000)
-check('5.0.0: se o .bin falhar, cai na malha procedural (o jogo nunca fica sem nada)',
-      'construirMalha();' in rd(C + '/CamadaMascara.java') and 'TEX_PROC' in rd(C + '/CamadaMascara.java'))
-check('5.0.0: importador do GLB versionado (arte/importar_glb.py)',
-      os.path.exists('arte/importar_glb.py'))
-check('4.9.5: textura propria da malha (entity/mascara_pedra.png, 256x256)',
-      'textures/entity/mascara_pedra.png' in _cm
-      and os.path.getsize(A + '/textures/entity/mascara_pedra.png') > 5000
-      and 'def textura(lado=256)' in rd('arte/previa_mascara3d.py'))
-check('4.9.5: render de conferencia no repo (mesma matematica em Python)',
-      os.path.exists('arte/previa_mascara3d.py') and 'def relevo(' in rd('arte/previa_mascara3d.py')
-      and 'def caixa_cabeca(' in rd('arte/previa_mascara3d.py')
-      and os.path.exists('previa/mascara3d.png'))
-check('4.9.3: a camada so aparece com o item na cabeca',
-      'EquipmentSlot.HEAD' in _cm and 'MascaraPedraItem' in _cm)
-check('4.9.3: camada registrada nos dois modelos de skin (classico e slim)',
-      'AddLayers' in rd(C + '/ClientEvents.java') and 'event.getSkins()' in rd(C + '/ClientEvents.java'))
-check('4.9.3: gerador da textura no repo (64x64, rosto + pedra + vao + canto)',
-      os.path.exists('arte/gerar_mascara.py') and '64, 64' in rd('arte/gerar_mascara.py')
-      and os.path.getsize(A + '/textures/item/mascara_pedra.png') > 800)
-
 # ============ 4.9.5: audio do dono no CIBERPSICOSE + mascara/coracao 3D ============
 _cib = rd(C + '/CiberpsicoseAvisoFx.java')
 check('4.9.5: o .ogg do dono esta no jar (assets .../sounds/ciberpsicose_aviso.ogg)',
@@ -1348,14 +1242,6 @@ check('4.9.5: modo reduzido nao toca a trilha (acessibilidade)',
       and 'SOM_CIBERPSICOSE.get(), 1.0f, 1.0f' in _cib)
 
 # ============ 4.9.7: o mod NAO pode derrubar o jogo (blindagem) ============
-_cm_codigo = '\n'.join(l for l in _cm.splitlines() if not l.strip().startswith(('*', '//', '/*')))
-check('4.9.8: malha montada PREGUICOSAMENTE (sem bloco static chamando construirMalha)',
-      'static {' not in _cm_codigo and _cm.count('construirMalha') == 2
-      and 'private static void garantirMalha()' in _cm and 'malhaTentada' in _cm)
-check('4.9.8: falha na montagem nao mata o jogo (try/catch no garantirMalha)',
-      'falha ao montar a malha da mascara (o jogo segue)' in _cm)
-check('4.9.7: render da mascara protegido (try/catch)',
-      'erro ao desenhar a mascara (ignorado)' in _cm)
 check('4.9.7: audio do ciberpsicose protegido (try/catch)',
       'nao consegui tocar o audio do ciberpsicose' in _cib)
 
@@ -1424,107 +1310,6 @@ check('5.2.0: pacote e fila do tablet protegidos contra excecao (nao derruba o j
       'receiveUnsafe' in _te and 'pacote do tablet ignorado' in _te
       and 'fila do tablet reiniciada' in _te)
 
-
-# ============ 5.2.1: A MÁSCARA 16x MAIOR (espaço da cabeça em BLOCOS) ============
-_cm = rd(C + '/CamadaMascara.java')
-_ri = rd(C + '/RenderItemMascara.java')
-_mj = rd(A + '/models/item/mascara_pedra.json')
-
-check('5.2.1/5.3.0: a camada da mascara converte PIXELS do modelo para BLOCOS (scale 1/16)',
-      'pose.scale(1f / 16f, 1f / 16f, 1f / 16f)' in _cm
-      and 'o espaço está em BLOCOS' in _cm)
-check('5.2.1: a escolha do 1/16 esta explicada no codigo (fdiv 16 no bytecode)',
-      'translateAndRotate faz' in _cm and 'fdiv' in _cm)
-check('5.3.0: item e camada usam a MESMA malha (mascara_bb.bin)',
-      'mascara_bb.bin' in _ri and 'mascara_bb.bin' in _cm and 'mascara_item.bin' not in _ri)
-check('5.2.2: item usa a MESMA escala 1/16 da camada (sem transformacao do cranio)',
-      'pose.scale(1f / 16f, 1f / 16f, 1f / 16f)' in _ri and 'SkullBlockRenderer' not in _ri
-      and 'pose.translate(0.5f, 0f, 0.5f)' not in _ri)
-check('5.2.1: o item NAO tem mais translate/scale inventado por contexto',
-      'THIRD_PERSON_RIGHT_HAND' not in _ri and 'case GUI' not in _ri)
-check('5.2.2/5.3.1: display do item com os 4 contextos do cranio vanilla',
-      all(c in _mj for c in ('"gui"', '"fixed"', '"ground"', '"thirdperson_righthand"')))
-check('5.2.1/5.8.0: particula do item aponta pra textura que existe (entity/mascara_58)',
-      'rptag:entity/mascara_58' in _mj and 'mascara_face' not in _mj)
-check('5.3.0: o render de conferencia usa o MESMO .bin do jar',
-      os.path.exists('arte/render_mascara_offline.py')
-      and 'mascara_bb.bin' in rd('arte/render_mascara_offline.py'))
-
-
-# ============ 5.2.2: a máscara ESCONDIDA atrás do chapéu da skin ============
-_mg = os.path.join(A, 'geo/mascara_bb.bin')
-
-def _ler_geo():
-    import struct
-    d = open(_mg, 'rb').read()
-    assert d[:4] == b'RPTM'
-    ver, n = struct.unpack('>ii', d[4:12])
-    vals = []
-    off = 12
-    for _ in range(3):
-        vals.append([struct.unpack('>f', d[off + 4*i:off + 4*i + 4])[0] for i in range(n)])
-        off += 4*n
-    return n, vals
-
-_n, (_gx, _gy, _gz) = _ler_geo()
-check('5.3.0: a malha cobre o rosto (altura >= 8 px, largura >= 7)',
-      max(_gy) - min(_gy) >= 7.9 and max(_gx) - min(_gx) >= 7.0)
-check('5.2.2: 100% da malha fica À FRENTE da camada do chapéu (z < -4,5)',
-      max(_gz) < -4.5)
-check('5.3.0: a malha está na frente do rosto (z entre -7,1 e -4,5)',
-      max(_gz) < -4.5 and min(_gz) > -7.1)
-check('5.2.2: ajustar_mascara.py existe e documenta o chapéu',
-      os.path.exists('arte/ajustar_mascara.py')
-      and 'camada do chapéu' in rd('arte/ajustar_mascara.py'))
-check('5.2.2: NAO mexer nas normais (casca dupla) — está explicado no script',
-      'NÃO MEXER' in rd('arte/ajustar_mascara.py'))
-check('5.2.2: previa da mascara vestida usa a malha do jar',
-      os.path.exists('arte/previa_mascara_vestida.py')
-      and 'GEO_MASCARA' in rd('arte/previa_mascara_vestida.py'))
-
-
-# ============ 5.3.0: a máscara agora é o MODELO DO DONO (.bbmodel) ============
-check('5.3.0: importar_bbmodel.py existe', os.path.exists('arte/importar_bbmodel.py'))
-_bb = rd('arte/importar_bbmodel.py') if os.path.exists('arte/importar_bbmodel.py') else ''
-check('5.3.0: conversor le os 116 cubos com rotacao em Y e UV por face',
-      'elements' in _bb and 'rotation' in _bb and 'faces' in _bb and 'resolution' in _bb)
-check('5.3.0: conversor espelha Y (Blockbench pra cabeca do MC) e comprime o Z',
-      'p[:, 1] = -p[:, 1]' in _bb and 'PROFUNDIDADE' in _bb)
-check('5.3.0: a malha do .bbmodel esta no jar (1.392 triangulos) e a do GLB saiu',
-      os.path.exists(A + '/geo/mascara_bb.bin')
-      and os.path.getsize(A + '/geo/mascara_bb.bin') < 300000
-      and not os.path.exists(A + '/geo/mascara_glb.bin'))
-check('5.3.0: a textura do .bbmodel (pedra em blocos 128x128) esta no jar',
-      os.path.exists(A + '/textures/entity/mascara_bb.png')
-      and os.path.getsize(A + '/textures/entity/mascara_bb.png') > 8000)
-check('5.8.0: camada e item apontam pra malha/textura NOVAS (5.8.0)',
-      'mascara_58.png' in _cm and 'mascara_58.png' in _ri)
-check('5.8.0: particula do item usa a textura que existe (5.8.0)',
-      'rptag:entity/mascara_58' in _mj)
-
-
-# ============ 5.3.1: item no inventario (display em unidades do jogo) ============
-# ItemTransform$Deserializer (1.21.1): translation * 0.0625 (clamp +-5),
-# scale = multiplicador direto (clamp +-4). O `display` do 5.3.0 estava em
-# PIXELS: "48" virava 3 BLOCOS (o item saia voando do slot) e "16" batia no
-# teto de 4 (icone gigante). Este check impede a regressao.
-import json as _json
-_disp = _json.load(open(A + '/models/item/mascara_pedra.json'))['display']
-check('5.3.1: display do item em UNIDADES do jogo (translation <= 5 blocos)',
-      all(abs(v) <= 5 for c in _disp.values() for v in c.get('translation', [0, 0, 0])))
-check('5.3.1: display do item com scale <= 4 (limite do ItemTransform)',
-      all(abs(v) <= 4 for c in _disp.values() for v in c.get('scale', [1, 1, 1])))
-check('5.3.1: gui com rotacao do cranio (30,45) e translation 0 (malha ja centrada)',
-      _disp['gui']['translation'] == [0, 0, 0] and _disp['gui']['rotation'][2] == 0
-      and _disp['gui']['scale'][0] <= 1.6)
-check('5.3.1: o item centra a MALHA no cubo 0..1 (offX/offY/offZ)',
-      'offX = 8f - (x0 + x1) * 0.5f' in _ri and 'pose.translate(offX, offY, offZ)' in _ri)
-check('5.3.1: previa do item no slot existe e usa a mesma matematica',
-      os.path.exists('arte/previa_gui_item.py')
-      and '0.0625' in rd('arte/previa_gui_item.py')
-      and 'translate(-0.5' in rd('arte/previa_gui_item.py').replace(' ', ''))
-check('5.3.1: o icone do slot cabe no slot (<= 16 px de 16)',
-      _disp['gui']['scale'][0] * 9.7 <= 16.0)
 
 # ============ 5.4.0: EVENTO NEPTUNE (terremoto, vazio, deus, bicho) ============
 _NP = R + '/NeptuneEventos.java'
@@ -2127,46 +1912,72 @@ check('5.8.1: medo — nome medoop no comando (com TAB)',
       'case "medoop" -> 22' in _cmds and 'literal("medoop")' in _cmds
       and 'case 22 -> "MEDOOP"' in _cmds)
 
-# ============ 5.8.0: MÁSCARA DE PEDRA REFEITA (malha + textura novas) ========
-_bin58 = 'src/main/resources/assets/rptag/geo/mascara_58.bin'
-_png58 = 'src/main/resources/assets/rptag/textures/entity/mascara_58.png'
-_cam = rd(C + '/CamadaMascara.java')
-_itm = rd(C + '/RenderItemMascara.java')
+# ============ 5.16.3: SEM MÁSCARA DE PEDRA (o dono pediu pra tirar TUDO) ============
+# O dono vai recolocar depois com o modelo novo, então o check garante que NÃO
+# sobrou nada da versão antiga (classe, camada, assets, lang, registro).
+check('5.16.3: os arquivos da máscara de pedra saíram do mod (classe, camada, renderer, leitor)',
+      all(not os.path.exists(R + '/' + f) for f in
+          ['MascaraPedraItem.java', 'client/CamadaMascara.java',
+           'client/RenderItemMascara.java', 'client/MalhaBin.java']))
+check('5.16.3: os assets da máscara saíram do jar (modelo, geo e texturas)',
+      all(not os.path.exists(A + '/' + f) for f in
+          ['models/item/mascara_pedra.json', 'geo/mascara_58.bin', 'geo/mascara_bb.bin',
+           'textures/entity/mascara_58.png', 'textures/entity/mascara_bb.png',
+           'textures/entity/mascara_pedra.png', 'textures/item/mascara_pedra.png',
+           'textures/item/mascara_pedra_item.png']))
+check('5.16.3: nenhum código do mod cita a máscara (registro, camada, item)',
+      not any(k in rd(f) for f in [R + '/RPTagMod.java', C + '/ClientEvents.java']
+              for k in ('MascaraPedra', 'CamadaMascara', 'RenderItemMascara',
+                        'MalhaBin', 'mascara_pedra', 'MASCARA_PEDRA')))
+check('5.16.3: o nome do item saiu do lang (pt_br e en_us)',
+      'mascara_pedra' not in rd(A + '/lang/pt_br.json')
+      and 'mascara_pedra' not in rd(A + '/lang/en_us.json'))
+check('5.16.3: o item não existe mais no registro',
+      'ITEMS.register("mascara' not in rd(R + '/RPTagMod.java'))
 
-def _cabecalho_bin(caminho):
-    """lê o cabeçalho RPTM do .bin como o MalhaBin.java lê (big-endian)."""
-    import struct
-    with open(caminho, 'rb') as f:
-        cru = f.read()
-    if cru[:4] != b'RPTM':
-        return None
-    ver, n = struct.unpack('>ii', cru[4:12])
-    return ver, n, len(cru)
+# ============ 5.16.3: FRAGMENTO DO VAZIO NÃO APARECE EM BAÚ ============
+_vz = rd(R + '/VazioReino.java')
+_ba = _vz[_vz.index('private static void colocarBau'):]
+_ba = _ba[:_ba.index('\n    }\n')]
+check('5.16.3: o baú do vazio NÃO tem fragmento (o dono pediu)',
+      'FRAGMENTO_VAZIO' not in _ba)
+check('5.16.3: o baú continua com sucata e com o tesouro bom (raro/mítico)',
+      'sucata(r)' in _ba and 'bomItem(r)' in _ba)
+check('5.16.3: o fragmento continua vindo dos altares do vazio (não sumiu do jogo)',
+      _vz.count('FRAGMENTO_VAZIO') >= 3)
 
-_hdr = _cabecalho_bin(_bin58) if os.path.exists(_bin58) else None
-check('5.8.0: a MALHA NOVA da máscara existe e o cabeçalho RPTM está certo',
-      _hdr is not None and _hdr[0] == 1 and _hdr[1] >= 6000
-      and _hdr[2] == 12 + 8 * 4 * _hdr[1])
-check('5.8.0: a malha é uma ESCULTURA fechada (externa + interna + aba), não 116 cubos',
-      _hdr is not None and _hdr[1] // 3 > 4000)
-check('5.8.0: a TEXTURA nova existe, 256x256 (traço fino sem serrilhado)',
-      os.path.exists(_png58) and _tam_png(_png58) == (256, 256))
-check('5.8.0: a máscara VESTIDA usa a malha e a textura novas',
-      'mascara_58.bin' in _cam and 'mascara_58.png' in _cam
-      and 'TEX_58' in _cam and 'ESCULTURA 5.8.0' in _cam)
-check('5.8.0: o ITEM na mão/inventário também usa a máscara nova (com a antiga de reserva)',
-      'mascara_58.bin' in _itm and 'mascara_58.png' in _itm and 'mascara_bb.bin' in _itm)
-check('5.8.0: a antiga (.bbmodel de 116 cubos) continua como RESERVA, não foi apagada',
-      os.path.exists('src/main/resources/assets/rptag/geo/mascara_bb.bin')
-      and 'mascara_bb.bin' in _cam)
-_ger = 'arte/gerar_mascara_58.py'
-check('5.8.0: o gerador da máscara está no repo (malha + textura + prévia)',
-      os.path.exists(_ger) and 'def relevo' in rd(_ger) and 'def gera_textura' in rd(_ger)
-      and 'def monta_previa' in rd(_ger))
-check('5.8.0: a textura é pintada nas MESMAS coordenadas (u,v) da malha',
-      'def uv_de' in rd(_ger) and 'rel = relevo(u, v)' in rd(_ger))
-check('5.8.0: a prévia da máscara está em previa/ (pra o dono ver antes de testar)',
-      os.path.exists('previa/mascara_58.png') and os.path.getsize('previa/mascara_58.png') > 40_000)
+# ============ 5.16.3: NADA DE AVISO AO SAIR DO VAZIO ============
+_ne = rd(R + '/NeptuneEventos.java')
+_av = _ne[_ne.index('public static void avisoSaidaDoVazio'):]
+_av = _av[:_av.index('\n    }\n')]
+check('5.16.3: avisoSaidaDoVazio NÃO manda texto pra tela (só loga no servidor)',
+      'ScreenTextPayload' not in _av and 'LOGGER' in _av)
+_ne_cod = '\n'.join(l for l in _ne.splitlines()
+                    if not l.strip().startswith(('*', '//', '/*')))
+check('5.16.3: quem tira o jogador do vazio é o ADM (sem mensagem automática)',
+      'VOCÊ ESCAPOU DO VAZIO' not in _ne_cod and 'VOCÊ FOI TIRADO DO VAZIO' not in _ne_cod)
+
+# ============ 5.16.3: A SOMBRA EM CIMA DO PORTAL ============
+_vfx = rd(C + '/VazioAlmasFx.java')
+check('5.16.3: a sombra é ESCURA (silhueta quase preta + contorno frio), não vulto branco',
+      'CORPO = { 0.010F, 0.009F, 0.016F }' in _vfx
+      and 'CONTORNO = { 0.20F, 0.13F, 0.34F }' in _vfx
+      and '0.86F, 0.89F, 0.98F' not in _vfx)
+check('5.16.3: a sombra VIRA (de lado afina, de frente a cara abre)',
+      'float afina = 0.14F + 0.86F * Math.abs(Mth.cos(ang));' in _vfx
+      and 'float cara = Mth.clamp((Mth.cos(ang) - 0.50F) / 0.50F, 0.0F, 1.0F);' in _vfx)
+check('5.16.3: tem contraluz, capuz inclinado, silhueta por perfil, farrapos e fumaça',
+      all(k in _vfx for k in ('private static void halo(', 'perfil(float u)',
+                              'O CAPUZ', 'FARRAPOS na barra', 'A FUMAÇA subindo',
+                              'CONTRA LUZ — o halo violeta')))
+check('5.16.3: os olhos são brasas que só acendem quando ela vem de frente',
+      'OLHO = { 1.00F, 0.90F, 0.70F }' in _vfx
+      and 'if (cara > 0.02F) {' in _vfx and 'halo(vc, mat, direita, cima, ox, yo, oz' in _vfx)
+check('5.16.3: a prévia offline da sombra existe (mesma matemática, dá pra conferir sem abrir o jogo)',
+      os.path.exists('arte/previa_sombra_vazio.py')
+      and 'previa/sombra_vazio_5.16.3.png' in rd('arte/previa_sombra_vazio.py')
+      and os.path.exists('previa/sombra_vazio_5.16.3.png')
+      and os.path.getsize('previa/sombra_vazio_5.16.3.png') > 80_000)
 
 # ============ 5.10.0: CONHECIMENTO novo (memórias, balança) + mod mais leve ============
 _conh = rd(C + '/ConhecimentoAvisoFx.java')
@@ -2492,14 +2303,11 @@ check('5.12.0: o logout automático continua chamando saidaAutomatica',
 check('5.12.0: sem classe de debug na entrega', not os.path.exists(R + '/DebugVazio.java'))
 
 # 11) 5.13.4 — PEDIDO 53
-check('5.13.4: aviso da SAIDA com LETRAS PRETAS (estilo 20, faixa clara)',
+check('5.16.3: o aviso da SAIDA foi REMOVIDO (não manda mais texto pra tela)',
       'public static void avisoSaidaDoVazio(ServerPlayer p, boolean escapou)' in _nev
-      and 'new ScreenTextPayload(texto, 6, 20)' in _nev
-      and 'desenhaAvisoSaidaVazio' in _ce and 'if (style == 20)' in _ce
-      and '0xEFEAD9' in _ce and '0xFF0A0A0A' in _ce)
-check('5.13.4: VOCE ESCAPOU DO VAZIO / VOCE FOI TIRADO DO VAZIO',
-      'ESCAPOU DO VAZIO' in _nev and 'TIRADO DO VAZIO' in _nev
-      and 'avisoSaidaDoVazio(alvo, escapou)' in _nev
+      and 'new ScreenTextPayload(texto, 6, 20)' not in _nev)
+check('5.16.3: a saída continua nas mãos do ADM (irParaSpawn segue vivo)',
+      'avisoSaidaDoVazio(alvo, escapou)' in _nev
       and 'irParaSpawn(alvo, true)' in _nev
       and 'irParaSpawn(alvo, false)' in _nev)
 check('5.13.4: nada de aviso automatico na barra de acao dentro do vazio',
@@ -2596,10 +2404,11 @@ check('5.13.4: relevo despeja a fila na hora (o teto de 40 mil engolia o terreno
       'despejarFila(nv)' in _vr and 'private static void despejarFila(' in _vr)
 check('5.13.4: relevo tem rampa na borda (sem paredao de 5 blocos na praca)',
       'double rampa = Math.min(1.0' in _vr)
-check('5.13.4: baus com RARIDADE e fragmento do vazio dentro',
+check('5.16.3: baus com RARIDADE e SEM fragmento do vazio dentro',
       'private static void colocarBau(ServerLevel nv, int x, int y, int z, RandomSource r)' in _vr
       and 'boolean raro = sorte >= 82 && sorte < 97;' in _vr
-      and 'RPTagMod.FRAGMENTO_VAZIO.get(), mitico ? 2 : 1' in _vr
+      and 'FRAGMENTO_VAZIO' not in _vr[_vr.index('private static void colocarBau'):
+                                       _vr.index('private static void colocarBau') + 2000]
       and 'colocarBau(nv, bx, y0, bz, r);' in _vr)
 check('5.13.4: sem slime no vazio (spawn cancelado + varredura de bichos)',
       'event.setSpawnCancelled(true);' in _sev

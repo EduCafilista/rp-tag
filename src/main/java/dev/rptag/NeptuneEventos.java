@@ -2007,29 +2007,17 @@ public final class NeptuneEventos {
 
     // ================================================================ EXÍLIO
     /**
-     * (5.13.4) O AVISO DA SAÍDA — LETRAS PRETAS. Pedido 53 do dono:
-     * <i>"tira esses avisos quando entrar na dimensão da tela do player, quando sair
-     * também; coloque um aviso com letras pretas falando que ele conseguiu escapar do
-     * vazio, ou que ele foi tirado"</i>.
+     * (5.16.3) <b>SEM AVISO AO SAIR DO VAZIO</b> — o dono pediu três vezes
+     * (<i>"sem mensagem de admin na tela"</i>, <i>"não quero aviso ao sair do vazio, tira já"</i>).
      *
-     * <p>Na ENTRADA não aparece mais nada (nem no chat, nem na tela). Na SAÍDA, este
-     * aviso: faixa clara com letras <b>pretas</b> — "VOCÊ ESCAPOU DO VAZIO" para quem
-     * atravessou o portal, "VOCÊ FOI TIRADO DO VAZIO" para quem foi solto por admin,
-     * morreu ou caiu no sorteio.
-     *
-     * <p>É o estilo 20 do {@link ScreenTextPayload} (desenhado em
-     * {@code ClientEffects.desenhaAvisoSaidaVazio}). Se o cliente for antigo, o pior que
-     * acontece é não aparecer nada — nada de erro.
+     * <p>Antes daqui saía um "VOCÊ ESCAPOU DO VAZIO" / "VOCÊ FOI TIRADO DO VAZIO" na tela. O método
+     * ficou só por compatibilidade das chamadas: <b>não manda mais nada</b>.
      */
     public static void avisoSaidaDoVazio(ServerPlayer p, boolean escapou) {
-        if (p == null) {
-            return;
-        }
-        try {
-            String texto = escapou ? "VOC\u00ca ESCAPOU DO VAZIO" : "VOC\u00ca FOI TIRADO DO VAZIO";
-            PacketDistributor.sendToPlayer(p, new ScreenTextPayload(texto, 6, 20));
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: aviso de saida do vazio falhou", t);
+        // nada na tela. Só o log do servidor (para o adm saber no console quem saiu).
+        if (p != null) {
+            RPTagMod.LOGGER.info("RP Tag: {} saiu do vazio ({})", p.getName().getString(),
+                    escapou ? "pelo portal" : "tirado por admin");
         }
     }
 
