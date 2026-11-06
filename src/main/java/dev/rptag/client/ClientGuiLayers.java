@@ -71,6 +71,7 @@ public final class ClientGuiLayers {
         SolTarotAvisoFx.registrar(event);
         TorreAvisoFx.registrar(event);
         EstrelaAvisoFx.registrar(event);
+        ToloAvisoFx.registrar(event);
         // (5.5.0) estilo 15 = ENERGIA "Anomalia de Entropia" (raios, plasma
         // roxo, glitch, medidor de entropia) — protótipo do dono
         EnergiaAvisoFx.registrar(event);

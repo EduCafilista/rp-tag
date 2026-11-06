@@ -357,6 +357,23 @@ public final class RPCommands {
      * (cristais), 7 divino (feixes de luz), 8 void (estrelas),
      * 9 sangue (gotas escorrendo). (3.86.0) +6 estilos novos.
      * Aceita VARIOS jogadores (nomes ou seletor @a — "avisar alguns players"). */
+    /**
+     * (5.16.2) um estilo da seção {@code /rp admin avisar2}: basta o nome, o texto vem depois.
+     * Os alvos continuam vindo de fora ({@code <jogadores>}), então o comando fica
+     * {@code /rp admin avisar2 <jogadores> <estilo> <texto>}.
+     */
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.minecraft.commands.CommandSourceStack> aviso2(
+            String estilo) {
+        return Commands.literal(estilo)
+                .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                        .executes(ctx -> {
+                            var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                            String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                            avisar(ctx, alvos, estilo, texto);
+                            return Command.SINGLE_SUCCESS;
+                        }));
+    }
+
     private static void avisar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
             java.util.Collection<ServerPlayer> alvos, String estilo, String texto) {
         int style = switch (estilo) {
@@ -374,19 +391,19 @@ public final class RPCommands {
             case "egipicio", "egipcio" -> 12;   // (4.5.0) O Olho de Horus
             case "expurgo" -> 13;   // (4.9.2) Hora do Expurgo (TV de emergencia)
             case "ciberpsicose", "ciber" -> 14;   // (4.9.3) Alerta de Ciberpsicose (glitch)
-            case "louco" -> 25;   // (5.14.0) O Louco (nevoa cinzenta, sigilo, relogio)
-            case "marinheiro" -> 26;   // (5.14.0) O Marinheiro / Enforcado (tempestade, mar, leme)
-            case "espectador", "justica" -> 27;   // (5.14.0) O Espectador / Justica (sonho, balanca, olhos)
+            case "louco", "fool" -> 25;   // (5.14.0) O Louco (nevoa cinzenta, sigilo, relogio)
+            case "marinheiro", "enforcado", "hangedman" -> 26;   // (5.14.0) O Marinheiro / Enforcado (tempestade, mar, leme)
+            case "espectador", "justica", "justice" -> 27;   // (5.14.0) O Espectador / Justica (sonho, balanca, olhos)
             // (5.16.0) as oito cartas de tarô do dono (o mesmo motor de canvas do protótipo)
-            case "eremita" -> 28;   // (5.16.0) O EREMITA
-            case "julgamento" -> 29;   // (5.16.0) O JULGAMENTO
-            case "lua" -> 30;   // (5.16.0) A LUA
-            case "mago" -> 31;   // (5.16.0) O MAGO
-            case "morte2", "ceifador", "morte_carta" -> 32;   // (5.16.0) A MORTE (carta)
-            case "sol" -> 33;   // (5.16.0) O SOL
-            case "torre" -> 34;   // (5.16.0) A TORRE
-            case "estrela" -> 35;   // (5.16.0) A ESTRELA
-            case "tolo" -> 25;   // (5.16.0) TOLO = o mesmo do Louco (o dono mandou igual)
+            case "eremita", "hermit" -> 28;   // (5.16.0) O EREMITA
+            case "julgamento", "judgement" -> 29;   // (5.16.0) O JULGAMENTO
+            case "lua", "moon" -> 30;   // (5.16.0) A LUA
+            case "mago", "magician" -> 31;   // (5.16.0) O MAGO
+            case "morte2", "ceifador", "morte_carta", "death" -> 32;   // (5.16.0) A MORTE (carta)
+            case "sol", "sun" -> 33;   // (5.16.0) O SOL
+            case "torre", "tower" -> 34;   // (5.16.0) A TORRE
+            case "estrela", "star" -> 35;   // (5.16.0) A ESTRELA
+            case "tolo", "foulo" -> 36;   // (5.16.2) TOLO = a CARTA do Louco (o protótipo FoolWarning, de volta)
             case "energia" -> 15;   // (5.5.0) ENERGIA — anomalia de entropia
             case "conhecimento" -> 16;   // (5.7.0) CONHECIMENTO — o olho que sabe
             case "allforone" -> 17;   // (5.7.0) ALLFORONE — as vozes têm forma
@@ -778,6 +795,7 @@ public final class RPCommands {
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
                     + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos: nomes ou @a), onefallall, morteop, sangueop, medoop, louco, marinheiro, espectador, "
                     + "eremita, julgamento, lua, mago, morte2, sol, torre, estrela, tolo\u00a7c\n"
+                    + "/rp admin avisar2 <jogadores> <estilo> <texto> \u00a77\u2014 a SECAO NOVA (Lord of the Mysteries + cartas de taro): louco, tolo, marinheiro, enforcado, espectador, justica, eremita, julgamento, lua, mago, morte2, sol, torre, estrela\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
                     + "/rp admin saidafx on|off \u00a77\u2014 animacao de saida dos jogadores (quem fica ve)\u00a7c\n"
@@ -1083,13 +1101,13 @@ public final class RPCommands {
                                                     avisar(ctx, alvos, "louco", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))
-                                // (5.16.0) TOLO: o dono mandou a MESMA carta do Louco — mesmo aviso, outro nome
+                                // (5.16.2) TOLO = a CARTA do Louco (o protótipo FoolWarning, que o dono reenviou)
                                 .then(Commands.literal("tolo")
                                         .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                                                 .executes(ctx -> {
                                                     var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
-                                                    avisar(ctx, alvos, "louco", texto);
+                                                    avisar(ctx, alvos, "tolo", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))
                                 // (5.14.0) O MARINHEIRO (Enforcado): tempestade, mar revolto, leme
@@ -1244,6 +1262,43 @@ public final class RPCommands {
                                                     avisar(ctx, alvos, "medoop", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))))
+                // ================================================= (5.16.2) /rp admin avisar2
+                // A SEÇÃO NOVA, separada da antiga: aqui ficam TODOS os avisos narrativos que o
+                // dono mandou — Lord of the Mysteries (o caminho do Louco, o Tolo, o Enforcado/
+                // Marinheiro, a Justiça/Espectador) e as cartas de tarô. O /rp admin avisar
+                // continua existindo, igual, para os avisos antigos.
+                // Uso: /rp admin avisar2 <jogadores> <estilo> <texto>
+                .then(Commands.literal("avisar2")
+                        .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
+                                // ---- Lord of the Mysteries
+                                .then(aviso2("louco"))          // 25 o Caminho do Louco (a escada 9..0)
+                                .then(aviso2("tolo"))           // 36 a carta do Tolo (o Louco observa)
+                                .then(aviso2("marinheiro"))     // 26 o Enforcado (tempestade)
+                                .then(aviso2("enforcado"))      // 26 mesmo aviso, nome que o dono usa
+                                .then(aviso2("espectador"))     // 27 a Justiça (sonho, balança, olhos)
+                                .then(aviso2("justica"))        // 27 mesmo aviso, nome que o dono usa
+                                // ---- as cartas de tarô
+                                .then(aviso2("eremita"))        // 28 IX
+                                .then(aviso2("julgamento"))     // 29 XX
+                                .then(aviso2("lua"))            // 30 XVIII
+                                .then(aviso2("mago"))           // 31 I
+                                .then(aviso2("morte2"))         // 32 XIII (o "morte" continua o estilo antigo)
+                                .then(aviso2("sol"))            // 33 XIX
+                                .then(aviso2("torre"))          // 34 XVI
+                                .then(aviso2("estrela"))       // 35 XVII
+                                // ---- os mesmos avisos com os nomes dos protótipos (todos entram)
+                                .then(aviso2("fool"))           // o Louco (protótipo FoolWarning)
+                                .then(aviso2("hangedman"))      // o Enforcado (HangedManWarning)
+                                .then(aviso2("justice"))        // a Justiça (JusticeWarning)
+                                .then(aviso2("foulo"))          // o Tolo (protótipo alternativo)
+                                .then(aviso2("tower"))          // a Torre
+                                .then(aviso2("star"))           // a Estrela
+                                .then(aviso2("sun"))            // o Sol
+                                .then(aviso2("moon"))           // a Lua
+                                .then(aviso2("magician"))       // o Mago
+                                .then(aviso2("hermit"))         // o Eremita
+                                .then(aviso2("judgement"))      // o Julgamento
+                                .then(aviso2("death"))))        // a Morte (a carta)
                 .then(Commands.literal("avisozona")
                         .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
                                 .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())

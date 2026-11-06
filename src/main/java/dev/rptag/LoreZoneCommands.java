@@ -325,7 +325,7 @@ public final class LoreZoneCommands {
             java.util.Map.entry("lua", 30), java.util.Map.entry("mago", 31),
             java.util.Map.entry("morte2", 32), java.util.Map.entry("sol", 33),
             java.util.Map.entry("torre", 34), java.util.Map.entry("estrela", 35),
-            java.util.Map.entry("tolo", 25));
+            java.util.Map.entry("tolo", 36));
 
     /** (3.85.0) nome do estilo pra exibir no /lorezone listar. */
     private static String nomeEstilo(int e) {
@@ -355,6 +355,7 @@ public final class LoreZoneCommands {
             case 33 -> "sol";
             case 34 -> "torre";
             case 35 -> "estrela";
+            case 36 -> "tolo";
             default -> "classico";
         };
     }

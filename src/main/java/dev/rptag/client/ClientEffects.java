@@ -203,6 +203,11 @@ public final class ClientEffects {
             RPTagMod.LOGGER.info("RP Tag: AVISO A ESTRELA iniciado (FX proprio)");
             return;
         }
+        if (style == 36) {
+            ToloAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: AVISO O TOLO iniciado (FX proprio)");
+            return;
+        }
         if (style == 10) {
             String limpoD = text.replaceAll("\\u00a7.", "");
             DemoniacoAvisoFx.iniciar("AVISO", limpoD);

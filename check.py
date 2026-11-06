@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.16.1'
+VER = '5.16.2'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2649,10 +2649,10 @@ check('5.14.0: os TRES avisos novos existem e sao FX proprio (nao video, nao par
 check('5.14.0: REGISTRADOS na tela (registerAboveAll dos tres)',
       'aviso_louco' in _lou and 'aviso_marinheiro' in _mar and 'aviso_espectador' in _esp)
 check('5.14.0: estilo 25/26/27 ligado no avisar() e no teste do cliente',
-      'case "louco" -> 25' in _rp and 'case "marinheiro" -> 26' in _rp
-      and 'case "espectador", "justica" -> 27' in _rp
+      'case "louco", "fool" -> 25' in _rp and 'case "marinheiro", "enforcado", "hangedman" -> 26' in _rp
+      and 'case "espectador", "justica", "justice" -> 27' in _rp
       and 'if (style == 25)' in _rgc and 'if (style == 26)' in _rgc and 'if (style == 27)' in _rgc
-      and 'case "louco" -> 25' in _fxc and 'case "marinheiro" -> 26' in _fxc)
+      and 'case "louco", "fool" -> 25' in _fxc and 'case "marinheiro", "enforcado", "hangedman" -> 26' in _fxc)
 check('5.14.0: /rp admin avisar louco|marinheiro|espectador existem como LITERAIS',
       'Commands.literal("louco")' in _rp and 'Commands.literal("marinheiro")' in _rp
       and 'Commands.literal("espectador")' in _rp)
@@ -2739,15 +2739,41 @@ check('5.16.0: os oito estão no switch do avisar() e no do /rpfx teste (28..35)
 check('5.16.0: os oito estão registrados na camada do GUI e no ClientEffects (28..35)',
       all(('%s.registrar(event);' % c) in rd(C + '/ClientGuiLayers.java') for c in _cartas)
       and all(('if (style == %d)' % i) in rd(C + '/ClientEffects.java') for i in range(28, 36)))
-check('5.16.0: TOLO continua sendo o MESMO aviso do Louco (o dono mandou a mesma carta)',
-      ('case "tolo" -> 25' in _rp) and ('case "tolo" -> 25' in rd(C + '/FxComando.java')))
+check('5.16.2: TOLO voltou a ser a CARTA do Tolo (protótipo FoolWarning), estilo 36',
+      ('case "tolo", "foulo" -> 36' in _rp) and ('case "tolo", "foulo" -> 36' in rd(C + '/FxComando.java'))
+      and ('if (style == 36)' in rd(C + '/ClientEffects.java')) and ('ToloAvisoFx.iniciar' in rd(C + '/ClientEffects.java')))
 check('5.16.0: MORTE (carta) tem nome proprio para nao bater no estilo 4 (a morte antiga)',
-      'case "morte2", "ceifador", "morte_carta" -> 32' in _rp
+      'case "morte2", "ceifador", "morte_carta", "death" -> 32' in _rp
       and 'Commands.literal("morte2")' in _rp and 'case "morte" -> 4;' in _rp
       and 'MorteTarotAvisoFx.iniciar' in rd(C + '/ClientEffects.java'))
 check('5.16.0: os estilos 28..35 NAO existiam antes (nenhum estilo antigo foi trocado)',
       all(('case %d ->' % i) not in rd(R + '/LoreZoneCommands.java') for i in range(28, 36))
       or all(('case %d ->' % i) in rd(R + '/LoreZoneCommands.java') for i in range(28, 36)))
+
+# ---- 5.16.2: /rp admin avisar2 (Lord of the Mysteries + cartas de tarô) ----
+_ct = rd(C + '/CartaTarotFx.java')
+check('5.16.2: existe a secao /rp admin avisar2 com os 14 estilos (LOTM + cartas)',
+      'Commands.literal("avisar2")' in _rp
+      and all(('aviso2("%s")' % e) in _rp for e in
+              ('louco', 'tolo', 'marinheiro', 'enforcado', 'espectador', 'justica',
+               'eremita', 'julgamento', 'lua', 'mago', 'morte2', 'sol', 'torre', 'estrela')))
+check('5.16.2: os avisos novos continuam funcionando pelo /rp admin avisar (nada quebrou)',
+      'case "eremita", "hermit" -> 28' in _rp and 'case "estrela", "star" -> 35' in _rp
+      and 'case "morte2", "ceifador", "morte_carta", "death" -> 32' in _rp)
+check('5.16.2: TOLO e o estilo 36 com a carta propria (ToloAvisoFx) e nao mais o 25',
+      'case "tolo", "foulo" -> 36' in _rp
+      and os.path.exists(C + '/ToloAvisoFx.java')
+      and 'ToloAvisoFx.registrar' in rd(C + '/ClientGuiLayers.java')
+      and 'if (style == 36)' in rd(C + '/ClientEffects.java'))
+check('5.16.2: o poligono triangula por corte de orelhas (a estrela de 8 pontas e concava)',
+      'corte de orelhas' in _ct and 'private static boolean pontoNoTri(' in _ct
+      and 'private static void triTela(' in _ct)
+check('5.16.2: o fundo do aviso cobre a tela toda (KBG) e o conteudo fica na area segura (K)',
+      'KBG = Math.max(w / PW, h / PH)' in _ct and 'K = Math.min(w / PW, h / PH)' in _ct
+      and 'K = KBG;' in _ct and 'float kConteudo = K;' in _ct)
+check('5.16.2: o brilho usa a textura branca propria (a shadow do jogo e preta)',
+      'rptag", "textures/misc/glow.png' in rd(C + '/AvisoBlob.java')
+      and os.path.exists(A + '/textures/misc/glow.png'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

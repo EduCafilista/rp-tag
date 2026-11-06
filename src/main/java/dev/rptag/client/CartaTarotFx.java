@@ -49,6 +49,8 @@ public abstract class CartaTarotFx {
 
     /** alfa global (o {@code setGlobalAlpha} do protótipo). */
     static float alfa = 1f;
+    /** (5.16.2) escala do fundo: cobre a tela toda (o conteúdo usa K, que cabe na tela). */
+    static float KBG = 1f;
     /** o {@code setGlobalBlendMode(ADD)} do protótipo. */
     private static boolean aditivo;
 
@@ -154,6 +156,11 @@ public abstract class CartaTarotFx {
         ultimaT = T;
 
         int w = g.guiWidth(), h = g.guiHeight();
+        // (5.16.2) TELA CHEIA. Antes o canvas 800x600 era ajustado por dentro da tela
+        // (min), então em monitor largo sobrava margem preta dos lados e o efeito parecia
+        // "cortado no todo". Agora o FUNDO usa a escala que COBRE a tela toda (max) e só o
+        // conteúdo (carta, estrela, textos) usa a escala que CABE (min), dentro da área segura.
+        KBG = Math.max(w / PW, h / PH);
         K = Math.min(w / PW, h / PH);
         OX = w / 2f;
         OY = h / 2f;
@@ -187,12 +194,18 @@ public abstract class CartaTarotFx {
 
         // (5.16.1) o alfa do céu agora é garantido dentro do AvisoRitual.degradeVertical.
         AvisoRitual.degradeVertical(B, 0, 0, w, h, th.sky0, th.sky1, 18);
-        mancha(PCX, PCY, 420, th.glowc, 0.16f * nevoa);   // (5.16.1) halo em 6 anéis dava 6 faixas
 
+        // ---- passada do FUNDO, na escala que cobre a tela (sem margem preta sobrando)
+        float kConteudo = K;
+        K = KBG;
+        mancha(PCX, PCY, 420, th.glowc, 0.16f * nevoa);   // (5.16.1) halo em 6 anéis dava 6 faixas
         th.bg(T, t);
         nevoaCamada(false, T, nevoa);
         th.mid(T, t);
         raios(t, rev);
+        K = kConteudo;
+
+        // ---- daqui para baixo é conteúdo: fica na área segura (nada é cortado)
         sigilo(th, T, t);
         orbitar(th, T, t, false);
         carta(th, T, t);
@@ -744,13 +757,85 @@ public abstract class CartaTarotFx {
         }
     }
 
+    /**
+     * preenche um polígono simples (pode ser CÔNCAVO, como a estrela de 8 pontas).
+     *
+     * <p>(5.16.2) Antes isto era um leque a partir do <b>vértice 0</b>. Isso só funciona em
+     * polígono convexo: na estrela de 8 pontas (côncava) os triângulos se cruzavam e saía um
+     * emaranhado branco no alto da tela — era o "defeito" da carta da Estrela. Agora triangula
+     * por <b>corte de orelhas</b>, que vale para qualquer polígono simples.
+     */
     static void poligono(float[] xs, float[] ys, int n, int cor) {
-        cor = ca(cor);
-        for (int i = 1; i + 1 < n; i++) {
-            B.tri(sx(tx(rcx(xs[0]), rcy(ys[0]))), sy(ty(rcx(xs[0]), rcy(ys[0]))), cor,
-                    sx(tx(rcx(xs[i]), rcy(ys[i]))), sy(ty(rcx(xs[i]), rcy(ys[i]))), cor,
-                    sx(tx(rcx(xs[i + 1]), rcy(ys[i + 1]))), sy(ty(rcx(xs[i + 1]), rcy(ys[i + 1]))), cor);
+        if (n < 3) {
+            return;
         }
+        cor = ca(cor);
+        // área com sinal (regra do laço) — para saber o sentido dos vértices
+        float area = 0;
+        for (int i = 0; i < n; i++) {
+            int j = (i + 1) % n;
+            area += xs[i] * ys[j] - xs[j] * ys[i];
+        }
+        int[] idx = new int[n];
+        boolean anti = area > 0;
+        for (int i = 0; i < n; i++) {
+            idx[i] = anti ? i : n - 1 - i;   // deixa sempre no mesmo sentido
+        }
+        int restam = n;
+        int guarda = 0;
+        while (restam > 2 && guarda++ < n * n) {
+            boolean cortou = false;
+            for (int i = 0; i < restam; i++) {
+                int i0 = idx[(i + restam - 1) % restam], i1 = idx[i], i2 = idx[(i + 1) % restam];
+                float ax = xs[i0], ay = ys[i0], bx = xs[i1], by = ys[i1], cx = xs[i2], cy = ys[i2];
+                float cruz = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+                if (cruz <= 0) {
+                    continue;                       // não é orelha (é reflexo ou é colinear)
+                }
+                boolean dentro = false;
+                for (int k = 0; k < restam && !dentro; k++) {
+                    int ip = idx[k];
+                    if (ip == i0 || ip == i1 || ip == i2) {
+                        continue;
+                    }
+                    dentro = pontoNoTri(xs[ip], ys[ip], ax, ay, bx, by, cx, cy);
+                }
+                if (dentro) {
+                    continue;
+                }
+                triTela(ax, ay, bx, by, cx, cy, cor);
+                for (int k = i; k < restam - 1; k++) {
+                    idx[k] = idx[k + 1];
+                }
+                restam--;
+                cortou = true;
+                break;
+            }
+            if (!cortou) {
+                break;                              // polígono degenerado: para (não trava o quadro)
+            }
+        }
+        if (restam > 2) {                            // sobra: fecha em leque (nunca deixa buraco)
+            for (int i = 1; i + 1 < restam; i++) {
+                triTela(xs[idx[0]], ys[idx[0]], xs[idx[i]], ys[idx[i]], xs[idx[i + 1]], ys[idx[i + 1]], cor);
+            }
+        }
+    }
+
+    private static void triTela(float ax, float ay, float bx, float by, float cx, float cy, int cor) {
+        B.tri(sx(tx(rcx(ax), rcy(ay))), sy(ty(rcx(ax), rcy(ay))), cor,
+                sx(tx(rcx(bx), rcy(by))), sy(ty(rcx(bx), rcy(by))), cor,
+                sx(tx(rcx(cx), rcy(cy))), sy(ty(rcx(cx), rcy(cy))), cor);
+    }
+
+    /** true se o ponto está dentro (ou na borda) do triângulo. */
+    private static boolean pontoNoTri(float px, float py, float ax, float ay, float bx, float by, float cx, float cy) {
+        float d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
+        float d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
+        float d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
+        boolean neg = d1 <= 0 || d2 <= 0 || d3 <= 0;
+        boolean pos = d1 >= 0 || d2 >= 0 || d3 >= 0;
+        return !(neg && pos);
     }
 
     static void contornoRet(float x, float y, float w, float h, float esp, int cor) {
