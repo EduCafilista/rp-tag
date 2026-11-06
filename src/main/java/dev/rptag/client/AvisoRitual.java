@@ -79,38 +79,69 @@ public final class AvisoRitual {
 
     /** halo radial: cheio no meio (r0) e sumindo até r1. */
     public static void halo(Buf b, float cx, float cy, float r0, float r1, int rgb, float a) {
+        halo(b, cx, cy, r0, r1, rgb, a, ladoHalo(r1));
+    }
+
+    /**
+     * (5.16.1) Quantos lados o halo precisa. Com 14 lados FIXOS, um halo de raio 420 desenhava
+     * arestas retas de ~180 px — apareciam como RISCO RETO atravessando a tela. Os lados agora
+     * acompanham o raio (e têm teto, para a névoa do Louco continuar barata).
+     */
+    public static int ladoHalo(float r1) {
+        return (int) Math.max(14, Math.min(48, r1 * 0.12f));
+    }
+
+    /** halo radial com número de lados explícito. */
+    public static void halo(Buf b, float cx, float cy, float r0, float r1, int rgb, float a, int segs) {
         if (a <= 0.004f) {
             return;
         }
-        // (5.14.0) 6 anéis x 14 lados: a névoa desenha 46 halos POR QUADRO, então o halo
-        // precisa ser barato — com 10x20 a tela gastava ~18 mil triângulos só de névoa.
+        // (5.14.0) 6 anéis: a névoa desenha 46 halos POR QUADRO, então o halo precisa ser barato
+        // — com 10x20 a tela gastava ~18 mil triângulos só de névoa.
         int passos = 6;
         float rAnt = r0;
         for (int i = 1; i <= passos; i++) {
             float u = i / (float) passos;
             float r = lerp(r0, r1, u);
             anel(b, cx, cy, rAnt, r, rgb, a * (1 - (i - 1) / (float) passos) * (1 - (i - 1) / (float) passos),
-                    a * (1 - u) * (1 - u), 14);
+                    a * (1 - u) * (1 - u), segs);
             rAnt = r;
         }
     }
 
-    /** retângulo em degradê vertical (faixas horizontais). */
+    /**
+     * retângulo em degradê vertical.
+     *
+     * <p>(5.16.1) TRÊS correções de uma vez:
+     * <ol>
+     *   <li>o {@code mix} devolve só RGB — ele DESCARTA o alfa, então chamar com a cor crua
+     *       (ex.: {@code 0x151B30}) fazia o degradê ficar INVISÍVEL. Cor sem alfa agora é opaca;</li>
+     *   <li>o alfa precisa ser interpolado entre as duas pontas (antes ficava o do topo);</li>
+     *   <li>faixas chapadas deixavam DEGRAU visível — a cada 33 px aparecia uma linha reta
+     *       atravessando a tela. Agora o degradê é <b>um quadrilátero com as cores nas duas
+     *       pontas</b> e o próprio jogo interpola: liso, sem degrau, e mais barato.</li>
+     * </ol>
+     */
     public static void degradeVertical(Buf b, float x, float y, float w, float h, int cTopo, int cBase, int faixas) {
-        for (int i = 0; i < faixas; i++) {
-            float u0 = i / (float) faixas, u1 = (i + 1) / (float) faixas;
-            int c0 = mix(cTopo, cBase, u0), c1 = mix(cTopo, cBase, u1);
-            b.quad(x, y + h * u0, c0, x + w, y + h * u0, c0, x + w, y + h * u1, c1, x, y + h * u1, c1);
+        int c0 = opaco(cTopo), c1 = opaco(cBase);
+        if (h <= 0.5f || w <= 0.5f) {
+            return;
         }
+        b.quad(x, y, c0, x + w, y, c0, x + w, y + h, c1, x, y + h, c1);
     }
 
-    /** retângulo em degradê horizontal. */
+    /** cor com alfa garantido (cor crua = opaca). */
+    private static int opaco(int cor) {
+        return (cor & 0xFF000000) == 0 ? (cor | 0xFF000000) : cor;
+    }
+
+    /** retângulo em degradê horizontal (um quadrilátero, o jogo interpola as pontas). */
     public static void degradeHorizontal(Buf b, float x, float y, float w, float h, int cEsq, int cDir, int faixas) {
-        for (int i = 0; i < faixas; i++) {
-            float u0 = i / (float) faixas, u1 = (i + 1) / (float) faixas;
-            int c0 = mix(cEsq, cDir, u0), c1 = mix(cEsq, cDir, u1);
-            b.quad(x + w * u0, y, c0, x + w * u1, y, c1, x + w * u1, y + h, c1, x + w * u0, y + h, c0);
+        int c0 = opaco(cEsq), c1 = opaco(cDir);
+        if (h <= 0.5f || w <= 0.5f) {
+            return;
         }
+        b.quad(x, y, c0, x + w, y, c1, x + w, y + h, c1, x, y + h, c0);
     }
 
     /** texto com escala (o GUI só desenha na escala 1, então escala a matriz). */

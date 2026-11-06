@@ -159,14 +159,11 @@ public final class SolTarotAvisoFx extends CartaTarotFx {
                 return;
             }
             aditivo();
-            // as três colunas de luz (degrade do topo para baixo)
+            // as três colunas de luz — (5.16.1) eram 8 retângulos chapados por coluna: dava
+            // degrau, e a coluna tinha borda reta. Agora é uma elipse macia esticada.
             for (int j = 0; j < 3; j++) {
                 float x = PCX + (j - 1) * 170, fl = 0.7f + 0.3f * rn((int) Math.floor(t * 8) + j, 1);
-                int n = 8;
-                for (int i = 0; i < n; i++) {
-                    float al = 0.2f * a * fl * (1 - i / (float) n);
-                    retangulo(x - 22, 470f * i / n, 44, 470f / n + 0.5f, col(0xFFEBAA, al));
-                }
+                manchaE(x, 235, 30, 235, 0xFFEBAA, 0.22f * a * fl);
             }
             normal();
         }

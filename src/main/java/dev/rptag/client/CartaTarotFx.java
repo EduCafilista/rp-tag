@@ -185,8 +185,9 @@ public abstract class CartaTarotFx {
         float nevoa = ss(0f, 1.5f, T) * (1 + ss(12f, 14f, T) * 0.6f);
         float rev = ss(3.6f, 4.8f, T);
 
+        // (5.16.1) o alfa do céu agora é garantido dentro do AvisoRitual.degradeVertical.
         AvisoRitual.degradeVertical(B, 0, 0, w, h, th.sky0, th.sky1, 18);
-        AvisoRitual.halo(B, sx(PCX), sy(PCY), 30 * K, 420 * K, th.glowc, 0.16f * nevoa);
+        mancha(PCX, PCY, 420, th.glowc, 0.16f * nevoa);   // (5.16.1) halo em 6 anéis dava 6 faixas
 
         th.bg(T, t);
         nevoaCamada(false, T, nevoa);
@@ -230,10 +231,13 @@ public abstract class CartaTarotFx {
         B.flush();
         normal();
 
-        // ---- vinheta pulsando
+        // ---- vinheta: transparente no miolo, escurecendo até a borda (com o pulso).
+        // (5.16.1) Leque radial com o alfa interpolado por vértice: anéis concêntricos deixavam
+        // RISCO RETO no alto da tela (cada anel virava um arco achatado) e faixas de borda
+        // deixavam o centro chapado. O leque é liso e segue o RadialGradient do protótipo.
         float batida = (float) Math.pow(Math.max(0, sin(t * 2.4f)), 2) * ss(5f, 6f, T);
-        AvisoRitual.anel(B, OX, OY, Math.min(w, h) * 0.42f, Math.min(w, h) * 0.98f, 0x000000, 0f,
-                0.62f + 0.06f * batida, 30);
+        float alvo = 0.80f + 0.10f * batida;
+        vinheta(w, h, alvo);
 
         // ---- grão
         for (int i = 0; i < 140; i++) {
@@ -286,18 +290,19 @@ public abstract class CartaTarotFx {
         if (amt <= 0.01f) {
             return;
         }
+        // (5.16.1) a névoa do protótipo é a COR DA CARTA (fogc), não branco — e ela é
+        // desenhada como mancha radial (AvisoRitual.halo), que é o equivalente do RadialGradient.
+        Tema th = atual == null ? null : atual.tema();
+        int cor = th == null ? 0x999999 : th.fogc;
         float[][] lista = frente ? PF : PB;
         int n = frente ? NPF : NPB;
         float k2 = frente ? 0.7f : 1f;
-        aditivo();
         for (int i = 0; i < n; i++) {
             float[] p = lista[i];
             float x = (float) ((p[0] + T * p[3] * 14) % (PW + 500)) - 250;
             float y = p[1] + sin(T * 0.3f + p[4]) * 22;
-            AvisoRitual.halo(B, sx(x), sy(y), p[2] * 0.35f * K, p[2] * K, 0xFFFFFF, 0f);
-            disco(x, y, p[2], 0xFFFFFF, p[5] * amt * k2);
+            mancha(x, y, p[2], cor, p[5] * amt * k2 * 1.8f);
         }
-        normal();
     }
 
     // ================================================================= raios de fundo
@@ -305,6 +310,8 @@ public abstract class CartaTarotFx {
         if (amt <= 0.01f) {
             return;
         }
+        Tema th = atual == null ? null : atual.tema();
+        int cor = th == null ? 0xFFFFFF : th.ac;
         aditivo();
         save();
         translate(PCX, PCY);
@@ -312,7 +319,7 @@ public abstract class CartaTarotFx {
         for (int k = 0; k < 16; k++) {
             rotate(TAU / 16f);
             float[] xs = {0, -14, 14}, ys = {0, -430, -430};
-            poligono(xs, ys, 3, col(0xFFFFFF, 0.045f * amt));
+            poligono(xs, ys, 3, col(cor, 0.045f * amt));
         }
         restore();
         normal();
@@ -436,7 +443,7 @@ public abstract class CartaTarotFx {
         translate(PCX, y);
         scale(Math.max(0.02f, Math.abs(sxv)), 1);
 
-        AvisoRitual.halo(B, sx(0), sy(0), 20 * K, 110 * K, th.ac, 0.35f + 0.3f * fa);
+        mancha(0, 0, 110, th.ac, (0.35f + 0.3f * fa) * alfa);
 
         if (!frente) {
             retangulo(-60, -95, 120, 190, col(th.bk, alfa));
@@ -491,10 +498,10 @@ public abstract class CartaTarotFx {
             float yy = sy(500 + (1 - a) * 18);
             if (a > 0.01f) {
                 if (brilho) {
-                    AvisoRitual.texto(G, ch, x + 5 * K + jx, yy, esc, col(th.ac, 0.55f * a), false);
-                    AvisoRitual.texto(G, ch, x - 5 * K + jx, yy, esc, col(0xDC283C, 0.5f * a), false);
+                    textoEm(ch, x + 5 * K + jx, yy, esc, col(th.ac, 0.55f * a), false);
+                    textoEm(ch, x - 5 * K + jx, yy, esc, col(0xDC283C, 0.5f * a), false);
                 }
-                AvisoRitual.texto(G, ch, x + jx, yy, esc, col(mix(th.tg0, th.tg2, (i + 0.5f) / palavra.length()), a), true);
+                textoEm(ch, x + jx, yy, esc, col(mix(th.tg0, th.tg2, (i + 0.5f) / palavra.length()), a), true);
             }
             x += larg + espaco;
         }
@@ -541,6 +548,30 @@ public abstract class CartaTarotFx {
         }
     }
 
+    /** vinheta radial: leque de triângulos do miolo (alfa 0) até a borda (alfa total). */
+    static void vinheta(int w, int h, float alvo) {
+        // (5.16.1) Em 4 faixas com rampa LINEAR aparecia uma CAIXA clara no meio da tela. Em
+        // leque apareciam emendas radiais. Aqui: 10 sub-faixas por borda com rampa QUADRÁTICA
+        // (alfa = alvo*(1-u)^2) e alfa interpolado dentro de cada faixa — liso, sem degrau e
+        // sem emenda, e os cantos escurecem um pouco mais, como na vinheta do protótipo.
+        if (alvo <= 0.004f) {
+            return;
+        }
+        int n = 10;
+        float dx = w * 0.34f, dy = h * 0.34f;
+        for (int i = 0; i < n; i++) {
+            float u0 = i / (float) n, u1 = (i + 1) / (float) n;
+            float a0 = alvo * (1 - u0) * (1 - u0), a1 = alvo * (1 - u1) * (1 - u1);
+            int c0 = col(0x000000, a0), c1 = col(0x000000, a1);
+            float y0 = dy * u0, y1 = dy * u1;
+            B.quad(0, y0, c0, w, y0, c0, w, y1, c1, 0, y1, c1);                    // topo
+            B.quad(0, h - y0, c0, w, h - y0, c0, w, h - y1, c1, 0, h - y1, c1);    // base
+            float x0 = dx * u0, x1 = dx * u1;
+            B.quad(x0, 0, c0, x0, h, c0, x1, h, c1, x1, 0, c1);                    // esquerda
+            B.quad(w - x0, 0, c0, w - x0, h, c0, w - x1, h, c1, w - x1, 0, c1);    // direita
+        }
+    }
+
     // ================================================================= primitivas (canvas -> tela)
     static float sx(float x) {
         return OX + (x - PCX) * K;
@@ -562,14 +593,39 @@ public abstract class CartaTarotFx {
         return pxProto * K / 9f;
     }
 
-    static void textoCentro(String s, float x, float y, float esc, int cor) {
+    /** (5.16.1) o texto do GUI troca o shader; sem rearmar, a geometria seguinte sai quebrada. */
+    static void rearmar() {
         boolean eraAditivo = aditivo;
         B.flush();
-        normal();
-        AvisoRitual.textoCentro(G, s, sx(tx(x, y)), sy(ty(x, y)), esc, cor, true);
+        if (eraAditivo) {
+            AvisoFxUtil.normal();
+            aditivo = false;
+        }
+        B = AvisoRitual.comecar(G);
         if (eraAditivo) {
             aditivo();
         }
+    }
+
+    static void textoCentro(String s, float x, float y, float esc, int cor) {
+        if (s == null || s.isEmpty()) {
+            return;
+        }
+        B.flush();
+        normal();
+        AvisoRitual.textoCentro(G, s, sx(tx(x, y)), sy(ty(x, y)), esc, cor, true);
+        B = AvisoRitual.comecar(G);
+    }
+
+    /** texto do canto esquerdo (o {@code AvisoRitual.texto} direto), já rearmando depois. */
+    static void textoEm(String s, float x, float y, float esc, int cor, boolean sombra) {
+        if (s == null || s.isEmpty()) {
+            return;
+        }
+        B.flush();
+        normal();
+        AvisoRitual.texto(G, s, x, y, esc, cor, sombra);
+        B = AvisoRitual.comecar(G);
     }
 
     static void save() {
@@ -653,12 +709,22 @@ public abstract class CartaTarotFx {
 
     static void retangulo(float x, float y, float w, float h, int cor) {
         cor = ca(cor);
-        quad(tx(x, y), ty(x, y), tx(x + w, y), ty(x + w, y), tx(x + w, y + h), ty(x + w, y + h), tx(x, y + h), ty(x, y + h), cor);
+        quad(tx(rcx(x), rcy(y)), ty(rcx(x), rcy(y)), tx(rcx(x + w), rcy(y)), ty(rcx(x + w), rcy(y)),
+                tx(rcx(x + w), rcy(y + h)), ty(rcx(x + w), rcy(y + h)), tx(rcx(x), rcy(y + h)), ty(rcx(x), rcy(y + h)), cor);
     }
 
     private static void quad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, int cor) {
         B.tri(sx(x1), sy(y1), cor, sx(x2), sy(y2), cor, sx(x3), sy(y3), cor);
         B.tri(sx(x1), sy(y1), cor, sx(x3), sy(y3), cor, sx(x4), sy(y4), cor);
+    }
+
+    /** prende o vértice dentro do recorte da carta (a arte não vaza pela moldura). */
+    private static float rcx(float x) {
+        return recortando ? Math.max(rcX, Math.min(rcX + rcW, x)) : x;
+    }
+
+    private static float rcy(float y) {
+        return recortando ? Math.max(rcY, Math.min(rcY + rcH, y)) : y;
     }
 
     static void linha(float x1, float y1, float x2, float y2, float w, int cor) {
@@ -681,9 +747,9 @@ public abstract class CartaTarotFx {
     static void poligono(float[] xs, float[] ys, int n, int cor) {
         cor = ca(cor);
         for (int i = 1; i + 1 < n; i++) {
-            B.tri(sx(tx(xs[0], ys[0])), sy(ty(xs[0], ys[0])), cor,
-                    sx(tx(xs[i], ys[i])), sy(ty(xs[i], ys[i])), cor,
-                    sx(tx(xs[i + 1], ys[i + 1])), sy(ty(xs[i + 1], ys[i + 1])), cor);
+            B.tri(sx(tx(rcx(xs[0]), rcy(ys[0]))), sy(ty(rcx(xs[0]), rcy(ys[0]))), cor,
+                    sx(tx(rcx(xs[i]), rcy(ys[i]))), sy(ty(rcx(xs[i]), rcy(ys[i]))), cor,
+                    sx(tx(rcx(xs[i + 1]), rcy(ys[i + 1]))), sy(ty(rcx(xs[i + 1]), rcy(ys[i + 1]))), cor);
         }
     }
 
@@ -698,22 +764,23 @@ public abstract class CartaTarotFx {
         elipse(cx, cy, r, r, rgb, a);
     }
 
+
     static void elipse(float cx, float cy, float rx, float ry, int rgb, float a) {
         if (!dentro(cx, cy)) {
             return;
         }
         int cor = ca(col(rgb, a));
-        rx *= Math.abs(ma);
-        ry *= Math.abs(md);
-        int n = 16;
+        // (5.16.1) NÃO escalar rx/ry aqui: o tx()/ty() de cada vértice já aplica a escala
+        // da pilha — antes a elipse saía com o dobro do tamanho de encolhimento.
+        int n = Math.max(10, Math.min(40, (int) (Math.max(rx, ry) * K * 0.7f)));
         float px = 0, py = 0;
         for (int i = 0; i <= n; i++) {
             float an = i * TAU / n;
             float ex = cx + cos(an) * rx, ey = cy + sin(an) * ry;
             if (i > 0) {
-                B.tri(sx(tx(cx, cy)), sy(ty(cx, cy)), cor,
-                        sx(tx(px, py)), sy(ty(px, py)), cor,
-                        sx(tx(ex, ey)), sy(ty(ex, ey)), cor);
+                B.tri(sx(tx(rcx(cx), rcy(cy))), sy(ty(rcx(cx), rcy(cy))), cor,
+                        sx(tx(rcx(px), rcy(py))), sy(ty(rcx(px), rcy(py))), cor,
+                        sx(tx(rcx(ex), rcy(ey))), sy(ty(rcx(ex), rcy(ey))), cor);
             }
             px = ex;
             py = ey;
@@ -721,10 +788,16 @@ public abstract class CartaTarotFx {
     }
 
     static void contorno(float cx, float cy, float r, float w, int cor) {
-        anel(cx, cy, r, w, cor, 24);
+        anel(cx, cy, r, w, cor, lados(r));
+    }
+
+    /** (5.16.1) lados suficientes para o círculo não virar polígono na tela. */
+    static int lados(float r) {
+        return (int) Math.max(16, Math.min(64, r * K * 0.35f));
     }
 
     static void anel(float cx, float cy, float r, float w, int cor, int segs) {
+        segs = Math.max(segs, lados(r));
         for (int i = 0; i < segs; i++) {
             float a0 = i * TAU / segs, a1 = (i + 1) * TAU / segs;
             linha(cx + cos(a0) * r, cy + sin(a0) * r, cx + cos(a1) * r, cy + sin(a1) * r, w, cor);
@@ -735,7 +808,7 @@ public abstract class CartaTarotFx {
     static void setor(float x, float y, float w, float h, float inicioGraus, float extentGraus, int rgb, float a) {
         int cor = ca(col(rgb, a));
         float cx = x + w / 2f, cy = y + h / 2f, rx = w / 2f, ry = h / 2f;
-        int n = Math.max(4, (int) (Math.abs(extentGraus) / 12));
+        int n = Math.max(6, (int) (Math.abs(extentGraus) / Math.max(3f, 28f / Math.max(1f, Math.max(rx, ry) * K * 0.25f))));
         float a0 = inicioGraus * 0.0174533f;
         for (int i = 0; i < n; i++) {
             float t0 = a0 + (extentGraus * 0.0174533f) * i / n;
@@ -748,19 +821,43 @@ public abstract class CartaTarotFx {
 
     /** degradê vertical de um retângulo (o {@code Theme.lin}). */
     static void degradeRect(float x, float y, float w, float h, int c0, int c1) {
-        int n = 12;
-        for (int i = 0; i < n; i++) {
-            float y0 = y + h * i / n, y1 = y + h * (i + 1) / n;
-            int c = mix(c0, c1, (i + 0.5f) / n);
-            float[] xs = {x, x + w, x + w, x};
-            float[] ys = {y0, y0, y1, y1};
-            poligono(xs, ys, 4, col(c, 1f));
-        }
+        // (5.16.1) eram 12 faixas chapadas = degraus horizontais na cara da carta. Um
+        // quadrilátero só, com as cores nas duas pontas: o jogo interpola e sai liso.
+        float x0 = sx(tx(x, y)), y0 = sy(ty(x, y));
+        float x1 = sx(tx(x + w, y)), y1 = sy(ty(x + w, y));
+        float x2 = sx(tx(x + w, y + h)), y2 = sy(ty(x + w, y + h));
+        float x3 = sx(tx(x, y + h)), y3 = sy(ty(x, y + h));
+        int a0 = col(c0, alfa), a1 = col(c1, alfa);
+        B.quad(x0, y0, a0, x1, y1, a0, x2, y2, a1, x3, y3, a1);
     }
 
-    /** mancha radial suave (o {@code Theme.rg}). */
+    /**
+     * mancha radial suave (o {@code Theme.rg}).
+     *
+     * <p>(5.16.1) Agora usa a textura de sombra do jogo ({@link AvisoBlob}): degradê radial de
+     * verdade, sem degrau e sem catavento — que era o que aparecia quando eu empilhava anéis.
+     */
     static void mancha(float cx, float cy, float r, int rgb, float a) {
-        AvisoRitual.halo(B, sx(tx(cx, cy)), sy(ty(cx, cy)), 0, r * K * Math.abs(ma), rgb, a);
+        if (a <= 0.004f || r <= 0.5f) {
+            return;
+        }
+        float px = sx(tx(cx, cy)), py = sy(ty(cx, cy));
+        float rr = r * K * Math.abs(ma);
+        B.flush();
+        AvisoBlob.desenhar(G, px - rr, py - rr, rr * 2, rr * 2, rgb, a);
+        B = new AvisoFxUtil.Buf(G.pose().last().pose());   // não usa comecar(): ele zera o blend
+    }
+
+    /** mancha radial ESTICADA (elipse macia) — para colunas de luz e poças de claridade. */
+    static void manchaE(float cx, float cy, float rx, float ry, int rgb, float a) {
+        if (a <= 0.004f || rx <= 0.5f || ry <= 0.5f) {
+            return;
+        }
+        float px = sx(tx(cx, cy)), py = sy(ty(cx, cy));
+        float w = rx * K * Math.abs(ma) * 2, h = ry * K * Math.abs(md) * 2;
+        B.flush();
+        AvisoBlob.desenhar(G, px - w / 2, py - h / 2, w, h, rgb, a);
+        B = new AvisoFxUtil.Buf(G.pose().last().pose());
     }
 
     /** estrela de 8 pontas do {@code Theme.star8}. */
