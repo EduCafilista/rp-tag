@@ -1,11 +1,11 @@
-# RP Tag 5.15.0 — O LOUCO AGORA É O CAMINHO INTEIRO (a escada das 10 Sequências)
+# RP Tag 5.16.0 — AS OITO CARTAS DE TARÔ (Eremita, Estrela, Julgamento, Lua, Mago, Morte, Sol, Torre)
 
 **O arquivo para baixar:**
-[rptag-5.15.0.jar](https://github.com/EduCafilista/rp-tag/releases/download/v5.15.0/rptag-5.15.0.jar)
-· 69.424.900 bytes · `md5 5d76d93afd85a26a6c02823d1eaca3fe`
-· `sha256 c3112a24467d7229f1a427699c375683e22f171af8ab0363bfcb2b0122df32a6`
+[rptag-5.16.0.jar](https://github.com/EduCafilista/rp-tag/releases/download/v5.16.0/rptag-5.16.0.jar)
+· 69.481.747 bytes · `md5 9f402f0807ecfd557937cafaef10a100`
+· `sha256 19f2e0fc83edba7f1969e5805161a19bd304fbc84f376c193c7b0ac479ff1773`
 
-**Página da release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.15.0
+**Página da release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.16.0
 
 > **Troque o jar no servidor E no cliente.** O desenho é do cliente; o comando é do servidor.
 
@@ -14,116 +14,157 @@
 ## Como usar
 
 ```
-/rp admin avisar @a louco Um grande perigo se aproxima.
+/rp admin avisar @a eremita    Um grande perigo se aproxima.
+/rp admin avisar @a estrela    ...
+/rp admin avisar @a julgamento ...
+/rp admin avisar @a lua        ...
+/rp admin avisar @a mago       ...
+/rp admin avisar @a morte2     ...
+/rp admin avisar @a sol        ...
+/rp admin avisar @a torre      ...
+/rp admin avisar @a tolo       ...
 ```
 
-(qualquer seletor: nome, lista ou `@a`; aceita **texto livre**, que aparece digitado na tela)
-
-**Para testar sozinho, sem passar pelo servidor:** `/rpfx teste louco`
-— se aqui aparece e no comando de admin não, o problema é rede/comando, não o desenho.
-
-**Nos avisos por zona:** `/lorezone aviso <id> louco <segundos> <texto>`.
-
----
-
-## 1. O que mudou nesta versão
-
-Saí o aviso antigo do Louco (névoa cinzenta + sigilo de 22 caminhos + relógio + lua carmesim).
-**Entrou o protótipo definitivo do dono, o `FoolPathwayWarning`**: um aviso só, de 16 segundos,
-em que **a escada das Sequências sobe de 9 até 0** e **cada Sequência acende o seu próprio efeito**.
-
-A carta do Louco é o último degrau — é ela que fecha o aviso.
-
-Nada mais mudou no resto do mod: o Marinheiro (26) e o Espectador (27) continuam exatamente
-como na 5.14.0.
+- **`tolo`** é a **mesma carta do Louco**: você mandou o arquivo do TOLO igualzinho ao do Louco
+  (comparei byte a byte, é o mesmo programa), então ele abre o aviso do Louco (estilo 25). Se um
+  dia você mudar a carta do Tolo, é só mandar o arquivo novo que eu separo.
+- **`morte2`** é a **carta A MORTE** (XIII). O nome `morte` já era o aviso de morte antigo do mod
+  (estilo 4) e eu não troquei o que já existia. Também aceita **`ceifador`** e **`morte_carta`**.
+- Todos aceitam **texto livre** (aparece digitado no meio do aviso) e qualquer seletor (`@a`, nome,
+  lista).
+- **Para testar sozinho**, sem passar pelo servidor: `/rpfx teste eremita`, `/rpfx teste torre`, etc.
+- Nos avisos por zona: `/lorezone aviso <id> eremita <segundos> <texto>` (os oito estão na lista).
 
 ---
 
-## 2. A escada das Sequências (o coração do aviso)
+## O que entrou
 
-Dez nós em círculo. O nó **9** acende em 1,4 s e cada seguinte acende **0,5 s** depois;
-o nó **0 (O Louco)** acende em **5,9 s** — junto com o clarão pálido, e é aí que a carta termina
-de subir e começa a virar.
+Cada arquivo que você mandou é o **mesmo programa** (um canvas de 800×600, uma "carta" que sobe,
+vira e mostra o título AVISO e três linhas). Em vez de copiar o desenho "por fora", eu portei o
+**motor do protótipo** para dentro do mod:
 
-Cada nó acende com um **estouro de faíscas** na cor dele, e o nome aparece ao lado de fora.
+- um **canvas 800×600** igual ao seu (centro em 400,255), escalado para a tela do jogador;
+- a **pilha de transformação** (`translate` / `rotate` / `scale` / `save` / `restore`) e o
+  **alfa global**, como no JavaFX;
+- as **primitivas do `GraphicsContext`**: `fillRect`, `fillOval`, `strokeOval`, `fillPolygon`,
+  `strokePolyline`, `strokeLine`, `fillArc`, `quadraticCurveTo`, `bezierCurveTo`, estrela de 8
+  pontas, hexagrama, glifos e os símbolos alquímicos.
 
-| # | Sequência | o que liga quando ela acende |
-|---|---|---|
-| 9 | **Vidente** | o **pêndulo** — peso de pedra balançando do alto, com rastro e brilho |
-| 8 | **Palhaço** | quatro **bonecos de papel** balançando nas bordas, moles, sem parar |
-| 7 | **Mago** | **chamas** nas duas bordas da tela, tremendo e soltando brasa |
-| 6 | **Sem Rosto** | cinco **máscaras** orbitando: metade passa **na frente** da carta, metade **atrás** |
-| 5 | **Marionetista** | **fios espirituais** descendo do alto até a carta |
-| 4 | **Feiticeiro Bizarro** | o **anel de maldição** em volta do centro, com as marcas em X e brasas subindo |
-| 3 | **Estudioso do Passado** | o **tempo corre ao contrário**: dois relógios girando para trás e os **ecos** da carta |
-| 2 | **Invocador de Milagres** | **pilares de luz** subindo das laterais |
-| 1 | **Atendente dos Mistérios** | duas **mãos de névoa** subindo das bordas de baixo |
-| 0 | **O Louco** | **a carta** — sobe, vira, e é o clarão que fecha a escada |
+Por isso **cada carta é quase uma cópia linha a linha do seu arquivo** — mesmas cores, mesmas
+posições, mesmos tempos.
 
-Os nós já acesos ficam **brilhando** (e o nome deles fica claro); os que ainda não acenderam
-ficam apagados, quase invisíveis. Dá para "ler" a escada subindo na tela.
-
----
-
-## 3. A linha do tempo (16 s, roda inteiro sozinho)
+**O que TODAS as oito fazem igual** (é o esqueleto comum do protótipo):
 
 | tempo | o que acontece |
 |---|---|
-| 0,0 s | escurece; a névoa de fundo abre |
-| 1,0 s | a **carta** começa a subir do rodapé |
-| 1,4 s | acende a **Sequência 9 (Vidente)** — e o pêndulo entra |
-| 1,9 s → 5,4 s | acendem as Sequências **8, 7, 6, 5, 4, 3, 2, 1**, uma a cada 0,5 s |
-| 2,4 s | a carta terminou de subir e fica flutuando |
-| 5,9 s | **clarão pálido** + acende a **Sequência 0 (O Louco)** |
-| 5,9 – 6,8 s | a carta **vira** (virada em 3D, sem sumir) |
-| 7,0 s | **clarão carmesim** + entra o **título** |
-| 8,2 s | 1ª fala (escrita letra por letra) |
-| 9,5 s | 2ª fala |
-| 11,0 s | 3ª fala — a frase final |
-| 14,4 s | começa a escurecer |
-| 16,0 s | fecha |
-
-**As falas** (as do protótipo, as mesmas do texto-base):
-
-- *"Todo fio leva ao mesmo lugar: ao Louco."*
-- (o seu texto, o que você escreveu no comando, digitado)
-- *"Você já era uma marionete."*
-
-O **texto do comando** entra no meio, digitado, e o resto do aviso continua rolando por trás dele.
+| 0,0 s | escurece e abre o céu da carta |
+| 0,3 s | entra o **sigilo de 22 caminhos** (anéis que se fecham, 22 glifos, as Sequências 9→0 girando ao contrário) |
+| 1,6 s | a **carta** começa a subir do rodapé |
+| 2,4 s | a carta para de subir e flutua |
+| 3,2 – 4,1 s | a carta **vira** (virada em perspectiva) |
+| 4,8 s | entra o **título AVISO** letra por letra, com o fio e a linha embaixo |
+| 5,6 s | as **cinco cartas** começam a orbitar (metade na frente, metade atrás) |
+| 5,0 – 11,5 s | as **palavras da carta** sussurram subindo pela tela |
+| 6,0 s | 1ª fala (a frase da carta) |
+| 7,4 s | **o seu texto**, digitado com cursor |
+| 9,0 s | 3ª fala (a frase final) |
+| 12,4 s | escurece e fecha em 14 s |
 
 ---
 
-## 4. O que se mantém das regras que você pediu
+## 1. O EREMITA (IX) — estilo 28
 
-- **sem partícula** — nada de partícula por perto; tudo é desenhado na tela;
-- **sem vídeo** — não usa quadro de vídeo, é tudo vetor (por isso o mod continua leve);
-- **só o alvo vê** — o pacote vai para quem foi escolhido no seletor;
-- **respeita o modo reduzido** — com os efeitos reduzidos ligados, o aviso desenha mais leve
-  (menos faíscas, menos fios, sem os brilhos extras) e o texto continua igual;
-- **letras claras sobre o escuro** (aqui o aviso é escuro de propósito, então o texto é branco —
-  é o único aviso do mod que não usa letra preta, porque o fundo dele não é claro).
+Montanhas de neve em três camadas, aurora verde-azul, 60 estrelas piscando e a **lanterna
+pendurada balançando** — ela acende a neve em volta (os flocos perto dela ficam dourados).
+A carta: a estrela de seis pontas, a montanha, o cajado e a lanterna.
+Falas: *"Na solidão da montanha, só a lanterna conhece o caminho."* / *"Ela já foi até você."*
+
+## 2. A ESTRELA (XVII) — estilo 29
+
+A **estrela de oito pontas** gigante no alto, 120 estrelas, a **constelação de sete** ligada por
+linhas, a aurora e um risco de luz que passa de vez em quando. Os dois **rios de luz** descem das
+bordas até a carta, com anéis pulsando na chegada. A carta: a mulher, os dois jarros e as sete
+estrelinhas. Falas: *"Mesmo na noite mais escura, uma estrela sabe onde você está."* /
+*"Não deixe a calma enganar você."*
+
+## 3. O JULGAMENTO (XX) — estilo 30
+
+As **asas gigantes** abertas (nove penas de cada lado, curvas fechadas), as **ondas douradas** do
+som da trombeta, as **almas** subindo em espiral com halo, as penas caindo e nove feixes de luz.
+A carta: o anjo com a trombeta, as nuvens e os túmulos abertos.
+Falas: *"A trombeta soou: todos serão chamados a responder."* / *"Sua hora chegou."*
+
+## 4. A LUA (XVIII) — estilo 31
+
+A **lua cheia** enorme com as crateras e o halo, 80 estrelas, a **água prateada** com 14 reflexos,
+os dois **lobos uivando** (com os anéis do uivo subindo) e as gotas caindo. No sigilo, as **oito
+fases da lua** girando.
+Falas: *"Sob a lua, nada é o que parece ser."* / *"Ouça o uivo ao longe."*
+
+## 5. O MAGO (I) — estilo 32
+
+A **chuva de runas** verdes caindo em 16 colunas, a **lemniscata** (o infinito) desenhada no céu
+com uma **cauda de luz** percorrendo e soltando faíscas, e os **quatro elementos** (fogo, água,
+terra e ar) girando em volta com o seu símbolo alquímico.
+A carta: a mesa com o bastão, a taça, a espada e as moedas.
+Falas: *"Como acima, assim abaixo: a vontade molda o mundo."* / *"O feitiço já foi lançado."*
+
+## 6. A MORTE (XIII) — estilo 33 (`morte2`)
+
+O **sol pálido** nascendo entre as duas torres, a **bandeira negra** tremulando com o emblema, a
+**lâmina de luz** atravessando a tela de tempos em tempos e pétalas caindo (algumas vermelhas). No
+sigilo, os treze X girando, um vermelho por vez.
+Falas: *"Nada escapa do fim: tudo o que vive um dia se despede."* / *"A sua vez chegou."*
+
+## 7. O SOL (XIX) — estilo 34
+
+O **sol dourado** com 24 raios girando, as três **colunas de luz**, os dois girassóis, as penas
+caindo e a poeira de luz subindo. No sigilo, doze sois pequenos girando.
+Falas: *"Quando o sol nasce, nenhuma sombra se esconde."* / *"A luz já encontrou você."*
+
+## 8. A TORRE (XVI) — estilo 35
+
+O **raio** caindo na torre **cinco vezes** (2,2 s · 3,5 s · 4,8 s · 7,0 s · 9,2 s — cada um é um
+raio novo, cheio de ramificações, com clarão), a **coroa arrancada voando**, os **destroços** e as
+**duas figuras caindo**. As brasas sobem o tempo todo.
+Falas: *"O que foi construído sobre a mentira não resiste ao raio."* / *"A torre já está caindo."*
 
 ---
 
-## 5. Correções menores que entraram junto
+## Regras que continuam valendo
 
-- O log do cliente dizia **"RP Tag 4.8.5: camada de avisos carregada"** (texto velho, escrito
-  na mão). Agora ele diz **a versão de verdade** — `RP Tag 5.15.0: camada de avisos carregada`.
-- `check.py` atualizado: as réguas do Louco agora verificam **a escada das 10 Sequências**
-  (os dez nomes, os nove efeitos, o relógio de acendimento e o estouro de faísca no nó),
-  e não mais a névoa/relógio da versão antiga.
+- **sem partícula do jogo e sem vídeo**: é tudo geometria e texto do próprio mod (por isso o jar
+  não cresceu quase nada: 61 KB);
+- **só o alvo vê** (o pacote vai para quem foi escolhido no seletor);
+- **respeita o modo reduzido** — com os efeitos reduzidos ligados o aviso desenha mais leve;
+- o aviso **roda inteiro sozinho** (nada de clique nem tecla);
+- **falha em um aviso nunca derruba a tela**: o desenho é protegido por `try/catch`.
 
 ---
 
-## 6) Conferido antes de publicar
+## Correção achada nesta versão
+
+O sorteio das palavras sussurradas guardava o texto num índice e lia em **outro** índice. Quando
+os dois não batiam, vinha `null` e **o resto do aviso parava de desenhar no meio** (o título AVISO
+e as falas sumiam). Achei isso rodando o mesmo código das cartas num canvas Java de teste, gerei
+24 imagens e olhei uma por uma. Corrigido: agora cada palavra leva o próprio texto junto.
+
+Esse teste virou uma ferramenta: `previa/` roda o motor das cartas fora do jogo e salva PNGs —
+se você quiser, na próxima eu te mostro as imagens antes de publicar.
+
+---
+
+## Conferido antes de publicar
 
 - `javac` (Java 21, NeoForge 21.1.249): **0 erros**;
-- `check.py`: **906 PASS / 0 FAIL**;
+- `check.py`: **919 PASS / 0 FAIL** (14 regras novas só para as cartas, incluindo "a morte2 não
+  bate com a morte antiga" e "os estilos 28–35 não existiam antes");
 - servidor de teste com o jar novo: **0 exceções**;
-- `/rp admin avisar @a louco teste`, `... marinheiro teste`, `... espectador teste`:
-  os três responderam (com 0 jogador online, "No player was found" — é o servidor reclamando
-  que não há ninguém, não o comando falhando).
+- `rp admin avisar @a <estilo> teste` para os **dez** nomes (os oito + `tolo` + `louco`): todos
+  responderam (com 0 jogador online o servidor responde "No player was found" — é o servidor
+  reclamando que não há ninguém, não o comando falhando);
+- as oito cartas foram desenhadas e conferidas em imagem antes de entrar no jar.
 
 ---
 
-**Arquivos:** `rptag-5.15.0.jar` (instalar em `mods/` do servidor **e** do cliente).
+**Arquivos:** `rptag-5.16.0.jar` (instalar em `mods/` do servidor **e** do cliente).

@@ -163,6 +163,46 @@ public final class ClientEffects {
             RPTagMod.LOGGER.info("RP Tag: AVISO DO ESPECTADOR iniciado (FX proprio)");
             return;
         }
+        if (style == 28) {
+            EremitaAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: AVISO O EREMITA iniciado (FX proprio)");
+            return;
+        }
+        if (style == 29) {
+            JulgamentoAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: AVISO O JULGAMENTO iniciado (FX proprio)");
+            return;
+        }
+        if (style == 30) {
+            LuaAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: AVISO A LUA iniciado (FX proprio)");
+            return;
+        }
+        if (style == 31) {
+            MagoAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: AVISO O MAGO iniciado (FX proprio)");
+            return;
+        }
+        if (style == 32) {
+            MorteTarotAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: AVISO A MORTE (CARTA) iniciado (FX proprio)");
+            return;
+        }
+        if (style == 33) {
+            SolTarotAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: AVISO O SOL iniciado (FX proprio)");
+            return;
+        }
+        if (style == 34) {
+            TorreAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: AVISO A TORRE iniciado (FX proprio)");
+            return;
+        }
+        if (style == 35) {
+            EstrelaAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: AVISO A ESTRELA iniciado (FX proprio)");
+            return;
+        }
         if (style == 10) {
             String limpoD = text.replaceAll("\\u00a7.", "");
             DemoniacoAvisoFx.iniciar("AVISO", limpoD);

@@ -319,7 +319,13 @@ public final class LoreZoneCommands {
             java.util.Map.entry("sangueop", 21),
             // (5.14.0) os tres avisos novos do dono
             java.util.Map.entry("louco", 25), java.util.Map.entry("marinheiro", 26),
-            java.util.Map.entry("espectador", 27));
+            java.util.Map.entry("espectador", 27),
+            // (5.16.0) as oito cartas de tarô
+            java.util.Map.entry("eremita", 28), java.util.Map.entry("julgamento", 29),
+            java.util.Map.entry("lua", 30), java.util.Map.entry("mago", 31),
+            java.util.Map.entry("morte2", 32), java.util.Map.entry("sol", 33),
+            java.util.Map.entry("torre", 34), java.util.Map.entry("estrela", 35),
+            java.util.Map.entry("tolo", 25));
 
     /** (3.85.0) nome do estilo pra exibir no /lorezone listar. */
     private static String nomeEstilo(int e) {
@@ -341,6 +347,14 @@ public final class LoreZoneCommands {
             case 25 -> "louco";
             case 26 -> "marinheiro";
             case 27 -> "espectador";
+            case 28 -> "eremita";
+            case 29 -> "julgamento";
+            case 30 -> "lua";
+            case 31 -> "mago";
+            case 32 -> "morte2";
+            case 33 -> "sol";
+            case 34 -> "torre";
+            case 35 -> "estrela";
             default -> "classico";
         };
     }

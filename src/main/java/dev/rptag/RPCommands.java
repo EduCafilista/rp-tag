@@ -377,6 +377,16 @@ public final class RPCommands {
             case "louco" -> 25;   // (5.14.0) O Louco (nevoa cinzenta, sigilo, relogio)
             case "marinheiro" -> 26;   // (5.14.0) O Marinheiro / Enforcado (tempestade, mar, leme)
             case "espectador", "justica" -> 27;   // (5.14.0) O Espectador / Justica (sonho, balanca, olhos)
+            // (5.16.0) as oito cartas de tarô do dono (o mesmo motor de canvas do protótipo)
+            case "eremita" -> 28;   // (5.16.0) O EREMITA
+            case "julgamento" -> 29;   // (5.16.0) O JULGAMENTO
+            case "lua" -> 30;   // (5.16.0) A LUA
+            case "mago" -> 31;   // (5.16.0) O MAGO
+            case "morte2", "ceifador", "morte_carta" -> 32;   // (5.16.0) A MORTE (carta)
+            case "sol" -> 33;   // (5.16.0) O SOL
+            case "torre" -> 34;   // (5.16.0) A TORRE
+            case "estrela" -> 35;   // (5.16.0) A ESTRELA
+            case "tolo" -> 25;   // (5.16.0) TOLO = o mesmo do Louco (o dono mandou igual)
             case "energia" -> 15;   // (5.5.0) ENERGIA — anomalia de entropia
             case "conhecimento" -> 16;   // (5.7.0) CONHECIMENTO — o olho que sabe
             case "allforone" -> 17;   // (5.7.0) ALLFORONE — as vozes têm forma
@@ -766,7 +776,8 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos: nomes ou @a), onefallall, morteop, sangueop, medoop\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos: nomes ou @a), onefallall, morteop, sangueop, medoop, louco, marinheiro, espectador, "
+                    + "eremita, julgamento, lua, mago, morte2, sol, torre, estrela, tolo\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
                     + "/rp admin saidafx on|off \u00a77\u2014 animacao de saida dos jogadores (quem fica ve)\u00a7c\n"
@@ -1072,7 +1083,88 @@ public final class RPCommands {
                                                     avisar(ctx, alvos, "louco", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))
+                                // (5.16.0) TOLO: o dono mandou a MESMA carta do Louco — mesmo aviso, outro nome
+                                .then(Commands.literal("tolo")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "louco", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
                                 // (5.14.0) O MARINHEIRO (Enforcado): tempestade, mar revolto, leme
+                                // (5.16.0) O EREMITA
+                                .then(Commands.literal("eremita")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "eremita", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.16.0) O JULGAMENTO
+                                .then(Commands.literal("julgamento")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "julgamento", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.16.0) A LUA
+                                .then(Commands.literal("lua")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "lua", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.16.0) O MAGO
+                                .then(Commands.literal("mago")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "mago", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.16.0) A MORTE
+                                .then(Commands.literal("morte2")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "morte2", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.16.0) O SOL
+                                .then(Commands.literal("sol")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "sol", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.16.0) A TORRE
+                                .then(Commands.literal("torre")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "torre", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.16.0) A ESTRELA
+                                .then(Commands.literal("estrela")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "estrela", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
                                 .then(Commands.literal("marinheiro")
                                         .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                                                 .executes(ctx -> {

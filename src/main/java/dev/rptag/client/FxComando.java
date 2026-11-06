@@ -84,6 +84,15 @@ public final class FxComando {
             case "louco" -> 25;
             case "marinheiro" -> 26;
             case "espectador", "justica" -> 27;
+            case "eremita" -> 28;
+            case "julgamento" -> 29;
+            case "lua" -> 30;
+            case "mago" -> 31;
+            case "morte2", "ceifador" -> 32;
+            case "sol" -> 33;
+            case "torre" -> 34;
+            case "estrela" -> 35;
+            case "tolo" -> 25;
             case "energia" -> 15;
             default -> 0;
         };

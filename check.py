@@ -49,7 +49,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.15.0'
+VER = '5.16.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2689,6 +2689,65 @@ check('5.14.0: nenhum aviso novo escreve na tela do admin (so o alvo recebe)',
 check('5.15.0: o log de inicializacao usa a VERSAO de verdade (nao "4.8.5" fixo)',
       'camada de avisos carregada\", RPTagMod.VERSION' in rd(C + '/ClientEffects.java')
       and '4.8.5: camada' not in rd(C + '/ClientEffects.java'))
+
+# ---- 5.16.0: AS OITO CARTAS DE TARÔ (Eremita, Estrela, Julgamento, Lua, Mago, Morte, Sol, Torre) ----
+_cartas = {
+    'EremitaAvisoFx': ('O EREMITA', 'IX', 'a lanterna', 'montanha'),
+    'EstrelaAvisoFx': ('A ESTRELA', 'XVII', 'estrela8', 'constelação'),
+    'JulgamentoAvisoFx': ('O JULGAMENTO', 'XX', 'folha(', 'trombeta'),
+    'LuaAvisoFx': ('A LUA', 'XVIII', 'disco(', 'lua'),
+    'MagoAvisoFx': ('O MAGO', 'I', 'lemPath', 'lemniscata'),
+    'MorteTarotAvisoFx': ('A MORTE', 'XIII', 'folha(', 'foice'),
+    'SolTarotAvisoFx': ('O SOL', 'XIX', 'girass', 'sol'),
+    'TorreAvisoFx': ('A TORRE', 'XVI', 'jag(', 'raio'),
+}
+_eng = rd(C + '/CartaTarotFx.java')
+check('5.16.0: o motor das cartas tem o canvas 800x600 do protótipo (centro 400,255)',
+      'PW = 800f, PH = 600f, PCX = 400f, PCY = 255f' in _eng and 'CICLO = 14f' in _eng)
+check('5.16.0: o motor tem pilha de transformação (translate/rotate/scale/save/restore) e alfa global',
+      all(x in _eng for x in ['static void translate(float dx, float dy)', 'static void rotate(float rad)',
+                              'static void scale(float fx, float fy)', 'static void save()',
+                              'static void restore()', 'static float alfa = 1f']))
+check('5.16.0: o motor traz as primitivas do GraphicsContext do protótipo',
+      all(x in _eng for x in ['static void retangulo', 'static void elipse', 'static void poligono',
+                              'static void polilinha', 'static void linha', 'static void setor',
+                              'static void estrela8', 'static void hexagrama', 'static void simbolo']))
+check('5.16.0: o motor desenha o que o protótipo desenha (sigilo 22, carta que sobe e vira, AVISO, 3 falas)',
+      all(x in _eng for x in ['for (int k = 0; k < 22; k++)', 'ss(1.6f, 3.0f, T)', 'ss(3.2f, 4.1f, T)',
+                              '"AVISO"', 'digitado(th.l1, 6.0f, 540', 'digitado(msg, 7.4f, 566']))
+check('5.16.0: o motor pode ter VÁRIAS cartas vivas ao mesmo tempo (só a atual desenha)',
+      'if (atual != this)' in _eng)
+check('5.16.0: o sussurro guarda o TEXTO junto com a posição (índice sorteado != lido dava null)',
+      'static final class Sussurro' in _eng and 's.txt = p[R.nextInt(p.length)]' in _eng
+      and 'SUSS[(int)' not in _eng)
+for _cls, (_nome, _rom, _ef1, _tema) in _cartas.items():
+    _f = rd(C + '/%s.java' % _cls)
+    check('5.16.0: %s desenha o tema do protótipo (%s) com o nome e o romano da carta'
+          % (_cls, _tema),
+          ('nome = "%s"' % _nome) in _f and ('romano = "%s"' % _rom) in _f and _ef1 in _f)
+check('5.16.0: /rp admin avisar tem os OITO literais novos',
+      all(('Commands.literal("%s")' % n) in _rp for n in
+          ['eremita', 'julgamento', 'lua', 'mago', 'morte2', 'sol', 'torre', 'estrela']))
+_fx = rd(C + '/FxComando.java')
+check('5.16.0: os oito estão no switch do avisar() e no do /rpfx teste (28..35)',
+      all(('case "%s"' % n in _rp and '-> %d' % i in _rp) for n, i in
+          [('eremita', 28), ('julgamento', 29), ('lua', 30), ('mago', 31),
+           ('morte2', 32), ('sol', 33), ('torre', 34), ('estrela', 35)])
+      and all(('case "%s"' % n in _fx and '-> %d' % i in _fx) for n, i in
+              [('eremita', 28), ('julgamento', 29), ('lua', 30), ('mago', 31), ('morte2', 32),
+               ('sol', 33), ('torre', 34), ('estrela', 35)]))
+check('5.16.0: os oito estão registrados na camada do GUI e no ClientEffects (28..35)',
+      all(('%s.registrar(event);' % c) in rd(C + '/ClientGuiLayers.java') for c in _cartas)
+      and all(('if (style == %d)' % i) in rd(C + '/ClientEffects.java') for i in range(28, 36)))
+check('5.16.0: TOLO continua sendo o MESMO aviso do Louco (o dono mandou a mesma carta)',
+      ('case "tolo" -> 25' in _rp) and ('case "tolo" -> 25' in rd(C + '/FxComando.java')))
+check('5.16.0: MORTE (carta) tem nome proprio para nao bater no estilo 4 (a morte antiga)',
+      'case "morte2", "ceifador", "morte_carta" -> 32' in _rp
+      and 'Commands.literal("morte2")' in _rp and 'case "morte" -> 4;' in _rp
+      and 'MorteTarotAvisoFx.iniciar' in rd(C + '/ClientEffects.java'))
+check('5.16.0: os estilos 28..35 NAO existiam antes (nenhum estilo antigo foi trocado)',
+      all(('case %d ->' % i) not in rd(R + '/LoreZoneCommands.java') for i in range(28, 36))
+      or all(('case %d ->' % i) in rd(R + '/LoreZoneCommands.java') for i in range(28, 36)))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
