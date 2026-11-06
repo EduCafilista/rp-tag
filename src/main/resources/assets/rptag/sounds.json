@@ -87,14 +87,6 @@
       }
     ]
   },
-  "allforone_aviso": {
-    "sounds": [
-      {
-        "name": "rptag:allforone_aviso",
-        "stream": true
-      }
-    ]
-  },
   "expulsao": {
     "sounds": [
       {

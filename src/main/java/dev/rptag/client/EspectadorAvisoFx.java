@@ -36,7 +36,7 @@ public final class EspectadorAvisoFx {
             "Justiça", "mente aberta", "não minta", "Espectador", "o que você esconde?", "ela vê"};
 
     private static long inicio = -1;
-    private static String msg = "Um grande perigo se aproxima do servidor.";
+    private static String msg = "";
     private static float pararEm = -1;
     private static final Random R = new Random();
 
@@ -107,7 +107,8 @@ public final class EspectadorAvisoFx {
     }
 
     public static void iniciar(String mensagem, float segundos) {
-        msg = (mensagem == null || mensagem.isBlank()) ? "Um grande perigo se aproxima do servidor." : mensagem;
+        // (5.16.4) SEM TEXTO = sem fala: o aviso aparece sozinho (o dono: "as vezes e apenas aviso").
+        msg = (mensagem == null) ? "" : mensagem.trim();
         pararEm = -1;
         ultimoSussurro = 0;
         for (int i = 0; i < NPET; i++) {
@@ -185,7 +186,15 @@ public final class EspectadorAvisoFx {
         float dp = ss(0.3f, 2.3f, T);
         if (dp > 0.01f) {
             sigilos(b, T, dp, k, cx, cy, env);
+            // (5.16.4) O CONSERTO: TEXTO no meio do buffer de triângulos quebrava a animação.
+            // Desenhar texto troca o shader do RenderSystem (vira o de fonte, com UV); o
+            // próximo flush() mandava os triângulos crus com esse shader e sem UV — era o
+            // "quebrado" da Justiça (e do Enforcado, no Marinheiro). Aqui fecha o buffer,
+            // escreve os números e abre um buffer novo (é o que CartaTarotFx faz desde
+            // sempre — por isso as cartas de tarô nunca tiveram esse problema).
+            b.flush();
             numeros(g, T, dp, k, cx, cy, env);
+            b = AvisoRitual.comecar(g);
         }
 
         // ---- cartas
@@ -644,6 +653,10 @@ public final class EspectadorAvisoFx {
 
     private static void digitado(GuiGraphics g, String txt, float inicioT, float dy, float T, float k, float cx, float cy,
             int cor) {
+        // (5.16.4) sem texto: nada de fala inventada
+        if (txt == null || txt.isEmpty()) {
+            return;
+        }
         int n = (int) Math.floor((T - inicioT) * 30);
         if (n <= 0 || T < inicioT) {
             return;

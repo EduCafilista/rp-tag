@@ -83,9 +83,26 @@ public final class AvisoFxUtil {
             quad(0, 0, col(rgb, a), 0, h, col(rgb, a), d, h, col(rgb, 0), d, 0, col(rgb, 0));
             quad(w, 0, col(rgb, a), w, h, col(rgb, a), w - d, h, col(rgb, 0), w - d, 0, col(rgb, 0));
         }
-        /** (5.10.0) fecha o desenho e LIBERA o builder: dá pra chamar de novo depois. */
+        /**
+         * (5.10.0) fecha o desenho e LIBERA o builder: dá pra chamar de novo depois.
+         *
+         * <p>(5.16.4) <b>A CORREÇÃO DO MARINHEIRO/JUSTIÇA.</b> O {@code drawWithShader(buf)}
+         * usa o shader que estiver no {@code RenderSystem} naquele instante — e desenhar
+         * TEXTO ({@code g.drawString}, nos números do sigilo, nos sussurros, no título)
+         * troca o shader para o de fonte ({@code position_tex_color}). Se o {@code flush()}
+         * acontecia depois de um texto, os triângulos crus eram enviados com o shader de
+         * TEXTURA, <b>sem UV</b> — a animação saía picotada/corrompida na tela (o
+         * "quebrado" do Enforcado e da Justiça; o Louco escapou porque fechava o buffer
+         * antes de escrever).
+         *
+         * <p>Agora o flush <b>força o shader de posição-cor</b> antes de desenhar. O blend
+         * NÃO é tocado aqui: quem desenha em modo aditivo continua aditivo.
+         */
         public void flush() {
-            if (n > 0 && bb != null) BufferUploader.drawWithShader(bb.buildOrThrow());
+            if (n > 0 && bb != null) {
+                RenderSystem.setShader(GameRenderer::getPositionColorShader);
+                BufferUploader.drawWithShader(bb.buildOrThrow());
+            }
             bb = null;
             n = 0;
         }

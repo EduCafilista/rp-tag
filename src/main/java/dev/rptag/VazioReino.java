@@ -303,7 +303,14 @@ public final class VazioReino {
                 tentarPredio(nv, p);
             }
 
-            // 6) o vazio que MATA devagar (pedido 49)
+            // 6) (5.16.4) O PISO DE BEDROCK — o dono: "e o player se ele quebrar para baixo
+            // na dimensão, ele não vai pro void e nem sai do vazio, né? coloca bedrock
+            // embaixo de tudo". O chão da dimensão vira bedrock no fundo: ele pode cavar
+            // até a base que para no bedrock, e nunca cai no void.
+            pisoDeBedrock(nv, p);
+
+            // 7) (5.13.0) o vazio que MATA devagar (pedido 49) — agora só como REDE DE
+            // SEGURANÇA (com o piso, ninguém chega lá); e SEM o aviso de morte na tela.
             tickCaindo(nv, p, agora);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: reino do vazio falhou (o jogo segue)", t);
@@ -1902,6 +1909,63 @@ public final class VazioReino {
     /** quanto tempo (ms) o vazio segura a pessoa antes de matar. */
     private static final long ESPERA_MORTE = 12_000L;
 
+    /**
+     * (5.16.4) O PISO DE BEDROCK — "coloca bedrock embaixo de tudo".
+     *
+     * <p>O dono perguntou: <i>"e o player se ele quebrar para baixo na dimensão, ele não vai
+     * pro void e nem sai do vazio, né?"</i>. A dimensão do vazio era um mundo {@code flat} com
+     * <b>zero camadas</b> — fora da praça era vazio absoluto: quem cavasse (ou caísse) descia
+     * até y=0, atravessava e morria no void. Era daí que vinha o aviso de morte na tela.
+     *
+     * <p>Agora o fundo é <b>bedrock</b>, sempre:
+     * <ol>
+     *   <li>o gerador da dimensão ({@code dimension/vazio.json}) já nasce com uma camada de
+     *       bedrock — vale para todo chunk NOVO;</li>
+     *   <li>este método carimba a camada à mão nos chunks <b>que já existiam</b> (o mundo de
+     *       quem já jogou), uma vez por chunk ({@code P:cx,cz} no save);</li>
+     *   <li>e, de quebra, quem estiver abaixo da linha do piso é <b>posto em cima dele</b> com
+     *       a queda zerada — cinto e suspensório: não tem como vazar nem por teleporte.</li>
+     * </ol>
+     */
+    private static void pisoDeBedrock(ServerLevel nv, ServerPlayer p) {
+        int base = nv.getMinBuildHeight();
+        int cx = p.getBlockX() >> 4, cz = p.getBlockZ() >> 4;
+        try {
+            if (marcar(nv, "P:" + cx + "," + cz)) {
+                // o chunk precisa existir antes de receber o piso
+                nv.getChunk(cx, cz);
+                for (int dx = 0; dx < 16; dx++) {
+                    for (int dz = 0; dz < 16; dz++) {
+                        BlockPos pos = new BlockPos(cx * 16 + dx, base, cz * 16 + dz);
+                        if (nv.getBlockState(pos).isAir()) {
+                            // direto (não pela FILA): são 256 blocos, uma vez por chunk, e o
+                            // piso não pode ficar pendurado se a fila encher
+                            nv.setBlock(pos, Blocks.BEDROCK.defaultBlockState(), 3);
+                        }
+                    }
+                }
+                RPTagMod.LOGGER.info("RP Tag: piso de bedrock no chunk do vazio {},{}‎", cx, cz);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: piso de bedrock falhou (o jogo segue)", t);
+        }
+
+        // a rede de segurança: ninguém fica abaixo do chão
+        if (p.getY() < base + 2.0) {
+            // pousa na SUPERFÍCIE do lugar (nunca dentro da pedra do piso)
+            int chao = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                    p.getBlockX(), p.getBlockZ());
+            p.teleportTo(p.getX(), Math.max(chao, base + 2), p.getZ());
+            p.setDeltaMovement(0, 0, 0);
+            p.fallDistance = 0;
+            p.setNoGravity(false);
+            CAINDO.remove(p.getUUID());
+            p.displayClientMessage(Component.literal(
+                    "\u00a78Você bateu no fundo do vazio.\u00a7r \u00a77O chão aqui é de bedrock — "
+                    + "não tem como descer mais."), true);
+        }
+    }
+
     private static void tickCaindo(ServerLevel nv, ServerPlayer p, long agora) {
         Long fim = CAINDO.get(p.getUUID());
         if (fim == null) {
@@ -1910,8 +1974,10 @@ public final class VazioReino {
                 CAINDO.put(p.getUUID(), morre);
                 p.setNoGravity(true);
                 p.playNotifySound(RPTagMod.SOM_VAZIO.get(), SoundSource.HOSTILE, 1.0F, 0.55F);
-                PacketDistributor.sendToPlayer(p, new ScreenTextPayload(
-                        p.getName().getString().toUpperCase(), 12, 23));
+                // (5.16.4) SEM AVISO DE MORTE NA TELA. O dono: "não quero aquele aviso de
+                // morte na tela do player". Antes saía aqui o estilo 23 (ENGOLIR) com o nome
+                // dele em letras gigantes. Ficou só a linha do chat — e com o piso de
+                // bedrock ninguém mais cai no void.
                 p.displayClientMessage(Component.literal(
                         "\u00a74\u00a7lO VAZIO TE PEGOU.\u00a7r \u00a7cVocê tem 12 segundos. "
                         + "\u00a78Ninguém vem."), false);

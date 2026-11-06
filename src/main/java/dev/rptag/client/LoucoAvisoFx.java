@@ -65,7 +65,7 @@ public final class LoucoAvisoFx {
     }
 
     private static long inicio = -1;
-    private static String msg = "Um grande perigo se aproxima do servidor.";
+    private static String msg = "";
     private static float pararEm = -1;
     private static float ultimaT;
     private static float ultimoSussurro;
@@ -137,7 +137,8 @@ public final class LoucoAvisoFx {
 
     /** segundos &lt;= 0: fica até chamar {@link #parar()}. */
     public static void iniciar(String mensagem, float segundos) {
-        msg = (mensagem == null || mensagem.isBlank()) ? "Um grande perigo se aproxima do servidor." : mensagem;
+        // (5.16.4) SEM TEXTO = sem fala: o aviso aparece sozinho (o dono: "as vezes e apenas aviso").
+        msg = (mensagem == null) ? "" : mensagem.trim();
         pararEm = -1;
         ultimaT = 0;
         ultimoSussurro = 0;
@@ -908,6 +909,10 @@ public final class LoucoAvisoFx {
 
     private static void digitado(GuiGraphics g, String txt, float inicioT, float yProt, float T, float k, float cx,
             float cy, int cor, float escala) {
+        // (5.16.4) sem texto: nada de fala inventada
+        if (txt == null || txt.isEmpty()) {
+            return;
+        }
         int n = (int) Math.floor((T - inicioT) * 30);
         if (n <= 0 || T < inicioT) {
             return;

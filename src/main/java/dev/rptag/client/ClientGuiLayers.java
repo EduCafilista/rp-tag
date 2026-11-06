@@ -78,15 +78,9 @@ public final class ClientGuiLayers {
         // (5.7.0) estilo 16 = CONHECIMENTO "O Olho que Sabe" (anéis de runas,
         // olho dourado, olhinhos nas beiradas, sussurros) — protótipo do dono
         ConhecimentoAvisoFx.registrar(event);
-        // (5.7.0) estilo 17 = ALLFORONE "As Vozes São Uma Pessoa" (sol pintado,
-        // silhueta em chamas, olhos, brasas) — protótipo do dono
-        AllForOneAvisoFx.registrar(event);
-        // (5.7.9) os TRÊS avisos novos dos protótipos do dono:
-        //   19 = ONEFALLALL (o sol dourado por trás da silhueta encapuzada,
-        //        as 8 vidas antigas em volta, a tocha pulando)
+        // (5.7.9) os avisos dos protótipos do dono (o ONE FOR ALL saiu na 5.16.4):
         //   20 = MORTEOP    (espiral, relógio, crânio se desmanchando em cinzas)
         //   21 = SANGUEOP   (fundo pulsando na batida, veias, gota, anel tracejado)
-        SolAvisoFx.registrar(event);
         MorteOpAvisoFx.registrar(event);
         SangueOpAvisoFx.registrar(event);
         // (5.8.1) 22 = MEDOOP (a membrana, a lanterna e a silhueta alta)

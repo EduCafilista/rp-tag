@@ -64,7 +64,7 @@ public abstract class CartaTarotFx {
     static long inicio = -1;
     static float ultimaT = -1;
     static float pararEm = -1;
-    static String msg = "Um grande perigo se aproxima do servidor.";
+    static String msg = "";
 
     // ================================================================= tema
     /** o que cada carta define (o {@code Theme} do protótipo). */
@@ -103,7 +103,8 @@ public abstract class CartaTarotFx {
 
     static void iniciar(CartaTarotFx fx, String mensagem) {
         atual = fx;
-        msg = (mensagem == null || mensagem.isBlank()) ? "Um grande perigo se aproxima do servidor." : mensagem;
+        // (5.16.4) SEM TEXTO = sem fala: o aviso aparece sozinho (o dono: "as vezes e apenas aviso").
+        msg = (mensagem == null) ? "" : mensagem.trim();
         inicio = -1;
         pararEm = CICLO;
         fx.tema().reset();

@@ -70,7 +70,7 @@ public final class ClientEffects {
     /** (3.87.0) estilo do aviso em exibicao: 0 classico, 1 pesadelo,
      * 2 runico, 3 real, 4 morte, 5 inferno, 6 gelo, 7 divino, 8 void,
      * 9 sangue, 10 demoniaco, 11 pesadelo2, 12 egipicio, 13 expurgo,
-     * 14 ciberpsicose, 15 energia, 16 conhecimento, 17 allforone, 18 saida,
+     * 14 ciberpsicose, 15 energia, 16 conhecimento, 18 saida,
      * 19 sombra da morte. */
     private static volatile int textStyle = 0;
 
@@ -97,27 +97,17 @@ public final class ClientEffects {
         LoucoAvisoFx.parar();
         MarinheiroAvisoFx.parar();
         EspectadorAvisoFx.parar();
-        // (5.7.9) os três avisos novos dos protótipos do dono
-        SolAvisoFx.parar();
+        // (5.7.9) os avisos novos dos protótipos do dono
+        // (5.16.4) o ONE FOR ALL (SolAvisoFx) e o ALL FOR ONE saíram a pedido do dono
         MorteOpAvisoFx.parar();
         SangueOpAvisoFx.parar();
         MedoOpAvisoFx.parar();
         EnergiaAvisoFx.parar();
         ConhecimentoAvisoFx.parar();
-        AllForOneAvisoFx.parar();
         SaidaPlayerFx.parar();
         SombraMorteFx.parar();
         // (5.12.0) a animação de ENGOLIR também é uma só por vez
         EngolirFx.parar();
-        // (5.7.9) estilo 19 = ONEFALLALL: o protótipo AvisoSol do dono (sol
-        // dourado atrás da silhueta encapuzada, as 8 vidas antigas em volta,
-        // a tocha pulando de cabeça em cabeça, brasas e sussurros).
-        if (style == 19) {
-            String limpoS = text.replaceAll("\u00a7.", "");
-            SolAvisoFx.iniciar(limpoS);
-            RPTagMod.LOGGER.info("RP Tag: aviso ONE FOR ALL (sol) iniciado");
-            return;
-        }
         // (5.7.9) estilo 20 = MORTEOP: espiral, relógio, crânio e cinzas.
         if (style == 20) {
             String limpoM = text.replaceAll("\u00a7.", "");
@@ -269,14 +259,6 @@ public final class ClientEffects {
         if (style == 19) {
             SombraMorteFx.iniciar();
             RPTagMod.LOGGER.info("RP Tag: SOMBRA DA MORTE iniciada (FX proprio)");
-            return;
-        }
-        // (5.7.0) estilo 17 = ALLFORONE: as vozes têm forma (sol pintado +
-        // silhueta em chamas + olhos) — protótipo do dono
-        if (style == 17) {
-            String limpo17 = text.replaceAll("\u00a7.", "");
-            AllForOneAvisoFx.iniciar(limpo17);
-            RPTagMod.LOGGER.info("RP Tag: AVISO ALLFORONE iniciado (FX proprio)");
             return;
         }
         // (5.12.0) estilo 23 = ENGOLIR (protótipo SwallowedByDarkness do dono):

@@ -50,7 +50,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.16.3'
+VER = '5.16.4'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -525,7 +525,7 @@ check('3.95/3.98: lorezone sem ascensao (case 11 = pesadelo2)',
       'entry("ascensao"' not in zc and 'ascensao' not in zc
       and 'entry("pesadelo2", 11)' in zc and 'case 11 -> "pesadelo2"' in zc)
 rp2 = rd(R + '/RPCommands.java')
-check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos' in rp2
+check('3.95: ajuda sem ascensao (com pesadelo2)', 'sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento (alvos' in rp2
       and 'ascensao' not in rp2 and 'pesadelo, pesadelo2, runico' in rp2)
 
 # ---- 3.93.0: DEMONIACO = FX "Chamado do Abismo" (arquivo do user) ----
@@ -897,7 +897,7 @@ check('4.9.0: ajuda lista afk + lote e NAO lista mais regra', 'admin afk tempo' 
 
 check('4.5: EGIPICIO e o estilo 12 (parse + nome + ajuda)',
       'case "egipicio", "egipcio" -> 12' in rp and 'case 12 -> "EGIPICIO"' in rp
-      and 'egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos' in rp)
+      and 'egipicio, expurgo, ciberpsicose, energia, conhecimento (alvos' in rp)
 check('4.5: EGIPICIO desenha o OLHO DE HORUS (sobrancelha/amendoa/iris)',
       'EgipcioAvisoFx' in egi and 'olho' in egi.lower())
 check('4.5: EGIPICIO tem templo, areia, hieroglifos e cartucho',
@@ -1624,7 +1624,7 @@ check('5.6.1: o pacote de quadros de FUNDO do tablet esta no jar (placeholder at
 
 # ============ 5.7.0: video real do tablet + avisos CONHECIMENTO/ALLFORONE + saida ============
 _conh = rd(C + '/ConhecimentoAvisoFx.java')
-_afo = rd(C + '/AllForOneAvisoFx.java')
+_afo = rd(C + '/ConhecimentoAvisoFx.java')   # (5.16.4) o AllForOneAvisoFx foi removido
 _sai = rd(C + '/SaidaPlayerFx.java')
 _fxp = rd('src/main/java/dev/rptag/client/ClientEffects.java')
 _rpc = rd(R + '/RPCommands.java')
@@ -1642,10 +1642,10 @@ check('5.7.0: aviso CONHECIMENTO (estilo 16) e o olho dourado do dono',
       'class ConhecimentoAvisoFx' in _conh and 'style == 16' in _fxp
       and 'case "conhecimento" -> 16' in _rpc and 'aviso_conhecimento' in _conh
       and 'RUNAS' in _conh and 'SANIDADE' in _conh)
-check('5.7.0: aviso ALLFORONE (estilo 17) e a silhueta de fogo do dono',
-      'class AllForOneAvisoFx' in _afo and 'style == 17' in _fxp
-      and 'case "allforone" -> 17' in _rpc and 'aviso_allforone' in _afo
-      and 'perfil(' in _afo and 'SEMPRE FORAM UMA PESSOA' in _afo)
+check('5.16.4: o aviso ALL FOR ONE saiu (classe, estilo 17, comando e camada)',
+      not os.path.exists(C + '/AllForOneAvisoFx.java')
+      and 'AllForOneAvisoFx' not in _fxp and 'style == 17' not in _fxp
+      and 'case "allforone" -> 17' not in _rpc and 'literal("allforone")' not in _rpc)
 check('5.7.0: ANIMACAO DE SAIDA (estilo 18) do prototipo do dono',
       'class SaidaPlayerFx' in _sai and 'style == 18' in _fxp and 'saida_player' in _sai
       and 'DESCONECTADO' in _sai and 'session.close();' in _sai)
@@ -1654,8 +1654,8 @@ check('5.7.0/5.7.9: quando um jogador SAI, a animacao roda SOZINHA (e da pra des
       and 'boolean saidaFx = true' in _wd and 'setSaidaFx' in _rpc
       and '/rp admin saidafx on|off' in _rpc)
 check('5.7.0: os 3 FX novos tem try/catch (nunca derrubam o jogo) e som proprio',
-      all('catch (Throwable t)' in x for x in (_conh, _afo, _sai))
-      and all('inicio = -1L;' in x for x in (_conh, _afo, _sai)))
+      all('catch (Throwable t)' in x for x in (_conh, _sai))
+      and all('inicio = -1L;' in x for x in (_conh, _sai)))
 
 # ============ 5.7.1: crash do CONHECIMENTO, cache do video, aura do vazio ============
 _conv = rd('arte/mp4_para_fx.py')
@@ -1793,7 +1793,7 @@ check('5.7.9: A CARA DO BICHO aparece (o vulto escuro vem ANTES, nao cobre o ros
 
 
 # ============ 5.7.9: som do terremoto, cara do bicho, exílio claro, logout, 3 avisos ======
-_sol = rd(C + '/SolAvisoFx.java')
+_sol = rd(C + '/MorteOpAvisoFx.java')   # (5.16.4) o SolAvisoFx (ONE FOR ALL) foi removido
 _mop = rd(C + '/MorteOpAvisoFx.java')
 _sop = rd(C + '/SangueOpAvisoFx.java')
 _fxd = rd(C + '/FxDraw.java')
@@ -1815,24 +1815,25 @@ check('5.7.9: ANIMACAO DE SAIDA automatica quando o player sai do jogo',
       and 'se desfez em sombra' in _ne2)
 check('5.7.9: /vazio entrar deixa o admin USAR o lugar (avisa que da pra andar/construir)',
       'd\u00e1 pra andar, construir' in _nc2 or 'pra andar, construir' in _nc2)
-check('5.7.9: aviso ONEFALLALL (protótipo AvisoSol) — sol dourado + 8 silhuetas + tocha',
-      'class SolAvisoFx' in _sol and 'AS VOZES NA SUA CABE' in _sol
-      and 'NLEGADO = 8' in _sol and 'tocha' in _sol and 'aviso_sol' in _sol)
+check('5.16.4: o aviso ONE FOR ALL saiu (classe, comando, camada e som)',
+      not os.path.exists(C + '/SolAvisoFx.java')
+      and 'SolAvisoFx' not in _cgl and 'SolAvisoFx.iniciar' not in _fxp
+      and 'onefallall' not in rd(R + '/RPCommands.java')
+      and 'entry("onefallall"' not in rd(R + '/LoreZoneCommands.java'))
 check('5.7.9: aviso MORTEOP (protótipo AvisoMorte) — espiral, relógio, crânio, cinzas',
       'class MorteOpAvisoFx' in _mop and 'ESPIRAL de 3 bra' in _mop
       and 'REL' in _mop and 'TUDO O QUE COME' in _mop and 'aviso_morte_op' in _mop)
 check('5.7.9: aviso SANGUEOP (protótipo AvisoSangue) — batida, veias, gota, anel tracejado',
       'class SangueOpAvisoFx' in _sop and 'BPM = 62F' in _sop and 'VEIAS' in _sop
       and 'GOTA' in _sop and 'aviso_sangue_op' in _sop)
-check('5.7.9: os 3 avisos novos registrados como camada e ligados aos estilos 19/20/21',
-      'SolAvisoFx.registrar(event)' in _cgl and 'MorteOpAvisoFx.registrar(event)' in _cgl
-      and 'SangueOpAvisoFx.registrar(event)' in _cgl
-      and 'style == 19' in _fxp and 'style == 20' in _fxp and 'style == 21' in _fxp)
-check('5.7.9: nomes no comando — onefallall, morteop, sangueop (com TAB)',
-      'case "onefallall" -> 19' in rd(R + '/RPCommands.java')
-      and 'case "morteop" -> 20' in rd(R + '/RPCommands.java')
+check('5.7.9/5.16.4: os avisos MORTEOP e SANGUEOP seguem registrados e ligados aos estilos 20/21',
+      'MorteOpAvisoFx.registrar(event)' in _cgl and 'SangueOpAvisoFx.registrar(event)' in _cgl
+      and 'style == 20' in _fxp and 'style == 21' in _fxp)
+check('5.7.9/5.16.4: nomes no comando — morteop e sangueop (com TAB); onefallall saiu',
+      'case "morteop" -> 20' in rd(R + '/RPCommands.java')
       and 'case "sangueop" -> 21' in rd(R + '/RPCommands.java')
-      and 'literal("onefallall")' in rd(R + '/RPCommands.java'))
+      and 'literal("morteop")' in rd(R + '/RPCommands.java')
+      and 'onefallall' not in rd(R + '/RPCommands.java'))
 check('5.7.9: FxDraw (triangulo, linha, anel, arco, disco em degrade) pros avisos novos',
       'class FxDraw' in _fxd and 'public static void discoGrad' in _fxd
       and 'public static void anel' in _fxd and 'public static void texto' in _fxd)
@@ -1950,8 +1951,9 @@ check('5.16.3: o fragmento continua vindo dos altares do vazio (não sumiu do jo
 _ne = rd(R + '/NeptuneEventos.java')
 _av = _ne[_ne.index('public static void avisoSaidaDoVazio'):]
 _av = _av[:_av.index('\n    }\n')]
-check('5.16.3: avisoSaidaDoVazio NÃO manda texto pra tela (só loga no servidor)',
-      'ScreenTextPayload' not in _av and 'LOGGER' in _av)
+check('5.16.4: avisoSaidaDoVazio avisa a CONQUISTA e nada quando é o ADM',
+      'ScreenTextPayload' in _av and 'CONQUISTOU A SA' in _av
+      and 'if (escapou) {' in _av and 'LOGGER' in _av)
 _ne_cod = '\n'.join(l for l in _ne.splitlines()
                     if not l.strip().startswith(('*', '//', '/*')))
 check('5.16.3: quem tira o jogador do vazio é o ADM (sem mensagem automática)',
@@ -2583,6 +2585,63 @@ check('5.16.2: o fundo do aviso cobre a tela toda (KBG) e o conteudo fica na are
 check('5.16.2: o brilho usa a textura branca propria (a shadow do jogo e preta)',
       'rptag", "textures/misc/glow.png' in rd(C + '/AvisoBlob.java')
       and os.path.exists(A + '/textures/misc/glow.png'))
+
+# ============ 5.16.4: avisar2 SEM TEXTO, avisos consertados, bedrock e conquista ============
+_rp4 = rd(R + '/RPCommands.java')
+_av2 = _rp4[_rp4.index('private static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.minecraft.commands.CommandSourceStack> aviso2('):]
+_av2 = _av2[:_av2.index('\n    }\n')]
+check('5.16.4: /rp admin avisar2 <jogadores> <estilo> roda SEM TEXTO (só o aviso)',
+      '.executes(ctx -> {' in _av2 and 'avisar(ctx, alvos, estilo, "")' in _av2)
+check('5.16.4: e continua aceitando texto depois do estilo (os dois caminhos)',
+      'StringArgumentType.greedyString()' in _av2
+      and 'StringArgumentType.getString(ctx, "texto")' in _av2)
+check('5.16.4: sem texto os avisos NÃO inventam frase (nada de "Um grande perigo...")',
+      all('Um grande perigo' not in rd(C + '/' + f) for f in
+          ['MarinheiroAvisoFx.java', 'EspectadorAvisoFx.java', 'LoucoAvisoFx.java', 'CartaTarotFx.java'])
+      and all('msg = (mensagem == null) ? "" : mensagem.trim();' in rd(C + '/' + f) for f in
+              ['MarinheiroAvisoFx.java', 'EspectadorAvisoFx.java', 'LoucoAvisoFx.java', 'CartaTarotFx.java']))
+
+# ---- a CAUSA do "enforcado/justiça quebrados": texto no meio do buffer de triângulos
+_aux = rd(C + '/AvisoFxUtil.java')
+check('5.16.4: o flush() do Buf FORÇA o shader de posição-cor (texto no meio não quebra mais)',
+      'public void flush() {' in _aux
+      and _aux[_aux.index('public void flush() {'):_aux.index('public void flush() {') + 400]
+      .count('RenderSystem.setShader(GameRenderer::getPositionColorShader);') >= 1)
+check('5.16.4: o Marinheiro/Enforcado fecha o buffer ANTES dos números do sigilo',
+      'b.flush();\n            numeros(g, T, dp, k, cx, cy, env);\n            b = AvisoRitual.comecar(g);'
+      in rd(C + '/MarinheiroAvisoFx.java'))
+check('5.16.4: o Espectador/Justiça faz o mesmo (era o mesmo defeito)',
+      'b.flush();\n            numeros(g, T, dp, k, cx, cy, env);\n            b = AvisoRitual.comecar(g);'
+      in rd(C + '/EspectadorAvisoFx.java'))
+
+# ---- bedrock embaixo de tudo
+_vz4 = rd(R + '/VazioReino.java')
+_dim = _json.load(open('src/main/resources/data/rptag/dimension/vazio.json'))
+check('5.16.4: o gerador do vazio nasce com piso de BEDROCK (chunk novo já vem com chão)',
+      _dim['generator']['settings']['layers'][0] == {'block': 'minecraft:bedrock', 'height': 2})
+check('5.16.4: e o MESMO piso de bedrock no gerador da dimensão do vazio (exilio)',
+      _json.load(open('src/main/resources/data/rptag/dimension/exilio.json'))
+      ['generator']['settings']['layers'][0] == {'block': 'minecraft:bedrock', 'height': 2})
+check('5.16.4: os chunks que já existiam ganham o piso à mão (pisoDeBedrock)',
+      'private static void pisoDeBedrock(ServerLevel nv, ServerPlayer p)' in _vz4
+      and 'Blocks.BEDROCK.defaultBlockState()' in _vz4
+      and 'pisoDeBedrock(nv, p);' in _vz4)
+check('5.16.4: e ninguém fica abaixo do chão (rede de segurança tira do void)',
+      'if (p.getY() < base + 2.0) {' in _vz4 and 'p.setNoGravity(false);' in _vz4)
+
+# ---- o aviso de morte na tela saiu
+_tc = _vz4[_vz4.index('private static void tickCaindo'):]
+_tc = _tc[:_tc.index('\n    }\n')]
+check('5.16.4: caiu no void NÃO abre mais aviso de morte na tela (estilo 23)',
+      'ScreenTextPayload' not in _tc)
+check('5.16.4: a queda no void continua com a linha no CHAT (o jogo não engole o aviso)',
+      'O VAZIO TE PEGOU' in _tc)
+
+# ---- a prévia offline do aviso (o mesmo espelho Java2D das cartas)
+check('5.16.4: a prévia dos avisos de ritual existe e roda sem abrir o jogo',
+      os.path.exists('/home/user/previa_ritual/montar.py')
+      and os.path.exists('/home/user/previa_ritual/src/dev/rptag/client/Canvas.java')
+      and os.path.exists('/home/user/previa_ritual/out/marinheiro.png'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

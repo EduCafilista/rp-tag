@@ -2007,18 +2007,34 @@ public final class NeptuneEventos {
 
     // ================================================================ EXÍLIO
     /**
-     * (5.16.3) <b>SEM AVISO AO SAIR DO VAZIO</b> — o dono pediu três vezes
-     * (<i>"sem mensagem de admin na tela"</i>, <i>"não quero aviso ao sair do vazio, tira já"</i>).
+     * (5.16.4) <b>O AVISO DE CONQUISTA.</b>
      *
-     * <p>Antes daqui saía um "VOCÊ ESCAPOU DO VAZIO" / "VOCÊ FOI TIRADO DO VAZIO" na tela. O método
-     * ficou só por compatibilidade das chamadas: <b>não manda mais nada</b>.
+     * <p>O dono explicou o que queria (e o que não queria):
+     * <i>"pode ter o aviso que ele conquistou a saída, mas não quero aquele aviso de morte na
+     * tela do player, foi isso que falei"</i>.
+     *
+     * <ul>
+     *   <li><b>conquistou a saída</b> (saiu pelo portal sozinho): aparece o aviso dourado
+     *       "VOCÊ CONQUISTOU A SAÍDA" — estilo 7 (DIVINO), positivo;</li>
+     *   <li><b>tirado pelo ADM</b>: nada na tela. Quem tira é o adm, e isso não é conquista
+     *       de ninguém — só fica o registro no console.</li>
+     * </ul>
+     *
+     * <p>O aviso de MORTE que ele não queria era outro: o da queda no void (estilo 23, em
+     * {@code VazioReino.tickCaindo}) — esse saiu, e de quebra a dimensão ganhou piso de
+     * bedrock (ver {@code VazioReino.pisoDeBedrock}), então ninguém mais cai no void.
      */
     public static void avisoSaidaDoVazio(ServerPlayer p, boolean escapou) {
-        // nada na tela. Só o log do servidor (para o adm saber no console quem saiu).
-        if (p != null) {
-            RPTagMod.LOGGER.info("RP Tag: {} saiu do vazio ({})", p.getName().getString(),
-                    escapou ? "pelo portal" : "tirado por admin");
+        if (p == null) {
+            return;
         }
+        if (escapou) {
+            // (5.16.4) a CONQUISTA: só quem saiu pelo portal sozinho vê
+            PacketDistributor.sendToPlayer(p, new ScreenTextPayload(
+                    "\u00a76\u00a7lVOC\u00ca CONQUISTOU A SA\u00cdDA", 9, 7));
+        }
+        RPTagMod.LOGGER.info("RP Tag: {} saiu do vazio ({})", p.getName().getString(),
+                escapou ? "pelo portal" : "tirado por admin");
     }
 
     /**

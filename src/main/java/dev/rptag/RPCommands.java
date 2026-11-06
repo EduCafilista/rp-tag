@@ -361,10 +361,28 @@ public final class RPCommands {
      * (5.16.2) um estilo da seção {@code /rp admin avisar2}: basta o nome, o texto vem depois.
      * Os alvos continuam vindo de fora ({@code <jogadores>}), então o comando fica
      * {@code /rp admin avisar2 <jogadores> <estilo> <texto>}.
+     *
+     * <p>(5.16.4) <b>O TEXTO É OPCIONAL.</b> O dono:
+     * <i>"/rp admin avisar2 EdUuJoGaA death — caso eu queira usar só isso eu posso, não
+     * precisa de texto, se tiver texto ok, mas não precisa 100% das vezes, às vezes é apenas
+     * aviso"</i>. Então:
+     * <ul>
+     *   <li>{@code /rp admin avisar2 Fulano death} — só o aviso (a carta aparece, sem fala);</li>
+     *   <li>{@code /rp admin avisar2 Fulano death Fulano traiu a coroa} — aviso + a fala.</li>
+     * </ul>
+     * Sem texto, os avisos de carta/ritual não inventam frase nenhuma: a linha da mensagem
+     * simplesmente não é desenhada.
      */
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.minecraft.commands.CommandSourceStack> aviso2(
             String estilo) {
         return Commands.literal(estilo)
+                // (5.16.4) SEM TEXTO: só o aviso
+                .executes(ctx -> {
+                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                    avisar(ctx, alvos, estilo, "");
+                    return Command.SINGLE_SUCCESS;
+                })
+                // com texto: aviso + a fala
                 .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                         .executes(ctx -> {
                             var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
@@ -406,8 +424,6 @@ public final class RPCommands {
             case "tolo", "foulo" -> 36;   // (5.16.2) TOLO = a CARTA do Louco (o protótipo FoolWarning, de volta)
             case "energia" -> 15;   // (5.5.0) ENERGIA — anomalia de entropia
             case "conhecimento" -> 16;   // (5.7.0) CONHECIMENTO — o olho que sabe
-            case "allforone" -> 17;   // (5.7.0) ALLFORONE — as vozes têm forma
-            case "onefallall" -> 19;  // (5.7.9) protótipo AvisoSol: o sol dourado
             case "morteop" -> 20;     // (5.7.9) protótipo AvisoMorte: relógio + crânio
             case "sangueop" -> 21;    // (5.7.9) protótipo AvisoSangue: batida + veias
             case "medoop" -> 22;       // (5.8.1) protótipo AvisoMedo: membrana + lanterna
@@ -460,9 +476,7 @@ public final class RPCommands {
             case 14 -> "CIBERPSICOSE";
             case 15 -> "ENERGIA";   // (5.5.0) anomalia de entropia
             case 16 -> "CONHECIMENTO";   // (5.7.0) o olho que sabe
-            case 17 -> "ALLFORONE";   // (5.7.0) as vozes têm forma
             case 18 -> "SAIDA";   // (5.7.0) animacao de saida do jogador
-            case 19 -> "ONEFALLALL";   // (5.7.9) o sol dourado
             case 20 -> "MORTEOP";   // (5.7.9) relogio + cranio
             case 21 -> "SANGUEOP";   // (5.7.9) batida + veias
             case 22 -> "MEDOOP";   // (5.8.1) a membrana rachando
@@ -793,7 +807,7 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento, allforone (alvos: nomes ou @a), onefallall, morteop, sangueop, medoop, louco, marinheiro, espectador, "
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento (alvos: nomes ou @a), morteop, sangueop, medoop, louco, marinheiro, espectador, "
                     + "eremita, julgamento, lua, mago, morte2, sol, torre, estrela, tolo\u00a7c\n"
                     + "/rp admin avisar2 <jogadores> <estilo> <texto> \u00a77\u2014 a SECAO NOVA (Lord of the Mysteries + cartas de taro): louco, tolo, marinheiro, enforcado, espectador, justica, eremita, julgamento, lua, mago, morte2, sol, torre, estrela\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
@@ -1218,23 +1232,7 @@ public final class RPCommands {
                                                     return Command.SINGLE_SUCCESS;
                                                 })))
                                 // (5.7.0) ALLFORONE: as vozes na sua cabeça têm forma
-                                .then(Commands.literal("allforone")
-                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
-                                                .executes(ctx -> {
-                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
-                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
-                                                    avisar(ctx, alvos, "allforone", texto);
-                                                    return Command.SINGLE_SUCCESS;
-                                                })))
                                 // (5.7.9) ONEFALLALL: o protótipo do sol dourado
-                                .then(Commands.literal("onefallall")
-                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
-                                                .executes(ctx -> {
-                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
-                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
-                                                    avisar(ctx, alvos, "onefallall", texto);
-                                                    return Command.SINGLE_SUCCESS;
-                                                })))
                                 // (5.7.9) MORTEOP: espiral, relógio, crânio e cinzas
                                 .then(Commands.literal("morteop")
                                         .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
