@@ -49,6 +49,15 @@ public final class ServerEvents {
     @SubscribeEvent
     public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
         NeptuneEventos.tick(event.getServer());
+        // (5.19.0) o TAB: mede o tick sempre e reescreve o cabeçalho/rodapé 1x por segundo
+        try {
+            TabList.amostrarTick(event.getServer());
+            if (event.getServer().getTickCount() % 20 == 0) {
+                TabList.enviarTodos(event.getServer());
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: tick do TAB falhou (o jogo segue)", t);
+        }
         // (5.17.0) NÚCLEO VIAL: o desgaste é por DIA do jogo, então checar a cada 2 s é de sobra
         // (o dia só vira a cada 20 minutos). Barato: sai na hora quando o dia não mudou.
         if (event.getServer().getTickCount() % 40 == 0) {
@@ -301,6 +310,13 @@ public final class ServerEvents {
         Titulos.avisar(server, joined.getUUID());
         // (5.11.0) quem entra depois do /vazio ligar também precisa da aura
         NeptuneEventos.reenviarAura(server);
+        // (5.19.0) o TAB (cabeçalho com o nome do servidor + rodapé com TPS/memória/uptime)
+        try {
+            TabList.enviar(joined, server);
+            TabList.enviarTodos(server);   // o "online" muda pra quem já estava
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: TAB no login falhou", t);
+        }
     }
 
     /**

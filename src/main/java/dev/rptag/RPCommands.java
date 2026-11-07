@@ -825,6 +825,7 @@ public final class RPCommands {
                     + "/rp admin vida lote A,B,C tirar 1 \u00a77\u2014 em lote, aplica na hora\u00a7c\n"
                     + "/rp admin afk tempo <s>|status \u00a77\u2014 tempo parado at\u00e9 virar AFK\u00a7c\n"
                     + "/rp admin bolhas on|off \u00a77\u2014 baloes do servidor inteiro\u00a7c\n"
+                    + "/rp admin tab on|off \u00a77\u2014 o TAB bonito (NEPTUNE SMP + online/TPS/ping/memoria)\u00a7c\n"
                     + "/tablet ver <jogador> \u00a77\u2014 abre a ficha de outro jogador (leitura)\u00a7c\n"
                     + "/tablet liberar <jogador> \u00a77\u2014 libera a ficha confirmada para edicao\u00a7c\n"
                     + "/do <texto> \u00a77\u2014 narracao de ambiente\u00a7c\n"
@@ -1474,6 +1475,28 @@ public final class RPCommands {
                                                     return barraValor(ctx, EntityArgument.getPlayers(ctx, "jogadores"),
                                                             com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "valor"));
                                                 })))))
+                // ============ (5.19.0) TAB DO SERVIDOR ============
+                // /rp admin tab on|off — o cabeçalho ("NEPTUNE SMP / explore the deep") e o
+                // rodapé (online, TPS, ping, memória, uptime) da lista de jogadores.
+                .then(Commands.literal("tab")
+                        .then(Commands.literal("on").executes(ctx -> tabLigar(ctx, true)))
+                        .then(Commands.literal("off").executes(ctx -> tabLigar(ctx, false)))
+                        .executes(ctx -> {
+                            // (5.19.0) sem argumento: só mostra como está (não mexe)
+                            var srv = ctx.getSource().getServer();
+                            boolean on = RPWorldData.get(srv).isTabLigado();
+                            boolean tpsOk = TabList.tps() >= 19.0;
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "\u00a7eTAB DO SERVIDOR\u00a77\n"
+                                    + "  situa\u00e7\u00e3o: " + (on ? "\u00a7aLIGADO" : "\u00a7cDESLIGADO") + "\u00a77\n"
+                                    + "  TPS agora: " + (tpsOk ? "\u00a7a" : "\u00a7e")
+                                    + String.format("%.1f", TabList.tps()) + "\u00a77\n"
+                                    + "  mem\u00f3ria: \u00a7f" + String.format("%.1f", TabList.memoriaUsada())
+                                    + " MB\u00a77 de \u00a7f" + String.format("%.1f", TabList.memoriaMaxima()) + " MB\u00a77\n"
+                                    + "  uptime: \u00a7f" + TabList.uptime() + "\u00a77\n"
+                                    + "\u00a7e/rp admin tab on|off\u00a77 \u2014 liga/desliga"), false);
+                            return Command.SINGLE_SUCCESS;
+                        }))
                 // ============ (5.18.0) AXION: DOIS jeitos de COLOCAR e UM de TIRAR =========
                 // Ela NUNCA aparece sozinha (nem quando o jogador entra pela primeira vez).
                 //   acordar -> COLOCA ela na tela, ACORDADA
@@ -1822,6 +1845,24 @@ public final class RPCommands {
             case "preto", "black" -> 0x141018;
             default -> -1;
         };
+    }
+
+    /**
+     * (5.19.0) /rp admin tab on|off — liga/desliga o cabeçalho e o rodapé da lista de jogadores.
+     *
+     * <p>Com {@code off}, o TAB volta a ser o do vanilla (sem cabeçalho, sem rodapé).
+     */
+    private static int tabLigar(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            boolean on) {
+        var server = ctx.getSource().getServer();
+        RPWorldData.get(server).setTabLigado(on);
+        TabList.enviarTodos(server);
+        ctx.getSource().sendSuccess(() -> Component.literal(on
+                ? "\u00a7aTAB LIGADO \u2014 NEPTUNE SMP em cima e online/TPS/ping/memória/uptime embaixo."
+                : "\u00a77TAB DESLIGADO \u2014 voltou a lista simples do vanilla.")
+                .withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
     }
 
     /** (5.18.0) /rp admin barra vertical on|off — a barra em pé (padrão) ou deitada. */

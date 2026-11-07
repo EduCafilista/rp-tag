@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.18.0'
+VER = '5.19.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2692,8 +2692,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.18.0.jar')
-      and os.path.getsize('build/libs/rptag-5.18.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.19.0.jar')
+      and os.path.getsize('build/libs/rptag-5.19.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2845,6 +2845,24 @@ check('5.18.0: o vial ganhou MODELO 3D (com elementos, nao so uma textura chapad
 check('5.18.0: o balao de texto ganhou MAIS CORES (dentro, borda e letra)',
       '18 cores' in rd(C + '/BubbleStyleScreen.java')
       and '0xC81E2E, 0x6B0F1A, 0x12B886' in rd(C + '/BubbleStyleScreen.java'))
+
+# ============ 5.19.0: o TAB com cara de servidor ============
+_tab = rd(R + '/TabList.java')
+check('5.19.0: o TAB tem cabecalho (NEPTUNE SMP + explore the deep) e regua',
+      'public static Component cabecalho()' in _tab
+      and 'NEPTUNE SMP' in _tab and 'explore the deep' in _tab)
+check('5.19.0: o rodape mostra online, TPS, ping, memoria e uptime',
+      'Online \u00bb' in _tab.replace('\\u00bb', '\u00bb') or '\u25C6 Online' in _tab)
+check('5.19.0: o TPS e medido no tick do servidor (media dos ultimos 100 ticks)',
+      'public static void amostrarTick(MinecraftServer server)' in _tab
+      and 'TICKS.size() > 100' in _tab)
+check('5.19.0: o PING vem do connection.latency() (1.21.1 nao tem mais no ServerPlayer)',
+      'return p.connection.latency();' in _tab)
+check('5.19.0: o TAB e enviado no login e a cada 1 s (clientbound tab list)',
+      'TabList.enviar(joined, server);' in rd(R + '/ServerEvents.java')
+      and 'new ClientboundTabListPacket(topo, baixo)' in _tab)
+check('5.19.0: /rp admin tab on|off liga e desliga (fica salvo no mundo)',
+      'Commands.literal("tab")' in _rp4 and 'private boolean tabLigado = true;' in rd(R + '/RPWorldData.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
