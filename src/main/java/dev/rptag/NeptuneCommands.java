@@ -225,7 +225,7 @@ public final class NeptuneCommands {
                                     return Command.SINGLE_SUCCESS;
                                 }))));
 
-        // (5.21.0) TESTE ESCONDIDO: prova o dano do bicho do vazio na hora
+        // (5.22.0) TESTE ESCONDIDO: prova que o vazio VARRE qualquer bicho
         vazio.then(Commands.literal("testebicho").executes(ctx -> {
             var server = ctx.getSource().getServer();
             var nv = server.getLevel(NeptuneEventos.CHAVE_EXILIO_PUBLICA);
@@ -233,8 +233,8 @@ public final class NeptuneCommands {
                 ctx.getSource().sendFailure(Component.literal("\u00a7cA dimensão do vazio não está carregada."));
                 return 0;
             }
-            String r = VazioReino.testeDeDano(nv, 8, 11, 8);
-            ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aTeste do bicho: \u00a7f" + r), false);
+            String r = VazioReino.testeVazio(nv);
+            ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aTeste do vazio: \u00a7f" + r), false);
             return Command.SINGLE_SUCCESS;
         }));
 

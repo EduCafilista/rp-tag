@@ -94,9 +94,10 @@ public final class ServerEvents {
      * (5.13.4) O VAZIO NÃO CRIA BICHO — pedido 53.
      *
      * <p><i>"não deixe spawnar slimes, se for para spawnar um bicho completamente
-     * preto"</i>. Aqui o spawn natural é <b>cancelado</b> em regra; passa só o que é
-     * preto de verdade (Enderman e Warden). Slime nunca — nem em slime chunk, nem em
-     * lua cheia, nem divisão de slime grande.
+     * preto"</i> (5.13.4). <b>(5.22.0)</b> o dono foi além: <i>"tira eles e deixa vazio
+     * mesmo, nao quero spawn de enderman la"</i>. Agora o vazio não cria <b>nada</b>: todo
+     * spawn natural é cancelado (Enderman e Warden inclusive) e o que aparecer é varrido
+     * por {@link VazioReino#limparBichos}.
      */
     @SubscribeEvent
     public static void onFinalizeSpawn(
@@ -106,10 +107,10 @@ public final class ServerEvents {
                     || !VazioReino.ehVazio(sl)) {
                 return;
             }
-            var tipo = event.getEntity().getType();
-            boolean preto = tipo == net.minecraft.world.entity.EntityType.ENDERMAN
-                    || tipo == net.minecraft.world.entity.EntityType.WARDEN;
-            if (!preto) {
+            // (5.22.0) NADA NASCE NO VAZIO — nem enderman. O dono: "tira eles e deixa
+            // vazio mesmo, nao quero spawn de enderman la". Antes passava enderman e
+            // warden ("bicho preto"); agora o spawn natural é cancelado para TODO mundo.
+            if (event.getEntity().getType() != null) {
                 event.setSpawnCancelled(true);
             }
         } catch (Throwable t) {

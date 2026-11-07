@@ -319,8 +319,10 @@ public final class VazioReino {
             // únicos bichos que existem aqui; quem encosta neles leva dano.
             danoDeContato(nv, p, agora);
 
-            // 9) (5.21.0) e ELES VÊM ATRÁS: nascem no escuro e escolhem a pessoa
-            tickBichos(nv, p, agora);
+            // 9) (5.22.0) O VAZIO VOLTOU A SER VAZIO — o dono: "os endermas do vazio estao
+            // muito roubados, tira eles e deixa vazio mesmo, nao quero spawn de enderman la,
+            // se o player ficar apanhando ate morrer ele nao vai sobreviver". A dimensão não
+            // cria mais NADA (ver {@link #limparBichos}) e todo spawn natural é cancelado.
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: reino do vazio falhou (o jogo segue)", t);
         }
@@ -502,16 +504,15 @@ public final class VazioReino {
                 if (!(e instanceof net.minecraft.world.entity.Mob)) {
                     continue;
                 }
-                boolean preto = e.getType() == net.minecraft.world.entity.EntityType.ENDERMAN
-                        || e.getType() == net.minecraft.world.entity.EntityType.WARDEN;
-                if (preto) {
-                    continue;
-                }
+                // (5.22.0) AGORA VAI TUDO — inclusive enderman e warden. O dono:
+                // "tira eles e deixa vazio mesmo, nao quero spawn de enderman la". O vazio
+                // não tem bicho nenhum: quem aparecer (spawn natural, ovo do adm, comando
+                // de outro mod) é varrido em até 4 segundos.
                 e.discard();
                 removidos++;
             }
             if (removidos > 0) {
-                RPTagMod.LOGGER.info("RP Tag: vazio limpou {} bicho(s) que nao sao pretos", removidos);
+                RPTagMod.LOGGER.info("RP Tag: vazio varreu {} bicho(s) (a dimensao e vazia)", removidos);
             }
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: limpeza de bichos do vazio falhou", t);
@@ -692,169 +693,46 @@ public final class VazioReino {
     /** quantos chunks de uma vez por tick (2 = suave, sem travar). */
     private static final int CHUNKS_POR_TICK = 2;
 
-    // ============================================== BICHOS DO VAZIO (5.21.0)
     /**
-     * (5.21.0) O BICHO DO VAZIO VAI ATRÁS — o dono: <i>"os bichos do vazio ainda nao estao
-     * me dando dano"</i>.
+     * (5.22.0) TESTE DE BANCADA — prova que o vazio VARRE qualquer bicho.
      *
-     * <p>O motivo era bobo: o bioma do vazio não tem lista de spawn, então <b>nunca nascia
-     * bicho nenhum</b> — as únicas coisas que andavam por lá eram as almas (que são desenho).
-     * Sem bicho não há encosto, e sem encosto não há dano.
-     *
-     * <p>Agora a dimensão cria os dela: um enderman a cada ~9 s, a 12–26 blocos da pessoa,
-     * com teto de {@value #MAX_BICHOS} vivos. Eles nascem marcados ({@code rptag_vazio} no
-     * NBT), não somem sozinhos e <b>escolhem a pessoa como alvo</b> — o enderman parado
-     * olhando o nada nunca encostava em ninguém.
+     * <p>Cria um enderman no meio da praça, roda a mesma {@link #limparBichos} que roda no
+     * tick do mundo e conta quantos sobraram. Devolve o texto pronto pro ADM ler no chat.
      */
-    private static final int MAX_BICHOS = 8;
-    private static final String MARCA_BICHO = "rptag_vazio";
-    private static long proximoBicho;
-    private static long proximoAgressao;
-
-    private static void tickBichos(ServerLevel nv, ServerPlayer p, long agora) {
+    public static String testeVazio(ServerLevel nv) {
         try {
-            boolean agredir = agora >= proximoAgressao;
-            if (agredir) {
-                proximoAgressao = agora + 900L;
-            }
-            int vivos = 0;
+            int antes = 0;
             for (net.minecraft.world.entity.Entity e : nv.getAllEntities()) {
-                if (!(e instanceof net.minecraft.world.entity.Mob m)) {
-                    continue;
-                }
-                if (!m.getPersistentData().getBoolean(MARCA_BICHO)) {
-                    continue;
-                }
-                vivos++;
-                if (!agredir || m.isDeadOrDying()) {
-                    continue;
-                }
-                // a pessoa mais perto (até 40 blocos) vira o alvo dele
-                ServerPlayer alvo = null;
-                double menor = 40.0;
-                for (ServerPlayer q : nv.players()) {
-                    double d = m.distanceToSqr(q);
-                    if (d < menor * menor) {
-                        menor = Math.sqrt(d);
-                        alvo = q;
-                    }
-                }
-                if (alvo != null && (m.getTarget() == null || !m.getTarget().isAlive()
-                        || m.getTarget() != alvo && menor < 8.0)) {
-                    m.setTarget(alvo);
+                if (e instanceof net.minecraft.world.entity.Mob && !e.isRemoved()) {
+                    antes++;
                 }
             }
-            if (agora < proximoBicho || vivos >= MAX_BICHOS) {
-                return;
-            }
-            proximoBicho = agora + 9_000L;
-            nascerBicho(nv, p);
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: bichos do vazio falharam (o jogo segue)", t);
-        }
-    }
-
-    /** nasce um enderman do vazio a 12–26 blocos da pessoa, já com alvo nela. */
-    private static void nascerBicho(ServerLevel nv, ServerPlayer p) {
-        double a = Math.random() * Math.PI * 2;
-        double d = 12.0 + Math.random() * 14.0;
-        int x = (int) Math.floor(p.getX() + Math.cos(a) * d);
-        int z = (int) Math.floor(p.getZ() + Math.sin(a) * d);
-        nv.getChunk(x >> 4, z >> 4);                 // o chunk tem que existir antes
-        int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-        if (y <= nv.getMinBuildHeight() + 2) {
-            return;                                  // buraco/cratera: tenta na próxima
-        }
-        var bicho = net.minecraft.world.entity.EntityType.ENDERMAN.create(nv);
-        if (bicho == null) {
-            return;
-        }
-        bicho.moveTo(x + 0.5, y, z + 0.5, (float) (Math.random() * 360.0), 0F);
-        bicho.setPersistenceRequired();               // não despawna no meio da caçada
-        bicho.getPersistentData().putBoolean(MARCA_BICHO, true);
-        bicho.setTarget(p);
-        nv.addFreshEntity(bicho);
-        // ele se MATERIALIZA no escuro (fumaça + alma subindo)
-        nv.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
-                x + 0.5, y + 1.1, z + 0.5, 22, 0.35, 0.9, 0.35, 0.01);
-        nv.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL,
-                x + 0.5, y + 0.6, z + 0.5, 10, 0.3, 0.5, 0.3, 0.02);
-        nv.playSound(null, p.blockPosition(), RPTagMod.SOM_VAZIO.get(),
-                net.minecraft.sounds.SoundSource.HOSTILE, 0.55F, 0.5F);
-    }
-
-    /**
-     * (5.21.0) TESTE DE BANCADA — prova que o bicho do vazio machuca de verdade.
-     *
-     * <p>Cria um jogador de teste, encosta um enderman nele e roda o MESMO
-     * {@link #danoDeContato} que roda no tick de quem entra. Devolve a vida antes/depois.
-     * (comando escondido, só para o ADM conferir na hora)
-     */
-    public static String testeDeDano(ServerLevel nv, int x, int y, int z) {
-        StringBuilder r = new StringBuilder();
-        try {
-            var perfil = new com.mojang.authlib.GameProfile(
-                    java.util.UUID.nameUUIDFromBytes("rptag-teste-bicho".getBytes()), "TesteBicho");
-            var fp = new net.minecraft.server.level.ServerPlayer(nv.getServer(), nv, perfil,
-                    net.minecraft.server.level.ClientInformation.createDefault());
-            fp.setPos(x + 0.5, y, z + 0.5);
-            fp.setHealth(20.0F);
             var bicho = net.minecraft.world.entity.EntityType.ENDERMAN.create(nv);
             if (bicho == null) {
-                return "sem enderman";
+                return "sem enderman no registro";
             }
-            bicho.moveTo(x + 1.4, y, z + 0.5, 0F, 0F);
-            bicho.getPersistentData().putBoolean(MARCA_BICHO, true);
+            bicho.moveTo(4.5, nv.getMinBuildHeight() + ALTURA_LAJE, 4.5, 0F, 0F);
             nv.addFreshEntity(bicho);
-            float antes = fp.getHealth();
-            // diagnóstico: a busca acha o bicho? o hurt responde o quê?
-            int achados = 0;
-            for (net.minecraft.world.entity.Entity e2 : nv.getEntities(fp,
-                    fp.getBoundingBox().inflate(2.4, 1.6, 2.4), en -> true)) {
-                achados++;
-            }
-            r.append("mobs no raio=").append(achados);
-            fp.invulnerableTime = 0;
-            fp.setInvulnerable(false);
-            fp.getAbilities().invulnerable = false;
-            r.append(" | criativo=").append(fp.isCreative()).append(" espectador=")
-                    .append(fp.isSpectator()).append(" invuln=").append(fp.getAbilities().invulnerable);
-            boolean direto = fp.hurt(nv.damageSources().magic(), 3.0F);
-            r.append(" | hurt direto=").append(direto).append(" vida=").append(fp.getHealth());
-            // controle: o MESMO hurt num bicho de verdade funciona?
-            var porco = net.minecraft.world.entity.EntityType.PIG.create(nv);
-            boolean controle = false;
-            if (porco != null) {
-                porco.moveTo(x + 2.5, y, z + 0.5, 0F, 0F);
-                nv.addFreshEntity(porco);
-                controle = porco.hurt(nv.damageSources().magic(), 3.0F);
-                porco.discard();
-            }
-            r.append(" | controle(porco)=").append(controle);
-            // o bicho escolheu a pessoa? e o ataque do proprio bicho passa?
-            r.append(" | com alvo=").append(bicho.getTarget() != null);
-            boolean mordida = bicho.doHurtTarget(fp);
-            r.append(" | mordida do enderman=").append(mordida).append(" vida=").append(fp.getHealth());
-            fp.setHealth(20.0F);
-            fp.invulnerableTime = 0;
-            danoDeContato(nv, fp, System.currentTimeMillis());
-            r.append(" | pelo danoDeContato=").append(fp.getHealth());
-            // e o nascimento de bicho do vazio
-            int marcados = 0;
+            int criado = bicho.isRemoved() ? 0 : 1;
+            limparBichos(nv);
+            int depois = 0;
             for (net.minecraft.world.entity.Entity e : nv.getAllEntities()) {
-                if (e instanceof net.minecraft.world.entity.Mob m
-                        && m.getPersistentData().getBoolean(MARCA_BICHO)) {
-                    marcados++;
+                if (e instanceof net.minecraft.world.entity.Mob && !e.isRemoved()) {
+                    depois++;
                 }
             }
-            r.append(" | bichos marcados na dimensao=").append(marcados);
-            bicho.discard();
-            fp.discard();
+            return "bichos antes=" + antes + " | criei 1 enderman (vivo=" + criado
+                    + ") | depois da varredura=" + depois;
         } catch (Throwable t) {
-            r.append("ERRO: ").append(t.getClass().getSimpleName()).append(": ").append(t.getMessage());
+            return "ERRO: " + t.getClass().getSimpleName() + ": " + t.getMessage();
         }
-        return r.toString();
     }
+
+    // ============================================== VAZIO VAZIO (5.22.0)
+    // (5.21.0) aqui existia um "spawner" de enderman: um bicho a cada 9 s, com alvo na
+    // pessoa. O dono testou e reprovou ("muito roubados... se o player ficar apanhando ate
+    // morrer ele nao vai sobreviver"): o vazio tem que ser VAZIO — só o cenário, as almas
+    // (que são desenho) e o silêncio. Nada nasce aqui.
 
     /** (5.20.0) último dano de contato por jogador (para não virar serra elétrica). */
     private static final Map<UUID, Long> ULTIMO_DANO_CONTATO = new HashMap<>();
@@ -1127,24 +1005,12 @@ public final class VazioReino {
                 }
 
                 double alvoX, alvoZ;
-                // (5.21.0) A ALMA ENCOSTA — e drena. O dono: "os bichos do vazio... devem
-                // dar dano ao encostar". Antes a alma parava a 2,6 blocos e ficava só
-                // olhando: dava para atravessar o vazio inteiro sem perder um coração.
-                if (perto != null && menor < 2.0) {
-                    Long ultimo = ULTIMO_DANO_CONTATO.get(perto.getUUID());
-                    if (ultimo == null || agora - ultimo > 1500L) {
-                        ULTIMO_DANO_CONTATO.put(perto.getUUID(), agora);
-                        perto.hurt(perto.damageSources().magic(), 2.0F);   // o frio da alma
-                        double dx = perto.getX() - ax;
-                        double dz = perto.getZ() - az;
-                        double mm = Math.max(0.001, Math.hypot(dx, dz));
-                        perto.push(dx / mm * 0.45, 0.22, dz / mm * 0.45);
-                        perto.hurtMarked = true;
-                        nv.playSound(null, perto.blockPosition(), SoundEvents.SOUL_ESCAPE.value(),
-                                SoundSource.HOSTILE, 0.6F, 0.45F);
-                        nv.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
-                                ax, ay + 1.0, az, 14, 0.25, 0.5, 0.25, 0.01);
-                    }
+                // (5.22.0) A ALMA NÃO MACHUCA MAIS. Ela encosta, encara, sussurra e some no
+                // breu — mas não tira vida. O vazio já tem o bastante para matar (o vazio
+                // em si, a queda, a escuridão); bicho e alma não são ameaça.
+                if (perto != null && menor < 2.1 && Math.random() < 0.08) {
+                    nv.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                            ax, ay + 1.0, az, 3, 0.2, 0.35, 0.2, 0.005);
                 }
                 if (perto != null && menor > 1.6) {
                     // vem na direção da pessoa, de leve (0,9 bloco por segundo)

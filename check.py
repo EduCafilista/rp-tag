@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.21.0'
+VER = '5.22.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2692,8 +2692,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.21.0.jar')
-      and os.path.getsize('build/libs/rptag-5.21.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.22.0.jar')
+      and os.path.getsize('build/libs/rptag-5.22.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2841,8 +2841,7 @@ check('5.18.0: o /rp admin bolha SAIU (era o mesmo do balao)',
       'literal("bolha")' not in _rp4 and 'literal("balao")' in _rp4)
 check('5.18.0: o vial ganhou MODELO 3D (com elementos, nao so uma textura chapada)',
       '"elements"' in io.open(A + '/models/item/nucleo_vial.json').read()
-      and os.path.exists(A + '/textures/item/nucleo_vial_3d.png')
-      and os.path.exists(A + '/textures/item/nucleo_vial_quebrado_3d.png'))
+      and os.path.exists(A + '/models/item/nucleo_vial_quebrado.json'))
 check('5.18.0: o balao de texto ganhou MAIS CORES (dentro, borda e letra)',
       '18 cores' in rd(C + '/BubbleStyleScreen.java')
       and '0xC81E2E, 0x6B0F1A, 0x12B886' in rd(C + '/BubbleStyleScreen.java'))
@@ -2900,21 +2899,42 @@ check('5.21.0: o piso claro do gerador virou PEDRA PRETA (as trevas)',
 check('5.21.0: a dimensao ja NASCE escura (blackstone + sculk, sem concreto cinza)',
       'light_gray_concrete' not in _dimx and 'minecraft:blackstone' in _dimx
       and 'minecraft:sculk' in _dimx and '"biome": "rptag:vazio"' in _dimx)
-check('5.21.0: o vazio tem bioma proprio e ele SPAWNA enderman',
+check('5.22.0: o bioma do vazio nao oferece NENHUM bicho (lista de spawn vazia)',
       os.path.exists('src/main/resources/data/rptag/worldgen/biome/vazio.json')
-      and 'minecraft:enderman' in rd('src/main/resources/data/rptag/worldgen/biome/vazio.json')
+      and '"monster": []' in rd('src/main/resources/data/rptag/worldgen/biome/vazio.json')
       and 'minecraft:ash' in rd('src/main/resources/data/rptag/worldgen/biome/vazio.json'))
-check('5.21.0: os BICHOS do vazio nascem e vao atras da pessoa',
-      'private static void tickBichos(ServerLevel nv, ServerPlayer p, long agora)' in _vr
-      and 'private static void nascerBicho(ServerLevel nv, ServerPlayer p)' in _vr
-      and 'bicho.setTarget(p);' in _vr and 'MARCA_BICHO' in _vr
-      and 'tickBichos(nv, p, agora);' in _vr)
+check('5.22.0: CHEGA de bicho no vazio (o spawner de enderman saiu de vez)',
+      'tickBichos' not in _vr and 'nascerBicho' not in _vr
+      and 'setTarget(p)' not in _vr and 'MAX_BICHOS' not in _vr)
 check('5.21.0: a montanha do vazio ficou PRETA (o tufo claro saiu da paleta)',
       'Blocks.TUFF.defaultBlockState()' not in _vr.split('private static BlockState pedraDoMonte')[1].split('private static')[0])
-check('5.21.0: a alma vazia ENCOSTA e drena vida (2 de dano, 1x a cada 1,5 s)',
-      'if (perto != null && menor < 2.0) {' in _vr
-      and 'perto.hurt(perto.damageSources().magic(), 2.0F)' in _vr
-      and 'agora - ultimo > 1500L' in _vr)
+check('5.22.0: a alma vazia NAO tira mais vida (so assusta e sussurra)',
+      'perto.hurt(perto.damageSources().magic(), 2.0F)' not in _vr
+      and 'menor < 2.1 && Math.random() < 0.08' in _vr)
+
+# ============ 5.22.0: o vazio voltou a ser vazio + o frasco do nucleo vial ============
+_se2 = rd(R + '/ServerEvents.java')
+check('5.22.0: nada nasce no vazio (o spawn natural e cancelado para todo mundo)',
+      'event.setSpawnCancelled(true);' in _se2
+      and 'EntityType.ENDERMAN' not in _se2.split('FinalizeSpawnEvent')[1].split('RightClickItem')[0])
+check('5.22.0: a varredura pega QUALQUER bicho (enderman e warden inclusive)',
+      'vazio varreu' in _vr
+      and 'boolean preto = e.getType() == net.minecraft.world.entity.EntityType.ENDERMAN' not in _vr)
+check('5.22.0: teste escondido /vazio testebicho prova a varredura',
+      'public static String testeVazio(ServerLevel nv)' in _vr
+      and 'testeVazio(nv)' in rd(R + '/NeptuneCommands.java'))
+_nv_m = io.open(A + '/models/item/nucleo_vial.json', encoding='utf-8').read()
+_nv_q = io.open(A + '/models/item/nucleo_vial_quebrado.json', encoding='utf-8').read()
+check('5.22.0: o nucleo vial virou um FRASCO DE VIDRO (paineis finos + energia dentro)',
+      '"vidro"' in _nv_m and '"luz"' in _nv_m and '"metal"' in _nv_m and '"rolha"' in _nv_m
+      and _nv_m.count('"from"') >= 10)
+check('5.22.0: o frasco tem o vermelho que BRILHA e o cristal girado no meio',
+      '"angle": 45' in _nv_m and 'nucleo_vial_luz' in _nv_m and '"gui_light": "front"' in _nv_m)
+check('5.22.0: o frasco QUEBRADO tem vidro rachado, cacos e rolha caida (sem luz)',
+      '"vidroq"' in _nv_q and 'residuo' in _nv_q and 'nucleo_vial_luz' not in _nv_q)
+check('5.22.0: as texturas do frasco existem (vidro, luz, metal, rolha, rachado, residuo)',
+      all(os.path.exists(A + '/textures/item/nucleo_vial_' + n + '.png') for n in
+          ['vidro', 'luz', 'metal', 'rolha', 'quebrado_vidro', 'residuo']))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
