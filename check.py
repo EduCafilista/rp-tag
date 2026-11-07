@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.17.1'
+VER = '5.17.2'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2692,8 +2692,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.17.1.jar')
-      and os.path.getsize('build/libs/rptag-5.17.1.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.17.2.jar')
+      and os.path.getsize('build/libs/rptag-5.17.2.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2777,13 +2777,21 @@ check('5.17.0: protocolo subiu para v15 (cliente velho é recusado)',
 # ============ 5.17.1: as três correções do dono ============
 _axc = rd(C + '/AxionHud.java')
 _nev2 = rd(R + '/NeptuneEventos.java')
-check('5.17.1: a AXION é ESCONDIDA por padrão (só aparece se o ADM mandar)',
+check('5.17.2: a AXION é ESCONDIDA por padrão (só aparece se o ADM mandar)',
       'private static int estado = AxionPayload.ESCONDIDA;' in _axc
       and 'private int axionEstado = 0;' in rd(R + '/RPWorldData.java'))
-check('5.17.1: e tem DOIS comandos só: acordar e dormir',
+_wdx = rd(R + '/RPWorldData.java')
+check('5.17.2: save antigo (5.17.0) é MIGRADO: quem entrou não vê a Axion',
+      'public static final int DATA_VERSAO = 2;' in _wdx
+      and 'if (data.dataVersao < DATA_VERSAO) {' in _wdx
+      and 'data.axionEstado = 0;' in _wdx
+      and 'tag.putInt("DataVersao", dataVersao);' in _wdx)
+check('5.17.2: no login o estado ATUAL da Axion é mandado pro jogador que entra',
+      'RPCommands.enviarAxion(joined, data);' in rd(R + '/ServerEvents.java'))
+check('5.17.2: e tem DOIS comandos só: um POE ela na tela, outro TIRA',
       'Commands.literal("axion")' in _rp4
-      and '.then(Commands.literal("acordar")' in _rp4
-      and '.then(Commands.literal("dormir")' in _rp4
+      and '.then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA))' in _rp4
+      and '.then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA))' in _rp4
       and 'literal("esconder")' not in _rp4 and 'literal("escala")' not in _rp4)
 check('5.17.1: a SAÍDA é animação NO CORPO (códigos no mundo + sombra), não na tela',
       'NeptunePackets.Codigos' in _nev2

@@ -1471,17 +1471,17 @@ public final class RPCommands {
                                                     return barraValor(ctx, EntityArgument.getPlayers(ctx, "jogadores"),
                                                             com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "valor"));
                                                 })))))
-                // ============ (5.17.0) AXION — (5.17.1) DOIS comandos: acordar e dormir ====
-                // Ela NÃO aparece por padrão (o padrão é escondida). O ADM chama:
-                //   acordar -> ela aparece ACORDADA na tela
-                //   dormir  -> ela aparece DORMINDO na tela
+                // ============ (5.17.2) AXION: um comando POE na tela, outro TIRA =========
+                // Ela NUNCA aparece sozinha (nem quando o jogador entra pela primeira vez).
+                //   acordar -> POE ela na tela (acordada)
+                //   dormir  -> TIRA ela da tela (volta a ficar escondida)
                 .then(Commands.literal("axion")
                         .then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA)))
-                        .then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.DORMINDO)))
+                        .then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA)))
                         .executes(ctx -> {
                             ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "\u00a7e/rp admin axion acordar\u00a77 \u2014 ela aparece ACORDADA\n"
-                                    + "\u00a7e/rp admin axion dormir\u00a77 \u2014 ela aparece DORMINDO")
+                                    "\u00a7e/rp admin axion acordar\u00a77 \u2014 COLOCA ela na tela\n"
+                                    + "\u00a7e/rp admin axion dormir\u00a77 \u2014 TIRA ela da tela")
                                     .withStyle(ChatFormatting.YELLOW), false);
                             return Command.SINGLE_SUCCESS;
                         }))
@@ -1866,9 +1866,9 @@ public final class RPCommands {
         for (ServerPlayer alvo : ctx.getSource().getServer().getPlayerList().getPlayers()) {
             enviarAxion(alvo, d);
         }
-        String nome = estado == AxionPayload.ACORDADA ? "\u00a7cACORDADA \u00a77(apareceu na tela)"
-                : estado == AxionPayload.DORMINDO ? "\u00a77DORMINDO (apareceu na tela)"
-                : "\u00a78escondida";
+        String nome = estado == AxionPayload.ACORDADA ? "\u00a7cna TELA \u00a77(acordada)"
+                : estado == AxionPayload.DORMINDO ? "\u00a77na TELA (dormindo)"
+                : "\u00a78fora da tela \u00a77(escondida)";
         ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aAxion: " + nome)
                 .withStyle(ChatFormatting.GREEN), false);
         return Command.SINGLE_SUCCESS;

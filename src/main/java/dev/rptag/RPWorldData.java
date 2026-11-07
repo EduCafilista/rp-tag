@@ -132,6 +132,18 @@ public final class RPWorldData extends SavedData {
     /** 0 = escondida (PADRÃO — ela só aparece quando o ADM manda), 1 = dormindo, 2 = acordada. */
     private int axionEstado = 0;
     private float axionEscala = 1.0F;
+    /**
+     * (5.17.2) VERSÃO DO SAVE — serve pras migrações.
+     *
+     * <p>O dono: <i>"a axion ainda aparece quando eu entrei a primeira vez no sv, ela nao
+     * deveria começar sem ela na minha tela?"</i>. A causa: o mundo da 5.17.0 gravou
+     * {@code AxionEstado} lá dentro, e o que está no save vence o padrão do código. Aqui o
+     * save antigo (versão &lt; 2) é migrado UMA vez: a Axion volta a nascer escondida e o
+     * ADM decide se ela aparece.
+     */
+    private int dataVersao = 0;
+    /** (5.17.2) versão que este jar grava. */
+    public static final int DATA_VERSAO = 2;
     /** (5.10.1) comando /title (VANILLA) de volta? Padrão NÃO — o dono pediu
      * "deixa só o /titulo". /rp admin titlevanilla on|off. */
     private boolean comandoTitleVanilla = false;
@@ -780,6 +792,7 @@ public final class RPWorldData extends SavedData {
         tag.putInt("BarraLargura", barraLargura);
         tag.putInt("AxionEstado", axionEstado);
         tag.putFloat("AxionEscala", axionEscala);
+        tag.putInt("DataVersao", dataVersao);   // (5.17.2)
         tag.putBoolean("ComandoTitleVanilla", comandoTitleVanilla); // (5.10.1)
         // (4.9.0) as 3 flags de "regra em RP" sairam junto com o /rp admin regra
         tag.putInt("AfkTimeout", afkTimeout);
@@ -930,6 +943,21 @@ public final class RPWorldData extends SavedData {
         if (tag.contains("BarraLargura")) data.barraLargura = tag.getInt("BarraLargura");
         if (tag.contains("AxionEstado")) data.axionEstado = tag.getInt("AxionEstado");
         if (tag.contains("AxionEscala")) data.axionEscala = tag.getFloat("AxionEscala");
+
+        // (5.17.2) MIGRAÇÃO: save da 5.17.0 (sem DataVersao) mandava a Axion APARECER na
+        // tela de todo mundo que entrava. Agora ela nasce ESCONDIDA e só aparece se o ADM
+        // mandar (/rp admin axion acordar). Roda uma vez só: depois a escolha do ADM fica.
+        data.dataVersao = tag.getInt("DataVersao");
+        if (data.dataVersao < DATA_VERSAO) {
+            boolean estavaNaTela = data.axionEstado != 0;
+            data.axionEstado = 0;
+            data.dataVersao = DATA_VERSAO;
+            data.setDirty();   // grava a migração junto (senão o save antigo fica no disco)
+            if (estavaNaTela) {
+                RPTagMod.LOGGER.info("RP Tag: save antigo -> a Axion volta a nascer FORA da tela "
+                        + "(ela só aparece com /rp admin axion acordar)");
+            }
+        }
         data.comandoTitleVanilla = tag.contains("ComandoTitleVanilla") && tag.getBoolean("ComandoTitleVanilla");
 
         // (4.5.0) mesmo cuidado: save antigo nao tem as chaves -> padrao LIBERADO
