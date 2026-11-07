@@ -363,12 +363,12 @@ public final class RPCommands {
      * {@code /rp admin avisar2 <jogadores> <estilo> <texto>}.
      *
      * <p>(5.16.4) <b>O TEXTO É OPCIONAL.</b> O dono:
-     * <i>"/rp admin avisar2 EdUuJoGaA death — caso eu queira usar só isso eu posso, não
+     * <i>"/rp admin avisar2 EdUuJoGaA morte2 — caso eu queira usar só isso eu posso, não
      * precisa de texto, se tiver texto ok, mas não precisa 100% das vezes, às vezes é apenas
      * aviso"</i>. Então:
      * <ul>
-     *   <li>{@code /rp admin avisar2 Fulano death} — só o aviso (a carta aparece, sem fala);</li>
-     *   <li>{@code /rp admin avisar2 Fulano death Fulano traiu a coroa} — aviso + a fala.</li>
+     *   <li>{@code /rp admin avisar2 Fulano morte2} — só o aviso (a carta aparece, sem fala);</li>
+     *   <li>{@code /rp admin avisar2 Fulano morte2 Fulano traiu a coroa} — aviso + a fala.</li>
      * </ul>
      * Sem texto, os avisos de carta/ritual não inventam frase nenhuma: a linha da mensagem
      * simplesmente não é desenhada.
@@ -409,18 +409,18 @@ public final class RPCommands {
             case "egipicio", "egipcio" -> 12;   // (4.5.0) O Olho de Horus
             case "expurgo" -> 13;   // (4.9.2) Hora do Expurgo (TV de emergencia)
             case "ciberpsicose", "ciber" -> 14;   // (4.9.3) Alerta de Ciberpsicose (glitch)
-            case "louco", "fool" -> 25;   // (5.14.0) O Louco (nevoa cinzenta, sigilo, relogio)
-            case "marinheiro", "enforcado", "hangedman" -> 26;   // (5.14.0) O Marinheiro / Enforcado (tempestade, mar, leme)
-            case "espectador", "justica", "justice" -> 27;   // (5.14.0) O Espectador / Justica (sonho, balanca, olhos)
+            case "louco" -> 25;   // (5.14.0) O Louco (nevoa cinzenta, sigilo, relogio)
+            case "marinheiro", "enforcado" -> 26;   // (5.14.0) O Marinheiro / Enforcado (tempestade, mar, leme)
+            case "espectador", "justica" -> 27;   // (5.14.0) O Espectador / Justica (sonho, balanca, olhos)
             // (5.16.0) as oito cartas de tarô do dono (o mesmo motor de canvas do protótipo)
-            case "eremita", "hermit" -> 28;   // (5.16.0) O EREMITA
-            case "julgamento", "judgement" -> 29;   // (5.16.0) O JULGAMENTO
-            case "lua", "moon" -> 30;   // (5.16.0) A LUA
-            case "mago", "magician" -> 31;   // (5.16.0) O MAGO
-            case "morte2", "ceifador", "morte_carta", "death" -> 32;   // (5.16.0) A MORTE (carta)
-            case "sol", "sun" -> 33;   // (5.16.0) O SOL
-            case "torre", "tower" -> 34;   // (5.16.0) A TORRE
-            case "estrela", "star" -> 35;   // (5.16.0) A ESTRELA
+            case "eremita" -> 28;   // (5.16.0) O EREMITA
+            case "julgamento" -> 29;   // (5.16.0) O JULGAMENTO
+            case "lua" -> 30;   // (5.16.0) A LUA
+            case "mago" -> 31;   // (5.16.0) O MAGO
+            case "morte2", "ceifador", "morte_carta" -> 32;   // (5.16.0) A MORTE (carta)
+            case "sol" -> 33;   // (5.16.0) O SOL
+            case "torre" -> 34;   // (5.16.0) A TORRE
+            case "estrela" -> 35;   // (5.16.0) A ESTRELA
             case "tolo", "foulo" -> 36;   // (5.16.2) TOLO = a CARTA do Louco (o protótipo FoolWarning, de volta)
             case "energia" -> 15;   // (5.5.0) ENERGIA — anomalia de entropia
             case "conhecimento" -> 16;   // (5.7.0) CONHECIMENTO — o olho que sabe
@@ -1284,19 +1284,11 @@ public final class RPCommands {
                                 .then(aviso2("sol"))            // 33 XIX
                                 .then(aviso2("torre"))          // 34 XVI
                                 .then(aviso2("estrela"))       // 35 XVII
-                                // ---- os mesmos avisos com os nomes dos protótipos (todos entram)
-                                .then(aviso2("fool"))           // o Louco (protótipo FoolWarning)
-                                .then(aviso2("hangedman"))      // o Enforcado (HangedManWarning)
-                                .then(aviso2("justice"))        // a Justiça (JusticeWarning)
-                                .then(aviso2("foulo"))          // o Tolo (protótipo alternativo)
-                                .then(aviso2("tower"))          // a Torre
-                                .then(aviso2("star"))           // a Estrela
-                                .then(aviso2("sun"))            // o Sol
-                                .then(aviso2("moon"))           // a Lua
-                                .then(aviso2("magician"))       // o Mago
-                                .then(aviso2("hermit"))         // o Eremita
-                                .then(aviso2("judgement"))      // o Julgamento
-                                .then(aviso2("death"))))        // a Morte (a carta)
+                                // (5.16.5) os nomes em INGLÊS saíram: eram o MESMO código dos
+                                // nomes em português (mago/magician = estilo 31, e assim por diante).
+                                // Só "foulo" ficou: é o jeito que o dono digitou "tolo" (outro apelido
+                                // em português, não uma versão em inglês).
+                                .then(aviso2("foulo"))))         // o Tolo (apelido em português)
                 .then(Commands.literal("avisozona")
                         .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
                                 .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())

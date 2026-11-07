@@ -50,7 +50,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.16.4'
+VER = '5.16.5'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2460,10 +2460,10 @@ check('5.14.0: os TRES avisos novos existem e sao FX proprio (nao video, nao par
 check('5.14.0: REGISTRADOS na tela (registerAboveAll dos tres)',
       'aviso_louco' in _lou and 'aviso_marinheiro' in _mar and 'aviso_espectador' in _esp)
 check('5.14.0: estilo 25/26/27 ligado no avisar() e no teste do cliente',
-      'case "louco", "fool" -> 25' in _rp and 'case "marinheiro", "enforcado", "hangedman" -> 26' in _rp
-      and 'case "espectador", "justica", "justice" -> 27' in _rp
+      'case "louco" -> 25' in _rp and 'case "marinheiro", "enforcado" -> 26' in _rp
+      and 'case "espectador", "justica" -> 27' in _rp
       and 'if (style == 25)' in _rgc and 'if (style == 26)' in _rgc and 'if (style == 27)' in _rgc
-      and 'case "louco", "fool" -> 25' in _fxc and 'case "marinheiro", "enforcado", "hangedman" -> 26' in _fxc)
+      and 'case "louco" -> 25' in _fxc and 'case "marinheiro", "enforcado" -> 26' in _fxc)
 check('5.14.0: /rp admin avisar louco|marinheiro|espectador existem como LITERAIS',
       'Commands.literal("louco")' in _rp and 'Commands.literal("marinheiro")' in _rp
       and 'Commands.literal("espectador")' in _rp)
@@ -2554,7 +2554,7 @@ check('5.16.2: TOLO voltou a ser a CARTA do Tolo (protótipo FoolWarning), estil
       ('case "tolo", "foulo" -> 36' in _rp) and ('case "tolo", "foulo" -> 36' in rd(C + '/FxComando.java'))
       and ('if (style == 36)' in rd(C + '/ClientEffects.java')) and ('ToloAvisoFx.iniciar' in rd(C + '/ClientEffects.java')))
 check('5.16.0: MORTE (carta) tem nome proprio para nao bater no estilo 4 (a morte antiga)',
-      'case "morte2", "ceifador", "morte_carta", "death" -> 32' in _rp
+      'case "morte2", "ceifador", "morte_carta" -> 32' in _rp
       and 'Commands.literal("morte2")' in _rp and 'case "morte" -> 4;' in _rp
       and 'MorteTarotAvisoFx.iniciar' in rd(C + '/ClientEffects.java'))
 check('5.16.0: os estilos 28..35 NAO existiam antes (nenhum estilo antigo foi trocado)',
@@ -2569,8 +2569,8 @@ check('5.16.2: existe a secao /rp admin avisar2 com os 14 estilos (LOTM + cartas
               ('louco', 'tolo', 'marinheiro', 'enforcado', 'espectador', 'justica',
                'eremita', 'julgamento', 'lua', 'mago', 'morte2', 'sol', 'torre', 'estrela')))
 check('5.16.2: os avisos novos continuam funcionando pelo /rp admin avisar (nada quebrou)',
-      'case "eremita", "hermit" -> 28' in _rp and 'case "estrela", "star" -> 35' in _rp
-      and 'case "morte2", "ceifador", "morte_carta", "death" -> 32' in _rp)
+      'case "eremita" -> 28' in _rp and 'case "estrela" -> 35' in _rp
+      and 'case "morte2", "ceifador", "morte_carta" -> 32' in _rp)
 check('5.16.2: TOLO e o estilo 36 com a carta propria (ToloAvisoFx) e nao mais o 25',
       'case "tolo", "foulo" -> 36' in _rp
       and os.path.exists(C + '/ToloAvisoFx.java')
@@ -2638,10 +2638,28 @@ check('5.16.4: a queda no void continua com a linha no CHAT (o jogo não engole 
       'O VAZIO TE PEGOU' in _tc)
 
 # ---- a prévia offline do aviso (o mesmo espelho Java2D das cartas)
-check('5.16.4: a prévia dos avisos de ritual existe e roda sem abrir o jogo',
-      os.path.exists('/home/user/previa_ritual/montar.py')
-      and os.path.exists('/home/user/previa_ritual/src/dev/rptag/client/Canvas.java')
-      and os.path.exists('/home/user/previa_ritual/out/marinheiro.png'))
+check('5.16.4: o gerador da prévia offline dos avisos está no workspace (fora do mod)',
+      os.path.exists('/home/user/previa_ritual/montar.py'))
+
+# ============ 5.16.5: só os nomes em PORTUGUÊS (os em inglês eram o MESMO código) =====
+_fxc2 = rd(C + '/FxComando.java')
+_EN = ('fool', 'hangedman', 'justice', 'hermit', 'judgement', 'moon', 'magician', 'death', 'sun', 'tower', 'star')
+check('5.16.5: os nomes em INGLÊS saíram do switch (eram duplicata, mesmo estilo)',
+      all(('"%s"' % e) not in _rp4 for e in _EN)
+      and all(('"%s"' % e) not in _fxc2 for e in _EN))
+check('5.16.5: e saíram também da ÁRVORE do comando (não aparecem mais no TAB)',
+      all(('aviso2("%s")' % e) not in _rp4 for e in _EN))
+check('5.16.5: os nomes em PORTUGUÊS continuam todos lá (mesmo estilo de antes)',
+      all(('case "%s"' % pt) in _rp4 for pt in
+          ('louco', 'marinheiro', 'espectador', 'eremita',
+           'julgamento', 'lua', 'mago', 'morte2', 'sol', 'torre', 'estrela', 'tolo'))
+      and 'case "mago" -> 31;' in _rp4 and 'case "lua" -> 30;' in _rp4
+      and 'case "estrela" -> 35;' in _rp4)
+check('5.16.5: mago = estilo 31 (o mesmo de antes) e NÃO existe mais "magician"',
+      'case "mago" -> 31;' in _rp4 and '"magician"' not in _rp4 and '"magician"' not in _fxc2)
+check('5.16.5: o único apelido repetido que sobrou é em português (foulo/enforcado/justica)',
+      'case "tolo", "foulo" -> 36;' in _rp4 and 'case "marinheiro", "enforcado" -> 26;' in _rp4
+      and 'case "espectador", "justica" -> 27;' in _rp4)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
