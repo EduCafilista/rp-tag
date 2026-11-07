@@ -108,6 +108,8 @@ public final class ClientEffects {
         SombraMorteFx.parar();
         // (5.12.0) a animação de ENGOLIR também é uma só por vez
         EngolirFx.parar();
+        // (5.17.0) a FITA (estilo 37) — um aviso por vez, como os outros
+        FitaAvisoFx.parar();
         // (5.7.9) estilo 20 = MORTEOP: espiral, relógio, crânio e cinzas.
         if (style == 20) {
             String limpoM = text.replaceAll("\u00a7.", "");
@@ -191,6 +193,12 @@ public final class ClientEffects {
         if (style == 35) {
             EstrelaAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
             RPTagMod.LOGGER.info("RP Tag: AVISO A ESTRELA iniciado (FX proprio)");
+            return;
+        }
+        // (5.17.0) estilo 37 = FITA CASSETE (a fita que o ADM gravou)
+        if (style == 37) {
+            FitaAvisoFx.iniciar(text);
+            RPTagMod.LOGGER.info("RP Tag: aviso FITA iniciado");
             return;
         }
         if (style == 36) {

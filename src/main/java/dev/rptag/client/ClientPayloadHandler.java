@@ -124,6 +124,28 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> ClientEffects.startScreenText(payload.text(), payload.seconds(), payload.style()));
     }
 
+    /** (5.17.0) a barra de progressão do HUD (o ADM manda rótulo, valor e cores). */
+    public static void handleBarra(final dev.rptag.BarraPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                BarraHudFx.receber(payload);
+            } catch (Throwable erro) {
+                dev.rptag.RPTagMod.LOGGER.warn("RP Tag: barra do HUD falhou", erro);
+            }
+        });
+    }
+
+    /** (5.17.0) a Axion: dormindo, acordada ou escondida. */
+    public static void handleAxion(final dev.rptag.AxionPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                AxionHud.receber(payload);
+            } catch (Throwable erro) {
+                dev.rptag.RPTagMod.LOGGER.warn("RP Tag: Axion falhou", erro);
+            }
+        });
+    }
+
     /** (3.77.0) BANNER da vida canônica (LORE ON/OFF). */
     public static void handleCanonBanner(final dev.rptag.CanonBannerPayload payload,
             final IPayloadContext context) {

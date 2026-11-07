@@ -48,6 +48,8 @@ public final class TabletVideoFundo {
     private static DynamicTexture tex;
     private static FxTimeline tl;
     private static VideoFrameLoader loader;
+    /** (5.17.0) tamanho real do quadro carregado (antes era fixo 1280x720). */
+    private static int texW = FxTimeline.LARGURA, texH = FxTimeline.ALTURA;
     private static volatile int geracao;
     private static int mostrado = -1;
     private static long inicioLoop;
@@ -133,6 +135,8 @@ public final class TabletVideoFundo {
                 } else {
                     tex.setPixels(img);   // fecha a imagem anterior
                 }
+                texW = img.getWidth();
+                texH = img.getHeight();
                 tex.upload();
                 mostrado = loader.ultimoPego();
             }
@@ -146,8 +150,7 @@ public final class TabletVideoFundo {
                 return;                     // ainda decodificando o primeiro
             }
 
-            int texW = FxTimeline.LARGURA;
-            int texH = FxTimeline.ALTURA;
+            // (5.17.0) tamanho REAL da textura (o aspecto 16:9 e o mesmo de antes)
             float alvoRatio = w / (float) h;
             float texRatio = texW / (float) texH;
             int desenhaW;

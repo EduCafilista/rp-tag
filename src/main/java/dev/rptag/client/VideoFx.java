@@ -30,6 +30,8 @@ public final class VideoFx {
     private static VideoFrameLoader loader;
     private static volatile int geracao;
     private static int mostrado = -1;
+    /** (5.17.0) tamanho REAL da textura carregada (os quadros deixaram de ser 1280x720). */
+    private static int texW = FxTimeline.LARGURA, texH = FxTimeline.ALTURA;
     private static boolean comecou, desligadoSessao;
     private static long esperaDesde;
 
@@ -92,6 +94,8 @@ public final class VideoFx {
                     } else {
                         tex.setPixels(img); // fecha a imagem anterior
                     }
+                    texW = img.getWidth();
+                    texH = img.getHeight();
                     tex.upload();
                     mostrado = loader.ultimoPego();
                     esperaDesde = agora;
@@ -120,7 +124,9 @@ public final class VideoFx {
         RenderSystem.enableBlend();
         if (tl.aditivo()) RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
         else RenderSystem.defaultBlendFunc();
-        int w = FxTimeline.LARGURA, h = FxTimeline.ALTURA;
+        // (5.17.0) o UV usa o tamanho REAL da textura (o aspecto 16:9 continua o
+        // mesmo, entao o enquadramento de FxTimeline.cobrir() nao muda)
+        int w = texW, h = texH;
         int[] r = FxTimeline.cobrir(g.guiWidth(), g.guiHeight()); // 16:9 sem distorcer
         g.blit(TEX, r[0], r[1], r[2], r[3], 0, 0, w, h, w, h);
         g.flush();

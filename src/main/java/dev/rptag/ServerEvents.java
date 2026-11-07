@@ -49,6 +49,17 @@ public final class ServerEvents {
     @SubscribeEvent
     public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
         NeptuneEventos.tick(event.getServer());
+        // (5.17.0) NÚCLEO VIAL: o desgaste é por DIA do jogo, então checar a cada 2 s é de sobra
+        // (o dia só vira a cada 20 minutos). Barato: sai na hora quando o dia não mudou.
+        if (event.getServer().getTickCount() % 40 == 0) {
+            try {
+                for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
+                    NucleoVialItem.tickJogador(p);
+                }
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: tick do núcleo vial falhou", t);
+            }
+        }
     }
 
     // ---- (5.12.0) REINO DO VAZIO: cliques nos pedestais e no portal ----
@@ -261,6 +272,15 @@ public final class ServerEvents {
         // Estado e persona do novo jogador para quem ja estava online.
         PacketDistributor.sendToAllPlayers(new SyncRPStatePayload(joined.getUUID(), data.isInRp(joined.getUUID())));
         PacketDistributor.sendToAllPlayers(PersonaSyncPayload.of(joined.getUUID(), data.getPersona(joined.getUUID())));
+
+        // (5.17.0) a BARRA do HUD e a AXION para quem acabou de entrar
+        try {
+            RPCommands.enviarBarra(joined, data);
+            RPCommands.enviarAxion(joined, data);
+            NucleoVialItem.tickJogador(joined);     // acerta os dias que passaram com o jogador offline
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: barra/axion no login falhou", t);
+        }
 
         // (4.5.0) recado de vida deixado por um admin enquanto a pessoa estava offline
         String recado = data.consumirRecadoVida(joined.getUUID());

@@ -94,5 +94,29 @@
         "stream": false
       }
     ]
+  },
+  "vial_ativar": {
+    "sounds": [
+      {
+        "name": "rptag:vial_ativar",
+        "stream": false
+      }
+    ]
+  },
+  "vial_quebrar": {
+    "sounds": [
+      {
+        "name": "rptag:vial_quebrar",
+        "stream": false
+      }
+    ]
+  },
+  "fita": {
+    "sounds": [
+      {
+        "name": "rptag:fita",
+        "stream": false
+      }
+    ]
   }
 }

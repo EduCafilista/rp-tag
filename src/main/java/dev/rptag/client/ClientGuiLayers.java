@@ -87,6 +87,11 @@ public final class ClientGuiLayers {
         MedoOpAvisoFx.registrar(event);
         // (5.7.0) ANIMAÇÃO DE SAÍDA do jogador (sprite dissolvendo em código)
         SaidaPlayerFx.registrar(event);
+        // (5.17.0) 37 = FITA CASSETE (o aviso que a fita toca)
+        FitaAvisoFx.registrar(event);
+        // (5.17.0) a BARRA que fica sempre na tela e a AXION no canto inferior direito
+        BarraHudFx.registrar(event);
+        AxionHud.registrar(event);
         // (5.12.0) 23 = ENGOLIR (o terremoto levando a pessoa — protótipo do dono)
         EngolirFx.registrar(event);
         // (5.7.2) SOMBRA DA MORTE: a escuridão saindo do corpo de quem morre

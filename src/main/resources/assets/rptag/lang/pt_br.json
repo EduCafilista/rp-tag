@@ -10,5 +10,8 @@
   "item.rptag.fragmento_vazio": "Fragmento do Vazio",
   "block.rptag.escuridao": "Escuridão",
   "dimension.rptag.exilio": "O Vazio",
-  "dimension.rptag.vazio": "O Vazio"
+  "dimension.rptag.vazio": "O Vazio",
+  "item.rptag.nucleo_vial": "Núcleo de Energia Vial",
+  "item.rptag.nucleo_vial_quebrado": "Núcleo de Energia Vial (quebrado)",
+  "item.rptag.fita": "Fita Cassete"
 }

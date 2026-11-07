@@ -4,7 +4,7 @@ Uso: python arte/validar.py   -> sai 1 se algo estiver errado
 
 Para cada assets/rptag/fx/<id>/: fx.json valido (mesmas regras do
 FxTimeline.parse), numero de quadros = arquivos _c = arquivos _a, todo _c
-com seu _a, tudo 1280x720, _a em tons de cinza, marcadores dentro do video.
+com seu _a do MESMO tamanho, tudo 16:9, _a em tons de cinza, marcadores dentro do video.
 """
 import glob
 import json
@@ -34,7 +34,8 @@ def validar(pasta):
         return
     frames = j.get("frames", 0)
     chk("%s: fps > 0 e frames > 0" % fx, j.get("fps", 0) > 0 and frames > 0)
-    chk("%s: 1280x720 no fx.json" % fx, j.get("width") == 1280 and j.get("height") == 720)
+    larg, alt = j.get("width"), j.get("height")
+    chk("%s: 16:9 no fx.json" % fx, bool(larg) and bool(alt) and abs(larg / alt - 16 / 9) < 0.01)
     chk("%s: blend normal|aditivo" % fx, j.get("blend") in ("normal", "aditivo"))
     chk("%s: marcadores dentro do video" % fx,
         all(0 <= m.get("frame", -1) < frames and m.get("name") for m in j.get("markers", [])))
@@ -44,8 +45,15 @@ def validar(pasta):
     esperados = ["%04d" % q for q in range(frames)]
     chk("%s: todo _c tem seu _a (0000..%04d)" % (fx, frames - 1),
         [os.path.basename(p)[:4] for p in cs] == esperados and [os.path.basename(p)[:4] for p in as_] == esperados)
-    tam = all(Image.open(p).size == (1280, 720) for p in cs + as_)
-    chk("%s: todos os quadros 1280x720" % fx, tam)
+    # (5.17.0) os quadros deixaram de ser 1280x720 (o jar pesava demais): agora vale
+    # qualquer tamanho desde que _c e _a sejam IGUAIS e o aspecto continue 16:9.
+    tamanhos = {Image.open(p).size for p in cs}
+    tamanhos_a = {Image.open(p).size for p in as_}
+    ok_tam = len(tamanhos) == 1 and len(tamanhos_a) == 1
+    wq, hq = (list(tamanhos)[0] if ok_tam else (0, 0))
+    chk("%s: _c e _a do mesmo tamanho (%dx%d)" % (fx, wq, hq), ok_tam and tamanhos == tamanhos_a)
+    chk("%s: quadros em 16:9" % fx,
+        ok_tam and abs(wq / max(1, hq) - 16 / 9) < 0.01 and wq >= 640)
     chk("%s: alfa em tons de cinza (L)" % fx, all(Image.open(p).mode == "L" for p in as_))
     mb = sum(os.path.getsize(p) for p in cs + as_) / 1e6
     print("      %s: %.1f MB" % (fx, mb))

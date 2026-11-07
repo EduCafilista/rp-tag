@@ -422,6 +422,7 @@ public final class RPCommands {
             case "torre" -> 34;   // (5.16.0) A TORRE
             case "estrela" -> 35;   // (5.16.0) A ESTRELA
             case "tolo", "foulo" -> 36;   // (5.16.2) TOLO = a CARTA do Louco (o protótipo FoolWarning, de volta)
+            case "fita" -> 37;   // (5.17.0) FITA CASSETE: o aviso que a fita toca
             case "energia" -> 15;   // (5.5.0) ENERGIA — anomalia de entropia
             case "conhecimento" -> 16;   // (5.7.0) CONHECIMENTO — o olho que sabe
             case "morteop" -> 20;     // (5.7.9) protótipo AvisoMorte: relógio + crânio
@@ -682,6 +683,9 @@ public final class RPCommands {
 
     private static void somAviso(ServerPlayer alvo, int style) {
         switch (style) {
+            // (5.17.0) FITA: o chiado da cassete (o mesmo som do item)
+            case 37 -> alvo.level().playSound(null, alvo.blockPosition(), RPTagMod.SOM_FITA.get(),
+                    net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
             // (3.96.0) PESADELO: o FX do cliente tem TRILHA propria
             // (enderman + caixinha desafinada + coracao + grito) — o
             // servidor faz as PARTICULAS (sculk + tinta + fumaca) + o
@@ -1205,6 +1209,15 @@ public final class RPCommands {
                                                     avisar(ctx, alvos, "marinheiro", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))
+                                // (5.17.0) FITA: o aviso da fita cassete (também dá pra testar sem o item)
+                                .then(Commands.literal("fita")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "fita", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
                                 // (5.14.0) O ESPECTADOR (Justica): ceu de sonho, balanca, anel de olhos
                                 .then(Commands.literal("espectador")
                                         .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
@@ -1288,7 +1301,8 @@ public final class RPCommands {
                                 // nomes em português (mago/magician = estilo 31, e assim por diante).
                                 // Só "foulo" ficou: é o jeito que o dono digitou "tolo" (outro apelido
                                 // em português, não uma versão em inglês).
-                                .then(aviso2("foulo"))))         // o Tolo (apelido em português)
+                                .then(aviso2("foulo"))          // o Tolo (apelido em português)
+                                .then(aviso2("fita"))))         // (5.17.0) o aviso da FITA cassete
                 .then(Commands.literal("avisozona")
                         .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
                                 .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
@@ -1315,6 +1329,181 @@ public final class RPCommands {
                             boolean on = RPWorldData.get(ctx.getSource().getServer()).saidaFx();
                             ctx.getSource().sendSuccess(() -> Component.literal(
                                     "Animação de saída está " + (on ? "LIGADA" : "DESLIGADA") + " (use on|off)."), false);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                // ============ (5.17.0) FITA CASSETE: o ADM grava a fala e entrega ============
+                // /rp admin fita dar <jogadores> <texto>   -> grava a fala e entrega a fita
+                // /rp admin fita gravar <texto>            -> regrava a fita que está na mão
+                // /rp admin fita ler                       -> mostra a fala da fita na mão
+                .then(Commands.literal("fita")
+                        .then(Commands.literal("dar")
+                                .then(Commands.argument("jogadores", EntityArgument.players())
+                                        .then(Commands.argument("texto",
+                                                        com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    String autor = ctx.getSource().getTextName();
+                                                    int n = 0;
+                                                    for (ServerPlayer alvo : alvos) {
+                                                        var fita = new net.minecraft.world.item.ItemStack(RPTagMod.FITA.get());
+                                                        FitaItem.gravar(fita, texto, autor);
+                                                        fita.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+                                                                Component.literal("\u00a7cFita de " + autor)
+                                                                        .withStyle(ChatFormatting.ITALIC));
+                                                        if (!alvo.getInventory().add(fita)) {
+                                                            alvo.drop(fita, false);
+                                                        }
+                                                        n++;
+                                                    }
+                                                    final int quantos = n;
+                                                    ctx.getSource().sendSuccess(() -> Component.literal(
+                                                            "\u00a7aFita gravada e entregue para " + quantos
+                                                                    + " jogador(es): \u00a77\"" + texto + "\"")
+                                                            .withStyle(ChatFormatting.GREEN), false);
+                                                    return Command.SINGLE_SUCCESS;
+                                                }))))
+                        .then(Commands.literal("gravar")
+                                .then(Commands.argument("texto",
+                                                com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                        .executes(ctx -> {
+                                            String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                            var fonte = ctx.getSource().getEntity();
+                                            if (!(fonte instanceof ServerPlayer p)) {
+                                                ctx.getSource().sendFailure(Component.literal(
+                                                        "Só dá pra regravar a fita que está NA MÃO de um jogador."));
+                                                return 0;
+                                            }
+                                            var mao = p.getMainHandItem();
+                                            if (!(mao.getItem() instanceof FitaItem)) {
+                                                ctx.getSource().sendFailure(Component.literal(
+                                                        "\u00a7cVocê precisa estar segurando uma fita na mão principal."));
+                                                return 0;
+                                            }
+                                            FitaItem.gravar(mao, texto, ctx.getSource().getTextName());
+                                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                                    "\u00a7aFita regravada: \u00a77\"" + texto + "\"")
+                                                    .withStyle(ChatFormatting.GREEN), false);
+                                            return Command.SINGLE_SUCCESS;
+                                        })))
+                        .then(Commands.literal("ler").executes(ctx -> {
+                            var fonte = ctx.getSource().getEntity();
+                            if (!(fonte instanceof ServerPlayer p)) {
+                                ctx.getSource().sendFailure(Component.literal("Só funciona na mão de um jogador."));
+                                return 0;
+                            }
+                            var mao = p.getMainHandItem();
+                            if (!(mao.getItem() instanceof FitaItem)) {
+                                ctx.getSource().sendFailure(Component.literal("\u00a7cSem fita na mão principal."));
+                                return 0;
+                            }
+                            String f = FitaItem.fala(mao);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    f.isBlank() ? "\u00a77A fita está virgem." : "\u00a7aFala: \u00a7f\"" + f + "\"")
+                                    .withStyle(ChatFormatting.GRAY), false);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .executes(ctx -> {
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "\u00a7e/rp admin fita dar <jogadores> <texto>\u00a77 — grava e entrega\n"
+                                    + "\u00a7e/rp admin fita gravar <texto>\u00a77 — regrava a fita da mão\n"
+                                    + "\u00a7e/rp admin fita ler\u00a77 — mostra a fala da fita da mão")
+                                    .withStyle(ChatFormatting.YELLOW), false);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                // ============ (5.17.0) NÚCLEO VIAL (só pra montar cena) ============
+                // /rp admin vial dar <jogadores> [carga]
+                // /rp admin vial carga <jogadores> <0..100> [ativo]
+                .then(Commands.literal("vial")
+                        .then(Commands.literal("dar")
+                                .then(Commands.argument("jogadores", EntityArgument.players())
+                                        .executes(ctx -> vialDar(ctx, EntityArgument.getPlayers(ctx, "jogadores"), 100, false))
+                                        .then(Commands.argument("carga",
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 100))
+                                                .executes(ctx -> vialDar(ctx, EntityArgument.getPlayers(ctx, "jogadores"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "carga"), false)))))
+                        .then(Commands.literal("carga")
+                                .then(Commands.argument("jogadores", EntityArgument.players())
+                                        .then(Commands.argument("valor",
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 100))
+                                                .executes(ctx -> vialCarga(ctx,
+                                                        EntityArgument.getPlayers(ctx, "jogadores"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "valor")))
+                                                .then(Commands.literal("ativo").executes(ctx -> vialCargaAtivo(ctx,
+                                                        EntityArgument.getPlayers(ctx, "jogadores"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "valor"), true)))
+                                                .then(Commands.literal("parado").executes(ctx -> vialCargaAtivo(ctx,
+                                                        EntityArgument.getPlayers(ctx, "jogadores"),
+                                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "valor"), false))))))
+                        .executes(ctx -> {
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "\u00a7e/rp admin vial dar <jogadores> [carga]\u00a77 — entrega um núcleo\n"
+                                    + "\u00a7e/rp admin vial carga <jogadores> <0..100> [ativo|parado]\u00a77 — crava a carga")
+                                    .withStyle(ChatFormatting.YELLOW), false);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                // ============ (5.17.0) BARRA DE PROGRESSÃO DO HUD ============
+                // /rp admin barra <jogadores> <0..100> [rotulo]
+                // /rp admin barra cor <rotulo|barra|fundo> <#RRGGBB>
+                // /rp admin barra titulo <texto> | onde <x> <y> | largura <px> | off | info
+                .then(Commands.literal("barra")
+                        .then(Commands.literal("off").executes(ctx -> barraOff(ctx)))
+                        .then(Commands.literal("info").executes(ctx -> barraInfo(ctx)))
+                        .then(Commands.literal("cor")
+                                .then(Commands.argument("parte", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                        .then(Commands.argument("hex", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> barraCor(ctx,
+                                                        com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "parte"),
+                                                        com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "hex"))))))
+                        .then(Commands.literal("titulo")
+                                .then(Commands.argument("rotulo", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                        .executes(ctx -> barraTitulo(ctx,
+                                                com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "rotulo")))))
+                        .then(Commands.literal("onde")
+                                .then(Commands.argument("x", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0, 1))
+                                        .then(Commands.argument("y", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0, 1))
+                                                .executes(ctx -> barraOnde(ctx,
+                                                        com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(ctx, "x"),
+                                                        com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(ctx, "y"))))))
+                        .then(Commands.literal("largura")
+                                .then(Commands.argument("px", com.mojang.brigadier.arguments.IntegerArgumentType.integer(40, 400))
+                                        .executes(ctx -> barraLargura(ctx,
+                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "px")))))
+                        .executes(ctx -> barraInfo(ctx))
+                        .then(Commands.argument("jogadores", EntityArgument.players())
+                                .then(Commands.argument("valor", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 100))
+                                        .executes(ctx -> barraValor(ctx, EntityArgument.getPlayers(ctx, "jogadores"),
+                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "valor")))
+                                        .then(Commands.argument("rotulo", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    String rot = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "rotulo");
+                                                    RPWorldData.get(ctx.getSource().getServer()).setBarraRotulo(rot);
+                                                    return barraValor(ctx, EntityArgument.getPlayers(ctx, "jogadores"),
+                                                            com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "valor"));
+                                                })))))
+                // ============ (5.17.0) AXION ============
+                .then(Commands.literal("axion")
+                        .then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA)))
+                        .then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.DORMINDO)))
+                        .then(Commands.literal("esconder").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA)))
+                        .then(Commands.literal("escala")
+                                .then(Commands.argument("valor", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.3, 3.0))
+                                        .executes(ctx -> {
+                                            double v = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(ctx, "valor");
+                                            RPWorldData.get(ctx.getSource().getServer()).setAxionEscala((float) v);
+                                            axionEstado(ctx, RPWorldData.get(ctx.getSource().getServer()).axionEstado());
+                                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                                    "\u00a7aAxion: escala " + String.format(java.util.Locale.ROOT, "%.2f", v))
+                                                    .withStyle(ChatFormatting.GREEN), false);
+                                            return Command.SINGLE_SUCCESS;
+                                        })))
+                        .executes(ctx -> {
+                            var d = RPWorldData.get(ctx.getSource().getServer());
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "\u00a7e/rp admin axion acordar|dormir|esconder | escala <0.3-3.0>\u00a77\n"
+                                    + "Estado atual: " + (d.axionEstado() == AxionPayload.ACORDADA ? "ACORDADA"
+                                            : d.axionEstado() == AxionPayload.DORMINDO ? "DORMINDO" : "ESCONDIDA"))
+                                    .withStyle(ChatFormatting.YELLOW), false);
                             return Command.SINGLE_SUCCESS;
                         }))
                 // (5.10.1) /rp admin titlevanilla on|off — o /title é comando VANILLA
@@ -1491,4 +1680,202 @@ public final class RPCommands {
 
         event.getDispatcher().register(root);
     }
+
+    // ===================================================================================
+    // (5.17.0) FITA / NÚCLEO VIAL / BARRA / AXION — os ajudantes dos comandos novos
+    // ===================================================================================
+
+    private static int vialDar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.Collection<ServerPlayer> alvos, int carga, boolean ativo) {
+        int n = 0;
+        long dia = ctx.getSource().getServer().overworld().getDayTime() / 24000L;
+        for (ServerPlayer alvo : alvos) {
+            var item = new net.minecraft.world.item.ItemStack(
+                    carga <= 0 ? RPTagMod.NUCLEO_VIAL_QUEBRADO.get() : RPTagMod.NUCLEO_VIAL.get());
+            NucleoVialItem.definirCarga(item, Math.max(0, Math.min(100, carga)), ativo, dia);
+            if (!alvo.getInventory().add(item)) {
+                alvo.drop(item, false);
+            }
+            n++;
+        }
+        final int quantos = n;
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aNúcleo vial (carga " + carga + "%) "
+                + (ativo ? "\u00a7cATIVO" : "\u00a77adormecido") + "\u00a7a entregue para " + quantos
+                + " jogador(es).").withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int vialCarga(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.Collection<ServerPlayer> alvos, int valor) {
+        return vialCargaAtivo(ctx, alvos, valor, false);
+    }
+
+    private static int vialCargaAtivo(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.Collection<ServerPlayer> alvos, int valor, boolean ativo) {
+        long dia = ctx.getSource().getServer().overworld().getDayTime() / 24000L;
+        int mudados = 0;
+        for (ServerPlayer alvo : alvos) {
+            var inv = alvo.getInventory();
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                var st = inv.getItem(i);
+                if (!st.isEmpty() && st.getItem() instanceof NucleoVialItem) {
+                    NucleoVialItem.definirCarga(st, Math.max(0, Math.min(100, valor)), ativo, dia);
+                    mudados++;
+                }
+            }
+            inv.setChanged();
+        }
+        final int m = mudados;
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aCarga cravada em " + valor + "%"
+                + (ativo ? " \u00a7c(ATIVO)" : "") + "\u00a7a — " + m + " núcleo(s) atualizado(s).")
+                .withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int barraValor(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.Collection<ServerPlayer> alvos, int valor) {
+        var dados = RPWorldData.get(ctx.getSource().getServer());
+        dados.setBarraValor(valor);
+        dados.setBarraVisivel(true);
+        for (ServerPlayer alvo : alvos) {
+            enviarBarra(alvo, dados);
+        }
+        final int v = valor;
+        final int n = alvos.size();
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aBarra em \u00a7f" + v + "%\u00a7a para "
+                + n + " jogador(es)  \u00a78(" + dados.barraRotulo() + ")").withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int barraOff(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
+        var dados = RPWorldData.get(ctx.getSource().getServer());
+        dados.setBarraVisivel(false);
+        for (ServerPlayer alvo : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+            enviarBarra(alvo, dados);
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a77Barra ESCONDIDA para todo mundo.")
+                .withStyle(ChatFormatting.GRAY), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int barraInfo(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
+        var d = RPWorldData.get(ctx.getSource().getServer());
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u00a7eBARRA DO HUD\u00a77\n"
+                + "  visível: " + (d.barraVisivel() ? "\u00a7asim" : "\u00a7cnão") + "\u00a77\n"
+                + "  rótulo: \u00a7f" + d.barraRotulo() + "\u00a77\n"
+                + "  valor: \u00a7f" + d.barraValor() + "%\u00a77\n"
+                + "  cor do texto: \u00a7f#" + String.format("%06X", d.barraCorTexto() & 0xFFFFFF) + "\u00a77\n"
+                + "  cor da barra: \u00a7f#" + String.format("%06X", d.barraCorBarra() & 0xFFFFFF) + "\u00a77\n"
+                + "  cor do fundo: \u00a7f#" + String.format("%06X", d.barraCorFundo() & 0xFFFFFF) + "\u00a77\n"
+                + "  posição: \u00a7f" + String.format(java.util.Locale.ROOT, "%.2f, %.2f", d.barraX(), d.barraY())
+                + "\u00a77  largura: \u00a7f" + d.barraLargura()).withStyle(ChatFormatting.YELLOW), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int barraCor(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            String parte, String hex) {
+        int cor;
+        try {
+            cor = Integer.parseInt(hex.replace("#", "").replace("0x", ""), 16) & 0xFFFFFF;
+        } catch (Exception e) {
+            ctx.getSource().sendFailure(Component.literal("\u00a7cCor inválida: use #RRGGBB, ex. #C81E2E"));
+            return 0;
+        }
+        var d = RPWorldData.get(ctx.getSource().getServer());
+        String qual;
+        switch (parte.toLowerCase(java.util.Locale.ROOT)) {
+            case "rotulo", "texto", "titulo" -> { d.setBarraCorTexto(cor); qual = "do RÓTULO"; }
+            case "barra", "fill", "progresso" -> { d.setBarraCorBarra(cor); qual = "da BARRA"; }
+            case "fundo", "background" -> { d.setBarraCorFundo(cor); qual = "do FUNDO"; }
+            default -> {
+                ctx.getSource().sendFailure(Component.literal(
+                        "\u00a7cUse: rotulo | barra | fundo"));
+                return 0;
+            }
+        }
+        for (ServerPlayer alvo : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+            enviarBarra(alvo, d);
+        }
+        final String q = qual;
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aCor " + q + " agora é \u00a7f#"
+                + String.format("%06X", cor)).withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int barraTitulo(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            String rotulo) {
+        var d = RPWorldData.get(ctx.getSource().getServer());
+        d.setBarraRotulo(rotulo);
+        for (ServerPlayer alvo : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+            enviarBarra(alvo, d);
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aRótulo da barra: \u00a7f" + rotulo)
+                .withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int barraOnde(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            double x, double y) {
+        var d = RPWorldData.get(ctx.getSource().getServer());
+        d.setBarraPos((float) x, (float) y);
+        for (ServerPlayer alvo : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+            enviarBarra(alvo, d);
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aBarra movida para "
+                + String.format(java.util.Locale.ROOT, "%.2f, %.2f", x, y)
+                + " \u00a78(0,0 = canto superior esquerdo; 1,1 = canto inferior direito)")
+                .withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int barraLargura(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            int px) {
+        var d = RPWorldData.get(ctx.getSource().getServer());
+        d.setBarraLargura(px);
+        for (ServerPlayer alvo : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+            enviarBarra(alvo, d);
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aLargura da barra: \u00a7f" + px + " px")
+                .withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (5.17.0) manda o estado inteiro da barra pra um jogador. */
+    public static void enviarBarra(ServerPlayer alvo, RPWorldData d) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo,
+                new BarraPayload(d.barraVisivel(), d.barraRotulo(), d.barraValor(), d.barraCorTexto(),
+                        d.barraCorBarra(), d.barraCorFundo(), d.barraX(), d.barraY(), d.barraLargura()));
+    }
+
+    private static int axionEstado(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            int estado) {
+        var d = RPWorldData.get(ctx.getSource().getServer());
+        d.setAxionEstado(estado);
+        for (ServerPlayer alvo : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+            enviarAxion(alvo, d);
+        }
+        String nome = estado == AxionPayload.ACORDADA ? "\u00a7cACORDADA"
+                : estado == AxionPayload.DORMINDO ? "\u00a77dormindo" : "\u00a78escondida";
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aAxion: " + nome)
+                .withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (5.17.0) manda o estado da Axion pra um jogador. */
+    public static void enviarAxion(ServerPlayer alvo, RPWorldData d) {
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo,
+                new AxionPayload(d.axionEstado(), d.axionEscala(), 0.995F, 0.995F));
+    }
+
 }

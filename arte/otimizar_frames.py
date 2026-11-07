@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Otimiza os quadros dos avisos em vídeo SEM mudar a resolução (1280x720).
+"""Otimiza os quadros dos avisos em vídeo — (5.17.0) agora TAMBÉM reduz a resolução.
+
+Histórico: na 5.10.0 este script só recompromia o JPEG (mesma resolução). Na 5.17.0 o
+dono reclamou do peso do mod ("o mod de novo está pesando"), então o script passou a
+reduzir para 896x504 (16:9, 70% da linear) na cor e 448x252 na máscara de alpha —
+o jogo estica de volta pra tela cheia na GPU, de graça. Resultado medido: fx de
+68,2 MB -> 32,8 MB (-52%), com SSIM 0,993 no que o jogador vê a 1280x720.
+
+O VideoFrameLoader (5.17.0) aceita qualquer tamanho — ele lê a largura/altura do
+arquivo e o VideoFx usa esse tamanho no UV do blit.
 
 O mod lê `fx/<id>/frames/NNNN_c.jpg` (cor, vira TYPE_3BYTE_BGR) e
 `NNNN_a.jpg` (alpha, vira TYPE_BYTE_GRAY). O caminho rápido do
@@ -26,18 +35,41 @@ from PIL import Image
 
 RAIZ = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                     'src', 'main', 'resources', 'assets', 'rptag', 'fx')
-Q_COR = 72
+Q_COR = 55
 Q_ALFA = 55
+# (5.17.0) resolução de saída (16:9). 1280x720 original -> 896x504 na cor, 448x252 no alfa.
+LARG_COR, ALT_COR = 896, 504
+LARG_ALFA, ALT_ALFA = 448, 252
 
 
 def recompressao(caminho, qualidade):
-    """devolve (bytes_novos, bytes_antes) — sem gravar."""
+    """devolve (bytes_novos, bytes_antes) — sem gravar.
+
+    (5.17.0) agora também REDUZ a resolução:
+      - cor  -> 896x504 (LANCZOS), q55, 4:2:0, progressivo;
+      - alfa -> 448x252 e volta suave pra 896x504 (é máscara, não precisa de detalhe);
+      - alfa CHAPADO (todos os pixels iguais, ex.: egípcio/tablet) -> branco sólido q35,
+        porque aquele arquivo não carrega informação nenhuma.
+    """
+    import numpy as np
     antes = os.path.getsize(caminho)
     with Image.open(caminho) as im:
-        modo = 'L' if qualidade == Q_ALFA else 'RGB'
-        im = im.convert(modo)
-        buf = io.BytesIO()
-        im.save(buf, 'JPEG', quality=qualidade, optimize=True, progressive=True)
+        if caminho.endswith('_a.jpg'):
+            im = im.convert('L')
+            a = np.asarray(im)
+            if a.size and (int(a.max()) - int(a.min())) <= 2:
+                im = Image.new('L', (LARG_COR, ALT_COR), 255)
+                qualidade = 35
+            else:
+                im = im.resize((LARG_ALFA, ALT_ALFA), Image.LANCZOS) \
+                       .resize((LARG_COR, ALT_COR), Image.LANCZOS)
+            buf = io.BytesIO()
+            im.save(buf, 'JPEG', quality=qualidade, optimize=True, progressive=True)
+        else:
+            im = im.convert('RGB').resize((LARG_COR, ALT_COR), Image.LANCZOS)
+            buf = io.BytesIO()
+            im.save(buf, 'JPEG', quality=qualidade, optimize=True,
+                    subsampling=2, progressive=True)
     return buf.getvalue(), antes
 
 

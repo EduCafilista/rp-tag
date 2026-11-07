@@ -34,7 +34,8 @@ public final class ModNetworking {
         // (5.9.0) v12: sync_titulo ganhou a COR do titulo pessoal
         // (5.13.0) v13: VAZIO_PORTAL (posicao + estado do portal negro, pedestais)
         // (5.13.6) v14: VAZIO_ALMAS (posicao das almas vazias, desenhadas por geometria)
-        PayloadRegistrar registrar = event.registrar("14");
+        // (5.17.0) v15: BARRA_HUD (a barra que fica sempre na tela) e AXION_HUD (a gatinha)
+        PayloadRegistrar registrar = event.registrar("15");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         // (5.13.0) o portal negro do vazio (posicao, pedestais, estado da abertura)
@@ -106,6 +107,12 @@ public final class ModNetworking {
         // (5.7.7) CÓDIGOS EM VOLTA DO PLAYER na saída (animação no mundo)
         registrar.playToClient(NeptunePackets.Codigos.TYPE, NeptunePackets.Codigos.STREAM_CODEC,
                 (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.GlifosSaidaFx.iniciar(p)));
+        // (5.17.0) a BARRA de progressão que fica sempre na tela (o ADM manda o estado inteiro)
+        registrar.playToClient(BarraPayload.TYPE, BarraPayload.STREAM_CODEC,
+                dev.rptag.client.ClientPayloadHandler::handleBarra);
+        // (5.17.0) a AXION no canto inferior direito (dormindo/acordada/escondida)
+        registrar.playToClient(AxionPayload.TYPE, AxionPayload.STREAM_CODEC,
+                dev.rptag.client.ClientPayloadHandler::handleAxion);
         // (5.7.2) SISTEMA DE TÍTULOS (etiqueta colorida + título pessoal)
         registrar.playToClient(TituloSyncPayload.TYPE, TituloSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTitulo);

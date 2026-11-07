@@ -116,6 +116,22 @@ public final class RPWorldData extends SavedData {
     /** (5.7.0) ANIMAÇÃO DE SAÍDA dos jogadores (quem fica vê o bonequinho se
      * desfazendo em código). Padrão LIGADO; /rp admin saidafx on|off. */
     private boolean saidaFx = true;
+
+    // ================= (5.17.0) BARRA DO HUD (só o ADM mexe) =================
+    private boolean barraVisivel = false;
+    private String barraRotulo = "AN\u00c1LISE";
+    private int barraValor = 10;
+    private int barraCorTexto = 0xE8EDF5;
+    private int barraCorBarra = 0xC81E2E;
+    private int barraCorFundo = 0x141018;
+    // (5.17.0) a barra nasce ACIMA da Axion: o canto inferior direito é a casa dela
+    private float barraX = 0.985F, barraY = 0.80F;
+    private int barraLargura = 120;
+
+    // ================= (5.17.0) AXION (a gatinha do canto) =================
+    /** 0 = escondida, 1 = dormindo (padrão), 2 = acordada. */
+    private int axionEstado = 1;
+    private float axionEscala = 1.0F;
     /** (5.10.1) comando /title (VANILLA) de volta? Padrão NÃO — o dono pediu
      * "deixa só o /titulo". /rp admin titlevanilla on|off. */
     private boolean comandoTitleVanilla = false;
@@ -266,6 +282,35 @@ public final class RPWorldData extends SavedData {
         comandoTitleVanilla = manter;
         setDirty();
     }
+
+    // ---------------------------------------------------- (5.17.0) barra do HUD
+    public boolean barraVisivel() { return barraVisivel; }
+    public void setBarraVisivel(boolean v) { barraVisivel = v; setDirty(); }
+    public String barraRotulo() { return barraRotulo; }
+    public void setBarraRotulo(String r) { barraRotulo = r == null ? "" : r; setDirty(); }
+    public int barraValor() { return barraValor; }
+    public void setBarraValor(int v) { barraValor = Math.max(0, Math.min(100, v)); setDirty(); }
+    public int barraCorTexto() { return barraCorTexto; }
+    public void setBarraCorTexto(int c) { barraCorTexto = c; setDirty(); }
+    public int barraCorBarra() { return barraCorBarra; }
+    public void setBarraCorBarra(int c) { barraCorBarra = c; setDirty(); }
+    public int barraCorFundo() { return barraCorFundo; }
+    public void setBarraCorFundo(int c) { barraCorFundo = c; setDirty(); }
+    public float barraX() { return barraX; }
+    public float barraY() { return barraY; }
+    public void setBarraPos(float x, float y) {
+        barraX = Math.max(0F, Math.min(1F, x));
+        barraY = Math.max(0F, Math.min(1F, y));
+        setDirty();
+    }
+    public int barraLargura() { return barraLargura; }
+    public void setBarraLargura(int px) { barraLargura = Math.max(40, Math.min(400, px)); setDirty(); }
+
+    // --------------------------------------------------------- (5.17.0) Axion
+    public int axionEstado() { return axionEstado; }
+    public void setAxionEstado(int e) { axionEstado = Math.max(0, Math.min(2, e)); setDirty(); }
+    public float axionEscala() { return axionEscala; }
+    public void setAxionEscala(float e) { axionEscala = Math.max(0.3F, Math.min(3.0F, e)); setDirty(); }
 
     public void setSaidaFx(boolean on) {
         saidaFx = on;
@@ -722,6 +767,18 @@ public final class RPWorldData extends SavedData {
         tag.putBoolean("ChatLocal", chatLocal);
         tag.putBoolean("BubblesOn", bubblesOn);
         tag.putBoolean("SaidaFx", saidaFx);
+        // (5.17.0) barra do HUD + Axion (sobrevivem ao restart, como o resto)
+        tag.putBoolean("BarraOn", barraVisivel);
+        tag.putString("BarraRotulo", barraRotulo);
+        tag.putInt("BarraValor", barraValor);
+        tag.putInt("BarraCorTexto", barraCorTexto);
+        tag.putInt("BarraCorBarra", barraCorBarra);
+        tag.putInt("BarraCorFundo", barraCorFundo);
+        tag.putFloat("BarraX", barraX);
+        tag.putFloat("BarraY", barraY);
+        tag.putInt("BarraLargura", barraLargura);
+        tag.putInt("AxionEstado", axionEstado);
+        tag.putFloat("AxionEscala", axionEscala);
         tag.putBoolean("ComandoTitleVanilla", comandoTitleVanilla); // (5.10.1)
         // (4.9.0) as 3 flags de "regra em RP" sairam junto com o /rp admin regra
         tag.putInt("AfkTimeout", afkTimeout);
@@ -861,6 +918,17 @@ public final class RPWorldData extends SavedData {
         data.bubblesOn = !tag.contains("BubblesOn") || tag.getBoolean("BubblesOn");
         // (5.7.0) save antigo nao tem a chave -> padrao LIGADO
         data.saidaFx = !tag.contains("SaidaFx") || tag.getBoolean("SaidaFx");
+        data.barraVisivel = tag.contains("BarraOn") && tag.getBoolean("BarraOn");
+        if (tag.contains("BarraRotulo")) data.barraRotulo = tag.getString("BarraRotulo");
+        if (tag.contains("BarraValor")) data.barraValor = tag.getInt("BarraValor");
+        if (tag.contains("BarraCorTexto")) data.barraCorTexto = tag.getInt("BarraCorTexto");
+        if (tag.contains("BarraCorBarra")) data.barraCorBarra = tag.getInt("BarraCorBarra");
+        if (tag.contains("BarraCorFundo")) data.barraCorFundo = tag.getInt("BarraCorFundo");
+        if (tag.contains("BarraX")) data.barraX = tag.getFloat("BarraX");
+        if (tag.contains("BarraY")) data.barraY = tag.getFloat("BarraY");
+        if (tag.contains("BarraLargura")) data.barraLargura = tag.getInt("BarraLargura");
+        if (tag.contains("AxionEstado")) data.axionEstado = tag.getInt("AxionEstado");
+        if (tag.contains("AxionEscala")) data.axionEscala = tag.getFloat("AxionEscala");
         data.comandoTitleVanilla = tag.contains("ComandoTitleVanilla") && tag.getBoolean("ComandoTitleVanilla");
 
         // (4.5.0) mesmo cuidado: save antigo nao tem as chaves -> padrao LIBERADO

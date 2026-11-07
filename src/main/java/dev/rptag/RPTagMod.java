@@ -47,7 +47,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.16.5";
+    public static final String VERSION = "5.17.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -178,6 +178,39 @@ public final class RPTagMod {
                     .lightLevel(st -> 1)));
     public static final Supplier<Item> ESCURIDAO_ITEM = ITEMS.register("escuridao",
             () -> new BlockItem(ESCURIDAO.get(), new Item.Properties()));
+
+    // ================= (5.17.0) NÚCLEO VIAL, FITA CASSETE e os sons deles =================
+    /** (5.17.0) o "acordar" do núcleo vial (energia subindo + vidro). */
+    public static final Supplier<SoundEvent> SOM_VIAL = SOUNDS.register("vial_ativar",
+            () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "vial_ativar")));
+    /** (5.17.0) o núcleo rachando quando a carga chega a 0. */
+    public static final Supplier<SoundEvent> SOM_VIAL_QUEBRAR = SOUNDS.register("vial_quebrar",
+            () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "vial_quebrar")));
+    /** (5.17.0) o chiado da fita cassete ao apertar o play. */
+    public static final Supplier<SoundEvent> SOM_FITA = SOUNDS.register("fita",
+            () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "fita")));
+
+    /**
+     * (5.17.0) NÚCLEO DE ENERGIA VIAL — só lore, se gasta em dias do jogo
+     * (1% a cada 5 dias parado, 10% a cada 5 dias ativado) e, ao chegar a 0,
+     * vira a {@link #NUCLEO_VIAL_QUEBRADO} no MESMO slot (nunca some).
+     */
+    public static final Supplier<NucleoVialItem> NUCLEO_VIAL = ITEMS.register("nucleo_vial",
+            () -> new NucleoVialItem(new Item.Properties().stacksTo(1)
+                    .rarity(net.minecraft.world.item.Rarity.EPIC)));
+
+    /** (5.17.0) a versão QUEBRADA (carga 0) — mesma coisa, sem energia. */
+    public static final Supplier<NucleoVialItem> NUCLEO_VIAL_QUEBRADO = ITEMS.register("nucleo_vial_quebrado",
+            () -> new NucleoVialItem(new Item.Properties().stacksTo(1)
+                    .rarity(net.minecraft.world.item.Rarity.UNCOMMON)));
+
+    /** (5.17.0) FITA CASSETE — o ADM grava a fala, o jogador ouve no clique direito. */
+    public static final Supplier<FitaItem> FITA = ITEMS.register("fita",
+            () -> new FitaItem(new Item.Properties().stacksTo(1)
+                    .rarity(net.minecraft.world.item.Rarity.RARE)));
 
     /** (5.13.2) FRAGMENTO DO VAZIO — item que abre o portal negro do exílio. */
     public static final Supplier<FragmentoItem> FRAGMENTO_VAZIO = ITEMS.register("fragmento_vazio",

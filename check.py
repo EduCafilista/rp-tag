@@ -18,6 +18,21 @@ def rd(p):
     return io.open(p, encoding='utf-8').read()
 
 
+def _png_tem_alpha(caminho):
+    """true se o PNG tem canal alfa E pelo menos 10% de pixels transparentes."""
+    try:
+        from PIL import Image
+        with Image.open(caminho) as im:
+            if im.mode not in ('RGBA', 'LA'):
+                return False
+            a = im.split()[-1]
+            hist = a.histogram()
+            total = sum(hist) or 1
+            return (sum(hist[:20]) / total) > 0.10
+    except Exception:
+        return False
+
+
 def _tam_jpg(caminho):
     """(largura, altura) lidas do marcador SOF do JPEG."""
     import struct
@@ -50,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.16.5'
+VER = '5.17.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -71,7 +86,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("14")' in mn)
+check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("15")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -198,7 +213,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo atual (3 payloads de musica)', 'registrar("14")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo atual (3 payloads de musica)', 'registrar("15")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -1083,10 +1098,10 @@ check('5.2.0: canais novos tablet_sync/tablet_update no lugar dos antigos ficha_
       'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9
       and 'tablet_sync' in rd(R + '/TabletSyncPayload.java') and 'tablet_update' in rd(R + '/TabletUpdatePayload.java'))
 check('5.2.0/5.4.0: protocolo subiu para v9..v12 e agora v14 (cliente antigo e recusado)',
-      'registrar("9")' not in _mn9 and 'registrar("14")' in _mn9 and 'registrar("8")' not in _mn9)
+      'registrar("9")' not in _mn9 and 'registrar("15")' in _mn9 and 'registrar("8")' not in _mn9)
 # (5.7.2) o canal subiu de novo: TITULOS entrou, cliente 5.7.1 e recusado
-check('5.7.2: protocolo v10 (agora v14) com o pacote de TITULOS',
-      'event.registrar("14")' in rd(R + '/ModNetworking.java')
+check('5.7.2: protocolo v10 (agora v15) com o pacote de TITULOS',
+      'event.registrar("15")' in rd(R + '/ModNetworking.java')
       and 'TituloSyncPayload.TYPE' in rd(R + '/ModNetworking.java'))
 check('5.2.0: o tablet e entregue no login', 'PlayerLoggedInEvent' in rd(R + '/TabletService.java'))
 check('5.2.0: /tablet existe e /ficha nao voltou',
@@ -1267,7 +1282,7 @@ check('5.2.0: item rptag:tablet registrado (stacksTo 1)', 'ITEMS.register("table
       and 'stacksTo(1)' in rd(R + '/RPTagMod.java'))
 check('5.2.0: tabela de limites da ficha 32/5/240/600/3000', 'LIMITES = {32, 5, 240, 600, 3000}' in _fp)
 check('5.2.0: protocolo com os 2 payloads do tablet',
-      'registrar("14")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
+      'registrar("15")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
 check('5.2.0: handler do cliente registrado', 'handleTablet' in rd(C + '/ClientPayloadHandler.java'))
 check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID antes do load',
       'tag.put("TabletSheets", sheets)' in _rw and 'hasUUID("Id")' in _rw
@@ -1348,8 +1363,8 @@ check('5.4.0: blur REAL no pulso travado (processBlurEffect) com fallback',
       'processBlurEffect' in rd(_NX) and 'catch (Throwable ignorado)' in rd(_NX))
 check('5.4.0: texto do vazio no chat com a frase do dono',
       'NeptunePackets' in rd(_NPk) and 'neptune_saida' in rd(_NPk))
-check('5.4.0: canal v9 (agora v14) registra os 5 pacotes novos',
-      'event.registrar("14")' in rd('src/main/java/dev/rptag/ModNetworking.java')
+check('5.4.0: canal v9 (agora v15) registra os 5 pacotes novos',
+      'event.registrar("15")' in rd('src/main/java/dev/rptag/ModNetworking.java')
       and rd('src/main/java/dev/rptag/ModNetworking.java').count('NeptunePackets') >= 5)
 check('5.4.0: comandos /terremoto, /vazio, /bicho e /neptune so pra OP',
       all(k in rd(_NC) for k in ['literal("terremoto")', 'literal("vazio")', 'literal("bicho")', 'literal("neptune")'])
@@ -1546,7 +1561,7 @@ check('5.7.4: trovao grave pros outros (medo) perto do vazio',
       'proximoTrovao' in rd(R + '/NeptuneEventos.java')
       and 'LIGHTNING_BOLT_THUNDER' in rd(R + '/NeptuneEventos.java'))
 check('5.7.4: canal v11 (o Aura mudou de formato; agora v14 com o portal e as almas do vazio)',
-      'event.registrar("14")' in rd(R + '/ModNetworking.java'))
+      'event.registrar("15")' in rd(R + '/ModNetworking.java'))
 
 # ============ 5.7.3: bicho na tela, música única, som do terremoto ============
 check('5.7.3: BICHO pula na tela de quem esta em CRIATIVO (era o bug do dono)',
@@ -1869,9 +1884,9 @@ check('5.9.0: cores por NOME (ouro, vermelho, ciano...) e HEX (FFD700 / #FFD700)
 check('5.9.0: dá pra voltar pra cor de fábrica (padrao) e a cor fica salva no mundo',
       'corDeFabrica' in _tit and '"padrao"' in _tcmd and 'putInt("CorPessoal"' in _tit
       and 'getInt("CorPessoal")' in _tit)
-check('5.9.0: o título pessoal também tem cor própria (pacote v14)',
+check('5.9.0: o título pessoal também tem cor própria (pacote v15)',
       'corPessoal' in _tpay and 'corPessoal' in _ctit
-      and 'event.registrar("14")' in _net)
+      and 'event.registrar("15")' in _net)
 check('5.9.0: /titulo definir e /titulo limpar aceitam VÁRIOS jogadores (@a)',
       'EntityArgument.players()' in _tcmd and 'getPlayers(ctx, "jogadores")' in _tcmd)
 check('5.9.0: TAB do comando sugere as cores',
@@ -2019,12 +2034,19 @@ check('5.10.0: os quadros de vídeo foram OTIMIZADOS (menos de 80 MB no total)',
       _total < 80 * 1024 * 1024)
 check('5.10.0: nenhum quadro ficou grande (o maior tem menos de 200 KB)',
       0 < _maior < 200 * 1024)
-check('5.10.0: a otimização NÃO mudou resolução (amostra: todas 1280x720)',
-      all(_tam_jpg(os.path.join(_fxdir, _d, 'frames', _f)) == (1280, 720)
+check('5.17.0: os quadros emagreceram (16:9, _c e _a do mesmo tamanho)',
+      all(
+          len({_tam_jpg(os.path.join(_fxdir, _d, 'frames', _f))
+               for _f in sorted(os.listdir(os.path.join(_fxdir, _d, 'frames')))[::57]
+               if _f.endswith('.jpg')}) == 1
+          and abs(_tam_jpg(os.path.join(_fxdir, _d, 'frames',
+                  sorted(f for f in os.listdir(os.path.join(_fxdir, _d, 'frames'))
+                         if f.endswith('_c.jpg'))[0]))[0]
+                  / _tam_jpg(os.path.join(_fxdir, _d, 'frames',
+                  sorted(f for f in os.listdir(os.path.join(_fxdir, _d, 'frames'))
+                         if f.endswith('_c.jpg'))[0]))[1] - 16 / 9) < 0.01
           for _d in sorted(os.listdir(_fxdir))
-          if os.path.isdir(os.path.join(_fxdir, _d, 'frames'))
-          for _f in sorted(os.listdir(os.path.join(_fxdir, _d, 'frames')))[::57]
-          if _f.endswith('.jpg')))
+          if os.path.isdir(os.path.join(_fxdir, _d, 'frames'))))
 check('5.10.0: o script da otimização está no repo (dá pra rodar de novo)',
       os.path.exists('arte/otimizar_frames.py')
       and 'def recompressao(' in rd('arte/otimizar_frames.py'))
@@ -2277,8 +2299,8 @@ check('5.13.2: portal animado também FORA do vazio (vórtice no overworld)',
       and 'envioEstado(nv, p, dados, base);' in _vr)
 check('5.13.2: cidade morta já de pé na chegada (anel inicial de ruínas)',
       'private static void anelInicial(' in _vr and 'marcar(nv, "anel")' in _vr)
-check('5.13.1: pacote do portal registrado (canal 13)',
-      'VazioPortalPayload.TYPE' in _net and 'event.registrar("14")' in _net
+check('5.13.1: pacote do portal registrado (canal 15)',
+      'VazioPortalPayload.TYPE' in _net and 'event.registrar("15")' in _net
       and 'VazioPortalPayload' in _pay)
 check('5.12.0: a volta pelo portal não depende de admin (voltarPeloPortal)',
       'public static void voltarPeloPortal(ServerPlayer alvo)' in _nev)
@@ -2354,8 +2376,8 @@ check('5.13.6: o CORPO da alma e GEOMETRIA no cliente (funciona com particula de
       and 'RenderType.debugQuads()' in rd(C + '/VazioAlmasFx.java')
       and 'private static void desenharAlma(' in rd(C + '/VazioAlmasFx.java')
       and os.path.exists(R + '/VazioAlmasPayload.java'))
-check('5.13.6: pacote das almas registrado (canal 14 + handler do cliente)',
-      'event.registrar("14")' in rd(R + '/ModNetworking.java')
+check('5.13.6: pacote das almas registrado (canal 15 + handler do cliente)',
+      'event.registrar("15")' in rd(R + '/ModNetworking.java')
       and 'VazioAlmasPayload.STREAM_CODEC' in rd(R + '/ModNetworking.java')
       and 'handleVazioAlmas' in rd(C + '/ClientPayloadHandler.java'))
 check('5.13.6 (pedido 56): textura da ESCURIDAO ANIMADA (4 quadros, 32x32, sem emenda)',
@@ -2660,6 +2682,97 @@ check('5.16.5: mago = estilo 31 (o mesmo de antes) e NÃO existe mais "magician"
 check('5.16.5: o único apelido repetido que sobrou é em português (foulo/enforcado/justica)',
       'case "tolo", "foulo" -> 36;' in _rp4 and 'case "marinheiro", "enforcado" -> 26;' in _rp4
       and 'case "espectador", "justica" -> 27;' in _rp4)
+
+# ============ 5.17.0: o mod emagreceu, FITA, NÚCLEO VIAL, BARRA e AXION ============
+_rm = rd(R + '/RPTagMod.java')
+_nv = rd(R + '/NucleoVialItem.java')
+_ft = rd(R + '/FitaItem.java')
+_mn2 = rd(R + '/ModNetworking.java')
+_se2 = rd(R + '/ServerEvents.java')
+
+# ---- peso
+check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
+      os.path.exists('build/libs/rptag-5.17.0.jar')
+      and os.path.getsize('build/libs/rptag-5.17.0.jar') < 45_000_000)
+check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
+      'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
+      and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
+check('5.17.0: o blit usa o tamanho REAL da textura no UV',
+      'texW = img.getWidth();' in rd(C + '/VideoFx.java')
+      and 'int w = texW, h = texH;' in rd(C + '/VideoFx.java'))
+check('5.17.0: os PNGs grandes do jar ficaram em PNG8 (logo, bicho, stickers)',
+      all(os.path.getsize(A + '/' + a) < 350_000 for a in
+          ('../rptag_logo.png', 'textures/gui/bicho.png', 'textures/gui/stickers_hi.png')
+          if os.path.exists(A + '/' + a)))
+
+# ---- FITA
+check('5.17.0: FITA registrada como item (FitaItem) com model e textura',
+      'ITEMS.register("fita"' in _rm and os.path.exists(A + '/models/item/fita.json')
+      and os.path.exists(A + '/textures/item/fita.png'))
+check('5.17.0: a fala fica GRAVADA no item (sobrevive a baú/morte)',
+      'TAG_FALA' in _ft and 'DataComponents.CUSTOM_DATA' in _ft)
+check('5.17.0: clique direito toca o CHIADO e mostra a fala no estilo FITA (37)',
+      'SOM_FITA' in _ft and 'ESTILO_FITA = 37' in _ft
+      and 'new ScreenTextPayload(cor, 8, ESTILO_FITA)' in _ft)
+check('5.17.0: o ADM grava e entrega /rp admin fita dar|gravar|ler',
+      'Commands.literal("fita")' in _rp4 and 'fita dar <jogadores> <texto>' in _rp4
+      and 'fita gravar' in _rp4 and 'fita ler' in _rp4)
+check('5.17.0: estilo 37 existe no cliente (FitaAvisoFx com cassete girando)',
+      'if (style == 37)' in _fxp and 'class FitaAvisoFx' in rd(C + '/FitaAvisoFx.java')
+      and 'FitaAvisoFx.registrar(event)' in rd(C + '/ClientGuiLayers.java'))
+
+# ---- NÚCLEO VIAL
+check('5.17.0: NÚCLEO VIAL + versão QUEBRADA registrados (nunca some, vira a quebrada)',
+      'ITEMS.register("nucleo_vial"' in _rm and 'ITEMS.register("nucleo_vial_quebrado"' in _rm
+      and 'NUCLEO_VIAL_QUEBRADO' in _nv and 'trocarPorQuebrado' in _nv)
+check('5.17.0: o desgaste é por DIA do mundo: 1% / 5 dias parado, 10% / 5 dias ativado',
+      'DIAS_POR_PCT_PARADO = 5' in _nv and 'PCT_ATIVO = 10' in _nv
+      and 'getDayTime() / 24000L' in _nv)
+check('5.17.0: ativado fica ENCANTADO (isFoil) e mostra a carga na barra do item',
+      'return ativo(stack);      // (pedido do dono)' in _nv or 'return ativo(stack);' in _nv)
+check('5.17.0: o servidor passa o tempo dos núcleos no tick (a cada 2 s)',
+      'NucleoVialItem.tickJogador(p)' in _se2)
+check('5.17.0: som ao ATIVAR o vial (e outro quando ele racha)',
+      'SOM_VIAL = SOUNDS.register("vial_ativar"' in _rm
+      and 'SOM_VIAL_QUEBRAR = SOUNDS.register("vial_quebrar"' in _rm
+      and os.path.exists(A + '/sounds/vial_ativar.ogg')
+      and os.path.exists(A + '/sounds/vial_quebrar.ogg'))
+check('5.17.0: /rp admin vial dar|carga (o ADM monta a cena)',
+      'Commands.literal("vial")' in _rp4 and 'vialDar(' in _rp4 and 'vialCarga(' in _rp4)
+
+# ---- BARRA DO HUD
+check('5.17.0: a BARRA fica sempre na tela e só o ADM mexe (valor, rótulo, cores)',
+      'Commands.literal("barra")' in _rp4 and 'barraValor(' in _rp4
+      and 'barraCor(' in _rp4 and 'barraTitulo(' in _rp4)
+check('5.17.0: o estado da barra vive no RPWorldData (sobrevive ao restart)',
+      'setBarraValor' in rd(R + '/RPWorldData.java')
+      and 'tag.putInt("BarraValor", barraValor);' in rd(R + '/RPWorldData.java'))
+check('5.17.0: o pacote BARRA_HUD leva rótulo+valor+3 cores+posição e é desenhado como camada',
+      'class BarraHudFx' in rd(C + '/BarraHudFx.java')
+      and 'BarraHudFx.registrar(event)' in rd(C + '/ClientGuiLayers.java')
+      and 'registrar.playToClient(BarraPayload.TYPE' in _mn2)
+check('5.17.0: a barra mostra a porcentagem no canto e o rótulo em cima',
+      'String pct = valor + "%";' in rd(C + '/BarraHudFx.java')
+      and 'AvisoRitual.texto(g, rotulo, x, y - 11' in rd(C + '/BarraHudFx.java'))
+
+# ---- AXION
+check('5.17.0: a AXION está na tela (dormindo por padrão), canto inferior direito',
+      'class AxionHud' in rd(C + '/AxionHud.java')
+      and 'AxionHud.registrar(event)' in rd(C + '/ClientGuiLayers.java')
+      and 'registrar.playToClient(AxionPayload.TYPE' in _mn2
+      and '0.995F' in rd(C + '/AxionHud.java'))
+check('5.17.0: as texturas da Axion têm FUNDO REMOVIDO (PNG com transparência)',
+      os.path.exists(A + '/textures/gui/axion_dormindo.png')
+      and os.path.exists(A + '/textures/gui/axion_acordada.png')
+      and _png_tem_alpha(A + '/textures/gui/axion_dormindo.png'))
+check('5.17.0: ela DORME e ACORDA com comando do ADM (e tem animação)',
+      'Commands.literal("axion")' in _rp4 and 'axionEstado(' in _rp4
+      and 'AxionPayload.ACORDADA' in _rp4 and 'respira' in rd(C + '/AxionHud.java'))
+check('5.17.0: o estado da Axion também fica no save',
+      'setAxionEstado' in rd(R + '/RPWorldData.java')
+      and 'tag.putInt("AxionEstado", axionEstado);' in rd(R + '/RPWorldData.java'))
+check('5.17.0: protocolo subiu para v15 (cliente velho é recusado)',
+      'event.registrar("15")' in _mn2)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -145,9 +145,14 @@ final class VideoFrameLoader implements Runnable {
     private NativeImage decodificar(int q) throws IOException {
         String base = String.format("fx/%s/frames/%04d", id, q);
         BufferedImage cor = ler(base + "_c.jpg"), alfa = ler(base + "_a.jpg");
-        int w = FxTimeline.LARGURA, h = FxTimeline.ALTURA;
-        if (cor.getWidth() != w || cor.getHeight() != h || alfa.getWidth() != w || alfa.getHeight() != h)
-            throw new IOException("quadro " + q + " nao e 1280x720");
+        // (5.17.0) O QUADRO MANDA NO TAMANHO. Antes exigia 1280x720; agora aceita
+        // o que vier (os quadros do jar sao 896x504 pra pesar menos) — a textura
+        // e criada no tamanho do arquivo e quem estica pra tela cheia e a GPU,
+        // de graça. Continua exigindo cor e alfa do MESMO tamanho (caminho rapido).
+        int w = cor.getWidth(), h = cor.getHeight();
+        if (alfa.getWidth() != w || alfa.getHeight() != h)
+            throw new IOException("quadro " + q + ": cor " + w + "x" + h
+                    + " e alfa " + alfa.getWidth() + "x" + alfa.getHeight() + " nao batem");
         int[] px = new int[w * h];
         if (cor.getType() == BufferedImage.TYPE_3BYTE_BGR && alfa.getType() == BufferedImage.TYPE_BYTE_GRAY) {
             // caminho RAPIDO (~10 ms/quadro): bytes direto do raster
