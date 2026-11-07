@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.17.0'
+VER = '5.17.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1664,10 +1664,9 @@ check('5.16.4: o aviso ALL FOR ONE saiu (classe, estilo 17, comando e camada)',
 check('5.7.0: ANIMACAO DE SAIDA (estilo 18) do prototipo do dono',
       'class SaidaPlayerFx' in _sai and 'style == 18' in _fxp and 'saida_player' in _sai
       and 'DESCONECTADO' in _sai and 'session.close();' in _sai)
-check('5.7.0/5.7.9: quando um jogador SAI, a animacao roda SOZINHA (e da pra desligar)',
+check('5.17.1: quando um jogador SAI, a animação NO CORPO roda sozinha e SEMPRE (sem comando)',
       'PlayerLoggedOutEvent' in _sev and 'saidaAutomatica' in _sev
-      and 'boolean saidaFx = true' in _wd and 'setSaidaFx' in _rpc
-      and '/rp admin saidafx on|off' in _rpc)
+      and 'Commands.literal("saidafx")' not in _rpc)
 check('5.7.0: os 3 FX novos tem try/catch (nunca derrubam o jogo) e som proprio',
       all('catch (Throwable t)' in x for x in (_conh, _sai))
       and all('inicio = -1L;' in x for x in (_conh, _sai)))
@@ -2313,9 +2312,10 @@ check('5.12.0: comandos de teste /vazio fragmentos | portal | pedestais | constr
       and 'VazioReino.listaPedestais()' in _nec and 'VazioReino.construirTudo(nv, quem)' in _nec)
 
 # 8) aviso de sangue na tela: era o estilo 9 mandado no lugar do 18
-check('5.12.0: a animação de SAÍDA manda estilo 18 (era 9 = SANGUE)',
-      'new ScreenTextPayload(nome, 9, 18)' in _nev
-      and 'new ScreenTextPayload(nome, 18, 9)' not in _nev)
+check('5.17.1: a saída NÃO manda aviso de tela cheia (só a animação no corpo)',
+      'new ScreenTextPayload(nome, 9, 18)' not in _nev
+      and 'new ScreenTextPayload(alvo.getName().getString().toUpperCase(),\n                    9, 18)' not in _nev
+      and 'NeptunePackets.Codigos' in _nev)
 check('5.12.0: o exilar não manda mais nada de sangue pra quem fica',
       'SangueAvisoFx.iniciar' in _ce and '11, 23' not in _nev)
 
@@ -2692,8 +2692,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.17.0.jar')
-      and os.path.getsize('build/libs/rptag-5.17.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.17.1.jar')
+      and os.path.getsize('build/libs/rptag-5.17.1.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2773,6 +2773,29 @@ check('5.17.0: o estado da Axion também fica no save',
       and 'tag.putInt("AxionEstado", axionEstado);' in rd(R + '/RPWorldData.java'))
 check('5.17.0: protocolo subiu para v15 (cliente velho é recusado)',
       'event.registrar("15")' in _mn2)
+
+# ============ 5.17.1: as três correções do dono ============
+_axc = rd(C + '/AxionHud.java')
+_nev2 = rd(R + '/NeptuneEventos.java')
+check('5.17.1: a AXION é ESCONDIDA por padrão (só aparece se o ADM mandar)',
+      'private static int estado = AxionPayload.ESCONDIDA;' in _axc
+      and 'private int axionEstado = 0;' in rd(R + '/RPWorldData.java'))
+check('5.17.1: e tem DOIS comandos só: acordar e dormir',
+      'Commands.literal("axion")' in _rp4
+      and '.then(Commands.literal("acordar")' in _rp4
+      and '.then(Commands.literal("dormir")' in _rp4
+      and 'literal("esconder")' not in _rp4 and 'literal("escala")' not in _rp4)
+check('5.17.1: a SAÍDA é animação NO CORPO (códigos no mundo + sombra), não na tela',
+      'NeptunePackets.Codigos' in _nev2
+      and 'sombraChuva(nv, pos.add(0, passo * 0.55, 0), 7 - passo)' in _nev2
+      and 'ScreenTextPayload pacote' not in _nev2)
+check('5.17.1: e ela é PADRÃO de todo jogador (sem saidafx, sem liga/desliga)',
+      'Commands.literal("saidafx")' not in _rp4 and 'saidafx on|off' not in _rp4)
+check('5.17.1: a BARRA tem a forma simples /rp admin barra <0..100> [frase]',
+      'argument("porcento"' in _rp4 and 'barraTodos(' in _rp4)
+check('5.17.1: e a barra só aparece SE O ADM QUISER (padrão escondida)',
+      'private boolean barraVisivel = false;' in rd(R + '/RPWorldData.java')
+      and 'private static boolean visivel;' in rd(C + '/BarraHudFx.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -1922,14 +1922,20 @@ public final class NeptuneEventos {
     public static int tocarAnimacaoSaida(ServerPlayer alvo, net.minecraft.server.MinecraftServer server) {
         int n = 0;
         try {
-            ScreenTextPayload pacote = new ScreenTextPayload(alvo.getName().getString().toUpperCase(),
-                    9, 18);
-            // (5.7.7) e os CÓDIGOS VERDES EM VOLTA DO CORPO, no mundo
+            // (5.17.1) o mesmo pedido vale aqui: a animação é NO CORPO (mundo), não na tela.
+            // A sombra no lugar + os códigos girando em volta do corpo.
+            if (alvo.level() instanceof ServerLevel nvCena) {
+                Vec3 posCena = alvo.position();
+                for (int passo = 0; passo < 4; passo++) {
+                    sombraChuva(nvCena, posCena.add(0, passo * 0.55, 0), 7 - passo);
+                }
+                nvCena.sendParticles(ParticleTypes.SOUL, posCena.x, posCena.y + 0.7, posCena.z,
+                        26, 0.35, 0.9, 0.35, 0.02);
+            }
             NeptunePackets.Codigos glifos = new NeptunePackets.Codigos(
                     alvo.getX(), alvo.getY(), alvo.getZ(), 6500,
                     alvo.getName().getString());
             for (ServerPlayer outro : server.getPlayerList().getPlayers()) {
-                PacketDistributor.sendToPlayer(outro, pacote);
                 PacketDistributor.sendToPlayer(outro, glifos);
                 n++;
             }
@@ -1969,22 +1975,22 @@ public final class NeptuneEventos {
                     0.35, 0.9, 0.35, 0.02);
             nv.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, pos.x, pos.y + 0.4, pos.z, 18,
                     0.30, 0.7, 0.30, 0.01);
-            // (2) os CÓDIGOS em volta do corpo + a placa com o nome (só pra quem fica)
+            // (2) os CÓDIGOS em volta do CORPO + a placa com o nome (só pra quem fica)
+            //
+            // (5.17.1) O DONO CORRIGIU: <i>"a animação de saída deve ser padrão dos players,
+            // não quero que seja uma animação na tela, eu quero uma animação no CORPO dos
+            // players quando eles saírem"</i>. Então aqui NÃO se manda mais o aviso de tela
+            // cheia (estilo 18) — fica só a animação NO MUNDO, no lugar exato onde o corpo
+            // estava: os códigos girando em volta dele, a coluna de sombra, as partículas e
+            // a placa com o nome. Roda SEMPRE que alguém sai (não é comando, não tem liga/
+            // desliga).
             NeptunePackets.Codigos glifos = new NeptunePackets.Codigos(
                     pos.x, pos.y, pos.z, 6500, nome);
-            // estilo 18 = A ANIMACAO DE SAIDA em si (o sprite do jogador se
-            // desfazendo em chuva de código, na tela de quem fica).
-            // (5.12.0) BUG DO DONO: aqui estava 9 (SANGUE). O cliente recebia
-            // "aviso de sangue" em vez da animação de saída — por isso ela
-            // "não aparecia" e por isso a tela de sangue pipocava quando
-            // alguém saía/era levado. O certo é (nome, segundos=18, estilo=18).
-            ScreenTextPayload pacote = new ScreenTextPayload(nome, 9, 18);
             for (ServerPlayer outro : nv.getServer().getPlayerList().getPlayers()) {
                 if (outro == saiu) {
                     continue;
                 }
                 PacketDistributor.sendToPlayer(outro, glifos);
-                PacketDistributor.sendToPlayer(outro, pacote);
                 if (outro.position().distanceTo(pos) <= 32.0) {
                     outro.playNotifySound(RPTagMod.SOM_EXPULSAO.get(), SoundSource.AMBIENT, 0.9F, 0.8F);
                     outro.displayClientMessage(Component.literal(

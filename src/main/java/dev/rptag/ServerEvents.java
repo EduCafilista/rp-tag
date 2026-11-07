@@ -362,8 +362,8 @@ public final class ServerEvents {
                 return;
             }
             // (5.7.9) uma chamada só: sombra + códigos + som + anúncio.
-            // A animação deixou de depender do /rp admin saidafx: ela é a
-            // despedida do personagem e roda sempre que alguém sai do jogo.
+            // (5.17.1) É A ANIMAÇÃO NO CORPO (no mundo), padrão de todo jogador:
+            // nada de tela cheia e nada de comando — sempre que alguém sai do jogo.
             // (5.12.0) se ele estava no meio da contagem do vazio, solta a gravidade
             dev.rptag.VazioReino.soltarCaindo(saiu);
             dev.rptag.NeptuneEventos.saidaAutomatica(saiu);

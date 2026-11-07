@@ -114,7 +114,7 @@ public final class RPWorldData extends SavedData {
     private boolean chatLocal = true;
     private boolean bubblesOn = true;
     /** (5.7.0) ANIMAÇÃO DE SAÍDA dos jogadores (quem fica vê o bonequinho se
-     * desfazendo em código). Padrão LIGADO; /rp admin saidafx on|off. */
+     * desfazendo em código). (5.17.1) É PADRÃO e roda sempre: o liga/desliga saiu. */
     private boolean saidaFx = true;
 
     // ================= (5.17.0) BARRA DO HUD (só o ADM mexe) =================
@@ -129,8 +129,8 @@ public final class RPWorldData extends SavedData {
     private int barraLargura = 120;
 
     // ================= (5.17.0) AXION (a gatinha do canto) =================
-    /** 0 = escondida, 1 = dormindo (padrão), 2 = acordada. */
-    private int axionEstado = 1;
+    /** 0 = escondida (PADRÃO — ela só aparece quando o ADM manda), 1 = dormindo, 2 = acordada. */
+    private int axionEstado = 0;
     private float axionEscala = 1.0F;
     /** (5.10.1) comando /title (VANILLA) de volta? Padrão NÃO — o dono pediu
      * "deixa só o /titulo". /rp admin titlevanilla on|off. */
@@ -250,6 +250,7 @@ public final class RPWorldData extends SavedData {
     }
 
     /** (5.7.0) animação de saída dos jogadores (quem FICA vê). */
+    /** (5.17.1) a animação de saída no corpo é padrão dos jogadores (sempre ligada). */
     public boolean saidaFx() {
         return saidaFx;
     }

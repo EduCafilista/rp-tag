@@ -30,7 +30,8 @@ public final class AxionHud {
     private static final ResourceLocation ACORDADA =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/axion_acordada.png");
 
-    private static int estado = AxionPayload.DORMINDO;
+    /** (5.17.1) ESCONDIDA por padrão: ela só aparece quando o ADM manda (acordar/dormir). */
+    private static int estado = AxionPayload.ESCONDIDA;
     private static float escala = 1.0F;
     private static float px = 0.995F, py = 0.995F;     // canto inferior direito
     private static boolean falhou;

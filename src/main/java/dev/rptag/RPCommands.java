@@ -816,7 +816,6 @@ public final class RPCommands {
                     + "/rp admin avisar2 <jogadores> <estilo> <texto> \u00a77\u2014 a SECAO NOVA (Lord of the Mysteries + cartas de taro): louco, tolo, marinheiro, enforcado, espectador, justica, eremita, julgamento, lua, mago, morte2, sol, torre, estrela\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
-                    + "/rp admin saidafx on|off \u00a77\u2014 animacao de saida dos jogadores (quem fica ve)\u00a7c\n"
                     + "/rp admin titlevanilla on|off \u00a77\u2014 o /title do Minecraft puro (padrao: fora; fica so o /titulo)\u00a7c\n"
                     + "/rp admin bolha <jogador> on|off \u00a77\u2014 modo balao de outro\u00a7c\n"
                     + "/rp admin balao <jogador> on|off \u00a77\u2014 libera/bloqueia o balao\u00a7c\n"
@@ -1311,26 +1310,8 @@ public final class RPCommands {
                                             String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                             return avisarZona(ctx, zonaId, texto);
                                         }))))
-                // (5.7.0) /rp admin saidafx on|off — animação de saída dos jogadores
-                .then(Commands.literal("saidafx")
-                        .then(Commands.literal("on").executes(ctx -> {
-                            RPWorldData.get(ctx.getSource().getServer()).setSaidaFx(true);
-                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "Animação de saída LIGADA — quem fica vê o jogador se desfazendo em código."), true);
-                            return Command.SINGLE_SUCCESS;
-                        }))
-                        .then(Commands.literal("off").executes(ctx -> {
-                            RPWorldData.get(ctx.getSource().getServer()).setSaidaFx(false);
-                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "Animação de saída DESLIGADA — ninguém vê nada quando um jogador sai."), true);
-                            return Command.SINGLE_SUCCESS;
-                        }))
-                        .executes(ctx -> {
-                            boolean on = RPWorldData.get(ctx.getSource().getServer()).saidaFx();
-                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "Animação de saída está " + (on ? "LIGADA" : "DESLIGADA") + " (use on|off)."), false);
-                            return Command.SINGLE_SUCCESS;
-                        }))
+                // (5.17.1) o /rp admin saidafx SAIU: a animação de saída no corpo é
+                // padrão de todo jogador e roda sempre — não tem mais liga/desliga.
                 // ============ (5.17.0) FITA CASSETE: o ADM grava a fala e entrega ============
                 // /rp admin fita dar <jogadores> <texto>   -> grava a fala e entrega a fita
                 // /rp admin fita gravar <texto>            -> regrava a fita que está na mão
@@ -1470,6 +1451,15 @@ public final class RPCommands {
                                         .executes(ctx -> barraLargura(ctx,
                                                 com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "px")))))
                         .executes(ctx -> barraInfo(ctx))
+                        // (5.17.1) A FORMA SIMPLES: /rp admin barra 10 ANALISE
+                        // (vai pra todo mundo; é essa que o dono pediu: "para o adm setar até a cor")
+                        .then(Commands.argument("porcento", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 100))
+                                .executes(ctx -> barraTodos(ctx,
+                                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "porcento"), null))
+                                .then(Commands.argument("frase", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                        .executes(ctx -> barraTodos(ctx,
+                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "porcento"),
+                                                com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "frase")))))
                         .then(Commands.argument("jogadores", EntityArgument.players())
                                 .then(Commands.argument("valor", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 100))
                                         .executes(ctx -> barraValor(ctx, EntityArgument.getPlayers(ctx, "jogadores"),
@@ -1481,28 +1471,17 @@ public final class RPCommands {
                                                     return barraValor(ctx, EntityArgument.getPlayers(ctx, "jogadores"),
                                                             com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "valor"));
                                                 })))))
-                // ============ (5.17.0) AXION ============
+                // ============ (5.17.0) AXION — (5.17.1) DOIS comandos: acordar e dormir ====
+                // Ela NÃO aparece por padrão (o padrão é escondida). O ADM chama:
+                //   acordar -> ela aparece ACORDADA na tela
+                //   dormir  -> ela aparece DORMINDO na tela
                 .then(Commands.literal("axion")
                         .then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA)))
                         .then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.DORMINDO)))
-                        .then(Commands.literal("esconder").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA)))
-                        .then(Commands.literal("escala")
-                                .then(Commands.argument("valor", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.3, 3.0))
-                                        .executes(ctx -> {
-                                            double v = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(ctx, "valor");
-                                            RPWorldData.get(ctx.getSource().getServer()).setAxionEscala((float) v);
-                                            axionEstado(ctx, RPWorldData.get(ctx.getSource().getServer()).axionEstado());
-                                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                                    "\u00a7aAxion: escala " + String.format(java.util.Locale.ROOT, "%.2f", v))
-                                                    .withStyle(ChatFormatting.GREEN), false);
-                                            return Command.SINGLE_SUCCESS;
-                                        })))
                         .executes(ctx -> {
-                            var d = RPWorldData.get(ctx.getSource().getServer());
                             ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "\u00a7e/rp admin axion acordar|dormir|esconder | escala <0.3-3.0>\u00a77\n"
-                                    + "Estado atual: " + (d.axionEstado() == AxionPayload.ACORDADA ? "ACORDADA"
-                                            : d.axionEstado() == AxionPayload.DORMINDO ? "DORMINDO" : "ESCONDIDA"))
+                                    "\u00a7e/rp admin axion acordar\u00a77 \u2014 ela aparece ACORDADA\n"
+                                    + "\u00a7e/rp admin axion dormir\u00a77 \u2014 ela aparece DORMINDO")
                                     .withStyle(ChatFormatting.YELLOW), false);
                             return Command.SINGLE_SUCCESS;
                         }))
@@ -1750,6 +1729,28 @@ public final class RPCommands {
         return Command.SINGLE_SUCCESS;
     }
 
+    /** (5.17.1) a forma simples: {@code /rp admin barra <porcento> [frase]} para TODO mundo. */
+    private static int barraTodos(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            int valor, String frase) {
+        var dados = RPWorldData.get(ctx.getSource().getServer());
+        dados.setBarraValor(valor);
+        if (frase != null && !frase.isBlank()) {
+            dados.setBarraRotulo(frase);
+        }
+        dados.setBarraVisivel(true);
+        var online = ctx.getSource().getServer().getPlayerList().getPlayers();
+        for (ServerPlayer alvo : online) {
+            enviarBarra(alvo, dados);
+        }
+        final int v = valor;
+        final String r = dados.barraRotulo();
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aBarra: \u00a7f" + r + " \u00a7a\u2192 \u00a7f"
+                + v + "%\u00a7a  \u00a78(na tela de " + online.size() + " jogador(es); off esconde)")
+                .withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
     private static int barraOff(
             com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
         var dados = RPWorldData.get(ctx.getSource().getServer());
@@ -1865,8 +1866,9 @@ public final class RPCommands {
         for (ServerPlayer alvo : ctx.getSource().getServer().getPlayerList().getPlayers()) {
             enviarAxion(alvo, d);
         }
-        String nome = estado == AxionPayload.ACORDADA ? "\u00a7cACORDADA"
-                : estado == AxionPayload.DORMINDO ? "\u00a77dormindo" : "\u00a78escondida";
+        String nome = estado == AxionPayload.ACORDADA ? "\u00a7cACORDADA \u00a77(apareceu na tela)"
+                : estado == AxionPayload.DORMINDO ? "\u00a77DORMINDO (apareceu na tela)"
+                : "\u00a78escondida";
         ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aAxion: " + nome)
                 .withStyle(ChatFormatting.GREEN), false);
         return Command.SINGLE_SUCCESS;
