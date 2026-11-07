@@ -319,6 +319,10 @@ public final class VazioReino {
             // únicos bichos que existem aqui; quem encosta neles leva dano.
             danoDeContato(nv, p, agora);
 
+            // 8b) (5.23.0) O NOME DO LUGAR — toda vez que a pessoa ENTRA na cidade (ou na
+            // praça, no portal, num santuário, nos ermos) toca o aviso daquele lugar.
+            VazioLugares.tick(nv, p, agora);
+
             // 9) (5.22.0) O VAZIO VOLTOU A SER VAZIO — o dono: "os endermas do vazio estao
             // muito roubados, tira eles e deixa vazio mesmo, nao quero spawn de enderman la,
             // se o player ficar apanhando ate morrer ele nao vai sobreviver". A dimensão não

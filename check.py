@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.22.0'
+VER = '5.23.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2692,8 +2692,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.22.0.jar')
-      and os.path.getsize('build/libs/rptag-5.22.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.23.0.jar')
+      and os.path.getsize('build/libs/rptag-5.23.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2920,9 +2920,12 @@ check('5.22.0: nada nasce no vazio (o spawn natural e cancelado para todo mundo)
 check('5.22.0: a varredura pega QUALQUER bicho (enderman e warden inclusive)',
       'vazio varreu' in _vr
       and 'boolean preto = e.getType() == net.minecraft.world.entity.EntityType.ENDERMAN' not in _vr)
-check('5.22.0: teste escondido /vazio testebicho prova a varredura',
+check('5.22.0: a varredura de bichos do vazio existe e o comando de teste NAO vai no jar',
       'public static String testeVazio(ServerLevel nv)' in _vr
-      and 'testeVazio(nv)' in rd(R + '/NeptuneCommands.java'))
+      and 'testebicho' not in rd(R + '/NeptuneCommands.java')
+      and 'simular' not in rd(R + '/NeptuneCommands.java'))
+check('5.23.0: nenhum comando escondido de teste vai no jar publicado',
+      all(k not in rd(R + '/NeptuneCommands.java') for k in ['testechao', 'testebicho', '"simular"']))
 _nv_m = io.open(A + '/models/item/nucleo_vial.json', encoding='utf-8').read()
 _nv_q = io.open(A + '/models/item/nucleo_vial_quebrado.json', encoding='utf-8').read()
 check('5.22.0: o nucleo vial virou um FRASCO DE VIDRO (paineis finos + energia dentro)',
@@ -2935,6 +2938,37 @@ check('5.22.0: o frasco QUEBRADO tem vidro rachado, cacos e rolha caida (sem luz
 check('5.22.0: as texturas do frasco existem (vidro, luz, metal, rolha, rachado, residuo)',
       all(os.path.exists(A + '/textures/item/nucleo_vial_' + n + '.png') for n in
           ['vidro', 'luz', 'metal', 'rolha', 'quebrado_vidro', 'residuo']))
+
+# ============ 5.23.0: aviso de lugar TODA vez que entra (cidade, praca, portal...) ============
+_lug = rd(R + '/VazioLugares.java')
+check('5.23.0: existe o sistema de aviso de LUGAR no vazio (VazioLugares)',
+      'public final class VazioLugares' in _lug
+      and 'public static void tick(ServerLevel nv, ServerPlayer p, long agora)' in _lug)
+check('5.23.0: os 5 lugares existem (praca, portal, santuario, CIDADE, ermos)',
+      all(k in _lug for k in ['"praca"', '"portal"', '"santuario"', '"cidade"', '"ermos"'])
+      and '"A CIDADE MORTA"' in _lug)
+check('5.23.0: o aviso toca TODA VEZ que entra (nao e 1x por sessao)',
+      'if (atual.id().equals(DENTRO.get(id)))' in _lug and 'DENTRO.put(id, atual.id());' in _lug
+      and 'DENTRO.remove(id);' in _lug and 'clearSeen' not in _lug)
+check('5.23.0: a decisao do lugar e separada da tela (decidir) e o tick so chama decidir+avisar',
+      'public static Lugar decidir(UUID id, double x, double z, long agora)' in _lug
+      and 'Lugar l = decidir(p.getUUID(), p.getX(), p.getZ(), agora);' in _lug)
+check('5.23.0: o aviso usa o titulo grande + subtitulo + som + particula de alma',
+      'ClientboundSetTitleTextPacket' in _lug and 'ClientboundSetSubtitleTextPacket' in _lug
+      and 'ClientboundSetTitlesAnimationPacket' in _lug and 'RPTagMod.SOM_VAZIO' in _lug
+      and 'ParticleTypes.SOUL' in _lug)
+check('5.23.0: a borda do lugar tem histerese (nao pisca andando na linha)',
+      'FOLGA = 8.0' in _lug and 'ESPERA_MS = 1500L' in _lug)
+check('5.23.0: trocar de dimensao / sair do servidor zera a memoria de lugar',
+      'public static void esquecer(UUID id)' in _lug
+      and 'VazioLugares.esquecer(event.getEntity().getUUID())' in _se
+      and 'VazioLugares.aoTrocarDimensao(' in rd(R + '/ServerEvents.java'))
+check('5.23.0: o tick do vazio chama VazioLugares.tick',
+      'VazioLugares.tick(nv, p, agora);' in _vr)
+_rp6 = rd(R + '/NeptuneCommands.java')
+check('5.23.0: /vazio lugares, /vazio lugar <id> e /vazio onde <x> <z>',
+      'literal("lugares")' in _rp6 and 'literal("lugar")' in _rp6 and 'literal("onde")' in _rp6
+      and 'VazioLugares.listar(quem)' in _rp6 and 'VazioLugares.lugarEm(x, z)' in _rp6)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

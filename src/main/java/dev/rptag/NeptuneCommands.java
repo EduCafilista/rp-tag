@@ -208,35 +208,66 @@ public final class NeptuneCommands {
             return Command.SINGLE_SUCCESS;
         }));
 
-        // (5.21.0) TESTE ESCONDIDO: o piso escuro e o rebaixamento da coluna
-        vazio.then(Commands.literal("testechao")
+        // (5.23.0) /vazio onde <x> <z> — em que lugar fica esse ponto (teste da geometria)
+        vazio.then(Commands.literal("onde")
                 .then(Commands.argument("x", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
                         .then(Commands.argument("z", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
                                 .executes(ctx -> {
                                     int x = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "x");
                                     int z = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "z");
-                                    var nv = ctx.getSource().getServer()
-                                            .getLevel(NeptuneEventos.CHAVE_EXILIO_PUBLICA);
-                                    if (nv == null) {
-                                        return 0;
-                                    }
+                                    VazioLugares.Lugar l = VazioLugares.lugarEm(x, z);
+                                    String nome = l == null ? "terra de ninguem (anel 20..45)" : l.nome();
                                     ctx.getSource().sendSuccess(() -> Component.literal(
-                                            "\u00a7aTeste do chao: \u00a7f" + VazioReino.testeChao(nv, x, z)), false);
+                                            "\u00a7a" + x + "," + z + " \u00a78-> \u00a7f" + nome), false);
                                     return Command.SINGLE_SUCCESS;
                                 }))));
 
-        // (5.22.0) TESTE ESCONDIDO: prova que o vazio VARRE qualquer bicho
-        vazio.then(Commands.literal("testebicho").executes(ctx -> {
-            var server = ctx.getSource().getServer();
-            var nv = server.getLevel(NeptuneEventos.CHAVE_EXILIO_PUBLICA);
-            if (nv == null) {
-                ctx.getSource().sendFailure(Component.literal("\u00a7cA dimensão do vazio não está carregada."));
-                return 0;
-            }
-            String r = VazioReino.testeVazio(nv);
-            ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aTeste do vazio: \u00a7f" + r), false);
+        // (5.23.0) /vazio lugares — a tabela dos lugares e onde a pessoa está agora
+        vazio.then(Commands.literal("lugares").executes(ctx -> {
+            ServerPlayer quem = ctx.getSource().getPlayerOrException();
+            ctx.getSource().sendSuccess(() -> Component.literal(VazioLugares.listar(quem)), false);
             return Command.SINGLE_SUCCESS;
         }));
+
+        // (5.23.0) /vazio lugar <id> — toca o aviso de um lugar na hora (teste do ADM)
+        vazio.then(Commands.literal("lugar")
+                .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .suggests((ctx, b) -> {
+                            for (VazioLugares.Lugar l : VazioLugares.TODOS) {
+                                b.suggest(l.id());
+                            }
+                            return b.buildFuture();
+                        })
+                        .executes(ctx -> {
+                            String id = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "id");
+                            VazioLugares.Lugar l = VazioLugares.porId(id);
+                            if (l == null) {
+                                ctx.getSource().sendFailure(Component.literal(
+                                        "\u00a7cLugar desconhecido. Use: praca, portal, santuario, cidade, ermos"));
+                                return 0;
+                            }
+                            ServerPlayer quem = ctx.getSource().getPlayer();
+                            int n = 0;
+                            if (quem != null) {
+                                VazioLugares.avisar(quem, (net.minecraft.server.level.ServerLevel) quem.level(), l);
+                                n = 1;
+                            } else {
+                                // do console: manda para quem estiver no vazio (teste)
+                                var nv = ctx.getSource().getServer()
+                                        .getLevel(NeptuneEventos.CHAVE_EXILIO_PUBLICA);
+                                if (nv != null) {
+                                    for (ServerPlayer q : nv.players()) {
+                                        VazioLugares.avisar(q, nv, l);
+                                        n++;
+                                    }
+                                }
+                            }
+                            final int enviados = n;
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "\u00a7aAviso de \u00a7f" + l.nome() + "\u00a7a enviado para "
+                                            + enviados + " jogador(es)."), false);
+                            return Command.SINGLE_SUCCESS;
+                        })));
 
         // (5.7.8) /vazio entrar — o admin vai pra dimensão do exílio testar o
         // ambiente (andar no escuro, monólitos, sussurros) sem punir ninguém.

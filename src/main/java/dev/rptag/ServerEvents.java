@@ -394,10 +394,30 @@ public final class ServerEvents {
         }
     }
 
+    /**
+     * (5.23.0) TROCOU DE MUNDO? O aviso de lugar recomeça.
+     *
+     * <p>Sem isto, quem saía do vazio dentro da cidade e voltava direto para a cidade não
+     * recebia o aviso ("todas as vezes que o player entrar na cidade"). Aqui a memória de
+     * "onde eu estava" é apagada na troca de dimensão.
+     */
+    @SubscribeEvent
+    public static void onTrocarDimensao(PlayerEvent.PlayerChangedDimensionEvent event) {
+        try {
+            if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                VazioLugares.aoTrocarDimensao(sp, event.getFrom(), event.getTo());
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: troca de dimensao (aviso de lugar) falhou", t);
+        }
+    }
+
     @SubscribeEvent
     public static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         // As lore zones voltam a aparecer na proxima sessao.
         LoreZones.clearSeen(event.getEntity().getUUID());
+        // (5.23.0) e os avisos de lugar do vazio esquecem onde a pessoa estava
+        VazioLugares.esquecer(event.getEntity().getUUID());
         // (5.7.0) ANIMACAO DE SAIDA: quem FICA vê o bonequinho do jogador que
         // saiu se desfazendo em código (o próprio que saiu não vê nada, claro).
         // (5.7.9) O DONO PEDIU: "não quero essa /saida, quero que a animação

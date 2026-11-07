@@ -1,0 +1,39 @@
+RP Tag 5.23.0 - AVISOS DE LUGAR NO VAZIO (prova de execucao)
+============================================================
+
+1) GEOMETRIA (/vazio onde <x> <z>, no servidor de teste, jar 5.23.0)
+   0,0        -> A PRACA
+   20,0       -> A PRACA          (borda de entrada: 20)
+   25,0       -> terra de ninguem (anel 20..45)
+   44,0       -> terra de ninguem (anel 20..45)
+   45,0       -> A CIDADE MORTA   (borda da cidade)
+   0,-22      -> O PORTAL         (centro)
+   0,-31      -> O PORTAL         (9 do centro, dentro dos 14)
+   0,-38      -> terra de ninguem (16 do centro, fora dos 14)
+   60,69      -> UM SANTUARIO QUEBRADO
+   61,88      -> UM SANTUARIO QUEBRADO
+   200,0      -> A CIDADE MORTA
+   301,0      -> OS ERMOS
+   400,400    -> OS ERMOS
+
+2) O AVISO TOCA TODA VEZ (rota com o MESMO juiz do tick)
+   comando de teste (fora do jar publicado):
+     (0,0)    -> A PRACA
+     (0,-35)  -> O PORTAL
+     (0,0)    -> A PRACA        <- voltou: avisa DE NOVO
+     (0,60)   -> A CIDADE MORTA
+     (0,0)    -> A PRACA        <- avisa DE NOVO (3a vez na praca)
+     (200,0)  -> A CIDADE MORTA
+     (0,0)    -> A PRACA
+     (30,0)   -> silencio
+     (30,0)   -> silencio       <- ficar parado nao repete
+     (0,0)    -> A PRACA
+   avisos disparados: 8
+   (prova: histerese + "toda entrada", sem metralhar a tela)
+
+3) SERVIDOR
+   jar final 5.23.0: sobe limpo, RCON responde, 0 excecoes no latest.log.
+   /vazio simular, /vazio testebicho e /vazio testechao NAO existem no jar
+   publicado ("Incorrect argument for command").
+
+4) check.py: 975 PASS / 0 FAIL
