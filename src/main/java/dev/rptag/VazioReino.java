@@ -601,6 +601,15 @@ public final class VazioReino {
 
     // ================================================================ RELEVO
     /**
+     * (5.18.0) O TOPO DA LAJE DO VAZIO, em Y ABSOLUTO.
+     *
+     * <p>{@code dimension/exilio.json} empilha, de baixo pra cima: bedrock 2 + deepslate 3 +
+     * blackstone 2 + tuff 2 + sculk 1 + concreto cinza-claro 1 = <b>11 blocos</b>. Logo o
+     * primeiro bloco de ar livre está em {@code minBuildHeight + 11}. O relevo mira sempre
+     * nesse chão fixo — é o que deixa a escultura repetível (e o conserto do mundo antigo).
+     */
+    public static final int ALTURA_LAJE = 11;
+    /**
      * (5.13.4) RELEVOS NA DIMENSÃO — pedido 53: <i>"faça relevos na dimensão, quero
      * prédios caídos, ruínas, coisas que evidencie o vazio"</i>.
      *
@@ -610,6 +619,9 @@ public final class VazioReino {
      * <b>uma vez por chunk</b> ({@code R:cx,cz} no save), 2 chunks por tick, e nunca por
      * cima de construção — só mexe em bloco NATURAL.
      */
+    /** (5.18.0) quantos blocos o relevo já mexeu nesta sessão (relatório no log). */
+    private static int relevoSessao = 0;
+
     private static void relevoTick(ServerLevel nv, long agora) {
         try {
             if (!relevoMapaFeito) {
@@ -624,9 +636,15 @@ public final class VazioReino {
             while (!RELEVO.isEmpty() && feitos < 2) {
                 int[] c = RELEVO.poll();
                 int cx = c[0], cz = c[1];
-                if (!marcar(nv, "R:" + cx + "," + cz)) {
-                    continue;
-                }
+                // (5.18.0) O RELEVO AGORA PASSA SEMPRE — e é isso que CONSERTA o mundo antigo.
+                // O dono: "cade as montanhas que voce tinha feito anteriormente no vazio?
+                // sumiram todas, volte para elas". O esculpir virou ABSOLUTO (mira a altura
+                // final, não "soma em cima do que tem"), então rodar de novo não empilha
+                // montanha sobre montanha: só levanta o que está faltando.
+                //
+                // Antes daqui existia um `marcar(nv, "R:cx,cz")`: a primeira passada marcava o
+                // chunk e, se a escultura falhasse (chunk ainda cru, fila cheia, server caindo),
+                // aquele chunk ficava CHAPADO PARA SEMPRE. Era esse o buraco.
                 // (5.13.4) o chunk TEM de existir antes de esculpir: getHeight num chunk
                 // que nunca foi gerado devolvia o chão do vazio errado e o relevo sumia.
                 nv.getChunk(cx, cz);
@@ -638,13 +656,68 @@ public final class VazioReino {
                 feitos++;
             }
             if (RELEVO.isEmpty() && relevoBlocos > 0) {
-                RPTagMod.LOGGER.info("RP Tag: relevo do vazio pronto ({} blocos assentados)",
-                        relevoBlocos);
+                RPTagMod.LOGGER.info("RP Tag: relevo do vazio conferido/consertado "
+                        + "({} blocos assentados agora, {} no total desta sessão)",
+                        relevoBlocos, relevoSessao);
                 relevoBlocos = 0;
             }
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: relevo do vazio falhou (o jogo segue)", t);
         }
+    }
+
+    /**
+     * (5.18.0) RECONSTRÓI O RELEVO — usado pelo {@code /vazio relevo}.
+     *
+     * <p>Joga a fila do anel inteiro de novo. Como a escultura mira a altura final, isto é
+     * um <b>conserto</b>: levanta o que está chapado, cava o que passou e não encosta no que
+     * já está certo. Já despeja a fila na hora.
+     *
+     * @return quantos chunks entraram na fila
+     */
+    public static int reconstruirRelevo(ServerLevel nv) {
+        relevoMapaFeito = true;
+        montarMapaRelevo();
+        int n = RELEVO.size();
+        int guarda = 0;
+        while (!RELEVO.isEmpty() && guarda < 400) {
+            int[] c = RELEVO.poll();
+            nv.getChunk(c[0], c[1]);
+            esculpirChunk(nv, c[0], c[1]);
+            despejarFila(nv);
+            guarda++;
+        }
+        RPTagMod.LOGGER.info("RP Tag: /vazio relevo -> {} chunks conferidos, {} blocos",
+                guarda, relevoSessao);
+        return n;
+    }
+
+    /**
+     * (5.18.0) MEDE O RELEVO — quantas colunas de montanha existem e qual a mais alta.
+     *
+     * <p>Serve de prova (e de conferência pro ADM): varre o anel em passos de 8 blocos,
+     * olha a altura de cada coluna e devolve {@code {maisAlta, colunasAltas}}.
+     */
+    public static int[] medirRelevo(ServerLevel nv) {
+        int topo = nv.getMinBuildHeight() + ALTURA_LAJE;
+        int maisAlta = 0;
+        int colunas = 0;
+        for (int x = -136; x <= 136; x += 8) {
+            for (int z = -136; z <= 136; z += 8) {
+                double d = Math.hypot(x, z);
+                if (d < 45 || d > 130) {
+                    continue;
+                }
+                int h = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - topo;
+                if (h > maisAlta) {
+                    maisAlta = h;
+                }
+                if (h >= 8) {
+                    colunas++;
+                }
+            }
+        }
+        return new int[]{ maisAlta, colunas };
     }
 
     /** monta a fila de chunks do relevo (anel de 45 a 130 blocos em volta da praça). */
@@ -883,6 +956,8 @@ public final class VazioReino {
     /** esculpe UM chunk de relevo (montes, crateras, pedras soltas). */
     private static void esculpirChunk(ServerLevel nv, int cx, int cz) {
         RandomSource r = RandomSource.create(cx * 34_133L + cz * 71_117L + 5L);
+        // (5.18.0) o topo da laje em Y absoluto (o chão liso do vazio)
+        final int TOPO_LAJE = nv.getMinBuildHeight() + ALTURA_LAJE;
         for (int dx = 0; dx < 16; dx++) {
             for (int dz = 0; dz < 16; dz++) {
                 int x = cx * 16 + dx, z = cz * 16 + dz;
@@ -915,24 +990,35 @@ public final class VazioReino {
                 if (pertoDeAltar) {
                     continue;
                 }
-                int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                if (y <= nv.getMinBuildHeight() + 4) {
-                    continue;
+                // (5.18.0) TUDO ABSOLUTO: o chão do vazio é uma laje fixa (as camadas de
+                // dimension/exilio.json somam 11 blocos), então a altura FINAL de cada coluna
+                // é sempre `TOPO_LAJE + relevoAltura()`. Mira nela — em vez de "somar em cima
+                // do que já existe" — e a escultura fica IDEMPOTENTE: rodar dez vezes dá o
+                // mesmo mundo, e um chunk que ficou chapado é levantado na próxima passada.
+                int atual = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                if (atual <= TOPO_LAJE) {
+                    atual = TOPO_LAJE + 1;
                 }
-                BlockPos topo = new BlockPos(x, y - 1, z);
-                if (!natural(nv.getBlockState(topo))) {
-                    continue;                          // construção ou já mexido
+                BlockPos topo = new BlockPos(x, atual - 1, z);
+                if (!natural(nv.getBlockState(topo)) && atual > TOPO_LAJE + 1) {
+                    continue;                          // construção por cima: não encosta
                 }
                 // (5.13.4) a amplitude CRESCE com a distância: sem essa rampa o relevo
                 // caía 5 blocos de uma vez na borda do anel e parecia terreno quebrado.
                 double rampa = Math.min(1.0, Math.max(0.0, (dist - (RAIO_PRACA + 12)) / 40.0));
                 int h = (int) Math.round(relevoAltura(x, z) * rampa);
-                relevoBlocos += Math.abs(h);
-                if (h > 0) {
+                int alvo = TOPO_LAJE + 1 + h;          // a altura FINAL da coluna
+                boolean mudou = false;
+                if (alvo > atual) {
                     // (5.13.6) montanha tem ESTRATO, não sorteio por bloco
-                    for (int i = 0; i < h; i++) {
-                        filaForte(new BlockPos(x, y + i, z), pedraDoMonte(r, i, h, x, y + i, z));
+                    int altura = alvo - atual;
+                    for (int i = 0; i < altura; i++) {
+                        filaForte(new BlockPos(x, atual + i, z),
+                                pedraDoMonte(r, i, altura, x, atual + i, z));
                     }
+                    relevoBlocos += altura;
+                    relevoSessao += altura;
+                    mudou = true;
                     // entulho no pé da serra: pedra solta caindo pelo barranco
                     if (h >= 10 && r.nextFloat() < 0.30F) {
                         int quantas = 1 + r.nextInt(3);
@@ -948,23 +1034,26 @@ public final class VazioReino {
                             }
                         }
                     }
-                } else if (h < 0) {
-                    for (int i = 0; i < -h; i++) {
-                        BlockPos p = new BlockPos(x, y - 1 - i, z);
-                        if (p.getY() <= nv.getMinBuildHeight() + 2
-                                || !natural(nv.getBlockState(p))) {
-                            break;
+                } else if (alvo < atual) {
+                    int fundo = Math.max(alvo, nv.getMinBuildHeight() + 3);
+                    for (int y2 = atual - 1; y2 >= fundo; y2--) {
+                        BlockPos pp = new BlockPos(x, y2, z);
+                        if (!natural(nv.getBlockState(pp))) {
+                            break;                     // achou construção: para
                         }
-                        filaForte(p, Blocks.AIR.defaultBlockState());
+                        filaForte(pp, Blocks.AIR.defaultBlockState());
+                        relevoBlocos++;
+                        relevoSessao++;
+                        mudou = true;
                     }
                     // fundo da cratera: cascalho solto
-                    if (r.nextFloat() < 0.35F) {
-                        filaForte(new BlockPos(x, y - 1 + h, z),
-                                Blocks.GRAVEL.defaultBlockState());
+                    if (mudou && r.nextFloat() < 0.35F) {
+                        filaForte(new BlockPos(x, fundo, z), Blocks.GRAVEL.defaultBlockState());
                     }
                 }
-                // pedras soltas e blocos caídos (a marca do vazio)
-                if (r.nextFloat() < 0.04F) {
+                // pedras soltas e blocos caídos (a marca do vazio) — só em coluna que mexeu,
+                // senão cada passada plantava mais pedra em cima da montanha já pronta
+                if (mudou && r.nextFloat() < 0.04F) {
                     int py = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                     if (py > nv.getMinBuildHeight() + 3) {
                         filaForte(new BlockPos(x, py, z), r.nextBoolean()
@@ -2445,7 +2534,11 @@ public final class VazioReino {
             if (Math.hypot(x, z) < RAIO_PRACA + 8) {
                 continue;
             }
-            if (!marcar(nv, "B:" + cx + "," + cz)) {
+            // (5.18.0) a célula marcada não bloqueia mais PARA SEMPRE: se não tem prédio de
+            // pé ali (o antigo falhou, ou o mundo é de antes), constrói agora. Era o outro
+            // lado do "quero as montanhas, predios do jeito que tava antes".
+            boolean novo = marcar(nv, "B:" + cx + "," + cz);
+            if (!novo && predioDePe(nv, x, z)) {
                 continue;
             }
             nv.getChunk(x >> 4, z >> 4);
@@ -2499,6 +2592,22 @@ public final class VazioReino {
             }
             return;
         }
+    }
+
+    /**
+     * (5.18.0) TEM PRÉDIO DE PÉ por aqui? Olha 5 colunas num raio de 26 blocos: se alguma
+     * passar de 10 blocos acima da laje, é construção (e não precisa refazer).
+     */
+    private static boolean predioDePe(ServerLevel nv, int x, int z) {
+        int topo = nv.getMinBuildHeight() + ALTURA_LAJE;
+        int[][] amostras = { { 0, 0 }, { 12, 0 }, { -12, 0 }, { 0, 12 }, { 0, -12 } };
+        for (int[] a : amostras) {
+            int h = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x + a[0], z + a[1]);
+            if (h > topo + 10) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** ruína de arranha-céu: casca com buracos, andares quebrados e entulho. */

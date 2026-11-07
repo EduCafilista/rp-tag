@@ -145,15 +145,19 @@ public class BubbleStyleScreen extends Screen {
             0xF26D9C, 0x6DBE5C, 0x9B7BD8, 0x4A3B8A, 0xE84D4D, 0x4D8FE8, 0x8A5A32, 0x9B6BE0,
             0x7A4AC8, 0xF0629E, 0xE8883C, 0x2A3140, 0xE04848, 0xF2F2F6, 0x4CAF50, 0xFFE9A8};
 
-    /** Paleta do DENTRO (12 cores). */
+    /** Paleta do DENTRO — (5.18.0) 12 -> 18 cores (o dono pediu "mais algumas cores no balao",
+     *  só se não quebrar: a fileira tem largura de sobra, 18 "● " cabem nos 192 px livres). */
     private static final int[] SW_IN = {0xF8F8F8, 0xF078B0, 0xE04848, 0xF09030,
-            0xF0D048, 0x8CE048, 0x58C858, 0x50C8C0, 0x5878F0, 0xA858E0, 0x82828E, 0x1E1E24};
-    /** Paleta da BORDA (12 cores). */
+            0xF0D048, 0x8CE048, 0x58C858, 0x50C8C0, 0x5878F0, 0xA858E0, 0x82828E, 0x1E1E24,
+            0xC81E2E, 0x6B0F1A, 0x12B886, 0x2FB9C6, 0xB48CE8, 0xE8DDB0};
+    /** Paleta da BORDA — (5.18.0) 12 -> 18 cores. */
     private static final int[] SW_BD = {0x14161C, 0x2A2E3A, 0x5A5F6E, 0x5C3A1E,
-            0x8A6A2E, 0xC8A028, 0x7A2430, 0x24305C, 0x2E4A8A, 0x4A2A6A, 0x245032, 0xE8E8F0};
-    /** Cores da LETRA. */
+            0x8A6A2E, 0xC8A028, 0x7A2430, 0x24305C, 0x2E4A8A, 0x4A2A6A, 0x245032, 0xE8E8F0,
+            0x6B0F1A, 0xD4A017, 0x1B2A63, 0x12B886, 0x4A4E57, 0xB48CE8};
+    /** Cores da LETRA — (5.18.0) 8 -> 12 cores. */
     private static final int[] TEXT_SW = {0xFFFFFF, 0x1E1E24, 0xFF5555, 0xFFAA00,
-            0xFFFF55, 0x55FF55, 0x5555FF, 0xFF55FF};
+            0xFFFF55, 0x55FF55, 0x5555FF, 0xFF55FF,
+            0xE06AA8, 0x2FB9C6, 0xD4A017, 0xB48CE8};
 
     private BubbleStyle style = BubbleStyle.DEFAULT;
     private boolean bubbleMode = false;

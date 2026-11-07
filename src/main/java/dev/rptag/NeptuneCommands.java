@@ -186,6 +186,28 @@ public final class NeptuneCommands {
                     return Command.SINGLE_SUCCESS;
                 })));
 
+        // (5.18.0) /vazio relevo — reconstrói (e CONSERTA) as montanhas e prédios do vazio.
+        // O dono: "cade as montanhas que voce tinha feito anteriormente no vazio? sumiram
+        // todas, volte para elas". O relevo agora é absoluto e repetível: este comando joga a
+        // fila de novo e levanta o que estiver faltando — sem duplicar nada.
+        vazio.then(Commands.literal("relevo").executes(ctx -> {
+            var server = ctx.getSource().getServer();
+            var nv = server.getLevel(NeptuneEventos.CHAVE_EXILIO_PUBLICA);
+            if (nv == null) {
+                ctx.getSource().sendFailure(Component.literal("\u00a7cA dimensão do vazio não está carregada."));
+                return 0;
+            }
+            int chunks = VazioReino.reconstruirRelevo(nv);
+            int[] m = VazioReino.medirRelevo(nv);
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a7aMontanhas do vazio: \u00a7f" + chunks + "\u00a7a chunks conferidos.\n"
+                            + "\u00a77Montanha mais alta: \u00a7f" + m[0] + " blocos\u00a77 · "
+                            + "colunas de serra: \u00a7f" + m[1] + "\n"
+                            + "\u00a78O relevo mira a altura final, então rodar de novo só "
+                            + "levanta o que falta — não empilha montanha."), false);
+            return Command.SINGLE_SUCCESS;
+        }));
+
         // (5.7.8) /vazio entrar — o admin vai pra dimensão do exílio testar o
         // ambiente (andar no escuro, monólitos, sussurros) sem punir ninguém.
         vazio.then(Commands.literal("entrar").executes(ctx -> {

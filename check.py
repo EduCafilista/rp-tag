@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.17.2'
+VER = '5.18.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2084,9 +2084,8 @@ check('5.10.1: e é removido do mapa LITERALS também (é ele que o parser lê, 
 check('5.10.1: sem sondas de diagnóstico no código que vai pra release', 
       '[sonda]' not in _tvan and 'ServerTickEvent' not in _tvan
       and 'literal("sonda")' not in rd(R + '/RPCommands.java'))
-check('5.10.1: e tem VOLTA (/rp admin titlevanilla on|off, salvo no mundo)',
-      'comandoTitleVanilla' in rd(R + '/RPWorldData.java')
-      and '"titlevanilla"' in rd(R + '/RPCommands.java')
+check('5.18.0: o /rp admin titlevanilla SAIU (o dono: "somento o bonito") e o /titulo do mod fica',
+      'literal("titlevanilla")' not in rd(R + '/RPCommands.java')
       and 'TitleCommand.register' in _tvan)
 check('5.10.1: o /titulo do mod continua de pé (definir, cor, personalizado, paleta)',
       'literal("paleta")' in rd(R + '/TituloCommands.java')
@@ -2356,7 +2355,7 @@ check('5.13.6 (pedido 56): MONTANHAS no relevo (ridged + cinto de serras no hori
       and 'Math.min(40.0, pico * 46.0)' in _vr)
 check('5.13.6: montanha tem ESTRATO de pedra (pedraDoMonte), nao sorteio por bloco',
       'private static BlockState pedraDoMonte(' in _vr
-      and 'pedraDoMonte(r, i, h, x, y + i, z)' in _vr
+      and 'pedraDoMonte(r, i, altura, x, atual + i, z)' in _vr
       and 'SMOOTH_BASALT.defaultBlockState()' in _vr
       and 'CRYING_OBSIDIAN.defaultBlockState()' in _vr)
 check('5.13.6: relevo respeita os 8 altares (fragmento nao fica soterrado)',
@@ -2419,7 +2418,8 @@ check('5.13.4: relevo na dimensao (montes, crateras, pedras soltas)',
       'private static void relevoTick(ServerLevel nv, long agora)' in _vr
       and 'private static double relevoAltura(int x, int z)' in _vr
       and 'private static void esculpirChunk(ServerLevel nv, int cx, int cz)' in _vr
-      and 'marcar(nv, "R:" + cx + "," + cz)' in _vr)
+      and 'int alvo = TOPO_LAJE + 1 + h;' in _vr
+      and 'public static int reconstruirRelevo(ServerLevel nv)' in _vr)
 check('5.13.4: relevo reconhece o piso da dimensao (concreto cinza-claro + sculk)',
       'st.is(Blocks.LIGHT_GRAY_CONCRETE)' in _vr and 'st.is(Blocks.SCULK)' in _vr)
 check('5.13.4: relevo carrega o chunk ANTES de esculpir (chunk cru = relevo sumido)',
@@ -2692,8 +2692,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.17.2.jar')
-      and os.path.getsize('build/libs/rptag-5.17.2.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.18.0.jar')
+      and os.path.getsize('build/libs/rptag-5.18.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2725,11 +2725,12 @@ check('5.17.0: estilo 37 existe no cliente (FitaAvisoFx com cassete girando)',
 check('5.17.0: NÚCLEO VIAL + versão QUEBRADA registrados (nunca some, vira a quebrada)',
       'ITEMS.register("nucleo_vial"' in _rm and 'ITEMS.register("nucleo_vial_quebrado"' in _rm
       and 'NUCLEO_VIAL_QUEBRADO' in _nv and 'trocarPorQuebrado' in _nv)
-check('5.17.0: o desgaste é por DIA do mundo: 1% / 5 dias parado, 10% / 5 dias ativado',
-      'DIAS_POR_PCT_PARADO = 5' in _nv and 'PCT_ATIVO = 10' in _nv
-      and 'getDayTime() / 24000L' in _nv)
-check('5.17.0: ativado fica ENCANTADO (isFoil) e mostra a carga na barra do item',
-      'return ativo(stack);      // (pedido do dono)' in _nv or 'return ativo(stack);' in _nv)
+check('5.18.0: o núcleo dura MUITO mais (1% / 30 dias parado, 1% / 10 dias ativado, com decimal)',
+      'DIAS_POR_PCT_PARADO = 30' in _nv and 'DIAS_POR_PCT_ATIVO = 10' in _nv
+      and 'getDayTime() / 24000L' in _nv and 'VialCarga' in _nv)
+check('5.18.0: ativado fica ENCANTADO, o QUEBRADO nao brilha e nao cobra carga',
+      'return ativo(stack) && !ehQuebrado(stack);' in _nv
+      and '(5.18.0) quebrado não cobra nem gasta' in _nv)
 check('5.17.0: o servidor passa o tempo dos núcleos no tick (a cada 2 s)',
       'NucleoVialItem.tickJogador(p)' in _se2)
 check('5.17.0: som ao ATIVAR o vial (e outro quando ele racha)',
@@ -2777,22 +2778,22 @@ check('5.17.0: protocolo subiu para v15 (cliente velho é recusado)',
 # ============ 5.17.1: as três correções do dono ============
 _axc = rd(C + '/AxionHud.java')
 _nev2 = rd(R + '/NeptuneEventos.java')
-check('5.17.2: a AXION é ESCONDIDA por padrão (só aparece se o ADM mandar)',
+check('5.18.0: a AXION é ESCONDIDA por padrão (só aparece se o ADM mandar)',
       'private static int estado = AxionPayload.ESCONDIDA;' in _axc
       and 'private int axionEstado = 0;' in rd(R + '/RPWorldData.java'))
 _wdx = rd(R + '/RPWorldData.java')
-check('5.17.2: save antigo (5.17.0) é MIGRADO: quem entrou não vê a Axion',
+check('5.18.0: save antigo (5.17.0) é MIGRADO: quem entrou não vê a Axion',
       'public static final int DATA_VERSAO = 2;' in _wdx
       and 'if (data.dataVersao < DATA_VERSAO) {' in _wdx
       and 'data.axionEstado = 0;' in _wdx
       and 'tag.putInt("DataVersao", dataVersao);' in _wdx)
-check('5.17.2: no login o estado ATUAL da Axion é mandado pro jogador que entra',
+check('5.18.0: no login o estado ATUAL da Axion é mandado pro jogador que entra',
       'RPCommands.enviarAxion(joined, data);' in rd(R + '/ServerEvents.java'))
-check('5.17.2: e tem DOIS comandos só: um POE ela na tela, outro TIRA',
-      'Commands.literal("axion")' in _rp4
-      and '.then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA))' in _rp4
-      and '.then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA))' in _rp4
-      and 'literal("esconder")' not in _rp4 and 'literal("escala")' not in _rp4)
+check('5.18.0: AXION tem DOIS jeitos de COLOCAR (acordada/dormindo) e UM de TIRAR',
+      '.then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA))' in _rp4
+      and '.then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.DORMINDO))' in _rp4
+      and '.then(Commands.literal("tirar").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA))' in _rp4
+      and 'literal("escala")' not in _rp4)
 check('5.17.1: a SAÍDA é animação NO CORPO (códigos no mundo + sombra), não na tela',
       'NeptunePackets.Codigos' in _nev2
       and 'sombraChuva(nv, pos.add(0, passo * 0.55, 0), 7 - passo)' in _nev2
@@ -2804,6 +2805,46 @@ check('5.17.1: a BARRA tem a forma simples /rp admin barra <0..100> [frase]',
 check('5.17.1: e a barra só aparece SE O ADM QUISER (padrão escondida)',
       'private boolean barraVisivel = false;' in rd(R + '/RPWorldData.java')
       and 'private static boolean visivel;' in rd(C + '/BarraHudFx.java'))
+
+# ============ 5.18.0: pedidos do dono (relevo, barra vertical, cores, nucleo, balao) ============
+check('5.18.0: as MONTANHAS do vazio voltam/consertam (relevo ABSOLUTO, sem marca que trava)',
+      'public static final int ALTURA_LAJE = 11;' in _vr
+      and 'marcar(nv, "R:"' not in _vr
+      and 'int TOPO_LAJE = nv.getMinBuildHeight() + ALTURA_LAJE;' in _vr)
+check('5.18.0: /vazio relevo forca o conserto das montanhas',
+      'VazioReino.reconstruirRelevo(nv)' in rd(R + '/NeptuneCommands.java'))
+check('5.18.0: os PREDIOS tambem se consertam (celula marcada sem predio = constroi)',
+      'if (!novo && predioDePe(nv, x, z)) {' in _vr and 'private static boolean predioDePe(' in _vr)
+_bpx = rd(R + '/BarraPayload.java')
+_bhx = rd(C + '/BarraHudFx.java')
+check('5.18.0: a BARRA e VERTICAL (em pe, enche de baixo pra cima) e o padrao e vertical',
+      'boolean vertical' in _bpx
+      and 'private boolean barraVertical = true;' in rd(R + '/RPWorldData.java'))
+check('5.18.0: o desenho vertical existe mesmo (preenche de baixo pra cima)',
+      'int bw = vertical ? 12 : largura;' in _bhx
+      and 'y + bh - 1 - alt' in _bhx)
+check('5.18.0: cor da barra por NOME (vermelho, verde, azul...) e nao so por codigo',
+      'public static int corPorNome(String nome)' in _rp4
+      and 'case "vermelho", "red" -> 0xC81E2E;' in _rp4
+      and 'case "dourado", "ouro", "gold" -> 0xD4A017;' in _rp4)
+check('5.18.0: o nome do NUCLEO aparece certo em qualquer idioma (getName no codigo)',
+      'public Component getName(ItemStack stack)' in _nv
+      and 'Núcleo de Energia Vial (quebrado)' in _nv)
+check('5.18.0: o nucleo ATIVO nao mostra mais "10% a cada 5 dias" em lugar nenhum',
+      'Estado: ATIVO"' in _nv and 'agora ele se gasta 10%' not in _nv)
+check('5.18.0: o QUEBRADO nao ativa (e diz por que)',
+      'if (ehQuebrado(stack)) {' in _nv
+      and 'Não acende mais' in _nv
+      and 'return InteractionResultHolder.fail(stack);' in _nv)
+check('5.18.0: o /rp admin bolha SAIU (era o mesmo do balao)',
+      'literal("bolha")' not in _rp4 and 'literal("balao")' in _rp4)
+check('5.18.0: o vial ganhou MODELO 3D (com elementos, nao so uma textura chapada)',
+      '"elements"' in io.open(A + '/models/item/nucleo_vial.json').read()
+      and os.path.exists(A + '/textures/item/nucleo_vial_3d.png')
+      and os.path.exists(A + '/textures/item/nucleo_vial_quebrado_3d.png'))
+check('5.18.0: o balao de texto ganhou MAIS CORES (dentro, borda e letra)',
+      '18 cores' in rd(C + '/BubbleStyleScreen.java')
+      and '0xC81E2E, 0x6B0F1A, 0x12B886' in rd(C + '/BubbleStyleScreen.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

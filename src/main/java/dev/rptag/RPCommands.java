@@ -816,8 +816,6 @@ public final class RPCommands {
                     + "/rp admin avisar2 <jogadores> <estilo> <texto> \u00a77\u2014 a SECAO NOVA (Lord of the Mysteries + cartas de taro): louco, tolo, marinheiro, enforcado, espectador, justica, eremita, julgamento, lua, mago, morte2, sol, torre, estrela\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
-                    + "/rp admin titlevanilla on|off \u00a77\u2014 o /title do Minecraft puro (padrao: fora; fica so o /titulo)\u00a7c\n"
-                    + "/rp admin bolha <jogador> on|off \u00a77\u2014 modo balao de outro\u00a7c\n"
                     + "/rp admin balao <jogador> on|off \u00a77\u2014 libera/bloqueia o balao\u00a7c\n"
                     + "/rp admin balaolist \u00a77\u2014 quem tem balao liberado\u00a7c\n"
                     + "/rp admin canon on|off \u00a77\u2014 modo de perder vidas (todos j\u00e1 t\u00eam; quem morrer perde uma)\u00a7c\n"
@@ -1428,6 +1426,11 @@ public final class RPCommands {
                 // /rp admin barra cor <rotulo|barra|fundo> <#RRGGBB>
                 // /rp admin barra titulo <texto> | onde <x> <y> | largura <px> | off | info
                 .then(Commands.literal("barra")
+                        .then(Commands.literal("vertical")
+                                .then(Commands.literal("on").executes(ctx -> barraVertical(ctx, true)))
+                                .then(Commands.literal("off").executes(ctx -> barraVertical(ctx, false)))
+                                .executes(ctx -> barraVertical(ctx,
+                                        RPWorldData.get(ctx.getSource().getServer()).barraVertical())))
                         .then(Commands.literal("off").executes(ctx -> barraOff(ctx)))
                         .then(Commands.literal("info").executes(ctx -> barraInfo(ctx)))
                         .then(Commands.literal("cor")
@@ -1471,44 +1474,27 @@ public final class RPCommands {
                                                     return barraValor(ctx, EntityArgument.getPlayers(ctx, "jogadores"),
                                                             com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "valor"));
                                                 })))))
-                // ============ (5.17.2) AXION: um comando POE na tela, outro TIRA =========
+                // ============ (5.18.0) AXION: DOIS jeitos de COLOCAR e UM de TIRAR =========
                 // Ela NUNCA aparece sozinha (nem quando o jogador entra pela primeira vez).
-                //   acordar -> POE ela na tela (acordada)
-                //   dormir  -> TIRA ela da tela (volta a ficar escondida)
+                //   acordar -> COLOCA ela na tela, ACORDADA
+                //   dormir  -> COLOCA ela na tela, DORMINDO
+                //   tirar   -> TIRA ela da tela (volta a ficar escondida)
                 .then(Commands.literal("axion")
                         .then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA)))
-                        .then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA)))
+                        .then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.DORMINDO)))
+                        .then(Commands.literal("tirar").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA)))
                         .executes(ctx -> {
                             ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "\u00a7e/rp admin axion acordar\u00a77 \u2014 COLOCA ela na tela\n"
-                                    + "\u00a7e/rp admin axion dormir\u00a77 \u2014 TIRA ela da tela")
+                                    "\u00a7e/rp admin axion acordar\u00a77 \u2014 POE ela na tela, acordada\n"
+                                    + "\u00a7e/rp admin axion dormir\u00a77 \u2014 POE ela na tela, dormindo\n"
+                                    + "\u00a7e/rp admin axion tirar\u00a77 \u2014 TIRA ela da tela")
                                     .withStyle(ChatFormatting.YELLOW), false);
                             return Command.SINGLE_SUCCESS;
                         }))
                 // (5.10.1) /rp admin titlevanilla on|off — o /title é comando VANILLA
                 // (não é do mod). Padrão: sem ele, só o /titulo do RP Tag.
-                .then(Commands.literal("titlevanilla")
-                        .then(Commands.literal("on").executes(ctx -> {
-                            TituloVanilla.aplicar(ctx.getSource().getServer(), true);
-                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "O /title (comando VANILLA do Minecraft, nao e do mod) esta de volta."),
-                                    true);
-                            return Command.SINGLE_SUCCESS;
-                        }))
-                        .then(Commands.literal("off").executes(ctx -> {
-                            TituloVanilla.aplicar(ctx.getSource().getServer(), false);
-                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "O /title (vanilla) foi REMOVIDO — agora so existe o /titulo do mod."),
-                                    true);
-                            return Command.SINGLE_SUCCESS;
-                        }))
-                        .executes(ctx -> {
-                            boolean on = RPWorldData.get(ctx.getSource().getServer()).comandoTitleVanilla();
-                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "O /title (vanilla) esta " + (on ? "LIGADO" : "DESLIGADO")
-                                            + " (use on|off). O /titulo do mod sempre funciona."), false);
-                            return Command.SINGLE_SUCCESS;
-                        }))
+                // (5.18.0) o /rp admin titlevanilla SAIU (o dono: "tira o title vanila nao
+                // gostei disso somento o bonito") — o /title do vanilla continua fora, sempre.
                 .then(Commands.literal("chatlocal")
                         .then(Commands.literal("on").executes(ctx -> {
                             RPWorldData.get(ctx.getSource().getServer()).setChatLocal(true);
@@ -1522,29 +1508,8 @@ public final class RPCommands {
                                     "Chat local DESLIGADO — o chat normal e global de novo."), true);
                             return Command.SINGLE_SUCCESS;
                         })))
-                .then(Commands.literal("bolha")
-                        .then(Commands.argument("jogador", EntityArgument.player())
-                                .then(Commands.literal("on").executes(ctx -> {
-                                    ServerPlayer target = EntityArgument.getPlayer(ctx, "jogador");
-                                    RPWorldData.get(ctx.getSource().getServer()).setBubbleMode(target.getUUID(), true);
-                                    ctx.getSource().sendSuccess(() -> Component.literal(
-                                            "Modo balao LIGADO para " + target.getName().getString()
-                                                    + " (as falas aparecem so no balao, sem chat)."), true);
-                                    target.sendSystemMessage(Component.literal(
-                                            "Um admin ativou o MODO BALAO para voce: suas falas aparecem so no balao sobre a cabeca.")
-                                            .withStyle(ChatFormatting.GREEN));
-                                    return Command.SINGLE_SUCCESS;
-                                }))
-                                .then(Commands.literal("off").executes(ctx -> {
-                                    ServerPlayer target = EntityArgument.getPlayer(ctx, "jogador");
-                                    RPWorldData.get(ctx.getSource().getServer()).setBubbleMode(target.getUUID(), false);
-                                    ctx.getSource().sendSuccess(() -> Component.literal(
-                                            "Modo balao DESLIGADO para " + target.getName().getString() + "."), true);
-                                    target.sendSystemMessage(Component.literal(
-                                            "Um admin desativou o modo balao para voce: suas falas voltaram ao chat normal.")
-                                            .withStyle(ChatFormatting.GRAY));
-                                    return Command.SINGLE_SUCCESS;
-                                }))))
+                // (5.18.0) o /rp admin bolha SAIU: era o mesmo que o balao/balaolist
+                // (o dono: "ja tem o balao, é comando duplicado basicamente").
                 // (3.80.0) /rp admin canon on|off — LIGA/DESLIGA o modo de
                 // PERDER vidas (todos os players JÁ têm vidas canônicas;
                 // com o modo ligado, quem morrer perde uma). SEM mensagem
@@ -1771,6 +1736,7 @@ public final class RPCommands {
                 + "  visível: " + (d.barraVisivel() ? "\u00a7asim" : "\u00a7cnão") + "\u00a77\n"
                 + "  rótulo: \u00a7f" + d.barraRotulo() + "\u00a77\n"
                 + "  valor: \u00a7f" + d.barraValor() + "%\u00a77\n"
+                + "  formato: \u00a7f" + (d.barraVertical() ? "VERTICAL" : "horizontal") + "\u00a77 (barra vertical on|off)\n"
                 + "  cor do texto: \u00a7f#" + String.format("%06X", d.barraCorTexto() & 0xFFFFFF) + "\u00a77\n"
                 + "  cor da barra: \u00a7f#" + String.format("%06X", d.barraCorBarra() & 0xFFFFFF) + "\u00a77\n"
                 + "  cor do fundo: \u00a7f#" + String.format("%06X", d.barraCorFundo() & 0xFFFFFF) + "\u00a77\n"
@@ -1782,11 +1748,13 @@ public final class RPCommands {
     private static int barraCor(
             com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
             String parte, String hex) {
-        int cor;
-        try {
-            cor = Integer.parseInt(hex.replace("#", "").replace("0x", ""), 16) & 0xFFFFFF;
-        } catch (Exception e) {
-            ctx.getSource().sendFailure(Component.literal("\u00a7cCor inválida: use #RRGGBB, ex. #C81E2E"));
+        // (5.18.0) COR POR NOME — o dono: "SETE POR NOME DE COR E NAO POR CODIGO".
+        // Aceita vermelho, verde, azul... e, para quem quiser, o #RRGGBB de sempre.
+        int cor = corPorNome(hex);
+        if (cor < 0) {
+            ctx.getSource().sendFailure(Component.literal("\u00a7cCor inválida. Use um NOME: "
+                    + "\u00a7fvermelho, vinho, laranja, amarelo, dourado, verde, esmeralda, ciano, "
+                    + "azul, anil, roxo, lilas, rosa, branco, cinza, preto\u00a7c (ou #RRGGBB)."));
             return 0;
         }
         var d = RPWorldData.get(ctx.getSource().getServer());
@@ -1807,6 +1775,68 @@ public final class RPCommands {
         final String q = qual;
         ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aCor " + q + " agora é \u00a7f#"
                 + String.format("%06X", cor)).withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /**
+     * (5.18.0) NOME DE COR -> RGB. O dono: <i>"mais facil de ver cores, sete por nome de cor e
+     * nao por codigo"</i>. Aceita também {@code #RRGGBB} pra quem gosta de código.
+     *
+     * @return o RGB, ou -1 quando o nome não existe.
+     */
+    public static int corPorNome(String nome) {
+        if (nome == null) {
+            return -1;
+        }
+        String n = nome.trim().toLowerCase(java.util.Locale.ROOT)
+                .replace("á", "a").replace("ã", "a").replace("â", "a")
+                .replace("é", "e").replace("ê", "e")
+                .replace("í", "i").replace("ó", "o").replace("ô", "o")
+                .replace("ú", "u").replace("ç", "c");
+        if (n.startsWith("#") || n.startsWith("0x")) {
+            try {
+                return Integer.parseInt(n.replace("#", "").replace("0x", "").replace(" ", ""), 16) & 0xFFFFFF;
+            } catch (Exception e) {
+                return -1;
+            }
+        }
+        return switch (n) {
+            case "vermelho", "red" -> 0xC81E2E;
+            case "vinho", "sangue", "bordo" -> 0x6B0F1A;
+            case "laranja", "orange" -> 0xE07A1F;
+            case "amarelo", "yellow" -> 0xE8C63A;
+            case "dourado", "ouro", "gold" -> 0xD4A017;
+            case "verde", "green" -> 0x3FA24A;
+            case "esmeralda" -> 0x12B886;
+            case "verdeclaro", "lima", "lime" -> 0x8FE06A;
+            case "ciano", "turquesa", "cyan" -> 0x2FB9C6;
+            case "azul", "blue" -> 0x2F6FD0;
+            case "anil", "azulmarinho", "marinho" -> 0x1B2A63;
+            case "azulclaro", "ceu" -> 0x7FB6E8;
+            case "roxo", "purple" -> 0x7A3FD0;
+            case "lilas", "violeta" -> 0xB48CE8;
+            case "rosa", "pink" -> 0xE06AA8;
+            case "branco", "white" -> 0xF2F4F8;
+            case "cinza", "gray", "grey" -> 0x8A8F99;
+            case "cinzaescuro" -> 0x4A4E57;
+            case "preto", "black" -> 0x141018;
+            default -> -1;
+        };
+    }
+
+    /** (5.18.0) /rp admin barra vertical on|off — a barra em pé (padrão) ou deitada. */
+    private static int barraVertical(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            boolean on) {
+        var d = RPWorldData.get(ctx.getSource().getServer());
+        d.setBarraVertical(on);
+        for (ServerPlayer alvo : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+            enviarBarra(alvo, d);
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(on
+                ? "\u00a7aBarra na VERTICAL (em pé) \u2014 enche de baixo pra cima."
+                : "\u00a7aBarra na HORIZONTAL (deitada) \u2014 enche da esquerda pra direita.")
+                .withStyle(ChatFormatting.GREEN), false);
         return Command.SINGLE_SUCCESS;
     }
 
@@ -1855,7 +1885,8 @@ public final class RPCommands {
     public static void enviarBarra(ServerPlayer alvo, RPWorldData d) {
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo,
                 new BarraPayload(d.barraVisivel(), d.barraRotulo(), d.barraValor(), d.barraCorTexto(),
-                        d.barraCorBarra(), d.barraCorFundo(), d.barraX(), d.barraY(), d.barraLargura()));
+                        d.barraCorBarra(), d.barraCorFundo(), d.barraX(), d.barraY(), d.barraLargura(),
+                        d.barraVertical()));
     }
 
     private static int axionEstado(

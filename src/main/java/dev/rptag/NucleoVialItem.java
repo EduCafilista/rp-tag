@@ -49,15 +49,46 @@ public final class NucleoVialItem extends Item {
     /** dia do mundo da última conta. */
     public static final String TAG_DIA = "VialUltimo";
 
-    /** dias do jogo por 1% parado. */
-    public static final int DIAS_POR_PCT_PARADO = 5;
-    /** dias do jogo por 10% ativado. */
-    public static final int DIAS_POR_PCT_ATIVO = 5;     // 10% a cada 5 dias
-    public static final int PCT_ATIVO = 10;
+    /**
+     * (5.18.0) O RITMO — o dono: <i>"o nucleo deve durar bem mais, acabou muito rapido"</i>.
+     *
+     * <p>A conta agora é em <b>dias de jogo por 1%</b>, sem número grande na tela:
+     * <ul>
+     *   <li><b>parado</b> no inventário/baú: <b>1% a cada 30 dias</b> de jogo (3000 dias até zerar);</li>
+     *   <li><b>ativado</b>: <b>1% a cada 10 dias</b> de jogo (1000 dias até zerar).</li>
+     * </ul>
+     * A carga é guardada com <b>casa decimal</b> ({@code VialCarga}), então um dia de jogo já
+     * aparece na conta — antes só mexia no número inteiro e parecia que não gastava.
+     */
+    public static final int DIAS_POR_PCT_PARADO = 30;
+    public static final int DIAS_POR_PCT_ATIVO = 10;
     public static final int CARGA_MAX = 100;
+
+    /** (5.18.0) a carga exata (com decimais) — o {@code VialPct} inteiro continua salvo pra
+     * quem já tinha o item e pro tooltip. */
+    public static final String TAG_CARGA = "VialCarga";
 
     public NucleoVialItem(Properties properties) {
         super(properties);
+    }
+
+    /**
+     * (5.18.0) O NOME NA MARRA — o dono mandou a print do item aparecendo como
+     * <b>"item.rptag.nucleo_vial"</b>: o cliente dele não estava achando a tradução no lang
+     * (cliente em outro idioma, ou lang não aplicado). Aqui o nome é escrito no código, então
+     * aparece certo em QUALQUER idioma, sempre.
+     */
+    @Override
+    public Component getName(ItemStack stack) {
+        if (this == RPTagMod.NUCLEO_VIAL_QUEBRADO.get()) {
+            return Component.literal("Núcleo de Energia Vial (quebrado)");
+        }
+        return Component.literal("Núcleo de Energia Vial");
+    }
+
+    /** (5.18.0) é a versão QUEBRADA? (não ativa, não brilha, não cobra carga) */
+    public static boolean ehQuebrado(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem() == RPTagMod.NUCLEO_VIAL_QUEBRADO.get();
     }
 
     // ------------------------------------------------------------------ leitura
@@ -81,6 +112,15 @@ public final class NucleoVialItem extends Item {
         return tag(stack).getLong(TAG_DIA);
     }
 
+    /** (5.18.0) carga com decimais (0..100). Item antigo (só {@code VialPct} inteiro) também vale. */
+    public static double cargaExata(ItemStack stack) {
+        CompoundTag t = tag(stack);
+        if (t.contains(TAG_CARGA)) {
+            return Math.max(0.0, Math.min(CARGA_MAX, t.getDouble(TAG_CARGA)));
+        }
+        return carga(stack);
+    }
+
     // ----------------------------------------------------------- carga/desgaste
     /**
      * Fecha a conta do tempo passado desde a última visita e grava de volta no item.
@@ -89,7 +129,7 @@ public final class NucleoVialItem extends Item {
      */
     private static boolean atualizar(ItemStack stack, long diaDeHoje) {
         long ultimo = dia(stack);
-        int pct = carga(stack);
+        double pct = cargaExata(stack);
         boolean on = ativo(stack);
         if (ultimo <= 0L) {                  // primeiro contato: começa a contar AGORA
             gravar(stack, pct, on, diaDeHoje);
@@ -99,25 +139,26 @@ public final class NucleoVialItem extends Item {
         if (passados <= 0L) {
             return false;                    // mesmo dia: nada a fazer
         }
-        int novo;
-        if (on) {
-            // ativado: 10% a cada 5 dias -> 2% por dia (arredonda pra baixo com resto)
-            novo = pct - (int) ((passados * PCT_ATIVO) / DIAS_POR_PCT_ATIVO);
-        } else {
-            // parado: 1% a cada 5 dias -> 0.2% por dia
-            novo = pct - (int) (passados / DIAS_POR_PCT_PARADO);
-        }
-        novo = Math.max(0, novo);
+        // (5.18.0) conta exata: 1% a cada 30 dias parado, 1% a cada 10 dias ativado
+        double porDia = on ? (1.0 / DIAS_POR_PCT_ATIVO) : (1.0 / DIAS_POR_PCT_PARADO);
+        double novo = Math.max(0.0, pct - passados * porDia);
         gravar(stack, novo, on, diaDeHoje);
-        return novo <= 0;
+        return novo <= 0.0;
     }
 
-    private static void gravar(ItemStack stack, int pct, boolean on, long dia) {
+    private static void gravar(ItemStack stack, double pct, boolean on, long dia) {
+        double v = Math.max(0.0, Math.min(CARGA_MAX, pct));
         CustomData.update(DataComponents.CUSTOM_DATA, stack, t -> {
-            t.putInt(TAG_PCT, Math.max(0, Math.min(CARGA_MAX, pct)));
+            t.putInt(TAG_PCT, (int) Math.round(v));
+            t.putDouble(TAG_CARGA, v);
             t.putBoolean(TAG_ATIVO, on);
             t.putLong(TAG_DIA, dia);
         });
+    }
+
+    /** (compatibilidade) grava com o valor inteiro. */
+    private static void gravar(ItemStack stack, int pct, boolean on, long dia) {
+        gravar(stack, (double) pct, on, dia);
     }
 
     /** o usuário/adm pode cravar um valor (usado pelo comando {@code /rp admin vial carga}). */
@@ -133,6 +174,17 @@ public final class NucleoVialItem extends Item {
             return InteractionResultHolder.success(stack);   // o servidor decide tudo
         }
         try {
+            // (5.18.0) O QUEBRADO NÃO ACENDE — ele já deu o que tinha que dar.
+            if (ehQuebrado(stack)) {
+                if (player instanceof ServerPlayer q) {
+                    q.displayClientMessage(Component.literal(
+                            "\u00a78O núcleo está rachado.\u00a7r \u00a77Não acende mais \u2014 "
+                            + "só um ADM pode dar outro."), true);
+                    q.level().playSound(null, q.blockPosition(), RPTagMod.SOM_VIAL_QUEBRAR.get(),
+                            SoundSource.PLAYERS, 0.5F, 0.55F);
+                }
+                return InteractionResultHolder.fail(stack);
+            }
             long dia = level.getDayTime() / 24000L;
             // fecha a conta do passado ANTES de mexer (senão o tempo "sumia" ao clicar)
             if (atualizar(stack, dia) && trocarPorQuebrado(stack, player)) {
@@ -145,11 +197,13 @@ public final class NucleoVialItem extends Item {
                 // som do vial (ativar e desativar têm o mesmo som, em alturas diferentes)
                 sp.level().playSound(null, sp.blockPosition(), RPTagMod.SOM_VIAL.get(),
                         SoundSource.PLAYERS, 0.9F, on ? 1.0F : 0.82F);
+                // (5.18.0) sem número nenhum na tela — o dono:
+                // "quando o player ativar o nucleo vial, nao deve aparecer aquele 10% em 5 dias"
                 sp.displayClientMessage(net.minecraft.network.chat.Component.literal(
-                        on ? "\u00a74\u00a7lO núcleo ACORDOU.\u00a7r \u00a77A energia vial está correndo \u2014 "
-                                + "agora ele se gasta 10% a cada 5 dias."
-                                : "\u00a78O núcleo voltou a dormir.\u00a7r \u00a77Parado, ele se gasta só "
-                                        + "1% a cada 5 dias."), true);
+                        on ? "\u00a74\u00a7lO núcleo ACORDOU.\u00a7r \u00a77A energia vial está correndo "
+                                + "por dentro dele."
+                                : "\u00a78O núcleo voltou a dormir.\u00a7r \u00a77Parado, ele quase "
+                                        + "não se gasta."), true);
             }
             return InteractionResultHolder.success(stack);
         } catch (Throwable t) {
@@ -214,8 +268,8 @@ public final class NucleoVialItem extends Item {
             long dia = p.level().getDayTime() / 24000L;
             for (int i = 0; i < inv.getContainerSize(); i++) {
                 ItemStack st = inv.getItem(i);
-                if (st.isEmpty() || !(st.getItem() instanceof NucleoVialItem)) {
-                    continue;
+                if (st.isEmpty() || !(st.getItem() instanceof NucleoVialItem) || ehQuebrado(st)) {
+                    continue;                        // (5.18.0) quebrado não cobra nem gasta
                 }
                 if (dia(st) <= 0L) {                 // nunca contado: começa agora
                     gravar(st, carga(st), ativo(st), dia);
@@ -257,10 +311,19 @@ public final class NucleoVialItem extends Item {
         tooltip.add(Component.literal("\"Uma fonte de vida, e também de ruína.\"")
                 .withStyle(ChatFormatting.DARK_RED, ChatFormatting.ITALIC));
         tooltip.add(Component.literal(""));
+        if (ehQuebrado(stack)) {
+            // (5.18.0) o QUEBRADO: nome e recado certos, e deixa claro que não acende
+            tooltip.add(Component.literal("Estado: QUEBRADO").withStyle(ChatFormatting.DARK_GRAY));
+            tooltip.add(Component.literal("A carga acabou. Ele não acende mais.")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            tooltip.add(Component.literal("Só um ADM pode entregar outro.")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            return;
+        }
         tooltip.add(Component.literal("Carga: " + pct + "%").withStyle(
                 pct > 60 ? ChatFormatting.RED : pct > 25 ? ChatFormatting.GOLD : ChatFormatting.DARK_GRAY));
-        tooltip.add(Component.literal(on ? "Estado: ATIVO \u2014 10% a cada 5 dias"
-                : "Estado: adormecido \u2014 1% a cada 5 dias").withStyle(
+        // (5.18.0) o dono não quer número de ritmo na tela: só o estado
+        tooltip.add(Component.literal(on ? "Estado: ATIVO" : "Estado: adormecido").withStyle(
                 on ? ChatFormatting.RED : ChatFormatting.GRAY));
         tooltip.add(Component.literal("Clique direito: acordar / adormecer")
                 .withStyle(ChatFormatting.DARK_GRAY));
@@ -268,12 +331,12 @@ public final class NucleoVialItem extends Item {
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        return ativo(stack);      // (pedido do dono) ativado = "fica encantado"
+        return ativo(stack) && !ehQuebrado(stack);   // (5.18.0) quebrado não brilha
     }
 
     @Override
     public boolean isBarVisible(ItemStack stack) {
-        return carga(stack) < CARGA_MAX;
+        return !ehQuebrado(stack) && carga(stack) < CARGA_MAX;
     }
 
     @Override
