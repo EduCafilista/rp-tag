@@ -130,8 +130,6 @@ public final class RPWorldData extends SavedData {
     /** (5.18.0) a barra em PÉ (padrão — o dono: "DEVE SER NA VERTICAL, PARA FICAR MELHOR
      * DO PLAYER VER"). Enche de baixo pra cima. */
     private boolean barraVertical = true;
-    /** (5.19.0) o TAB com cabeçalho/rodapé do servidor. Padrão: LIGADO. */
-    private boolean tabLigado = true;
 
     // ================= (5.17.0) AXION (a gatinha do canto) =================
     /** 0 = escondida (PADRÃO — ela só aparece quando o ADM manda), 1 = dormindo, 2 = acordada. */
@@ -323,8 +321,6 @@ public final class RPWorldData extends SavedData {
     }
     public int barraLargura() { return barraLargura; }
     public boolean barraVertical() { return barraVertical; }
-    public boolean isTabLigado() { return tabLigado; }
-    public void setTabLigado(boolean v) { tabLigado = v; setDirty(); }
     public void setBarraVertical(boolean v) { barraVertical = v; setDirty(); }
     public void setBarraLargura(int px) { barraLargura = Math.max(40, Math.min(400, px)); setDirty(); }
 
@@ -800,7 +796,6 @@ public final class RPWorldData extends SavedData {
         tag.putFloat("BarraY", barraY);
         tag.putInt("BarraLargura", barraLargura);
         tag.putBoolean("BarraVertical", barraVertical);   // (5.18.0)
-        tag.putBoolean("TabLigado", tabLigado);           // (5.19.0)
         tag.putInt("AxionEstado", axionEstado);
         tag.putFloat("AxionEscala", axionEscala);
         tag.putInt("DataVersao", dataVersao);   // (5.17.2)
@@ -953,7 +948,6 @@ public final class RPWorldData extends SavedData {
         if (tag.contains("BarraY")) data.barraY = tag.getFloat("BarraY");
         if (tag.contains("BarraLargura")) data.barraLargura = tag.getInt("BarraLargura");
         data.barraVertical = !tag.contains("BarraVertical") || tag.getBoolean("BarraVertical");
-        data.tabLigado = !tag.contains("TabLigado") || tag.getBoolean("TabLigado");   // (5.19.0)
         if (tag.contains("AxionEstado")) data.axionEstado = tag.getInt("AxionEstado");
         if (tag.contains("AxionEscala")) data.axionEscala = tag.getFloat("AxionEscala");
 

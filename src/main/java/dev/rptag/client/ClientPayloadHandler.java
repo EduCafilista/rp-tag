@@ -246,4 +246,10 @@ public final class ClientPayloadHandler {
             }
         });
     }
+
+    /** (5.20.0) o balão de fala da Axion (o desenho é no AxionHud). */
+    public static void handleAxionFala(final dev.rptag.AxionFalaPayload payload,
+            final net.neoforged.neoforge.network.handling.IPayloadContext context) {
+        context.enqueueWork(() -> AxionHud.receberFala(payload.texto(), payload.segundos()));
+    }
 }

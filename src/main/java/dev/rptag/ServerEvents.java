@@ -49,15 +49,6 @@ public final class ServerEvents {
     @SubscribeEvent
     public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
         NeptuneEventos.tick(event.getServer());
-        // (5.19.0) o TAB: mede o tick sempre e reescreve o cabeçalho/rodapé 1x por segundo
-        try {
-            TabList.amostrarTick(event.getServer());
-            if (event.getServer().getTickCount() % 20 == 0) {
-                TabList.enviarTodos(event.getServer());
-            }
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: tick do TAB falhou (o jogo segue)", t);
-        }
         // (5.17.0) NÚCLEO VIAL: o desgaste é por DIA do jogo, então checar a cada 2 s é de sobra
         // (o dia só vira a cada 20 minutos). Barato: sai na hora quando o dia não mudou.
         if (event.getServer().getTickCount() % 40 == 0) {
@@ -213,6 +204,56 @@ public final class ServerEvents {
     public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer p) {
             NeptuneEventos.avisarRespawn(p.getUUID());
+            // (5.20.0) MORREU NO VAZIO? CONTINUA NO VAZIO.
+            // O dono: "se o player morrer la dentro ele continua la dentro". Antes o respawn
+            // devolvia a pessoa pro overworld (ou pro spawn do mundo), o que esvaziava o
+            // exílio: morrer era a saída de graça.
+            try {
+                if (VazioReino.consumirMorteNoVazio(p.getUUID())) {
+                    var nv = p.getServer().getLevel(NeptuneEventos.CHAVE_EXILIO_PUBLICA);
+                    if (nv != null) {
+                        var chegada = VazioReino.chegada(nv);
+                        p.teleportTo(nv, chegada.x, chegada.y, chegada.z,
+                                java.util.Set.of(), p.getYRot(), p.getXRot());
+                        p.setHealth(p.getMaxHealth());     // volta de pé, não com 0 de vida
+                        p.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                                "\u00a78O vazio não devolve ninguém.\u00a7r \u00a77Você acordou de novo "
+                                        + "na praça \u2014 ainda dentro dele."), false);
+                    }
+                }
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: respawn no vazio falhou (o jogo segue)", t);
+            }
+        }
+    }
+
+    /** (5.20.0) anota a morte para saber, no respawn, que ela foi DENTRO do vazio. */
+    @SubscribeEvent
+    public static void onDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        try {
+            if (event.getEntity() instanceof ServerPlayer p && VazioReino.ehVazio(p.level())) {
+                VazioReino.marcarMorteNoVazio(p.getUUID());
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: marcação de morte no vazio falhou", t);
+        }
+    }
+
+    /**
+     * (5.20.0) TODO CHUNK DO VAZIO PASSA PELO RELEVO — o mundo inteiro tem montanha.
+     *
+     * <p>O dono: <i>"NAO QUERO que apenas o spawn seja com montanhas, quero que o mundo
+     * inteiro seja assim"</i>. Cada chunk que carrega entra na fila do relevo (2 por tick),
+     * então onde o jogador for, o terreno é serra/cratera — não laje lisa.
+     */
+    @SubscribeEvent
+    public static void onChunkLoad(net.neoforged.neoforge.event.level.ChunkEvent.Load event) {
+        try {
+            if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel sl) {
+                VazioReino.aoCarregarChunk(sl, event.getChunk().getPos().x, event.getChunk().getPos().z);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: relevo do chunk falhou (o jogo segue)", t);
         }
     }
 
@@ -310,13 +351,6 @@ public final class ServerEvents {
         Titulos.avisar(server, joined.getUUID());
         // (5.11.0) quem entra depois do /vazio ligar também precisa da aura
         NeptuneEventos.reenviarAura(server);
-        // (5.19.0) o TAB (cabeçalho com o nome do servidor + rodapé com TPS/memória/uptime)
-        try {
-            TabList.enviar(joined, server);
-            TabList.enviarTodos(server);   // o "online" muda pra quem já estava
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: TAB no login falhou", t);
-        }
     }
 
     /**

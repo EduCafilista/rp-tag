@@ -113,6 +113,9 @@ public final class ModNetworking {
         // (5.17.0) a AXION no canto inferior direito (dormindo/acordada/escondida)
         registrar.playToClient(AxionPayload.TYPE, AxionPayload.STREAM_CODEC,
                 dev.rptag.client.ClientPayloadHandler::handleAxion);
+        // (5.20.0) a AXION FALANDO: balão vermelho com letras pretas saindo dela
+        registrar.playToClient(AxionFalaPayload.TYPE, AxionFalaPayload.STREAM_CODEC,
+                dev.rptag.client.ClientPayloadHandler::handleAxionFala);
         // (5.7.2) SISTEMA DE TÍTULOS (etiqueta colorida + título pessoal)
         registrar.playToClient(TituloSyncPayload.TYPE, TituloSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTitulo);

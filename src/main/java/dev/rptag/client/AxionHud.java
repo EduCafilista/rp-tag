@@ -38,6 +38,13 @@ public final class AxionHud {
     private static long virou;                          // quando mudou de estado (para o "pulinho")
     private static final long NASCEU = System.currentTimeMillis();
 
+    // ================= (5.20.0) O BALÃO DE FALA =================
+    /** o que ela está falando agora ("" = calada). */
+    private static String fala = "";
+    /** quando a fala começou e quando termina (ms do relógio). */
+    private static long falaInicio = 0L;
+    private static long falaFim = 0L;
+
     private AxionHud() {
     }
 
@@ -55,6 +62,101 @@ public final class AxionHud {
         px = p.x();
         py = p.y();
         // (5.17.0) ela é sempre visível no canto por padrão; o pacote só diz COMO
+    }
+
+    /**
+     * (5.20.0) CHEGOU UMA FALA — balão vermelho, letras pretas.
+     *
+     * <p>Se ela estiver escondida (ninguém mandou colocar na tela), a fala a faz aparecer:
+     * não tem sentido o ADM mandar a Axion falar e a boca dela estar fora da tela.
+     */
+    public static void receberFala(String texto, int segundos) {
+        fala = texto == null ? "" : texto;
+        falaInicio = System.currentTimeMillis();
+        falaFim = falaInicio + Math.max(1, segundos) * 1000L;
+        if (estado == AxionPayload.ESCONDIDA && !fala.isBlank()) {
+            estado = AxionPayload.ACORDADA;      // quem fala, aparece
+            virou = falaInicio;
+        }
+    }
+
+    /** (5.20.0) o balão: fundo vermelho escuro, letras PRETAS, rabicho apontando pra ela. */
+    private static void desenharFala(GuiGraphics g, int ax, int ay, int aw, int ah) {
+        long ms = System.currentTimeMillis();
+        if (fala.isBlank() || ms > falaFim) {
+            return;
+        }
+        var fonte = Minecraft.getInstance().font;
+        // quebra em até 3 linhas de 26 caracteres (fica colado nela, não cobre a tela)
+        java.util.List<String> linhas = new java.util.ArrayList<>();
+        String resto = fala.trim();
+        while (!resto.isEmpty() && linhas.size() < 3) {
+            if (resto.length() <= 26) {
+                linhas.add(resto);
+                resto = "";
+            } else {
+                int corte = resto.lastIndexOf(' ', 26);
+                if (corte <= 0) {
+                    corte = 26;
+                }
+                linhas.add(resto.substring(0, corte));
+                resto = resto.substring(corte).trim();
+            }
+        }
+        int larg = 0;
+        for (String l : linhas) {
+            larg = Math.max(larg, fonte.width(l));
+        }
+        int pad = 5;
+        int bw = larg + pad * 2;
+        int bh = linhas.size() * 10 + pad * 2;
+
+        // aparece/some suave (0.18 s)
+        float u = (ms - falaInicio) / 180F;
+        float alfa = AvisoFxUtil.cl(u);
+        float restante = (falaFim - ms) / 400F;
+        alfa = Math.min(alfa, AvisoFxUtil.cl(restante));
+
+        // cola na ESQUERDA dela, subindo um pouco acima da cabeça
+        int bx = ax - bw - 6;
+        int by = ay - bh / 2;
+        int W = g.guiWidth();
+        if (bx < 4) {                            // sem espaço à esquerda: vai pra direita
+            bx = ax + aw + 6;
+        }
+        bx = Math.max(4, Math.min(bx, W - bw - 4));
+
+        int vermelho = AvisoFxUtil.col(0x8E0F1A, alfa);       // vermelho escuro (o do dono)
+        int vermelhoTopo = AvisoFxUtil.col(0xB31424, alfa);
+        int tinta = AvisoFxUtil.col(0x2A0206, alfa);          // borda quase preta
+        int preto = AvisoFxUtil.col(0x120204, alfa);          // LETRAS PRETAS
+
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 260);            // por cima de tudo
+        AvisoFxUtil.preparar(g);
+        AvisoFxUtil.Buf b = AvisoRitual.comecar(g);
+        // sombra + borda + recheio
+        b.rect(bx - 2, by - 2, bw + 4, bh + 4, AvisoFxUtil.col(0x000000, alfa * 0.55F));
+        b.rect(bx, by, bw, bh, tinta);
+        b.rect(bx + 1, by + 1, bw - 2, bh - 2, vermelho);
+        b.rect(bx + 1, by + 1, bw - 2, 1, vermelhoTopo);       // brilho em cima
+        // o rabicho (triângulo apontando pra ela)
+        boolean praEsquerda = bx > ax;
+        int bx0 = praEsquerda ? bx : bx + bw - 1;
+        int dir = praEsquerda ? -1 : 1;
+        for (int i = 0; i < 6; i++) {
+            b.rect(bx0 + dir * i, by + bh / 2 - 4 + i, 1, 1, vermelho);
+            b.rect(bx0 + dir * i, by + bh / 2 + 4 - i, 1, 1, vermelho);
+        }
+        b.flush();
+
+        // as letras (PRETAS) linha por linha, centralizadas
+        for (int i = 0; i < linhas.size(); i++) {
+            String l = linhas.get(i);
+            AvisoRitual.texto(g, l, bx + (bw - fonte.width(l)) / 2F, by + pad + i * 10F,
+                    1.0F, preto, false);
+        }
+        g.pose().popPose();
     }
 
     // ------------------------------------------------------------------ desenho
@@ -114,6 +216,8 @@ public final class AxionHud {
             if (dorme) {
                 desenharZzz(g, x, y, w, t);
             }
+            // ---- (5.20.0) e o BALÃO DE FALA, quando o ADM manda ela falar
+            desenharFala(g, x, y, Math.round(w), Math.round(h));
         } catch (Throwable t) {
             falhou = true;
             RPTagMod.LOGGER.warn("RP Tag: Axion desligada nesta sessão", t);

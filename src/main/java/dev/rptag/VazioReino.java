@@ -113,7 +113,7 @@ public final class VazioReino {
     private static long proximaDica;
     private static long proximoPredio;
     private static long proximoMundo;
-    private static long proximaRuina;
+    // (5.20.0) `proximaRuina` saiu: a cidade não cresce mais sozinha (ver cidadeFixa).
     /** (5.13.3) quando o miolo do portal é conferido de novo (reparo automático). */
     private static long proximoReparo;
 
@@ -297,11 +297,12 @@ public final class VazioReino {
             // player". Nada de "Pedestais 3/8" pipocando na tela — quem quiser o
             // progresso pergunta com /vazio pedestais.
 
-            // 5) PRÉDIOS PERDIDOS: nasce um a cada ~3 s, longe da praça
-            if (agora >= proximoPredio) {
-                proximoPredio = agora + 2200L + (long) (Math.random() * 1800);
-                tentarPredio(nv, p);
-            }
+            // 5) (5.20.0) CHEGA DE PRÉDIO NASCENDO SOZINHO.
+            // O dono: "ta spawnando predio toda hora, devia ser so tipo uma construçao no
+            // mapa, nao que fica spawnando toda hora, alguma hora vai crashar". Antes: uma
+            // ruína a cada 2 s + um prédio a cada ~3 s, PARA SEMPRE — em uma hora de jogo
+            // eram ~2.700 construções e o save virava um monstro. Agora a cidade é FIXA:
+            // um conjunto de construções erguido UMA vez (ver {@link #cidadeFixa}).
 
             // 6) (5.16.4) O PISO DE BEDROCK — o dono: "e o player se ele quebrar para baixo
             // na dimensão, ele não vai pro void e nem sai do vazio, né? coloca bedrock
@@ -312,6 +313,11 @@ public final class VazioReino {
             // 7) (5.13.0) o vazio que MATA devagar (pedido 49) — agora só como REDE DE
             // SEGURANÇA (com o piso, ninguém chega lá); e SEM o aviso de morte na tela.
             tickCaindo(nv, p, agora);
+
+            // 8) (5.20.0) OS BICHOS DO VAZIO MACHUCAM — o dono: "os bichos do vazio alem
+            // de assustar devem dar dano ao encostar no player". Enderman e Warden são os
+            // únicos bichos que existem aqui; quem encosta neles leva dano.
+            danoDeContato(nv, p, agora);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: reino do vazio falhou (o jogo segue)", t);
         }
@@ -344,11 +350,9 @@ public final class VazioReino {
             relevoTick(nv, agora);
             // (5.13.6) as almas vazias (são virtuais: posição + desenho no cliente)
             tickAlmas(nv, agora);
-            // (5.13.1) a cidade morta cresce sozinha: uma ruína a cada 2 s em volta da
-            // praça (o dono: "a dimensão tem que ter mais coisas... prédios, ruínas")
-            if (agora >= proximaRuina) {
-                proximaRuina = agora + 2000L;
-                ruinaAutomatica(nv);
+            // (5.20.0) A CIDADE É FIXA — erguida uma única vez e nunca mais cresce.
+            if (marcar(nv, "cidade-v1")) {
+                cidadeFixa(nv);
             }
             animarAbertura(nv, agora);
             // (5.13.4) NADA DE SLIME (e nada de bicho que não seja PRETO)
@@ -633,6 +637,20 @@ public final class VazioReino {
             }
             proximoRelevo = agora + 100L;             // ~2 chunks/tick, diluído
             int feitos = 0;
+            // (5.20.0) primeiro os chunks que o jogador fez carregar (mundo inteiro)
+            while (!CONFERIR.isEmpty() && feitos < CHUNKS_POR_TICK) {
+                var it = CONFERIR.iterator();
+                long chave = it.next();
+                it.remove();
+                int cx = (int) (chave >> 32);
+                int cz = (int) chave;
+                if (!nv.hasChunk(cx, cz)) {
+                    continue;                        // descarregou antes da vez: ignora
+                }
+                esculpirChunk(nv, cx, cz);
+                despejarFila(nv);
+                feitos++;
+            }
             while (!RELEVO.isEmpty() && feitos < 2) {
                 int[] c = RELEVO.poll();
                 int cx = c[0], cz = c[1];
@@ -664,6 +682,101 @@ public final class VazioReino {
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: relevo do vazio falhou (o jogo segue)", t);
         }
+    }
+
+    /** (5.20.0) chunks que chegaram do disco e ainda vão passar pelo relevo. */
+    private static final java.util.LinkedHashSet<Long> CONFERIR = new java.util.LinkedHashSet<>();
+    /** quantos chunks de uma vez por tick (2 = suave, sem travar). */
+    private static final int CHUNKS_POR_TICK = 2;
+
+    /** (5.20.0) último dano de contato por jogador (para não virar serra elétrica). */
+    private static final Map<UUID, Long> ULTIMO_DANO_CONTATO = new HashMap<>();
+    /** (5.20.0) quem morreu DENTRO do vazio (volta pra cá no respawn). */
+    private static final Map<UUID, Boolean> MORREU_NO_VAZIO = new HashMap<>();
+
+    /**
+     * (5.20.0) OS BICHOS DO VAZIO MACHUCAM AO ENCOSTAR.
+     *
+     * <p>O dono: <i>"os bichos do vazio alem de assustar devem dar dano ao encostar no
+     * player"</i>. Antes o Enderman e o Warden só assustavam — dava pra atravessar o vazio
+     * andando no meio deles. Agora, quem chega a menos de 1,9 bloco de um deles leva dano
+     * (<b>4</b> do Enderman, <b>7</b> do Warden, 1x por segundo) e é jogado pra trás.
+     */
+    private static void danoDeContato(ServerLevel nv, ServerPlayer p, long agora) {
+        try {
+            Long ultimo = ULTIMO_DANO_CONTATO.get(p.getUUID());
+            if (ultimo != null && agora - ultimo < 1000L) {
+                return;
+            }
+            net.minecraft.world.phys.AABB perto = p.getBoundingBox().inflate(1.9, 1.2, 1.9);
+            for (net.minecraft.world.entity.Entity e : nv.getEntities(p, perto, en ->
+                    en.getType() == net.minecraft.world.entity.EntityType.ENDERMAN
+                            || en.getType() == net.minecraft.world.entity.EntityType.WARDEN)) {
+                if (!(e instanceof net.minecraft.world.entity.Mob bicho)) {
+                    continue;
+                }
+                if (bicho.isDeadOrDying()) {
+                    continue;
+                }
+                boolean warden = bicho.getType() == net.minecraft.world.entity.EntityType.WARDEN;
+                float dano = warden ? 7.0F : 4.0F;
+                ULTIMO_DANO_CONTATO.put(p.getUUID(), agora);
+                // o dano vem do bicho (o crédito da morte fica com ele, não com o "vazio")
+                p.hurt(nv.damageSources().mobAttack(bicho), dano);
+                // empurrão pra trás, na direção oposta ao bicho
+                double dx = p.getX() - bicho.getX();
+                double dz = p.getZ() - bicho.getZ();
+                double m = Math.max(0.001, Math.hypot(dx, dz));
+                p.push(dx / m * 0.55, 0.28, dz / m * 0.55);
+                p.hurtMarked = true;
+                nv.playSound(null, p.blockPosition(), RPTagMod.SOM_VAZIO.get(),
+                        net.minecraft.sounds.SoundSource.HOSTILE, 0.5F, warden ? 0.5F : 0.9F);
+                break;
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: dano dos bichos do vazio falhou (o jogo segue)", t);
+        }
+    }
+
+    /** (5.20.0) marca que a pessoa morreu DENTRO do vazio (o respawn devolve ela pra cá). */
+    public static void marcarMorteNoVazio(UUID id) {
+        MORREU_NO_VAZIO.put(id, Boolean.TRUE);
+    }
+
+    /** @return true se a morte que originou este respawn foi dentro do vazio. */
+    public static boolean consumirMorteNoVazio(UUID id) {
+        return MORREU_NO_VAZIO.remove(id) != null;
+    }
+
+    /**
+     * (5.20.0) O MUNDO INTEIRO TEM MONTANHA — chamado sempre que um chunk do vazio carrega.
+     *
+     * <p>O dono: <i>"NAO QUERO que apenas o spawn seja com montanhas, quero que o mundo
+     * inteiro seja assim"</i>. Antes o relevo só passava no anel de 45 a 130 blocos em volta
+     * da praça: dali pra fora o chão era a laje lisa para sempre.
+     *
+     * <p>Agora TODO chunk do vazio entra nesta fila quando carrega (e também os que já estão
+     * em volta de quem entra), e o {@link #relevoTick} esculpe 2 por tick. Como a escultura
+     * mira a altura FINAL (é idempotente), passar de novo não empilha nada — só levanta o
+     * que falta, e o que o jogador construir por cima é respeitado (só mexe em bloco natural).
+     */
+    public static void aoCarregarChunk(ServerLevel nv, int cx, int cz) {
+        try {
+            if (!ehVazio(nv)) {
+                return;
+            }
+            if (CONFERIR.size() > 4000) {
+                return;                          // fila cheia: os próximos entram no próximo load
+            }
+            CONFERIR.add((long) cx << 32 ^ (cz & 0xFFFFFFFFL));
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: fila do relevo falhou (o jogo segue)", t);
+        }
+    }
+
+    /** (5.20.0) quantos chunks ainda faltam passar pelo relevo. */
+    public static int chunksNaFila() {
+        return CONFERIR.size() + RELEVO.size();
     }
 
     /**
@@ -761,6 +874,10 @@ public final class VazioReino {
         double base = (a * 3.4 + b * 2.6 + c * 1.1) * 1.15;
 
         // 2) as MONTANHAS (só longe da praça)
+        // (5.20.0) O MUNDO INTEIRO É ASSIM — o dono: "NAO QUERO que apenas o spawn seja
+        // com montanhas, quero que o mundo inteiro seja assim". A conta já era por POSIÇÃO
+        // (seno de x,z), então ela vale em qualquer coordenada: o que faltava era esculpir
+        // todo chunk que carrega, não só o anel de 45..130. Ver {@link #aoCarregarChunk}.
         double d = Math.hypot(x, z);
         double longe = Math.min(1.0, Math.max(0.0, (d - 62.0) / 40.0));
         if (longe <= 0.0) {
@@ -965,6 +1082,7 @@ public final class VazioReino {
                 if (dist < RAIO_PRACA + 12) {
                     continue;                          // praça intacta
                 }
+                // (5.20.0) sem teto de distância: o relevo vale para o mundo inteiro
                 if (Math.abs(x) <= 10 && z > -36 && z < 8) {
                     continue;                          // caminho do portal
                 }
@@ -2522,35 +2640,61 @@ public final class VazioReino {
         }
     }
 
-    private static void ruinaAutomatica(ServerLevel nv) {
-        for (int tentativa = 0; tentativa < 12; tentativa++) {
-            int i = contadorRuinas++;
-            double ang = i * 2.399963;                       // espiral de ouro
-            double raio = 34 + (i * 13 % 71);                // 34..104
-            int x = (int) Math.round(Math.cos(ang) * raio);
-            int z = (int) Math.round(Math.sin(ang) * raio);
-            int cx = Math.floorDiv(x, 96);
-            int cz = Math.floorDiv(z, 96);
-            if (Math.hypot(x, z) < RAIO_PRACA + 8) {
-                continue;
+    /**
+     * (5.20.0) A CIDADE FIXA DO VAZIO — construções que existem e NUNCA MAIS crescem.
+     *
+     * <p>O dono: <i>"ta spawnando predio toda hora, devia ser so tipo uma construçao no
+     * mapa, nao que fica spawnando toda hora, alguma hora vai crashar e quebrar tudo"</i>.
+     *
+     * <p>São <b>24 construções</b> num anel de 60 a 240 blocos, em posições determinísticas
+     * (espiral de ouro + passo fixo). Rodada UMA vez por mundo (a marca {@code cidade-v1}
+     * fica no save); se a pessoa já tinha o mundo antigo lotado, nada é construído de novo
+     * em cima — só o que falta.
+     */
+    private static void cidadeFixa(ServerLevel nv) {
+        try {
+            int erguidas = 0;
+            for (int i = 0; i < 24; i++) {
+                double ang = i * 2.399963 + 0.35;                 // espiral de ouro
+                double raio = 60 + (i * 17 % 180);                // 60..240
+                int x = (int) Math.round(Math.cos(ang) * raio);
+                int z = (int) Math.round(Math.sin(ang) * raio);
+                if (Math.hypot(x, z) < RAIO_PRACA + 28) {
+                    continue;                                     // a praça fica limpa
+                }
+                boolean pertoDeAltar = false;
+                for (int[] alt : VazioGeometria.SANTUARIO) {
+                    if (Math.hypot(x - alt[0], z - alt[1]) < 26) {
+                        pertoDeAltar = true;
+                        break;
+                    }
+                }
+                if (pertoDeAltar) {
+                    continue;
+                }
+                int cx = Math.floorDiv(x, 96);
+                int cz = Math.floorDiv(z, 96);
+                if (!marcar(nv, "B:" + cx + "," + cz)) {
+                    continue;                                     // essa célula já tem construção
+                }
+                nv.getChunk(x >> 4, z >> 4);
+                if (predioDePe(nv, x, z)) {
+                    continue;                                     // já tem prédio de pé
+                }
+                int tipo = Math.floorMod(i * 37, 10);
+                if (tipo < 3) {
+                    enfileirarPredio(nv, x, z, cx, cz);           // arranha-céu
+                } else if (tipo < 8) {
+                    enfileirarRuinaBaixa(nv, x, z, cx, cz);       // casa/prédio baixo
+                } else {
+                    enfileirarQuarteirao(nv, x, z, cx, cz);       // muros, postes, entulho
+                }
+                erguidas++;
             }
-            // (5.18.0) a célula marcada não bloqueia mais PARA SEMPRE: se não tem prédio de
-            // pé ali (o antigo falhou, ou o mundo é de antes), constrói agora. Era o outro
-            // lado do "quero as montanhas, predios do jeito que tava antes".
-            boolean novo = marcar(nv, "B:" + cx + "," + cz);
-            if (!novo && predioDePe(nv, x, z)) {
-                continue;
-            }
-            nv.getChunk(x >> 4, z >> 4);
-            int tipo = Math.floorMod(i * 37, 10);
-            if (tipo < 2) {
-                enfileirarPredio(nv, x, z, cx, cz);
-            } else if (tipo < 7) {
-                enfileirarRuinaBaixa(nv, x, z, cx, cz);
-            } else {
-                enfileirarQuarteirao(nv, x, z, cx, cz);
-            }
-            return;
+            RPTagMod.LOGGER.info("RP Tag: cidade FIXA do vazio erguida ({} construcoes; "
+                    + "nada mais nasce sozinho)", erguidas);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: cidade fixa do vazio falhou (o jogo segue)", t);
         }
     }
 

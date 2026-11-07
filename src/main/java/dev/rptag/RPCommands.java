@@ -430,6 +430,19 @@ public final class RPCommands {
             case "medoop" -> 22;       // (5.8.1) protótipo AvisoMedo: membrana + lanterna
             default -> 0;
         };
+        // (5.20.0) "AVISAR AXION:" — o dono: 'SE O ADM "rp admin avisar AXION: " tem que ficar
+        // vermelho mais escuro, personalizado'. Se o texto começa com AXION:, o aviso vira a
+        // VOZ da Axion: nome em vermelho escuro, negrito, e o resto na mesma cor.
+        boolean vozDaAxion = false;
+        if (texto != null) {
+            String t = texto.trim();
+            String baixo = t.toLowerCase(java.util.Locale.ROOT);
+            if (baixo.startsWith("axion:") || baixo.startsWith("axion :")) {
+                texto = t.substring(baixo.indexOf(':') + 1).trim();
+                vozDaAxion = true;
+                style = 0;                     // sem fantasia: é ela falando
+            }
+        }
         // (4.7.3) Grafia "egipcio" (sem o "i"): nao tem literal proprio, para nao
         // aparecer duas vezes no tab-complete — mas se a primeira palavra do texto
         // for "egipcio", o aviso vira egipicio e o resto e a mensagem.
@@ -443,7 +456,10 @@ public final class RPCommands {
         }
         final int estiloFinal = style;   // lambda do sendSuccess exige effectively final
         String traduzido = translateAmp(texto);
-        if (style == 0 && traduzido.indexOf('\u00a7') < 0) {
+        if (vozDaAxion) {
+            // (5.20.0) VERMELHO MAIS ESCURO (§4) com o nome dela na frente, personalizado
+            traduzido = "\u00a74\u00a7lAXION\u00a74\u00a7l \u00bb \u00a7r\u00a74" + traduzido;
+        } else if (style == 0 && traduzido.indexOf('\u00a7') < 0) {
             traduzido = "\u00a7c" + traduzido; // sem cor? VERMELHO (o classic "voce esta sendo observado")
         }
         ScreenTextPayload payload = new ScreenTextPayload(traduzido, 8, style); // (3.61.0) 8s: aviso serio pede tempo
@@ -825,7 +841,6 @@ public final class RPCommands {
                     + "/rp admin vida lote A,B,C tirar 1 \u00a77\u2014 em lote, aplica na hora\u00a7c\n"
                     + "/rp admin afk tempo <s>|status \u00a77\u2014 tempo parado at\u00e9 virar AFK\u00a7c\n"
                     + "/rp admin bolhas on|off \u00a77\u2014 baloes do servidor inteiro\u00a7c\n"
-                    + "/rp admin tab on|off \u00a77\u2014 o TAB bonito (NEPTUNE SMP + online/TPS/ping/memoria)\u00a7c\n"
                     + "/tablet ver <jogador> \u00a77\u2014 abre a ficha de outro jogador (leitura)\u00a7c\n"
                     + "/tablet liberar <jogador> \u00a77\u2014 libera a ficha confirmada para edicao\u00a7c\n"
                     + "/do <texto> \u00a77\u2014 narracao de ambiente\u00a7c\n"
@@ -1475,28 +1490,6 @@ public final class RPCommands {
                                                     return barraValor(ctx, EntityArgument.getPlayers(ctx, "jogadores"),
                                                             com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "valor"));
                                                 })))))
-                // ============ (5.19.0) TAB DO SERVIDOR ============
-                // /rp admin tab on|off — o cabeçalho ("NEPTUNE SMP / explore the deep") e o
-                // rodapé (online, TPS, ping, memória, uptime) da lista de jogadores.
-                .then(Commands.literal("tab")
-                        .then(Commands.literal("on").executes(ctx -> tabLigar(ctx, true)))
-                        .then(Commands.literal("off").executes(ctx -> tabLigar(ctx, false)))
-                        .executes(ctx -> {
-                            // (5.19.0) sem argumento: só mostra como está (não mexe)
-                            var srv = ctx.getSource().getServer();
-                            boolean on = RPWorldData.get(srv).isTabLigado();
-                            boolean tpsOk = TabList.tps() >= 19.0;
-                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "\u00a7eTAB DO SERVIDOR\u00a77\n"
-                                    + "  situa\u00e7\u00e3o: " + (on ? "\u00a7aLIGADO" : "\u00a7cDESLIGADO") + "\u00a77\n"
-                                    + "  TPS agora: " + (tpsOk ? "\u00a7a" : "\u00a7e")
-                                    + String.format("%.1f", TabList.tps()) + "\u00a77\n"
-                                    + "  mem\u00f3ria: \u00a7f" + String.format("%.1f", TabList.memoriaUsada())
-                                    + " MB\u00a77 de \u00a7f" + String.format("%.1f", TabList.memoriaMaxima()) + " MB\u00a77\n"
-                                    + "  uptime: \u00a7f" + TabList.uptime() + "\u00a77\n"
-                                    + "\u00a7e/rp admin tab on|off\u00a77 \u2014 liga/desliga"), false);
-                            return Command.SINGLE_SUCCESS;
-                        }))
                 // ============ (5.18.0) AXION: DOIS jeitos de COLOCAR e UM de TIRAR =========
                 // Ela NUNCA aparece sozinha (nem quando o jogador entra pela primeira vez).
                 //   acordar -> COLOCA ela na tela, ACORDADA
@@ -1506,11 +1499,21 @@ public final class RPCommands {
                         .then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA)))
                         .then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.DORMINDO)))
                         .then(Commands.literal("tirar").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA)))
+                        // (5.20.0) /rp admin axion falar <texto> — BALÃO DE FALA:
+                        // vermelho escuro com letras pretas, saindo dela na tela de todos.
+                        .then(Commands.literal("falar")
+                                .then(Commands.argument("texto",
+                                                com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                        .executes(ctx -> axionFalar(ctx,
+                                                com.mojang.brigadier.arguments.StringArgumentType.getString(
+                                                        ctx, "texto")))))
                         .executes(ctx -> {
                             ctx.getSource().sendSuccess(() -> Component.literal(
                                     "\u00a7e/rp admin axion acordar\u00a77 \u2014 POE ela na tela, acordada\n"
                                     + "\u00a7e/rp admin axion dormir\u00a77 \u2014 POE ela na tela, dormindo\n"
-                                    + "\u00a7e/rp admin axion tirar\u00a77 \u2014 TIRA ela da tela")
+                                    + "\u00a7e/rp admin axion tirar\u00a77 \u2014 TIRA ela da tela\n"
+                                    + "\u00a7e/rp admin axion falar <texto>\u00a77 \u2014 ela diz isso "
+                                    + "num balão vermelho de letras pretas")
                                     .withStyle(ChatFormatting.YELLOW), false);
                             return Command.SINGLE_SUCCESS;
                         }))
@@ -1847,24 +1850,6 @@ public final class RPCommands {
         };
     }
 
-    /**
-     * (5.19.0) /rp admin tab on|off — liga/desliga o cabeçalho e o rodapé da lista de jogadores.
-     *
-     * <p>Com {@code off}, o TAB volta a ser o do vanilla (sem cabeçalho, sem rodapé).
-     */
-    private static int tabLigar(
-            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
-            boolean on) {
-        var server = ctx.getSource().getServer();
-        RPWorldData.get(server).setTabLigado(on);
-        TabList.enviarTodos(server);
-        ctx.getSource().sendSuccess(() -> Component.literal(on
-                ? "\u00a7aTAB LIGADO \u2014 NEPTUNE SMP em cima e online/TPS/ping/memória/uptime embaixo."
-                : "\u00a77TAB DESLIGADO \u2014 voltou a lista simples do vanilla.")
-                .withStyle(ChatFormatting.GREEN), false);
-        return Command.SINGLE_SUCCESS;
-    }
-
     /** (5.18.0) /rp admin barra vertical on|off — a barra em pé (padrão) ou deitada. */
     private static int barraVertical(
             com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
@@ -1928,6 +1913,42 @@ public final class RPCommands {
                 new BarraPayload(d.barraVisivel(), d.barraRotulo(), d.barraValor(), d.barraCorTexto(),
                         d.barraCorBarra(), d.barraCorFundo(), d.barraX(), d.barraY(), d.barraLargura(),
                         d.barraVertical()));
+    }
+
+    /**
+     * (5.20.0) A AXION FALA — manda o balão pra todo mundo.
+     *
+     * <p>O dono: <i>"sera que teria alguma forma de ter um balao de fala vermelinho com letras
+     * petras, que saia da axion? ... seria legal para o adm falar comigo"</i>. O balão é
+     * desenhado colado nela, no canto da tela, e some sozinho (8 s).
+     */
+    private static int axionFalar(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            String texto) {
+        if (texto == null || texto.isBlank()) {
+            ctx.getSource().sendFailure(Component.literal("\u00a7cEscreva o que ela vai falar."));
+            return 0;
+        }
+        // tira os códigos § que o ADM talvez digite: o balão é sempre vermelho com letra preta
+        String limpo = texto.replaceAll("\u00a7[0-9a-fk-orA-FK-OR]", "").trim();
+        var server = ctx.getSource().getServer();
+        // ela precisa estar na tela pra falar
+        if (RPWorldData.get(server).axionEstado() == AxionPayload.ESCONDIDA) {
+            RPWorldData.get(server).setAxionEstado(AxionPayload.ACORDADA);
+            for (ServerPlayer alvo : server.getPlayerList().getPlayers()) {
+                enviarAxion(alvo, RPWorldData.get(server));
+            }
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
+                new AxionFalaPayload(limpo, 8));
+        for (ServerPlayer alvo : server.getPlayerList().getPlayers()) {
+            alvo.playNotifySound(RPTagMod.SOM_VAZIO.get(),
+                    net.minecraft.sounds.SoundSource.NEUTRAL, 0.35F, 1.6F);
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u00a7aAxion fala: \u00a74\u00a7l\"" + limpo + "\"\u00a7r \u00a77(balão na tela de todos)")
+                .withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
     }
 
     private static int axionEstado(

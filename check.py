@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.19.0'
+VER = '5.20.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2266,9 +2266,9 @@ check('5.13.1 (pedido 51): portal INVOCADO abre mesmo sem os 8 fragmentos (abert
       and 'dados.isPortalAberto() || portalInvocado(nv)' in _vr)
 check('5.13.1 (pedido 51): cada portal tem o SEU relogio de abertura (chavePortal)',
       'chavePortal(nv, base)' in _vr and 'private static final Map<String, Long> ABERTURA' in _vr)
-check('5.13.1 (pedido 51): a cidade morta nasce sozinha (ruinas, predios, quarteiroes)',
-      'private static void ruinaAutomatica' in _vr and 'enfileirarQuarteirao' in _vr
-      and 'enfileirarRuinaBaixa' in _vr and 'proximaRuina' in _vr)
+check('5.20.0: a cidade morta existe, mas FIXA (sem crescimento infinito)',
+      'private static void cidadeFixa(ServerLevel nv)' in _vr and 'enfileirarQuarteirao' in _vr
+      and 'enfileirarRuinaBaixa' in _vr and 'private static long proximaRuina;' not in _vr)
 check('5.13.5: neblina mais ESCURA (0,058 / 0,052 / 0,080, horizonte 150)',
       '0.058F' in rd(C + '/VazioNeblina.java')
       and '0.080F' in rd(C + '/VazioNeblina.java')
@@ -2692,8 +2692,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.19.0.jar')
-      and os.path.getsize('build/libs/rptag-5.19.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.20.0.jar')
+      and os.path.getsize('build/libs/rptag-5.20.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2813,8 +2813,9 @@ check('5.18.0: as MONTANHAS do vazio voltam/consertam (relevo ABSOLUTO, sem marc
       and 'int TOPO_LAJE = nv.getMinBuildHeight() + ALTURA_LAJE;' in _vr)
 check('5.18.0: /vazio relevo forca o conserto das montanhas',
       'VazioReino.reconstruirRelevo(nv)' in rd(R + '/NeptuneCommands.java'))
-check('5.18.0: os PREDIOS tambem se consertam (celula marcada sem predio = constroi)',
-      'if (!novo && predioDePe(nv, x, z)) {' in _vr and 'private static boolean predioDePe(' in _vr)
+check('5.18.0: os PREDIOS se consertam (celula sem predio = constroi) e nao crescem sem fim',
+      'if (predioDePe(nv, x, z)) {' in _vr and 'private static boolean predioDePe(' in _vr
+      and 'cidade-v1' in _vr)
 _bpx = rd(R + '/BarraPayload.java')
 _bhx = rd(C + '/BarraHudFx.java')
 check('5.18.0: a BARRA e VERTICAL (em pe, enche de baixo pra cima) e o padrao e vertical',
@@ -2846,23 +2847,41 @@ check('5.18.0: o balao de texto ganhou MAIS CORES (dentro, borda e letra)',
       '18 cores' in rd(C + '/BubbleStyleScreen.java')
       and '0xC81E2E, 0x6B0F1A, 0x12B886' in rd(C + '/BubbleStyleScreen.java'))
 
-# ============ 5.19.0: o TAB com cara de servidor ============
-_tab = rd(R + '/TabList.java')
-check('5.19.0: o TAB tem cabecalho (NEPTUNE SMP + explore the deep) e regua',
-      'public static Component cabecalho()' in _tab
-      and 'NEPTUNE SMP' in _tab and 'explore the deep' in _tab)
-check('5.19.0: o rodape mostra online, TPS, ping, memoria e uptime',
-      'Online \u00bb' in _tab.replace('\\u00bb', '\u00bb') or '\u25C6 Online' in _tab)
-check('5.19.0: o TPS e medido no tick do servidor (media dos ultimos 100 ticks)',
-      'public static void amostrarTick(MinecraftServer server)' in _tab
-      and 'TICKS.size() > 100' in _tab)
-check('5.19.0: o PING vem do connection.latency() (1.21.1 nao tem mais no ServerPlayer)',
-      'return p.connection.latency();' in _tab)
-check('5.19.0: o TAB e enviado no login e a cada 1 s (clientbound tab list)',
-      'TabList.enviar(joined, server);' in rd(R + '/ServerEvents.java')
-      and 'new ClientboundTabListPacket(topo, baixo)' in _tab)
-check('5.19.0: /rp admin tab on|off liga e desliga (fica salvo no mundo)',
-      'Commands.literal("tab")' in _rp4 and 'private boolean tabLigado = true;' in rd(R + '/RPWorldData.java'))
+# ============ 5.20.0: vazio (mundo inteiro), bichos, morte, cidade fixa, Axion falando ============
+_vr = rd(R + '/VazioReino.java')
+_se = rd(R + '/ServerEvents.java')
+check('5.20.0: o TAB saiu (o dono pediu) e o TAB do vanilla voltou',
+      not os.path.exists(R + '/TabList.java')
+      and 'TabList.' not in _se and 'literal("tab")' not in _rp4)
+check('5.20.0: as MONTANHAS valem no mundo inteiro (todo chunk do vazio passa pelo relevo)',
+      'public static void aoCarregarChunk(ServerLevel nv, int cx, int cz)' in _vr
+      and 'onChunkLoad(net.neoforged.neoforge.event.level.ChunkEvent.Load event)' in _se
+      and 'VazioReino.aoCarregarChunk(sl, event.getChunk().getPos().x, event.getChunk().getPos().z)' in _se)
+check('5.20.0: a fila do relevo roda 2 chunks por tick (não trava o servidor)',
+      'CHUNKS_POR_TICK = 2;' in _vr and 'while (!CONFERIR.isEmpty() && feitos < CHUNKS_POR_TICK)' in _vr)
+check('5.20.0: os PREDIOS pararam de nascer sozinhos (cidade FIXA, uma vez por mundo)',
+      'cidadeFixa(nv)' in _vr and 'marcar(nv, "cidade-v1")' in _vr
+      and 'ruinaAutomatica(' not in _vr.replace('private static void ruinaAutomatica', ''))
+check('5.20.0: os BICHOS do vazio machucam ao encostar (Enderman 4 / Warden 7, 1x por segundo)',
+      'private static void danoDeContato(ServerLevel nv, ServerPlayer p, long agora)' in _vr
+      and 'float dano = warden ? 7.0F : 4.0F;' in _vr
+      and 'agora - ultimo < 1000L' in _vr)
+check('5.20.0: quem morre DENTRO do vazio continua dentro (respawn na praca do vazio)',
+      'marcarMorteNoVazio' in _vr and 'consumirMorteNoVazio' in _vr
+      and 'VazioReino.consumirMorteNoVazio(p.getUUID())' in _se
+      and 'VazioReino.marcarMorteNoVazio(p.getUUID())' in _se)
+_af = rd(R + '/AxionFalaPayload.java')
+_ax = rd(C + '/AxionHud.java')
+check('5.20.0: a AXION fala num balao VERMELHO com letras PRETAS',
+      'public static void receberFala(String texto, int segundos)' in _ax
+      and '0x8E0F1A' in _ax and '0x120204' in _ax
+      and 'record AxionFalaPayload' in _af)
+check('5.20.0: /rp admin axion falar <texto> manda o balao pra todos',
+      'literal("falar")' in _rp4 and 'private static int axionFalar(' in _rp4
+      and 'sendToAllPlayers(' in _rp4)
+check('5.20.0: "avisar AXION:" fica em VERMELHO ESCURO personalizado',
+      'boolean vozDaAxion = false;' in _rp4
+      and 'AXION' in _rp4 and 'vozDaAxion) {' in _rp4)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
