@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.20.0'
+VER = '5.21.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1432,8 +1432,8 @@ check('5.5.0: dimensao do EXILIO existe (rptag:exilio) com chao (5.7.8: camadas 
 # (5.13.1) O DONO VOLTOU ATRAS: o vazio NAO pode ser tudo preto ("o vazio deve
 # ser como antes, pq agora ta tudo preto na dimensao"). Voltaram os valores de
 # 9938159: luz ambiente 0,42, ceu ligado, sem teto e o CEU DO OVERWORLD.
-check('5.13.5 (pedido 55): o vazio voltou a ser ESCURO (luz 0,14 + meia-noite fixa)',
-      '"ambient_light": 0.14' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+check('5.13.5 (pedido 55): o vazio e ESCURO (luz 0,06 + meia-noite fixa)',
+      '"ambient_light": 0.06' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and '"fixed_time": 18000' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and '"has_skylight": true' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and '"has_ceiling": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
@@ -2166,8 +2166,8 @@ check('5.12.0: CADA passo do deus bate um WARDEN_STEP grave',
       'SoundEvents.WARDEN_STEP' in _nev and 'SoundSource.HOSTILE, 1.35F' in _nev)
 
 # 3) vazio mais preto + prédios perdidos
-check('5.13.5 (pedido 55): a dimensao esta mais ESCURA de novo (luz 0,14, noite fixa)',
-      '"ambient_light": 0.14' in _dim and '"fixed_time": 18000' in _dim
+check('5.13.5 (pedido 55): a dimensao esta mais ESCURA de novo (luz 0,06, noite fixa)',
+      '"ambient_light": 0.06' in _dim and '"fixed_time": 18000' in _dim
       and 'minecraft:overworld' in _dim)
 check('5.12.0: neblina do vazio quase preta no cliente (VazioNeblina)',
       os.path.exists(C + '/VazioNeblina.java')
@@ -2269,10 +2269,10 @@ check('5.13.1 (pedido 51): cada portal tem o SEU relogio de abertura (chavePorta
 check('5.20.0: a cidade morta existe, mas FIXA (sem crescimento infinito)',
       'private static void cidadeFixa(ServerLevel nv)' in _vr and 'enfileirarQuarteirao' in _vr
       and 'enfileirarRuinaBaixa' in _vr and 'private static long proximaRuina;' not in _vr)
-check('5.13.5: neblina mais ESCURA (0,058 / 0,052 / 0,080, horizonte 150)',
-      '0.058F' in rd(C + '/VazioNeblina.java')
-      and '0.080F' in rd(C + '/VazioNeblina.java')
-      and '150F' in rd(C + '/VazioNeblina.java'))
+check('5.21.0: neblina das TREVAS (0,028 / 0,022 / 0,040, horizonte 130)',
+      '0.028F' in rd(C + '/VazioNeblina.java')
+      and '0.040F' in rd(C + '/VazioNeblina.java')
+      and '130F' in rd(C + '/VazioNeblina.java'))
 check('5.13.2: passo do deus só com o pé no chão (voando não faz barulho de andar)',
       'boolean peNoChao;' in _ne2 and 'p.onGround() && !p.getAbilities().flying' in _ne2
       and 'if (peNoChao) {' in _ne2)
@@ -2366,10 +2366,10 @@ check('5.13.6 (pedido 56): ALMAS VAZIAS perdidas na dimensao (virtuais, sem enti
       and 'ALMAS_CASAS' in _vr and 'ALMAS_ESTADO' in _vr
       and 'ArmorStand' not in _vr.split('limparBichos')[1].split('colocarBau')[0]
       and 'VazioAlmasPayload' in _vr)
-check('5.13.6: a alma se vira e se aproxima de quem chega (e sussurra)',
+check('5.13.6: a alma se vira, se aproxima de quem chega (e sussurra)',
       'menor < 9.0 && agora - ALMA_FALOU[i] > 6000L' in _vr
       and 'SoundEvents.SOUL_ESCAPE.value()' in _vr
-      and 'if (perto != null && menor > 2.6)' in _vr)
+      and 'if (perto != null && menor > 1.6)' in _vr)
 check('5.13.6: o CORPO da alma e GEOMETRIA no cliente (funciona com particula desligada)',
       os.path.exists(C + '/VazioAlmasFx.java')
       and 'RenderType.debugQuads()' in rd(C + '/VazioAlmasFx.java')
@@ -2396,9 +2396,9 @@ check('5.13.5 (pedido 55): a saida e no SPAWN dele (cama/ancora ou spawn do mund
       'alvo.getRespawnPosition()' in _nev and 'alvo.getRespawnDimension()' in _nev
       and 'getSharedSpawnPos()' in _nev and 'getSharedSpawnAngle()' in _nev
       and 'private static void pousar(' in _nev)
-check('5.13.5 (pedido 55): a dimensao mais escura nao virou tela preta (neblina 0,05x)',
-      '0.058F' in rd(C + '/VazioNeblina.java')
-      and '"ambient_light": 0.14' in _dim)
+check('5.13.5 (pedido 55): a dimensao escura nao virou tela preta (neblina visivel)',
+      '0.028F' in rd(C + '/VazioNeblina.java')
+      and '"ambient_light": 0.06' in _dim)
 check('5.13.5: mods de mapa mostram o nome da dimensao (lang dimension.rptag.exilio)',
       'dimension.rptag.exilio' in rd('src/main/resources/assets/rptag/lang/pt_br.json')
       and 'dimension.rptag.exilio' in rd('src/main/resources/assets/rptag/lang/en_us.json'))
@@ -2418,7 +2418,7 @@ check('5.13.4: relevo na dimensao (montes, crateras, pedras soltas)',
       'private static void relevoTick(ServerLevel nv, long agora)' in _vr
       and 'private static double relevoAltura(int x, int z)' in _vr
       and 'private static void esculpirChunk(ServerLevel nv, int cx, int cz)' in _vr
-      and 'int alvo = TOPO_LAJE + 1 + h;' in _vr
+      and 'int alvo = TOPO_LAJE + h;' in _vr
       and 'public static int reconstruirRelevo(ServerLevel nv)' in _vr)
 check('5.13.4: relevo reconhece o piso da dimensao (concreto cinza-claro + sculk)',
       'st.is(Blocks.LIGHT_GRAY_CONCRETE)' in _vr and 'st.is(Blocks.SCULK)' in _vr)
@@ -2692,8 +2692,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.20.0.jar')
-      and os.path.getsize('build/libs/rptag-5.20.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.21.0.jar')
+      and os.path.getsize('build/libs/rptag-5.21.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2882,6 +2882,39 @@ check('5.20.0: /rp admin axion falar <texto> manda o balao pra todos',
 check('5.20.0: "avisar AXION:" fica em VERMELHO ESCURO personalizado',
       'boolean vozDaAxion = false;' in _rp4
       and 'AXION' in _rp4 and 'vozDaAxion) {' in _rp4)
+
+# ============ 5.21.0: o chao no nivel certo, as trevas, os bichos e a alma ============
+_dimx = rd('src/main/resources/data/rptag/dimension/exilio.json')
+check('5.21.0: o chao do vazio parou de ficar 1 bloco acima do padrao',
+      'int alvo = TOPO_LAJE + h;' in _vr and 'TOPO_LAJE + 1 + h' not in _vr
+      and 'if (atual < TOPO_LAJE) {' in _vr and 'atual = TOPO_LAJE;' in _vr)
+check('5.21.0: o mundo ANTIGO e rebaixado (a montanha que flutuava desce um bloco)',
+      'private static void assentarColuna(ServerLevel nv, int x, int z)' in _vr
+      and 'assentarColuna(nv, x, z);' in _vr)
+check('5.21.0: o piso claro do gerador virou PEDRA PRETA (as trevas)',
+      'private static void vestirChao(ServerLevel nv, int x, int z)' in _vr
+      and 'private static BlockState pedraDoChao(int x, int z)' in _vr
+      and 'vestirChao(nv, x, z);' in _vr
+      and 'Blocks.CRYING_OBSIDIAN.defaultBlockState()' in _vr
+      and 'Blocks.GILDED_BLACKSTONE.defaultBlockState()' in _vr)
+check('5.21.0: a dimensao ja NASCE escura (blackstone + sculk, sem concreto cinza)',
+      'light_gray_concrete' not in _dimx and 'minecraft:blackstone' in _dimx
+      and 'minecraft:sculk' in _dimx and '"biome": "rptag:vazio"' in _dimx)
+check('5.21.0: o vazio tem bioma proprio e ele SPAWNA enderman',
+      os.path.exists('src/main/resources/data/rptag/worldgen/biome/vazio.json')
+      and 'minecraft:enderman' in rd('src/main/resources/data/rptag/worldgen/biome/vazio.json')
+      and 'minecraft:ash' in rd('src/main/resources/data/rptag/worldgen/biome/vazio.json'))
+check('5.21.0: os BICHOS do vazio nascem e vao atras da pessoa',
+      'private static void tickBichos(ServerLevel nv, ServerPlayer p, long agora)' in _vr
+      and 'private static void nascerBicho(ServerLevel nv, ServerPlayer p)' in _vr
+      and 'bicho.setTarget(p);' in _vr and 'MARCA_BICHO' in _vr
+      and 'tickBichos(nv, p, agora);' in _vr)
+check('5.21.0: a montanha do vazio ficou PRETA (o tufo claro saiu da paleta)',
+      'Blocks.TUFF.defaultBlockState()' not in _vr.split('private static BlockState pedraDoMonte')[1].split('private static')[0])
+check('5.21.0: a alma vazia ENCOSTA e drena vida (2 de dano, 1x a cada 1,5 s)',
+      'if (perto != null && menor < 2.0) {' in _vr
+      and 'perto.hurt(perto.damageSources().magic(), 2.0F)' in _vr
+      and 'agora - ultimo > 1500L' in _vr)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

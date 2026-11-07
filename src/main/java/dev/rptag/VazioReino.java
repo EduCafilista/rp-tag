@@ -318,6 +318,9 @@ public final class VazioReino {
             // de assustar devem dar dano ao encostar no player". Enderman e Warden são os
             // únicos bichos que existem aqui; quem encosta neles leva dano.
             danoDeContato(nv, p, agora);
+
+            // 9) (5.21.0) e ELES VÊM ATRÁS: nascem no escuro e escolhem a pessoa
+            tickBichos(nv, p, agora);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: reino do vazio falhou (o jogo segue)", t);
         }
@@ -689,6 +692,170 @@ public final class VazioReino {
     /** quantos chunks de uma vez por tick (2 = suave, sem travar). */
     private static final int CHUNKS_POR_TICK = 2;
 
+    // ============================================== BICHOS DO VAZIO (5.21.0)
+    /**
+     * (5.21.0) O BICHO DO VAZIO VAI ATRÁS — o dono: <i>"os bichos do vazio ainda nao estao
+     * me dando dano"</i>.
+     *
+     * <p>O motivo era bobo: o bioma do vazio não tem lista de spawn, então <b>nunca nascia
+     * bicho nenhum</b> — as únicas coisas que andavam por lá eram as almas (que são desenho).
+     * Sem bicho não há encosto, e sem encosto não há dano.
+     *
+     * <p>Agora a dimensão cria os dela: um enderman a cada ~9 s, a 12–26 blocos da pessoa,
+     * com teto de {@value #MAX_BICHOS} vivos. Eles nascem marcados ({@code rptag_vazio} no
+     * NBT), não somem sozinhos e <b>escolhem a pessoa como alvo</b> — o enderman parado
+     * olhando o nada nunca encostava em ninguém.
+     */
+    private static final int MAX_BICHOS = 8;
+    private static final String MARCA_BICHO = "rptag_vazio";
+    private static long proximoBicho;
+    private static long proximoAgressao;
+
+    private static void tickBichos(ServerLevel nv, ServerPlayer p, long agora) {
+        try {
+            boolean agredir = agora >= proximoAgressao;
+            if (agredir) {
+                proximoAgressao = agora + 900L;
+            }
+            int vivos = 0;
+            for (net.minecraft.world.entity.Entity e : nv.getAllEntities()) {
+                if (!(e instanceof net.minecraft.world.entity.Mob m)) {
+                    continue;
+                }
+                if (!m.getPersistentData().getBoolean(MARCA_BICHO)) {
+                    continue;
+                }
+                vivos++;
+                if (!agredir || m.isDeadOrDying()) {
+                    continue;
+                }
+                // a pessoa mais perto (até 40 blocos) vira o alvo dele
+                ServerPlayer alvo = null;
+                double menor = 40.0;
+                for (ServerPlayer q : nv.players()) {
+                    double d = m.distanceToSqr(q);
+                    if (d < menor * menor) {
+                        menor = Math.sqrt(d);
+                        alvo = q;
+                    }
+                }
+                if (alvo != null && (m.getTarget() == null || !m.getTarget().isAlive()
+                        || m.getTarget() != alvo && menor < 8.0)) {
+                    m.setTarget(alvo);
+                }
+            }
+            if (agora < proximoBicho || vivos >= MAX_BICHOS) {
+                return;
+            }
+            proximoBicho = agora + 9_000L;
+            nascerBicho(nv, p);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: bichos do vazio falharam (o jogo segue)", t);
+        }
+    }
+
+    /** nasce um enderman do vazio a 12–26 blocos da pessoa, já com alvo nela. */
+    private static void nascerBicho(ServerLevel nv, ServerPlayer p) {
+        double a = Math.random() * Math.PI * 2;
+        double d = 12.0 + Math.random() * 14.0;
+        int x = (int) Math.floor(p.getX() + Math.cos(a) * d);
+        int z = (int) Math.floor(p.getZ() + Math.sin(a) * d);
+        nv.getChunk(x >> 4, z >> 4);                 // o chunk tem que existir antes
+        int y = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        if (y <= nv.getMinBuildHeight() + 2) {
+            return;                                  // buraco/cratera: tenta na próxima
+        }
+        var bicho = net.minecraft.world.entity.EntityType.ENDERMAN.create(nv);
+        if (bicho == null) {
+            return;
+        }
+        bicho.moveTo(x + 0.5, y, z + 0.5, (float) (Math.random() * 360.0), 0F);
+        bicho.setPersistenceRequired();               // não despawna no meio da caçada
+        bicho.getPersistentData().putBoolean(MARCA_BICHO, true);
+        bicho.setTarget(p);
+        nv.addFreshEntity(bicho);
+        // ele se MATERIALIZA no escuro (fumaça + alma subindo)
+        nv.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                x + 0.5, y + 1.1, z + 0.5, 22, 0.35, 0.9, 0.35, 0.01);
+        nv.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL,
+                x + 0.5, y + 0.6, z + 0.5, 10, 0.3, 0.5, 0.3, 0.02);
+        nv.playSound(null, p.blockPosition(), RPTagMod.SOM_VAZIO.get(),
+                net.minecraft.sounds.SoundSource.HOSTILE, 0.55F, 0.5F);
+    }
+
+    /**
+     * (5.21.0) TESTE DE BANCADA — prova que o bicho do vazio machuca de verdade.
+     *
+     * <p>Cria um jogador de teste, encosta um enderman nele e roda o MESMO
+     * {@link #danoDeContato} que roda no tick de quem entra. Devolve a vida antes/depois.
+     * (comando escondido, só para o ADM conferir na hora)
+     */
+    public static String testeDeDano(ServerLevel nv, int x, int y, int z) {
+        StringBuilder r = new StringBuilder();
+        try {
+            var perfil = new com.mojang.authlib.GameProfile(
+                    java.util.UUID.nameUUIDFromBytes("rptag-teste-bicho".getBytes()), "TesteBicho");
+            var fp = new net.minecraft.server.level.ServerPlayer(nv.getServer(), nv, perfil,
+                    net.minecraft.server.level.ClientInformation.createDefault());
+            fp.setPos(x + 0.5, y, z + 0.5);
+            fp.setHealth(20.0F);
+            var bicho = net.minecraft.world.entity.EntityType.ENDERMAN.create(nv);
+            if (bicho == null) {
+                return "sem enderman";
+            }
+            bicho.moveTo(x + 1.4, y, z + 0.5, 0F, 0F);
+            bicho.getPersistentData().putBoolean(MARCA_BICHO, true);
+            nv.addFreshEntity(bicho);
+            float antes = fp.getHealth();
+            // diagnóstico: a busca acha o bicho? o hurt responde o quê?
+            int achados = 0;
+            for (net.minecraft.world.entity.Entity e2 : nv.getEntities(fp,
+                    fp.getBoundingBox().inflate(2.4, 1.6, 2.4), en -> true)) {
+                achados++;
+            }
+            r.append("mobs no raio=").append(achados);
+            fp.invulnerableTime = 0;
+            fp.setInvulnerable(false);
+            fp.getAbilities().invulnerable = false;
+            r.append(" | criativo=").append(fp.isCreative()).append(" espectador=")
+                    .append(fp.isSpectator()).append(" invuln=").append(fp.getAbilities().invulnerable);
+            boolean direto = fp.hurt(nv.damageSources().magic(), 3.0F);
+            r.append(" | hurt direto=").append(direto).append(" vida=").append(fp.getHealth());
+            // controle: o MESMO hurt num bicho de verdade funciona?
+            var porco = net.minecraft.world.entity.EntityType.PIG.create(nv);
+            boolean controle = false;
+            if (porco != null) {
+                porco.moveTo(x + 2.5, y, z + 0.5, 0F, 0F);
+                nv.addFreshEntity(porco);
+                controle = porco.hurt(nv.damageSources().magic(), 3.0F);
+                porco.discard();
+            }
+            r.append(" | controle(porco)=").append(controle);
+            // o bicho escolheu a pessoa? e o ataque do proprio bicho passa?
+            r.append(" | com alvo=").append(bicho.getTarget() != null);
+            boolean mordida = bicho.doHurtTarget(fp);
+            r.append(" | mordida do enderman=").append(mordida).append(" vida=").append(fp.getHealth());
+            fp.setHealth(20.0F);
+            fp.invulnerableTime = 0;
+            danoDeContato(nv, fp, System.currentTimeMillis());
+            r.append(" | pelo danoDeContato=").append(fp.getHealth());
+            // e o nascimento de bicho do vazio
+            int marcados = 0;
+            for (net.minecraft.world.entity.Entity e : nv.getAllEntities()) {
+                if (e instanceof net.minecraft.world.entity.Mob m
+                        && m.getPersistentData().getBoolean(MARCA_BICHO)) {
+                    marcados++;
+                }
+            }
+            r.append(" | bichos marcados na dimensao=").append(marcados);
+            bicho.discard();
+            fp.discard();
+        } catch (Throwable t) {
+            r.append("ERRO: ").append(t.getClass().getSimpleName()).append(": ").append(t.getMessage());
+        }
+        return r.toString();
+    }
+
     /** (5.20.0) último dano de contato por jogador (para não virar serra elétrica). */
     private static final Map<UUID, Long> ULTIMO_DANO_CONTATO = new HashMap<>();
     /** (5.20.0) quem morreu DENTRO do vazio (volta pra cá no respawn). */
@@ -708,7 +875,7 @@ public final class VazioReino {
             if (ultimo != null && agora - ultimo < 1000L) {
                 return;
             }
-            net.minecraft.world.phys.AABB perto = p.getBoundingBox().inflate(1.9, 1.2, 1.9);
+            net.minecraft.world.phys.AABB perto = p.getBoundingBox().inflate(2.4, 1.6, 2.4);
             for (net.minecraft.world.entity.Entity e : nv.getEntities(p, perto, en ->
                     en.getType() == net.minecraft.world.entity.EntityType.ENDERMAN
                             || en.getType() == net.minecraft.world.entity.EntityType.WARDEN)) {
@@ -960,7 +1127,26 @@ public final class VazioReino {
                 }
 
                 double alvoX, alvoZ;
-                if (perto != null && menor > 2.6) {
+                // (5.21.0) A ALMA ENCOSTA — e drena. O dono: "os bichos do vazio... devem
+                // dar dano ao encostar". Antes a alma parava a 2,6 blocos e ficava só
+                // olhando: dava para atravessar o vazio inteiro sem perder um coração.
+                if (perto != null && menor < 2.0) {
+                    Long ultimo = ULTIMO_DANO_CONTATO.get(perto.getUUID());
+                    if (ultimo == null || agora - ultimo > 1500L) {
+                        ULTIMO_DANO_CONTATO.put(perto.getUUID(), agora);
+                        perto.hurt(perto.damageSources().magic(), 2.0F);   // o frio da alma
+                        double dx = perto.getX() - ax;
+                        double dz = perto.getZ() - az;
+                        double mm = Math.max(0.001, Math.hypot(dx, dz));
+                        perto.push(dx / mm * 0.45, 0.22, dz / mm * 0.45);
+                        perto.hurtMarked = true;
+                        nv.playSound(null, perto.blockPosition(), SoundEvents.SOUL_ESCAPE.value(),
+                                SoundSource.HOSTILE, 0.6F, 0.45F);
+                        nv.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                                ax, ay + 1.0, az, 14, 0.25, 0.5, 0.25, 0.01);
+                    }
+                }
+                if (perto != null && menor > 1.6) {
                     // vem na direção da pessoa, de leve (0,9 bloco por segundo)
                     double dx = perto.getX() - ax;
                     double dz = perto.getZ() - az;
@@ -1046,8 +1232,8 @@ public final class VazioReino {
             if (s < 0.55F) {
                 return Blocks.BLACKSTONE.defaultBlockState();
             }
-            if (s < 0.78F) {
-                return Blocks.TUFF.defaultBlockState();
+            if (s < 0.78F) {                                   // (5.21.0) era TUFF (claro)
+                return Blocks.DEEPSLATE.defaultBlockState();
             }
             if (s < 0.92F) {
                 return Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState();
@@ -1055,8 +1241,8 @@ public final class VazioReino {
             return Blocks.DEEPSLATE_COAL_ORE.defaultBlockState();
         }
         if (f > 0.18) {                                        // contraforte
-            if (s < 0.46F) {
-                return Blocks.TUFF.defaultBlockState();
+            if (s < 0.46F) {                                   // (5.21.0) era TUFF (claro)
+                return Blocks.COBBLED_DEEPSLATE.defaultBlockState();
             }
             if (s < 0.74F) {
                 return Blocks.DEEPSLATE.defaultBlockState();
@@ -1067,7 +1253,7 @@ public final class VazioReino {
             return Blocks.GRAVEL.defaultBlockState();
         }
         return s < 0.62F ? Blocks.DEEPSLATE.defaultBlockState()
-                : Blocks.TUFF.defaultBlockState();             // pé
+                : Blocks.BASALT.defaultBlockState();           // pé (5.21.0: era tufo)
     }
 
     /** esculpe UM chunk de relevo (montes, crateras, pedras soltas). */
@@ -1079,6 +1265,11 @@ public final class VazioReino {
             for (int dz = 0; dz < 16; dz++) {
                 int x = cx * 16 + dx, z = cz * 16 + dz;
                 double dist = Math.hypot(x, z);
+                // (5.21.0) AS TREVAS — o piso cinza-claro do gerador sai e entra pedra preta
+                vestirChao(nv, x, z);
+                // (5.21.0) e o mundo antigo (montanha flutuando 1 bloco acima do piso) é
+                // rebaixado aqui: o relevo das versões anteriores começava 1 bloco alto.
+                assentarColuna(nv, x, z);
                 if (dist < RAIO_PRACA + 12) {
                     continue;                          // praça intacta
                 }
@@ -1113,19 +1304,25 @@ public final class VazioReino {
                 // é sempre `TOPO_LAJE + relevoAltura()`. Mira nela — em vez de "somar em cima
                 // do que já existe" — e a escultura fica IDEMPOTENTE: rodar dez vezes dá o
                 // mesmo mundo, e um chunk que ficou chapado é levantado na próxima passada.
+                // (5.21.0) O CHÃO ESTAVA 1 BLOCO ALTO — o dono: "o chao do vazio ainda está
+                // bugando, ele esta ficando 1 bloco acima do padrao". Aqui todo alvo levava
+                // +1: com a laje de 11 camadas o primeiro ar é `TOPO_LAJE` (11) e a coluna
+                // plana é `TOPO_LAJE + h`; somar 1 em cima disso erguia o relevo inteiro e
+                // deixava uma camada de AR embaixo da montanha (montanha flutuando 1 bloco
+                // acima do piso). Agora `atual` e `alvo` são a MESMA unidade (primeiro ar).
                 int atual = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                if (atual <= TOPO_LAJE) {
-                    atual = TOPO_LAJE + 1;
+                if (atual < TOPO_LAJE) {
+                    atual = TOPO_LAJE;                 // chunk cru/quebrado: assume a laje
                 }
                 BlockPos topo = new BlockPos(x, atual - 1, z);
-                if (!natural(nv.getBlockState(topo)) && atual > TOPO_LAJE + 1) {
+                if (!natural(nv.getBlockState(topo)) && atual > TOPO_LAJE) {
                     continue;                          // construção por cima: não encosta
                 }
                 // (5.13.4) a amplitude CRESCE com a distância: sem essa rampa o relevo
                 // caía 5 blocos de uma vez na borda do anel e parecia terreno quebrado.
                 double rampa = Math.min(1.0, Math.max(0.0, (dist - (RAIO_PRACA + 12)) / 40.0));
                 int h = (int) Math.round(relevoAltura(x, z) * rampa);
-                int alvo = TOPO_LAJE + 1 + h;          // a altura FINAL da coluna
+                int alvo = TOPO_LAJE + h;              // a altura FINAL da coluna (primeiro ar)
                 boolean mudou = false;
                 if (alvo > atual) {
                     // (5.13.6) montanha tem ESTRATO, não sorteio por bloco
@@ -1181,6 +1378,152 @@ public final class VazioReino {
                 }
             }
         }
+    }
+
+    // ============================================== TREVAS (5.21.0)
+    /**
+     * (5.21.0) O CHÃO DO VAZIO É PRETO — pedido do dono: <i>"quero que voce deixe bem
+     * bonito a dimensao, bem dark escuridao trevas trevosas"</i>.
+     *
+     * <p>O gerador da dimensão tem uma camada de concreto cinza-claro no topo da laje (era
+     * o que dava aquele piso claro e lavado da foto). Aqui essa camada — e o tufo claro das
+     * encostas — vira <b>pedra preta</b>: deepslate, blackstone, tijolo rachado, com veios
+     * raros de sculk (o brilho verde-azulado), obsidiana chorando (roxo) e blackstone
+     * dourada. É determinístico (mesma conta por x/z): rodar de novo dá o mesmo mundo.
+     */
+    private static void vestirChao(ServerLevel nv, int x, int z) {
+        try {
+            // (5.21.0) são DOIS lugares: o PISO da laje (onde o relevo não subiu) e o
+            // TOPO da coluna (a encosta de tufo claro da montanha).
+            int y0 = nv.getMinBuildHeight() + ALTURA_LAJE;
+            BlockPos piso = new BlockPos(x, y0 - 1, z);
+            if (pintavel(nv.getBlockState(piso))) {
+                nv.setBlock(piso, pedraDoChao(x, z), 2);   // 2 = sem mexer em vizinho
+            }
+            int h = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            if (h > y0) {
+                BlockPos topo = new BlockPos(x, h - 1, z);
+                if (!topo.equals(piso) && pintavel(nv.getBlockState(topo))) {
+                    nv.setBlock(topo, pedraDoChao(x + 977, z - 311), 2);
+                }
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: pintura do chao do vazio falhou", t);
+        }
+    }
+
+    /** (5.21.0) teste de bancada do piso e do rebaixamento (só para o ADM). */
+    public static String testeChao(ServerLevel nv, int x, int z) {
+        StringBuilder r = new StringBuilder();
+        try {
+            int y0 = nv.getMinBuildHeight() + ALTURA_LAJE;
+            r.append("piso=").append(nv.getBlockState(new BlockPos(x, y0 - 1, z)));
+            vestirChao(nv, x, z);
+            r.append(" | pintado=").append(nv.getBlockState(new BlockPos(x, y0 - 1, z)));
+            r.append(" | antes11-14=");
+            for (int y = y0; y <= y0 + 3; y++) {
+                r.append(nv.getBlockState(new BlockPos(x, y, z)).getBlock().toString()).append(",");
+            }
+            assentarColuna(nv, x, z);
+            r.append(" | depois11-14=");
+            for (int y = y0; y <= y0 + 3; y++) {
+                r.append(nv.getBlockState(new BlockPos(x, y, z)).getBlock().toString()).append(",");
+            }
+        } catch (Throwable t) {
+            r.append("ERRO ").append(t);
+        }
+        return r.toString();
+    }
+
+    /**
+     * (5.21.0) CONSERTA O MUNDO QUE FICOU 1 BLOCO ALTO.
+     *
+     * <p>O relevo das versões anteriores mirava a laje somando um bloco: <b>toda</b> a
+     * escultura do vazio nascia 1 bloco acima da laje, com uma camada de AR embaixo —
+     * montanha flutuando (o dono: <i>"o chao do vazio ainda está bugando, ele esta ficando
+     * 1 bloco acima do padrão"</i>). Aqui a coluna é <b>rebaixada</b> um bloco: onde o
+     * primeiro bloco acima do piso é AR e o de cima é pedra natural, a coluna desce.
+     * Só mexe em pedra natural (nunca em construção, baú ou algo com dados).
+     */
+    private static void assentarColuna(ServerLevel nv, int x, int z) {
+        try {
+            int y0 = nv.getMinBuildHeight() + ALTURA_LAJE;        // 1º bloco livre
+            BlockPos vao = new BlockPos(x, y0, z);
+            if (!nv.getBlockState(vao).isAir()) {
+                return;                                          // sem vão: nada a fazer
+            }
+            if (!natural(nv.getBlockState(new BlockPos(x, y0 - 1, z)))) {
+                return;                                          // embaixo é construção
+            }
+            BlockPos acima = new BlockPos(x, y0 + 1, z);
+            if (nv.getBlockState(acima).isAir()) {
+                return;                                          // coluna plana: já está certa
+            }
+            int topo = y0 + 1;
+            while (topo < y0 + 64 && !nv.getBlockState(new BlockPos(x, topo, z)).isAir()) {
+                topo++;
+            }
+            if (topo >= y0 + 64) {
+                return;                                          // coluna maluca: não encosta
+            }
+            for (int y = y0 + 1; y < topo; y++) {                // (o vão em y0 é AR mesmo)
+                BlockState bloco = nv.getBlockState(new BlockPos(x, y, z));
+                if (!natural(bloco)) {
+                    return;                                      // achou construção: para tudo
+                }
+            }
+            for (int y = y0; y < topo; y++) {
+                nv.setBlock(new BlockPos(x, y, z), nv.getBlockState(new BlockPos(x, y + 1, z)), 2);
+            }
+            nv.setBlock(new BlockPos(x, topo, z), Blocks.AIR.defaultBlockState(), 2);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: assentar coluna do vazio falhou", t);
+        }
+    }
+
+    /** só pinta o que é piso VIRGEM do gerador — o que o dono vê claro e sem graça. */
+    private static boolean pintavel(BlockState s) {
+        return s.is(Blocks.LIGHT_GRAY_CONCRETE) || s.is(Blocks.GRAY_CONCRETE)
+                || s.is(Blocks.WHITE_CONCRETE) || s.is(Blocks.TUFF)
+                || s.is(Blocks.CALCITE) || s.is(Blocks.ANDESITE)
+                || s.is(Blocks.STONE) || s.is(Blocks.DIRT) || s.is(Blocks.GRASS_BLOCK);
+    }
+
+    /** a paleta das trevas: 90% pedra preta, e o resto é o que brilha no escuro. */
+    private static BlockState pedraDoChao(int x, int z) {
+        int h = (x * 73_856_093) ^ (z * 19_349_663) ^ (x * z * 83_492_791);
+        int m = Math.floorMod(h, 1000);
+        if (m < 300) {
+            return Blocks.DEEPSLATE.defaultBlockState();          // cinza-escuro frio
+        }
+        if (m < 520) {
+            return Blocks.BLACKSTONE.defaultBlockState();         // preto de basalto
+        }
+        if (m < 640) {
+            return Blocks.COBBLED_DEEPSLATE.defaultBlockState();  // pedra quebrada
+        }
+        if (m < 730) {
+            return Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState();
+        }
+        if (m < 800) {
+            return Blocks.DEEPSLATE_TILES.defaultBlockState();
+        }
+        if (m < 850) {
+            return Blocks.BASALT.defaultBlockState();
+        }
+        if (m < 890) {
+            return Blocks.SMOOTH_BASALT.defaultBlockState();
+        }
+        if (m < 940) {
+            return Blocks.SCULK.defaultBlockState();             // mancha que brilha no breu
+        }
+        if (m < 975) {
+            return Blocks.SCULK_VEIN.defaultBlockState();        // o veio por cima da pedra
+        }
+        if (m < 992) {
+            return Blocks.GILDED_BLACKSTONE.defaultBlockState(); // lascas de ouro no preto
+        }
+        return Blocks.CRYING_OBSIDIAN.defaultBlockState();       // o roxo que chora
     }
 
     // ================================================================ PEDESTAIS

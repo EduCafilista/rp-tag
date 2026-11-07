@@ -56,9 +56,11 @@ public final class VazioNeblina {
         // para o horizonte sumir. O que ilumina o resto são as lanternas de alma.
         float t = (System.currentTimeMillis() % 20000L) / 20000F;
         float pulso = 0.004F + 0.004F * (float) Math.sin(t * 6.2831853F);
-        e.setRed(0.058F + pulso);
-        e.setGreen(0.052F + pulso);
-        e.setBlue(0.080F + pulso * 1.2F);
+        // (5.21.0) "bem dark escuridao trevas trevosas": mais fundo no preto, com um
+        // resto de roxo (o breu que ainda deixa ver a silhueta das ruínas).
+        e.setRed(0.028F + pulso);
+        e.setGreen(0.022F + pulso);
+        e.setBlue(0.040F + pulso * 1.2F);
     }
 
     /** a neblina fecha perto: o que é longe é breu. */
@@ -73,8 +75,8 @@ public final class VazioNeblina {
         // volta a engolir rápido — é o único lugar onde o breu é proposital.
         // (5.13.5) "mais escura": o horizonte fecha em 150 (era 210) e começa em 20 —
         // a cidade morta aparece como silhueta, do jeito que o dono pediu.
-        float perto = y < 0 ? 2F : 20F;
-        float longe = y < 0 ? 30F : 150F;
+        float perto = y < 0 ? 2F : 16F;
+        float longe = y < 0 ? 26F : 130F;
         e.setNearPlaneDistance(perto);
         e.setFarPlaneDistance(longe);
         e.setCanceled(true);

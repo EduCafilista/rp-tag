@@ -3,7 +3,7 @@
   "generator": {
     "type": "minecraft:flat",
     "settings": {
-      "biome": "minecraft:stony_shore",
+      "biome": "rptag:vazio",
       "lakes": false,
       "features": false,
       "layers": [
@@ -17,18 +17,14 @@
         },
         {
           "block": "minecraft:blackstone",
-          "height": 2
-        },
-        {
-          "block": "minecraft:tuff",
-          "height": 2
+          "height": 3
         },
         {
           "block": "minecraft:sculk",
-          "height": 1
+          "height": 2
         },
         {
-          "block": "minecraft:light_gray_concrete",
+          "block": "minecraft:blackstone",
           "height": 1
         }
       ],
