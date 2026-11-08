@@ -1,0 +1,37 @@
+RP Tag 5.24.2 - COR DA BARRA FACIL (prova de execucao, servidor real)
+=====================================================================
+
+1) /rp admin barra cor            -> PALETA CLICAVEL no chat
+   (cada cor e um botao; clicar roda /rp admin barra cor <cor>)
+   saida real do servidor:
+     COR DA BARRA
+     Clique numa cor para pintar a barra inteira:
+     [■ vermelho] [■ vinho] [■ laranja]
+     [■ amarelo] [■ dourado] [■ verde]
+     [■ esmeralda] [■ lima] [■ ciano]
+     [■ azul] [■ azulclaro] [■ anil]
+     ... (18 cores)
+     Agora: barra #C81E2E · letra #F2F4F8 · fundo #141018
+     Só uma parte? /rp admin barra cor barra|rotulo|fundo <cor>
+
+2) /rp admin barra cor verde      -> UMA palavra pinta a barra INTEIRA
+   "Barra pintada de verde (barra, fundo e letra ja combinando)."
+   conferido no /rp admin barra info:
+     cor da barra: #3FA24A
+     cor do fundo: #123016   <- mesma cor, bem escura
+     cor do texto: #F2F4F8   <- letra legivel em cima dela
+
+3) O jeito ANTIGO continua e aceita a ordem invertida
+   /rp admin barra cor barra dourado  -> "Cor da BARRA agora e #D4A017"
+   /rp admin barra cor azul fundo     -> "Cor do FUNDO agora e #2F6FD0"
+
+4) Cor errada ensina o caminho
+   /rp admin barra cor abcxyz ->
+     "Essa cor nao existe. Use uma destas (ou #RRGGBB):
+      vermelho, vinho, laranja, amarelo, dourado, verde, esmeralda, lima, ciano,
+      azul, azulclaro, anil, roxo, lilas, rosa, branco, cinza, preto
+      Dica: /rp admin barra cor abre a paleta pra clicar."
+
+5) O TAB agora sugere as cores e as partes (sugereCor), em vez de obrigar a decorar.
+
+GERAL: check.py 999 PASS / 0 FAIL | servidor sobe limpo, 0 excecoes

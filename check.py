@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.24.1'
+VER = '5.24.2'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2693,8 +2693,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.24.1.jar')
-      and os.path.getsize('build/libs/rptag-5.24.1.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.24.2.jar')
+      and os.path.getsize('build/libs/rptag-5.24.2.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3012,9 +3012,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.24.1: a versao subiu pra 5.24.1 no jar, no mod e no gradle',
-      "version = '5.24.1'" in rd('build.gradle')
-      and '5.24.1' in rd(R + '/RPTagMod.java'))
+check('5.24.2: a versao subiu pra 5.24.2 no jar, no mod e no gradle',
+      "version = '5.24.2'" in rd('build.gradle')
+      and '5.24.2' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3042,6 +3042,28 @@ check('5.24.1: o /rp admin avisar ficou com a secao ANTIGA (14 estilos + classic
                       'ciberpsicose', 'energia', 'conhecimento', 'morteop', 'sangueop', 'medoop'})
 check('5.24.1: a ajuda separa as duas listas e avisa que nada do avisar2 esta no avisar',
       'nada disso existe no avisar' in _s)
+
+# ============ 5.24.2: cor da barra FACIL pro ADM ============
+check('5.24.2: /rp admin barra cor SEM argumento abre a PALETA clicavel',
+      'private static int barraPaleta(' in _rp7
+      and '.then(Commands.literal("cor")\n                                .executes(ctx -> barraPaleta(ctx))' in _rp7
+      and 'ClickEvent.Action.RUN_COMMAND' in _rp7)
+check('5.24.2: a paleta tem um botao por cor (e o botao roda o comando da cor)',
+      'for (String nome : NOMES_COR)' in _rp7 and '"/rp admin barra cor " + nome' in _rp7)
+check('5.24.2: /rp admin barra cor <cor> pinta a BARRA INTEIRA com uma palavra',
+      'private static int pintarBarraInteira(' in _rp7
+      and 'd.setBarraCorFundo(escurecer(cor, 0.30F));' in _rp7
+      and 'd.setBarraCorTexto(textoSobre(cor));' in _rp7)
+check('5.24.2: o TAB sugere os nomes de cor e as partes',
+      'private static com.mojang.brigadier.suggestion.SuggestionProvider<' in _rp7
+      and 'for (String c : NOMES_COR) {' in _rp7 and '.suggests(sugereCor())' in _rp7)
+check('5.24.2: o jeito ANTIGO continua (parte + cor) e aceita a ordem invertida',
+      'return barraCor(ctx, parte, nomeCor);' in _rp7
+      and 'if (!ehParte(a) && ehParte(b)) {' in _rp7)
+check('5.24.2: a letra acompanha a cor (clara em fundo escuro, escura em fundo claro)',
+      'return luz > 0.6 ? 0x141018 : 0xF2F4F8;' in _rp7)
+check('5.24.2: cor errada ensina o caminho (lista as cores e manda pra paleta)',
+      'private static int barraCorInvalida(' in _rp7 and 'abre a paleta pra clicar' in _rp7)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

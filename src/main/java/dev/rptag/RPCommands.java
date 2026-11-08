@@ -1330,7 +1330,7 @@ public final class RPCommands {
                         }))
                 // ============ (5.17.0) BARRA DE PROGRESSÃO DO HUD ============
                 // /rp admin barra <jogadores> <0..100> [rotulo]
-                // /rp admin barra cor <rotulo|barra|fundo> <#RRGGBB>
+                // /rp admin barra cor [<parte>] [<cor>]  (5.24.2: paleta clicável + cor por nome)
                 // /rp admin barra titulo <texto> | onde <x> <y> | largura <px> | off | info
                 .then(Commands.literal("barra")
                         .then(Commands.literal("vertical")
@@ -1340,12 +1340,20 @@ public final class RPCommands {
                                         RPWorldData.get(ctx.getSource().getServer()).barraVertical())))
                         .then(Commands.literal("off").executes(ctx -> barraOff(ctx)))
                         .then(Commands.literal("info").executes(ctx -> barraInfo(ctx)))
+                        // (5.24.2) COR FACIL: /rp admin barra cor  -> paleta CLICAVEL
+                        //          /rp admin barra cor <cor>     -> a barra inteira naquela cor
+                        //          /rp admin barra cor <parte> <cor> -> controle fino (rotulo|barra|fundo)
                         .then(Commands.literal("cor")
-                                .then(Commands.argument("parte", com.mojang.brigadier.arguments.StringArgumentType.word())
-                                        .then(Commands.argument("hex", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
-                                                .executes(ctx -> barraCor(ctx,
-                                                        com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "parte"),
-                                                        com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "hex"))))))
+                                .executes(ctx -> barraPaleta(ctx))
+                                .then(Commands.argument("a", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                        .suggests(sugereCor())
+                                        .executes(ctx -> barraCorFacil(ctx,
+                                                com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "a"), null))
+                                        .then(Commands.argument("b", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                                .suggests(sugereCor())
+                                                .executes(ctx -> barraCorFacil(ctx,
+                                                        com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "a"),
+                                                        com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "b"))))))
                         .then(Commands.literal("titulo")
                                 .then(Commands.argument("rotulo", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                                         .executes(ctx -> barraTitulo(ctx,
@@ -1680,7 +1688,9 @@ public final class RPCommands {
                 + "  cor da barra: \u00a7f#" + String.format("%06X", d.barraCorBarra() & 0xFFFFFF) + "\u00a77\n"
                 + "  cor do fundo: \u00a7f#" + String.format("%06X", d.barraCorFundo() & 0xFFFFFF) + "\u00a77\n"
                 + "  posição: \u00a7f" + String.format(java.util.Locale.ROOT, "%.2f, %.2f", d.barraX(), d.barraY())
-                + "\u00a77  largura: \u00a7f" + d.barraLargura()).withStyle(ChatFormatting.YELLOW), false);
+                + "\u00a77  largura: \u00a7f" + d.barraLargura()
+                + "\n\u00a7eMudar a cor:\u00a77 \u00a7f/rp admin barra cor\u00a77 (paleta pra clicar) "
+                + "ou \u00a7f/rp admin barra cor vermelho").withStyle(ChatFormatting.YELLOW), false);
         return Command.SINGLE_SUCCESS;
     }
 
@@ -1723,6 +1733,176 @@ public final class RPCommands {
      *
      * @return o RGB, ou -1 quando o nome não existe.
      */
+    /** (5.24.2) os nomes de cor que aparecem no TAB e na paleta (a ordem é a da paleta). */
+    public static final String[] NOMES_COR = {
+        "vermelho", "vinho", "laranja", "amarelo", "dourado", "verde", "esmeralda", "lima",
+        "ciano", "azul", "azulclaro", "anil", "roxo", "lilas", "rosa", "branco", "cinza", "preto"
+    };
+
+    /** (5.24.2) as partes que dá pra pintar separado. */
+    private static final String[] PARTES = { "barra", "rotulo", "fundo" };
+
+    /** (5.24.2) TAB das cores: sugere os nomes de cor E as partes. */
+    private static com.mojang.brigadier.suggestion.SuggestionProvider<
+            net.minecraft.commands.CommandSourceStack> sugereCor() {
+        return (ctx, b) -> {
+            for (String p : PARTES) {
+                b.suggest(p);
+            }
+            for (String c : NOMES_COR) {
+                b.suggest(c);
+            }
+            return b.buildFuture();
+        };
+    }
+
+    /** (5.24.2) esta palavra é uma das partes (barra/rotulo/fundo)? */
+    private static boolean ehParte(String t) {
+        if (t == null) {
+            return false;
+        }
+        String n = t.trim().toLowerCase(java.util.Locale.ROOT);
+        return n.equals("barra") || n.equals("fill") || n.equals("progresso")
+                || n.equals("rotulo") || n.equals("texto") || n.equals("titulo")
+                || n.equals("fundo") || n.equals("background");
+    }
+
+    /**
+     * (5.24.2) A COR FACIL — pedido do dono: <i>"deixa o jeito de mudar a cor da barra de
+     * progressao mais facil dos adm mudar, ta muito dificil atualmente"</i>.
+     *
+     * <p>Antes era preciso saber que existiam três partes e escrever
+     * {@code /rp admin barra cor barra vermelho}. Agora:
+     * <ul>
+     *   <li>{@code /rp admin barra cor} — abre a <b>paleta clicável</b> no chat: clica no nome
+     *       da cor e a barra muda na hora (sem digitar mais nada);</li>
+     *   <li>{@code /rp admin barra cor vermelho} — <b>uma palavra</b> pinta a barra inteira
+     *       (a barra, o fundo e a letra já saem combinando);</li>
+     *   <li>{@code /rp admin barra cor barra vermelho} — o jeito antigo continua, para quem
+     *       quer pintar só uma parte.</li>
+     * </ul>
+     * E o TAB agora sugere os nomes de cor e as partes.
+     */
+    private static int barraCorFacil(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            String a, String b) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        var d = RPWorldData.get(ctx.getSource().getServer());
+        // jeito A: /barra cor <cor>            -> a barra inteira
+        if (b == null) {
+            int cor = corPorNome(a);
+            if (cor < 0) {
+                if (ehParte(a)) {
+                    ctx.getSource().sendFailure(Component.literal("\u00a7cFalta a cor. Exemplo: \u00a7f/rp admin barra cor "
+                            + a + " vermelho\u00a7c — ou clique numa cor na paleta: \u00a7f/rp admin barra cor"));
+                    return 0;
+                }
+                return barraCorInvalida(ctx);
+            }
+            return pintarBarraInteira(ctx, d, cor);
+        }
+        // jeito B: aceita a ordem invertida (/barra cor vermelho barra)
+        String parte = a, nomeCor = b;
+        if (!ehParte(a) && ehParte(b)) {
+            parte = b;
+            nomeCor = a;
+        }
+        return barraCor(ctx, parte, nomeCor);          // jeito antigo (parte + cor)
+    }
+
+    /** (5.24.2) pinta a barra INTEIRA de uma vez (barra + fundo + letra combinando). */
+    private static int pintarBarraInteira(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            RPWorldData d, int cor) {
+        d.setBarraCorBarra(cor);
+        d.setBarraCorFundo(escurecer(cor, 0.30F));      // o fundo vira a mesma cor, bem escura
+        d.setBarraCorTexto(textoSobre(cor));            // letra clara em fundo escuro e vice-versa
+        for (ServerPlayer alvo : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+            enviarBarra(alvo, d);
+        }
+        final String nome = nomeDaCor(cor);
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7aBarra pintada de \u00a7f" + nome
+                + "\u00a7a (barra, fundo e letra já combinando). \u00a78Fina o detalhe com: "
+                + "/rp admin barra cor <barra|rotulo|fundo> <cor>"), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (5.24.2) A PALETA — cada cor é um botão: clicou, pintou. */
+    private static int barraPaleta(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
+        var d = RPWorldData.get(ctx.getSource().getServer());
+        var fonte = ctx.getSource();
+        fonte.sendSuccess(() -> Component.literal("\u00a78\u00a7m          \u00a7r \u00a7eCOR DA BARRA \u00a78\u00a7m          "), false);
+        fonte.sendSuccess(() -> Component.literal("\u00a77Clique numa cor para pintar a barra inteira:"), false);
+        Component linha = Component.literal("");
+        int naLinha = 0;
+        for (String nome : NOMES_COR) {
+            int cor = corPorNome(nome);
+            String hex = String.format("%06X", cor);
+            Component botao = Component.literal("\u00a78[\u00a7r")
+                    .append(Component.literal("\u25A0 " + nome).withStyle(st -> st
+                            .withColor(cor & 0xFFFFFF)
+                            .withClickEvent(new net.minecraft.network.chat.ClickEvent(
+                                    net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,
+                                    "/rp admin barra cor " + nome))
+                            .withHoverEvent(new net.minecraft.network.chat.HoverEvent(
+                                    net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT,
+                                    Component.literal("\u00a77pintar de \u00a7f" + nome + "\u00a78 (#" + hex + ")")))))
+                    .append(Component.literal("\u00a78] "));
+            linha = linha.copy().append(botao);
+            naLinha++;
+            if (naLinha % 3 == 0) {
+                final Component l = linha;
+                fonte.sendSuccess(() -> l, false);
+                linha = Component.literal("");
+            }
+        }
+        if (naLinha % 3 != 0) {
+            final Component l = linha;
+            fonte.sendSuccess(() -> l, false);
+        }
+        int[] atuais = { d.barraCorBarra(), d.barraCorTexto(), d.barraCorFundo() };
+        fonte.sendSuccess(() -> Component.literal("\u00a78Agora: barra \u00a7f#" + String.format("%06X", atuais[0])
+                + " \u00a78· letra \u00a7f#" + String.format("%06X", atuais[1])
+                + " \u00a78· fundo \u00a7f#" + String.format("%06X", atuais[2])), false);
+        fonte.sendSuccess(() -> Component.literal("\u00a78Só uma parte? \u00a7f/rp admin barra cor barra|rotulo|fundo <cor>"
+                + " \u00a78· \u00a7f/rp admin barra info\u00a78 mostra tudo"), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (5.24.2) a cor não existe: ensina o caminho mais fácil. */
+    private static int barraCorInvalida(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx) {
+        ctx.getSource().sendFailure(Component.literal("\u00a7cEssa cor não existe. Use uma destas (ou #RRGGBB):\n"
+                + "\u00a7f" + String.join(", ", NOMES_COR) + "\n"
+                + "\u00a78Dica: \u00a7f/rp admin barra cor\u00a78 abre a paleta pra clicar."));
+        return 0;
+    }
+
+    /** (5.24.2) escurece uma cor (0 = preto, 1 = a própria cor). */
+    private static int escurecer(int cor, float fator) {
+        int r = (int) (((cor >> 16) & 0xFF) * fator);
+        int g = (int) (((cor >> 8) & 0xFF) * fator);
+        int b = (int) ((cor & 0xFF) * fator);
+        return (Math.max(0, r) << 16) | (Math.max(0, g) << 8) | Math.max(0, b);
+    }
+
+    /** (5.24.2) letra que dá pra ler em cima desta cor (clara em fundo escuro, escura em fundo claro). */
+    private static int textoSobre(int cor) {
+        int r = (cor >> 16) & 0xFF, g = (cor >> 8) & 0xFF, b = cor & 0xFF;
+        double luz = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
+        return luz > 0.6 ? 0x141018 : 0xF2F4F8;
+    }
+
+    /** (5.24.2) o nome mais próximo de uma cor (pra confirmar no chat). */
+    private static String nomeDaCor(int cor) {
+        for (String nome : NOMES_COR) {
+            if (corPorNome(nome) == cor) {
+                return nome;
+            }
+        }
+        return "#" + String.format("%06X", cor);
+    }
+
     public static int corPorNome(String nome) {
         if (nome == null) {
             return -1;
