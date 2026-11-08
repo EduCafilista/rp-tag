@@ -92,6 +92,9 @@ public final class VazioReino {
     /** jogadores caindo no vazio: uuid -> quando morre (ms). */
     private static final Map<UUID, Long> CAINDO = new HashMap<>();
 
+    /** (5.24.0) quando o preparo em volta de cada jogador rodou pela última vez. */
+    private static final Map<UUID, Long> PREPARADO_ATE = new HashMap<>();
+
     /** jogadores dentro do portal aberto: uuid -> desde quando (ms). */
     private static final Map<UUID, Long> NO_PORTAL = new HashMap<>();
 
@@ -118,8 +121,6 @@ public final class VazioReino {
     private static long proximoReparo;
 
     // --------------------------------------------------------- RELEVO (5.13.4)
-    /** fila de chunks que ainda vão receber relevo (x,z em coordenadas de chunk). */
-    private static final ArrayDeque<int[]> RELEVO = new ArrayDeque<>();
     private static long proximoRelevo;
     /** (5.13.4) quando os bichos do vazio são varridos de novo. */
     private static long proximoLimpeza;
@@ -322,6 +323,16 @@ public final class VazioReino {
             // 8b) (5.23.0) O NOME DO LUGAR — toda vez que a pessoa ENTRA na cidade (ou na
             // praça, no portal, num santuário, nos ermos) toca o aviso daquele lugar.
             VazioLugares.tick(nv, p, agora);
+
+            // 8c) (5.24.0) O MUNDO JÁ ESTÁ PRONTO QUANDO ELE CHEGA — pedido do dono: "ainda ta
+            // spawnando blocos conforme eu ando por ele". De 2 em 2 segundos os chunks em volta
+            // de quem anda entram na FRENTE da fila do preparo, então a paisagem é esculpida
+            // antes de entrar no campo de visão (e chunk já pronto é descartado na hora).
+            Long vistoPrep = PREPARADO_ATE.get(p.getUUID());
+            if (vistoPrep == null || agora - vistoPrep > 2000L) {
+                PREPARADO_ATE.put(p.getUUID(), agora);
+                prepararEmVolta(nv, p);
+            }
 
             // 9) (5.22.0) O VAZIO VOLTOU A SER VAZIO — o dono: "os endermas do vazio estao
             // muito roubados, tira eles e deixa vazio mesmo, nao quero spawn de enderman la,
@@ -643,9 +654,21 @@ public final class VazioReino {
             if (agora < proximoRelevo) {
                 return;
             }
-            proximoRelevo = agora + 100L;             // ~2 chunks/tick, diluído
+            proximoRelevo = agora + 100L;             // ~20 chunks por segundo
             int feitos = 0;
-            // (5.20.0) primeiro os chunks que o jogador fez carregar (mundo inteiro)
+            // (5.24.0) 1) O PREPARO VEM PRIMEIRO: os chunks em volta de quem está no vazio (e os
+            // do miolo do mapa) são esculpidos ANTES de a pessoa chegar neles — é isso que acaba
+            // com o "mundo se montando na minha frente".
+            while (!PREPARO.isEmpty() && feitos < CHUNKS_POR_TICK) {
+                int[] c = PREPARO.poll();
+                if (!nv.hasChunk(c[0], c[1])) {
+                    nv.getChunk(c[0], c[1]);         // gera agora: sai pronto do forno
+                }
+                esculpirUmaVez(nv, c[0], c[1]);
+                despejarFila(nv);
+                feitos++;
+            }
+            // 2) e o que o jogador fez carregar (mundo inteiro) entra depois — sem repetir nada
             while (!CONFERIR.isEmpty() && feitos < CHUNKS_POR_TICK) {
                 var it = CONFERIR.iterator();
                 long chave = it.next();
@@ -655,33 +678,11 @@ public final class VazioReino {
                 if (!nv.hasChunk(cx, cz)) {
                     continue;                        // descarregou antes da vez: ignora
                 }
-                esculpirChunk(nv, cx, cz);
+                esculpirUmaVez(nv, cx, cz);
                 despejarFila(nv);
                 feitos++;
             }
-            while (!RELEVO.isEmpty() && feitos < 2) {
-                int[] c = RELEVO.poll();
-                int cx = c[0], cz = c[1];
-                // (5.18.0) O RELEVO AGORA PASSA SEMPRE — e é isso que CONSERTA o mundo antigo.
-                // O dono: "cade as montanhas que voce tinha feito anteriormente no vazio?
-                // sumiram todas, volte para elas". O esculpir virou ABSOLUTO (mira a altura
-                // final, não "soma em cima do que tem"), então rodar de novo não empilha
-                // montanha sobre montanha: só levanta o que está faltando.
-                //
-                // Antes daqui existia um `marcar(nv, "R:cx,cz")`: a primeira passada marcava o
-                // chunk e, se a escultura falhasse (chunk ainda cru, fila cheia, server caindo),
-                // aquele chunk ficava CHAPADO PARA SEMPRE. Era esse o buraco.
-                // (5.13.4) o chunk TEM de existir antes de esculpir: getHeight num chunk
-                // que nunca foi gerado devolvia o chão do vazio errado e o relevo sumia.
-                nv.getChunk(cx, cz);
-                esculpirChunk(nv, cx, cz);
-                // (5.13.4) e a fila é despejada NA HORA: ela tem teto de 40.000 blocos e,
-                // com o relevo despejando ~1.400 por tick contra 400 drenados, o que
-                // passava do teto era JOGADO FORA (metade da dimensão ficava chapada).
-                despejarFila(nv);
-                feitos++;
-            }
-            if (RELEVO.isEmpty() && relevoBlocos > 0) {
+            if (preparoTerminou() && relevoBlocos > 0) {
                 RPTagMod.LOGGER.info("RP Tag: relevo do vazio conferido/consertado "
                         + "({} blocos assentados agora, {} no total desta sessão)",
                         relevoBlocos, relevoSessao);
@@ -690,6 +691,34 @@ public final class VazioReino {
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: relevo do vazio falhou (o jogo segue)", t);
         }
+    }
+
+    /**
+     * (5.24.0) ESCULPE UMA VEZ SÓ — e nunca mais.
+     *
+     * <p>O dono: <i>"ainda ta spawnando blocos conforme eu ando por ele, vai chegar a um ponto
+     * com milhares deles"</i>. O relevo era idempotente e por isso era refeito em <b>toda</b>
+     * visita a um chunk: passar de novo reescrevia centenas de blocos (o log antigo mostrava
+     * 1, 16, 653, 37 blocos "consertados" a cada passada). Agora o chunk é esculpido <b>uma
+     * vez na vida do mundo</b> e a marca fica no save — andar pelo vazio não muda mais nada.
+     * O {@code /vazio relevo} apaga as marcas e conserta quando o ADM quiser.
+     */
+    private static void esculpirUmaVez(ServerLevel nv, int cx, int cz) {
+        if (marcado(nv, "E:" + cx + "," + cz)) {
+            return;                               // esse chunk já está pronto desde sempre
+        }
+        // duas passadas na MESMA vez: a primeira assenta a montanha, a segunda fecha as emendas
+        // (borda da praça, rampa, encosta que encosta na vizinha). Depois disso o chunk está
+        // pronto de verdade e nunca mais é tocado.
+        esculpirChunk(nv, cx, cz);
+        despejarFila(nv);
+        esculpirChunk(nv, cx, cz);
+        marcar(nv, "E:" + cx + "," + cz);
+    }
+
+    /** o preparo do mapa acabou? (fila vazia = o mundo já está pronto pra ser visitado) */
+    private static boolean preparoTerminou() {
+        return PREPARO.isEmpty() && CONFERIR.isEmpty();
     }
 
     /** (5.20.0) chunks que chegaram do disco e ainda vão passar pelo relevo. */
@@ -825,7 +854,7 @@ public final class VazioReino {
 
     /** (5.20.0) quantos chunks ainda faltam passar pelo relevo. */
     public static int chunksNaFila() {
-        return CONFERIR.size() + RELEVO.size();
+        return CONFERIR.size() + PREPARO.size();
     }
 
     /**
@@ -839,13 +868,16 @@ public final class VazioReino {
      */
     public static int reconstruirRelevo(ServerLevel nv) {
         relevoMapaFeito = true;
+        // (5.24.0) o conserto é para valer: apaga as marcas de "esse chunk já foi esculpido"
+        // e passa de novo. Sem isso o comando não teria o que consertar.
+        RPWorldData.get(nv.getServer()).esquecerRelevo();
         montarMapaRelevo();
-        int n = RELEVO.size();
+        int n = PREPARO.size();
         int guarda = 0;
-        while (!RELEVO.isEmpty() && guarda < 400) {
-            int[] c = RELEVO.poll();
+        while (!PREPARO.isEmpty() && guarda < 400) {
+            int[] c = PREPARO.poll();
             nv.getChunk(c[0], c[1]);
-            esculpirChunk(nv, c[0], c[1]);
+            esculpirUmaVez(nv, c[0], c[1]);
             despejarFila(nv);
             guarda++;
         }
@@ -882,20 +914,70 @@ public final class VazioReino {
         return new int[]{ maisAlta, colunas };
     }
 
-    /** monta a fila de chunks do relevo (anel de 45 a 130 blocos em volta da praça). */
+    /**
+     * (5.24.0) fila do PREPARO: os chunks que o vazio esculpe <b>antes</b> de alguém chegar.
+     *
+     * <p>A lista nasce com o miolo do mapa (a praça, o portal, o anel dos altares e a boca da
+     * cidade, até {@link #RAIO_PREPARO} blocos) e cresce sozinha em volta de quem anda no vazio
+     * (ver {@link #prepararEmVolta}). Chunk já esculpido é descartado na hora pela marca — então
+     * a fila é barata a partir da segunda visita.
+     */
+    private static final ArrayDeque<int[]> PREPARO = new ArrayDeque<>();
+    /** até onde o preparo do boot vai (blocos do centro). */
+    private static final int RAIO_PREPARO = 200;
+    /** raio (em chunks) que entra na frente da fila quando alguém está andando no vazio. */
+    private static final int VOLTA_PREPARO = 7;
+
+    /** monta a fila de chunks do preparo (miolo do mapa, até {@link #RAIO_PREPARO} blocos). */
     private static void montarMapaRelevo() {
-        RELEVO.clear();
-        int min = 45, max = 130;
-        for (int cx = -(max >> 4) - 1; cx <= (max >> 4) + 1; cx++) {
-            for (int cz = -(max >> 4) - 1; cz <= (max >> 4) + 1; cz++) {
-                double d = Math.hypot(cx * 16 + 8, cz * 16 + 8);
-                if (d < min || d > max) {
+        PREPARO.clear();
+        int c = (RAIO_PREPARO >> 4) + 1;
+        int n = 0;
+        for (int cx = -c; cx <= c; cx++) {
+            for (int cz = -c; cz <= c; cz++) {
+                if (Math.hypot(cx * 16 + 8, cz * 16 + 8) > RAIO_PREPARO) {
                     continue;
                 }
-                RELEVO.add(new int[]{ cx, cz });
+                PREPARO.add(new int[]{ cx, cz });
+                n++;
             }
         }
-        RPTagMod.LOGGER.info("RP Tag: relevo do vazio agendado ({} chunks)", RELEVO.size());
+        RPTagMod.LOGGER.info("RP Tag: preparo do vazio agendado ({} chunks, raio {} blocos)", n,
+                RAIO_PREPARO);
+    }
+
+    /**
+     * (5.24.0) PREPARA EM VOLTA DE QUEM ESTÁ ANDANDO — o mundo já está pronto quando ele chega.
+     *
+     * <p>Chamado de tempo em tempo para cada jogador no vazio: joga os chunks de um raio de
+     * {@link #VOLTA_PREPARO} chunks <b>na frente</b> da fila. Como cada chunk é esculpido uma
+     * vez só, isso não reescreve nada: só garante que a paisagem exista antes do jogador vê-la.
+     */
+    private static void prepararEmVolta(ServerLevel nv, ServerPlayer p) {
+        try {
+            int cx = p.getBlockX() >> 4, cz = p.getBlockZ() >> 4;
+            int postos = 0;
+            for (int dx = -VOLTA_PREPARO; dx <= VOLTA_PREPARO; dx++) {
+                for (int dz = -VOLTA_PREPARO; dz <= VOLTA_PREPARO; dz++) {
+                    if (dx * dx + dz * dz > VOLTA_PREPARO * VOLTA_PREPARO) {
+                        continue;
+                    }
+                    // chunk que já está pronto nem entra na fila: o preparo só trabalha no
+                    // que falta, senão a fila virava um monte de nada a cada 2 segundos
+                    if (marcado(nv, "E:" + (cx + dx) + "," + (cz + dz))) {
+                        continue;
+                    }
+                    PREPARO.addFirst(new int[]{ cx + dx, cz + dz });
+                    postos++;
+                }
+            }
+            if (postos > 0) {
+                RPTagMod.LOGGER.info("RP Tag: preparo do vazio em volta de {} (+{} chunks)",
+                        p.getName().getString(), postos);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: preparo em volta do jogador falhou", t);
+        }
     }
 
     /**
@@ -1193,7 +1275,6 @@ public final class VazioReino {
                 double rampa = Math.min(1.0, Math.max(0.0, (dist - (RAIO_PRACA + 12)) / 40.0));
                 int h = (int) Math.round(relevoAltura(x, z) * rampa);
                 int alvo = TOPO_LAJE + h;              // a altura FINAL da coluna (primeiro ar)
-                boolean mudou = false;
                 if (alvo > atual) {
                     // (5.13.6) montanha tem ESTRATO, não sorteio por bloco
                     int altura = alvo - atual;
@@ -1203,22 +1284,10 @@ public final class VazioReino {
                     }
                     relevoBlocos += altura;
                     relevoSessao += altura;
-                    mudou = true;
-                    // entulho no pé da serra: pedra solta caindo pelo barranco
-                    if (h >= 10 && r.nextFloat() < 0.30F) {
-                        int quantas = 1 + r.nextInt(3);
-                        for (int k = 0; k < quantas; k++) {
-                            int ox = r.nextInt(5) - 2, oz = r.nextInt(5) - 2;
-                            int py = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                                    x + ox, z + oz);
-                            if (py > nv.getMinBuildHeight() + 3) {
-                                filaForte(new BlockPos(x + ox, py, z + oz),
-                                        r.nextBoolean()
-                                                ? Blocks.COBBLED_DEEPSLATE.defaultBlockState()
-                                                : Blocks.GRAVEL.defaultBlockState());
-                            }
-                        }
-                    }
+                    // (5.24.0) O ENTULHO SAIU. Aqui nasciam 1 a 3 pedras soltas por coluna de
+                    // serra (e mais cascalho no fundo das crateras, e mais bloco caído solto):
+                    // eram "milhares deles" espalhados pelo chão, e cada pedra nova mexia na
+                    // altura da coluna, o que fazia o relevo cavar de novo na visita seguinte.
                 } else if (alvo < atual) {
                     int fundo = Math.max(alvo, nv.getMinBuildHeight() + 3);
                     for (int y2 = atual - 1; y2 >= fundo; y2--) {
@@ -1229,22 +1298,8 @@ public final class VazioReino {
                         filaForte(pp, Blocks.AIR.defaultBlockState());
                         relevoBlocos++;
                         relevoSessao++;
-                        mudou = true;
                     }
-                    // fundo da cratera: cascalho solto
-                    if (mudou && r.nextFloat() < 0.35F) {
-                        filaForte(new BlockPos(x, fundo, z), Blocks.GRAVEL.defaultBlockState());
-                    }
-                }
-                // pedras soltas e blocos caídos (a marca do vazio) — só em coluna que mexeu,
-                // senão cada passada plantava mais pedra em cima da montanha já pronta
-                if (mudou && r.nextFloat() < 0.04F) {
-                    int py = nv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                    if (py > nv.getMinBuildHeight() + 3) {
-                        filaForte(new BlockPos(x, py, z), r.nextBoolean()
-                                ? Blocks.BLACKSTONE.defaultBlockState()
-                                : Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState());
-                    }
+                    // (5.24.0) e o cascalho solto do fundo da cratera também saiu.
                 }
             }
         }

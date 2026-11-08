@@ -105,6 +105,29 @@ public final class RPWorldData extends SavedData {
         return construcoes.size();
     }
 
+    /**
+     * (5.24.0) ESQUECE O RELEVO — tira só as marcas de chunk esculpido ("E:cx,cz").
+     *
+     * <p>Usado pelo {@code /vazio relevo}: é o que permite o comando <b>consertar</b> de novo o
+     * terreno (as marcas das construções continuam de pé).
+     *
+     * @return quantas marcas saíram
+     */
+    public int esquecerRelevo() {
+        int n = 0;
+        java.util.Iterator<String> it = construcoes.iterator();
+        while (it.hasNext()) {
+            if (it.next().startsWith("E:")) {
+                it.remove();
+                n++;
+            }
+        }
+        if (n > 0) {
+            setDirty();
+        }
+        return n;
+    }
+
     /** (5.13.4) esquece tudo (usado SÓ pelo /vazio construir, que quer refazer na marra). */
     public void esquecerConstrucoes() {
         construcoes.clear();
@@ -116,6 +139,26 @@ public final class RPWorldData extends SavedData {
     /** (5.7.0) ANIMAÇÃO DE SAÍDA dos jogadores (quem fica vê o bonequinho se
      * desfazendo em código). (5.17.1) É PADRÃO e roda sempre: o liga/desliga saiu. */
     private boolean saidaFx = true;
+
+    // ================= (5.24.0) A BARRA SAI DA TELA DE QUEM NÃO QUER =================
+    /**
+     * Pedido do dono: <i>"no mod tem que ter um comando para tirar a barra da tela do player
+     * tbm, vai que ele nao quer mais e tals"</i>. Cada jogador esconde a PRÓPRIA barra com
+     * {@code /barra off} — a escolha fica salva no mundo e volta com ele no próximo login.
+     * O ADM continua mandando na barra de todo mundo ({@code /rp admin barra ...}).
+     */
+    private final java.util.Set<java.util.UUID> barraEscondida = new java.util.HashSet<>();
+
+    /** (5.24.0) esse jogador pediu pra não ver a barra? */
+    public boolean barraEscondida(java.util.UUID id) { return barraEscondida.contains(id); }
+
+    /** (5.24.0) esconde/mostra a barra SÓ desse jogador. */
+    public void setBarraEscondida(java.util.UUID id, boolean esconder) {
+        boolean mudou = esconder ? barraEscondida.add(id) : barraEscondida.remove(id);
+        if (mudou) {
+            setDirty();
+        }
+    }
 
     // ================= (5.17.0) BARRA DO HUD (só o ADM mexe) =================
     private boolean barraVisivel = false;
@@ -327,6 +370,26 @@ public final class RPWorldData extends SavedData {
     // --------------------------------------------------------- (5.17.0) Axion
     public int axionEstado() { return axionEstado; }
     public void setAxionEstado(int e) { axionEstado = Math.max(0, Math.min(2, e)); setDirty(); }
+    /**
+     * (5.24.0) DE QUEM É A AXION — ela mora na tela de UMA pessoa.
+     *
+     * <p>O dono: <i>"a axion nao fala no botao de tela de todos, e apenas na tela do personagem
+     * tal que tem a axion"</i>. O {@code /rp admin axion dono <jogador>} grava o id (e o nome,
+     * pra continuar certo com ele offline); {@code null} = sem dono (ninguém vê o balão dela).
+     */
+    private java.util.UUID axionDono;
+    private String axionDonoNome = "";
+
+    public java.util.UUID axionDono() { return axionDono; }
+
+    public String axionDonoNome() { return axionDonoNome; }
+
+    public void setAxionDono(java.util.UUID id, String nome) {
+        axionDono = id;
+        axionDonoNome = nome == null ? "" : nome;
+        setDirty();
+    }
+
     public float axionEscala() { return axionEscala; }
     public void setAxionEscala(float e) { axionEscala = Math.max(0.3F, Math.min(3.0F, e)); setDirty(); }
 
@@ -755,6 +818,15 @@ public final class RPWorldData extends SavedData {
         }
         tag.put("VazioPortais", portaisList);
 
+        // (5.24.0) quem escondeu a barra da própria tela
+        ListTag barraOffList = new ListTag();
+        for (java.util.UUID id : barraEscondida) {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", id);
+            barraOffList.add(e);
+        }
+        tag.put("BarraEscondida", barraOffList);
+
         // (5.13.4) o que já foi construído no vazio (constrói uma vez, nunca mais)
         ListTag constrList = new ListTag();
         for (String k : construcoes) {
@@ -797,6 +869,10 @@ public final class RPWorldData extends SavedData {
         tag.putInt("BarraLargura", barraLargura);
         tag.putBoolean("BarraVertical", barraVertical);   // (5.18.0)
         tag.putInt("AxionEstado", axionEstado);
+        if (axionDono != null) {
+            tag.putUUID("AxionDono", axionDono);
+        }
+        tag.putString("AxionDonoNome", axionDonoNome);
         tag.putFloat("AxionEscala", axionEscala);
         tag.putInt("DataVersao", dataVersao);   // (5.17.2)
         tag.putBoolean("ComandoTitleVanilla", comandoTitleVanilla); // (5.10.1)
@@ -888,6 +964,12 @@ public final class RPWorldData extends SavedData {
             data.typewriter.put(typewriterList.getCompound(i).getUUID("Id"), true);
         }
 
+        // (5.24.0) quem escondeu a barra da própria tela
+        ListTag barraOff = tag.getList("BarraEscondida", Tag.TAG_COMPOUND);
+        for (int i = 0; i < barraOff.size(); i++) {
+            data.barraEscondida.add(barraOff.getCompound(i).getUUID("Id"));
+        }
+
         data.canonEvent = tag.getBoolean("CanonEvent");
 
         ListTag vidasList = tag.getList("CanonLives", Tag.TAG_COMPOUND);
@@ -949,6 +1031,8 @@ public final class RPWorldData extends SavedData {
         if (tag.contains("BarraLargura")) data.barraLargura = tag.getInt("BarraLargura");
         data.barraVertical = !tag.contains("BarraVertical") || tag.getBoolean("BarraVertical");
         if (tag.contains("AxionEstado")) data.axionEstado = tag.getInt("AxionEstado");
+        if (tag.contains("AxionDono")) data.axionDono = tag.getUUID("AxionDono");
+        if (tag.contains("AxionDonoNome")) data.axionDonoNome = tag.getString("AxionDonoNome");
         if (tag.contains("AxionEscala")) data.axionEscala = tag.getFloat("AxionEscala");
 
         // (5.17.2) MIGRAÇÃO: save da 5.17.0 (sem DataVersao) mandava a Axion APARECER na

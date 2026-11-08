@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.23.0'
+VER = '5.24.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2692,8 +2692,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.23.0.jar')
-      and os.path.getsize('build/libs/rptag-5.23.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.24.0.jar')
+      and os.path.getsize('build/libs/rptag-5.24.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2969,6 +2969,53 @@ _rp6 = rd(R + '/NeptuneCommands.java')
 check('5.23.0: /vazio lugares, /vazio lugar <id> e /vazio onde <x> <z>',
       'literal("lugares")' in _rp6 and 'literal("lugar")' in _rp6 and 'literal("onde")' in _rp6
       and 'VazioLugares.listar(quem)' in _rp6 and 'VazioLugares.lugarEm(x, z)' in _rp6)
+
+# ============ 5.24.0: barra do jogador, vazio que nao se constroi na frente, portal, axion ============
+_d = rd(R + '/RPWorldData.java')
+_rp7 = rd(R + '/RPCommands.java')
+check('5.24.0: /barra [on|off] existe e e de TODO jogador (registrado direto no dispatcher)',
+      'Commands.literal("barra")' in _rp7
+      and 'private static int barraDoJogador(' in _rp7
+      and '.then(Commands.literal("off").executes(ctx -> barraDoJogador(ctx, Boolean.FALSE)))' in _rp7)
+check('5.24.0: a barra respeita a escolha do jogador (enviarBarra checa barraEscondida)',
+      'boolean visivel = d.barraVisivel() && !d.barraEscondida(alvo.getUUID());' in _rp7
+      and 'public boolean barraEscondida(java.util.UUID id)' in _d)
+check('5.24.0: a escolha da barra fica salva no mundo (volta no proximo login)',
+      'tag.put("BarraEscondida", barraOffList);' in _d
+      and 'tag.getList("BarraEscondida", Tag.TAG_COMPOUND)' in _d)
+check('5.24.0: o vazio esculpe cada chunk UMA VEZ (marca E: no save, nada de refazer ao andar)',
+      'private static void esculpirUmaVez(ServerLevel nv, int cx, int cz)' in _vr
+      and 'marcado(nv, "E:" + cx + "," + cz)' in _vr
+      and 'marcar(nv, "E:" + cx + "," + cz);' in _vr
+      and 'esculpirChunk(nv, cx, cz);\n        despejarFila(nv);\n        esculpirChunk(nv, cx, cz);' in _vr
+      and 'public int esquecerRelevo()' in _d)
+_corpo = _vr[_vr.index('private static void esculpirChunk'):_vr.index('// ============================================== TREVAS')]
+check('5.24.0: o entulho sorteado saiu do relevo (nada de pedra solta acumulando)',
+      'Blocks.GRAVEL.defaultBlockState()' not in _corpo
+      and 'Blocks.COBBLED_DEEPSLATE.defaultBlockState()' not in _corpo
+      and 'r.nextBoolean()' not in _corpo)
+check('5.24.0: o vazio PREPARA o terreno antes do jogador chegar (fila PREPARO)',
+      'private static final ArrayDeque<int[]> PREPARO' in _vr
+      and 'private static void prepararEmVolta(ServerLevel nv, ServerPlayer p)' in _vr
+      and 'prepararEmVolta(nv, p);' in _vr
+      and 'preparo do vazio agendado' in _vr)
+check('5.24.0: a frase do portal e "ele nao gosta de devolver ninguem"',
+      '"ele não gosta de devolver ninguém"' in _lug if False else '"ele não gosta de devolver ninguém"' in rd(R + '/VazioLugares.java'))
+check('5.24.0: /rp admin axion dono <jogador> e dono nenhum (de quem ela e)',
+      'private static int axionDono(' in _rp7 and 'Commands.literal("dono")' in _rp7
+      and 'Commands.literal("nenhum")' in _rp7)
+check('5.24.0: a Axion fala SO na tela do dono (nada de balao pra todos)',
+      'PacketDistributor.sendToAllPlayers(\n                new AxionFalaPayload' not in _rp7
+      and 'PacketDistributor.sendToPlayer(quem,' in _rp7)
+check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pessoa)',
+      'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
+      and 'private java.util.UUID axionDono;' in _d
+      and 'tag.putUUID("AxionDono", axionDono);' in _d)
+check('5.24.0: a versao subiu pra 5.24.0 no jar, no mod e no gradle',
+      "version = '5.24.0'" in rd('build.gradle')
+      and '5.24.0' in rd(R + '/RPTagMod.java'))
+check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
+      all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

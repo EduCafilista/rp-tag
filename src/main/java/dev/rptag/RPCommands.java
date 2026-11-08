@@ -1499,6 +1499,20 @@ public final class RPCommands {
                         .then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA)))
                         .then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.DORMINDO)))
                         .then(Commands.literal("tirar").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA)))
+                        // (5.24.0) de quem é a Axion (o balão dela só aparece pra essa pessoa)
+                        .then(Commands.literal("dono")
+                                .then(Commands.argument("jogador", EntityArgument.player())
+                                        .executes(ctx -> axionDono(ctx, EntityArgument.getPlayer(ctx, "jogador"))))
+                                .then(Commands.literal("nenhum").executes(ctx -> {
+                                    var srv = ctx.getSource().getServer();
+                                    RPWorldData d = RPWorldData.get(srv);
+                                    d.setAxionDono(null, null);
+                                    for (ServerPlayer alvo : srv.getPlayerList().getPlayers()) {
+                                        enviarAxion(alvo, d);
+                                    }
+                                    return axionDono(ctx, null);
+                                }))
+                                .executes(ctx -> axionDono(ctx, null)))
                         // (5.20.0) /rp admin axion falar <texto> — BALÃO DE FALA:
                         // vermelho escuro com letras pretas, saindo dela na tela de todos.
                         .then(Commands.literal("falar")
@@ -1512,8 +1526,10 @@ public final class RPCommands {
                                     "\u00a7e/rp admin axion acordar\u00a77 \u2014 POE ela na tela, acordada\n"
                                     + "\u00a7e/rp admin axion dormir\u00a77 \u2014 POE ela na tela, dormindo\n"
                                     + "\u00a7e/rp admin axion tirar\u00a77 \u2014 TIRA ela da tela\n"
+                                    + "\u00a7e/rp admin axion dono <jogador>\u00a77 \u2014 de quem ela é "
+                                    + "(o balão dela só aparece pra essa pessoa)\n"
                                     + "\u00a7e/rp admin axion falar <texto>\u00a77 \u2014 ela diz isso "
-                                    + "num balão vermelho de letras pretas")
+                                    + "num balão vermelho de letras pretas, só na tela do dono")
                                     .withStyle(ChatFormatting.YELLOW), false);
                             return Command.SINGLE_SUCCESS;
                         }))
@@ -1640,6 +1656,12 @@ public final class RPCommands {
                                     "RP desativado para " + target.getName().getString() + "."), true);
                             return Command.SINGLE_SUCCESS;
                         }))));
+
+        // (5.24.0) /barra [on|off] — o jogador tira a barra da PRÓPRIA tela (todo mundo pode)
+        event.getDispatcher().register(Commands.literal("barra")
+                .then(Commands.literal("on").executes(ctx -> barraDoJogador(ctx, Boolean.TRUE)))
+                .then(Commands.literal("off").executes(ctx -> barraDoJogador(ctx, Boolean.FALSE)))
+                .executes(ctx -> barraDoJogador(ctx, null)));
 
         // (4.5.0) /afk — entra/sai do AFK na mão (sai do RP sozinho)
         event.getDispatcher().register(Commands.literal("afk").executes(ctx -> {
@@ -1909,10 +1931,40 @@ public final class RPCommands {
 
     /** (5.17.0) manda o estado inteiro da barra pra um jogador. */
     public static void enviarBarra(ServerPlayer alvo, RPWorldData d) {
+        // (5.24.0) quem pediu pra tirar a barra com /barra off não recebe ela de volta quando
+        // o ADM mexe na barra de todo mundo — a escolha do jogador ganha.
+        boolean visivel = d.barraVisivel() && !d.barraEscondida(alvo.getUUID());
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo,
-                new BarraPayload(d.barraVisivel(), d.barraRotulo(), d.barraValor(), d.barraCorTexto(),
+                new BarraPayload(visivel, d.barraRotulo(), d.barraValor(), d.barraCorTexto(),
                         d.barraCorBarra(), d.barraCorFundo(), d.barraX(), d.barraY(), d.barraLargura(),
                         d.barraVertical()));
+    }
+
+    /**
+     * (5.24.0) /barra [on|off] — O JOGADOR TIRA A BARRA DA PRÓPRIA TELA.
+     *
+     * <p>O dono: <i>"no mod tem que ter um comando para tirar a barra da tela do player tbm, vai
+     * que ele nao quer mais e tals"</i>. Sem argumento, alterna (liga/desliga). A escolha fica
+     * guardada no save do mundo, então continua valendo quando ele voltar pro servidor.
+     */
+    private static int barraDoJogador(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            Boolean quer) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer p = ctx.getSource().getPlayerOrException();
+        RPWorldData d = RPWorldData.get(ctx.getSource().getServer());
+        boolean esconder = (quer == null) ? !d.barraEscondida(p.getUUID()) : !quer;
+        d.setBarraEscondida(p.getUUID(), esconder);
+        enviarBarra(p, d);                    // manda o estado novo (escondida ou não) na hora
+        String msg = esconder
+                ? "\u00a77Barra do HUD \u00a7cfora da sua tela\u00a77. Pra ela voltar: \u00a7f/barra on"
+                : "\u00a77Barra do HUD \u00a7ade volta na sua tela\u00a77.";
+        if (esconder && !d.barraVisivel()) {
+            msg = "\u00a77A barra do HUD já está desligada pro servidor inteiro \u2014 "
+                    + "quando o ADM ligar, ela continua fora da sua tela.";
+        }
+        final String m = msg;
+        ctx.getSource().sendSuccess(() -> Component.literal(m), false);
+        return Command.SINGLE_SUCCESS;
     }
 
     /**
@@ -1932,24 +1984,83 @@ public final class RPCommands {
         // tira os códigos § que o ADM talvez digite: o balão é sempre vermelho com letra preta
         String limpo = texto.replaceAll("\u00a7[0-9a-fk-orA-FK-OR]", "").trim();
         var server = ctx.getSource().getServer();
-        // ela precisa estar na tela pra falar
-        if (RPWorldData.get(server).axionEstado() == AxionPayload.ESCONDIDA) {
-            RPWorldData.get(server).setAxionEstado(AxionPayload.ACORDADA);
-            for (ServerPlayer alvo : server.getPlayerList().getPlayers()) {
-                enviarAxion(alvo, RPWorldData.get(server));
+        RPWorldData d = RPWorldData.get(server);
+
+        // (5.24.0) ELA FALA SÓ NA TELA DE QUEM TEM ELA.
+        // O dono: "a axion nao fala no botao de tela de todos, e apenas na tela do personagem
+        // tal que tem a axion". Então o balão vai para o DONO dela (definido com
+        // /rp admin axion dono <jogador>) e para mais ninguém. Sem dono escolhido, a fala cai
+        // na tela de quem mandou o comando (e o console é avisado de como escolher o dono).
+        ServerPlayer destinatario = null;
+        if (d.axionDono() != null) {
+            destinatario = server.getPlayerList().getPlayer(d.axionDono());
+            if (destinatario == null) {
+                ctx.getSource().sendFailure(Component.literal(
+                        "\u00a7cA Axion é de \u00a7f" + d.axionDonoNome()
+                                + "\u00a7c, mas ele está offline agora \u2014 o balão espera ele voltar."));
+                return 0;
+            }
+        } else {
+            destinatario = ctx.getSource().getPlayer();     // quem mandou (se for jogador)
+            if (destinatario == null) {
+                ctx.getSource().sendFailure(Component.literal(
+                        "\u00a7cA Axion não tem dono. Escolha primeiro: \u00a7f/rp admin axion dono <jogador>"));
+                return 0;
             }
         }
-        net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
-                new AxionFalaPayload(limpo, 8));
-        for (ServerPlayer alvo : server.getPlayerList().getPlayers()) {
-            alvo.playNotifySound(RPTagMod.SOM_VAZIO.get(),
-                    net.minecraft.sounds.SoundSource.NEUTRAL, 0.35F, 1.6F);
+        // ela precisa estar na tela pra falar
+        if (d.axionEstado() == AxionPayload.ESCONDIDA) {
+            d.setAxionEstado(AxionPayload.ACORDADA);
+            for (ServerPlayer alvo : server.getPlayerList().getPlayers()) {
+                enviarAxion(alvo, d);
+            }
         }
+        final ServerPlayer quem = destinatario;
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(quem,
+                new AxionFalaPayload(limpo, 8));
+        quem.playNotifySound(RPTagMod.SOM_VAZIO.get(),
+                net.minecraft.sounds.SoundSource.NEUTRAL, 0.35F, 1.6F);
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "\u00a7aAxion fala: \u00a74\u00a7l\"" + limpo + "\"\u00a7r \u00a77(balão na tela de todos)")
+                "\u00a7aAxion fala: \u00a74\u00a7l\"" + limpo + "\"\u00a7r \u00a77(balão só na tela de \u00a7f"
+                        + quem.getName().getString() + "\u00a77)")
                 .withStyle(ChatFormatting.GREEN), false);
         return Command.SINGLE_SUCCESS;
     }
+
+    /**
+     * (5.24.0) /rp admin axion dono [jogador] — QUEM TEM A AXION.
+     *
+     * <p>Com um jogador: ela passa a morar na tela dele (e a falar só ali). Sem argumento:
+     * mostra quem é o dono atual. Com {@code nenhum}: solta (volta a ser a Axion do servidor).
+     */
+    private static int axionDono(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            ServerPlayer novo) {
+        var server = ctx.getSource().getServer();
+        RPWorldData d = RPWorldData.get(server);
+        if (novo != null) {
+            d.setAxionDono(novo.getUUID(), novo.getName().getString());
+            for (ServerPlayer alvo : server.getPlayerList().getPlayers()) {
+                enviarAxion(alvo, d);         // ela agora aparece só pra ele
+            }
+        }
+        java.util.UUID id = d.axionDono();
+        String nome = "\u00a78ninguém (ela é do servidor inteiro)";
+        if (id != null) {
+            ServerPlayer p = server.getPlayerList().getPlayer(id);
+            String n = p != null ? p.getName().getString() : d.axionDonoNome();
+            if (n == null || n.isBlank()) {
+                n = id.toString().substring(0, 8);
+            }
+            nome = "\u00a7f" + n;
+        }
+        final String quem = nome;
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u00a7aA Axion é de: " + quem + "\u00a78 — o balão dela só aparece na tela dessa pessoa.")
+                .withStyle(ChatFormatting.GREEN), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
 
     private static int axionEstado(
             com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
@@ -1969,8 +2080,13 @@ public final class RPCommands {
 
     /** (5.17.0) manda o estado da Axion pra um jogador. */
     public static void enviarAxion(ServerPlayer alvo, RPWorldData d) {
+        // (5.24.0) ela mora com UMA pessoa: quem não é o dono recebe "escondida".
+        int estado = d.axionEstado();
+        if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID())) {
+            estado = AxionPayload.ESCONDIDA;
+        }
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo,
-                new AxionPayload(d.axionEstado(), d.axionEscala(), 0.995F, 0.995F));
+                new AxionPayload(estado, d.axionEscala(), 0.995F, 0.995F));
     }
 
 }

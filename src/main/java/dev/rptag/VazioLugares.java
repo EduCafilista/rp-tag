@@ -54,7 +54,7 @@ public final class VazioLugares {
     private static final Lugar PRACA = new Lugar("praca", "A PRAÇA",
             "o único lugar do vazio que ainda tem luz", ChatFormatting.GOLD, 1.25F);
     private static final Lugar PORTAL = new Lugar("portal", "O PORTAL",
-            "a saída não gosta de emprestar ninguém", ChatFormatting.LIGHT_PURPLE, 0.85F);
+            "ele não gosta de devolver ninguém", ChatFormatting.LIGHT_PURPLE, 0.85F);
     private static final Lugar SANTUARIO = new Lugar("santuario", "UM SANTUÁRIO QUEBRADO",
             "alguém rezou aqui. não adiantou", ChatFormatting.DARK_AQUA, 0.7F);
     private static final Lugar CIDADE = new Lugar("cidade", "A CIDADE MORTA",

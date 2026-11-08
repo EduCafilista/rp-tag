@@ -1,0 +1,39 @@
+RP Tag 5.24.0 - PROVA DE EXECUCAO (servidor de teste, NeoForge 21.1.249 / MC 1.21.1)
+=====================================================================================
+
+1) O VAZIO NAO SE CONSTROI MAIS NA SUA FRENTE
+   1o boot (mundo novo, jar 5.24.0):
+     "preparo do vazio agendado (484 chunks, raio 200 blocos)"
+     "relevo do vazio conferido/consertado (776346 blocos assentados agora, ...)"  -> UMA vez
+   2o boot (mesmo mundo, nada tocado):
+     "preparo do vazio agendado (484 chunks, raio 200 blocos)"
+     NENHUMA linha de "conferido/consertado"  -> 0 blocos mexidos (antes eram centenas por visita)
+   3o e 4o boot: idem, 0 blocos.
+   Motivo: cada chunk ganhou a marca "E:cx,cz" no save (esculpido UMA vez na vida do mundo).
+   E o entulho sorteado (pedra solta / cascalho / bloco caido) saiu do relevo.
+
+2) COMANDO DA BARRA PARA O JOGADOR
+   /barra          -> alterna (liga/desliga a barra NA TELA DELE)
+   /barra on       -> volta
+   /barra off      -> tira
+   escolha fica salva: rptag_states.dat contem "BarraEscondida" (conferido no arquivo)
+   servidor responde: "A player is required to run this command here" quando vem do console
+   (ou seja: o comando existe e e do jogador, nao do ADM)
+
+3) O PORTAL
+   frase nova: "ele nao gosta de devolver ninguem"  (titulo continua "O PORTAL")
+
+4) AXION FALA SO NA TELA DE QUEM TEM ELA
+   /rp admin axion dono <jogador>   -> "A Axion e de: <jogador>"
+   /rp admin axion dono nenhum      -> solta
+   /rp admin axion falar <texto>    -> balao SO na tela do dono (antes: sendToAllPlayers)
+   Prova de persistencia: definido o dono, o servidor foi DESLIGADO e religado com o jar final
+     "/rp admin axion dono" -> "A Axion e de: Fulano" (voltou do save)
+     "/rp admin axion falar oi" -> "A Axion e de Fulano, mas ele esta offline agora -
+                                   o balao espera ele voltar."
+   Arquivo de save (gzip) contem: BarraEscondida, AxionDono, AxionDonoNome e "Fulano".
+
+5) GERAL
+   check.py: 987 PASS / 0 FAIL
+   servidor com o jar final: 0 excecoes no latest.log
+   comandos de teste (testechao, testebicho, simular, _prova) NAO existem no jar publicado
