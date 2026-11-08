@@ -1,0 +1,29 @@
+RP Tag 5.24.1 - avisar x avisar2 (prova de execucao)
+=====================================================
+
+PEDIDO: "dos rp admin avisar, os que tiver em rp admin avisar2 nao deve estar no avisar"
+
+ARVORE DE COMANDOS LIDA DO SERVIDOR (dispatcher do jogo, jar 5.24.1):
+
+  /rp admin avisar  (19 estilos):
+     ciberpsicose conhecimento demoniaco divino egipicio energia expurgo gelo
+     inferno medoop morte morteop pesadelo pesadelo2 real runico sangue
+     sangueop void
+     (+ "classico", que nao precisa de palavra: e o texto puro)
+
+  /rp admin avisar2 (16 estilos):
+     enforcado eremita espectador estrela fita foulo julgamento justica louco
+     lua mago marinheiro morte2 sol tolo torre
+
+  INTERSECAO: VAZIA (nenhum estilo aparece nos dois).
+
+O QUE SAIU DO /rp admin avisar (e continua no avisar2):
+  louco, tolo, eremita, julgamento, lua, mago, morte2, sol, torre, estrela,
+  marinheiro, fita, espectador
+
+Nada se perdeu: o despacho do estilo (o FX de cada um) e o MESMO
+  case "louco" -> 25 | case "morte2","ceifador","morte_carta" -> 32
+  case "tolo","foulo" -> 36 | case "fita" -> 37  (e assim por diante)
+
+GERAL: check.py 992 PASS / 0 FAIL | servidor sobe limpo, 0 excecoes
+       nenhum comando de teste vai no jar publicado (_prova removido)

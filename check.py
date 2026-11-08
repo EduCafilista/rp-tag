@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.24.0'
+VER = '5.24.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1004,7 +1004,8 @@ check('4.7.1: EGIPCIO tem selo de ouro a direita da placa', 'SELO' in egi)
 import re as _re
 _rp = rd(R + '/RPCommands.java')
 _comando = _rp[_rp.index('.then(Commands.literal("avisar")'):_rp.index('.then(Commands.literal("avisozona")')]
-_literais = set(_re.findall(r'Commands\.literal\("([a-z0-9_]+)"\)', _comando))
+_literais = (set(_re.findall(r'Commands\.literal\("([a-z0-9_]+)"\)', _comando))
+             | set(_re.findall(r'aviso2\("([a-z0-9_]+)"\)', _comando)))
 _k = _rp.index('private static void avisar(')
 _metodo = _rp[_k:_rp.index('    private static ', _k + 10)]      # so o corpo do avisar()
 _estilos = set(_re.findall(r'case "([a-z0-9_]+)"', _metodo))
@@ -2486,9 +2487,9 @@ check('5.14.0: estilo 25/26/27 ligado no avisar() e no teste do cliente',
       and 'case "espectador", "justica" -> 27' in _rp
       and 'if (style == 25)' in _rgc and 'if (style == 26)' in _rgc and 'if (style == 27)' in _rgc
       and 'case "louco" -> 25' in _fxc and 'case "marinheiro", "enforcado" -> 26' in _fxc)
-check('5.14.0: /rp admin avisar louco|marinheiro|espectador existem como LITERAIS',
-      'Commands.literal("louco")' in _rp and 'Commands.literal("marinheiro")' in _rp
-      and 'Commands.literal("espectador")' in _rp)
+check('5.14.0: louco|marinheiro|espectador existem como comando (hoje no avisar2)',
+      'aviso2("louco")' in _rp and 'aviso2("marinheiro")' in _rp
+      and 'aviso2("espectador")' in _rp)
 check('5.15.0: LOUCO = a ESCADA das 10 Sequencias (9 Vidente ... 0 O Louco)',
       'FoolPathwayWarning' in _lou and 'private static float tn(int s)' in _lou
       and 'para a Sequencia 0' in _lou or ('tn(int s)' in _lou and 'NOMES' in _lou))
@@ -2558,8 +2559,8 @@ for _cls, (_nome, _rom, _ef1, _tema) in _cartas.items():
     check('5.16.0: %s desenha o tema do protótipo (%s) com o nome e o romano da carta'
           % (_cls, _tema),
           ('nome = "%s"' % _nome) in _f and ('romano = "%s"' % _rom) in _f and _ef1 in _f)
-check('5.16.0: /rp admin avisar tem os OITO literais novos',
-      all(('Commands.literal("%s")' % n) in _rp for n in
+check('5.16.0: os OITO avisos novos continuam no comando (hoje no /rp admin avisar2)',
+      all(('aviso2("%s")' % n) in _rp for n in
           ['eremita', 'julgamento', 'lua', 'mago', 'morte2', 'sol', 'torre', 'estrela']))
 _fx = rd(C + '/FxComando.java')
 check('5.16.0: os oito estão no switch do avisar() e no do /rpfx teste (28..35)',
@@ -2577,7 +2578,7 @@ check('5.16.2: TOLO voltou a ser a CARTA do Tolo (protótipo FoolWarning), estil
       and ('if (style == 36)' in rd(C + '/ClientEffects.java')) and ('ToloAvisoFx.iniciar' in rd(C + '/ClientEffects.java')))
 check('5.16.0: MORTE (carta) tem nome proprio para nao bater no estilo 4 (a morte antiga)',
       'case "morte2", "ceifador", "morte_carta" -> 32' in _rp
-      and 'Commands.literal("morte2")' in _rp and 'case "morte" -> 4;' in _rp
+      and 'aviso2("morte2")' in _rp and 'case "morte" -> 4;' in _rp
       and 'MorteTarotAvisoFx.iniciar' in rd(C + '/ClientEffects.java'))
 check('5.16.0: os estilos 28..35 NAO existiam antes (nenhum estilo antigo foi trocado)',
       all(('case %d ->' % i) not in rd(R + '/LoreZoneCommands.java') for i in range(28, 36))
@@ -2692,8 +2693,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.24.0.jar')
-      and os.path.getsize('build/libs/rptag-5.24.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.24.1.jar')
+      and os.path.getsize('build/libs/rptag-5.24.1.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3011,11 +3012,36 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.24.0: a versao subiu pra 5.24.0 no jar, no mod e no gradle',
-      "version = '5.24.0'" in rd('build.gradle')
-      and '5.24.0' in rd(R + '/RPTagMod.java'))
+check('5.24.1: a versao subiu pra 5.24.1 no jar, no mod e no gradle',
+      "version = '5.24.1'" in rd('build.gradle')
+      and '5.24.1' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
+
+# ============ 5.24.1: nada do avisar2 repetido no avisar ============
+_s   = rd(R + '/RPCommands.java')
+_ai  = _s.index('.then(Commands.literal("avisar")')
+_af  = _s.index('.then(Commands.literal("avisar2")')
+_a2f = _s.index('.then(Commands.literal("avisozona")')
+_avisar  = _s[_ai:_af]
+_avisar2 = _s[_af:_a2f]
+_lit_avisar  = set(re.findall(r'Commands\.literal\("([a-z0-9]+)"\)', _avisar)) - {'avisar'}
+_lit_avisar2 = set(re.findall(r'aviso2\("([a-z0-9]+)"\)', _avisar2))
+check('5.24.1: NENHUM estilo do avisar2 aparece no /rp admin avisar (pedido do dono)',
+      not (_lit_avisar & _lit_avisar2))
+check('5.24.1: o /rp admin avisar2 continua com os 16 avisos narrativos (nada se perdeu)',
+      _lit_avisar2 == {'louco', 'tolo', 'marinheiro', 'enforcado', 'espectador', 'justica',
+                       'eremita', 'julgamento', 'lua', 'mago', 'morte2', 'sol', 'torre',
+                       'estrela', 'foulo', 'fita'})
+check('5.24.1: os estilos que sairam do avisar continuam com o FX proprio no despacho',
+      all(k in _s for k in ['case "louco" -> 25', 'case "morte2", "ceifador", "morte_carta" -> 32',
+                            'case "tolo", "foulo" -> 36', 'case "fita" -> 37']))
+check('5.24.1: o /rp admin avisar ficou com a secao ANTIGA (14 estilos + classico)',
+      _lit_avisar == {'pesadelo', 'pesadelo2', 'morte', 'inferno', 'gelo', 'divino', 'void',
+                      'sangue', 'demoniaco', 'runico', 'real', 'egipicio', 'expurgo',
+                      'ciberpsicose', 'energia', 'conhecimento', 'morteop', 'sangueop', 'medoop'})
+check('5.24.1: a ajuda separa as duas listas e avisa que nada do avisar2 esta no avisar',
+      'nada disso existe no avisar' in _s)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
