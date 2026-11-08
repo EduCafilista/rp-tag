@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.24.3'
+VER = '5.24.4'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1810,7 +1810,6 @@ check('5.7.9: A CARA DO BICHO aparece (o vulto escuro vem ANTES, nao cobre o ros
 # ============ 5.7.9: som do terremoto, cara do bicho, exílio claro, logout, 3 avisos ======
 _sol = rd(C + '/MorteOpAvisoFx.java')   # (5.16.4) o SolAvisoFx (ONE FOR ALL) foi removido
 _mop = rd(C + '/MorteOpAvisoFx.java')
-_sop = rd(C + '/SangueOpAvisoFx.java')
 _fxd = rd(C + '/FxDraw.java')
 _cgl = rd(C + '/ClientGuiLayers.java')
 check('5.7.9: /terremoto parar CALA o som (StopSound por jogador, como no /vazio desligar)',
@@ -1838,15 +1837,15 @@ check('5.16.4: o aviso ONE FOR ALL saiu (classe, comando, camada e som)',
 check('5.7.9: aviso MORTEOP (protótipo AvisoMorte) — espiral, relógio, crânio, cinzas',
       'class MorteOpAvisoFx' in _mop and 'ESPIRAL de 3 bra' in _mop
       and 'REL' in _mop and 'TUDO O QUE COME' in _mop and 'aviso_morte_op' in _mop)
-check('5.7.9: aviso SANGUEOP (protótipo AvisoSangue) — batida, veias, gota, anel tracejado',
-      'class SangueOpAvisoFx' in _sop and 'BPM = 62F' in _sop and 'VEIAS' in _sop
-      and 'GOTA' in _sop and 'aviso_sangue_op' in _sop)
-check('5.7.9/5.16.4: os avisos MORTEOP e SANGUEOP seguem registrados e ligados aos estilos 20/21',
-      'MorteOpAvisoFx.registrar(event)' in _cgl and 'SangueOpAvisoFx.registrar(event)' in _cgl
-      and 'style == 20' in _fxp and 'style == 21' in _fxp)
-check('5.7.9/5.16.4: nomes no comando — morteop e sangueop (com TAB); onefallall saiu',
-      'case "morteop" -> 20' in rd(R + '/RPCommands.java')
-      and 'case "sangueop" -> 21' in rd(R + '/RPCommands.java')
+check('5.24.4: o aviso SANGUEOP saiu do mod inteiro (classe, camada, estilo 21, comando, som)',
+      not os.path.exists(C + '/SangueOpAvisoFx.java')
+      and 'SangueOpAvisoFx' not in _cgl and 'SangueOpAvisoFx' not in _fxp
+      and 'case "sangueop"' not in rd(R + '/RPCommands.java')
+      and 'sangueop' not in rd(R + '/LoreZoneCommands.java')
+      and 'case 21 -> "SANGUEOP"' not in rd(R + '/RPCommands.java'))
+check('5.7.9/5.16.4: o MORTEOP continua registrado e ligado ao estilo 20; onefallall saiu',
+      'MorteOpAvisoFx.registrar(event)' in _cgl and 'style == 20' in _fxp
+      and 'case "morteop" -> 20' in rd(R + '/RPCommands.java')
       and 'literal("morteop")' in rd(R + '/RPCommands.java')
       and 'onefallall' not in rd(R + '/RPCommands.java'))
 check('5.7.9: FxDraw (triangulo, linha, anel, arco, disco em degrade) pros avisos novos',
@@ -2693,8 +2692,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.24.3.jar')
-      and os.path.getsize('build/libs/rptag-5.24.3.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.24.4.jar')
+      and os.path.getsize('build/libs/rptag-5.24.4.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3012,9 +3011,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.24.3: a versao subiu pra 5.24.3 no jar, no mod e no gradle',
-      "version = '5.24.3'" in rd('build.gradle')
-      and '5.24.3' in rd(R + '/RPTagMod.java'))
+check('5.24.4: a versao subiu pra 5.24.4 no jar, no mod e no gradle',
+      "version = '5.24.4'" in rd('build.gradle')
+      and '5.24.4' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3039,7 +3038,7 @@ check('5.24.1: os estilos que sairam do avisar continuam com o FX proprio no des
 check('5.24.1/5.24.3: o /rp admin avisar ficou com a secao ANTIGA + as 2 infeccoes',
       _lit_avisar == {'pesadelo', 'pesadelo2', 'morte', 'inferno', 'gelo', 'divino', 'void',
                       'sangue', 'demoniaco', 'runico', 'real', 'egipicio', 'expurgo',
-                      'ciberpsicose', 'energia', 'conhecimento', 'morteop', 'sangueop', 'medoop',
+                      'ciberpsicose', 'energia', 'conhecimento', 'morteop', 'medoop',
                       'infeccao', 'infeccao2'})
 check('5.24.1: a ajuda separa as duas listas e avisa que nada do avisar2 esta no avisar',
       'nada disso existe no avisar' in _s)

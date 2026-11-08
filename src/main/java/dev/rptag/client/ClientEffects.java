@@ -100,7 +100,6 @@ public final class ClientEffects {
         // (5.7.9) os avisos novos dos protótipos do dono
         // (5.16.4) o ONE FOR ALL (SolAvisoFx) e o ALL FOR ONE saíram a pedido do dono
         MorteOpAvisoFx.parar();
-        SangueOpAvisoFx.parar();
         MedoOpAvisoFx.parar();
         EnergiaAvisoFx.parar();
         ConhecimentoAvisoFx.parar();
@@ -120,13 +119,9 @@ public final class ClientEffects {
             RPTagMod.LOGGER.info("RP Tag: aviso MORTE OP iniciado");
             return;
         }
-        // (5.7.9) estilo 21 = SANGUEOP: batida, veias, gota e anel tracejado.
-        if (style == 21) {
-            String limpoG = text.replaceAll("\u00a7.", "");
-            SangueOpAvisoFx.iniciar(limpoG);
-            RPTagMod.LOGGER.info("RP Tag: aviso SANGUE OP iniciado");
-            return;
-        }
+        // (5.24.4) o estilo 21 (SANGUEOP) SAIU do mod: o dono achou o FX repetido com o
+        // SANGUE e nao gostou da arte ("sair so sangueop nao gostei dele"). Quem usa
+        // estilo 21 num /lorezone cai no aviso classico, sem quebrar nada.
         // (5.8.1) estilo 22 = MEDOOP: a membrana, a lanterna e a silhueta.
         if (style == 22) {
             String limpoMedo = text.replaceAll("\u00a7.", "");

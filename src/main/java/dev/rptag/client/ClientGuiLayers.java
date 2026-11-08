@@ -80,9 +80,7 @@ public final class ClientGuiLayers {
         ConhecimentoAvisoFx.registrar(event);
         // (5.7.9) os avisos dos protótipos do dono (o ONE FOR ALL saiu na 5.16.4):
         //   20 = MORTEOP    (espiral, relógio, crânio se desmanchando em cinzas)
-        //   21 = SANGUEOP   (fundo pulsando na batida, veias, gota, anel tracejado)
         MorteOpAvisoFx.registrar(event);
-        SangueOpAvisoFx.registrar(event);
         // (5.8.1) 22 = MEDOOP (a membrana, a lanterna e a silhueta alta)
         MedoOpAvisoFx.registrar(event);
         // (5.7.0) ANIMAÇÃO DE SAÍDA do jogador (sprite dissolvendo em código)

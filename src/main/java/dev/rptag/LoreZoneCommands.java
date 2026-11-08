@@ -316,7 +316,8 @@ public final class LoreZoneCommands {
             java.util.Map.entry("demoniaco", 10), java.util.Map.entry("pesadelo2", 11),
             // (5.7.9) os avisos dos protótipos novos do dono
             // (5.16.4) o "onefallall" (ONE FOR ALL) saiu a pedido do dono
-            java.util.Map.entry("morteop", 20), java.util.Map.entry("sangueop", 21),
+            // (5.24.4) SANGUEOP (21) saiu do mod
+            java.util.Map.entry("morteop", 20),
             // (5.14.0) os tres avisos novos do dono
             java.util.Map.entry("louco", 25), java.util.Map.entry("marinheiro", 26),
             java.util.Map.entry("espectador", 27),
@@ -342,7 +343,6 @@ public final class LoreZoneCommands {
             case 10 -> "demoniaco";
             case 11 -> "pesadelo2";
             case 20 -> "morteop";
-            case 21 -> "sangueop";
             case 25 -> "louco";
             case 26 -> "marinheiro";
             case 27 -> "espectador";

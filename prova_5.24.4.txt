@@ -1,0 +1,57 @@
+================================================================================
+PROVA 5.24.4 — pedido 77, fecho: SAIU O SANGUEOP
+================================================================================
+
+Data: 2026-09-03 · jar: rptag-5.24.4.jar (35.691.305 bytes)
+
+Decisão do dono (pergunta da auditoria): "sair so sangueop nao gostei dele".
+Tudo o que a 5.24.3 entregou (fita em pixel art + as duas infecções) continua aqui;
+esta versão só tira o aviso SANGUEOP do mod.
+
+--------------------------------------------------------------------------------
+1) O QUE SAIU (arquivo por arquivo)
+--------------------------------------------------------------------------------
+  src/main/java/dev/rptag/client/SangueOpAvisoFx.java        APAGADO (a classe do FX)
+  ClientEffects.java   - SangueOpAvisoFx.parar() e o ramo "if (style == 21)"
+  ClientGuiLayers.java - SangueOpAvisoFx.registrar(event) (a camada de HUD)
+  RPCommands.java      - case "sangueop" -> 21, o literal do comando, o nome SANGUEOP
+                         no feedback e a citação na ajuda (e o som do estilo 21)
+  LoreZoneCommands.java- a entrada "sangueop" do mapa de estilos e o nome no listar
+  check.py             - a checagem antiga virou "o SANGUEOP saiu do mod inteiro"
+
+  O estilo 21 não existe mais: quem tinha "/lorezone ... sangueop" cai no aviso
+  CLÁSSICO (o texto continua funcionando), nada quebra.
+
+--------------------------------------------------------------------------------
+2) PROVA NO SERVIDOR (jar final, servidor de verdade)
+--------------------------------------------------------------------------------
+  > rp ajuda
+  /rp admin avisar <jogadores> [estilo] <texto> - texto na tela; estilos: classico,
+     pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue,
+     demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento (alvos: nomes
+     ou @a), morteop, medoop, infeccao, infeccao2
+                                                          ^^^^^^^^^^^^^^^^^ não tem sangueop
+  > rp admin avisar @a infeccao prova      -> No player was found   (estilo aceito)
+  > rp admin avisar @a infeccao2 prova     -> No player was found   (estilo aceito)
+  > rp admin avisar @a morteop prova       -> No player was found   (o par do morte continua)
+
+  jar: unzip -l rptag-5.24.4.jar | grep SangueOpAvisoFx  ->  0 arquivos
+
+  log do boot: Mod List -> RP Tag 5.24.4 (rptag)
+  grep -cE "Exception|ERROR" run/logs/latest.log  ->  0
+
+--------------------------------------------------------------------------------
+3) CHECAGEM
+--------------------------------------------------------------------------------
+  python3 check.py  ->  1010 PASS / 0 FAIL
+
+--------------------------------------------------------------------------------
+4) FICA ASSIM A SEÇÃO /rp admin avisar (21 estilos + clássico)
+--------------------------------------------------------------------------------
+  classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void,
+  sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento,
+  morteop, medoop, infeccao, infeccao2
+
+  (o par que repetia tema e você NÃO mandou sair — pesadelo × pesadelo2 e
+   morte × morteop — continua no mod)
+================================================================================

@@ -431,7 +431,6 @@ public final class RPCommands {
             case "energia" -> 15;   // (5.5.0) ENERGIA — anomalia de entropia
             case "conhecimento" -> 16;   // (5.7.0) CONHECIMENTO — o olho que sabe
             case "morteop" -> 20;     // (5.7.9) protótipo AvisoMorte: relógio + crânio
-            case "sangueop" -> 21;    // (5.7.9) protótipo AvisoSangue: batida + veias
             case "medoop" -> 22;       // (5.8.1) protótipo AvisoMedo: membrana + lanterna
             default -> 0;
         };
@@ -500,7 +499,6 @@ public final class RPCommands {
             case 16 -> "CONHECIMENTO";   // (5.7.0) o olho que sabe
             case 18 -> "SAIDA";   // (5.7.0) animacao de saida do jogador
             case 20 -> "MORTEOP";   // (5.7.9) relogio + cranio
-            case 21 -> "SANGUEOP";   // (5.7.9) batida + veias
             case 22 -> "MEDOOP";   // (5.8.1) a membrana rachando
             case 38 -> "INFECCAO";   // (5.24.3) veias + olho + FORCA x SANIDADE
             case 39 -> "INFECCAO (MINECRAFT)";   // (5.24.3) a variante do 2o protótipo
@@ -848,7 +846,7 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento (alvos: nomes ou @a), morteop, sangueop, medoop, infeccao, infeccao2\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento (alvos: nomes ou @a), morteop, medoop, infeccao, infeccao2\u00a7c\n"
                     + "/rp admin avisar2 <jogadores> <estilo> <texto> \u00a77\u2014 a SECAO NOVA (Lord of the Mysteries + cartas de taro; nada disso existe no avisar): louco, tolo/foulo, marinheiro/enforcado, espectador/justica, eremita, julgamento, lua, mago, morte2, sol, torre, estrela, fita\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
@@ -1026,7 +1024,7 @@ public final class RPCommands {
                                 // O que sobra aqui é a seção antiga: classico (sem literal), pesadelo,
                                 // pesadelo2, morte, inferno, gelo, divino, void, sangue, demoniaco,
                                 // runico, real, egipicio, expurgo, ciberpsicose, energia, conhecimento,
-                                // morteop, sangueop e medoop.
+                                // morteop e medoop.
                         .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
                                 .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                                         .executes(ctx -> {
@@ -1181,15 +1179,8 @@ public final class RPCommands {
                                                     avisar(ctx, alvos, "morteop", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))
-                                // (5.7.9) SANGUEOP: batida, veias e a gota
-                                .then(Commands.literal("sangueop")
-                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
-                                                .executes(ctx -> {
-                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
-                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
-                                                    avisar(ctx, alvos, "sangueop", texto);
-                                                    return Command.SINGLE_SUCCESS;
-                                                })))
+                                // (5.24.4) o SANGUEOP saiu do mod (o dono achou repetido com o SANGUE
+                                // e nao gostou da arte): o /rp admin avisar nao oferece mais esse estilo.
                                 // (5.8.1) MEDOOP: a membrana rachando no escuro
                                 .then(Commands.literal("medoop")
                                         .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
