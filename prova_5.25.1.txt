@@ -1,0 +1,86 @@
+PROVA 5.25.1 — tela de morte FORA DE RP (escurece, sobram só os botões) + visão noturna do vampiro
+Servidor de verdade (NeoForge 21.1.249 / MC 1.21.1 / Java 21), rptag-5.25.1.jar, RCON.
+
+===============================================================================
+1. O QUE MUDOU
+===============================================================================
+(a) MORTE FORA DE RP — tela nova (MorteTelaRp):
+    - O servidor manda, no evento de morte, um aviso dizendo se aquela morte conta
+      como vida canônica (MorteRpPayload, pacote novo).
+    - Se NÃO conta: o cliente NÃO abre o DeathScreen do vanilla ("You Died!", score,
+      causa da morte). Ele abre uma tela própria que:
+        · pinta a tela de preto num fade de 1,2 s (o mundo e a animação somem);
+        · deixa de pé SÓ os botões (Reaparecer / Tela de título), reposicionados;
+        · põe uma atmosfera: poeira subindo, um halo vermelho fraco embaixo do corpo
+          e uma vinheta nas bordas;
+        · depois de 1,6 s aparece um recado discreto em cinza:
+          "morte fora de RP — sua vida canônica está intacta".
+    - Se a morte É canônica (canônico ligado): tudo como antes — tela do vanilla +
+      ritual da vida perdida. A tela nova NUNCA aparece nesse caso.
+    - O aviso vale para UMA morte só (é esquecido ao sair da tela); sem aviso do
+      servidor o cliente usa a tela do vanilla.
+
+(b) VAMPIRO — visão noturna:
+    - À noite o vampiro ganha NIGHT_VISION (320 ticks, renovada a cada segundo enquanto
+      durar menos de 6 s). De dia não ganha nada (e a queimadura do sol continua).
+    - A noite é contada pelo RELÓGIO do mundo (13 000 a 23 000), que é quando o céu
+      escurece de verdade — não pelo isDay() do jogo.
+
+Versão: jar/mod/gradle em 5.25.1. Protocolo de rede subiu para v16 (cliente velho é
+recusado com aviso, em vez de ficar com a tela de morte errada).
+
+===============================================================================
+2. COMPILAÇÃO E CHECAGENS
+===============================================================================
+javac --release 21 -Xmx900m ......... sem erros
+check.py ............................ 1036 PASS / 0 FAIL
+arte/validar.py ..................... 54 ok, 0 falhas
+jar ................................. build/libs/rptag-5.25.1.jar (35.708.342 bytes)
+comando de teste dentro do jar ...... 0 ocorrências de "_prova251"
+
+===============================================================================
+3. PROVA NO SERVIDOR (comando temporário rodado por FakePlayer e depois removido)
+===============================================================================
+$ rp _prova251
+PROVA251 CANON-AGORA=false | AVISO-MORTE-ENVIAVEL=true
+       | RELOGIO=18000 NOITE=true VISao-NOTURNA=true DUR=320
+       | RELOGIO=6000 NOITE=false VISao-NOTURNA=false
+       | NAO-VAMPIRO-NOITE-VISAO=false
+
+Leitura:
+  CANON-AGORA=false ......... o canônico está desligado neste mundo, então essa morte
+                              é morte FORA de RP → é a tela nova.
+  AVISO-MORTE-ENVIAVEL=true . o aviso da morte é entregue ao jogador (o cliente recebe
+                              "não é canônica" e troca a tela do vanilla pela nova).
+  RELOGIO=18000 NOITE=true VISao-NOTURNA=true DUR=320
+                              com o relógio na meia-noite, o vampiro recebe a visão
+                              noturna (320 ticks).
+  RELOGIO=6000 NOITE=false VISao-NOTURNA=false
+                              com o relógio ao meio-dia o vampiro NÃO recebe nada.
+  NAO-VAMPIRO-NOITE-VISAO=false
+                              quem não é vampiro não ganha visão noturna de noite.
+
+Detalhe que a prova pegou: na primeira rodada o teste usava o isDay() do jogo e a
+meia-noite voltava "dia" — o isDay() do Minecraft só vira noite lá pela 1h. O sistema
+passou a contar a noite pelo relógio (13 000–23 000), que é o que o jogador vê.
+
+===============================================================================
+4. O JAR FINAL (sem nenhum comando de teste) NO SERVIDOR
+===============================================================================
+Mod List: RP Tag 5.25.1 (rptag)   → carregou normal, sem erro de registro
+$ rp _prova251               → "Unknown or incomplete command" (comando de teste fora do jar)
+$ rp admin vampiro           → pede subcomando (ligar/desligar/ver)
+$ rp admin ciberpsicose ...  → pede os jogadores
+$ rp admin eclipse           → pede "dar"
+$ rp ajuda                   → lista ciberpsicose, eclipse e vampiro
+grep -cE "Exception|ERROR" run/logs/latest.log → 0
+
+===============================================================================
+5. O QUE O DONO VÊ NA PRÁTICA
+===============================================================================
+- Morre SEM o canônico ligado: a tela escurece, o "You Died!" e o mundo somem, ficam
+  só os botões e a poeira; depois de um instante aparece o recado de que a vida
+  canônica está intacta. Reaparecer e voltar ao RP.
+- Morre COM o canônico ligado: nada mudou — tela do vanilla e o ritual da vida perdida.
+- Jogador vampiro à noite: enxerga no escuro (visão noturna) enquanto for noite; de dia
+  volta ao normal e o sol continua queimando (a menos que use o Amuleto Eclipse).

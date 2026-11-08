@@ -97,6 +97,7 @@ public final class VampiroSistema {
             ACESO_PELO_SOL.remove(p.getUUID());
             return;
         }
+        visaoNoturna(p);
         boolean protegido = protegido(p);
         if (protegido) {
             Long quando = ACESO_PELO_SOL.remove(p.getUUID());
@@ -132,10 +133,45 @@ public final class VampiroSistema {
         }
     }
 
+    /**
+     * (5.25.1) VISÃO NOTURNA DO VAMPIRO — pedido do dono: <i>"a noite o vampiro vai ter night
+     * vision, para ele não ter só debuff"</i>.
+     *
+     * <p>À noite o vampiro enxerga no escuro (é o mínimo: o sol já é um castigo). De dia não damos
+     * nada. Não removemos o efeito de ninguém: a visão que damos dura 16 s e é renovada a cada
+     * segundo — quando amanhece ela simplesmente expira sozinha, sem apagar a poção que o jogador
+     * tenha tomado.
+     */
+    /**
+     * É noite? A conta é feita no RELÓGIO do mundo (13 000 = anoitecer, 23 000 = amanhecer), do
+     * mesmo jeito que o céu escurece — assim não dependemos do {@code isDay()} do jogo (que só
+     * liga/desliga ao meio-dia e à meia-noite e é usado para a queimadura do sol).
+     */
+    public static boolean noite(ServerPlayer p) {
+        long t = p.serverLevel().getDayTime() % 24000L;
+        return t >= 13000L && t < 23000L;
+    }
+
+    private static void visaoNoturna(ServerPlayer p) {
+        var lv = p.serverLevel();
+        if (!noite(p)) {
+            return;   // de dia o vampiro não ganha nada (e a queimadura continua valendo)
+        }
+        var atual = p.getEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION);
+        if (atual != null && atual.getDuration() > 120) {
+            return;   // já está com visão noturna valendo: não gasta pacote à toa
+        }
+        p.addEffect(new MobEffectInstance(net.minecraft.world.effect.MobEffects.NIGHT_VISION,
+                320, 0, false, false, true));   // 16 s, renovado a cada segundo
+    }
+
     /** usado pelo comando pra explicar ao ADM onde o jogador está levando o sol. */
     public static String estado(ServerPlayer p) {
         StringBuilder sb = new StringBuilder();
         sb.append(ehVampiro(p) ? "VAMPIRO (sol queima)" : "normal");
+        if (ehVampiro(p) && noite(p)) {
+            sb.append(" · vis\u00e3o noturna");
+        }
         if (ehVampiro(p)) {
             sb.append(protegido(p) ? " · protegido agora" : noSol(p) ? " · NO SOL agora" : " · na sombra");
         }

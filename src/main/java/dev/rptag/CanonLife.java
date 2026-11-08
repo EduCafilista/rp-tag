@@ -81,6 +81,16 @@ public final class CanonLife {
             return;
         }
         RPWorldData wd = RPWorldData.get(vitima.server);
+        // (5.25.1) A TELA DE MORTE: o cliente não sabe se o mundo está em evento canônico, então
+        // quem conta é o servidor. Vai UM recado no instante da morte:
+        //   canon = false -> morte FORA DE RP: o cliente escurece a tela e deixa só os botões;
+        //   canon = true  -> vida canônica: o ritual (véu, trovão, aviso) continua igual.
+        try {
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(vitima,
+                    new MorteRpPayload(wd.isCanonEvent()));
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: aviso da tela de morte falhou", t);
+        }
         if (!wd.isCanonEvent()) {
             return;
         }

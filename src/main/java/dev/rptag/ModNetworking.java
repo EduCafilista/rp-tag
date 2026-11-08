@@ -35,7 +35,8 @@ public final class ModNetworking {
         // (5.13.0) v13: VAZIO_PORTAL (posicao + estado do portal negro, pedestais)
         // (5.13.6) v14: VAZIO_ALMAS (posicao das almas vazias, desenhadas por geometria)
         // (5.17.0) v15: BARRA_HUD (a barra que fica sempre na tela) e AXION_HUD (a gatinha)
-        PayloadRegistrar registrar = event.registrar("15");
+        // (5.25.1) v16: MORTE_RP (o servidor diz se a morte é de vida canônica)
+        PayloadRegistrar registrar = event.registrar("16");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         // (5.13.0) o portal negro do vazio (posicao, pedestais, estado da abertura)
@@ -116,6 +117,9 @@ public final class ModNetworking {
         // (5.20.0) a AXION FALANDO: balão vermelho com letras pretas saindo dela
         registrar.playToClient(AxionFalaPayload.TYPE, AxionFalaPayload.STREAM_CODEC,
                 dev.rptag.client.ClientPayloadHandler::handleAxionFala);
+        // (5.25.1) MORTE FORA DE RP: escurece a tela e sobram so os botoes de respawn
+        registrar.playToClient(MorteRpPayload.TYPE, MorteRpPayload.STREAM_CODEC,
+                dev.rptag.client.ClientPayloadHandler::handleMorte);
         // (5.7.2) SISTEMA DE TÍTULOS (etiqueta colorida + título pessoal)
         registrar.playToClient(TituloSyncPayload.TYPE, TituloSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTitulo);

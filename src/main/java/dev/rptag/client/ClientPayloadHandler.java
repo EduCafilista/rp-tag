@@ -115,6 +115,14 @@ public final class ClientPayloadHandler {
     }
 
     /** (3.44.0) MEDO: liga a tremedeira + vinheta neste cliente. */
+    /**
+     * (5.25.1) a MORTE: o servidor diz se ela é de vida canônica. Se não for (morte fora de RP),
+     * o cliente troca a tela do jogo pela {@link MorteTelaRp} — escurece e sobram os botões.
+     */
+    public static void handleMorte(final dev.rptag.MorteRpPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> MorteTelaRp.definirCanon(payload.canon()));
+    }
+
     public static void handleFear(final FearPayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> ClientEffects.startFear(payload.seconds()));
     }
