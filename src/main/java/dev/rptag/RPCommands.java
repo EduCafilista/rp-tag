@@ -423,6 +423,11 @@ public final class RPCommands {
             case "estrela" -> 35;   // (5.16.0) A ESTRELA
             case "tolo", "foulo" -> 36;   // (5.16.2) TOLO = a CARTA do Louco (o protótipo FoolWarning, de volta)
             case "fita" -> 37;   // (5.17.0) FITA CASSETE: o aviso que a fita toca
+            // (5.24.3) INFECCAO: o dono mandou DOIS protótipos e disse que os dois valem.
+            // O estilo 38 é o cinematográfico (InfectionWarning); o 39 é o "estilo Minecraft"
+            // (InfeccaoAviso). Os DOIS moram no /rp admin avisar — nunca no avisar2 (pedido 75).
+            case "infeccao", "infecçao", "infecção", "infection" -> 38;
+            case "infeccao2", "infecção2", "infecçao2", "infeccao_mc" -> 39;
             case "energia" -> 15;   // (5.5.0) ENERGIA — anomalia de entropia
             case "conhecimento" -> 16;   // (5.7.0) CONHECIMENTO — o olho que sabe
             case "morteop" -> 20;     // (5.7.9) protótipo AvisoMorte: relógio + crânio
@@ -497,6 +502,8 @@ public final class RPCommands {
             case 20 -> "MORTEOP";   // (5.7.9) relogio + cranio
             case 21 -> "SANGUEOP";   // (5.7.9) batida + veias
             case 22 -> "MEDOOP";   // (5.8.1) a membrana rachando
+            case 38 -> "INFECCAO";   // (5.24.3) veias + olho + FORCA x SANIDADE
+            case 39 -> "INFECCAO (MINECRAFT)";   // (5.24.3) a variante do 2o protótipo
             default -> "classico";
         };
     }
@@ -702,6 +709,20 @@ public final class RPCommands {
             // (5.17.0) FITA: o chiado da cassete (o mesmo som do item)
             case 37 -> alvo.level().playSound(null, alvo.blockPosition(), RPTagMod.SOM_FITA.get(),
                     net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
+            // (5.24.3) INFECCAO: a coisa entrando no corpo (sculk catalisador + coracao)
+            case 38 -> {
+                alvo.level().playSound(null, alvo.blockPosition(), net.minecraft.sounds.SoundEvents.SCULK_CATALYST_BLOOM,
+                        net.minecraft.sounds.SoundSource.PLAYERS, 0.9F, 0.55F);
+                alvo.level().playSound(null, alvo.blockPosition(), net.minecraft.sounds.SoundEvents.SCULK_SHRIEKER_SHRIEK,
+                        net.minecraft.sounds.SoundSource.PLAYERS, 0.7F, 1.25F);
+            }
+            // (5.24.3) INFECCAO 2: o mesmo bicho, mais "de jogo" (slime grande + ferida)
+            case 39 -> {
+                alvo.level().playSound(null, alvo.blockPosition(), net.minecraft.sounds.SoundEvents.SLIME_SQUISH,
+                        net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 0.5F);
+                alvo.level().playSound(null, alvo.blockPosition(), net.minecraft.sounds.SoundEvents.WARDEN_LISTENING,
+                        net.minecraft.sounds.SoundSource.PLAYERS, 0.9F, 0.8F);
+            }
             // (3.96.0) PESADELO: o FX do cliente tem TRILHA propria
             // (enderman + caixinha desafinada + coracao + grito) — o
             // servidor faz as PARTICULAS (sculk + tinta + fumaca) + o
@@ -827,7 +848,7 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento (alvos: nomes ou @a), morteop, sangueop, medoop\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento (alvos: nomes ou @a), morteop, sangueop, medoop, infeccao, infeccao2\u00a7c\n"
                     + "/rp admin avisar2 <jogadores> <estilo> <texto> \u00a77\u2014 a SECAO NOVA (Lord of the Mysteries + cartas de taro; nada disso existe no avisar): louco, tolo/foulo, marinheiro/enforcado, espectador/justica, eremita, julgamento, lua, mago, morte2, sol, torre, estrela, fita\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
@@ -930,6 +951,7 @@ public final class RPCommands {
         // /rp admin chatlocal on|off — apenas admins (liga/desliga o chat local)
         root.then(Commands.literal("admin")
                 .requires(src -> src.hasPermission(2))
+
                 // (3.44.0) /rp admin medo <jogador> [segundos] — tela treme + bordas vermelhas
                 .then(Commands.literal("medo")
                         .then(Commands.argument("jogador", net.minecraft.commands.arguments.EntityArgument.player())
@@ -1175,6 +1197,25 @@ public final class RPCommands {
                                                     var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
                                                     String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
                                                     avisar(ctx, alvos, "medoop", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.24.3) INFECCAO: veias, olho injetado, FORCA x SANIDADE (pedido 77).
+                                // É do AVISAR — o dono foi claro: "no avisar nao no avisar2".
+                                .then(Commands.literal("infeccao")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "infeccao", texto);
+                                                    return Command.SINGLE_SUCCESS;
+                                                })))
+                                // (5.24.3) INFECCAO 2: a variante estilo Minecraft (o 2o protótipo do dono)
+                                .then(Commands.literal("infeccao2")
+                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                                .executes(ctx -> {
+                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
+                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
+                                                    avisar(ctx, alvos, "infeccao2", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))))
                 // ================================================= (5.16.2) /rp admin avisar2

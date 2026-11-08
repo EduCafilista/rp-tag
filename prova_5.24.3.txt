@@ -1,0 +1,94 @@
+================================================================================
+PROVA 5.24.3 — pedido 77: a FITA em pixel art + as DUAS INFECÇÕES no /rp admin avisar
+================================================================================
+
+Data: 2026-09-03 · jar: rptag-5.24.3.jar (35.696.879 bytes)
+Servidor: NeoForge 21.1.249 / MC 1.21.1 / Java 21 — servidor de verdade, RCON 25575
+
+--------------------------------------------------------------------------------
+1) O QUE MUDOU NESTA VERSÃO
+--------------------------------------------------------------------------------
+(a) FITA CASSETE (estilo 37) refeita com a ARTE DO PROTÓTIPO que o dono mandou
+    (h.uguu.se/pLNzbawr.java · CassetteAnimation):
+      · pixel art na grade 84×54 (a cassete do protótipo): corpo em duas chapas,
+        aço em cima e embaixo, 4 parafusos, etiqueta com a tarja vermelha, LED REC,
+        janela preta, a fita aparecendo entre os carretéis, nervura e os 4 furos;
+      · os carretéis GIRAM de verdade: o ângulo é integrado quadro a quadro
+        (angL += -9*sp/pacL*dt, igual ao protótipo) e o PACOTE DE FITA passa de um
+        para o outro (5.7-2.4p · 3.3+2.4p) — no fim a fita REBOBINA ao contrário;
+      · OSD de videocassete: PLAY ▶ / ▶▶ REW / STOP ■ / PAUSE ❚❚ + contador
+        m:ss:cc, com aberração cromática (vermelho/azul deslocados) e o LED;
+      · tracking, faixa rolante, grão, linhas de varredura, vinheta e a TV ligando
+        nos primeiros 0,7 s (a linha que abre).
+
+(b) INFECÇÃO — DOIS estilos novos, os dois no /rp admin avisar (nunca no avisar2):
+      · 38 "infeccao"   = porte do InfectionWarning (n.uguu.se/FXhMykwO.java)
+      · 39 "infeccao2"  = porte do InfeccaoAviso   (h.uguu.se/cXnAVpMd.java)
+
+--------------------------------------------------------------------------------
+2) PROVA NO SERVIDOR — a árvore de comandos de verdade
+--------------------------------------------------------------------------------
+(comando temporário de diagnóstico, REMOVIDO do jar publicado — o jar final
+responde "Unknown or incomplete command" para ele, como se vê no item 4)
+
+  > rp admin _prova77
+  PROVA77 AVISAR(22): [ciberpsicose, conhecimento, demoniaco, divino, egipicio,
+      energia, expurgo, gelo, infeccao, infeccao2, inferno, medoop, morte,
+      morteop, pesadelo, pesadelo2, real, runico, sangue, sangueop, texto, void]
+  PROVA77 AVISAR2(16): [enforcado, eremita, espectador, estrela, fita, foulo,
+      julgamento, justica, louco, lua, mago, marinheiro, morte2, sol, tolo, torre]
+  PROVA77 INTERSECAO: []
+  PROVA77 INFEccAO-NO-AVISAR: true
+  PROVA77 INFEccAO-NO-AVISAR2: false
+
+  = as 21 opções de estilo do avisar (+ a palavra "texto") e as 16 do avisar2;
+    NENHUM nome aparece nas duas seções (interseção VAZIA) e as duas infecções
+    estão SÓ no avisar.
+
+--------------------------------------------------------------------------------
+3) PROVA DE QUE OS RAMOS EXISTEM (o alvo não existe no servidor vazio, mas o
+   comando PASSA pela árvore — quem não existe é o jogador, não o estilo)
+--------------------------------------------------------------------------------
+  > rp admin avisar @a infeccao o mundo esta infectado
+     No player was found          <- o estilo "infeccao" foi aceito
+  > rp admin avisar @a infeccao2 o mundo esta infectado
+     No player was found          <- o estilo "infeccao2" foi aceito
+  > rp admin avisar @a medoop teste
+     No player was found          <- controle: os antigos continuam iguais
+
+  > rp admin avisar2 @a infeccao teste
+     Incorrect argument for command
+     ...visar2 @a infeccao teste<--[HERE]     <- INFECÇÃO NÃO EXISTE NO AVISAR2
+
+--------------------------------------------------------------------------------
+4) O JAR PUBLICADO (sem comando de teste)
+--------------------------------------------------------------------------------
+  > rp admin _prova77
+     Unknown or incomplete command (o diagnóstico saiu do jar)
+
+  > rp admin avisar @a infeccao prova final
+     No player was found
+  > rp admin avisar @a infeccao2 prova final
+     No player was found
+
+  log do boot com o jar FINAL:
+    Mod List: RP Tag 5.24.3 (rptag)
+    grep -cE "Exception|ERROR" run/logs/latest.log  ->  0
+
+--------------------------------------------------------------------------------
+5) CHECAGEM AUTOMÁTICA
+--------------------------------------------------------------------------------
+  python3 check.py  ->  1011 PASS / 0 FAIL
+  (11 checagens novas da 5.24.3: pixel art da fita, carretéis integrados, OSD,
+   LED/parafusos/etiqueta/TV, os dois FX de infecção, as duas infecções só no
+   avisar, o despacho no cliente, o registro das camadas e os dois sons)
+
+--------------------------------------------------------------------------------
+6) COMANDOS PARA O DONO TESTAR
+--------------------------------------------------------------------------------
+  /rp admin avisar @a infeccao  O mundo está infectado.
+  /rp admin avisar @a infeccao2 O mundo está infectado.
+  /rp admin avisar2 @a fita  a fita nova (pixel art, carretéis girando, OSD)
+
+  (o texto do meio é o que o ADM escreve; o resto da arte é do protótipo)
+================================================================================

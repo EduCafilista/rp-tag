@@ -110,6 +110,9 @@ public final class ClientEffects {
         EngolirFx.parar();
         // (5.17.0) a FITA (estilo 37) — um aviso por vez, como os outros
         FitaAvisoFx.parar();
+        // (5.24.3) as duas INFEcCOES (estilos 38 e 39) entram na mesma regra
+        InfeccaoAvisoFx.parar();
+        Infeccao2AvisoFx.parar();
         // (5.7.9) estilo 20 = MORTEOP: espiral, relógio, crânio e cinzas.
         if (style == 20) {
             String limpoM = text.replaceAll("\u00a7.", "");
@@ -193,6 +196,18 @@ public final class ClientEffects {
         if (style == 35) {
             EstrelaAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
             RPTagMod.LOGGER.info("RP Tag: AVISO A ESTRELA iniciado (FX proprio)");
+            return;
+        }
+        // (5.24.3) estilo 38 = INFECCAO (veias, olho injetado, FORCA x SANIDADE)
+        if (style == 38) {
+            InfeccaoAvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: aviso INFECCAO iniciado (FX proprio)");
+            return;
+        }
+        // (5.24.3) estilo 39 = INFECCAO 2 (a variante estilo Minecraft)
+        if (style == 39) {
+            Infeccao2AvisoFx.iniciar(text.replaceAll("\u00a7.", ""));
+            RPTagMod.LOGGER.info("RP Tag: aviso INFECCAO 2 iniciado (FX proprio)");
             return;
         }
         // (5.17.0) estilo 37 = FITA CASSETE (a fita que o ADM gravou)

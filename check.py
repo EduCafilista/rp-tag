@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.24.2'
+VER = '5.24.3'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2693,8 +2693,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.24.2.jar')
-      and os.path.getsize('build/libs/rptag-5.24.2.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.24.3.jar')
+      and os.path.getsize('build/libs/rptag-5.24.3.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3012,9 +3012,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.24.2: a versao subiu pra 5.24.2 no jar, no mod e no gradle',
-      "version = '5.24.2'" in rd('build.gradle')
-      and '5.24.2' in rd(R + '/RPTagMod.java'))
+check('5.24.3: a versao subiu pra 5.24.3 no jar, no mod e no gradle',
+      "version = '5.24.3'" in rd('build.gradle')
+      and '5.24.3' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3036,10 +3036,11 @@ check('5.24.1: o /rp admin avisar2 continua com os 16 avisos narrativos (nada se
 check('5.24.1: os estilos que sairam do avisar continuam com o FX proprio no despacho',
       all(k in _s for k in ['case "louco" -> 25', 'case "morte2", "ceifador", "morte_carta" -> 32',
                             'case "tolo", "foulo" -> 36', 'case "fita" -> 37']))
-check('5.24.1: o /rp admin avisar ficou com a secao ANTIGA (14 estilos + classico)',
+check('5.24.1/5.24.3: o /rp admin avisar ficou com a secao ANTIGA + as 2 infeccoes',
       _lit_avisar == {'pesadelo', 'pesadelo2', 'morte', 'inferno', 'gelo', 'divino', 'void',
                       'sangue', 'demoniaco', 'runico', 'real', 'egipicio', 'expurgo',
-                      'ciberpsicose', 'energia', 'conhecimento', 'morteop', 'sangueop', 'medoop'})
+                      'ciberpsicose', 'energia', 'conhecimento', 'morteop', 'sangueop', 'medoop',
+                      'infeccao', 'infeccao2'})
 check('5.24.1: a ajuda separa as duas listas e avisa que nada do avisar2 esta no avisar',
       'nada disso existe no avisar' in _s)
 
@@ -3064,6 +3065,53 @@ check('5.24.2: a letra acompanha a cor (clara em fundo escuro, escura em fundo c
       'return luz > 0.6 ? 0x141018 : 0xF2F4F8;' in _rp7)
 check('5.24.2: cor errada ensina o caminho (lista as cores e manda pra paleta)',
       'private static int barraCorInvalida(' in _rp7 and 'abre a paleta pra clicar' in _rp7)
+
+# ============ 5.24.3: pedido 77 — FITA em pixel art + as duas INFECCOES ============
+_fita = rd(C + '/FitaAvisoFx.java')
+check('5.24.3: a FITA usa a PIXEL ART do prototipo (grade 84x54, pacote dos carreteis passando)',
+      'float pacL = 5.7F - 2.4F * pr, pacR = 3.3F + 2.4F * pr;' in _fita
+      and 'private static void desenharCassete(' in _fita
+      and 'carretel(b, 32, 27, angL, pacL, borrao, a);' in _fita
+      and 'carretel(b, 52, 27, angR, pacR, borrao, a);' in _fita)
+check('5.24.3: os carreteis GIRAM de verdade (angulo integrado quadro a quadro)',
+      'angL += -9F * sp / pacL * dtm;' in _fita and 'angR += -9F * sp / pacR * dtm;' in _fita
+      and 'fase += sp * 12F * dtm;' in _fita)
+check('5.24.3: entrou o OSD de videocassete (PLAY / REW / STOP / PAUSE + contador)',
+      '"\\u25C0\\u25C0 REW"' in _fita and 'PLAY \\u25B6' in _fita
+      and 'STOP \\u25A0' in _fita and '%d:%02d:%02d' in _fita)
+check('5.24.3: a fita tem LED REC, parafusos, etiqueta e a TV ligando',
+      '0xFF2A35' in _fita and 'parafusos' in _fita and '0xC0262F' in _fita
+      and 'a TV ligando' in _fita)
+
+_inf1 = rd(C + '/InfeccaoAvisoFx.java')
+_inf2 = rd(C + '/Infeccao2AvisoFx.java')
+check('5.24.3: existe o FX da INFECCAO 38 (veias ramificadas + olho + FORCA x SANIDADE)',
+      'public final class InfeccaoAvisoFx' in _inf1
+      and 'private static void desenharVeias(' in _inf1
+      and 'private static void olho(' in _inf1
+      and 'PONTOS_FORCA' in _inf1 and 'PONTOS_SAN' in _inf1)
+check('5.24.3: a INFECCAO 38 tem o "AVISO" com sangue escorrendo e o O virando olho',
+      'AVISO contaminado' in _inf1 and 'o "O" vira um OLHO' in _inf1)
+check('5.24.3: existe o FX da INFECCAO 39 (estilo Minecraft: coracoes, blocos, 4 estagios)',
+      'public final class Infeccao2AvisoFx' in _inf2
+      and 'ALGO ENTROU EM VOC\\u00ca' in _inf2
+      and 'VOC\\u00ca NUNCA ESTEVE S\\u00c3O' in _inf2
+      and 'CORACAO' in _inf2)
+check('5.24.3: as DUAS infeccoes sao do /rp admin avisar e NAO do avisar2 (pedido do dono)',
+      'case "infeccao", "infec\u00e7ao", "infec\u00e7\u00e3o", "infection" -> 38;' in _s
+      and 'case "infeccao2", "infec\u00e7\u00e3o2", "infec\u00e7ao2", "infeccao_mc" -> 39;' in _s
+      and 'infeccao' in _lit_avisar and 'infeccao2' in _lit_avisar
+      and 'infeccao' not in _lit_avisar2 and 'infeccao2' not in _lit_avisar2)
+check('5.24.3: o cliente liga os dois FX e para os dois quando chega outro aviso',
+      'if (style == 38) {' in _ce and 'if (style == 39) {' in _ce
+      and 'InfeccaoAvisoFx.parar();' in _ce and 'Infeccao2AvisoFx.parar();' in _ce)
+check('5.24.3: os dois FX estao registrados como camada de HUD',
+      'InfeccaoAvisoFx.registrar(event);' in _cgl and 'Infeccao2AvisoFx.registrar(event);' in _cgl)
+check('5.24.3: cada infeccao tem som proprio',
+      'case 38 ->' in _s and 'SCULK_CATALYST_BLOOM' in _s
+      and 'case 39 ->' in _s and 'SLIME_SQUISH' in _s)
+check('5.24.3: a ajuda do comando lista as duas infeccoes',
+      'medoop, infeccao, infeccao2' in _s)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

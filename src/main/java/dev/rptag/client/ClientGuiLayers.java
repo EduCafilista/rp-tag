@@ -89,6 +89,9 @@ public final class ClientGuiLayers {
         SaidaPlayerFx.registrar(event);
         // (5.17.0) 37 = FITA CASSETE (o aviso que a fita toca)
         FitaAvisoFx.registrar(event);
+        // (5.24.3) 38 = INFECCAO (veias + olho + FORCA x SANIDADE) e 39 = a variante Minecraft
+        InfeccaoAvisoFx.registrar(event);
+        Infeccao2AvisoFx.registrar(event);
         // (5.17.0) a BARRA que fica sempre na tela e a AXION no canto inferior direito
         BarraHudFx.registrar(event);
         AxionHud.registrar(event);
