@@ -350,6 +350,97 @@ public final class RPCommands {
                 .withStyle(ChatFormatting.DARK_PURPLE), false); // (3.47.0) SO O ADMIN ve (era broadcast!)
     }
 
+    // ================================================== (5.25.0) CIBERPSICOSE
+    /**
+     * Liga a CIBERPSICOSE nos alvos: efeito de verdade ({@code rptag:ciberpsicose}) por N
+     * segundos + o estouro de faíscas elétricas no corpo + o som do glitch. O CLIENTE vê o
+     * efeito e liga a tela quebrada — então o efeito sobrevive a relog e também funciona por
+     * {@code /effect give <jogador> rptag:ciberpsicose 30}.
+     */
+    private static int ciberAplicar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.Collection<ServerPlayer> alvos, int seg) {
+        for (ServerPlayer alvo : alvos) {
+            alvo.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    RPEffects.CIBERPSICOSE, seg * 20, 0, false, false, true));
+            particulasCiberpsicose(alvo);
+            alvo.level().playSound(null, alvo.blockPosition(), RPTagMod.SOM_CIBERPSICOSE.get(),
+                    net.minecraft.sounds.SoundSource.PLAYERS, 0.9F, 1.0F);
+        }
+        final int n = alvos.size();
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u00a7b\u26a1 CIBERPSICOSE em " + n + " jogador(es) por " + seg + "s")
+                .withStyle(ChatFormatting.AQUA), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** Tira a ciberpsicose: o efeito sai e a tela do cliente se remonta sozinha. */
+    private static int ciberParar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.Collection<ServerPlayer> alvos) {
+        for (ServerPlayer alvo : alvos) {
+            alvo.removeEffect(RPEffects.CIBERPSICOSE);
+        }
+        final int n = alvos.size();
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u00a7bCIBERPSICOSE desligada em " + n + " jogador(es)").withStyle(ChatFormatting.AQUA), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    // ====================================================== (5.25.0) VAMPIRO
+    /** Liga/desliga o atributo {@code rptag:vampiro} (1 = vampiro, 0 = normal). */
+    private static int vampiroDefinir(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.Collection<ServerPlayer> alvos, boolean ligado) {
+        java.util.List<String> feitos = new java.util.ArrayList<>();
+        for (ServerPlayer alvo : alvos) {
+            VampiroSistema.definir(alvo, ligado);
+            feitos.add(alvo.getName().getString());
+            if (ligado) {
+                alvo.displayClientMessage(Component.literal(
+                                "\u00a74\u00a7lVOC\u00ca \u00c9 UM VAMPIRO \u00a7r\u00a7c\u2014 o sol agora te queima. "
+                                        + "Segure o Amuleto do Eclipse para se proteger.")
+                        .withStyle(ChatFormatting.RED), false);
+                // (5.25.0) o morcego: o som do vampiro (batida de asa no escuro)
+                alvo.level().playSound(null, alvo.blockPosition(),
+                        net.minecraft.sounds.SoundEvents.BAT_AMBIENT,
+                        net.minecraft.sounds.SoundSource.PLAYERS, 0.9F, 0.5F);
+            } else {
+                alvo.displayClientMessage(Component.literal("\u00a77O sol não te incomoda mais.")
+                        .withStyle(ChatFormatting.GRAY), false);
+            }
+        }
+        final String nomes = String.join(", ", feitos);
+        ctx.getSource().sendSuccess(() -> Component.literal((ligado ? "\u00a74VAMPIRO LIGADO \u00a77em " : "\u00a77VAMPIRO DESLIGADO em ")
+                        + nomes + "  \u00a78(atributo rptag:vampiro = " + (ligado ? 1 : 0) + ")")
+                .withStyle(ligado ? ChatFormatting.DARK_RED : ChatFormatting.GRAY), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** Mostra o estado de cada alvo (vampiro? protegido? tomando sol?). */
+    private static int vampiroVer(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.Collection<ServerPlayer> alvos) {
+        for (ServerPlayer alvo : alvos) {
+            ctx.getSource().sendSuccess(() -> Component.literal("\u00a77" + alvo.getName().getString()
+                            + ": \u00a7f" + VampiroSistema.estado(alvo)), false);
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** Entrega o Amuleto do Eclipse. */
+    private static int eclipseDar(com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.Collection<ServerPlayer> alvos) {
+        for (ServerPlayer alvo : alvos) {
+            net.minecraft.world.item.ItemStack is = new net.minecraft.world.item.ItemStack(RPTagMod.AMULETO_ECLIPSE.get());
+            if (!alvo.getInventory().add(is)) {
+                alvo.drop(is, false);
+            }
+            alvo.displayClientMessage(Component.literal("\u00a7bO Amuleto do Eclipse chegou às suas mãos.")
+                    .withStyle(ChatFormatting.AQUA), false);
+        }
+        final int n = alvos.size();
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a7bAmuleto do Eclipse para " + n + " jogador(es)")
+                .withStyle(ChatFormatting.AQUA), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
     /** (3.64.0) Mostra o texto GRANDE na tela dos alvos. ESTILOS:
      * 0 classico (caixa de fala, cores &), 1 pesadelo (veu preto + sangue),
      * 2 runico (veu arcano + runas), 3 real (azul-noite + ouro),
@@ -846,6 +937,12 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
+                    // (5.25.0) a ciberpsicose como EFEITO e o vampiro (atributo + amuleto)
+                    + "/rp admin ciberpsicose <jogadores> [1-600s] \u00a77\u2014 EFEITO rptag:ciberpsicose: a tela quebra do come\u00e7o ao fim\u00a7c\n"
+                    + "/rp admin ciberpsicose parar <jogadores> \u00a77\u2014 tira a ciberpsicose\u00a7c\n"
+                    + "/rp admin vampiro <jogadores> ligar|desligar \u00a77\u2014 o ATRIBUTO rptag:vampiro: o sol passa a queimar\u00a7c\n"
+                    + "/rp admin vampiro ver <jogadores> \u00a77\u2014 mostra quem \u00e9 vampiro / est\u00e1 no sol / est\u00e1 protegido\u00a7c\n"
+                    + "/rp admin eclipse dar <jogadores> \u00a77\u2014 entrega o AMULETO DO ECLIPSE (na m\u00e3o: o sol n\u00e3o queima)\u00a7c\n"
                     + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento (alvos: nomes ou @a), morteop, medoop, infeccao, infeccao2\u00a7c\n"
                     + "/rp admin avisar2 <jogadores> <estilo> <texto> \u00a77\u2014 a SECAO NOVA (Lord of the Mysteries + cartas de taro; nada disso existe no avisar): louco, tolo/foulo, marinheiro/enforcado, espectador/justica, eremita, julgamento, lua, mago, morte2, sol, torre, estrela, fita\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
@@ -965,6 +1062,53 @@ public final class RPCommands {
                                             medar(ctx, alvo, seg);
                                             return Command.SINGLE_SUCCESS;
                                         }))))
+                // ============================================ (5.25.0) CIBERPSICOSE
+                // Pedido do dono: "Igual ao efeito medo, preciso criar um efeito para a
+                // ciberpsicose, que assim como eu coloco medo nos personagens, eles vao sofrer
+                // ciberpsicose, quero efeito mesmo".
+                //   /rp admin ciberpsicose <jogadores> [segundos]   (padrao 30 s)
+                //   /rp admin ciberpsicose parar <jogadores>
+                // Nada de "aviso": e EFEITO (rptag:ciberpsicose) — a tela quebrada fica ligada
+                // do comeco ao fim, com icone no HUD, igual o medo.
+                .then(Commands.literal("ciberpsicose")
+                        .then(Commands.literal("parar")
+                                .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
+                                        .executes(ctx -> ciberParar(ctx,
+                                                net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores")))))
+                        .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
+                                .executes(ctx -> ciberAplicar(ctx,
+                                        net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores"), 30))
+                                .then(Commands.argument("segundos", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 600))
+                                        .executes(ctx -> ciberAplicar(ctx,
+                                                net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores"),
+                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "segundos"))))))
+                // ============================================ (5.25.0) VAMPIRO
+                // Pedido do dono: "quero criar um atributo, que se eu atribuir a algum player ele
+                // toma dano ao sol, como se fosse um vampiro".
+                //   /rp admin vampiro <jogadores> ligar|desligar
+                //   /rp admin vampiro ver <jogadores>
+                .then(Commands.literal("vampiro")
+                        .then(Commands.literal("ligar")
+                                .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
+                                        .executes(ctx -> vampiroDefinir(ctx,
+                                                net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores"), true))))
+                        .then(Commands.literal("desligar")
+                                .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
+                                        .executes(ctx -> vampiroDefinir(ctx,
+                                                net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores"), false))))
+                        .then(Commands.literal("ver")
+                                .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
+                                        .executes(ctx -> vampiroVer(ctx,
+                                                net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores")))))
+                        .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
+                                .executes(ctx -> vampiroVer(ctx,
+                                        net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores")))))
+                // ============================================ (5.25.0) AMULETO DO ECLIPSE
+                .then(Commands.literal("eclipse")
+                        .then(Commands.literal("dar")
+                                .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
+                                        .executes(ctx -> eclipseDar(ctx,
+                                                net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores"))))))
                 // (4.5.0) /rp admin afk tempo <segundos> | status
                 .then(Commands.literal("afk")
                         .then(Commands.literal("status").executes(ctx -> {

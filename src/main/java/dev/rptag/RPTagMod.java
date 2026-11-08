@@ -47,7 +47,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.24.4";
+    public static final String VERSION = "5.25.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -217,7 +217,21 @@ public final class RPTagMod {
             () -> new FragmentoItem(new Item.Properties().stacksTo(8)
                     .rarity(net.minecraft.world.item.Rarity.RARE)));
 
+    /**
+     * (5.25.0) AMULETO DO ECLIPSE — o item que segura o sol pra quem é vampiro
+     * (ver {@link AmuletoEclipseItem} e {@link VampiroSistema}).
+     */
+    public static final net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.world.item.Item,
+            AmuletoEclipseItem> AMULETO_ECLIPSE = ITEMS.register("amuleto_eclipse",
+            () -> new AmuletoEclipseItem(new net.minecraft.world.item.Item.Properties()
+                    .stacksTo(1)
+                    .rarity(net.minecraft.world.item.Rarity.RARE)));
+
     public RPTagMod(IEventBus modEventBus, ModContainer modContainer) {
+        // (5.25.0) o ATRIBUTO do vampiro (rptag:vampiro) — registro oficial
+        RPAttributes.ATTRIBUTES.register(modEventBus);
+        // ...e o gancho que COLA o atributo no jogador (sem isso o player não tem a ficha dele)
+        modEventBus.addListener(RPTagMod::colarAtributosNoJogador);
         // (3.45.0) o efeito MEDO usa DeferredRegister (registro oficial,
         // aparece no /effect give e no HUD como efeito de verdade).
         RPEffects.EFFECTS.register(modEventBus);
@@ -236,5 +250,14 @@ public final class RPTagMod {
         // @EventBusSubscriber não pegou esta classe (as outras pegou), e aqui
         // não dá pra depender de sorte — o registro explícito é determinístico.
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(TituloVanilla.class);
+    }
+
+    /**
+     * (5.25.0) Todo jogador nasce com a ficha do vampiro (valor 0). Sem esse gancho o atributo
+     * existe no registro mas NÃO existe no jogador — e o {@code getAttribute} devolve null.
+     */
+    private static void colarAtributosNoJogador(
+            net.neoforged.neoforge.event.entity.EntityAttributeModificationEvent event) {
+        event.add(net.minecraft.world.entity.EntityType.PLAYER, RPAttributes.VAMPIRO);
     }
 }

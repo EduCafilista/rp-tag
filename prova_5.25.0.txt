@@ -1,0 +1,87 @@
+================================================================================
+PROVA 5.25.0 — CIBERPSICOSE como EFEITO + VAMPIRO (atributo) + AMULETO DO ECLIPSE
+================================================================================
+
+Data: 2026-09-03 · jar: rptag-5.25.0.jar (35.703.094 bytes)
+Servidor: NeoForge 21.1.249 / MC 1.21.1 / Java 21 (servidor de verdade, RCON 25575)
+
+--------------------------------------------------------------------------------
+1) CIBERPSICOSE = EFEITO (igual ao medo)
+--------------------------------------------------------------------------------
+  /rp admin ciberpsicose <jogadores> [1-600s]   -> aplica rptag:ciberpsicose (padrao 30 s)
+  /rp admin ciberpsicose parar <jogadores>      -> tira
+  /effect give <jogador> rptag:ciberpsicose 30  -> funciona tambem (efeito de verdade)
+
+  O CLIENTE le o efeito e liga a TELA QUEBRADA do CiberpsicoseAvisoFx (glitch, rasgos,
+  biomonitor, "SINAIS VITAIS CRITICOS", surtos) do comeco ao fim do efeito — sobrevive a
+  relog, porque quem manda e o efeito no jogador, nao um pacote de uma vez.
+  Icone proprio no HUD: textures/mob_effect/ciberpsicose.png (ciano).
+
+--------------------------------------------------------------------------------
+2) VAMPIRO = ATRIBUTO DE VERDADE (rptag:vampiro)
+--------------------------------------------------------------------------------
+  /rp admin vampiro <jogadores> ligar|desligar
+  /rp admin vampiro ver <jogadores>          (diz: vampiro? no sol? protegido?)
+  /attribute <jogador> rptag:vampiro base set 1   <- pelo comando do Minecraft tambem
+
+  O sol queima como no zumbi: DIA + CEU A VISTA + fora da agua/chuva -> PEGA FOGO
+  (o dano e o do proprio jogo; armadura, resistencia a fogo e leite valem normal).
+
+  /rp admin eclipse dar <jogadores>          -> entrega o AMULETO DO ECLIPSE
+     · na MAO (principal ou secundaria) = protecao passiva
+     · CLIQUE DIREITO = efeito rptag:sombra (Sombra do Eclipse, 2 min) + 20 s de recarga
+  Quando a protecao acaba em cima do sol, o fogo volta. O fogo apagado pela protecao e
+  SO o que o sol acendeu (quem caiu na lava continua queimando).
+
+--------------------------------------------------------------------------------
+3) PROVA NO SERVIDOR (FakePlayer, sem precisar de ninguem online)
+--------------------------------------------------------------------------------
+(comando temporario "/rp _prova250", REMOVIDO do jar publicado — ver item 4)
+
+  > rp _prova250
+  PROVA250 ATRIBUTO=rptag:vampiro | NO-PLAYER=true | EFEITOS=rptag:ciberpsicose,rptag:sombra
+           | ITEM=rptag:amuleto_eclipse | DIA=true CEU=true
+           | NORMAL-FOGO=false            <- pessoa normal no sol: NAO queima
+           NIVEL=1.0 | VAMPIRO-FOGO=true  <- vampiro no sol: QUEIMA
+           | AMULETO-PROTEGIDO=true FOGO=false   <- amuleto na mao: protegido, fogo apagado
+           | SOMBRA=true PROTEGIDO=true FOGO=false   <- Sombra do Eclipse tambem protege
+           | SEM-PROTECAO-FOGO=true       <- acabou a protecao: o sol volta a queimar
+           | DESLIGADO-FOGO=false ESTADO=normal   <- atributo em 0: nao queima mais
+
+  Leitura:
+    NO-PLAYER=true     = o atributo esta COLADO no jogador (sem isso getAttribute daria null)
+    ATRIBUTO/EFEITOS/ITEM = os tres estao no registro oficial do jogo
+
+--------------------------------------------------------------------------------
+4) O JAR PUBLICADO (sem comando de teste)
+--------------------------------------------------------------------------------
+  > rp _prova250                      -> Unknown or incomplete command (saiu do jar)
+  > rp admin ciberpsicose @a 30       -> No player was found   (o ramo existe)
+  > rp admin vampiro ligar @a         -> No player was found
+  > rp admin vampiro ver @a           -> No player was found
+  > rp admin eclipse dar @a           -> No player was found
+  > rp admin ciberpsicose parar @a    -> No player was found
+
+  > rp ajuda
+  /rp admin ciberpsicose <jogadores> [1-600s] - EFEITO rptag:ciberpsicose: a tela quebra...
+  /rp admin ciberpsicose parar <jogadores>    - tira a ciberpsicose
+  /rp admin vampiro <jogadores> ligar|desligar - o ATRIBUTO rptag:vampiro: o sol passa a queimar
+  /rp admin vampiro ver <jogadores>           - mostra quem e vampiro / esta no sol / protegido
+  /rp admin eclipse dar <jogadores>           - entrega o AMULETO DO ECLIPSE
+
+  log do boot: Mod List -> RP Tag 5.25.0 (rptag)
+  grep -cE "Exception|ERROR" run/logs/latest.log  ->  0
+
+--------------------------------------------------------------------------------
+5) CHECAGEM
+--------------------------------------------------------------------------------
+  python3 check.py  ->  1025 PASS / 0 FAIL  (15 checagens novas da 5.25.0)
+
+--------------------------------------------------------------------------------
+6) COMO TESTAR NO JOGO
+--------------------------------------------------------------------------------
+  /rp admin ciberpsicose SeuNome 30        (a tela quebra e fica quebrada ate acabar)
+  /rp admin vampiro ligar SeuNome          (entre no sol: pega fogo)
+  /rp admin eclipse dar SeuNome            (segure na mao: o fogo apaga e nao volta)
+  /rp admin vampiro ver SeuNome            (mostra o estado)
+================================================================================

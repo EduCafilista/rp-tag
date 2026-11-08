@@ -29,4 +29,25 @@ public final class RPEffects {
     public static final DeferredHolder<MobEffect, MobEffect> MEDO =
             EFFECTS.register("medo", () -> new MobEffect(MobEffectCategory.HARMFUL, 0x6A0DAD) {
             }); // (1.21.1) o construtor e PROTECTED — subclasse anonima, igual o vanilla
+
+    /**
+     * (5.25.0) A CIBERPSICOSE: o efeito do colapso ciberpsicótico — igual ao MEDO, é um efeito
+     * de verdade (ícone no HUD, dá pra usar {@code /effect give <jogador> rptag:ciberpsicose 30})
+     * e o CLIENTE transforma ele na tela toda quebrada (glitch, rasgos, biomonitor, "SINAIS
+     * VITAIS CRÍTICOS") do {@code CiberpsicoseAvisoFx} — do começo ao fim do efeito.
+     *
+     * <p>Cor ciano-choque: a mesma do glitch do FX.
+     */
+    public static final DeferredHolder<MobEffect, MobEffect> CIBERPSICOSE =
+            EFFECTS.register("ciberpsicose", () -> new MobEffect(MobEffectCategory.HARMFUL, 0x00F0FF) {
+            });
+
+    /**
+     * (5.25.0) SOMBRA DO ECLIPSE: o sol não vê quem está na sombra. É o que o Amuleto do Eclipse
+     * entrega no clique direito — e é o que o {@code VampiroSistema} consulta pra não deixar o
+     * sol acender o vampiro. BENÉFICO, então entra como ícone azul no HUD.
+     */
+    public static final DeferredHolder<MobEffect, MobEffect> SOMBRA =
+            EFFECTS.register("sombra", () -> new MobEffect(MobEffectCategory.BENEFICIAL, 0x1A237E) {
+            });
 }

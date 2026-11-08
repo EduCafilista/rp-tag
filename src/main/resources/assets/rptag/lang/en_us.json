@@ -10,5 +10,9 @@
   "item.rptag.fragmento_vazio": "Void Fragment",
   "block.rptag.escuridao": "Darkness",
   "dimension.rptag.exilio": "The Void",
-  "dimension.rptag.vazio": "The Void"
+  "dimension.rptag.vazio": "The Void",
+  "effect.rptag.ciberpsicose": "Cyberpsychosis",
+  "effect.rptag.sombra": "Eclipse Shade",
+  "item.rptag.amuleto_eclipse": "Eclipse Amulet",
+  "attribute.rptag.vampiro": "Vampire"
 }

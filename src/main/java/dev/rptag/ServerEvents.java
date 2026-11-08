@@ -60,6 +60,17 @@ public final class ServerEvents {
                 RPTagMod.LOGGER.warn("RP Tag: tick do núcleo vial falhou", t);
             }
         }
+        // (5.25.0) VAMPIRO: uma vez por segundo o sol decide se queima ou não.
+        // Só faz trabalho pra quem é vampiro (quem não é sai na primeira linha).
+        if (event.getServer().getTickCount() % 20 == 0) {
+            try {
+                for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
+                    VampiroSistema.tick(p);
+                }
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: tick do vampiro falhou", t);
+            }
+        }
     }
 
     // ---- (5.12.0) REINO DO VAZIO: cliques nos pedestais e no portal ----

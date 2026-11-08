@@ -65,7 +65,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.24.4'
+VER = '5.25.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1229,9 +1229,11 @@ check('4.9.3: camada registrada + estilo 14 abre e encerra o anterior',
       and 'if (style == 14)' in rd(C + '/ClientEffects.java')
       and 'CiberpsicoseAvisoFx.parar();' in rd(C + '/ClientEffects.java'))
 _rc93 = rd(R + '/RPCommands.java')
-check('4.9.3: /rp admin avisar ... ciberpsicose (literal unico) + nome + ajuda',
+check('4.9.3/5.25.0: ciberpsicose = o AVISO (estilo 14) e, desde a 5.25.0, tambem um EFEITO',
       'case "ciberpsicose", "ciber" -> 14;' in _rc93
-      and _rc93.count('.then(Commands.literal("ciberpsicose")') == 1
+      # (5.25.0) agora sao DOIS literais com esse nome, de proposito: o aviso (estilo 14) e o
+      # comando do efeito (/rp admin ciberpsicose <jogadores> [segundos])
+      and _rc93.count('.then(Commands.literal("ciberpsicose")') == 2
       and 'case 14 -> "CIBERPSICOSE";' in _rc93
       and 'egipicio, expurgo, ciberpsicose' in _rc93)
 check('4.9.3: particulas do servidor (faisca eletrica, fumaca, end rod)',
@@ -2692,8 +2694,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.24.4.jar')
-      and os.path.getsize('build/libs/rptag-5.24.4.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.25.0.jar')
+      and os.path.getsize('build/libs/rptag-5.25.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3011,9 +3013,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.24.4: a versao subiu pra 5.24.4 no jar, no mod e no gradle',
-      "version = '5.24.4'" in rd('build.gradle')
-      and '5.24.4' in rd(R + '/RPTagMod.java'))
+check('5.25.0: a versao subiu pra 5.25.0 no jar, no mod e no gradle',
+      "version = '5.25.0'" in rd('build.gradle')
+      and '5.25.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3111,6 +3113,71 @@ check('5.24.3: cada infeccao tem som proprio',
       and 'case 39 ->' in _s and 'SLIME_SQUISH' in _s)
 check('5.24.3: a ajuda do comando lista as duas infeccoes',
       'medoop, infeccao, infeccao2' in _s)
+
+# ============ 5.25.0: CIBERPSICOSE como EFEITO + VAMPIRO (atributo) + AMULETO DO ECLIPSE ============
+_ef = rd(R + '/RPEffects.java')
+_at = rd(R + '/RPAttributes.java')
+_vs = rd(R + '/VampiroSistema.java')
+_ae = rd(R + '/AmuletoEclipseItem.java')
+_se = rd(R + '/ServerEvents.java')
+_mod = rd(R + '/RPTagMod.java')
+_cib = rd(C + '/CiberpsicoseAvisoFx.java')
+check('5.25.0: existe o EFEITO rptag:ciberpsicose (registrado, com cor e icone)',
+      'EFFECTS.register("ciberpsicose"' in _ef and 'MobEffectCategory.HARMFUL, 0x00F0FF' in _ef
+      and os.path.exists(A + '/textures/mob_effect/ciberpsicose.png'))
+check('5.25.0: o CLIENTE liga a tela quebrada enquanto o efeito existir (e desliga quando acaba)',
+      'private static void seguirEfeito()' in _cib
+      and 'mc.player.hasEffect(dev.rptag.RPEffects.CIBERPSICOSE)' in _cib
+      and 'iniciar("CIBERPSICOSE DETECTADA", 0)' in _cib and 'parar();' in _cib
+      and 'seguirEfeito();' in _cib)
+check('5.25.0: /rp admin ciberpsicose <jogadores> [segundos] e ... parar <jogadores>',
+      'private static int ciberAplicar(' in _s and 'private static int ciberParar(' in _s
+      and '.then(Commands.literal("ciberpsicose")' in _s
+      and 'RPEffects.CIBERPSICOSE, seg * 20' in _s
+      and 'alvo.removeEffect(RPEffects.CIBERPSICOSE);' in _s)
+check('5.25.0: a ciberpsicose tambem funciona por /effect give (efeito de verdade, igual o medo)',
+      'RPEffects.EFFECTS.register(modEventBus);' in _mod
+      and 'addEffect(new net.minecraft.world.effect.MobEffectInstance(' in _s)
+check('5.25.0: o ATRIBUTO rptag:vampiro existe, e sincronizado e vai de 0 a 1',
+      'RangedAttribute(' in _at and '"attribute.rptag.vampiro", 0.0D, 0.0D, 1.0D' in _at
+      and '.setSyncable(true)' in _at)
+check('5.25.0: o atributo esta REGISTRADO e colado no jogador (sem isso getAttribute devolve null)',
+      'RPAttributes.ATTRIBUTES.register(modEventBus);' in _mod
+      and 'colarAtributosNoJogador' in _mod
+      and 'event.add(net.minecraft.world.entity.EntityType.PLAYER, RPAttributes.VAMPIRO);' in _mod)
+check('5.25.0: o SOL queima o vampiro (dia + ceu aberto + fora da agua, igual zumbi)',
+      'lv.isDay() && !p.isInWaterOrRain() && lv.canSeeSky(p.blockPosition())' in _vs
+      and 'p.setRemainingFireTicks(200);' in _vs and 'O SOL QUEIMA A SUA PELE!' in _vs)
+check('5.25.0: e o fogo so e apagado pela protecao quando foi o SOL que acendeu (lava continua)',
+      'ACESO_PELO_SOL' in _vs and 'System.currentTimeMillis() - quando < 4000L' in _vs)
+check('5.25.0: o tick do vampiro roda no servidor a cada 1 segundo',
+      'VampiroSistema.tick(p);' in _se and 'getTickCount() % 20 == 0' in _se)
+check('5.25.0: /rp admin vampiro <jogadores> ligar|desligar|ver',
+      'private static int vampiroDefinir(' in _s and 'private static int vampiroVer(' in _s
+      and 'Commands.literal("ligar")' in _s and 'Commands.literal("desligar")' in _s
+      and 'inst.setBaseValue(ligado ? 1.0D : 0.0D);' in _vs)
+check('5.25.0: o AMULETO DO ECLIPSE existe (item + modelo + textura + nome nos dois idiomas)',
+      'AmuletoEclipseItem extends Item' in _ae
+      and 'ITEMS.register("amuleto_eclipse"' in _mod
+      and os.path.exists(A + '/models/item/amuleto_eclipse.json')
+      and os.path.exists(A + '/textures/item/amuleto_eclipse.png')
+      and 'item.rptag.amuleto_eclipse' in rd(A + '/lang/pt_br.json')
+      and 'item.rptag.amuleto_eclipse' in rd(A + '/lang/en_us.json'))
+check('5.25.0: o amuleto protege NA MAO (principal ou secundaria) e pelo uso (clique direito)',
+      'p.getMainHandItem().is(RPTagMod.AMULETO_ECLIPSE.get())' in _vs
+      and 'p.getOffhandItem().is(RPTagMod.AMULETO_ECLIPSE.get())' in _vs
+      and 'VampiroSistema.sombra(sp, SOMBRA_SEGUNDOS);' in _ae
+      and 'public static boolean protegido(' in _vs)
+check('5.25.0: existe o EFEITO rptag:sombra (2 min) e ele tambem protege',
+      'EFFECTS.register("sombra"' in _ef and 'p.hasEffect(RPEffects.SOMBRA)' in _vs
+      and os.path.exists(A + '/textures/mob_effect/sombra.png')
+      and 'effect.rptag.sombra' in rd(A + '/lang/pt_br.json'))
+check('5.25.0: /rp admin eclipse dar <jogadores> entrega o amuleto',
+      'private static int eclipseDar(' in _s
+      and 'new net.minecraft.world.item.ItemStack(RPTagMod.AMULETO_ECLIPSE.get())' in _s)
+check('5.25.0: o /rp ajuda ensina os quatro comandos novos',
+      'ciberpsicose <jogadores>' in _s and 'vampiro <jogadores> ligar|desligar' in _s
+      and 'eclipse dar <jogadores>' in _s)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

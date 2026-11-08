@@ -101,7 +101,29 @@ public final class CiberpsicoseAvisoFx {
     }
 
     // ------------------------------------------------------------------ render
+    /**
+     * (5.25.0) A CIBERPSICOSE COMO EFEITO (igual ao medo).
+     *
+     * <p>Enquanto o jogador tiver o efeito {@code rptag:ciberpsicose}, a tela quebrada fica
+     * ligada — <b>do começo ao fim do efeito</b>, sobrevivendo a relog e valendo também para
+     * {@code /effect give <jogador> rptag:ciberpsicose 30}. Quando o efeito acaba, a animação de
+     * saída roda e a tela volta ao normal.
+     *
+     * <p>O modo antigo (o aviso de 30 s do {@code /rp admin avisar ... ciberpsicose}) continua
+     * funcionando: se um aviso estiver rodando, o efeito não atropela ele.
+     */
+    private static void seguirEfeito() {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        boolean tem = mc.player != null && mc.player.hasEffect(dev.rptag.RPEffects.CIBERPSICOSE);
+        if (tem && inicio < 0) {
+            iniciar("CIBERPSICOSE DETECTADA", 0);   // 0 = fica até o efeito acabar
+        } else if (!tem && inicio >= 0 && pararEm < 0) {
+            parar();                                // efeito acabou: roda a saída e desliga
+        }
+    }
+
     private static void render(GuiGraphics g, DeltaTracker dt) {
+        seguirEfeito();
         if (inicio < 0) return;
         float t = (System.nanoTime() - inicio) / 1e9f;
         float fimT = Float.MAX_VALUE;

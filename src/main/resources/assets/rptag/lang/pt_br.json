@@ -13,5 +13,9 @@
   "dimension.rptag.vazio": "O Vazio",
   "item.rptag.nucleo_vial": "Núcleo de Energia Vial",
   "item.rptag.nucleo_vial_quebrado": "Núcleo de Energia Vial (quebrado)",
-  "item.rptag.fita": "Fita Cassete"
+  "item.rptag.fita": "Fita Cassete",
+  "effect.rptag.ciberpsicose": "Ciberpsicose",
+  "effect.rptag.sombra": "Sombra do Eclipse",
+  "item.rptag.amuleto_eclipse": "Amuleto do Eclipse",
+  "attribute.rptag.vampiro": "Vampiro"
 }
