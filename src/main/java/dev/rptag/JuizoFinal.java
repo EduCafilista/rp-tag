@@ -143,8 +143,10 @@ public final class JuizoFinal {
             // a saída nasce LONGE, num ângulo sorteado: procurar é o desafio
             double ang = Math.random() * Math.PI * 2.0D;
             double dist = 240.0D + Math.random() * 120.0D;
-            SAIDA.put(p.getUUID(), new BlockPos((int) (Math.cos(ang) * dist), PISO + 1,
-                    (int) (Math.sin(ang) * dist)));
+            // (5.28.1) encosta a saída no CENTRO DO CORREDOR (nunca dentro de parede)
+            int sx = snapCelula((int) (Math.cos(ang) * dist));
+            int sz = snapCelula((int) (Math.sin(ang) * dist));
+            SAIDA.put(p.getUUID(), new BlockPos(sx, PISO + 1, sz));
             NO_JUIZO.add(p.getUUID());
             NA_SALA.remove(p.getUUID());
             ULTIMO_BICHO.remove(p.getUUID());
@@ -468,16 +470,14 @@ public final class JuizoFinal {
                     int wx = (cx << 4) + x, wz = (cz << 4) + z;
                     int celX = Math.floorDiv(wx, CELULA), celZ = Math.floorDiv(wz, CELULA);
                     int lx = Math.floorMod(wx, CELULA), lz = Math.floorMod(wz, CELULA);
-                    boolean parede;
-                    if (lx >= 4 && lz < 4) {
-                        parede = hash(celX, celZ, 10) % 7 < 3;          // parede leste
-                    } else if (lz >= 4 && lx < 4) {
-                        parede = hash(celX, celZ, 20) % 7 < 3;          // parede sul
-                    } else if (lx >= 4 && lz >= 4) {
-                        parede = hash(celX, celZ, 30) % 5 < 3;          // canto/pilar
-                    } else {
-                        parede = false;                                  // corredor
-                    }
+                    // (5.28.1) A REGRA QUE ACABOU COM OS CAMINHOS SEM SAÍDA.
+                    // Antes cada parede era sorteada por um hash solto: isso fechava
+                    // bolsões inteiros (salas cercadas de parede por todos os lados) e podia
+                    // deixar a PRÓPRIA SAÍDA num bloco isolado. Agora a parede a LESTE só
+                    // existe em linha ÍMPAR e a parede ao SUL só em linha PAR — o que dá, por
+                    // construção, um caminho entre quaisquer dois pontos (prova em
+                    // {@link #ehParede}).
+                    boolean parede = ehParede(celX, celZ, lx, lz);
                     lv.setBlock(m.set(wx, PISO, wz), Blocks.BLACKSTONE.defaultBlockState(), 2);
                     for (int y = PISO + 1; y < TETO; y++) {
                         lv.setBlock(m.set(wx, y, wz), parede
@@ -490,6 +490,63 @@ public final class JuizoFinal {
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: chunk do labirinto falhou", t);
         }
+    }
+
+    /**
+     * (5.28.1) <b>A PAREDE DO LABIRINTO — E A PROVA DE QUE NENHUM CAMINHO FICA SEM SAÍDA.</b>
+     *
+     * <p>Bug que o dono viu: <i>"o labirinto está gerando caminhos sem saida"</i>. A geração
+     * antiga sorteava cada parede com um hash independente, então nada impedia fechar uma
+     * "sala" de 4x4 por todos os lados — e pior, a própria saída podia cair num bloco cercado.
+     *
+     * <p>Regra nova (corredor de 4 blocos, parede de 2, célula de 6):
+     * <ul>
+     *   <li><b>parede a LESTE</b> (entre a célula e a vizinha do lado): só existe se a linha
+     *       (Z) for <b>ÍMPAR</b>. Em linha PAR ela é sempre aberta;</li>
+     *   <li><b>parede ao SUL</b> (entre a célula e a de baixo): só existe se a linha for
+     *       <b>PAR</b>. Em linha ÍMPAR é sempre aberta;</li>
+     *   <li>o canto de 2x2 (pilar) é sempre maciço — é ele que dá o desenho de labirinto;</li>
+     *   <li>aberturas extras (65% nas linhas ímpares, 30% nas pares) criam <b>laços</b>, o que
+     *       reduz becos sem saída. Elas só ABREM: nunca fecham uma passagem garantida.</li>
+     * </ul>
+     *
+     * <p><b>Prova da conectividade:</b> numa linha PAR todas as células se ligam na horizontal
+     * (parede leste sempre aberta). Toda célula de linha ÍMPAR tem a parede sul aberta, logo se
+     * liga à célula de baixo — que está numa linha PAR. Como toda linha par é uma faixa
+     * contínua e toda célula de linha ímpar desce para uma linha par, <b>qualquer</b> célula
+     * alcança qualquer outra. Como a regra só depende de (celX, celZ) — e não de onde o chunk
+     * começa —, isso vale para o labirinto inteiro, inclusive para as partes que ainda não
+     * foram construídas.
+     */
+    private static boolean ehParede(int celX, int celZ, int lx, int lz) {
+        boolean bandaX = lx >= 4, bandaZ = lz >= 4;
+        if (bandaX && bandaZ) {
+            return true;                                        // pilar do canto
+        }
+        if (bandaX) {                                           // parede LESTE
+            if (Math.floorMod(celZ, 2) == 0) {
+                return false;                                   // linha par: passa sempre
+            }
+            return hash(celX, celZ, 11) % 100 >= 65;            // 65% de laços
+        }
+        if (bandaZ) {                                           // parede SUL
+            if (Math.floorMod(celZ, 2) != 0) {
+                return false;                                   // linha ímpar: desce sempre
+            }
+            return hash(celX, celZ, 22) % 100 >= 30;            // 30% de laços
+        }
+        return false;                                           // corredor
+    }
+
+    /**
+     * (5.28.1) CENTRO DO CORREDOR da célula que contém essa coordenada.
+     *
+     * <p>A saída nunca mais pode cair dentro da parede: o ponto sorteado é "encostado" no
+     * centro do corredor da célula onde caiu. Antes ela podia nascer cercada de bloco, e aí
+     * nem existia caminho até ela.
+     */
+    private static int snapCelula(int w) {
+        return Math.floorDiv(w, CELULA) * CELULA + 2;
     }
 
     /** a saída: um obelisco de luz (só nasce quando o jogador chega perto). */

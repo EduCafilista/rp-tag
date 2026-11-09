@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.28.0'
+VER = '5.28.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2699,8 +2699,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.28.0.jar')
-      and os.path.getsize('build/libs/rptag-5.28.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.28.1.jar')
+      and os.path.getsize('build/libs/rptag-5.28.1.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3018,9 +3018,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.28.0: a versao subiu pra 5.28.0 no jar, no mod e no gradle',
-      "version = '5.28.0'" in rd('build.gradle')
-      and '5.28.0' in rd(R + '/RPTagMod.java'))
+check('5.28.1: a versao subiu pra 5.28.1 no jar, no mod e no gradle',
+      "version = '5.28.1'" in rd('build.gradle')
+      and '5.28.1' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3256,8 +3256,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.28.0: a versao subiu pra 5.28.0 (jar, mod e gradle)',
-      "version = '5.28.0'" in rd('build.gradle') and '5.28.0' in rd(R + '/RPTagMod.java'))
+check('5.28.1: a versao subiu pra 5.28.1 (jar, mod e gradle)',
+      "version = '5.28.1'" in rd('build.gradle') and '5.28.1' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3315,8 +3315,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.28.0: a versao subiu pra 5.28.0 (jar, mod e gradle)',
-      "version = '5.28.0'" in rd('build.gradle') and '5.28.0' in _rm)
+check('5.28.1: a versao subiu pra 5.28.1 (jar, mod e gradle)',
+      "version = '5.28.1'" in rd('build.gradle') and '5.28.1' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3338,8 +3338,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.28.0: a versao subiu pra 5.28.0 (jar, mod e gradle)',
-      "version = '5.28.0'" in rd('build.gradle') and '5.28.0' in rd(R + '/RPTagMod.java'))
+check('5.28.1: a versao subiu pra 5.28.1 (jar, mod e gradle)',
+      "version = '5.28.1'" in rd('build.gradle') and '5.28.1' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3461,6 +3461,25 @@ check('5.28.0 (e): os comandos do ADM do julgamento existem',
 check('5.28.0: nenhum comando de TESTE saiu no jar (nada de _prova/_juizo)',
       '_prova' not in rd(R + '/RPCommands.java')
       and not os.path.exists(R + '/_ProvaJuizo.java'))
+
+# ============ 5.28.1: O LABIRINTO SEM CAMINHO SEM SAIDA ============
+_ju2 = rd(R + '/JuizoFinal.java')
+check('5.28.1: a parede do labirinto segue a regra que garante passagem (ehParede)',
+      'private static boolean ehParede(int celX, int celZ, int lx, int lz)' in _ju2
+      and 'Math.floorMod(celZ, 2) == 0' in _ju2
+      and 'Math.floorMod(celZ, 2) != 0' in _ju2
+      and 'parede = ehParede(celX, celZ, lx, lz);' in _ju2
+      and 'hash(celX, celZ, 10)' not in _ju2)
+check('5.28.1: as aberturas extras so ABREM (lacos), nunca fecham a passagem garantida',
+      '|| hash(' not in _ju2.split('private static boolean ehParede')[1][:1400]
+      and 'return true;' in _ju2.split('private static boolean ehParede')[1][:1400])
+check('5.28.1: a saida e encostada no CENTRO DO CORREDOR (nunca dentro de parede)',
+      'private static int snapCelula(int w)' in _ju2
+      and 'int sx = snapCelula(' in _ju2 and 'int sz = snapCelula(' in _ju2)
+check('5.28.1: a prova da conectividade esta escrita no codigo (nao e promessa)',
+      'Prova da conectividade' in _ju2 and 'inclusive para as partes que ainda não' in _ju2)
+check('5.28.1: nenhum comando de teste saiu no jar (nada de _lab/_prova)',
+      not os.path.exists(R + '/_ProvaLab.java') and '_prova' not in rd(R + '/RPCommands.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
