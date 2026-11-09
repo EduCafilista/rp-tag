@@ -2282,8 +2282,12 @@ public final class VazioReino {
                 nv.setBlock(ancoraPedestal(nv, i).offset(0, 2, 0), Blocks.SCULK.defaultBlockState(), 2);
             }
         }
-        // (5.13.5) SEM aviso na tela de ninguém: o dono não quer texto nenhum no vazio
-        // ("nenhum rp admin avisar na tela do player"). Só a animação e o som.
+        // (5.13.5) SEM aviso na tela de ninguém DENTRO do vazio ("nenhum rp admin avisar na
+        // tela do player"). Só a animação e o som.
+        // (5.28.0) MAS a SAÍDA tem aviso, e ele sai AGORA — pedido do dono: "muda o avisar na
+        // hora que o player sair do vazio". Antes ele só aparecia no fim do teleporte (e às
+        // vezes o teleporte engolia a mensagem).
+        NeptuneEventos.avisoSaidaDoVazio(p, true);
         NeptuneEventos.voltarPeloPortal(p);
         return true;
     }

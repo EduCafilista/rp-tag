@@ -310,6 +310,13 @@ public final class ClientEffects {
         // parte do desenho): 20 s, ou o que vier maior no pacote.
         if (style == 14) {
             String limpoC = text.replaceAll("\u00a7.", "");
+            // (5.28.0) TEXTO VAZIO = "PARE AGORA". O servidor manda isso quando o efeito acaba
+            // ou quando o ADM usa /rp admin ciberpsicose parar. Sem isso a tela do glitch podia
+            // ficar presa na cara do jogador pra sempre.
+            if (limpoC.isBlank()) {
+                CiberpsicoseAvisoFx.parar();
+                return;
+            }
             CiberpsicoseAvisoFx.iniciar(limpoC, Math.max(20f, seconds));
             RPTagMod.LOGGER.info("RP Tag: ALERTA DE CIBERPSICOSE iniciado (FX proprio)");
             return;

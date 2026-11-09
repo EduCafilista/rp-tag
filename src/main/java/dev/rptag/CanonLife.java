@@ -173,6 +173,12 @@ public final class CanonLife {
                     RPEffects.MEDO, 30 * 20, 0, false, false));
             RPTagMod.LOGGER.info("RP Tag: {} perdeu a ÚLTIMA vida canonica — MEDO ABSURDO ativado",
                     player.getName().getString());
+            // (5.28.0) ZEROU AS VIDAS = JULGAMENTO. O dono: "o player morre perdeu as 5 vidas...
+            // em vez de só perder o personagem, ele vai para outra dimensão, um labirinto
+            // infinito". Dá 8 s pro ritual terminar de tocar e então ele acorda no labirinto.
+            JuizoFinal.agendar(player.getServer(), player, 8000L);
+            PacketDistributor.sendToPlayer(player, new ScreenTextPayload(
+                    "\u00a74\u00a7lO JULGAMENTO COME\u00c7OU", 8, 4));
         }
         // (3.78.0) O STRONDO: trovão NA HORA (o audio da lore entra ~1,5 s
         // depois, tocado pelo PROPRIO CLIENTE ao ver o véu — CanonLife.java)

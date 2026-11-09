@@ -66,6 +66,8 @@ public final class CiberpsicoseAvisoFx {
 
     /** segundos <= 0: fica até chamar parar(). */
     public static void iniciar(String mensagem, float segundos) {
+        semEfeitoDesde = -1L;                       // (5.28.0) tela nova, contadores novos
+        nascidaEm = System.currentTimeMillis();
         seguindoEfeito = false;   // (5.27.0) a tela do comando não morre junto com o efeito
         msg = (mensagem == null || mensagem.isEmpty()) ? "CIBERPSICOSE DETECTADA" : mensagem.toUpperCase();
         dur = segundos; pararEm = -1; evIdx = 0; spikeTocado = -1; somTocou = false;
@@ -127,15 +129,48 @@ public final class CiberpsicoseAvisoFx {
      */
     private static boolean seguindoEfeito;
 
+    /** (5.28.0) desde quando ele está SEM o efeito (ms) — com 0,4 s de folga pra não piscar. */
+    private static long semEfeitoDesde = -1L;
+
+    /** (5.28.0) quando a tela atual começou, em relógio de parede (pro teto de segurança). */
+    private static long nascidaEm = -1L;
+
+    /**
+     * (5.28.0) <b>O TETO — A TELA NUNCA MAIS FICA PRESA.</b>
+     *
+     * <p>O dono: <i>"o efeito de ciberpsicose nao saiu mais da minha tela"</i>. O efeito podia
+     * acabar num momento em que o cliente não olhava (morte, troca de dimensão, reconexão, menu
+     * aberto) e a tela do modo persistente ficava lá para sempre. Agora há TRÊS travas:
+     * o servidor avisa quando o efeito acaba ({@code ScreenTextPayload("")}), o cliente confere a
+     * cada quadro com 0,4 s de folga, e nada dura mais que {@link #TETO_MS} de qualquer jeito.
+     */
+    private static final long TETO_MS = 180_000L;
+
     private static void seguirEfeito() {
         var mc = net.minecraft.client.Minecraft.getInstance();
-        boolean tem = mc.player != null && mc.player.hasEffect(dev.rptag.RPEffects.CIBERPSICOSE);
-        if (tem && inicio < 0) {
-            seguindoEfeito = true;
-            iniciar("CIBERPSICOSE DETECTADA", 0);   // 0 = fica até o efeito acabar
-        } else if (!tem && seguindoEfeito && inicio >= 0 && pararEm < 0) {
+        boolean tem = mc.player != null && !mc.player.isDeadOrDying()
+                && mc.player.hasEffect(dev.rptag.RPEffects.CIBERPSICOSE);
+        long agora = System.currentTimeMillis();
+        if (tem) {
+            semEfeitoDesde = -1L;
+            if (inicio < 0) {
+                seguindoEfeito = true;
+                iniciar("CIBERPSICOSE DETECTADA", 0);   // 0 = fica até o efeito acabar
+                nascidaEm = agora;
+            }
+        } else if (seguindoEfeito && inicio >= 0 && pararEm < 0) {
+            if (semEfeitoDesde < 0L) {
+                semEfeitoDesde = agora;
+            }
+            if (agora - semEfeitoDesde > 400L || mc.player == null) {
+                seguindoEfeito = false;
+                parar();                                // efeito acabou: roda a saída e desliga
+            }
+        }
+        // trava final: nada de tela eterna, nem se o efeito ficar "grudado" no servidor
+        if (inicio >= 0 && pararEm < 0 && nascidaEm > 0 && agora - nascidaEm > TETO_MS) {
             seguindoEfeito = false;
-            parar();                                // efeito acabou: roda a saída e desliga
+            parar();
         }
     }
 

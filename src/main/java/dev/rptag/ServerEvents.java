@@ -46,9 +46,33 @@ public final class ServerEvents {
     }
 
     // ---- (5.4.0) tick do evento NEPTUNE (terremoto, deus, bicho, saidas) ----
+    /**
+     * (5.28.0) MORRER NO JULGAMENTO NÃO É FUGA: quem respawna com o julgamento em andamento volta
+     * pro labirinto (ou pra sala), nunca pro mundo normal.
+     */
+    @SubscribeEvent
+    public static void aoRenascerNoJuizo(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer p) {
+            try {
+                JuizoFinal.aoRenascer(p);
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: respawn no julgamento falhou", t);
+            }
+        }
+    }
+
     @SubscribeEvent
     public static void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
         NeptuneEventos.tick(event.getServer());
+        // (5.28.0) O JULGAMENTO: labirinto (chunks, bichos, saída) e a sala do boss.
+        // De 4 em 4 ticks é de sobra — o trabalho pesado é por chunk, não por tick.
+        if (event.getServer().getTickCount() % 4 == 0) {
+            try {
+                JuizoFinal.tick(event.getServer());
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: tick do julgamento falhou (o jogo segue)", t);
+            }
+        }
         // (5.17.0) NÚCLEO VIAL: o desgaste é por DIA do jogo, então checar a cada 2 s é de sobra
         // (o dia só vira a cada 20 minutos). Barato: sai na hora quando o dia não mudou.
         if (event.getServer().getTickCount() % 40 == 0) {

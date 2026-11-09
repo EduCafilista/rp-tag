@@ -379,6 +379,10 @@ public final class RPCommands {
         for (ServerPlayer alvo : alvos) {
             alvo.removeEffect(RPEffects.CIBERPSICOSE);
             CiberpsicoseSistema.esquecer(alvo.getUUID());
+            // (5.28.0) AVISA O CLIENTE: texto vazio no estilo 14 = "fecha a tela AGORA".
+            // Era isso que faltava pra tela não ficar presa na cara do jogador.
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo,
+                    new ScreenTextPayload("", 1, 14));
         }
         final int n = alvos.size();
         ctx.getSource().sendSuccess(() -> Component.literal(

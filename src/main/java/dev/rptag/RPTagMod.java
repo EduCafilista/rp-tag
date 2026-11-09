@@ -47,7 +47,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.27.0";
+    public static final String VERSION = "5.28.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -231,6 +231,18 @@ public final class RPTagMod {
     public static final Supplier<FitaItem> FITA = ITEMS.register("fita",
             () -> new FitaItem(new Item.Properties().stacksTo(1)
                     .rarity(net.minecraft.world.item.Rarity.RARE)));
+
+    // ================= (5.28.0) O JULGAMENTO: a chave e o item do boss =================
+    /** (5.28.0) a CHAVE que o ADM entrega depois da luta: abre o portal atrás do trono. */
+    public static final Supplier<ChaveJulgamentoItem> CHAVE_JULGAMENTO = ITEMS.register("chave_julgamento",
+            () -> new ChaveJulgamentoItem(new Item.Properties().stacksTo(1)
+                    .rarity(net.minecraft.world.item.Rarity.EPIC)));
+
+    /** (5.28.0) a RELÍQUIA DO JULGAMENTO: o item do boss que fica com o vencedor. */
+    public static final Supplier<Item> RELIQUIA_JULGAMENTO = ITEMS.register("reliquia_julgamento",
+            () -> new Item(new Item.Properties().stacksTo(1)
+                    .rarity(net.minecraft.world.item.Rarity.EPIC)
+                    .fireResistant()));
 
     /** (5.13.2) FRAGMENTO DO VAZIO — item que abre o portal negro do exílio. */
     public static final Supplier<FragmentoItem> FRAGMENTO_VAZIO = ITEMS.register("fragmento_vazio",

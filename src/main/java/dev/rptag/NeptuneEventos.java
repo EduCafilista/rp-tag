@@ -2133,14 +2133,27 @@ public final class NeptuneEventos {
      * {@code VazioReino.tickCaindo}) — esse saiu, e de quebra a dimensão ganhou piso de
      * bedrock (ver {@code VazioReino.pisoDeBedrock}), então ninguém mais cai no void.
      */
+    /** (5.28.0) quem já recebeu o aviso de saída e quando (evita o aviso dobrado). */
+    private static final java.util.Map<java.util.UUID, Long> AVISEI_SAIDA =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
     public static void avisoSaidaDoVazio(ServerPlayer p, boolean escapou) {
         if (p == null) {
             return;
         }
         if (escapou) {
-            // (5.16.4) a CONQUISTA: só quem saiu pelo portal sozinho vê
+            // (5.28.0) O DONO: "muda o avisar na hora que o player sair do vazio, pode usar o
+            // avisar 'Vazio: Você Conquistou a saida'". O aviso agora sai NO INSTANTE em que ele
+            // atravessa o portal (ver VazioReino.usarPortal), e a marca abaixo impede que ele
+            // apareça duas vezes quando o teleporte de volta termina.
+            long agora = System.currentTimeMillis();
+            Long antes = AVISEI_SAIDA.get(p.getUUID());
+            if (antes != null && agora - antes < 15000L) {
+                return;
+            }
+            AVISEI_SAIDA.put(p.getUUID(), agora);
             PacketDistributor.sendToPlayer(p, new ScreenTextPayload(
-                    "\u00a76\u00a7lVOC\u00ca CONQUISTOU A SA\u00cdDA", 12, 7));
+                    "\u00a76\u00a7lVAZIO: \u00a7r\u00a7e\u00a7lVOC\u00ca CONQUISTOU A SA\u00cdDA", 12, 7));
         }
         RPTagMod.LOGGER.info("RP Tag: {} saiu do vazio ({})", p.getName().getString(),
                 escapou ? "pelo portal" : "tirado por admin");

@@ -5,10 +5,10 @@
   "respawn_anchor_works": false,
   "bed_works": false,
   "has_raids": false,
-  "has_skylight": true,
+  "has_skylight": false,
   "has_ceiling": false,
   "coordinate_scale": 1.0,
-  "ambient_light": 0.06,
+  "ambient_light": 0.16,
   "fixed_time": 18000,
   "logical_height": 256,
   "min_y": 0,
@@ -16,5 +16,5 @@
   "monster_spawn_light_level": 0,
   "monster_spawn_block_light_limit": 0,
   "infiniburn": "#minecraft:infiniburn_end",
-  "effects": "minecraft:overworld"
+  "effects": "minecraft:the_nether"
 }

@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.27.0'
+VER = '5.28.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1437,12 +1437,13 @@ check('5.5.0: dimensao do EXILIO existe (rptag:exilio) com chao (5.7.8: camadas 
 # (5.13.1) O DONO VOLTOU ATRAS: o vazio NAO pode ser tudo preto ("o vazio deve
 # ser como antes, pq agora ta tudo preto na dimensao"). Voltaram os valores de
 # 9938159: luz ambiente 0,42, ceu ligado, sem teto e o CEU DO OVERWORLD.
-check('5.13.5 (pedido 55): o vazio e ESCURO (luz 0,06 + meia-noite fixa)',
-      '"ambient_light": 0.06' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+check('5.13.5/5.28.0: o vazio e ESCURO (luz baixa + meia-noite fixa) e SEM CEU',
+      ('"ambient_light": 0.06' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+       or '"ambient_light": 0.16' in rd('src/main/resources/data/rptag/dimension_type/exilio.json'))
       and '"fixed_time": 18000' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and '"has_skylight": true' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and '"has_skylight": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and '"has_ceiling": false' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
-      and 'minecraft:overworld' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
+      and 'minecraft:the_nether' in rd('src/main/resources/data/rptag/dimension_type/exilio.json')
       and os.path.exists(C + '/VazioNeblina.java'))
 check('5.7.9: exilar POUSA na SUPERFICIE (y=1 era dentro da pedra: nao andava nem via)',
       '"exilio"' in _ne2 and 'chegadaNoExilio(destino)' in _ne2
@@ -2170,9 +2171,11 @@ check('5.12.0: CADA passo do deus bate um WARDEN_STEP grave',
       'SoundEvents.WARDEN_STEP' in _nev and 'SoundSource.HOSTILE, 1.35F' in _nev)
 
 # 3) vazio mais preto + prédios perdidos
-check('5.13.5 (pedido 55): a dimensao esta mais ESCURA de novo (luz 0,06, noite fixa)',
-      '"ambient_light": 0.06' in _dim and '"fixed_time": 18000' in _dim
-      and 'minecraft:overworld' in _dim)
+check('5.13.5/5.28.0: a dimensao esta mais ESCURA de novo (luz baixa, noite fixa, sem ceu)',
+      ('"ambient_light": 0.06' in _dim or '"ambient_light": 0.16' in _dim)
+      and '"fixed_time": 18000' in _dim
+      and '"has_skylight": false' in _dim
+      and 'minecraft:the_nether' in _dim)
 check('5.12.0: neblina do vazio quase preta no cliente (VazioNeblina)',
       os.path.exists(C + '/VazioNeblina.java')
       and 'ViewportEvent.ComputeFogColor' in rd(C + '/VazioNeblina.java')
@@ -2400,9 +2403,9 @@ check('5.13.5 (pedido 55): a saida e no SPAWN dele (cama/ancora ou spawn do mund
       'alvo.getRespawnPosition()' in _nev and 'alvo.getRespawnDimension()' in _nev
       and 'getSharedSpawnPos()' in _nev and 'getSharedSpawnAngle()' in _nev
       and 'private static void pousar(' in _nev)
-check('5.13.5 (pedido 55): a dimensao escura nao virou tela preta (neblina visivel)',
+check('5.13.5/5.28.0: a dimensao escura nao virou tela preta (neblina visivel)',
       '0.028F' in rd(C + '/VazioNeblina.java')
-      and '"ambient_light": 0.06' in _dim)
+      and ('"ambient_light": 0.06' in _dim or '"ambient_light": 0.16' in _dim))
 check('5.13.5: mods de mapa mostram o nome da dimensao (lang dimension.rptag.exilio)',
       'dimension.rptag.exilio' in rd('src/main/resources/assets/rptag/lang/pt_br.json')
       and 'dimension.rptag.exilio' in rd('src/main/resources/assets/rptag/lang/en_us.json'))
@@ -2696,8 +2699,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.27.0.jar')
-      and os.path.getsize('build/libs/rptag-5.27.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.28.0.jar')
+      and os.path.getsize('build/libs/rptag-5.28.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3015,9 +3018,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.27.0: a versao subiu pra 5.27.0 no jar, no mod e no gradle',
-      "version = '5.27.0'" in rd('build.gradle')
-      and '5.27.0' in rd(R + '/RPTagMod.java'))
+check('5.28.0: a versao subiu pra 5.28.0 no jar, no mod e no gradle',
+      "version = '5.28.0'" in rd('build.gradle')
+      and '5.28.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3253,8 +3256,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.27.0: a versao subiu pra 5.27.0 (jar, mod e gradle)',
-      "version = '5.27.0'" in rd('build.gradle') and '5.27.0' in rd(R + '/RPTagMod.java'))
+check('5.28.0: a versao subiu pra 5.28.0 (jar, mod e gradle)',
+      "version = '5.28.0'" in rd('build.gradle') and '5.28.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3312,8 +3315,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.27.0: a versao subiu pra 5.27.0 (jar, mod e gradle)',
-      "version = '5.27.0'" in rd('build.gradle') and '5.27.0' in _rm)
+check('5.28.0: a versao subiu pra 5.28.0 (jar, mod e gradle)',
+      "version = '5.28.0'" in rd('build.gradle') and '5.28.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3335,8 +3338,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.27.0: a versao subiu pra 5.27.0 (jar, mod e gradle)',
-      "version = '5.27.0'" in rd('build.gradle') and '5.27.0' in rd(R + '/RPTagMod.java'))
+check('5.28.0: a versao subiu pra 5.28.0 (jar, mod e gradle)',
+      "version = '5.28.0'" in rd('build.gradle') and '5.28.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3393,6 +3396,71 @@ check('5.27.0 (7): o estado do portal vai na hora pros clientes do vazio',
       _vr.count('envioEstado(nv, quem, dados, base)') >= 1)
 check('5.27.0: nenhum comando de TESTE saiu no jar (nada de _prova/oficina)',
       '_prova270' not in _rpc and not re.search(r'"[a-z]*prova\d+"', _rpc))
+
+# ============ 5.28.0: OS 5 AJUSTES + O JULGAMENTO ============
+_ne2 = rd(R + '/NeptuneEventos.java')
+_vr2 = rd(R + '/VazioReino.java')
+check('5.28.0 (a): o aviso "Vazio: Voce Conquistou a saida" sai NA HORA da travessia',
+      'VAZIO: ' in _ne2 and 'CONQUISTOU A SA\u00cdDA' in _ne2
+      and 'NeptuneEventos.avisoSaidaDoVazio(p, true);' in _vr2
+      and 'AVISEI_SAIDA' in _ne2)
+_ci2 = rd(R + '/CiberpsicoseSistema.java')
+check('5.28.0 (b): a ciberpsicose bate mais rapido (0,45 a 0,9 s)',
+      'agora + 450L + (long) (Math.random() * 450.0D)' in _ci2)
+check('5.28.0 (c): a tela da ciberpsicose NAO fica presa (servidor avisa quando acaba)',
+      'TINHA' in _ci2 and 'new ScreenTextPayload("", 1, 14)' in _ci2
+      and 'new ScreenTextPayload("", 1, 14)' in rd(R + '/RPCommands.java'))
+_cfx = rd(C + '/CiberpsicoseAvisoFx.java')
+_cef = rd(C + '/ClientEffects.java')
+check('5.28.0 (c): a tela tem TETO e folga de 0,4 s antes de se fechar',
+      'TETO_MS' in _cfx and 'semEfeitoDesde' in _cfx and 'nascidaEm' in _cfx)
+check('5.28.0 (c): texto vazio no estilo 14 = fechar a tela na hora',
+      'limpoC.isBlank()' in _cef and 'CiberpsicoseAvisoFx.parar();' in _cef)
+_ej = _json.load(io.open('src/main/resources/data/rptag/dimension_type/exilio.json', encoding='utf-8'))
+check('5.28.0 (d): o vazio NAO tem ceu (sem luz do ceu, sem sol, sem lua)',
+      _ej['has_skylight'] is False)
+check('5.28.0 (d): o cliente desenha o ceu PRETO no vazio (VazioCeuPreto)',
+      os.path.exists(C + '/VazioCeuPreto.java')
+      and 'AFTER_SKY' in rd(C + '/VazioCeuPreto.java')
+      and 'ehVazio' in rd(C + '/VazioCeuPreto.java'))
+_ju = rd(R + '/JuizoFinal.java')
+check('5.28.0 (e): o JULGAMENTO existe (labirinto + sala branca, sem ceu)',
+      'CHAVE_JUIZO' in _ju and 'CHAVE_SALA' in _ju
+      and os.path.exists('src/main/resources/data/rptag/dimension/juizo.json')
+      and os.path.exists('src/main/resources/data/rptag/dimension/sala_julgamento.json'))
+_jt = _json.load(io.open('src/main/resources/data/rptag/dimension_type/juizo.json', encoding='utf-8'))
+check('5.28.0 (e): o labirinto e fechado (teto + sem ceu) e a sala branca e clara',
+      _jt['has_ceiling'] is True and _jt['has_skylight'] is False
+      and _json.load(io.open('src/main/resources/data/rptag/dimension_type/sala_julgamento.json',
+                             encoding='utf-8'))['ambient_light'] > 0.5)
+check('5.28.0 (e): o labirinto e INFINITO (nasce por chunk, com hash estavel)',
+      'construirChunk' in _ju and 'hash(' in _ju and 'CELULA' in _ju)
+check('5.28.0 (e): os bichos do labirinto sao BUFADOS (e nascem em cima do ar)',
+      'bufado(' in _ju and 'DAMAGE_BOOST' in _ju and 'isEmptyBlock(cand)' in _ju)
+check('5.28.0 (e): a saida do labirinto leva a SALA BRANCA do boss',
+      'achouSaida' in _ju and 'construirSala' in _ju and 'SEA_LANTERN' in _ju)
+check('5.28.0 (e): a CHAVE abre o portao atras do trono',
+      os.path.exists(R + '/ChaveJulgamentoItem.java')
+      and 'abrirPortao' in _ju and 'CRYING_OBSIDIAN' in _ju
+      and 'CHAVE_JULGAMENTO' in rd(R + '/RPTagMod.java'))
+check('5.28.0 (e): vencer devolve a vida com +2 vidas canonicas e o item do boss',
+      'Math.min(5, atuais + 2)' in _ju and 'darItemDoBoss' in _ju
+      and 'RELIQUIA_JULGAMENTO' in rd(R + '/RPTagMod.java'))
+check('5.28.0 (e): perder marca o PERSONAGEM PERDIDO (e persiste no mundo)',
+      'marcarPersonagemPerdido' in _ju
+      and 'marcarPersonagemPerdido' in rd(R + '/RPWorldData.java')
+      and 'PersonagensPerdidos' in rd(R + '/RPWorldData.java'))
+check('5.28.0 (e): zerar as 5 vidas manda o player pro JULGAMENTO',
+      'JuizoFinal.agendar' in rd(R + '/CanonLife.java'))
+check('5.28.0 (e): morrer DENTRO do julgamento nao e fuga (volta pra dentro)',
+      'JuizoFinal.aoRenascer' in rd(R + '/ServerEvents.java') and 'aoRenascer' in _ju)
+_jc = rd(R + '/JuizoCommands.java')
+check('5.28.0 (e): os comandos do ADM do julgamento existem',
+      all(k in _jc for k in ['"entrar"', '"sala"', '"chave"', '"ganhar"', '"perder"',
+                             '"reviver"', '"sair"', '"status"', '"info"']))
+check('5.28.0: nenhum comando de TESTE saiu no jar (nada de _prova/_juizo)',
+      '_prova' not in rd(R + '/RPCommands.java')
+      and not os.path.exists(R + '/_ProvaJuizo.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

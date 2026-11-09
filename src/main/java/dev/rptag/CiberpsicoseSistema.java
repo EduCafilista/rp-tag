@@ -51,6 +51,9 @@ public final class CiberpsicoseSistema {
     /** quantos golpes ele já deu nesse surto (só pra variar as falas). */
     private static final Map<UUID, Integer> GOLPES = new ConcurrentHashMap<>();
 
+    /** (5.28.0) quem estava com o efeito no segundo anterior (pra avisar quando acabar). */
+    private static final java.util.Set<UUID> TINHA = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
     private static final String[] FALAS = {
             "sua m\u00e3o se move sozinha",
             "voc\u00ea n\u00e3o mandou o bra\u00e7o fazer isso",
@@ -67,8 +70,17 @@ public final class CiberpsicoseSistema {
         if (!p.hasEffect(RPEffects.CIBERPSICOSE)) {
             PROXIMO.remove(p.getUUID());
             GOLPES.remove(p.getUUID());
+            // (5.28.0) O EFEITO ACABOU — manda o cliente FECHAR A TELA. O dono reclamou que
+            // "o efeito de ciberpsicose nao saiu mais da minha tela": quando o efeito expirava
+            // sozinho o cliente podia não perceber (troca de dimensão, morte, reconexão) e a
+            // tela ficava presa. Agora o servidor AVISA que acabou.
+            if (TINHA.remove(p.getUUID())) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p,
+                        new ScreenTextPayload("", 1, 14));
+            }
             return;
         }
+        TINHA.add(p.getUUID());
         // (5.27.0) O DONO ESTAVA EM CREATIVE E NADA ACONTECIA ("ativei o cyberpsicose e nao bati
         // nos mobs a minha volta"). Antes o sistema pulava jogador em creative — e ADM testa em
         // creative. Agora o único caso que não tem golpe é espectador/morto (não tem corpo).
@@ -80,9 +92,9 @@ public final class CiberpsicoseSistema {
         if (quando != null && agora < quando) {
             return;
         }
-        // (5.27.0) a próxima "falha" vem entre 1,2 e 2,6 s — o dono quer SENTIR que o corpo
-        // dele está batendo em tudo ("eu devo sair batendo em tudo")
-        PROXIMO.put(p.getUUID(), agora + 1200L + (long) (Math.random() * 1400.0D));
+        // (5.28.0) O DONO: "o efeito ciberpsicose pode bater mais rapido". Era 1,2 a 2,6 s;
+        // agora é de 0,45 a 0,9 s — a mão dele dispara em quase todo bicho que encosta.
+        PROXIMO.put(p.getUUID(), agora + 450L + (long) (Math.random() * 450.0D));
 
         LivingEntity alvo = acharAlvo(p);
         if (alvo == null) {

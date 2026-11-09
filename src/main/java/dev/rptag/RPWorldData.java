@@ -420,6 +420,24 @@ public final class RPWorldData extends SavedData {
         return canonLives.getOrDefault(id, 5);
     }
 
+    /** (5.28.0) quem PERDEU o personagem no Julgamento (persiste no mundo). */
+    private final Map<UUID, Boolean> perdidos = new HashMap<>();
+
+    /** (5.28.0) marca/desmarca o personagem como perdido no Julgamento. */
+    public void marcarPersonagemPerdido(UUID id, boolean perdido) {
+        if (perdido) {
+            perdidos.put(id, Boolean.TRUE);
+        } else {
+            perdidos.remove(id);
+        }
+        setDirty();
+    }
+
+    /** (5.28.0) o personagem desse jogador foi perdido no Julgamento? */
+    public boolean isPersonagemPerdido(UUID id) {
+        return perdidos.getOrDefault(id, Boolean.FALSE);
+    }
+
     /** define o estoque de vidas canônicas (persiste no mundo). */
     public void setCanonLives(UUID id, int vidas) {
         canonLives.put(id, Math.max(0, vidas));
@@ -804,6 +822,15 @@ public final class RPWorldData extends SavedData {
         }
         tag.put("CanonLives", vidasList);
 
+        // (5.28.0) os personagens perdidos no Julgamento
+        ListTag perdidosList = new ListTag();
+        for (UUID id : perdidos.keySet()) {
+            CompoundTag e = new CompoundTag();
+            e.putUUID("Id", id);
+            perdidosList.add(e);
+        }
+        tag.put("PersonagensPerdidos", perdidosList);
+
         // (5.12.0) alturas das construções do vazio
         tag.putIntArray("VazioYs", vazioYs);
         tag.putBoolean("VazioPortalAberto", portalAberto);
@@ -976,6 +1003,12 @@ public final class RPWorldData extends SavedData {
         for (int i = 0; i < vidasList.size(); i++) {
             CompoundTag e = vidasList.getCompound(i);
             data.canonLives.put(e.getUUID("Id"), e.getInt("Lives"));
+        }
+
+        // (5.28.0) personagens perdidos no Julgamento
+        ListTag perdidosList = tag.getList("PersonagensPerdidos", Tag.TAG_COMPOUND);
+        for (int i = 0; i < perdidosList.size(); i++) {
+            data.perdidos.put(perdidosList.getCompound(i).getUUID("Id"), Boolean.TRUE);
         }
 
         int[] ys = tag.getIntArray("VazioYs");
