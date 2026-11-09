@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Suite de verificações do RP Tag — roda ANTES de entregar um ciclo."""
+import glob
 import io, os, re, sys, zipfile
 import json as _json
 
@@ -65,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.26.0'
+VER = '5.26.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -73,7 +74,7 @@ check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
 # ---- 2. lorezone re-entrada (INSIDE + seen.remove)
 lz = rd(R + '/LoreZones.java')
 check('lorezone: mapa INSIDE existe', 'INSIDE' in lz)
-check('3.99 -> 5.26.0: o registro de avisos vistos continua salvo no mundo (o dono mudou so a regra)',
+check('3.99 -> 5.26.1: o registro de avisos vistos continua salvo no mundo (o dono mudou so a regra)',
       'seen.remove(zid)' not in lz and 'avisosVistos' in lz
       and 'marcarAvisoVisto(uuid, zone.id())' in lz
       and 'tag.put("AvisosVistos", vistos)' in lz)
@@ -451,7 +452,7 @@ zc = rd(R + '/LoreZoneCommands.java')
 check('3.86: lorezone aviso aceita os 10 estilos',
       '"inferno", 5' in zc and '"sangue", 9' in zc and '"void", 8' in zc)
 lz = rd(R + '/LoreZones.java')
-check('3.98/4.5 -> 5.26.0: clamp de estilo da zona vai ate 39 (agora a zona aceita a infeccao)', lz.count('Math.min(39,') == 2)
+check('3.98/4.5 -> 5.26.1: clamp de estilo da zona vai ate 39 (agora a zona aceita a infeccao)', lz.count('Math.min(39,') == 2)
 
 # ---- 3.87.0: inferno bizarro, divino celestial, void profundo,
 # sangue pulsando fundo, DEMONIACO macabro ----
@@ -583,7 +584,7 @@ check('3.95: somAviso case 7 = particulasAscensao (server-safe)',
 check('3.95: somAviso case 9 = particulasSangue (server-safe)',
       'case 9 -> particulasSangue(alvo)' in rp and 'REDSTONE_BLOCK' in rp
       and 'class SangueAvisoFx' not in rp)
-check('3.98/4.5 -> 5.26.0: clamp no LoreZones (x2, agora 39) e 24 no ClientEffects',
+check('3.98/4.5 -> 5.26.1: clamp no LoreZones (x2, agora 39) e 24 no ClientEffects',
       'Math.min(24, textStyle)' in ce and lz.count('Math.min(39') == 2)
 
 # ---- 3.96.0: VOID = "Queda Sem Fundo" + PESADELO = "Sono Sem Descanso"
@@ -663,7 +664,7 @@ check('3.98: mensagem embaixo tambem no pesadelo2',
       'cy + 25 * k, 0)' in pa)
 
 # ---- 3.99.0: lorezone - aviso unico + musica/som com tempo maximo ----
-check('3.99 -> 5.26.0: aviso a CADA entrada (saiu e voltou = aparece de novo)',
+check('3.99 -> 5.26.1: aviso a CADA entrada (saiu e voltou = aparece de novo)',
       'boolean entrouAgora = !prev.contains(zone.id())' in lz
       and 'show(player, zone);' in lz
       and 'if (!data.avisoVisto(uuid, zone.id())) {' not in lz)
@@ -2573,7 +2574,7 @@ check('5.16.0: os oito estão no switch do avisar() e no do /rpfx teste (28..35)
               [('eremita', 28), ('julgamento', 29), ('lua', 30), ('mago', 31), ('morte2', 32),
                ('sol', 33), ('torre', 34), ('estrela', 35)]))
 check('5.16.0: os oito estão registrados na camada do GUI e no ClientEffects (28..35)',
-      all(('%s.registrar(event);' % c) in rd(C + '/ClientGuiLayers.java') for c in _cartas)
+      all(('%s.registrar(event)' % c) in rd(C + '/ClientGuiLayers.java') for c in _cartas)
       and all(('if (style == %d)' % i) in rd(C + '/ClientEffects.java') for i in range(28, 36)))
 check('5.16.2: TOLO voltou a ser a CARTA do Tolo (protótipo FoolWarning), estilo 36',
       ('case "tolo", "foulo" -> 36' in _rp) and ('case "tolo", "foulo" -> 36' in rd(C + '/FxComando.java'))
@@ -2695,8 +2696,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.26.0.jar')
-      and os.path.getsize('build/libs/rptag-5.26.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.26.1.jar')
+      and os.path.getsize('build/libs/rptag-5.26.1.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2775,7 +2776,7 @@ check('5.17.0: ela DORME e ACORDA com comando do ADM (e tem animação)',
 check('5.17.0: o estado da Axion também fica no save',
       'setAxionEstado' in rd(R + '/RPWorldData.java')
       and 'tag.putInt("AxionEstado", axionEstado);' in rd(R + '/RPWorldData.java'))
-check('5.17.0/5.26.0: protocolo subiu para v18 (cliente velho é recusado)',
+check('5.17.0/5.26.1: protocolo subiu para v18 (cliente velho é recusado)',
       'event.registrar("18")' in _mn2)
 
 # ============ 5.17.1: as três correções do dono ============
@@ -3014,9 +3015,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.26.0: a versao subiu pra 5.26.0 no jar, no mod e no gradle',
-      "version = '5.26.0'" in rd('build.gradle')
-      and '5.26.0' in rd(R + '/RPTagMod.java'))
+check('5.26.1: a versao subiu pra 5.26.1 no jar, no mod e no gradle',
+      "version = '5.26.1'" in rd('build.gradle')
+      and '5.26.1' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3108,8 +3109,8 @@ check('5.24.3: o cliente liga os dois FX e para os dois quando chega outro aviso
       'if (style == 38) {' in _ce and 'if (style == 39) {' in _ce
       and 'InfeccaoAvisoFx.parar();' in _ce and 'Infeccao2AvisoFx.parar();' in _ce)
 check('5.24.3: os dois FX estao registrados como camada de HUD',
-      'InfeccaoAvisoFx.registrar(event);' in _cgl and 'Infeccao2AvisoFx.registrar(event);' in _cgl)
-check('5.24.3 -> 5.26.0: cada infeccao tem TRILHA propria (arquivo sintetizado, tocado pelo FX)',
+      'InfeccaoAvisoFx.registrar(event)' in _cgl and 'Infeccao2AvisoFx.registrar(event)' in _cgl)
+check('5.24.3 -> 5.26.1: cada infeccao tem TRILHA propria (arquivo sintetizado, tocado pelo FX)',
       os.path.getsize('src/main/resources/assets/rptag/sounds/infeccao_aviso.ogg') > 60000
       and os.path.getsize('src/main/resources/assets/rptag/sounds/infeccao2_aviso.ogg') > 60000
       and 'SOM_INFECCAO.get()' in rd(C + '/InfeccaoAvisoFx.java')
@@ -3182,82 +3183,82 @@ check('5.25.0: o /rp ajuda ensina os quatro comandos novos',
       'ciberpsicose <jogadores>' in _s and 'vampiro <jogadores> ligar|desligar' in _s
       and 'eclipse dar <jogadores>' in _s)
 
-# ============ 5.26.0: TELA DE MORTE FORA DE RP + VISAO NOTURNA DO VAMPIRO ============
+# ============ 5.26.1: TELA DE MORTE FORA DE RP + VISAO NOTURNA DO VAMPIRO ============
 _mt = rd(C + '/MorteTelaRp.java')
 _mp = rd(R + '/MorteRpPayload.java')
 _cl = rd(R + '/CanonLife.java')
-check('5.26.0: existe a TELA DE MORTE nova (escurece e sobram so os botoes)',
+check('5.26.1: existe a TELA DE MORTE nova (escurece e sobram so os botoes)',
       'public final class MorteTelaRp extends DeathScreen' in _mt
       and 'esta tela' not in _mt.lower().replace('a tela', '')
       and 'for (var r : this.renderables)' in _mt
       and 'g.fill(0, 0, w, h, ((int) (255 * escuro) << 24));' in _mt)
-check('5.26.0: a tela NAO desenha titulo, score nem a causa da morte do vanilla',
+check('5.26.1: a tela NAO desenha titulo, score nem a causa da morte do vanilla',
       'super.render(g, mx, my, parcial)' not in _mt
       and 'morte fora de RP' in _mt          # so o recadinho discreto de "vida canonica intacta"
       # (a citacao "You Died" so existe no COMENTARIO de cabecalho; o codigo nao desenha nada disso)
       and 'g.drawString(this.font, recado' in _mt
       and 'renderDeathBackground' not in _mt)
-check('5.26.0: a morte fora de RP troca o DeathScreen do jogo (ScreenEvent.Opening)',
+check('5.26.1: a morte fora de RP troca o DeathScreen do jogo (ScreenEvent.Opening)',
       'ScreenEvent.Opening event' in _mt and 'event.setNewScreen(new MorteTelaRp())' in _mt
       and 'nova.getClass() == DeathScreen.class' in _mt)
-check('5.26.0: o SERVIDOR avisa se a morte e canonica (MorteRpPayload no LivingDeathEvent)',
+check('5.26.1: o SERVIDOR avisa se a morte e canonica (MorteRpPayload no LivingDeathEvent)',
       'record MorteRpPayload(boolean canon, boolean sol)' in _mp
       and 'new MorteRpPayload(wd.isCanonEvent(), peloSol)' in _cl
       and 'if (!wd.isCanonEvent()) {' in _cl)
-check('5.26.0: a tela nova SO entra quando o servidor diz que a morte NAO e canonica',
+check('5.26.1: a tela nova SO entra quando o servidor diz que a morte NAO e canonica',
       'if (canon || !avisado)' in _mt and 'public static void definirMorte(boolean canonVida, boolean foiOSol)' in _mt
       and 'registrar.playToClient(MorteRpPayload.TYPE' in rd(R + '/ModNetworking.java')
       and 'MorteTelaRp.definirMorte(payload.canon(), payload.sol())' in rd(C + '/ClientPayloadHandler.java'))
-check('5.26.0: a tela tem atmosfera propria (poeira subindo, brilho do corpo, vinheta)',
+check('5.26.1: a tela tem atmosfera propria (poeira subindo, brilho do corpo, vinheta)',
       'desenharAtmosfera' in _mt and 'fillGradient' in _mt and 'poeira' in _mt.lower())
-check('5.26.0: o recado do servidor vale para UMA morte so (e limpo ao sair da tela)',
+check('5.26.1: o recado do servidor vale para UMA morte so (e limpo ao sair da tela)',
       'public static void esquecer()' in _mt and 'esquecer();' in _mt)
-check('5.26.0: o pacote subiu de versao (v16) — cliente velho e recusado com aviso',
+check('5.26.1: o pacote subiu de versao (v16) — cliente velho e recusado com aviso',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
-check('5.26.0: o VAMPIRO tem VISAO NOTURNA a noite (nao e so debuff)',
+check('5.26.1: o VAMPIRO tem VISAO NOTURNA a noite (nao e so debuff)',
       'private static void visaoNoturna(ServerPlayer p)' in _vs
       and 'MobEffects.NIGHT_VISION' in _vs and 'if (!noiteDele) {' in _vs
       and 'public static boolean escuro(ServerPlayer p)' in _vs
       and 'visaoNoturna(p);' in _vs)
-check('5.26.0: a NOITE agora tem duas camadas (efeito de 2 min + aviso pro cliente)',
+check('5.26.1: a NOITE agora tem duas camadas (efeito de 2 min + aviso pro cliente)',
       '2400, 0, false, false, true' in _vs and 'atual.getDuration() > 1200' in _vs
       and 'new VampiroNoitePayload(noiteDele)' in _vs)
-check('5.26.0: o /rp admin vampiro ver mostra a visao noturna a noite',
+check('5.26.1: o /rp admin vampiro ver mostra a visao noturna a noite',
       'vis\u00e3o noturna' in _vs)
 
-# ============ 5.26.0: AVISO DE MORTE PELO SOL ============
+# ============ 5.26.1: AVISO DE MORTE PELO SOL ============
 _mp2 = rd(R + '/MorteRpPayload.java')
 _cl2 = rd(R + '/CanonLife.java')
 _vs2 = rd(R + '/VampiroSistema.java')
 _mt2 = rd(C + '/MorteTelaRp.java')
-check('5.26.0: o pacote da morte leva TAMBEM se a morte foi o SOL (2 booleanos)',
+check('5.26.1: o pacote da morte leva TAMBEM se a morte foi o SOL (2 booleanos)',
       'record MorteRpPayload(boolean canon, boolean sol)' in _mp2
       and _mp2.count('ByteBufCodecs.BOOL') == 2)
-check('5.26.0: o servidor sabe que a morte foi o SOL (fogo + a marca que o sol acendeu)',
+check('5.26.1: o servidor sabe que a morte foi o SOL (fogo + a marca que o sol acendeu)',
       'public static boolean morreuPeloSol(ServerPlayer p' in _vs2
       and 'DamageTypeTags.IS_FIRE' in _vs2
       and 'ACESO_PELO_SOL.get(p.getUUID())' in _vs2 and '< 10_000L' in _vs2)
-check('5.26.0: a morte pelo sol NAO confunde lava/fogo de outro (precisa da marca do sol)',
+check('5.26.1: a morte pelo sol NAO confunde lava/fogo de outro (precisa da marca do sol)',
       'if (quando == null) {' in _vs2 and 'return false;   // o sol nunca acendeu fogo neste jogador' in _vs2)
-check('5.26.0: a mesa inteira e avisada de que ele morreu PEGANDO FOGO por causa do SOL',
+check('5.26.1: a mesa inteira e avisada de que ele morreu PEGANDO FOGO por causa do SOL',
       'avisarMortePeloSol(vitima)' in _cl2
       and 'morreu pegando fogo: o SOL o alcan' in _cl2
       and 'getPlayerList().getPlayers()' in _cl2)
-check('5.26.0: o proprio morto le que foi o SOL e o que teria salvado',
+check('5.26.1: o proprio morto le que foi o SOL e o que teria salvado',
       'morreu para o SOL' in _cl2 and 'amuleto do eclipse' in _cl2)
-check('5.26.0: a tela diz O SOL TE ALCANCOU e que ele morreu pegando fogo',
+check('5.26.1: a tela diz O SOL TE ALCANCOU e que ele morreu pegando fogo',
       'O SOL TE ALCAN' in _mt2 and 'morreu pegando fogo' in _mt2
       and 'teriam te salvado' in _mt2)
-check('5.26.0: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja, tremulando)',
+check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja, tremulando)',
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
-check('5.26.0: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
+check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.26.0: a versao subiu pra 5.26.0 (jar, mod e gradle)',
-      "version = '5.26.0'" in rd('build.gradle') and '5.26.0' in rd(R + '/RPTagMod.java'))
-check('5.26.0: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
+check('5.26.1: a versao subiu pra 5.26.1 (jar, mod e gradle)',
+      "version = '5.26.1'" in rd('build.gradle') and '5.26.1' in rd(R + '/RPTagMod.java'))
+check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
-# ============ 5.26.0: SOM DA INFECCAO, LOREZONE POR ENTRADA, CIBERPSICOSE QUE ATACA, ============
+# ============ 5.26.1: SOM DA INFECCAO, LOREZONE POR ENTRADA, CIBERPSICOSE QUE ATACA, ============
 # ============          VISAO NOTURNA EM DUAS CAMADAS E PROTEÇÃO DO ECLIPSE               ============
 _rm = rd(R + '/RPTagMod.java')
 _sj = rd('src/main/resources/assets/rptag/sounds.json')
@@ -3270,50 +3271,72 @@ _vv = rd(C + '/VisaoVampiroFx.java')
 _pt = rd('src/main/resources/assets/rptag/lang/pt_br.json')
 _en = rd('src/main/resources/assets/rptag/lang/en_us.json')
 
-check('5.26.0: a INFECCAO ganhou TRILHA propria (som registrado no mod)',
+check('5.26.1: a INFECCAO ganhou TRILHA propria (som registrado no mod)',
       'SOM_INFECCAO =' in _rm and '"infeccao_aviso"' in _rm)
-check('5.26.0: a INFECCAO 2 tambem tem trilha propria (outro som, outro arquivo)',
+check('5.26.1: a INFECCAO 2 tambem tem trilha propria (outro som, outro arquivo)',
       'SOM_INFECCAO2 =' in _rm and '"infeccao2_aviso"' in _rm)
-check('5.26.0: os dois sons existem no sounds.json (senao nao toca)',
+check('5.26.1: os dois sons existem no sounds.json (senao nao toca)',
       'infeccao_aviso' in _sj and 'infeccao2_aviso' in _sj)
-check('5.26.0: os arquivos .ogg das trilhas estao no mod (10 s cada, gerados por arte/audio_infeccao.py)',
+check('5.26.1: os arquivos .ogg das trilhas estao no mod (10 s cada, gerados por arte/audio_infeccao.py)',
       os.path.getsize('src/main/resources/assets/rptag/sounds/infeccao_aviso.ogg') > 60000
       and os.path.getsize('src/main/resources/assets/rptag/sounds/infeccao2_aviso.ogg') > 60000
       and os.path.exists('arte/audio_infeccao.py'))
-check('5.26.0: quem toca a trilha e o FX do cliente, no mesmo instante da animacao',
+check('5.26.1: quem toca a trilha e o FX do cliente, no mesmo instante da animacao',
       'SOM_INFECCAO.get()' in _fx1 and 'SOM_INFECCAO2.get()' in _fx2)
-check('5.26.0: o servidor parou de tocar os 2 sons baixinhos da infeccao (era o "fraco")',
+check('5.26.1: o servidor parou de tocar os 2 sons baixinhos da infeccao (era o "fraco")',
       'case 38, 39 -> { }' in rd(R + '/RPCommands.java'))
-check('5.26.0: LOREZONE mostra o titulo/aviso a CADA ENTRADA (nao mais uma vez na vida)',
+check('5.26.1: LOREZONE mostra o titulo/aviso a CADA ENTRADA (nao mais uma vez na vida)',
       'data.marcarAvisoVisto(uuid, zone.id());' in _lz and 'show(player, zone);' in _lz
       and 'if (!data.avisoVisto(uuid, zone.id())) {' not in _lz)
-check('5.26.0: dentro da zona aparece UMA vez (so dispara na entrada, nao a cada segundo)',
+check('5.26.1: dentro da zona aparece UMA vez (so dispara na entrada, nao a cada segundo)',
       'boolean entrouAgora = !prev.contains(zone.id());' in _lz and 'if (entrouAgora) {' in _lz
       and 'AVISOS_POR_ENTRADA' in _lz)
-check('5.26.0: CIBERPSICOSE ataca quem esta perto SEM o jogador querer (jogador primeiro)',
+check('5.26.1: CIBERPSICOSE ataca quem esta perto SEM o jogador querer (jogador primeiro)',
       'public final class CiberpsicoseSistema' in _cp2
       and 'acharAlvo' in _cp2 and 'return melhorJogador != null ? melhorJogador : melhorBicho;' in _cp2)
-check('5.26.0: o golpe da ciberpsicose e um golpe DE VERDADE do jogo (arma/dano/knockback)',
+check('5.26.1: o golpe da ciberpsicose e um golpe DE VERDADE do jogo (arma/dano/knockback)',
       'p.attack(alvo);' in _cp2 and 'p.swing(InteractionHand.MAIN_HAND, true);' in _cp2
       and 'PLAYER_ATTACK_CRIT' in _cp2)
-check('5.26.0: o sistema da ciberpsicose roda no tick do servidor',
+check('5.26.1: o sistema da ciberpsicose roda no tick do servidor',
       'CiberpsicoseSistema.tick(p);' in rd(R + '/ServerEvents.java'))
-check('5.26.0: a visao noturna agora dura 2 min (nao 16 s) e a noite comeca no anoitecer',
+check('5.26.1: a visao noturna agora dura 2 min (nao 16 s) e a noite comeca no anoitecer',
       '2400, 0, false, false, true' in _vs and 't >= 12000L && t < 23600L' in _vs)
-check('5.26.0: e o servidor avisa o CLIENTE que o vampiro esta na noite dele',
+check('5.26.1: e o servidor avisa o CLIENTE que o vampiro esta na noite dele',
       'record VampiroNoitePayload(boolean noite)' in _vn
       and 'registrar.playToClient(VampiroNoitePayload.TYPE' in rd(R + '/ModNetworking.java')
       and 'handleVampiroNoite' in rd(C + '/ClientPayloadHandler.java'))
-check('5.26.0: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta escuro',
+check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta escuro',
       'public final class VisaoVampiroFx' in _vv and 'desenharClarao' in _vv
-      and 'getMaxLocalRawBrightness' in _vv and 'VisaoVampiroFx.registrar(event);' in rd(C + '/ClientGuiLayers.java'))
-check('5.26.0: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
+      and 'getMaxLocalRawBrightness' in _vv
+      and 'seguro("visao_vampiro", () -> VisaoVampiroFx.registrar(event))' in rd(C + '/ClientGuiLayers.java'))
+check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.26.0: a versao subiu pra 5.26.0 (jar, mod e gradle)',
-      "version = '5.26.0'" in rd('build.gradle') and '5.26.0' in _rm)
-check('5.26.0: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
+check('5.26.1: a versao subiu pra 5.26.1 (jar, mod e gradle)',
+      "version = '5.26.1'" in rd('build.gradle') and '5.26.1' in _rm)
+check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
+
+# ============ 5.26.1: HOTFIX DO CRASH DO CLIENTE (camada registrada duas vezes) ============
+_vv2 = rd(C + '/VisaoVampiroFx.java')
+_cgl = rd(C + '/ClientGuiLayers.java')
+check('5.26.1: a visao de vampiro e registrada em UM lugar so (o crash "Layer already registered")',
+      '@EventBusSubscriber' not in _vv2 and '@SubscribeEvent' not in _vv2
+      and _cgl.count('VisaoVampiroFx.registrar(event)') == 1
+      and _cgl.count('seguro("visao_vampiro"') == 1)
+check('5.26.1: nenhuma camada e registrada duas vezes no cliente (checagem em TODO o codigo)',
+      (lambda: (lambda ids: len(ids) == len(set(ids)))(
+          re.findall(r'registerAboveAll\(\s*ResourceLocation\.fromNamespaceAndPath\(RPTagMod\.MODID, "([a-z0-9_]+)"\)',
+                     ''.join(rd(f) for f in glob.glob(C + '/*.java')))))())
+check('5.26.1: nenhum aviso do cliente esta anotado com @EventBusSubscriber E chamado na mao',
+      (lambda: all(('@EventBusSubscriber' not in rd(C + '/' + f))
+                   for f in os.listdir(C) if f.endswith('AvisoFx.java') or f.endswith('Fx.java'))))
+check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mais o cliente)',
+      'private static void seguro(String nome, Runnable registro)' in _cgl
+      and 'catch (Throwable erro)' in _cgl
+      and _cgl.count('seguro("') >= 37)
+check('5.26.1: a versao subiu pra 5.26.1 (jar, mod e gradle)',
+      "version = '5.26.1'" in rd('build.gradle') and '5.26.1' in rd(R + '/RPTagMod.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -1,0 +1,82 @@
+PROVA 5.26.1 — HOTFIX do crash do CLIENTE na tela de carregamento
+Servidor de verdade (NeoForge 21.1.249 / MC 1.21.1 / Java 21) + análise do log do dono.
+
+===============================================================================
+1. O QUE ACONTECEU (o log que o dono mandou, gPvNmKkL.log)
+===============================================================================
+O cliente nem abria: morria na tela de carregamento.
+
+  [Render thread/ERROR] Exception caught during firing event: Layer already registered: rptag:visao_vampiro
+  java.lang.IllegalArgumentException: Layer already registered: rptag:visao_vampiro
+      at ...VisaoVampiroFx.registrar(VisaoVampiroFx.java:52)
+      at ...ClientGuiLayers.onRegisterGuiLayers(ClientGuiLayers.java:92)
+      at ...Minecraft.<init>(Minecraft.java:601)          <- ainda no construtor do jogo
+  [Render thread/FATAL] Preparing crash report with UUID 9ee17480-...
+
+Causa (minha): eu criei a camada da visão de vampiro na 5.26.0 e registrei ELA DUAS VEZES:
+  (1) com a anotação de listener automático na própria classe (VisaoVampiroFx), e
+  (2) com a chamada no lugar de sempre (ClientGuiLayers).
+O NeoForge não aceita a mesma camada duas vezes e derruba o cliente na inicialização.
+
+===============================================================================
+2. O CONSERTO
+===============================================================================
+(a) A camada agora é registrada em UM lugar só:
+    ClientGuiLayers.onRegisterGuiLayers →
+        seguro("visao_vampiro", () -> VisaoVampiroFx.registrar(event));
+    e a classe VisaoVampiroFx perdeu a anotação de listener automático (com um aviso
+    escrito no código pra ninguém repetir isso).
+
+(b) BLINDAGEM (a parte que vale pra sempre): TODAS as 37 camadas do cliente passaram a
+    ser registradas por um "seguro(...)" que pega qualquer erro no registro, escreve no
+    log QUAL camada falhou e SEGUE ABRINDO O JOGO:
+        RP Tag: a camada 'X' nao pode ser registrada (o jogo segue sem ela)
+    Ou seja: mesmo que um dia entre outra camada repetida, o cliente NÃO cai mais.
+
+===============================================================================
+3. PROVA (bytecode do jar final — é exatamente o que o NeoForge checa)
+===============================================================================
+1) A classe da camada tem anotação de listener automático?
+   $ javap -v -p build/classes dev.rptag.client.VisaoVampiroFx | grep -cE "SubscribeEvent|EventBusSubscriber"
+   0        <- era 2 na 5.26.0 (a anotação na classe + no método). Zero agora.
+
+2) O método registrar é só um método comum (sem anotação):
+   public static void registrar(RegisterGuiLayersEvent);
+     flags: ACC_PUBLIC, ACC_STATIC      <- nenhuma anotação de event bus
+
+3) No jar final, quantas vezes a camada é registrada?
+   $ unzip -p rptag-5.26.1.jar dev/rptag/client/ClientGuiLayers.class | strings | grep -c visao_vampiro
+   1        <- um registro só (o da 5.26.0 tinha 2 caminhos e estourava)
+
+4) ClientGuiLayers referencia registrar 1 vez: 1
+
+5) check.py ganhou 2 guardas novas (pra esse bug nunca voltar):
+   - nenhuma camada registrada com o mesmo id duas vezes em TODO o código do cliente;
+   - nenhuma classe de aviso pode ter listener automático E ser chamada na mão.
+
+===============================================================================
+4. O QUE NÃO PUDE PROVAR AQUI (e por quê)
+===============================================================================
+Não consigo abrir um cliente Minecraft neste sandbox: a máquina tem 1 GB de RAM e
+nenhuma GPU (o cliente pede ~2 GB e um OpenGL de verdade). O teste do jar foi feito no
+SERVIDOR; o conserto do cliente é provado no bytecode (acima), que é exatamente a
+condição que o NeoForge avalia, + a blindagem que impede o crash mesmo se algo escapar.
+
+===============================================================================
+5. SERVIDOR COM O JAR FINAL 5.26.1
+===============================================================================
+Mod List: RP Tag 5.26.1 (rptag)  → carregou normal
+$ rp ajuda    → lista ciberpsicose, eclipse, infeccao, vampiro
+grep -cE "Exception|ERROR" run/logs/latest.log → 0
+
+===============================================================================
+6. CHECAGENS
+===============================================================================
+javac --release 21 ............... sem erros
+check.py ......................... 1068 PASS / 0 FAIL
+arte/validar.py .................. 54 ok, 0 falhas
+jar .............................. build/libs/rptag-5.26.1.jar (35.947.578 bytes)
+
+Tudo o que a 5.26.0 trazia continua igual (trilhas das infecções, lorezone por
+entrada, ciberpsicose que ataca, visão noturna em duas camadas, PROTEÇÃO DO ECLIPSE).
+Protocolo v18 (o mesmo da 5.26.0 — servidor e cliente no MESMO jar).

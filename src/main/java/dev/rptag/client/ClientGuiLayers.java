@@ -31,74 +31,76 @@ public final class ClientGuiLayers {
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         // (3.92.0) ASCENSÃO: camada do FX cinematográfico (pilar de luz,
         // asas, hexagrama, letras caindo) — a mensagem vem do comando
-        DivinoAvisoFx.registrar(event);
+        seguro("divino_aviso_fx", () -> DivinoAvisoFx.registrar(event));
         // (3.93.0) CHAMADO DO ABISMO: camada do FX do demoniaco (mandibulas,
         // fissuras de lava, pentagrama, chifres, olho) — mensagem do comando
-        DemoniacoAvisoFx.registrar(event);
-        SangueAvisoFx.registrar(event);
-        VoidAvisoFx.registrar(event);
-        PesadeloAvisoFx.registrar(event);
+        seguro("demoniaco_aviso_fx", () -> DemoniacoAvisoFx.registrar(event));
+        seguro("sangue_aviso_fx", () -> SangueAvisoFx.registrar(event));
+        seguro("void_aviso_fx", () -> VoidAvisoFx.registrar(event));
+        seguro("pesadelo_aviso_fx", () -> PesadeloAvisoFx.registrar(event));
         // (3.97.0) FORNALHA (inferno), GEADA ETERNA (gelo), TRADUCAO ARCANA (runico)
-        InfernoAvisoFx.registrar(event);
-        GeloAvisoFx.registrar(event);
-        RunicoAvisoFx.registrar(event);
+        seguro("inferno_aviso_fx", () -> InfernoAvisoFx.registrar(event));
+        seguro("gelo_aviso_fx", () -> GeloAvisoFx.registrar(event));
+        seguro("runico_aviso_fx", () -> RunicoAvisoFx.registrar(event));
         // (3.98.0) estilo 11 = PESADELO2 "Sono Sem Descanso" (o modelo
         // antigo, do 3.96.4, mantido como opcao ao lado do "Seguido")
-        PesadeloAntigoAvisoFx.registrar(event);
+        seguro("pesadelo_antigo_aviso_fx", () -> PesadeloAntigoAvisoFx.registrar(event));
         // (4.1.0) estilo 4 = MORTE "Linha Reta" (monitor cardiaco que vira
         // linha reta + cranio pixel art + cinzas) — vale pro aviso de morte
         // do /rp admin avisar e pro ritual da VIDA CANONICA
-        MorteAvisoFx.registrar(event);
+        seguro("morte_aviso_fx", () -> MorteAvisoFx.registrar(event));
         // (4.5.0) estilo 12 = EGIPICIO "O Olho de Horus" (cartucho + hieroglifos + areia)
-        EgipcioAvisoFx.registrar(event);
+        seguro("egipcio_aviso_fx", () -> EgipcioAvisoFx.registrar(event));
         // (4.9.9) estilo 3 = REAL "Decreto da Coroa"
-        RealAvisoFx.registrar(event);
+        seguro("real_aviso_fx", () -> RealAvisoFx.registrar(event));
         // (4.9.2) estilo 13 = EXPURGO "Hora do Expurgo" (TV de emergencia:
         // estatica, contagem 5-4-3-2-1, sirene, mascaras) — prototipo do dono
-        ExpurgoAvisoFx.registrar(event);
+        seguro("expurgo_aviso_fx", () -> ExpurgoAvisoFx.registrar(event));
         // (4.9.3) estilo 14 = CIBERPSICOSE "Alerta de Ciberpsicose" (glitch
         // cyberpunk: estatica, humanidade caindo, vidro estilhacando, ECG)
-        CiberpsicoseAvisoFx.registrar(event);
+        seguro("ciberpsicose_aviso_fx", () -> CiberpsicoseAvisoFx.registrar(event));
         // (5.14.0) os tres avisos do dono: Louco, Marinheiro (Enforcado) e Espectador (Justica)
-        LoucoAvisoFx.registrar(event);
-        MarinheiroAvisoFx.registrar(event);
-        EspectadorAvisoFx.registrar(event);
-        EremitaAvisoFx.registrar(event);
-        JulgamentoAvisoFx.registrar(event);
-        LuaAvisoFx.registrar(event);
-        MagoAvisoFx.registrar(event);
-        MorteTarotAvisoFx.registrar(event);
-        SolTarotAvisoFx.registrar(event);
-        TorreAvisoFx.registrar(event);
-        EstrelaAvisoFx.registrar(event);
-        ToloAvisoFx.registrar(event);
+        seguro("louco_aviso_fx", () -> LoucoAvisoFx.registrar(event));
+        seguro("marinheiro_aviso_fx", () -> MarinheiroAvisoFx.registrar(event));
+        seguro("espectador_aviso_fx", () -> EspectadorAvisoFx.registrar(event));
+        seguro("eremita_aviso_fx", () -> EremitaAvisoFx.registrar(event));
+        seguro("julgamento_aviso_fx", () -> JulgamentoAvisoFx.registrar(event));
+        seguro("lua_aviso_fx", () -> LuaAvisoFx.registrar(event));
+        seguro("mago_aviso_fx", () -> MagoAvisoFx.registrar(event));
+        seguro("morte_tarot_aviso_fx", () -> MorteTarotAvisoFx.registrar(event));
+        seguro("sol_tarot_aviso_fx", () -> SolTarotAvisoFx.registrar(event));
+        seguro("torre_aviso_fx", () -> TorreAvisoFx.registrar(event));
+        seguro("estrela_aviso_fx", () -> EstrelaAvisoFx.registrar(event));
+        seguro("tolo_aviso_fx", () -> ToloAvisoFx.registrar(event));
         // (5.5.0) estilo 15 = ENERGIA "Anomalia de Entropia" (raios, plasma
         // roxo, glitch, medidor de entropia) — protótipo do dono
-        EnergiaAvisoFx.registrar(event);
+        seguro("energia_aviso_fx", () -> EnergiaAvisoFx.registrar(event));
         // (5.7.0) estilo 16 = CONHECIMENTO "O Olho que Sabe" (anéis de runas,
         // olho dourado, olhinhos nas beiradas, sussurros) — protótipo do dono
-        ConhecimentoAvisoFx.registrar(event);
+        seguro("conhecimento_aviso_fx", () -> ConhecimentoAvisoFx.registrar(event));
         // (5.7.9) os avisos dos protótipos do dono (o ONE FOR ALL saiu na 5.16.4):
         //   20 = MORTEOP    (espiral, relógio, crânio se desmanchando em cinzas)
-        MorteOpAvisoFx.registrar(event);
+        seguro("morte_op_aviso_fx", () -> MorteOpAvisoFx.registrar(event));
         // (5.8.1) 22 = MEDOOP (a membrana, a lanterna e a silhueta alta)
-        MedoOpAvisoFx.registrar(event);
+        seguro("medo_op_aviso_fx", () -> MedoOpAvisoFx.registrar(event));
         // (5.7.0) ANIMAÇÃO DE SAÍDA do jogador (sprite dissolvendo em código)
-        SaidaPlayerFx.registrar(event);
+        seguro("saida_player_fx", () -> SaidaPlayerFx.registrar(event));
         // (5.17.0) 37 = FITA CASSETE (o aviso que a fita toca)
-        FitaAvisoFx.registrar(event);
+        seguro("fita_aviso_fx", () -> FitaAvisoFx.registrar(event));
         // (5.24.3) 38 = INFECCAO (veias + olho + FORCA x SANIDADE) e 39 = a variante Minecraft
-        // (5.26.0) a visão de vampiro (clarão prateado no escuro, quando o servidor avisa)
-        VisaoVampiroFx.registrar(event);
-        InfeccaoAvisoFx.registrar(event);
-        Infeccao2AvisoFx.registrar(event);
+        // (5.26.0) a visão de vampiro (clarão prateado no escuro, quando o servidor avisa).
+        // (5.26.1) registrada AQUI e em nenhum outro lugar — ela já esteve anotada com
+        // @EventBusSubscriber também, e o NeoForge derrubou o cliente por camada repetida.
+        seguro("visao_vampiro", () -> VisaoVampiroFx.registrar(event));
+        seguro("infeccao_aviso_fx", () -> InfeccaoAvisoFx.registrar(event));
+        seguro("infeccao2aviso_fx", () -> Infeccao2AvisoFx.registrar(event));
         // (5.17.0) a BARRA que fica sempre na tela e a AXION no canto inferior direito
-        BarraHudFx.registrar(event);
+        seguro("barra_hud_fx", () -> BarraHudFx.registrar(event));
         AxionHud.registrar(event);
         // (5.12.0) 23 = ENGOLIR (o terremoto levando a pessoa — protótipo do dono)
-        EngolirFx.registrar(event);
+        seguro("engolir_fx", () -> EngolirFx.registrar(event));
         // (5.7.2) SOMBRA DA MORTE: a escuridão saindo do corpo de quem morre
-        SombraMorteFx.registrar(event);
+        seguro("sombra_morte_fx", () -> SombraMorteFx.registrar(event));
         // (5.4.0) EVENTO NEPTUNE: terremoto (nebulosa + poeira + visao dupla),
         // saida verde, susto do bicho, nebulosa do vazio e aura do deus.
         event.registerAboveAll(
@@ -121,5 +123,21 @@ public final class ClientGuiLayers {
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "canon_banner"),
                 (g, delta) -> ClientEffects.desenhaBannerCanon(g));
+    }
+
+    /**
+     * (5.26.1) REGISTRO À PROVA DE BALA — lição do log do dono (cliente morreu na tela de
+     * carregamento com "Layer already registered: rptag:visao_vampiro").
+     *
+     * <p>Uma camada repetida (ou qualquer erro de registro) não pode mais derrubar o jogo: o
+     * erro fica no log com o nome da camada e o cliente segue abrindo com as outras.
+     */
+    private static void seguro(String nome, Runnable registro) {
+        try {
+            registro.run();
+        } catch (Throwable erro) {
+            RPTagMod.LOGGER.error("RP Tag: a camada '{}' nao pode ser registrada (o jogo segue sem ela)",
+                    nome, erro);
+        }
     }
 }

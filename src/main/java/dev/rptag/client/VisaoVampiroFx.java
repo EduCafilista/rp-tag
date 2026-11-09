@@ -4,9 +4,6 @@ import dev.rptag.RPTagMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 
 /**
@@ -30,7 +27,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
  *   <li>sem efeito colateral no jogo: nada de mexer no brilho do cliente dele.</li>
  * </ul>
  */
-@EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class VisaoVampiroFx {
 
     /** true = o servidor disse que ESTE jogador é vampiro e é noite no mundo dele. */
@@ -47,7 +43,15 @@ public final class VisaoVampiroFx {
         return noiteDoVampiro;
     }
 
-    @SubscribeEvent
+    /**
+     * (5.26.1) ATENÇÃO: esta camada é registrada em UM lugar só —
+     * {@code ClientGuiLayers.onRegisterGuiLayers} (igual a todos os outros avisos do mod).
+     *
+     * <p>Na 5.26.0 ela estava nos DOIS lugares (aqui como listener automatico e também
+     * chamada de lá), e o NeoForge não aceita a mesma camada duas vezes:
+     * <i>"Layer already registered: rptag:visao_vampiro"</i> → o cliente morria na tela de
+     * carregamento. Esta classe NUNCA deve virar um listener automatico de event bus.
+     */
     public static void registrar(RegisterGuiLayersEvent event) {
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "visao_vampiro"),
