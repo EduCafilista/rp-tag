@@ -66,6 +66,7 @@ public final class CiberpsicoseAvisoFx {
 
     /** segundos <= 0: fica até chamar parar(). */
     public static void iniciar(String mensagem, float segundos) {
+        seguindoEfeito = false;   // (5.27.0) a tela do comando não morre junto com o efeito
         msg = (mensagem == null || mensagem.isEmpty()) ? "CIBERPSICOSE DETECTADA" : mensagem.toUpperCase();
         dur = segundos; pararEm = -1; evIdx = 0; spikeTocado = -1; somTocou = false;
         inicio = System.nanoTime();
@@ -112,12 +113,28 @@ public final class CiberpsicoseAvisoFx {
      * <p>O modo antigo (o aviso de 30 s do {@code /rp admin avisar ... ciberpsicose}) continua
      * funcionando: se um aviso estiver rodando, o efeito não atropela ele.
      */
+    /**
+     * (5.27.0) A TELA SÓ "SEGUE O EFEITO" QUANDO FOI O EFEITO QUE A LIGOU.
+     *
+     * <p>Bug que o dono viu (<i>"os avisos parecem que estão muito rápidos, o de ciberpsicose
+     * dura 2 segundos"</i>): este método rodava a cada quadro e, se o jogador NÃO tivesse o
+     * efeito {@code rptag:ciberpsicose}, matava a tela na hora. Só que o aviso do ADM
+     * ({@code /rp admin avisar <jogador> ciberpsicose ...}) é só TELA — ninguém ganha o efeito —
+     * então ela nascia e morria em ~1,4 s (o tempo da saída).
+     *
+     * <p>Agora existe a marca {@link #seguindoEfeito}: só as telas abertas POR CAUSA do efeito
+     * são desligadas quando ele acaba. As telas abertas por comando duram o que o comando manda.
+     */
+    private static boolean seguindoEfeito;
+
     private static void seguirEfeito() {
         var mc = net.minecraft.client.Minecraft.getInstance();
         boolean tem = mc.player != null && mc.player.hasEffect(dev.rptag.RPEffects.CIBERPSICOSE);
         if (tem && inicio < 0) {
+            seguindoEfeito = true;
             iniciar("CIBERPSICOSE DETECTADA", 0);   // 0 = fica até o efeito acabar
-        } else if (!tem && inicio >= 0 && pararEm < 0) {
+        } else if (!tem && seguindoEfeito && inicio >= 0 && pararEm < 0) {
+            seguindoEfeito = false;
             parar();                                // efeito acabou: roda a saída e desliga
         }
     }

@@ -89,7 +89,7 @@ public final class RPCommands {
                 : "VOCE PERDEU SUA ULTIMA VIDA \u2014 TOME CUIDADO";
         ServerPlayer online = alvo.online();
         if (online != null) {
-            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(online, new ScreenTextPayload(msg, 8, 4));
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(online, new ScreenTextPayload(msg, 12, 4));   // (5.27.0) 12 s: o dono achava rapido demais
             online.playNotifySound(net.minecraft.sounds.SoundEvents.LIGHTNING_BOLT_THUNDER,
                     net.minecraft.sounds.SoundSource.WEATHER, 3.0F, 0.8F);
             if (depois == 0) {
@@ -125,7 +125,7 @@ public final class RPCommands {
         ServerPlayer online = alvo.online();
         if (online != null) {
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(online, new ScreenTextPayload(
-                    "VOCE GANHOU UMA NOVA CHANCE \u2014 uma vida canonica foi restaurada (" + depois + "/5)", 6, 0));
+                    "VOCE GANHOU UMA NOVA CHANCE \u2014 uma vida canonica foi restaurada (" + depois + "/5)", 12, 0));
             online.playNotifySound(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
                     net.minecraft.sounds.SoundSource.PLAYERS, 0.9F, 1.4F);
         } else {
@@ -558,7 +558,7 @@ public final class RPCommands {
         } else if (style == 0 && traduzido.indexOf('\u00a7') < 0) {
             traduzido = "\u00a7c" + traduzido; // sem cor? VERMELHO (o classic "voce esta sendo observado")
         }
-        ScreenTextPayload payload = new ScreenTextPayload(traduzido, 8, style); // (3.61.0) 8s: aviso serio pede tempo
+        ScreenTextPayload payload = new ScreenTextPayload(traduzido, 12, style); // (5.27.0) 12 s (era 8): aviso serio pede tempo
         for (ServerPlayer alvo : alvos) {
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo, payload);
             somAviso(alvo, style);
@@ -879,7 +879,7 @@ public final class RPCommands {
         if (traduzido.indexOf('\u00a7') < 0) {
             traduzido = "\u00a7c" + traduzido;
         }
-        ScreenTextPayload payload = new ScreenTextPayload(traduzido, 8, 0);
+        ScreenTextPayload payload = new ScreenTextPayload(traduzido, 12, 0);   // (5.27.0) 12 s
         int n = 0;
         for (ServerPlayer p : ctx.getSource().getServer().getPlayerList().getPlayers()) {
             if (p.level().dimension() == zona.dimension()

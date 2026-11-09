@@ -81,6 +81,8 @@ public final class NeptuneEventos {
     // ------------------------------------------------------------------ estado
     /** terremoto */
     private static boolean terremotoAtivo = false;
+    /** (5.27.0) quando abre a próxima fenda em volta dos jogadores (ms). */
+    private static long proximaFenda = 0L;
     private static long terremotoFim = 0;
     private static float terremotoForca = 1.0F;
     private static long proximoRumble = 0;
@@ -199,6 +201,7 @@ public final class NeptuneEventos {
 
     public static void iniciarTerremoto(MinecraftServer server, int segundos) {
         terremotoAtivo = true;
+        proximaFenda = System.currentTimeMillis() + 3000L;   // (5.27.0) a 1a fenda vem 3 s depois
         terremotoFim = System.currentTimeMillis() + Math.max(10, segundos) * 1000L;
         terremotoForca = 1.0F;
         proximoRumble = 0;
@@ -397,6 +400,22 @@ public final class NeptuneEventos {
             }
         }
 
+        // ---- (5.27.0) A TERRA RACHANDO EM VOLTA: durante o evento inteiro, a cada ~2,5 s,
+        // uma fenda nova abre perto de um jogador (não só embaixo de quem está parado).
+        if (agora >= proximaFenda) {
+            proximaFenda = agora + 2500L;
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                try {
+                    if (p.isSpectator() || p.isDeadOrDying()) {
+                        continue;
+                    }
+                    abrirFendaPerto(p);
+                } catch (Throwable t) {
+                    RPTagMod.LOGGER.warn("RP Tag: fenda em volta falhou", t);
+                }
+            }
+        }
+
         // ---- PULSOS: 6 s estuncado, 4 s livre (dá pra correr)
         if (agora >= proximoPulso) {
             faseTravado = !faseTravado;
@@ -590,6 +609,90 @@ public final class NeptuneEventos {
      * {@code /terremoto fenda} usa quando o admin quer testar no chão em que
      * está pisando, e é o mesmo motor que roda embaixo dos jogadores.
      */
+    /**
+     * (5.27.0) A TERRA SE ABRINDO EM VOLTA — pedido do dono: <i>"quando o terremoto começar,
+     * pode começar a aparecer fendas na terra, se abrindo e buracos para os players caírem e
+     * ficarem presos"</i>.
+     *
+     * <p>Antes o terremoto só abria um buraco <b>embaixo de quem estava parado</b> (o pulso
+     * "travado"). Agora, durante o evento inteiro, o chão racha <b>em volta</b> dos jogadores:
+     * a cada ~2,5 s aparece uma fenda nova num ponto sorteado a 3–14 blocos de um jogador —
+     * com a cova funda (dá para cair e não sair pulando), os braços de rachadura na superfície
+     * e o estrondo de terra.
+     *
+     * <p>Nunca abre dentro de casa: só onde o chão é terra/pedra natural (mesma lista de
+     * blocos caváveis do {@link #abrirFenda(ServerPlayer)}).
+     *
+     * @return true se a fenda abriu
+     */
+    public static boolean abrirFendaPerto(ServerPlayer p) {
+        try {
+            if (!(p.level() instanceof ServerLevel nv)) {
+                return false;
+            }
+            java.util.Random r = new java.util.Random(nv.getRandom().nextLong());
+            for (int tentativa = 0; tentativa < 6; tentativa++) {
+                double ang = r.nextDouble() * Math.PI * 2.0D;
+                double dist = 3.0D + r.nextDouble() * 11.0D;
+                int x = (int) Math.floor(p.getX() + Math.cos(ang) * dist);
+                int z = (int) Math.floor(p.getZ() + Math.sin(ang) * dist);
+                int y = nv.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                BlockPos chao = new BlockPos(x, y - 1, z);
+                if (!CAVEIS.contains(nv.getBlockState(chao).getBlock())) {
+                    continue;                 // não é terra/pedra (construção, água...): tenta outro
+                }
+                cavarFendaFundo(nv, chao, r);
+                return true;
+            }
+            return false;
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui abrir a fenda em volta", t);
+            return false;
+        }
+    }
+
+    /** a fenda de verdade — versão funda (3 blocos), para o jogador ficar preso lá dentro. */
+    private static void cavarFendaFundo(ServerLevel nv, BlockPos chao, java.util.Random r) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (Math.abs(dx) + Math.abs(dz) == 2 && r.nextBoolean()) {
+                    continue;                 // cantos às vezes ficam: a cova não é um quadrado perfeito
+                }
+                for (int dy = 0; dy >= -2; dy--) {
+                    cavar(nv, chao.offset(dx, dy, dz), r);
+                }
+            }
+        }
+        // braços de rachadura na superfície
+        int bracos = 3 + r.nextInt(3);
+        for (int b = 0; b < bracos; b++) {
+            double ang = (Math.PI * 2 * b / bracos) + (r.nextDouble() - 0.5) * 0.9;
+            int x = chao.getX();
+            int z = chao.getZ();
+            int comp = 4 + r.nextInt(5);
+            for (int i = 0; i < comp; i++) {
+                ang += (r.nextDouble() - 0.5) * 0.75;
+                x += (int) Math.round(Math.cos(ang));
+                z += (int) Math.round(Math.sin(ang));
+                for (int dy = -1; dy <= 2; dy++) {
+                    if (cavar(nv, new BlockPos(x, chao.getY() + dy, z), r)) {
+                        break;
+                    }
+                }
+            }
+        }
+        nv.playSound(null, chao, net.minecraft.sounds.SoundEvents.WITHER_BREAK_BLOCK,
+                SoundSource.BLOCKS, 1.0F, 0.5F);
+        nv.playSound(null, chao, net.minecraft.sounds.SoundEvents.DEEPSLATE_BREAK,
+                SoundSource.BLOCKS, 0.9F, 0.55F);
+        nv.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                chao.getX() + 0.5D, chao.getY() + 1.0D, chao.getZ() + 0.5D, 12, 1.0D, 0.2D, 1.0D, 0.02D);
+        nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
+                        net.minecraft.core.particles.ParticleTypes.BLOCK,
+                        nv.getBlockState(chao.below()).getBlock().defaultBlockState()),
+                chao.getX() + 0.5D, chao.getY() + 1.0D, chao.getZ() + 0.5D, 24, 1.2D, 0.3D, 1.2D, 0.12D);
+    }
+
     public static boolean abrirFendaEm(ServerLevel nv, BlockPos perto) {
         try {
             BlockPos chao = null;
@@ -2037,7 +2140,7 @@ public final class NeptuneEventos {
         if (escapou) {
             // (5.16.4) a CONQUISTA: só quem saiu pelo portal sozinho vê
             PacketDistributor.sendToPlayer(p, new ScreenTextPayload(
-                    "\u00a76\u00a7lVOC\u00ca CONQUISTOU A SA\u00cdDA", 9, 7));
+                    "\u00a76\u00a7lVOC\u00ca CONQUISTOU A SA\u00cdDA", 12, 7));
         }
         RPTagMod.LOGGER.info("RP Tag: {} saiu do vazio ({})", p.getName().getString(),
                 escapou ? "pelo portal" : "tirado por admin");

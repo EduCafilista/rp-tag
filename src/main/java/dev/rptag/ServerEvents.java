@@ -63,16 +63,21 @@ public final class ServerEvents {
         // (5.25.0) VAMPIRO: uma vez por segundo o sol decide se queima ou não.
         // Só faz trabalho pra quem é vampiro (quem não é sai na primeira linha).
         if (event.getServer().getTickCount() % 20 == 0) {
-            try {
-                for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
+            for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
+                // (5.27.0) try/catch POR JOGADOR: um problema num participante não pode
+                // desligar o tick dos outros (era isso que fazia "às vezes não acontece nada").
+                try {
                     VampiroSistema.tick(p);
-                    // (5.26.0) CIBERPSICOSE: de 2 em 2 ou 4 em 4 segundos a mão dele ataca sozinha
-                    // quem estiver perto (jogador primeiro). Sai na primeira linha pra quem não tem
-                    // o efeito.
-                    CiberpsicoseSistema.tick(p);
+                } catch (Throwable t) {
+                    RPTagMod.LOGGER.warn("RP Tag: tick do vampiro falhou para " + p.getName().getString(), t);
                 }
-            } catch (Throwable t) {
-                RPTagMod.LOGGER.warn("RP Tag: tick do vampiro falhou", t);
+                try {
+                    // (5.26.0) CIBERPSICOSE: de ~1 em ~2 segundos a mão dele ataca sozinha quem
+                    // estiver perto (jogador primeiro). Sai na primeira linha pra quem não tem o efeito.
+                    CiberpsicoseSistema.tick(p);
+                } catch (Throwable t) {
+                    RPTagMod.LOGGER.warn("RP Tag: tick da ciberpsicose falhou para " + p.getName().getString(), t);
+                }
             }
         }
     }
@@ -351,7 +356,7 @@ public final class ServerEvents {
         // (4.5.0) recado de vida deixado por um admin enquanto a pessoa estava offline
         String recado = data.consumirRecadoVida(joined.getUUID());
         if (recado != null && !recado.isBlank()) {
-            PacketDistributor.sendToPlayer(joined, new ScreenTextPayload(recado, 8, 4));
+            PacketDistributor.sendToPlayer(joined, new ScreenTextPayload(recado, 12, 4));
             joined.playNotifySound(net.minecraft.sounds.SoundEvents.LIGHTNING_BOLT_THUNDER,
                     net.minecraft.sounds.SoundSource.WEATHER, 1.2F, 0.8F);
         }

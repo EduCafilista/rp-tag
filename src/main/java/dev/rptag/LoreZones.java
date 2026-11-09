@@ -66,7 +66,7 @@ public final class LoreZones {
             // aviso vazio = desligado (zona usa o titulo classico)
             tag.putString("Aviso", aviso == null ? "" : aviso);
             tag.putInt("AvisoEstilo", avisoEstilo);
-            tag.putInt("AvisoSeg", avisoSeg == 0 ? 8 : avisoSeg);
+            tag.putInt("AvisoSeg", avisoSeg == 0 ? 12 : avisoSeg);   // (5.27.0) padrao 12 s
             // (4.0.0) faixa vertical (minY/maxY) — ex.: so a caverna
             tag.putDouble("MinY", minY);
             tag.putDouble("MaxY", maxY);
@@ -89,7 +89,7 @@ public final class LoreZones {
                     tag.contains("Aviso") ? tag.getString("Aviso") : "",
                     Math.max(0, Math.min(39, tag.getInt("AvisoEstilo"))),
                     tag.contains("AvisoSeg") && tag.getInt("AvisoSeg") > 0
-                            ? tag.getInt("AvisoSeg") : 8,
+                            ? tag.getInt("AvisoSeg") : 12,
                     // (4.0.0) zonas antigas: sem faixa = esfera inteira
                     tag.contains("MinY") ? tag.getDouble("MinY") : tag.getDouble("Y") - tag.getDouble("Radius"),
                     tag.contains("MaxY") ? tag.getDouble("MaxY") : tag.getDouble("Y") + tag.getDouble("Radius"));
@@ -427,7 +427,7 @@ public final class LoreZones {
         if (zone.aviso() != null && !zone.aviso().isEmpty()) {
             int estilo = Math.max(0, Math.min(39, zone.avisoEstilo()));
             int seg = Math.max(1, Math.min(60,
-                    zone.avisoSeg() == 0 ? 8 : zone.avisoSeg()));
+                    zone.avisoSeg() == 0 ? 12 : zone.avisoSeg()));   // (5.27.0) padrao 12 s
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
                     new ScreenTextPayload(zone.aviso(), seg, estilo));
             // (3.99.0) o SOM nao toca aqui: ele toca a CADA entrada (com limite de tempo)

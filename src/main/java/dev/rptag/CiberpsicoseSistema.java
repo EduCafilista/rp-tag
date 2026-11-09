@@ -44,7 +44,7 @@ import net.minecraft.world.phys.Vec3;
 public final class CiberpsicoseSistema {
 
     /** até onde a mão dele alcança quando ele "não está no controle". */
-    private static final double ALCANCE = 4.5D;
+    private static final double ALCANCE = 5.5D;   // (5.27.0) era 4,5: agora pega quem está perto
 
     /** quando (ms) o próximo golpe involuntário de cada jogador. */
     private static final Map<UUID, Long> PROXIMO = new ConcurrentHashMap<>();
@@ -69,7 +69,10 @@ public final class CiberpsicoseSistema {
             GOLPES.remove(p.getUUID());
             return;
         }
-        if (p.isCreative() || p.isSpectator() || p.isDeadOrDying()) {
+        // (5.27.0) O DONO ESTAVA EM CREATIVE E NADA ACONTECIA ("ativei o cyberpsicose e nao bati
+        // nos mobs a minha volta"). Antes o sistema pulava jogador em creative — e ADM testa em
+        // creative. Agora o único caso que não tem golpe é espectador/morto (não tem corpo).
+        if (p.isSpectator() || p.isDeadOrDying()) {
             return;
         }
         long agora = System.currentTimeMillis();
@@ -77,8 +80,9 @@ public final class CiberpsicoseSistema {
         if (quando != null && agora < quando) {
             return;
         }
-        // a próxima "falha" vem entre 2 e 4 s — sem ritmo, que é o que assusta
-        PROXIMO.put(p.getUUID(), agora + 2000L + (long) (Math.random() * 2000.0D));
+        // (5.27.0) a próxima "falha" vem entre 1,2 e 2,6 s — o dono quer SENTIR que o corpo
+        // dele está batendo em tudo ("eu devo sair batendo em tudo")
+        PROXIMO.put(p.getUUID(), agora + 1200L + (long) (Math.random() * 1400.0D));
 
         LivingEntity alvo = acharAlvo(p);
         if (alvo == null) {

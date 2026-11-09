@@ -403,31 +403,35 @@ public final class RaiosVazioFx {
             Vec3 e1 = paraCam.scale(0.012);
             Vec3 e2 = paraCam.scale(0.024);
 
+            // (5.27.0) MAIS ESCURO, "MAIS VAZIO" — pedido do dono: "acho que os raios vermelho
+            // que saem no vazio ligar, podem ser mais escuros, mais vazio né?". As três camadas
+            // desceram de tom: a capa virou sangue seco, o corpo um vermelho fundo de breu e o
+            // núcleo deixou de ser quase branco (era o que fazia parecer "energia", não vazio).
             // ---------------- 1) CAPA vermelho-escura, larga ----------------
             // (é a que segura o raio contra céu claro / shader claro: alpha normal,
             //  não soma, então o vermelho "mancha" a tela em vez de lavar)
             fita(vc, mat, a, b, perp, w * 2.35F, afina0, afina1,
-                    cor(0.52F, 0.015F, 0.03F, 0.50F * forca),
-                    cor(0.62F, 0.03F, 0.04F, 0.44F * forca));
+                    cor(0.22F, 0.005F, 0.012F, 0.42F * forca),
+                    cor(0.28F, 0.008F, 0.018F, 0.36F * forca));
 
             // ---------------- 2) CORPO vermelho vivo ----------------
             Vec3 a2 = a.add(e1), b2 = b.add(e1);
             fita(vc, mat, a2, b2, perp, w, afina0, afina1,
-                    cor(0.86F, 0.05F, 0.06F, 0.92F * forca),
-                    cor(0.95F, 0.10F, 0.08F, 0.85F * forca));
+                    cor(0.44F, 0.012F, 0.025F, 0.80F * forca),
+                    cor(0.52F, 0.020F, 0.030F, 0.72F * forca));
 
             // ---------------- 3) NÚCLEO quente, quase branco ----------------
             Vec3 a3 = a.add(e2), b3 = b.add(e2);
             fita(vc, mat, a3, b3, perp, w * 0.38F, afina0, afina1,
-                    cor(1.0F, 0.52F, 0.30F, 0.98F * forca),
-                    cor(1.0F, 0.34F, 0.18F, 0.92F * forca));
+                    cor(0.66F, 0.10F, 0.08F, 0.85F * forca),
+                    cor(0.58F, 0.06F, 0.05F, 0.78F * forca));
         }
 
         // ponta "estalando": um losango quente no fim do raio
         Vec3 p = pts[n];
         float t = r.largura * (surto ? 3.0F : 2.4F);
         if (p.distanceToSqr(cam.subtract(base)) > 2.0) {
-            quadPequeno(vc, mat, p, t, cor(1.0F, 0.55F, 0.28F, 0.90F * forca));
+            quadPequeno(vc, mat, p, t, cor(0.62F, 0.08F, 0.06F, 0.80F * forca));
         }
     }
 

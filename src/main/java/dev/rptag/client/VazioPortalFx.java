@@ -315,12 +315,53 @@ public final class VazioPortalFx {
             vc.addVertex(mat, bx + px1, base + altura, bz + pz1).setColor(corCima);
             vc.addVertex(mat, bx, base + altura, bz).setColor(corCima);
 
-            // o "olho" no topo: losango aceso quando cheio
+            // (5.27.0) A ANIMAÇÃO NOVA DOS PEDESTAIS — pedido do dono: "melhore a animação
+            // dos pedestais". O pedestal deixou de ser uma fita parada e passou a TER VIDA:
+            //   · o olho no topo respira (pulsa em dois ritmos quando está cheio);
+            //   · um segundo anel gira em volta da coluna;
+            //   · 3 fagulhas orbitam o pedestal (e sobem mais rápido quando ele está cheio);
+            //   · quem está cheio solta um "suspiro" de luz a cada ~3 s (um clarão que sobe).
+            float pulsoOlho = cheio
+                    ? 0.5F + 0.5F * (float) Math.sin(t * 3.3 + i)
+                    : 0.25F + 0.25F * (float) Math.sin(t * 1.1 + i * 2.0F);
             if (cheio) {
-                losango(vc, mat, bx, base, bz, 0.20F + 0.06F * (float) Math.sin(t * 3.3 + i),
-                        cor(0.78F, 0.48F, 1.0F, 0.85F));
+                losango(vc, mat, bx, base, bz, 0.18F + 0.09F * pulsoOlho,
+                        cor(0.86F, 0.58F, 1.0F, 0.55F + 0.40F * pulsoOlho));
+                // "suspiro" de luz subindo (a cada ~3 s)
+                float ciclo = (t * 0.34F + i * 0.17F) % 1.0F;
+                float ySus = base + 0.6F + ciclo * (altura + 1.4F);
+                float aSus = (1.0F - ciclo) * 0.55F;
+                losango(vc, mat, bx, ySus, bz, 0.10F + 0.05F * (1.0F - ciclo),
+                        cor(0.72F, 0.42F, 0.98F, aSus));
             } else {
-                losango(vc, mat, bx, base, bz, 0.13F, cor(0.55F, 0.08F, 0.18F, 0.55F));
+                losango(vc, mat, bx, base, bz, 0.12F + 0.03F * pulsoOlho,
+                        cor(0.55F, 0.08F, 0.18F, 0.40F + 0.25F * pulsoOlho));
+            }
+
+            // anel girando em volta da coluna (fica entre a base e o meio)
+            int segGi = 10;
+            float raioGi = 0.55F;
+            float yGi = base + 0.9F + 0.25F * (float) Math.sin(t * 1.3F + i);
+            for (int q = 0; q < segGi; q++) {
+                float a0 = (float) (t * 0.9 + i + q * (Math.PI * 2 / segGi));
+                float a1 = a0 + (float) (Math.PI * 2 / segGi) * 0.6F;
+                float x0 = bx + (float) Math.cos(a0) * raioGi, z0 = bz + (float) Math.sin(a0) * raioGi;
+                float x1 = bx + (float) Math.cos(a1) * raioGi, z1 = bz + (float) Math.sin(a1) * raioGi;
+                int cGi = cheio ? cor(0.62F, 0.34F, 0.92F, 0.30F) : cor(0.42F, 0.05F, 0.14F, 0.20F);
+                quadPequeno3d(vc, mat, (x0 + x1) * 0.5F, yGi, (z0 + z1) * 0.5F, 0.05F, cGi);
+            }
+
+            // 3 fagulhas em órbita (sobem em espiral; cheio = mais alto e mais claro)
+            for (int q = 0; q < 3; q++) {
+                float fase = (t * (cheio ? 0.55F : 0.30F) + q / 3.0F + i * 0.11F) % 1.0F;
+                float ang = (float) (t * 1.4 + q * 2.1 + i);
+                float raio = 0.42F + 0.18F * (float) Math.sin(t * 0.8F + q);
+                float fx = bx + (float) Math.cos(ang) * raio;
+                float fz = bz + (float) Math.sin(ang) * raio;
+                float fy = base + 0.2F + fase * (cheio ? 5.0F : 2.6F);
+                int cf = cheio ? cor(0.80F, 0.52F, 1.0F, 0.55F * (1.0F - fase))
+                        : cor(0.60F, 0.10F, 0.20F, 0.35F * (1.0F - fase));
+                losango(vc, mat, fx, fy, fz, 0.06F, cf);
             }
 
             // anel no chão (12 segmentos) — a praça inteira fica legível de longe
@@ -364,6 +405,15 @@ public final class VazioPortalFx {
         vc.addVertex(mat, x, y, z - t).setColor(cor);
         vc.addVertex(mat, x, y + t, z).setColor(cor);
         vc.addVertex(mat, x, y, z + t).setColor(cor);
+    }
+
+    /** (5.27.0) quad pequeno deitado (para o anel girando em volta do pedestal). */
+    private static void quadPequeno3d(VertexConsumer vc, org.joml.Matrix4f mat,
+            float x, float y, float z, float t, int cor) {
+        vc.addVertex(mat, x - t, y, z - t).setColor(cor);
+        vc.addVertex(mat, x + t, y, z - t).setColor(cor);
+        vc.addVertex(mat, x + t, y, z + t).setColor(cor);
+        vc.addVertex(mat, x - t, y, z + t).setColor(cor);
     }
 
     /** verguinha vertical fina (portal fechado). */

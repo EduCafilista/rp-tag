@@ -162,7 +162,7 @@ public final class CanonLife {
         String msg = restam > 0
                 ? FRASE + " \u2014 RESTAM " + restam
                 : "VOCÊ PERDEU SUA ÚLTIMA VIDA \u2014 TOME CUIDADO";
-        PacketDistributor.sendToPlayer(player, new ScreenTextPayload(msg, 8, 4));
+        PacketDistributor.sendToPlayer(player, new ScreenTextPayload(msg, 12, 4));
         if (restam == 0) {
             // (3.83.0) MEDO ABSURDO: a última vida dispara o efeito de MEDO
             // no MÁXIMO (30 s = o teto do sistema, o mesmo do /rp admin

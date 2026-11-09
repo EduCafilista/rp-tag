@@ -100,7 +100,7 @@ public final class FitaItem extends Item {
             // o MESMO pacote de tela cheia dos avisos, no estilo FITA (37)
             String cor = translateAmp(texto);
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(sp,
-                    new ScreenTextPayload(cor, 8, ESTILO_FITA));
+                    new ScreenTextPayload(cor, 12, ESTILO_FITA));
             RPTagMod.LOGGER.info("RP Tag: fita tocada por {}: {}", sp.getGameProfile().getName(), texto);
             return InteractionResultHolder.success(stack);
         } catch (Throwable t) {

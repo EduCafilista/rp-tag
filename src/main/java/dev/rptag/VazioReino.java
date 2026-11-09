@@ -263,6 +263,18 @@ public final class VazioReino {
     }
 
     /**
+     * (5.27.0) <b>PORTAL LIVRE</b> — aberto pelo comando ({@code /vazio abrir}) ou pelos 8
+     * fragmentos de ALGUÉM: qualquer jogador atravessa.
+     *
+     * <p>Bug do dono: <i>"se eu usar vazio abrir, nao funciona o portal, nem se eu colocar os 8
+     * fragmentos, tem que corrigir isso"</i>. O portal era montado (a prova de 5.27.0 mostra a
+     * moldura de obsidiana, o miolo de ar e o piso), mas a caminhada só valia para quem tinha os
+     * 8 fragmentos registrados no save. Pelo comando, ninguém tinha — o buraco abria e não levava
+     * a lugar nenhum.
+     */
+    public static volatile boolean PORTAL_LIVRE = false;
+
+    /**
      * (5.13.1) O PORTAL ESTA ABERTO? Sim se os 8 fragmentos abriram o do vazio OU se ele foi
      * invocado por comando. Antes o {@code /vazio portal} do overworld montava a moldura e
      * deixava o miolo em AR num mundo sem os 8 pedestais ("invoquei o portal e ele nao
@@ -1663,6 +1675,8 @@ public final class VazioReino {
             colocarFila(nv);
         }
         dados.setPortalAberto(true);
+        // (5.27.0) aberto pelo COMANDO (p == null) = livre para todos atravessarem
+        PORTAL_LIVRE = (p == null);
         ABERTURA.put(chavePortal(nv, base), System.currentTimeMillis());
         LINHAS.put(chavePortal(nv, base), 0);
         nv.getChunk(base.getX() >> 4, base.getZ() >> 4);
@@ -1673,6 +1687,13 @@ public final class VazioReino {
         }
         nv.playSound(null, base, SoundEvents.PORTAL_TRIGGER, SoundSource.AMBIENT, 1.2F, 0.5F);
         nv.playSound(null, base, SoundEvents.WITHER_SPAWN, SoundSource.AMBIENT, 0.5F, 1.7F);
+        // (5.27.0) manda o estado NA HORA para quem está no vazio (antes só ia no tick de 1 s e,
+        // se o jogador estivesse longe da praça, o vórtice podia demorar a aparecer)
+        for (ServerPlayer quem : nv.getServer().getPlayerList().getPlayers()) {
+            if (quem.level() == nv) {
+                envioEstado(nv, quem, dados, base);
+            }
+        }
         if (p != null) {
             // só o 8º fragmento avisa (é conquista do jogador, não comando de admin)
             p.displayClientMessage(Component.literal(
@@ -1682,6 +1703,7 @@ public final class VazioReino {
 
     /** (5.13.0) fecha o portal e apaga o miolo (usado pelo /vazio fechar). */
     public static void fecharPortal(ServerLevel nv) {
+        PORTAL_LIVRE = false;   // (5.27.0) fechou: volta a cobrar os 8 fragmentos
         RPWorldData dados = RPWorldData.get(nv.getServer());
         dados.setPortalAberto(false);
         BlockPos base = ancoraPortal(nv);
@@ -1780,6 +1802,7 @@ public final class VazioReino {
         try {
             if (praca != null && !dados.isPortalAberto() && dados.temOsOito(p.getUUID())) {
                 abrirPortal(nv, p);
+                PORTAL_LIVRE = true;   // (5.27.0) os 8 foram pagos: o portal serve para a mesa toda
             }
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: auto-abertura do portal falhou", t);
@@ -1792,17 +1815,26 @@ public final class VazioReino {
         //     · praça: cobra os 8 fragmentos;
         //     · invocado: livre (é ferramenta de teste).
         boolean atravessou = false;
-        if (praca != null && dados.isPortalAberto() && dados.temOsOito(p.getUUID())
-                && dentroDoPortal(p, praca)) {
+        // (5.27.0) O BUG DO PORTAL QUE NUNCA LEVAVA NINGUÉM — pedido do dono: "se eu usar
+        // vazio abrir, nao funciona o portal, nem se eu colocar os 8 fragmentos".
+        // Antes: a cada tick em que o jogador ainda estava ESPERANDO dentro do miolo (os
+        // 120 ms do {@code esperarNoMiolo}), o {@code NO_PORTAL.remove} logo abaixo apagava
+        // o relógio da espera. Resultado: a conta recomeçava do zero 20x por segundo e
+        // NUNCA passava de 120 ms — o portal abria, brilhava, e não levava ninguém.
+        // Agora o relógio só é apagado quando o jogador REALMENTE sai do miolo.
+        boolean dentroPraca = praca != null && dados.isPortalAberto()
+                && (PORTAL_LIVRE || dados.temOsOito(p.getUUID()))
+                && dentroDoPortal(p, praca);
+        if (dentroPraca) {
             atravessou = esperarNoMiolo(p, nv, dados, praca, agora);
         }
-        if (!atravessou) {
-            BlockPos invocado = portalInvocado(nv) ? ancoraPortal(nv) : null;
-            if (invocado != null && !invocado.equals(praca) && dentroDoPortal(p, invocado)) {
-                atravessou = esperarNoMiolo(p, nv, dados, invocado, agora);
-            }
+        BlockPos invocado = portalInvocado(nv) ? ancoraPortal(nv) : null;
+        boolean dentroInvocado = !atravessou && invocado != null && !invocado.equals(praca)
+                && dentroDoPortal(p, invocado);
+        if (dentroInvocado) {
+            atravessou = esperarNoMiolo(p, nv, dados, invocado, agora);
         }
-        if (!atravessou) {
+        if (!atravessou && !dentroPraca && !dentroInvocado) {
             NO_PORTAL.remove(p.getUUID());
         }
 
@@ -2221,7 +2253,9 @@ public final class VazioReino {
                     + "/8\u00a77)."), false);
             return true;
         }
-        if (!livre && !dados.temOsOito(p.getUUID())) {
+        // (5.27.0) PORTAL_LIVRE: aberto pelo comando /vazio abrir (ou pelos 8 de alguém) —
+        // aqui também não pode cobrar os fragmentos, senão o buraco abre e ninguém atravessa.
+        if (!livre && !PORTAL_LIVRE && !dados.temOsOito(p.getUUID())) {
             nv.playSound(null, base, SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.AMBIENT, 0.9F, 0.5F);
             p.displayClientMessage(Component.literal(
                     "\u00a74O portal não te reconhece. \u00a77Você precisa \u00a7fENCAIXAR\u00a77 os 8 "

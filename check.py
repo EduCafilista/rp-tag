@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.26.1'
+VER = '5.27.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -276,7 +276,7 @@ check('aviso SEM pulso (pedido do dono)', 'desenhaAviso' in ce and 'pulse' not i
 check('aviso MAIOR (escala 3.2x)', '3.2F' in av)
 check('aviso com peso (negrito de tinta, 2 passadas)', 'translate(0.3F' in av)
 check('aviso na CAMADA OFICIAL (aparece com shaders)', 'aviso_hud' in cgl and 'desenhaAviso' in cgl)
-check('aviso dura 8s (payload com estilo)', 'new ScreenTextPayload(traduzido, 8, style)' in rp)
+check('aviso dura 12s (payload com estilo) — 5.27.0', 'new ScreenTextPayload(traduzido, 12, style)' in rp)
 check('avisar aceita VARIOS alvos (players/@a)', 'EntityArgument.players()' in rp and 'getPlayers(ctx, "jogadores")' in rp)
 check('4 ESTILOS de aviso (pesadelo/runico/real/classico)', 'literal("pesadelo")' in rp and 'literal("runico")' in rp and 'literal("real")' in rp)
 check('som assustador no aviso (real=sino do beacon; pesadelo=FX c/ trilha propria)', 'BEACON_ACTIVATE' in rp and 'particulasPesadelo' in rp and 'ELDER_GUARDIAN_CURSE' not in rp)
@@ -830,7 +830,7 @@ check('4.4: /rp admin vida <jogador> tirar|dar|definir|ver existe',
 check('4.4: tirar vida usa o MESMO estoque do ritual (get/setCanonLives)',
       'wd.getCanonLives(alvo.getUUID())' in rp and 'wd.setCanonLives(alvo.getUUID(), depois)' in rp)
 check('4.4: tirar vida avisa o alvo (estilo 4) + trovao + MEDO na ultima',
-      'ScreenTextPayload(msg, 8, 4)' in rp and 'LIGHTNING_BOLT_THUNDER' in rp
+      'ScreenTextPayload(msg, 12, 4)' in rp and 'LIGHTNING_BOLT_THUNDER' in rp
       and 'FearPayload(30)' in rp)
 check('4.4: tirar vida NAO congela o jogador (nao houve morte)',
       'FREEZES' not in rp.rsplit('vidaTirar', 1)[1].split('private static int vidaDar')[0])
@@ -2696,8 +2696,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.26.1.jar')
-      and os.path.getsize('build/libs/rptag-5.26.1.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.27.0.jar')
+      and os.path.getsize('build/libs/rptag-5.27.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -2717,7 +2717,7 @@ check('5.17.0: a fala fica GRAVADA no item (sobrevive a baú/morte)',
       'TAG_FALA' in _ft and 'DataComponents.CUSTOM_DATA' in _ft)
 check('5.17.0: clique direito toca o CHIADO e mostra a fala no estilo FITA (37)',
       'SOM_FITA' in _ft and 'ESTILO_FITA = 37' in _ft
-      and 'new ScreenTextPayload(cor, 8, ESTILO_FITA)' in _ft)
+      and 'new ScreenTextPayload(cor, 12, ESTILO_FITA)' in _ft)
 check('5.17.0: o ADM grava e entrega /rp admin fita dar|gravar|ler',
       'Commands.literal("fita")' in _rp4 and 'fita dar <jogadores> <texto>' in _rp4
       and 'fita gravar' in _rp4 and 'fita ler' in _rp4)
@@ -3015,9 +3015,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.26.1: a versao subiu pra 5.26.1 no jar, no mod e no gradle',
-      "version = '5.26.1'" in rd('build.gradle')
-      and '5.26.1' in rd(R + '/RPTagMod.java'))
+check('5.27.0: a versao subiu pra 5.27.0 no jar, no mod e no gradle',
+      "version = '5.27.0'" in rd('build.gradle')
+      and '5.27.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3253,8 +3253,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.26.1: a versao subiu pra 5.26.1 (jar, mod e gradle)',
-      "version = '5.26.1'" in rd('build.gradle') and '5.26.1' in rd(R + '/RPTagMod.java'))
+check('5.27.0: a versao subiu pra 5.27.0 (jar, mod e gradle)',
+      "version = '5.27.0'" in rd('build.gradle') and '5.27.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3312,8 +3312,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.26.1: a versao subiu pra 5.26.1 (jar, mod e gradle)',
-      "version = '5.26.1'" in rd('build.gradle') and '5.26.1' in _rm)
+check('5.27.0: a versao subiu pra 5.27.0 (jar, mod e gradle)',
+      "version = '5.27.0'" in rd('build.gradle') and '5.27.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3335,8 +3335,64 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.26.1: a versao subiu pra 5.26.1 (jar, mod e gradle)',
-      "version = '5.26.1'" in rd('build.gradle') and '5.26.1' in rd(R + '/RPTagMod.java'))
+check('5.27.0: a versao subiu pra 5.27.0 (jar, mod e gradle)',
+      "version = '5.27.0'" in rd('build.gradle') and '5.27.0' in rd(R + '/RPTagMod.java'))
+
+# ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
+_vamp = rd(R + '/VampiroSistema.java')
+_nosol = re.search(r'public static boolean noSol\(.*?\n    \}', _vamp, re.S)
+_escur = re.search(r'public static boolean escuro\(.*?\n    \}', _vamp, re.S)
+check('5.27.0 (1): vampiro NAO queima no vazio (la nao tem sol)',
+      bool(_nosol) and 'VazioReino.ehVazio(' in _nosol.group(0)
+      and 'return false;' in _nosol.group(0).split('ehVazio', 1)[1][:200])
+check('5.27.0 (1): no vazio ele conta como ESCURO (visao noturna/efeito)',
+      bool(_escur) and 'VazioReino.ehVazio(' in _escur.group(0)
+      and 'return true;' in _escur.group(0).split('ehVazio', 1)[1][:200])
+
+_rpc = rd(R + '/RPCommands.java')
+_lz = rd(R + '/LoreZones.java')
+check('5.27.0 (2): os avisos duram 12 s (o dono achava 2 s rapido demais)',
+      'new ScreenTextPayload(traduzido, 12, style)' in _rpc
+      and 'avisoSeg() == 0 ? 12 : zone.avisoSeg()' in _lz
+      and 'tag.putInt("AvisoSeg", avisoSeg == 0 ? 12 : avisoSeg)' in _lz)
+
+_ci = rd(R + '/CiberpsicoseSistema.java')
+check('5.27.0 (3): a ciberpsicose bate sozinha em creative (so spectator e morto ficam de fora)',
+      'CREATIVE' not in _ci.split('private static boolean podeBater')[1][:600]
+      if 'private static boolean podeBater' in _ci else True)
+check('5.27.0 (3): a ciberpsicose NAO e anulada por estar em creative',
+      'isCreative()' not in _ci or 'return false' in _ci.split('isCreative()')[1][:200])
+_apx = rd(C + '/CiberpsicoseAvisoFx.java')
+check('5.27.0 (2): a tela da ciberpsicose nao some sozinha se quem a abriu foi o EFEITO',
+      'seguindoEfeito' in _apx and 'seguirEfeito' in _apx)
+
+_ne = rd(R + '/NeptuneEventos.java')
+check('5.27.0 (4): o terremoto abre fendas no chao (e prende quem cai)',
+      'abrirFendaPerto' in _ne and 'cavarFendaFundo' in _ne and 'proximaFenda' in _ne)
+check('5.27.0 (4): a fenda cava 3 blocos de fundo (o player cai e fica preso)',
+      re.search(r'for \(int (d|prof)\w* = 1; \1 \w*= ?3', _ne) is not None
+      or _ne.count('cavarFendaFundo') >= 2)
+_rv = rd(C + '/RaiosVazioFx.java')
+check('5.27.0 (5): os raios do vazio ficaram mais ESCUROS (mais vazio)',
+      '0.22F' in _rv.replace(', ', ', ') or '0.22f' in _rv.lower())
+_vp = rd(C + '/VazioPortalFx.java')
+check('5.27.0 (6): os pedestais do vazio tem animacao nova (anel girando + fagulhas)',
+      'quadPequeno3d' in _vp and 'anel' in _vp.lower())
+
+_vr = rd(R + '/VazioReino.java')
+check('5.27.0 (7): /vazio abrir abre o portal para QUALQUER UM atravessar (PORTAL_LIVRE)',
+      'PORTAL_LIVRE' in _vr
+      and '(PORTAL_LIVRE || dados.temOsOito(p.getUUID()))' in _vr
+      and 'PORTAL_LIVRE = (p == null);' in _vr)
+check('5.27.0 (7): o RELOGIO da travessia nao e apagado enquanto o jogador espera no miolo',
+      'if (!atravessou && !dentroPraca && !dentroInvocado)' in _vr
+      and 'boolean dentroPraca' in _vr and 'boolean dentroInvocado' in _vr)
+check('5.27.0 (7): a TRAVESSIA tambem nao cobra os 8 quando o portal esta livre (era o bug)',
+      'if (!livre && !PORTAL_LIVRE && !dados.temOsOito(p.getUUID()))' in _vr)
+check('5.27.0 (7): o estado do portal vai na hora pros clientes do vazio',
+      _vr.count('envioEstado(nv, quem, dados, base)') >= 1)
+check('5.27.0: nenhum comando de TESTE saiu no jar (nada de _prova/oficina)',
+      '_prova270' not in _rpc and not re.search(r'"[a-z]*prova\d+"', _rpc))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

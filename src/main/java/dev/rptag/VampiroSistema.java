@@ -113,6 +113,13 @@ public final class VampiroSistema {
     /** true = o sol está batendo nele AGORA (dia, céu à vista, fora da água e da chuva). */
     public static boolean noSol(ServerPlayer p) {
         var lv = p.serverLevel();
+        // (5.27.0) NO VAZIO NÃO TEM SOL — pedido do dono: "um vampiro nao deve queimar no
+        // vazio, ja que la nao tem luz do sol para queimar ele". A dimensão do exílio tem o
+        // céu fechado (nada de luz do dia chegando do alto): o sol não acende fogo lá.
+        // O fogo que ele JÁ tiver (lava, fogo de alguém) continua queimando normalmente.
+        if (VazioReino.ehVazio(lv)) {
+            return false;
+        }
         // (5.25.2) o "é dia?" agora vem do RELÓGIO do mundo, igual à visão noturna: o isDay() do
         // jogo só atualiza quando o céu é recalculado, então logo depois de mudar a hora ele ainda
         // responde a hora antiga (foi o que a prova pegou). Sol = 23 000 -> 13 000.
@@ -197,6 +204,11 @@ public final class VampiroSistema {
      * céu já está escuro) ficar de fora.
      */
     public static boolean escuro(ServerPlayer p) {
+        // (5.27.0) no vazio é breu SEMPRE (não tem sol lá): a visão de vampiro fica ligada
+        // o tempo todo, o que também combina com "lá não tem luz do sol".
+        if (VazioReino.ehVazio(p.serverLevel())) {
+            return true;
+        }
         long t = p.serverLevel().getDayTime() % 24000L;
         return t >= 12000L && t < 23600L;
     }
