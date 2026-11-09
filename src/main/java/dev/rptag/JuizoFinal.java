@@ -95,9 +95,20 @@ public final class JuizoFinal {
     /** lado da célula do labirinto (corredor de 4, parede de 2). */
     private static final int CELULA = 6;
     /** centro da sala branca. */
-    private static final int SALA_X = 0, SALA_Y = 64, SALA_Z = 0;
-    /** meia-largura da sala branca. */
-    private static final int SALA_R = 12;
+    /**
+     * (5.29.0) o canto de referência da arena. A dimensão da sala é plana (uma camada de
+     * bedrock em y=0) e a arena do dono já traz o próprio piso de bedrock no y=0 do arquivo —
+     * então ela é montada <b>em cima do chão</b>, sem ficar flutuando.
+     */
+    private static final int SALA_X = 0, SALA_Y = 0, SALA_Z = 0;
+    /** (5.29.0) a arena do dono (arquivo .schem): canto relativo ao centro. */
+    private static final int ARENA_X = JuizoSala.ORIGEM_X;
+    private static final int ARENA_Z = JuizoSala.ORIGEM_Z;
+
+    /** (5.29.0) os pontos da arena, achados depois de construir (sempre em ar livre). */
+    private static BlockPos pontoEntrada;
+    private static BlockPos pontoTrono;
+    private static BlockPos pontoPortao;
 
     // ---------------------------------------------------------------- estado
     private static final Set<UUID> NO_JUIZO = new HashSet<>();
@@ -204,7 +215,8 @@ public final class JuizoFinal {
             SAIDA.remove(p.getUUID());
             NA_SALA.add(p.getUUID());
             construirSala(sala);
-            BlockPos entrada = new BlockPos(SALA_X, SALA_Y + 1, SALA_Z + SALA_R - 3);
+            BlockPos entrada = pontoEntrada != null ? pontoEntrada
+                    : new BlockPos(0, SALA_Y + 2, ARENA_Z + JuizoSala.COMPRIMENTO - 12);
             p.teleportTo(sala, entrada.getX() + 0.5D, entrada.getY(), entrada.getZ() + 0.5D,
                     180.0F, 0.0F);
             p.setHealth(p.getMaxHealth());
@@ -236,102 +248,125 @@ public final class JuizoFinal {
     // ================================================================ A SALA BRANCA
     /** monta (uma vez) a sala branca: piso, paredes, teto de luz, trono e o portão atrás. */
     public static void construirSala(ServerLevel lv) {
-        String k = "sala";
-        if (PRONTOS.contains(k)) {
+        if (JuizoSala.pronta()) {
             return;
         }
         try {
-            int r = SALA_R;
-            BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
-            for (int x = -r; x <= r; x++) {
-                for (int z = -r; z <= r; z++) {
-                    boolean borda = Math.abs(x) == r || Math.abs(z) == r;
-                    lv.setBlock(m.set(SALA_X + x, SALA_Y, SALA_Z + z),
-                            Blocks.SMOOTH_QUARTZ.defaultBlockState(), 2);           // piso
-                    for (int y = 1; y <= 8; y++) {
-                        lv.setBlock(m.set(SALA_X + x, SALA_Y + y, SALA_Z + z),
-                                borda ? Blocks.WHITE_CONCRETE.defaultBlockState()
-                                        : Blocks.AIR.defaultBlockState(), 2);
-                    }
-                    boolean luz = (x % 4 == 0) && (z % 4 == 0);
-                    lv.setBlock(m.set(SALA_X + x, SALA_Y + 9, SALA_Z + z),
-                            luz ? Blocks.SEA_LANTERN.defaultBlockState()
-                                    : Blocks.WHITE_CONCRETE.defaultBlockState(), 2);  // teto
-                }
-            }
-            // ---- o TRONO, no fundo (norte)
-            for (int x = -3; x <= 3; x++) {
-                lv.setBlock(m.set(SALA_X + x, SALA_Y + 1, SALA_Z - r + 2),
-                        Blocks.CHISELED_QUARTZ_BLOCK.defaultBlockState(), 2);
-                lv.setBlock(m.set(SALA_X + x, SALA_Y + 2, SALA_Z - r + 2),
-                        x == 0 ? Blocks.WHITE_CONCRETE.defaultBlockState() : Blocks.AIR.defaultBlockState(), 2);
-            }
-            // ---- o PORTÃO atrás do trono: quem abre é a CHAVE do ADM
-            for (int x = -2; x <= 2; x++) {
-                for (int y = 1; y <= 4; y++) {
-                    boolean dentro = Math.abs(x) <= 1 && y <= 3;
-                    lv.setBlock(m.set(SALA_X + x, SALA_Y + y, SALA_Z - r + 1),
-                            dentro ? Blocks.AIR.defaultBlockState()
-                                    : Blocks.CRYING_OBSIDIAN.defaultBlockState(), 2);
-                }
-            }
+            // (5.29.0) A ARENA DO DONO — o .schem que ele mandou (98 x 71 x 93), centrada em
+            // (0, SALA_Y, 0). O piso dela já vem no arquivo; a dimensão é plana no bedrock.
+            JuizoSala.construir(lv, ARENA_X, SALA_Y, 0 + ARENA_Z);
+            // os três pontos da cena, sempre em ar livre
+            pontoEntrada = colunaLivre(lv, new BlockPos(0, SALA_Y + 2, ARENA_Z + JuizoSala.COMPRIMENTO - 12));
+            pontoTrono = colunaLivre(lv, new BlockPos(0, SALA_Y + 2, ARENA_Z + 14));
+            pontoPortao = colunaLivre(lv, new BlockPos(0, SALA_Y + 2, ARENA_Z + 6));
             portaoAberto = false;
-            PRONTOS.add(k);
-            RPTagMod.LOGGER.info("RP Tag: sala do julgamento construída");
+            RPTagMod.LOGGER.info("RP Tag: arena do Julgamento pronta (entrada {}, trono {}, portao {})",
+                    pontoEntrada, pontoTrono, pontoPortao);
         } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: construção da sala falhou", t);
+            RPTagMod.LOGGER.warn("RP Tag: construcao da arena falhou", t);
         }
     }
 
-    /** o vulto da INTRODUÇÃO: o ADM usa o modelo dele em cima deste ponto. */
+    /**
+     * (5.29.0) o ponto mais próximo de {@code perto} que tem chão e três blocos de ar — assim a
+     * gente nunca joga o jogador (ou o portal) dentro de um pilar da arena do dono.
+     */
+    private static BlockPos colunaLivre(ServerLevel lv, BlockPos perto) {
+        try {
+            for (int r = 0; r <= 14; r++) {
+                for (int dx = -r; dx <= r; dx++) {
+                    for (int dz = -r; dz <= r; dz++) {
+                        if (Math.max(Math.abs(dx), Math.abs(dz)) != r) {
+                            continue;   // só o anel de raio r
+                        }
+                        for (int dy = 0; dy <= 6; dy++) {
+                            BlockPos p = perto.offset(dx, dy, dz);
+                            if (lv.getBlockState(p.below()).isSolid()
+                                    && lv.isEmptyBlock(p)
+                                    && lv.isEmptyBlock(p.above())
+                                    && lv.isEmptyBlock(p.above(2))) {
+                                return p;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: procurar ponto livre na arena falhou", t);
+        }
+        return perto;
+    }
+
+
+    /**
+     * (5.29.0) A INTRODUÇÃO DO BOSS — <b>SEM boneco</b>.
+     *
+     * <p>O dono: <i>"pode tirar esse stand que você colocou como o JUÍZO kkkk eu falei que vai ser
+     * um ADM que vai interpretar"</i>. O armor stand que ficava no trono saiu de vez: a
+     * introdução agora é o aviso na tela, o som e uma marcação de partículas no chão onde o ADM
+     * deve se posicionar (partícula, não entidade).
+     */
     private static void vultoDoBoss(ServerLevel lv) {
         try {
-            BlockPos trono = new BlockPos(SALA_X, SALA_Y + 1, SALA_Z - SALA_R + 3);
-            lv.getEntitiesOfClass(net.minecraft.world.entity.decoration.ArmorStand.class,
-                    new AABB(trono).inflate(6.0D), e -> true).forEach(e -> e.discard());
-            var stand = EntityType.ARMOR_STAND.spawn(lv, trono, MobSpawnType.EVENT);
-            if (stand != null) {
-                stand.setCustomName(Component.literal("\u00a7fO JULGAMENTO"));
-                stand.setCustomNameVisible(true);
-                stand.setGlowingTag(true);
-                stand.setNoGravity(true);
-            }
+            BlockPos trono = pontoTrono != null ? pontoTrono
+                    : new BlockPos(0, SALA_Y + 2, ARENA_Z + 14);
             lv.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
-                    trono.getX() + 0.5D, trono.getY() + 1.0D, trono.getZ() + 0.5D,
-                    60, 1.2D, 1.6D, 1.2D, 0.02D);
+                    trono.getX() + 0.5D, trono.getY() + 0.4D, trono.getZ() + 0.5D,
+                    60, 1.2D, 0.4D, 1.2D, 0.02D);
         } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: vulto do julgamento falhou", t);
+            RPTagMod.LOGGER.warn("RP Tag: marcação do trono falhou", t);
         }
     }
+
 
     /** a CHAVE abre o portal atrás do boss. */
     public static boolean abrirPortao(ServerPlayer p) {
         ServerLevel sala = p.getServer().getLevel(CHAVE_SALA);
         if (sala == null || !ehSala(p.level())) {
-            p.displayClientMessage(Component.literal(
-                    "\u00a78A chave só gira na sala do julgamento.").withStyle(ChatFormatting.DARK_GRAY), true);
+            try {
+                p.displayClientMessage(Component.literal(
+                        "\u00a78A chave só gira na sala do julgamento.")
+                        .withStyle(ChatFormatting.DARK_GRAY), true);
+            } catch (Throwable ignorado) {
+                // jogador de teste
+            }
             return false;
         }
         try {
             construirSala(sala);
-            BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
-            for (int x = -1; x <= 1; x++) {
-                for (int y = 1; y <= 3; y++) {
-                    sala.setBlock(m.set(SALA_X + x, SALA_Y + y, SALA_Z - SALA_R + 1),
-                            RPTagMod.ESCURIDAO.get().defaultBlockState(), 2);
+            BlockPos base = pontoPortao != null ? pontoPortao
+                    : new BlockPos(0, SALA_Y + 2, ARENA_Z + 6);
+            // (5.29.0) o PORTÃO: um portal de escuridão na arena do dono. É ele que o
+            // cliente desenha com o vórtice novo (VazioPortalFx estilo Juízo).
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dy = 0; dy <= 4; dy++) {
+                    boolean dentro = Math.abs(dx) <= 1 && dy <= 3;
+                    if (dentro) {
+                        sala.setBlock(base.offset(dx, dy, 0),
+                                RPTagMod.ESCURIDAO.get().defaultBlockState(), 2);
+                    }
                 }
             }
             portaoAberto = true;
-            sala.playSound(null, new BlockPos(SALA_X, SALA_Y + 2, SALA_Z - SALA_R + 1),
-                    net.minecraft.sounds.SoundEvents.PORTAL_TRIGGER,
+            // (5.29.0) o cliente desenha o portal novo (o olho) em cima desse ponto
+            for (ServerPlayer outro : sala.players()) {
+                try {
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(outro,
+                            new VazioPoderPayload(4, base.getX() + 0.5D, base.getY(),
+                                    base.getZ() - 0.6D, 0.0D, 0.0D, 0.0D));
+                } catch (Throwable ignorado) {
+                    // jogador de teste: sem conexão
+                }
+            }
+            sala.playSound(null, base, net.minecraft.sounds.SoundEvents.PORTAL_TRIGGER,
                     net.minecraft.sounds.SoundSource.AMBIENT, 1.0F, 0.6F);
             aviso(p, "\u00a7a\u00a7lO PORT\u00c3O SE ABRIU", 6, 0);
             try {
                 p.displayClientMessage(Component.literal(
-                        "\u00a7aO portal atrás do trono está aberto. \u00a77Atravesse para voltar à vida.")
+                        "\u00a7aO portal atrás do boss está aberto. \u00a77Atravesse para voltar à vida.")
                         .withStyle(ChatFormatting.GREEN), false);
             } catch (Throwable ignorado) {
-                // jogador de teste: sem chat
+                // jogador de teste
             }
             return true;
         } catch (Throwable t) {
@@ -339,6 +374,7 @@ public final class JuizoFinal {
             return false;
         }
     }
+
 
     // ================================================================ RESULTADOS
     /**
@@ -353,7 +389,9 @@ public final class JuizoFinal {
             dados.setCanonLives(p.getUUID(), novos);
             dados.marcarPersonagemPerdido(p.getUUID(), false);
             sair(p);
-            darItemDoBoss(p);
+            // (5.29.0) SEM item automático: o dono — "não é para você dar quando a pessoa sair,
+            // o ADM que vai dar um item específico". A vitória só devolve a vida e as +2 vidas
+            // canônicas; o item sai da mão do ADM.
             aviso(p, "\u00a7a\u00a7lVOC\u00ca VENCEU O JULGAMENTO", 10, 7);
             try {
                 p.playNotifySound(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
@@ -418,17 +456,7 @@ public final class JuizoFinal {
         ENTROU_EM.remove(p.getUUID());
     }
 
-    /** o item do boss (relíquia) + a mensagem. */
-    public static void darItemDoBoss(ServerPlayer p) {
-        try {
-            p.getInventory().add(new net.minecraft.world.item.ItemStack(RPTagMod.RELIQUIA_JULGAMENTO.get()));
-            p.displayClientMessage(Component.literal(
-                    "\u00a7dVocê tomou o item do boss: \u00a7f" + "RELÍQUIA DO JULGAMENTO")
-                    .withStyle(ChatFormatting.LIGHT_PURPLE), false);
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: dar o item do boss falhou", t);
-        }
-    }
+
 
     /** entrega a CHAVE (o ADM dropa no chão ou entrega na mão). */
     public static void darChave(ServerPlayer p) {
@@ -755,11 +783,12 @@ public final class JuizoFinal {
         if (!portaoAberto) {
             return;
         }
-        BlockPos portao = new BlockPos(SALA_X, SALA_Y + 1, SALA_Z - SALA_R + 1);
+        BlockPos portao = pontoPortao != null ? pontoPortao
+                : new BlockPos(0, SALA_Y + 2, ARENA_Z + 6);
         if (p.blockPosition().distSqr(portao) <= 6.0D || (
                 Math.abs(p.getX() - portao.getX()) <= 2.0D
                 && Math.abs(p.getZ() - portao.getZ()) <= 1.6D
-                && p.getY() >= SALA_Y && p.getY() <= SALA_Y + 5)) {
+                && p.getY() >= portao.getY() - 1 && p.getY() <= portao.getY() + 5)) {
             vitoria(p);
         }
     }
@@ -773,7 +802,9 @@ public final class JuizoFinal {
         if (NA_SALA.contains(p.getUUID())) {
             ServerLevel sala = p.getServer().getLevel(CHAVE_SALA);
             if (sala != null) {
-                p.teleportTo(sala, SALA_X + 0.5D, SALA_Y + 1.0D, SALA_Z + SALA_R - 3.5D, 180.0F, 0.0F);
+                BlockPos ent = pontoEntrada != null ? pontoEntrada
+                        : new BlockPos(0, SALA_Y + 2, ARENA_Z + JuizoSala.COMPRIMENTO - 12);
+                p.teleportTo(sala, ent.getX() + 0.5D, ent.getY(), ent.getZ() + 0.5D, 180.0F, 0.0F);
             }
             return;
         }

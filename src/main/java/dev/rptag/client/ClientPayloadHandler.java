@@ -138,6 +138,18 @@ public final class ClientPayloadHandler {
         context.enqueueWork(() -> ClientEffects.startScreenText(payload.text(), payload.seconds(), payload.style()));
     }
 
+    /** (5.29.0) os poderes do vazio e o portal do juízo (geometria, não partícula). */
+    public static void handleVazioPoder(final dev.rptag.VazioPoderPayload payload,
+            final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                VazioPoderFx.receber(payload);
+            } catch (Throwable erro) {
+                dev.rptag.RPTagMod.LOGGER.warn("RP Tag: efeito de poder do vazio falhou", erro);
+            }
+        });
+    }
+
     /** (5.17.0) a barra de progressão do HUD (o ADM manda rótulo, valor e cores). */
     public static void handleBarra(final dev.rptag.BarraPayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {

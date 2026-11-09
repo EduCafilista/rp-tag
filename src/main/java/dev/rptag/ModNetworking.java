@@ -63,6 +63,9 @@ public final class ModNetworking {
         registrar.playToClient(dev.rptag.CanonBannerPayload.TYPE, dev.rptag.CanonBannerPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleCanonBanner);
         // (3.50.0) MUSICA CUSTOM de lore zone (.ogg da pasta do cliente)
+        // (5.29.0) os poderes do vazio (raio, orbe, onda, olhos) e o portal do juízo
+        registrar.playToClient(dev.rptag.VazioPoderPayload.TYPE, dev.rptag.VazioPoderPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleVazioPoder);
         registrar.playToClient(dev.rptag.ZoneShowPayload.TYPE, dev.rptag.ZoneShowPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleZoneShow);
 

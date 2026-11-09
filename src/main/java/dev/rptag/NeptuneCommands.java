@@ -155,6 +155,51 @@ public final class NeptuneCommands {
             return Command.SINGLE_SUCCESS;
         }));
 
+        // ================= (5.29.0) OS PODERES DO VAZIO =================
+        // o dono: "os poderes do vazio pode usar igual o do bicho desse mod" (Ronova).
+        vazio.then(Commands.literal("poder")
+                .then(Commands.argument("jogador", EntityArgument.player())
+                        .then(Commands.literal("ligar").executes(ctx -> {
+                            ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                            dev.rptag.VazioPoderes.ligar(alvo, true);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "\u00a75\u2588 " + alvo.getName().getString()
+                                    + " tem o DOM DO VAZIO. \u00a77Dentro do vazio: "
+                                    + "\u00a74/vazio soltar raio|orbe|onda|olhos\u00a77. "
+                                    + "A aura de penas carmesim aparece sozinha em volta do corpo."), true);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .then(Commands.literal("desligar").executes(ctx -> {
+                            ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                            dev.rptag.VazioPoderes.ligar(alvo, false);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "\u00a77O dom do vazio saiu de "
+                                    + alvo.getName().getString() + "."), true);
+                            return Command.SINGLE_SUCCESS;
+                        }))));
+
+        vazio.then(Commands.literal("soltar")
+                .then(Commands.argument("poder", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .suggests((ctx, b) -> {
+                            b.suggest("raio");
+                            b.suggest("orbe");
+                            b.suggest("onda");
+                            b.suggest("olhos");
+                            return b.buildFuture();
+                        })
+                        .executes(ctx -> {
+                            ServerPlayer p = ctx.getSource().getPlayerOrException();
+                            String nome = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "poder");
+                            dev.rptag.VazioPoderes.Poder poder = dev.rptag.VazioPoderes.Poder.porId(nome);
+                            if (poder == null) {
+                                ctx.getSource().sendFailure(Component.literal(
+                                        "\u00a7cPoderes: raio, orbe, onda, olhos."));
+                                return 0;
+                            }
+                            int r = dev.rptag.VazioPoderes.usar(p, poder);
+                            return r == 1 ? Command.SINGLE_SUCCESS : 0;
+                        })));
+
         vazio.then(Commands.literal("desligar").executes(ctx -> {
             ServerPlayer p = ctx.getSource().getPlayerOrException();
             NeptuneEventos.desligarDeus(p);

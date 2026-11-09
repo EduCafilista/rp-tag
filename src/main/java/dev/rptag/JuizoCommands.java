@@ -175,9 +175,9 @@ public final class JuizoCommands {
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "\u00a7e\u2500\u2500 O JULGAMENTO \u2500\u2500\n"
                 + "\u00a77\u2022 \u00a7f5 vidas zeradas \u2192 \u00a77labirinto infinito com bichos bufados\n"
-                + "\u00a77\u2022 \u00a7fachar a saída \u2192 \u00a77sala branca do boss\n"
-                + "\u00a77\u2022 \u00a7fo ADM interpreta o boss com o modelo dele\n"
-                + "\u00a77\u2022 \u00a7f/juizo ganhar <jogador> \u2192 \u00a77item do boss + volta com +2 vidas\n"
+                + "\u00a77\u2022 \u00a7fachar a saída \u2192 \u00a77A ARENA DO JULGAMENTO\n"
+                + "\u00a77\u2022 \u00a7fo ADM interpreta o boss \u2014 \u00a7fo mod NÃO põe boneco nenhum\n"
+                + "\u00a77\u2022 \u00a7f/juizo ganhar <jogador> \u2192 \u00a77volta com +2 vidas (o ITEM quem dá é o ADM)\n"
                 + "\u00a77\u2022 \u00a7f/juizo perder <jogador> \u2192 \u00a77personagem perdido\n"
                 + "\u00a77\u2022 \u00a7fa CHAVE (\u00a7f/juizo chave\u00a77) abre o portal atrás do trono\n"
                 + "\u00a77\u2022 \u00a7f/juizo reviver <jogador> \u2192 \u00a77desfaz a perda (1 vida)"),

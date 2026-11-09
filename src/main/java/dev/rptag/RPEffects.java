@@ -50,4 +50,19 @@ public final class RPEffects {
     public static final DeferredHolder<MobEffect, MobEffect> SOMBRA =
             EFFECTS.register("sombra", () -> new MobEffect(MobEffectCategory.BENEFICIAL, 0x1A237E) {
             });
+
+    /**
+     * (5.29.0) <b>PODER DO VAZIO</b> — o que dá os poderes (e a aura) dentro do exílio.
+     *
+     * <p>Pedido do dono: <i>"os poderes do vazio pode usar igual o do bicho desse mod"</i>
+     * (o mod de referência é o Ronova: raio carmesim, orbes, onda da morte, olhos/penas).
+     * Quem tem este efeito e está <b>no vazio</b> solta os poderes com um comando e ganha a
+     * aura de penas carmesim em volta do corpo (ver {@code client.VazioAuraFx}).
+     *
+     * <p>É BENÉFICO: ícone no HUD e dá pra ligar com {@code /effect give <jogador> rptag:poder_vazio}.
+     * A cor é o carmesim do vazio.
+     */
+    public static final DeferredHolder<MobEffect, MobEffect> PODER_VAZIO =
+            EFFECTS.register("poder_vazio", () -> new MobEffect(MobEffectCategory.BENEFICIAL, 0xB0121E) {
+            });
 }
