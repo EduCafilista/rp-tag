@@ -60,13 +60,14 @@ public final class VazioPoderFx {
                 case 2 -> VIVOS.add(new Efeito(2, de, ate, agora, 1_600_000_000L)); // onda
                 case 3 -> VIVOS.add(new Efeito(3, de, ate, agora, 450_000_000L));   // olhos
                 case 4 -> portalFixo = new Efeito(4, de, ate, agora, 8L * 60L * 1_000_000_000L);
+                case 5 -> VIVOS.add(new Efeito(5, de, ate, agora, 1_400_000_000L)); // chuva de penas
+                case 6 -> VIVOS.add(new Efeito(6, de, ate, agora, 2_600_000_000L)); // OLHO QUE BANE
                 default -> {
                     return;
                 }
             }
-            if (p.tipo() == 0 || p.tipo() == 1) {
-                VazioAuraFx.pulsar();   // a aura em volta do corpo acende junto
-            }
+            // (5.31.0) TODO poder acende a aura em volta do corpo (era só raio/orbe)
+            VazioAuraFx.pulsar();
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: efeito de poder do vazio falhou", t);
         }
@@ -150,6 +151,8 @@ public final class VazioPoderFx {
                 float alfa = 1.0F - vida;
                 tubo(vc, mat, e.de(), e.ate(), 0.03F, cor(alfa, 0xFF, 0x50, 0x5A));
             }
+            case 5 -> chuvaDePenas(vc, mat, e, vida);
+            case 6 -> olhoQueBane(vc, mat, e, vida);
             default -> {
             }
         }
@@ -230,6 +233,137 @@ public final class VazioPoderFx {
         anel(vc, mat, base, 1.9F + 0.2F * (float) Math.sin(t * 2.6), cor(0.5F, 0xB0, 0x10, 0x1C), 36);
     }
 
+    // ---------------------------------------------------------------- penas
+
+    /**
+     * (5.31.0) <b>CHUVA DE PENAS</b>: a cortina carmesim que cai onde ele olha.
+     *
+     * <p>Penas pretas descendo em coluna, com as pontas carmesim, terminando num clarão no chão
+     * — o visual do Ronova ({"Rain of Feathers"}), na nossa paleta escura.
+     */
+    private static void chuvaDePenas(VertexConsumer vc, org.joml.Matrix4f mat, Efeito e, float vida) {
+        float alfa = (1.0F - vida) * (vida < 0.1F ? vida / 0.1F : 1.0F);
+        Vec3 centro = e.ate();
+        for (int i = 0; i < 36; i++) {
+            double ang = i * 2.399963;                     // espalha bonito (espiral áurea)
+            double raio = 0.6 + (i % 7) * 1.1;
+            double queda = (vida * 18.0 + i * 0.7) % 12.0;
+            double x = centro.x + Math.cos(ang) * raio;
+            double z = centro.z + Math.sin(ang) * raio;
+            double y = centro.y + 11.0 - queda;
+            float comp = 0.45F;
+            pena(vc, mat, x, y, z, 0.05 * Math.cos(ang), -1.0 * comp, 0.05 * Math.sin(ang),
+                    0.06F, cor(0.9F * alfa, 0x08, 0x02, 0x04), cor(0.7F * alfa, 0xE0, 0x18, 0x24));
+        }
+        anel(vc, mat, new Vec3(centro.x, centro.y + 0.1, centro.z), 1.0F + vida * 6.0F,
+                cor(0.5F * alfa, 0xB0, 0x10, 0x1C), 40);
+    }
+
+    // ---------------------------------------------------------------- o olho que bane
+
+    /**
+     * (5.31.0) <b>O OLHO VERMELHO QUE BANE</b> — a animação que o dono pediu.
+     *
+     * <p>Fases (2,6 s no total):
+     * <ol>
+     *   <li><b>abre</b> (0 – 0,5 s): uma fenda horizontal preta rasga o ar, e a pálpebra carmesim
+     *       se abre de dentro pra fora;</li>
+     *   <li><b>encara</b> (0,5 – 1,6 s): a íris aparece, encolhe a pupila e se volta pro alvo,
+     *       com penas girando em volta como cílios;</li>
+     *   <li><b>arranca</b> (1,6 – 2,2 s): um clarão carmesim toma a tela e o alvo é sugado (a
+     *       coluna de luz sobe no lugar onde ele estava);</li>
+     *   <li><b>fecha</b> (2,2 – 2,6 s): a pálpebra desce e o olho some.</li>
+     * </ol>
+     */
+    private static void olhoQueBane(VertexConsumer vc, org.joml.Matrix4f mat, Efeito e, float vida) {
+        Vec3 centro = e.de().add(0, 1.4, 0);
+        Vec3 alvo = e.ate();
+
+        // abertura da pálpebra: 0 (fechado) → 1 (escancarado) → 0 (fecha)
+        float abre;
+        if (vida < 0.19F) {
+            abre = vida / 0.19F;
+        } else if (vida < 0.85F) {
+            abre = 1.0F;
+        } else {
+            abre = Math.max(0.0F, 1.0F - (vida - 0.85F) / 0.15F);
+        }
+        float larg = 3.4F;
+        float alt = 1.25F * abre;
+
+        // 1) a FENDA (o rasgo preto na realidade)
+        quadZ(vc, mat, (float) centro.x - larg * 1.15F, (float) centro.y - 0.03F,
+                (float) centro.x + larg * 1.15F, (float) centro.y + 0.03F,
+                (float) centro.z - 0.05F, cor(0.95F * abre, 0x00, 0x00, 0x00));
+
+        // 2) a PÁLPEBRA (elipse achatada carmesim em volta)
+        int lados = 48;
+        for (int i = 0; i < lados; i++) {
+            double a0 = i / (double) lados * Math.PI * 2.0;
+            double a1 = (i + 1) / (double) lados * Math.PI * 2.0;
+            float x0 = (float) (centro.x + Math.sin(a0) * larg);
+            float x1 = (float) (centro.x + Math.sin(a1) * larg);
+            float y0 = (float) (centro.y + Math.sin(a0) * alt);
+            float y1 = (float) (centro.y + Math.sin(a1) * alt);
+            float esp = 0.10F * abre;
+            quadZ(vc, mat, x0, y0 - esp, x1, y1 + esp, (float) centro.z - 0.02F,
+                    cor(0.75F * abre, 0xC8, 0x10, 0x1E));
+        }
+
+        // 3) a ÍRIS + a PUPILA (a pupila aperta conforme o alvo é arrancado)
+        if (abre > 0.5F) {
+            float irisA = (abre - 0.5F) * 2.0F;
+            float aperto = vida > 0.55F && vida < 0.8F
+                    ? 1.0F - 0.55F * (float) Math.sin((vida - 0.55F) / 0.25F * Math.PI)
+                    : 1.0F;
+            float rx = larg * 0.62F, ry = alt * 0.85F;
+            for (int i = 0; i < lados; i++) {
+                double a0 = i / (double) lados * Math.PI * 2.0;
+                double a1 = (i + 1) / (double) lados * Math.PI * 2.0;
+                float cx = (float) centro.x, cy = (float) centro.y;
+                int corIris = cor(0.9F * irisA, 0x8A, 0x08, 0x12);
+                vc.addVertex(mat, cx, cy, (float) centro.z + 0.03F).setColor(corIris);
+                vc.addVertex(mat, cx + (float) Math.cos(a0) * rx, cy + (float) Math.sin(a0) * ry,
+                        (float) centro.z + 0.03F).setColor(corIris);
+                vc.addVertex(mat, cx + (float) Math.cos(a1) * rx, cy + (float) Math.sin(a1) * ry,
+                        (float) centro.z + 0.03F).setColor(corIris);
+                vc.addVertex(mat, cx + (float) Math.cos(a1) * rx, cy + (float) Math.sin(a1) * ry,
+                        (float) centro.z + 0.03F).setColor(corIris);
+                int corPupila = cor(1.0F * irisA, 0x02, 0x00, 0x01);
+                float pr = 0.62F * aperto;
+                vc.addVertex(mat, cx, cy, (float) centro.z + 0.05F).setColor(corPupila);
+                vc.addVertex(mat, cx + (float) Math.cos(a0) * pr, cy + (float) Math.sin(a0) * pr * 0.75F,
+                        (float) centro.z + 0.05F).setColor(corPupila);
+                vc.addVertex(mat, cx + (float) Math.cos(a1) * pr, cy + (float) Math.sin(a1) * pr * 0.75F,
+                        (float) centro.z + 0.05F).setColor(corPupila);
+                vc.addVertex(mat, cx + (float) Math.cos(a1) * pr, cy + (float) Math.sin(a1) * pr * 0.75F,
+                        (float) centro.z + 0.05F).setColor(corPupila);
+            }
+        }
+
+        // 4) as PENAS-CÍLIO girando em volta do olho
+        for (int i = 0; i < 16; i++) {
+            double ang = i / 16.0 * Math.PI * 2.0 + vida * 7.0;
+            float px = (float) (centro.x + Math.cos(ang) * (larg + 0.55F));
+            float py = (float) (centro.y + Math.sin(ang) * (alt + 0.45F));
+            float comp = 1.1F + 0.5F * (float) Math.sin(vida * 9.0 + i);
+            pena(vc, mat, px, py, (float) centro.z - 0.1F,
+                    Math.cos(ang) * comp * 0.5, Math.sin(ang) * comp * 0.5, 0,
+                    0.07F, cor(0.8F * abre, 0x05, 0x01, 0x02), cor(0.7F * abre, 0xD0, 0x14, 0x20));
+        }
+
+        // 5) o CLARÃO e a COLUNA (o alvo é arrancado)
+        if (vida > 0.55F && vida < 0.78F) {
+            float f = (vida - 0.55F) / 0.23F;              // 0..1 dentro da fase
+            float alfa = 1.0F - Math.abs(f * 2.0F - 1.0F); // sobe e desce
+            esfera(vc, mat, centro, 1.2F + f * 4.5F, cor(0.7F * alfa, 0xB0, 0x10, 0x1C));
+            tubo(vc, mat, new Vec3(alvo.x, alvo.y, alvo.z),
+                    new Vec3(alvo.x, alvo.y + 12.0, alvo.z), 0.55F, cor(0.6F * alfa, 0x20, 0x02, 0x06));
+            tubo(vc, mat, new Vec3(alvo.x, alvo.y, alvo.z),
+                    new Vec3(alvo.x, alvo.y + 12.0, alvo.z), 0.18F, cor(0.85F * alfa, 0xFF, 0x30, 0x3C));
+        }
+    }
+
     // ---------------------------------------------------------------- primitivas
 
     /** um "cano" quadrado entre dois pontos (o raio/rastro). */
@@ -305,6 +439,22 @@ public final class VazioPoderFx {
     private static void billboard(VertexConsumer vc, org.joml.Matrix4f mat,
             float x, float y, float z, float r, int cor) {
         quadZ(vc, mat, x - r, y - r, x + r, y + r, z, cor);
+    }
+
+    /** uma pena: losango comprido (base grossa e escura, ponta fina e carmesim). */
+    private static void pena(VertexConsumer vc, org.joml.Matrix4f mat,
+            double x, double y, double z, double dx, double dy, double dz,
+            float largura, int corBase, int corPonta) {
+        double len = Math.sqrt(dx * dx + dz * dz);
+        if (len < 1e-5) {
+            return;
+        }
+        double nx = -dz / len * largura;
+        double nz = dx / len * largura;
+        vc.addVertex(mat, (float) (x + nx), (float) y, (float) (z + nz)).setColor(corBase);
+        vc.addVertex(mat, (float) (x - nx), (float) y, (float) (z - nz)).setColor(corBase);
+        vc.addVertex(mat, (float) (x + dx), (float) (y + dy), (float) (z + dz)).setColor(corPonta);
+        vc.addVertex(mat, (float) (x + dx), (float) (y + dy), (float) (z + dz)).setColor(corPonta);
     }
 
     private static void quadZ(VertexConsumer vc, org.joml.Matrix4f mat,

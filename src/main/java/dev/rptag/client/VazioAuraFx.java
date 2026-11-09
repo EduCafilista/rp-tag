@@ -50,12 +50,16 @@ public final class VazioAuraFx {
     /** pulsos curtos (0..1) que o raio/orbe deixam na aura. */
     private static float pulso;
 
+    /** (5.31.0) quando foi o último poder (a aura fica acesa 14 s depois dele). */
+    private static long ultimoPoder;
+
     private static final Random SORTE = new Random(29L);
     private static final List<float[]> POEIRA = new ArrayList<>();   // x,y,z,vel
 
     /** chamado pelo FX dos poderes quando o jogador solta algo. */
     public static void pulsar() {
         pulso = 1.0F;
+        ultimoPoder = System.currentTimeMillis();
     }
 
     @SubscribeEvent
@@ -69,9 +73,15 @@ public final class VazioAuraFx {
             if (p == null || mc.level == null) {
                 return;
             }
-            if (!VazioReino.ehVazio(mc.level) || !p.hasEffect(RPEffects.PODER_VAZIO)) {
+            // (5.31.0) a aura não depende mais de efeito/comando: ela acende em quem está no
+            // vazio (ou no reino do Juízo, ou é ADM) e ACENDE FORTE por 14 s a cada poder usado
+            boolean lugar = VazioReino.ehVazio(mc.level) || dev.rptag.JuizoReino.eh(mc.level);
+            boolean adm = mc.player.hasPermissions(2);
+            boolean usando = pulso > 0.0F || (System.currentTimeMillis() - ultimoPoder) < 14000L;
+            if (!(lugar || adm) && !usando) {
                 return;
             }
+            float forca = usando ? 1.0F : 0.45F;   // fora do poder fica discreta
             Vec3 cam = event.getCamera().getPosition();
             PoseStack pose = event.getPoseStack();
             MultiBufferSource.BufferSource buf = mc.renderBuffers().bufferSource();
@@ -111,15 +121,34 @@ public final class VazioAuraFx {
                 double dirz = Math.sin(ang) * comp;
                 double diry = 0.35 * comp;
 
-                int alfa = (int) (150 + 90 * pulso);
-                int corBase = ((alfa & 0xFF) << 24) | 0x8E0B16;      // carmesim fundo
-                int corPonta = (0x40 << 24) | 0xFF3A46;             // ponta quase transparente
+                int alfa = (int) ((150 + 90 * pulso) * forca);
+                // (5.31.0) "mude a textura para ficar mais negra": corpo quase PRETO,
+                // só a ponta da pena queima em carmesim
+                int corBase = ((alfa & 0xFF) << 24) | 0x0A0204;
+                int corPonta = (((int) (90 * forca)) << 24) | 0xE01020;
 
                 pena(vc, mat, cx, cy, cz, dirx, diry, dirz, larg, corBase, corPonta);
             }
 
             // ---- o núcleo escuro atrás do corpo (a "sombra" da arte)
-            anel(vc, mat, px, py + 0.06, pz, 1.15F + pulso * 0.25F, (0x66 << 24) | 0x120208);
+            anel(vc, mat, px, py + 0.06, pz, 1.15F + pulso * 0.25F,
+                    (((int) (0x80 * forca)) << 24) | 0x060103);
+
+            // ---- (5.31.0) as LASCAS NEGRAS: o manto de penas pretas girando colado no corpo
+            for (int i = 0; i < 14; i++) {
+                double ang = i / 14.0 * Math.PI * 2.0 - t * 1.35;
+                double raio = 0.45 + 0.12 * Math.sin(t * 2.6 + i);
+                double altura = corpo * 0.18 + (i % 4) * 0.22 + 0.05 * Math.sin(t * 3.1 + i);
+                float comp = 0.55F + 0.25F * (float) Math.sin(t * 2.0 + i * 1.7);
+                double cx = px + Math.cos(ang) * raio;
+                double cz = pz + Math.sin(ang) * raio;
+                double cy = py + altura;
+                pena(vc, mat, cx, cy, cz,
+                     Math.cos(ang) * comp * 0.7, -0.35 * comp, Math.sin(ang) * comp * 0.7,
+                     0.075F,
+                     (((int) (200 * forca)) << 24) | 0x000000,
+                     (((int) (110 * forca)) << 24) | 0x1A0308);
+            }
 
             // ---- poeira carmesim subindo (pouca e barata)
             if (POEIRA.isEmpty()) {
@@ -138,7 +167,7 @@ public final class VazioAuraFx {
                     m[0] = (SORTE.nextFloat() - 0.5F) * 1.6F;
                     m[2] = (SORTE.nextFloat() - 0.5F) * 1.6F;
                 }
-                float a = 0.55F * (1.0F - m[1] / 2.4F);
+                float a = 0.55F * (1.0F - m[1] / 2.4F) * forca;
                 billboard(vc, mat, px + m[0], py + m[1], pz + m[2], 0.055F,
                         ((int) (a * 255) << 24) | 0xD2202E);
             }

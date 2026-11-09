@@ -6,12 +6,12 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * (5.29.0) Pacote S2C dos <b>poderes do vazio</b>: manda o evento visual para quem está perto
- * (o raio carmesim, o orbe, a onda, a rajada de olhos e o portal do julgamento).
+ * (5.31.0) Pacote S2C dos <b>poderes do vazio</b>: manda o evento visual para quem está perto.
  *
- * @param tipo 0 = raio, 1 = orbe, 2 = onda, 3 = olhos, 4 = portal do julgamento
- * @param ox/oy/oz onde começa (ou onde o portal está)
- * @param tx/ty/tz onde termina (alvo do raio/orbe; no portal, igual à origem)
+ * @param tipo 0 = raio, 1 = orbe, 2 = onda, 3 = olhos, 4 = portal do julgamento,
+ *             5 = chuva de penas, 6 = olho que BANE
+ * @param ox/oy/oz origem (ou onde o portal/olho fica)
+ * @param tx/ty/tz destino (no olho do banimento, o alvo)
  */
 public record VazioPoderPayload(int tipo, double ox, double oy, double oz,
         double tx, double ty, double tz) implements CustomPacketPayload {

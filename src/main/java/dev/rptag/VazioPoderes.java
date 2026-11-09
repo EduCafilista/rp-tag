@@ -43,7 +43,8 @@ public final class VazioPoderes {
 
     /** os quatro poderes + o atalho. */
     public enum Poder {
-        RAIO("raio", 1200L), ORBE("orbe", 600L), ONDA("onda", 6000L), OLHOS("olhos", 4000L);
+        RAIO("raio", 1200L), ORBE("orbe", 600L), ONDA("onda", 6000L),
+        OLHOS("olhos", 4000L), PENAS("penas", 3500L), BANIR("banir", 12000L);
 
         public final String id;
         public final long recarga;
@@ -65,9 +66,32 @@ public final class VazioPoderes {
 
     private static final Map<String, Long> PRONTO = new ConcurrentHashMap<>();
 
-    /** o jogador pode usar os poderes agora? */
+    /** (5.31.0) a ORDEM DO LEQUE (teclas 1..6) — igual ao {@code PoderLeque} do cliente. */
+    public static Poder poderPorIndice(int i) {
+        Poder[] ordem = {Poder.RAIO, Poder.ORBE, Poder.ONDA, Poder.OLHOS, Poder.PENAS, Poder.BANIR};
+        return i >= 0 && i < ordem.length ? ordem[i] : null;
+    }
+
+    /**
+     * (5.31.0) quem pode soltar os poderes.
+     *
+     * <p>O dono: <i>"não quero esse comando de ativar poderes ou desativar"</i>. Então o dom não
+     * é mais dado por comando: <b>no vazio e no reino do Juízo</b> qualquer um com a tecla usa; e
+     * o <b>ADM</b> (nível de permissão 2, o mesmo do {@code /juizo}) pode usar em qualquer lugar,
+     * para ensaiar a cena.
+     */
     public static boolean temPoder(ServerPlayer p) {
-        return p != null && p.hasEffect(RPEffects.PODER_VAZIO) && VazioReino.ehVazio(p.level());
+        if (p == null) {
+            return false;
+        }
+        try {
+            if (VazioReino.ehVazio(p.level()) || JuizoReino.eh(p.level())) {
+                return true;
+            }
+            return p.hasPermissions(2);
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     /**
@@ -94,10 +118,13 @@ public final class VazioPoderes {
                 case ORBE -> orbe(p);
                 case ONDA -> onda(p);
                 case OLHOS -> olhos(p);
+                case PENAS -> penas(p);
+                case BANIR -> banir(p);
             }
             return 1;
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: poder do vazio " + poder.id + " falhou", t);
+            avisar(p, "\u00a7cO poder falhou.");
             return 0;
         }
     }
@@ -201,6 +228,77 @@ public final class VazioPoderes {
         }
     }
 
+    // ------------------------------------------------------------------ PENAS
+    /** a chuva de penas: uma cortina carmesim cai onde ele olha. */
+    private static void penas(ServerPlayer p) {
+        ServerLevel lv = p.serverLevel();
+        Vec3 olho = p.getEyePosition();
+        Vec3 dir = p.getLookAngle().normalize();
+        Vec3 alvo = olho.add(dir.scale(18.0D));
+        Vec3 fim = olho.add(dir.scale(26.0D));
+        int atingidos = 0;
+        for (LivingEntity e : lv.getEntitiesOfClass(LivingEntity.class,
+                new AABB(alvo.x - 8, alvo.y - 5, alvo.z - 8, alvo.x + 8, alvo.y + 5, alvo.z + 8),
+                e -> e != p && e.isAlive())) {
+            e.hurt(lv.damageSources().magic(), 8.0F);
+            e.setRemainingFireTicks(60);
+            atingidos++;
+        }
+        lv.sendParticles(ParticleTypes.CRIMSON_SPORE, alvo.x, alvo.y + 4, alvo.z, 160, 5.0D, 0.5D, 5.0D, 0.02D);
+        lv.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, alvo.x, alvo.y, alvo.z, 40, 3.0D, 0.2D, 3.0D, 0.05D);
+        lv.playSound(null, alvo.x, alvo.y, alvo.z, SoundEvents.PHANTOM_SWOOP, SoundSource.PLAYERS, 1.0F, 0.7F);
+        mandar(lv, p, 5, olho, fim);
+        avisar(p, "\u00a74\u00a7lCHUVA DE PENAS \u00a77\u2014 " + atingidos + " atingido(s).");
+    }
+
+    // ------------------------------------------------------------------ BANIR
+    /**
+     * <b>O OLHO VERMELHO QUE BANE</b> (5.31.0) — a assinatura do Ronova.
+     *
+     * <p>O dono: <i>"quero a animação que faz do olho vermelho para banir a pessoa para outro
+     * mundo do mod"</i>. Abre um olho carmesim gigante na frente de quem conjura e o alvo olhado
+     * <b>é arrancado do mundo</b> e jogado na dimensão do outro mod (o mesmo reino que o Juízo
+     * usa como labirinto). Se não houver alvo, o próprio conjurador é banido (é assim que o ADM
+     * testa a cena).
+     */
+    private static void banir(ServerPlayer p) {
+        ServerLevel lv = p.serverLevel();
+        Vec3 olho = p.getEyePosition();
+        Vec3 dir = p.getLookAngle().normalize();
+        Vec3 olhoPos = olho.add(dir.scale(4.0D));
+        Vec3 fim = olho.add(dir.scale(40.0D));
+        LivingEntity alvo = null;
+        HitResult hit = ProjectileUtil.getEntityHitResult(p, olho, fim,
+                p.getBoundingBox().inflate(40.0D), e -> e instanceof LivingEntity && e != p, 0.6F);
+        if (hit instanceof EntityHitResult ehr && ehr.getEntity() instanceof LivingEntity le) {
+            alvo = le;
+        }
+        // o OLHO: o cliente desenha a abertura + a íris + o clarão
+        mandar(lv, p, 6, olhoPos, alvo != null ? alvo.position() : fim);
+        lv.playSound(null, p.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM,
+                SoundSource.PLAYERS, 1.4F, 0.5F);
+        lv.playSound(null, p.blockPosition(), SoundEvents.END_PORTAL_SPAWN,
+                SoundSource.PLAYERS, 0.8F, 0.6F);
+        lv.sendParticles(ParticleTypes.SQUID_INK, olhoPos.x, olhoPos.y, olhoPos.z, 80, 1.6D, 1.6D, 1.6D, 0.02D);
+        if (alvo instanceof ServerPlayer vitima) {
+            if (JuizoReino.entrar(vitima)) {
+                avisar(vitima, "\u00a74\u00a7lO OLHO SE ABRIU \u2014 voc\u00ea foi banido.", 8, 2);
+            } else {
+                avisar(p, "\u00a7cO outro mod não está instalado: ninguém foi banido.");
+            }
+            avisar(p, "\u00a74Banido: \u00a7f" + vitima.getName().getString());
+        } else if (alvo != null) {
+            // mob: não atravessa dimensão, é apagado pelo olho
+            alvo.hurt(lv.damageSources().magic(), 30.0F);
+            alvo.discard();
+            avisar(p, "\u00a74O olho apagou o ser que estava na frente.");
+        } else if (JuizoReino.entrar(p)) {
+            avisar(p, "\u00a74\u00a7lO OLHO SE ABRIU \u2014 você foi banido.", 8, 2);
+        } else {
+            avisar(p, "\u00a7cSem alvo na frente (e sem o outro mod para banir você).");
+        }
+    }
+
     // ------------------------------------------------------------------ ajuda
     private static void mandar(ServerLevel lv, ServerPlayer p, int tipo, Vec3 de, Vec3 ate) {
         VazioPoderPayload pacote = new VazioPoderPayload(tipo,
@@ -218,21 +316,23 @@ public final class VazioPoderes {
     }
 
     private static void avisar(ServerPlayer p, String texto) {
+        avisar(p, texto, 4, 1);
+    }
+
+    /** aviso na barra de ação (fica {@code segundos} na tela) + a linha no chat. */
+    private static void avisar(ServerPlayer p, String texto, int segundos, int estilo) {
         try {
-            p.displayClientMessage(Component.literal(texto).withStyle(ChatFormatting.DARK_GRAY), true);
+            dev.rptag.JuizoFinal.avisoPublico(p, texto, segundos, estilo);
         } catch (Throwable ignorado) {
-            // jogador de teste
+            try {
+                p.displayClientMessage(Component.literal(texto), true);
+            } catch (Throwable semTela) {
+                // jogador de teste
+            }
         }
     }
 
-    /** liga/desliga o dom (usado nos comandos). */
-    public static void ligar(ServerPlayer p, boolean ligado) {
-        if (ligado) {
-            p.addEffect(new MobEffectInstance(RPEffects.PODER_VAZIO, 20 * 60 * 60 * 6, 0, false, false, true));
-        } else {
-            p.removeEffect(RPEffects.PODER_VAZIO);
-        }
-    }
+
 
     /** o ajudante: solta a onda quando ele leva um golpe? (não — os poderes são na mão do ADM) */
     public static void esquecer(UUID id) {

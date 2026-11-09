@@ -27,10 +27,18 @@ public final class ClientGuiLayers {
     private ClientGuiLayers() {
     }
 
+    /** (5.31.0) as teclas do leque (R abre, X repete) — aparecem em Opções → Controles. */
+    @SubscribeEvent
+    public static void onRegisterKeys(net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent event) {
+        seguro("teclas_do_leque", () -> PoderLeque.registrarTeclas(event));
+    }
+
     @SubscribeEvent
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         // (3.92.0) ASCENSÃO: camada do FX cinematográfico (pilar de luz,
         // asas, hexagrama, letras caindo) — a mensagem vem do comando
+        // (5.31.0) o LEQUE DE HABILIDADES do vazio (tecla R)
+        seguro("leque_poderes", () -> PoderLeque.registrarCamada(event));
         seguro("divino_aviso_fx", () -> DivinoAvisoFx.registrar(event));
         // (3.93.0) CHAMADO DO ABISMO: camada do FX do demoniaco (mandibulas,
         // fissuras de lava, pentagrama, chifres, olho) — mensagem do comando

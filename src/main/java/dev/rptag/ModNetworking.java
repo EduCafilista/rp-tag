@@ -45,6 +45,21 @@ public final class ModNetworking {
         // (5.13.6) as almas vazias perdidas na dimensão
         registrar.playToClient(VazioAlmasPayload.TYPE, VazioAlmasPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleVazioAlmas);
+        // (5.31.0) o leque de habilidades do vazio manda o número da habilidade
+        registrar.playToServer(dev.rptag.VazioPoderC2S.TYPE, dev.rptag.VazioPoderC2S.STREAM_CODEC,
+                (payload, ctx) -> ctx.enqueueWork(() -> {
+                    try {
+                        if (ctx.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                            dev.rptag.VazioPoderes.Poder poder =
+                                    dev.rptag.VazioPoderes.poderPorIndice(payload.poder());
+                            if (poder != null) {
+                                dev.rptag.VazioPoderes.usar(sp, poder);
+                            }
+                        }
+                    } catch (Throwable t) {
+                        dev.rptag.RPTagMod.LOGGER.warn("RP Tag: habilidade do leque falhou", t);
+                    }
+                }));
         registrar.playToServer(TabletUpdatePayload.TYPE, TabletUpdatePayload.STREAM_CODEC,
                 TabletService::handleUpdate);
         registrar.playToClient(SyncRPStatePayload.TYPE, SyncRPStatePayload.STREAM_CODEC,

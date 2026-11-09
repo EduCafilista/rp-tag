@@ -228,6 +228,11 @@ public final class JuizoFinal {
         ULTIMA_DICA.remove(p.getUUID());
     }
 
+    /** (5.31.0) aviso na barra de ação para outros sistemas (poderes do vazio usam este). */
+    public static void avisoPublico(ServerPlayer p, String texto, int segundos, int estilo) {
+        aviso(p, texto, segundos, estilo);
+    }
+
     /** (5.30.0) o jogador está procurando a saída (é a marca que o portal do reino respeita). */
     public static boolean estaProcurando(UUID id) {
         return NO_JUIZO.contains(id);

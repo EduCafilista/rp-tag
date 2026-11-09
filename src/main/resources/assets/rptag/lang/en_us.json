@@ -14,5 +14,8 @@
   "effect.rptag.ciberpsicose": "Cyberpsychosis",
   "effect.rptag.sombra": "Eclipse Protection",
   "item.rptag.amuleto_eclipse": "Eclipse Amulet",
-  "attribute.rptag.vampiro": "Vampire"
+  "attribute.rptag.vampiro": "Vampire",
+  "key.categories.rptag": "RP Tag",
+  "key.rptag.leque": "Void powers",
+  "key.rptag.repetir": "Cast last power"
 }

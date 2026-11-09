@@ -17,5 +17,8 @@
   "effect.rptag.ciberpsicose": "Ciberpsicose",
   "effect.rptag.sombra": "PROTEÇÃO DO ECLIPSE",
   "item.rptag.amuleto_eclipse": "Amuleto do Eclipse",
-  "attribute.rptag.vampiro": "Vampiro"
+  "attribute.rptag.vampiro": "Vampiro",
+  "key.categories.rptag": "RP Tag",
+  "key.rptag.leque": "Poderes do Vazio",
+  "key.rptag.repetir": "Repetir poder"
 }
