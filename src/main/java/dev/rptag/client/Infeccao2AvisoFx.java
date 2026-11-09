@@ -68,6 +68,13 @@ public final class Infeccao2AvisoFx {
         ativo = true;
         falhou = false;
         inicio = System.currentTimeMillis();
+        // (5.26.0) A TRILHA da variante "de Minecraft": Warden farejando, slime espremendo,
+        // esporos estourando e o baque final — sintetizada em arte/audio_infeccao.py.
+        try {
+            tocar(dev.rptag.RPTagMod.SOM_INFECCAO2.get(), 1.0F, 1.0F);
+        } catch (Throwable t) {
+            dev.rptag.RPTagMod.LOGGER.warn("RP Tag: trilha da infeccao 2 falhou", t);
+        }
         fala = texto == null ? "" : texto;
         linhas = quebrar(fala.replaceAll("\u00a7.", ""), 40);
         if (!pronto) {

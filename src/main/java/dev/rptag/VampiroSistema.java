@@ -28,7 +28,7 @@ import net.minecraft.world.effect.MobEffectInstance;
  * <p>O <b>Amuleto do Eclipse</b> ({@code rptag:amuleto_eclipse}) protege de dois jeitos:
  * <ul>
  *   <li><b>na mão</b> (principal <i>ou</i> secundária): proteção passiva, sem apertar nada;</li>
- *   <li><b>usando</b> (clique direito): dá o efeito <b>Sombra do Eclipse</b>
+ *   <li><b>usando</b> (clique direito): dá o efeito <b>PROTEÇÃO DO ECLIPSE</b>
  *       ({@code rptag:sombra}, 2 min) — aí pode guardar o amuleto que a sombra continua.</li>
  * </ul>
  * Quando a proteção termina em cima do sol, o fogo volta na hora.
@@ -100,7 +100,7 @@ public final class VampiroSistema {
     }
 
     // ------------------------------------------------------------------ proteção
-    /** o amuleto na mão (principal ou secundária) ou o efeito Sombra do Eclipse. */
+    /** o amuleto na mão (principal ou secundária) ou o efeito PROTEÇÃO DO ECLIPSE. */
     public static boolean protegido(ServerPlayer p) {
         if (p.hasEffect(RPEffects.SOMBRA)) {
             return true;
@@ -126,6 +126,13 @@ public final class VampiroSistema {
     public static void tick(ServerPlayer p) {
         if (!ehVampiro(p)) {
             ACESO_PELO_SOL.remove(p.getUUID());
+            if (AVISADO.remove(p.getUUID()) != null) {
+                try {
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p,
+                            new VampiroNoitePayload(false));
+                } catch (Throwable ignored) {
+                }
+            }
             return;
         }
         visaoNoturna(p);
@@ -183,17 +190,61 @@ public final class VampiroSistema {
         return t >= 13000L && t < 23000L;
     }
 
+    /**
+     * (5.26.0) <b>Escuro o bastante pra visão de vampiro</b> — do anoitecer (12 000) ao raiar
+     * (23 600). É mais largo que a janela do sol de propósito: o dono reclamou que a visão noturna
+     * "está falhando", e um dos motivos era justamente o começo da noite (12 000–13 000, quando o
+     * céu já está escuro) ficar de fora.
+     */
+    public static boolean escuro(ServerPlayer p) {
+        long t = p.serverLevel().getDayTime() % 24000L;
+        return t >= 12000L && t < 23600L;
+    }
+
+    /**
+     * (5.26.0) VISÃO NOTURNA — agora em duas camadas, porque só o efeito do jogo estava falhando
+     * pra quem usa shader:
+     * <ol>
+     *   <li>o <b>efeito</b> NIGHT_VISION (ícone + a cura/brilho normal do Minecraft), dado por
+     *       <b>2 minutos</b> e renovado quando falta menos de 1 minuto — antes eram 16 s renovados
+     *       a cada segundo, e qualquer tick perdido (lag, respawn, mundo carregando) deixava o
+     *       vampiro no escuro;</li>
+     *   <li>o <b>aviso pro cliente</b> ({@link VampiroNoitePayload}) de que ele está na noite dele:
+     *       o cliente então acende a "visão de vampiro" do mod (um clarão prateado no escuro), que
+     *       não depende de shader nenhum.</li>
+     * </ol>
+     */
     private static void visaoNoturna(ServerPlayer p) {
-        var lv = p.serverLevel();
-        if (!noite(p)) {
+        boolean noiteDele = escuro(p);
+        avisarCliente(p, noiteDele);
+        if (!noiteDele) {
             return;   // de dia o vampiro não ganha nada (e a queimadura continua valendo)
         }
         var atual = p.getEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION);
-        if (atual != null && atual.getDuration() > 120) {
-            return;   // já está com visão noturna valendo: não gasta pacote à toa
+        if (atual != null && atual.getDuration() > 1200) {
+            return;   // já tem visão noturna de sobra: não gasta pacote à toa
         }
         p.addEffect(new MobEffectInstance(net.minecraft.world.effect.MobEffects.NIGHT_VISION,
-                320, 0, false, false, true));   // 16 s, renovado a cada segundo
+                2400, 0, false, false, true));   // 2 min, renovado quando cai pra menos de 1 min
+    }
+
+    /** true = o cliente já sabe que este jogador está no modo "vampiro de noite" (pra não repetir). */
+    private static final Map<UUID, Boolean> AVISADO = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static void avisarCliente(ServerPlayer p, boolean noiteDele) {
+        Boolean antes = AVISADO.put(p.getUUID(), noiteDele);
+        // manda quando muda — e de vez em quando (a cada ~5 s) pra se o cliente recarregar
+        boolean mudou = antes == null || antes != noiteDele;
+        boolean relembrar = p.tickCount % 100 < 20;
+        if (!mudou && !relembrar) {
+            return;
+        }
+        try {
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p,
+                    new VampiroNoitePayload(noiteDele));
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: aviso de noite do vampiro falhou", t);
+        }
     }
 
     /** usado pelo comando pra explicar ao ADM onde o jogador está levando o sol. */
@@ -209,7 +260,7 @@ public final class VampiroSistema {
         return sb.toString();
     }
 
-    /** usado pelo item: aplica a Sombra do Eclipse (2 min). */
+    /** usado pelo item: aplica a PROTEÇÃO DO ECLIPSE (2 min). */
     public static void sombra(ServerPlayer p, int segundos) {
         p.addEffect(new MobEffectInstance(RPEffects.SOMBRA, segundos * 20, 0, false, true, true));
     }

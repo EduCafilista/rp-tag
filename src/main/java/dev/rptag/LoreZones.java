@@ -87,7 +87,7 @@ public final class LoreZones {
                     tag.contains("MusicInterval") ? tag.getInt("MusicInterval") : 45,
                     // (3.85.0) zonas antigas: sem aviso = titulo classico
                     tag.contains("Aviso") ? tag.getString("Aviso") : "",
-                    Math.max(0, Math.min(12, tag.getInt("AvisoEstilo"))),
+                    Math.max(0, Math.min(39, tag.getInt("AvisoEstilo"))),
                     tag.contains("AvisoSeg") && tag.getInt("AvisoSeg") > 0
                             ? tag.getInt("AvisoSeg") : 8,
                     // (4.0.0) zonas antigas: sem faixa = esfera inteira
@@ -273,12 +273,17 @@ public final class LoreZones {
                 insideNow.add(zone.id());
                 boolean entrouAgora = !prev.contains(zone.id());
                 if (entrouAgora) {
-                    // (3.99.0) AVISO: uma vez POR JOGADOR, PARA SEMPRE.
-                    // (sair e voltar nao mostra de novo — nem relogando)
-                    if (!data.avisoVisto(uuid, zone.id())) {
-                        data.marcarAvisoVisto(uuid, zone.id());
-                        show(player, zone);
-                    }
+                    // (5.26.0) PEDIDO DO DONO: "quando em uma lorezone tiver um avisar ele deve
+                    // aparecer APENAS UMA VEZ, mas toda vez que alguem entrar novamente na area da
+                    // lorezone deve aparecer o titulo, exemplo CIDADE MORTA".
+                    //   -> dentro da zona: aparece UMA vez (o INSIDE já garante: só dispara na
+                    //      ENTRADA, nunca a cada segundo enquanto ele está lá);
+                    //   -> saiu e voltou: aparece de novo.
+                    // Antes (3.99.0) era "uma vez na vida": ficava gravado no mundo e quem já tinha
+                    // visto nunca mais via o título. Agora vale POR ENTRADA (o registro continua
+                    // sendo guardado no mundo, só não bloqueia mais — o /lorezone rever usa ele).
+                    data.marcarAvisoVisto(uuid, zone.id());
+                    show(player, zone);
                     // (3.99.0) SOM pontual: toca a CADA entrada, mas com
                     // limite de tempo (nao vira ambiencia eterna)
                     if (!zone.sound().isEmpty()) {
@@ -409,16 +414,23 @@ public final class LoreZones {
      * mesmos estilos do /rp admin avisar: classico, pesadelo, runico,
      * real, morte) substitui o titulo classico — e o som continua.
      */
+    /** (5.26.0) quantos títulos/avisos de lorezone já apareceram POR ENTRADA (vai pra prova). */
+    public static volatile int AVISOS_POR_ENTRADA = 0;
+
     private static void show(ServerPlayer player, Zone zone) {
+        AVISOS_POR_ENTRADA++;
         var connection = player.connection;
+        if (connection == null) {
+            return;   // fora do jogo (prova/FakePlayer): conta o aviso e não tenta mandar pacote
+        }
+        // (3.99.0) a zona pode ter um AVISO próprio (o mesmo /rp admin avisar, com estilo e tempo)
         if (zone.aviso() != null && !zone.aviso().isEmpty()) {
-            int estilo = Math.max(0, Math.min(12, zone.avisoEstilo()));
+            int estilo = Math.max(0, Math.min(39, zone.avisoEstilo()));
             int seg = Math.max(1, Math.min(60,
                     zone.avisoSeg() == 0 ? 8 : zone.avisoSeg()));
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
                     new ScreenTextPayload(zone.aviso(), seg, estilo));
-            // (3.99.0) o SOM nao toca mais aqui: ele toca a CADA entrada
-            // (com limite de tempo), independente do aviso ser unico
+            // (3.99.0) o SOM nao toca aqui: ele toca a CADA entrada (com limite de tempo)
             return;
         }
         connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket(15, 70, 25));

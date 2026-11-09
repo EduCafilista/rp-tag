@@ -62,6 +62,15 @@ public final class InfeccaoAvisoFx {
         ativo = true;
         falhou = false;
         inicio = System.currentTimeMillis();
+        // (5.26.0) A TRILHA — pedido do dono: "o avisar Infecçao merece um som mais irado, algo
+        // que dê para mostrar o que se está passando na animação". 10 s, sintetizada em
+        // arte/audio_infeccao.py justamente pra bater com a cena: coração acelerando, veias
+        // crescendo, olho abrindo, sussurros, o surto e o apagão nos 8,2 s.
+        try {
+            tocar(dev.rptag.RPTagMod.SOM_INFECCAO.get(), 1.0F, 1.0F);
+        } catch (Throwable t) {
+            dev.rptag.RPTagMod.LOGGER.warn("RP Tag: trilha da infeccao falhou", t);
+        }
         fala = texto == null ? "" : texto;
         linhas = quebrar(fala.replaceAll("\u00a7.", ""), 44);
         flavor1 = quebrar("Ela promete for\u00e7a, mas consome a mente de quem a recebe.", 56);

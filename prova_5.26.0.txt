@@ -1,0 +1,167 @@
+PROVA 5.26.0 — trilha da infecção, lorezone por entrada, ciberpsicose agressiva,
+              visão noturna em duas camadas e PROTEÇÃO DO ECLIPSE
+Servidor de verdade (NeoForge 21.1.249 / MC 1.21.1 / Java 21), rptag-5.26.0.jar, RCON.
+
+===============================================================================
+1. O QUE O DONO PEDIU (e o que virou)
+===============================================================================
+(a) "o avisar Infecçao merece um som mais irado, algo que dê para mostrar o que se
+     está passando na animação, o infecção2 tbm merece um novo som, isso ta muito
+     fraco sem som"
+     -> as DUAS infecções ganharam trilha própria de 10 s, sintetizada pra bater com
+        a linha do tempo da animação (arte/audio_infeccao.py).
+
+(b) "quando em uma lorezone tiver um avisar ele deve aparecer apenas uma vez, mas
+     toda vez que alguém entrar novamente na área, deve aparecer o título (CIDADE
+     MORTA)"
+     -> o aviso/título da lorezone agora é POR ENTRADA.
+
+(c) "o que mais podemos fazer no efeito de ciberpsicose? ele atacar as outras pessoas
+     sem ele querer? ou atacar qualquer ser vivo perto dele?"
+     -> as duas: ele ataca sozinho quem estiver perto (jogador primeiro).
+
+(d) "a night vision do vampiro está falhando"
+     -> visão noturna em duas camadas (efeito de 2 min renovado + clarão do mod no
+        cliente, que não depende de shader) e a noite passou a começar no anoitecer.
+
+(e) "não gostei de eclipse shade, quero PROTEÇÃO DO ECLIPSE"
+     -> o efeito se chama PROTEÇÃO DO ECLIPSE (pt e en).
+
+===============================================================================
+2. AS TRILHAS (novas)
+===============================================================================
+infeccao_aviso.ogg   124.440 bytes · 10,00 s · 44,1 kHz estéreo · Vorbis
+infeccao2_aviso.ogg  107.582 bytes · 10,00 s · 44,1 kHz estéreo · Vorbis
+
+O que se ouve na INFECÇÃO (casa com a cena de 10 s do FX):
+  0,0–4 s   coração batendo e ACELERANDO (72 -> 150 bpm), o vinho pulsando
+  1,5–5 s   as VEIAS crescendo: tecido esticando, um "crec" úmido por raiz
+  2,8–7 s   o OLHO abre: agudo que sobe, com batimento dissonante (sanidade caindo)
+  4,0–7 s   sussurros ("ela promete força...")
+  6,4–8 s   o SURTO: grito distorcido subindo
+  8,2 s     APAGÃO: o baque grave que corta a tela
+  8,6–10 s  sobra o coração batendo devagar na poeira
+
+O que se ouve na INFECÇÃO 2 (a "de Minecraft"):
+  Warden farejando (sub-grave + formante), slime espremendo 5 vezes, 26 esporos
+  estourando em posições aleatórias, zumbido de caverna subindo, o mesmo coração,
+  o baque final de blocos e o último espremido.
+
+Quem toca: o FX do cliente, no mesmo instante em que a animação começa
+(InfeccaoAvisoFx.iniciar / Infeccao2AvisoFx.iniciar). O servidor PAROU de tocar os
+dois sons baixinhos que existiam antes (sculk catalisador + slime) — era o "fraco".
+
+Se quiser regerar/mudar: python3 arte/audio_infeccao.py
+
+===============================================================================
+3. LOREZONE — aviso a cada ENTRADA
+===============================================================================
+Antes: uma vez POR JOGADOR, PARA SEMPRE (ficava gravado no mundo; quem já tinha
+visto nunca mais via o título, nem saindo e voltando, nem relogando).
+
+Agora: dentro da zona aparece UMA vez; saiu e voltou, aparece de novo.
+
+PROVA (zona de teste "CIDADE MORTA", raio 6, jogador em cima do centro):
+$ rp _prova260
+  ZONA-1A-ENTRADA=1 ZONA-DEPOIS-DE-VOLTAR=2
+  -> 3 checagens seguidas DENTRO da zona: contou 1 (uma vez só, sem spam);
+     saiu da área, voltou e checou de novo: contou 2 (apareceu outra vez).
+
+O registro no mundo continua sendo salvo (o /lorezone rever e o reset de avisos
+seguem funcionando) — ele só não bloqueia mais.
+
+===============================================================================
+4. CIBERPSICOSE — ataca quem está perto, sem o jogador querer
+===============================================================================
+Enquanto o efeito rptag:ciberpsicose está no jogador:
+ - de 2 a 4 s (sem ritmo fixo) o corpo escolhe um alvo e bate;
+ - JOGADOR primeiro (a cena do RP: a pessoa surta e acerta o amigo); se não tiver
+   jogador por perto, qualquer ser vivo (mob, animal, aldeão);
+ - alcance 4,5 blocos; o corpo se VIRA sozinho e o braço desce (animação real);
+ - o dano é o do jogo: p.attack() — vale o item na mão, encantamento, knockback,
+   som de crítico, partículas e a morte é creditada a ele;
+ - no actionbar: "⚡ Você acertou <nome> — sua mão se move sozinha." (5 falas
+   diferentes) e, a cada 5 golpes, um aviso no chat.
+
+PROVA:
+$ rp _prova260
+  PSICOSE-SEM-EFEITO-NAO-BATE=true GOLPES=1 ZUMBI-VIDA=20.0->19.807775
+  CARGA-ATAQUE=0.10 DANO-ATRIBUTO=1.0
+  -> sem o efeito: 0 golpes (não mexe em ninguém);
+  -> com o efeito: 1 golpe, o zumbi ao lado perdeu vida de verdade;
+  -> o dano saiu pequeno NESSA PROVA porque o alvo é um jogador-fantasma recém-
+     criado, com a barra de ataque em 0.10 (nem começou a carregar). Numa pessoa
+     de verdade, parada, a barra está cheia (1.00) e o golpe sai com o dano
+     inteiro do item.
+
+===============================================================================
+5. VISÃO NOTURNA DO VAMPIRO (agora em duas camadas)
+===============================================================================
+Camada 1 — o efeito do jogo:
+ - NIGHT_VISION por 2 MINUTOS (antes: 16 s renovados a cada segundo; qualquer tick
+   perdido — lag, respawn, chunk carregando — deixava o vampiro no escuro);
+ - só é renovado quando falta menos de 1 minuto.
+Camada 2 — a visão de vampiro do MOD (não depende de shader):
+ - o servidor avisa o cliente quando o vampiro está na noite dele (pacote novo);
+ - o cliente acende um clarão prateado radial, que só aparece quando está escuro
+   de verdade onde o jogador está (com sol ou tocha do lado, nada muda) e cuja
+   força acompanha o breu.
+E a noite do vampiro passou a começar no ANOITECER (12.000) e ir até 23.600 — antes
+só valia de 13.000 a 23.000, então o comecinho da noite ficava sem nada.
+
+PROVA:
+$ rp _prova260
+  NOITE12k-ESCURO=true EFEITO=true DUR=2400
+  DIA-ESCURO=false EFEITO-DIA=false PACOTE-CLIENTE=true
+  -> relógio 18.000 (meia-noite): escuro, efeito dado, 2.400 ticks (2 min);
+  -> relógio 6.000 (meio-dia): não é escuro e o vampiro NÃO ganha o efeito;
+  -> o pacote que avisa o cliente é entregue normalmente.
+
+===============================================================================
+6. PROTEÇÃO DO ECLIPSE (nome novo)
+===============================================================================
+O efeito era "Eclipse Shade" (en) / "Sombra do Eclipse" (pt). Agora:
+  effect.rptag.sombra = "PROTEÇÃO DO ECLIPSE" (pt_br) · "Eclipse Protection" (en_us)
+e todos os textos do mod (item, dica do item, comentários do sistema) falam o nome
+novo. O ID interno continua rptag:sombra de propósito: quem já usa
+/effect give @s rptag:sombra não perde nada.
+
+PROVA:
+$ rp _prova260
+  NOME-NOVO=true NOME-VELHO=false
+  -> lendo o pt_br.json de DENTRO do jar: achou PROTEÇÃO DO ECLIPSE, não achou mais
+     "Sombra do Eclipse".
+
+===============================================================================
+7. RESULTADO DA PROVA INTEIRA (uma linha, do servidor de verdade)
+===============================================================================
+PROVA260 OGG-INFECCAO=124440 OGG-INFECCAO2=107582
+  | SOM-REGISTRADO=rptag:infeccao_aviso,rptag:infeccao2_aviso
+  | NOME-NOVO=true NOME-VELHO=false
+  | ZONA-1A-ENTRADA=1 ZONA-DEPOIS-DE-VOLTAR=2
+  | CARGA-ATAQUE=0.10 DANO-ATRIBUTO=1.0
+  | PSICOSE-SEM-EFEITO-NAO-BATE=true GOLPES=1 ZUMBI-VIDA=20.0->19.807775
+  | NOITE12k-ESCURO=true EFEITO=true DUR=2400
+  | DIA-ESCURO=false EFEITO-DIA=false PACOTE-CLIENTE=true
+grep -cE "Exception|ERROR" no log ... 0
+
+===============================================================================
+8. O JAR FINAL (sem nenhum comando de teste) NO SERVIDOR
+===============================================================================
+Mod List: RP Tag 5.26.0 (rptag)  → carregou normal
+$ rp _prova260                → "Unknown or incomplete command" (comando de teste fora do jar)
+$ rp admin vampiro            → pede subcomando (ligar/desligar/ver)
+$ rp admin ciberpsicose parar → ok
+$ rp admin avisar @a infeccao teste → "No player was found" (sem ninguém online, normal)
+grep -cE "Exception|ERROR" run/logs/latest.log → 0
+
+===============================================================================
+9. CHECAGENS
+===============================================================================
+javac --release 21 ..................... sem erros
+check.py ............................... 1063 PASS / 0 FAIL
+arte/validar.py ........................ 54 ok, 0 falhas
+jar .................................... build/libs/rptag-5.26.0.jar (35.946.050 bytes)
+"_prova260" dentro do jar .............. 0 ocorrências
+
+Protocolo subiu para v18 (o pacote do vampiro é novo). Cliente e servidor no MESMO jar.

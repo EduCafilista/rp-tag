@@ -43,7 +43,7 @@ public final class RPEffects {
             });
 
     /**
-     * (5.25.0) SOMBRA DO ECLIPSE: o sol não vê quem está na sombra. É o que o Amuleto do Eclipse
+     * (5.25.0) PROTEÇÃO DO ECLIPSE (id antigo "sombra"): o sol não vê quem está na sombra. É o que o Amuleto do Eclipse
      * entrega no clique direito — e é o que o {@code VampiroSistema} consulta pra não deixar o
      * sol acender o vampiro. BENÉFICO, então entra como ícone azul no HUD.
      */

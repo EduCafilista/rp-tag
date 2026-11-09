@@ -47,7 +47,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.25.2";
+    public static final String VERSION = "5.26.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -77,6 +77,26 @@ public final class RPTagMod {
     public static final Supplier<SoundEvent> SOM_CIBERPSICOSE =
             SOUNDS.register("ciberpsicose_aviso", () -> SoundEvent.createVariableRangeEvent(
                     ResourceLocation.fromNamespaceAndPath(MODID, "ciberpsicose_aviso")));
+
+    /**
+     * (5.26.0) SOM do aviso INFECÇÃO (estilo 38) — pedido do dono: <i>"o avisar Infecçao merece um
+     * som mais irado, algo que dê para mostrar o que se está passando na animação"</i>.
+     *
+     * <p>Sintetizado em {@code arte/audio_infeccao.py} (10 s, casa com a linha do tempo do FX):
+     * coração batendo e acelerando, as veias crescendo, o olho abrindo (agudo que sobe), os
+     * sussurros da promessa, o surto e o <b>apagão</b>.
+     */
+    public static final Supplier<SoundEvent> SOM_INFECCAO =
+            SOUNDS.register("infeccao_aviso", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "infeccao_aviso")));
+
+    /**
+     * (5.26.0) SOM do aviso INFECÇÃO 2 (estilo 39) — a variante "de Minecraft": o Warden farejando,
+     * slime espremendo, esporos estourando, o mesmo coração e o baque final de blocos.
+     */
+    public static final Supplier<SoundEvent> SOM_INFECCAO2 =
+            SOUNDS.register("infeccao2_aviso", () -> SoundEvent.createVariableRangeEvent(
+                    ResourceLocation.fromNamespaceAndPath(MODID, "infeccao2_aviso")));
 
     // ======================= 5.4.0 — EVENTO NEPTUNE (terremoto/vazio/deus) =======================
     /** COLAPSO: a terra rachando (áudio do dono, 14,7 s) — toca quando o

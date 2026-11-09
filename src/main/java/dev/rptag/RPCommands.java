@@ -378,6 +378,7 @@ public final class RPCommands {
             java.util.Collection<ServerPlayer> alvos) {
         for (ServerPlayer alvo : alvos) {
             alvo.removeEffect(RPEffects.CIBERPSICOSE);
+            CiberpsicoseSistema.esquecer(alvo.getUUID());
         }
         final int n = alvos.size();
         ctx.getSource().sendSuccess(() -> Component.literal(
@@ -798,20 +799,11 @@ public final class RPCommands {
             // (5.17.0) FITA: o chiado da cassete (o mesmo som do item)
             case 37 -> alvo.level().playSound(null, alvo.blockPosition(), RPTagMod.SOM_FITA.get(),
                     net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
-            // (5.24.3) INFECCAO: a coisa entrando no corpo (sculk catalisador + coracao)
-            case 38 -> {
-                alvo.level().playSound(null, alvo.blockPosition(), net.minecraft.sounds.SoundEvents.SCULK_CATALYST_BLOOM,
-                        net.minecraft.sounds.SoundSource.PLAYERS, 0.9F, 0.55F);
-                alvo.level().playSound(null, alvo.blockPosition(), net.minecraft.sounds.SoundEvents.SCULK_SHRIEKER_SHRIEK,
-                        net.minecraft.sounds.SoundSource.PLAYERS, 0.7F, 1.25F);
-            }
-            // (5.24.3) INFECCAO 2: o mesmo bicho, mais "de jogo" (slime grande + ferida)
-            case 39 -> {
-                alvo.level().playSound(null, alvo.blockPosition(), net.minecraft.sounds.SoundEvents.SLIME_SQUISH,
-                        net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 0.5F);
-                alvo.level().playSound(null, alvo.blockPosition(), net.minecraft.sounds.SoundEvents.WARDEN_LISTENING,
-                        net.minecraft.sounds.SoundSource.PLAYERS, 0.9F, 0.8F);
-            }
+            // (5.26.0) INFECCAO e INFECCAO 2: agora tem TRILHA PROPRIA (10 s, sintetizada pra
+            // bater com a animacao). Quem toca e o FOX do cliente, no mesmo instante em que a tela
+            // comeca — por isso aqui nao ha som do servidor (antes eram 2 sons baixinhos do jogo
+            // que o dono ouvia como "fraco, sem som").
+            case 38, 39 -> { }
             // (3.96.0) PESADELO: o FX do cliente tem TRILHA propria
             // (enderman + caixinha desafinada + coracao + grito) — o
             // servidor faz as PARTICULAS (sculk + tinta + fumaca) + o

@@ -119,6 +119,12 @@ public final class ClientPayloadHandler {
      * (5.25.1) a MORTE: o servidor diz se ela é de vida canônica. Se não for (morte fora de RP),
      * o cliente troca a tela do jogo pela {@link MorteTelaRp} — escurece e sobram os botões.
      */
+    /** (5.26.0) o servidor diz que o vampiro está na noite dele: acende a visão de vampiro. */
+    public static void handleVampiroNoite(final dev.rptag.VampiroNoitePayload payload,
+            final IPayloadContext context) {
+        context.enqueueWork(() -> dev.rptag.client.VisaoVampiroFx.definir(payload.noite()));
+    }
+
     public static void handleMorte(final dev.rptag.MorteRpPayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> MorteTelaRp.definirMorte(payload.canon(), payload.sol()));
     }

@@ -88,6 +88,8 @@ public final class ClientGuiLayers {
         // (5.17.0) 37 = FITA CASSETE (o aviso que a fita toca)
         FitaAvisoFx.registrar(event);
         // (5.24.3) 38 = INFECCAO (veias + olho + FORCA x SANIDADE) e 39 = a variante Minecraft
+        // (5.26.0) a visão de vampiro (clarão prateado no escuro, quando o servidor avisa)
+        VisaoVampiroFx.registrar(event);
         InfeccaoAvisoFx.registrar(event);
         Infeccao2AvisoFx.registrar(event);
         // (5.17.0) a BARRA que fica sempre na tela e a AXION no canto inferior direito

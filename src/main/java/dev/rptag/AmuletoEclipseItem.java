@@ -25,7 +25,7 @@ import net.minecraft.world.level.Level;
  * <ul>
  *   <li><b>estar na mão</b> (principal ou secundária): proteção passiva — não precisa apertar
  *       nada, o sol não morde enquanto o amuleto estiver em uma das mãos;</li>
- *   <li><b>usar</b> (clique direito): abre a <b>Sombra do Eclipse</b> por 2 minutos (o efeito
+ *   <li><b>usar</b> (clique direito): abre a <b>PROTEÇÃO DO ECLIPSE</b> por 2 minutos (o efeito
  *       {@code rptag:sombra}). Dá pra guardar o amuleto na mochila que a sombra continua — e aí
  *       vem 20 s de recarga antes de poder abrir de novo.</li>
  * </ul>
@@ -36,7 +36,7 @@ import net.minecraft.world.level.Level;
  */
 public final class AmuletoEclipseItem extends Item {
 
-    /** quanto tempo a Sombra do Eclipse dura quando o item é usado (segundos). */
+    /** quanto tempo a PROTEÇÃO DO ECLIPSE dura quando o item é usado (segundos). */
     public static final int SOMBRA_SEGUNDOS = 120;
     /** recarga do clique direito (segundos) — o tempo do efeito é maior de propósito. */
     public static final int RECARGA_SEGUNDOS = 20;
@@ -84,7 +84,7 @@ public final class AmuletoEclipseItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext ctx, List<Component> linhas, TooltipFlag flag) {
         linhas.add(Component.literal("Segure na mão para o sol não te queimar.")
                 .withStyle(ChatFormatting.GRAY));
-        linhas.add(Component.literal("Clique direito: Sombra do Eclipse (2 min).")
+        linhas.add(Component.literal("Clique direito: PROTEÇÃO DO ECLIPSE (2 min).")
                 .withStyle(ChatFormatting.DARK_AQUA));
         linhas.add(Component.literal("Só faz diferença para quem é VAMPIRO.")
                 .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));

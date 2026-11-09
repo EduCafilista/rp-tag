@@ -66,6 +66,10 @@ public final class ServerEvents {
             try {
                 for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
                     VampiroSistema.tick(p);
+                    // (5.26.0) CIBERPSICOSE: de 2 em 2 ou 4 em 4 segundos a mão dele ataca sozinha
+                    // quem estiver perto (jogador primeiro). Sai na primeira linha pra quem não tem
+                    // o efeito.
+                    CiberpsicoseSistema.tick(p);
                 }
             } catch (Throwable t) {
                 RPTagMod.LOGGER.warn("RP Tag: tick do vampiro falhou", t);

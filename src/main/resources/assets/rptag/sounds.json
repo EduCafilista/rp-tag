@@ -118,5 +118,21 @@
         "stream": false
       }
     ]
+  },
+  "infeccao_aviso": {
+    "sounds": [
+      {
+        "name": "rptag:infeccao_aviso",
+        "stream": false
+      }
+    ]
+  },
+  "infeccao2_aviso": {
+    "sounds": [
+      {
+        "name": "rptag:infeccao2_aviso",
+        "stream": false
+      }
+    ]
   }
 }
