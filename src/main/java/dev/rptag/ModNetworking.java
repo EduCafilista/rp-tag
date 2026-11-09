@@ -36,7 +36,7 @@ public final class ModNetworking {
         // (5.13.6) v14: VAZIO_ALMAS (posicao das almas vazias, desenhadas por geometria)
         // (5.17.0) v15: BARRA_HUD (a barra que fica sempre na tela) e AXION_HUD (a gatinha)
         // (5.25.1) v16: MORTE_RP (o servidor diz se a morte é de vida canônica)
-        PayloadRegistrar registrar = event.registrar("16");
+        PayloadRegistrar registrar = event.registrar("17");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         // (5.13.0) o portal negro do vazio (posicao, pedestais, estado da abertura)

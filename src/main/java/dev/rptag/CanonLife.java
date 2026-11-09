@@ -81,13 +81,30 @@ public final class CanonLife {
             return;
         }
         RPWorldData wd = RPWorldData.get(vitima.server);
+        // (5.25.2) ESTA MORTE FOI O SOL? O fogo do vampiro é acendido por nós (VampiroSistema), então
+        // a marca de "quem o sol acendeu" sabe responder. Se foi, a mesa inteira fica sabendo — e a
+        // tela do morto ganha uma frase própria em vez do genérico ("morreu pegando fogo"?).
+        boolean peloSol = false;
+        try {
+            peloSol = dev.rptag.VampiroSistema.morreuPeloSol(vitima, e.getSource());
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui saber se a morte foi o sol", t);
+        }
+        if (peloSol) {
+            try {
+                avisarMortePeloSol(vitima);
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: aviso da morte pelo sol falhou", t);
+            }
+        }
         // (5.25.1) A TELA DE MORTE: o cliente não sabe se o mundo está em evento canônico, então
         // quem conta é o servidor. Vai UM recado no instante da morte:
         //   canon = false -> morte FORA DE RP: o cliente escurece a tela e deixa só os botões;
         //   canon = true  -> vida canônica: o ritual (véu, trovão, aviso) continua igual.
+        // (5.25.2) vai também "esta morte foi o sol?" (sol = true) pra trocar a atmosfera da tela.
         try {
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(vitima,
-                    new MorteRpPayload(wd.isCanonEvent()));
+                    new MorteRpPayload(wd.isCanonEvent(), peloSol));
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: aviso da tela de morte falhou", t);
         }
@@ -228,5 +245,31 @@ public final class CanonLife {
         MORTE_NAO_CONTA.remove(e.getEntity().getUUID());
         // (3.82.0) PROTECAO_ATE é de propósito NÃO limpa no logout: sair e
         // voltar não burla o limite anti-mortes-seguidas
+    }
+
+    /**
+     * (5.25.2) O AVISO DA MORTE PELO SOL — pedido do dono: <i>"quando tiver morto para o sol tem que
+     * ser um aviso, que morreu pegando fogo por causa do sol, algo assim melhore"</i>.
+     *
+     * <p>Vai pro chat de <b>todo mundo</b> (é cena de mesa: o grupo inteiro viu o vampiro virar tocha
+     * ao nascer do sol), em dourado, com o mesmo formato de fala do resto do mod. O nome do morto
+     * fica clicável pelo chat normal do jogo, como as outras mensagens.
+     */
+    private static void avisarMortePeloSol(ServerPlayer vitima) {
+        dev.rptag.VampiroSistema.ULTIMA_MORTE_PELO_SOL = vitima.getName().getString()
+                + " @ tick " + vitima.serverLevel().getDayTime() % 24000L;
+        Component aviso = Component.literal("\u2600 ").withStyle(ChatFormatting.GOLD)
+                .append(Component.literal(vitima.getName().getString()).withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(" morreu pegando fogo: o SOL o alcan\u00e7ou.")
+                        .withStyle(ChatFormatting.GOLD))
+                .append(Component.literal(" A luz do dia foi mais r\u00e1pida que a sombra.")
+                        .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+        for (ServerPlayer quem : vitima.server.getPlayerList().getPlayers()) {
+            quem.sendSystemMessage(aviso);
+        }
+        vitima.sendSystemMessage(Component.literal("Voc\u00ea morreu para o SOL.")
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+                .append(Component.literal(" O amuleto do eclipse (ou a sombra) teria te salvado.")
+                        .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
     }
 }

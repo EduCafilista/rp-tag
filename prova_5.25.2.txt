@@ -1,0 +1,90 @@
+PROVA 5.25.2 — aviso de morte pelo SOL
+Servidor de verdade (NeoForge 21.1.249 / MC 1.21.1 / Java 21), rptag-5.25.2.jar, RCON.
+
+===============================================================================
+1. O PEDIDO
+===============================================================================
+Dono: "Quando tiver morto para o sol tem que ser um aviso, que morreu pegando fogo
+por causa do sol, algo assim melhore."
+
+Virou quatro coisas:
+ (a) o SERVIDOR reconhece sozinho que a morte foi o sol;
+ (b) a mesa inteira recebe o aviso no chat;
+ (c) a tela de morte de quem morreu ganha o aviso próprio (brasa no lugar da poeira);
+ (d) continua valendo a regra do pedido anterior: tela nova só em morte FORA de RP.
+
+===============================================================================
+2. COMO O SERVIDOR SABE QUE FOI O SOL (e não lava, nem fogo de outro)
+===============================================================================
+Duas condições juntas:
+ 1. a causa da morte é FOGO (DamageTypeTags.IS_FIRE) — queda, faca, mob não são;
+ 2. o fogo foi o NOSSO: o jogador estava na marca que o sistema do vampiro acende a
+    cada segundo (a mesma que renova o fogo no sol) há menos de 10 s — que é a
+    duração do fogo do sol.
+Quem morreu na lava, no fogo do amigo ou queimado por espada não ganha o aviso do sol.
+Quem correu para a sombra e morreu do fogo que o sol acendeu, ganha.
+
+===============================================================================
+3. O QUE APARECE
+===============================================================================
+No chat (todo mundo vê — é cena de mesa), em dourado:
+  ☀ NOME morreu pegando fogo: o SOL o alcançou. A luz do dia foi mais rápida que a sombra.
+No chat de quem morreu, em dourado e negrito:
+  Você morreu para o SOL. O amuleto do eclipse (ou a sombra) teria te salvado.
+Na tela de morte (morte fora de RP), no lugar do recado genérico:
+  ☀  O SOL TE ALCANÇOU  ☀            (título grande, dourado, entra após 1 s)
+  Você morreu pegando fogo — a luz do dia queimou a sua pele.
+  A sombra, um teto ou o amuleto do eclipse teriam te salvado.
+  morte fora de RP — sua vida canônica está intacta
+E a atmosfera muda: a poeira cinza vira BRASA laranja subindo mais rápido, que
+tremeluz, e o brilho embaixo do corpo fica laranja em vez de vermelho escuro.
+
+===============================================================================
+4. PROVA NO SERVIDOR (comando temporário rodado por FakePlayer, depois removido)
+===============================================================================
+$ rp _prova252
+PROVA252 SEM-SOL=false | QUEIMANDO=true FOGO-DO-SOL=true
+       | QUEDA=false GENERICO=false
+       | AVISOU-SOL=true EXC=nao REGISTRO=ProvaSolMorte @ tick 6000
+       | AVISOU-QUEDA=false
+       | PACOTE-CANON=false PACOTE-SOL=true
+
+Leitura:
+  SEM-SOL=false ............ jogador que nunca levou sol: morrer de fogo NÃO vira "morte pelo sol".
+  QUEIMANDO=true FOGO-DO-SOL=true
+                             o sol acendeu o fogo dele e a morte por fogo foi reconhecida como o SOL.
+  QUEDA=false GENERICO=false  o mesmo jogador morrendo por queda / dano genérico não é o sol.
+  AVISOU-SOL=true EXC=nao    o evento de morte de verdade rodou o aviso e registrou:
+                             "ProvaSolMorte @ tick 6000" (sem nenhuma exceção).
+  AVISOU-QUEDA=false         o mesmo evento com causa QUEDA não dispara o aviso do sol.
+  PACOTE-CANON=false PACOTE-SOL=true
+                             o recado que vai pro cliente leva os dois dados: não é canônica
+                             (tela nova) e foi o sol (brasa + texto do sol).
+  grep -cE "Exception|ERROR" no log ... 0
+
+Detalhe que a prova pegou: o "é dia?" do jogo (isDay) só se atualiza quando o céu é
+recalculado, então logo depois de mudar a hora ele respondia a hora antiga e o sol
+não acendia na prova. O teste do sol passou a usar o RELÓGIO do mundo (noite =
+13 000–23 000), igual ao que já era usado na visão noturna. Ficou mais correto e
+mais previsível.
+
+===============================================================================
+5. O JAR FINAL (sem nenhum comando de teste) NO SERVIDOR
+===============================================================================
+Mod List: RP Tag 5.25.2 (rptag)  → carregou normal
+$ rp _prova252                → "Unknown or incomplete command" (comando de teste fora do jar)
+$ rp admin vampiro            → pede subcomando (ligar/desligar/ver)
+$ rp admin ciberpsicose parar → ok
+grep -cE "Exception|ERROR" run/logs/latest.log → 0
+
+===============================================================================
+6. CHECAGENS
+===============================================================================
+javac --release 21 ............... sem erros
+check.py ......................... 1046 PASS / 0 FAIL
+arte/validar.py .................. 54 ok, 0 falhas
+jar .............................. build/libs/rptag-5.25.2.jar (35.710.268 bytes)
+"_prova252" dentro do jar ........ 0 ocorrências
+
+Protocolo subiu para v17 (o pacote da morte mudou de formato: agora leva também o
+"foi o sol"). Cliente e servidor no MESMO jar.

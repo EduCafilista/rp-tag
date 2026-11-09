@@ -43,6 +43,8 @@ public final class MorteTelaRp extends DeathScreen {
     private static volatile boolean canon = false;
     /** true = já recebemos o recado do servidor sobre esta morte. */
     private static volatile boolean avisado = false;
+    /** (5.25.2) true = esta morte foi o SOL (o servidor sabe: o fogo do vampiro é dele). */
+    private static volatile boolean peloSol = false;
 
     private final long inicio = System.currentTimeMillis();
 
@@ -54,9 +56,16 @@ public final class MorteTelaRp extends DeathScreen {
     }
 
     // ---------------------------------------------------------------- a ponte
-    /** chamado pelo pacote do servidor (no instante da morte do jogador local). */
-    public static void definirCanon(boolean canonVida) {
+    /**
+     * chamado pelo pacote do servidor (no instante da morte do jogador local).
+     *
+     * @param canonVida a morte é de vida canônica? (se sim, esta tela nem entra)
+     * @param foiOSol   (5.25.2) a morte foi o SOL? — pedido do dono: <i>"quando tiver morto para o
+     *                  sol tem que ser um aviso, que morreu pegando fogo por causa do sol"</i>
+     */
+    public static void definirMorte(boolean canonVida, boolean foiOSol) {
         canon = canonVida;
+        peloSol = foiOSol;
         avisado = true;
         // corrida de rede: se a tela do jogo ja abriu antes do recado chegar, troca agora
         Minecraft mc = Minecraft.getInstance();
@@ -84,6 +93,7 @@ public final class MorteTelaRp extends DeathScreen {
     public static void esquecer() {
         avisado = false;
         canon = false;
+        peloSol = false;
     }
 
     // ---------------------------------------------------------------- montagem
@@ -125,10 +135,65 @@ public final class MorteTelaRp extends DeathScreen {
             r.render(g, mx, my, parcial);
         }
 
-        // 3) um lembrete discreto de que isto é morte fora de RP (não é vida canônica)
+        // 3) o que dizer embaixo dos botões — o texto entra devagar, sem piscar na cara
+        try {
+            desenharTexto(g, t, w, h);
+        } catch (Throwable erro) {
+            RPTagMod.LOGGER.warn("RP Tag: texto da tela de morte falhou", erro);
+        }
+    }
+
+    /**
+     * (5.25.2) O TEXTO DA TELA. Pedido do dono: <i>"quando tiver morto para o sol tem que ser um
+     * aviso, que morreu pegando fogo por causa do sol, algo assim melhore"</i>.
+     *
+     * <p>Morreu pegando fogo no sol → o aviso é esse, em dourado e com o nome do sol maior; e o
+     * lembrete de vida canônica fica embaixo, menor, porque continua sendo verdade. Qualquer outra
+     * morte fora de RP → só o lembrete de sempre, em cinza.
+     */
+    private void desenharTexto(GuiGraphics g, float t, int w, int h) {
+        if (peloSol) {
+            // título: O SOL TE ALCANÇOU (entra 1 s depois do escuro)
+            if (t > 1.0F) {
+                int alfa = (int) (Math.min(1F, (t - 1.0F) / 0.6F) * 255F) << 24;
+                Component titulo = Component.literal("\u2600  O SOL TE ALCAN\u00c7OU  \u2600")
+                        .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+                g.pose().pushPose();
+                g.pose().translate(w / 2F, h / 2F - 64F, 0F);
+                g.pose().scale(2.0F, 2.0F, 1F);
+                int larg = this.font.width(titulo);
+                g.drawString(this.font, titulo, -larg / 2, 0, alfa, true);
+                g.pose().popPose();
+            }
+            // a causa, dita com todas as letras
+            if (t > 1.35F) {
+                int alfa = (int) (Math.min(1F, (t - 1.35F) / 0.5F) * 230F) << 24;
+                Component causa = Component.literal(
+                                "Voc\u00ea morreu pegando fogo \u2014 a luz do dia queimou a sua pele.")
+                        .withStyle(ChatFormatting.YELLOW);
+                int larg = this.font.width(causa);
+                g.drawString(this.font, causa, w / 2 - larg / 2, h / 2 + 26, alfa, false);
+                Component dica = Component.literal(
+                                "A sombra, um teto ou o amuleto do eclipse teriam te salvado.")
+                        .withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC);
+                int larg2 = this.font.width(dica);
+                g.drawString(this.font, dica, w / 2 - larg2 / 2, h / 2 + 40, alfa, false);
+            }
+            if (t > 1.9F) {
+                int alfa = (int) (Math.min(1F, (t - 1.9F) / 0.8F) * 150F) << 24;
+                Component recado = Component.literal(
+                                "morte fora de RP \u2014 sua vida can\u00f4nica est\u00e1 intacta")
+                        .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC);
+                int larg = this.font.width(recado);
+                g.drawString(this.font, recado, w / 2 - larg / 2, h / 2 + 62, alfa, false);
+            }
+            return;
+        }
+        // morte comum fora de RP: o lembrete discreto de sempre
         if (t > 1.6F) {
             int alfa = (int) (Math.min(1F, (t - 1.6F) / 0.8F) * 150F) << 24;
-            Component recado = Component.literal("morte fora de RP \u2014 sua vida can\u00f4nica est\u00e1 intacta")
+            Component recado = Component.literal(
+                            "morte fora de RP \u2014 sua vida can\u00f4nica est\u00e1 intacta")
                     .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC);
             int larg = this.font.width(recado);
             g.drawString(this.font, recado, w / 2 - larg / 2, h / 2 + 44, alfa, false);
@@ -152,19 +217,23 @@ public final class MorteTelaRp extends DeathScreen {
             }
             int r = (int) (raio * u);
             int base = h - (int) (h * 0.18F);
-            g.fill(w / 2 - r, base - r / 2, w / 2 + r, base + r / 2, (alfa << 24) | 0x3A0A0E);
+            g.fill(w / 2 - r, base - r / 2, w / 2 + r, base + r / 2,
+                    (alfa << 24) | (peloSol ? 0x6B2A08 : 0x3A0A0E));
         }
-        // poeira/cinza subindo devagar
-        int n = 46;
+        // poeira/cinza subindo devagar (na morte pelo SOL vira brasa: laranja, mais rápida,
+        // tremeluzindo — é o que o dono pediu: "algo assim melhore")
+        int cor = peloSol ? 0xE8873A : 0x8A8A92;
+        int n = peloSol ? 60 : 46;
         for (int i = 0; i < n; i++) {
             float semente = (float) (Math.sin(i * 12.9898) * 43758.5453D);
             semente = semente - (float) Math.floor(semente);
             float x = (semente * w + (float) Math.sin(t * 0.5F + i) * 18F);
-            float vel = 12F + semente * 26F;
+            float vel = (peloSol ? 26F : 12F) + semente * (peloSol ? 44F : 26F);
             float y = h - ((t * vel + semente * h) % (h + 120F));
-            int alfa = (int) (escuro * (26F + 40F * semente));
+            float brilho = peloSol ? (0.7F + 0.3F * (float) Math.sin(t * 7F + i)) : 1F;
+            int alfa = (int) (escuro * (26F + 40F * semente) * brilho);
             int tam = semente > 0.82F ? 2 : 1;
-            g.fill((int) x, (int) y, (int) x + tam, (int) y + tam, (alfa << 24) | 0x8A8A92);
+            g.fill((int) x, (int) y, (int) x + tam, (int) y + tam, (alfa << 24) | cor);
         }
         // vinheta fechando
         int v = (int) (Math.min(1F, t / 1.4F) * 150F);

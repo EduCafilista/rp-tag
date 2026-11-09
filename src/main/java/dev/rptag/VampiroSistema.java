@@ -44,7 +44,35 @@ public final class VampiroSistema {
     /** quando (ms) o SOL acendeu cada jogador — pra não apagar fogo que não foi nosso. */
     private static final Map<UUID, Long> ACESO_PELO_SOL = new java.util.concurrent.ConcurrentHashMap<>();
 
+    /** a última morte que o mod reconheceu como "foi o sol" — só pra conferência no servidor. */
+    public static volatile String ULTIMA_MORTE_PELO_SOL = "nenhuma";
+
     private VampiroSistema() {
+    }
+
+    /**
+     * (5.25.2) <b>Esta morte foi o SOL?</b> — pedido do dono: <i>"quando tiver morto para o sol tem
+     * que ser um aviso, que morreu pegando fogo por causa do sol, algo assim melhore"</i>.
+     *
+     * <p>Só conta quando as DUAS coisas batem:
+     * <ol>
+     *   <li>a causa da morte é <b>fogo</b> (queimadura, estar em chamas) — queda, mob, faca não são;</li>
+     *   <li>o fogo foi <b>o NOSSO</b>: o jogador estava na marca do sol (a que a gente põe a cada
+     *       segundo em {@link #tick}) há menos de 10 s — que é exatamente quanto dura o fogo do sol.
+     * </ol>
+     *
+     * <p>Assim quem morreu na lava, no fogo do amigo ou de espada não ganha o aviso do sol por
+     * engano, e quem correu pra sombra morrendo do fogo que o sol acendeu ganha.
+     */
+    public static boolean morreuPeloSol(ServerPlayer p, net.minecraft.world.damagesource.DamageSource fonte) {
+        if (fonte == null || !fonte.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
+            return false;   // não morreu de fogo: não é o sol
+        }
+        Long quando = ACESO_PELO_SOL.get(p.getUUID());
+        if (quando == null) {
+            return false;   // o sol nunca acendeu fogo neste jogador
+        }
+        return System.currentTimeMillis() - quando < 10_000L;
     }
 
     // ------------------------------------------------------------------ atributo
@@ -85,7 +113,10 @@ public final class VampiroSistema {
     /** true = o sol está batendo nele AGORA (dia, céu à vista, fora da água e da chuva). */
     public static boolean noSol(ServerPlayer p) {
         var lv = p.serverLevel();
-        return lv.isDay() && !p.isInWaterOrRain() && lv.canSeeSky(p.blockPosition());
+        // (5.25.2) o "é dia?" agora vem do RELÓGIO do mundo, igual à visão noturna: o isDay() do
+        // jogo só atualiza quando o céu é recalculado, então logo depois de mudar a hora ele ainda
+        // responde a hora antiga (foi o que a prova pegou). Sol = 23 000 -> 13 000.
+        return !noite(p) && !p.isInWaterOrRain() && lv.canSeeSky(p.blockPosition());
     }
 
     /**

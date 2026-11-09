@@ -23,8 +23,13 @@ import net.minecraft.resources.ResourceLocation;
  *   <li>{@code canon = true} → morte de vida canônica: a tela padrão e o ritual do mod continuam
  *       como sempre foram.</li>
  * </ul>
+ *
+ * <p>(5.25.2) Veio junto o {@code sol}: <b>esta morte foi o SOL?</b> Pedido do dono: <i>"quando tiver
+ * morto para o sol tem que ser um aviso, que morreu pegando fogo por causa do sol, algo assim
+ * melhore"</i>. Com {@code sol = true} a tela troca a poeira cinza por brasa subindo e escreve, em
+ * dourado, que foi a luz do dia que matou — e o servidor avisa no chat pra todo mundo.
  */
-public record MorteRpPayload(boolean canon) implements CustomPacketPayload {
+public record MorteRpPayload(boolean canon, boolean sol) implements CustomPacketPayload {
 
     public static final Type<MorteRpPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "morte_rp"));
@@ -32,6 +37,7 @@ public record MorteRpPayload(boolean canon) implements CustomPacketPayload {
     public static final StreamCodec<RegistryFriendlyByteBuf, MorteRpPayload> STREAM_CODEC =
             StreamCodec.composite(
                     ByteBufCodecs.BOOL, MorteRpPayload::canon,
+                    ByteBufCodecs.BOOL, MorteRpPayload::sol,
                     MorteRpPayload::new);
 
     @Override

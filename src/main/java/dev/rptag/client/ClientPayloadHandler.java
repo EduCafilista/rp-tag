@@ -120,7 +120,7 @@ public final class ClientPayloadHandler {
      * o cliente troca a tela do jogo pela {@link MorteTelaRp} — escurece e sobram os botões.
      */
     public static void handleMorte(final dev.rptag.MorteRpPayload payload, final IPayloadContext context) {
-        context.enqueueWork(() -> MorteTelaRp.definirCanon(payload.canon()));
+        context.enqueueWork(() -> MorteTelaRp.definirMorte(payload.canon(), payload.sol()));
     }
 
     public static void handleFear(final FearPayload payload, final IPayloadContext context) {
