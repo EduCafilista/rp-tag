@@ -141,8 +141,38 @@ public final class JuizoFinal {
                 p.getName().getString(), ms);
     }
 
-    /** manda o jogador pro labirinto AGORA (também é o `/juizo entrar`). */
+    /**
+     * manda o jogador pro labirinto AGORA (também é o `/juizo entrar`).
+     *
+     * <p>(5.30.0) O labirinto agora é o <b>Reino do outro mod</b> — se ele existir. O labirinto
+     * de blocos do próprio RP Tag fica só como reserva para servidor sem o outro mod instalado
+     * (sem ele, o jogador que zerasse as vidas não teria pra onde ir).
+     */
     public static boolean entrar(ServerPlayer p) {
+        if (JuizoReino.entrar(p)) {
+            NO_JUIZO.add(p.getUUID());
+            NA_SALA.remove(p.getUUID());
+            SAIDA.remove(p.getUUID());
+            ULTIMO_BICHO.remove(p.getUUID());
+            ENTROU_EM.put(p.getUUID(), System.currentTimeMillis());
+            p.setHealth(p.getMaxHealth());
+            p.getFoodData().setFoodLevel(20);
+            p.removeAllEffects();
+            aviso(p, "\u00a74\u00a7lO JULGAMENTO", 10, 4);
+            try {
+                p.playNotifySound(net.minecraft.sounds.SoundEvents.WITHER_SPAWN,
+                        net.minecraft.sounds.SoundSource.AMBIENT, 0.7F, 0.6F);
+                p.displayClientMessage(Component.literal(
+                        "\u00a78Você acordou no reino da Morte. \u00a77O portal do reino é a única "
+                        + "saída \u2014 atravesse e ele te leva ao trono do Juízo.")
+                        .withStyle(ChatFormatting.DARK_GRAY), false);
+            } catch (Throwable ignorado) {
+                // jogador de teste: sem chat/tela
+            }
+            RPTagMod.LOGGER.info("RP Tag: {} caiu no reino do outro mod ({})",
+                    p.getName().getString(), JuizoReino.nome());
+            return true;
+        }
         ServerLevel lv = p.getServer().getLevel(CHAVE_JUIZO);
         if (lv == null) {
             RPTagMod.LOGGER.warn("RP Tag: a dimensão do julgamento não existe (json faltando?)");
@@ -196,6 +226,11 @@ public final class JuizoFinal {
 
     private static void DICA_LIMPA(ServerPlayer p) {
         ULTIMA_DICA.remove(p.getUUID());
+    }
+
+    /** (5.30.0) o jogador está procurando a saída (é a marca que o portal do reino respeita). */
+    public static boolean estaProcurando(UUID id) {
+        return NO_JUIZO.contains(id);
     }
 
     public static boolean estaNoJulgamento(UUID id) {
@@ -716,6 +751,10 @@ public final class JuizoFinal {
                     tickLabirinto(p, (ServerLevel) p.level(), agora);
                 } else if (ehSala(p.level())) {
                     tickSala(p, (ServerLevel) p.level(), agora);
+                } else if (JuizoReino.eh(p.level())) {
+                    // (5.30.0) está no reino do outro mod: o relógio do labirinto não manda
+                    // aqui — quem decide a saída é o portal do reino (JuizoPortalExterno)
+                    continue;
                 } else if (NO_JUIZO.contains(p.getUUID())) {
                     // fugiu por teleporte (comando/porta): sai da lista, o jogo segue
                     dadosDeVolta(p);
@@ -806,6 +845,10 @@ public final class JuizoFinal {
                         : new BlockPos(0, SALA_Y + 2, ARENA_Z + JuizoSala.COMPRIMENTO - 12);
                 p.teleportTo(sala, ent.getX() + 0.5D, ent.getY(), ent.getZ() + 0.5D, 180.0F, 0.0F);
             }
+            return;
+        }
+        // (5.30.0) morreu no reino do outro mod? volta pro reino (morrer não é fuga)
+        if (JuizoReino.entrar(p)) {
             return;
         }
         ServerLevel lv = p.getServer().getLevel(CHAVE_JUIZO);

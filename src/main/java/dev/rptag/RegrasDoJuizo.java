@@ -48,7 +48,8 @@ public final class RegrasDoJuizo {
                 return;
             }
             // ---- o vazio e o labirinto: nada para cima, nada para baixo
-            if (VazioReino.ehVazio(lv) || JuizoFinal.ehJuizo(lv)) {
+            // (5.30.0) o reino do outro mod é o novo labirinto: vale a mesma regra
+            if (VazioReino.ehVazio(lv) || JuizoFinal.ehJuizo(lv) || JuizoReino.eh(lv)) {
                 int pes = p.blockPosition().getY();
                 if (alvo.getY() > pes) {
                     event.setCanceled(true);

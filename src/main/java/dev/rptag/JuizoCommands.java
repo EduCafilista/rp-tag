@@ -50,6 +50,42 @@ public final class JuizoCommands {
                                 .executes(ctx -> comAlvos(ctx, "entrar"))))
 
                 // /juizo sala <jogadores> — leva direto pra sala branca (teste do ADM)
+                // (5.30.0) qual dimensão está servindo de labirinto (o Reino do outro mod)
+                .then(Commands.literal("dimensao")
+                        .executes(ctx -> dimensao(ctx))
+                        .then(Commands.literal("listar").executes(ctx -> listarDimensoes(ctx)))
+                        .then(Commands.literal("automatico").executes(ctx -> {
+                            dev.rptag.JuizoReino.fixar(null);
+                            var resolvida = dev.rptag.JuizoReino.chave(ctx.getSource().getServer());
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "\u00a77Voltou pro automático. Dimensão encontrada: \u00a7f"
+                                    + (resolvida == null ? "(nenhuma \u2014 labirinto antigo)"
+                                            : resolvida.location().toString())),
+                                    false);
+                            return Command.SINGLE_SUCCESS;
+                        }))
+                        .then(Commands.literal("definir")
+                                .then(Commands.argument("id", net.minecraft.commands.arguments.ResourceLocationArgument.id())
+                                        .suggests((ctx, b) -> {
+                                            for (var k : dev.rptag.JuizoReino.candidatas(ctx.getSource().getServer())) {
+                                                b.suggest(k.location().toString());
+                                            }
+                                            return b.buildFuture();
+                                        })
+                                        .executes(ctx -> {
+                                            net.minecraft.resources.ResourceLocation rl =
+                                                    net.minecraft.commands.arguments.ResourceLocationArgument.getId(ctx, "id");
+                                            dev.rptag.JuizoReino.fixar(rl);
+                                            boolean existe = ctx.getSource().getServer().getLevel(
+                                                    net.minecraft.resources.ResourceKey.create(
+                                                            net.minecraft.core.registries.Registries.DIMENSION, rl)) != null;
+                                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                                    "\u00a77Labirinto do Julgamento agora é: \u00a7f" + rl
+                                                    + (existe ? "\u00a7a (carregada)"
+                                                              : "\u00a7c (essa dimensão NÃO existe aqui)")),
+                                                    true);
+                                            return Command.SINGLE_SUCCESS;
+                                        }))))
                 .then(Commands.literal("sala")
                         .then(Commands.argument("jogadores", EntityArgument.players())
                                 .executes(ctx -> comAlvos(ctx, "sala"))))
@@ -171,10 +207,50 @@ public final class JuizoCommands {
                 + (JuizoFinal.estaNoJulgamento(id) ? "SIM" : "não")).withStyle(ChatFormatting.GRAY));
     }
 
+    /** (5.30.0) mostra/descobre qual dimensão está servindo de labirinto. */
+    private static int dimensao(CommandContext<CommandSourceStack> ctx) {
+        var srv = ctx.getSource().getServer();
+        var k = dev.rptag.JuizoReino.chave(srv);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "\u00a7e\u2500\u2500 LABIRINTO DO JULGAMENTO \u2500\u2500\n"
+                + "\u00a77dimensão em uso: \u00a7f" + (k == null ? "(nenhuma \u2014 "
+                + "usando o labirinto antigo do RP Tag)" : k.location().toString()) + "\n"
+                + "\u00a77dimensões de outros mods: \u00a7f"
+                + dev.rptag.JuizoReino.candidatas(srv).size()
+                + "\u00a77  \u2022  \u00a7f/juizo dimensao listar\n"
+                + "\u00a77se a escolha automática errar: \u00a7f/juizo dimensao definir <id>"),
+                false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** (5.30.0) lista as dimensões que os outros mods trouxeram. */
+    private static int listarDimensoes(CommandContext<CommandSourceStack> ctx) {
+        var srv = ctx.getSource().getServer();
+        var lista = dev.rptag.JuizoReino.candidatas(srv);
+        if (lista.isEmpty()) {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a77Nenhuma dimensão de outro mod carregada. O Julgamento usa o "
+                    + "labirinto antigo do RP Tag."), false);
+            return Command.SINGLE_SUCCESS;
+        }
+        StringBuilder sb = new StringBuilder("\u00a7e\u2500\u2500 DIMENS\u00d5ES DE OUTROS MODS \u2500\u2500\n");
+        var emUso = dev.rptag.JuizoReino.chave(srv);
+        for (var k : lista) {
+            boolean escolhida = emUso != null && emUso.equals(k);
+            sb.append(escolhida ? "\u00a7a\u25b8 " : "\u00a78\u2022 ").append("\u00a7f")
+              .append(k.location()).append(escolhida ? "\u00a77  (é esta)" : "").append("\n");
+        }
+        String texto = sb.toString();
+        ctx.getSource().sendSuccess(() -> Component.literal(texto), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
     private static int info(CommandContext<CommandSourceStack> ctx) {
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "\u00a7e\u2500\u2500 O JULGAMENTO \u2500\u2500\n"
-                + "\u00a77\u2022 \u00a7f5 vidas zeradas \u2192 \u00a77labirinto infinito com bichos bufados\n"
+                + "\u00a77\u2022 \u00a7f5 vidas zeradas \u2192 \u00a77o REINO do outro mod (o novo labirinto)\n"
+                + "\u00a77\u2022 \u00a7fo PORTAL do reino \u2192 \u00a77leva pra ARENA, não pro overworld\n"
+                + "\u00a77\u2022 \u00a7f/juizo dimensao \u2192 \u00a77qual dimensão está servindo de labirinto\n"
                 + "\u00a77\u2022 \u00a7fachar a saída \u2192 \u00a77A ARENA DO JULGAMENTO\n"
                 + "\u00a77\u2022 \u00a7fo ADM interpreta o boss \u2014 \u00a7fo mod NÃO põe boneco nenhum\n"
                 + "\u00a77\u2022 \u00a7f/juizo ganhar <jogador> \u2192 \u00a77volta com +2 vidas (o ITEM quem dá é o ADM)\n"
