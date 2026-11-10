@@ -320,7 +320,7 @@ public final class VazioPoderes {
      */
     private static void banir(ServerPlayer p) {
         // (5.33.0) o cone de mira decide quem vai; sem alvo, nada acontece (nunca o próprio)
-        banirAlvo(p, alvoNaMira(p, 40.0D, 0.55D));
+        banirAlvo(p, alvoNaMira(p, 48.0D, 0.35D));
     }
 
     /**
@@ -353,6 +353,8 @@ public final class VazioPoderes {
                 SoundSource.PLAYERS, 0.8F, 0.6F);
         lv.sendParticles(ParticleTypes.SQUID_INK, olhoPos.x, olhoPos.y, olhoPos.z, 80, 1.6D, 1.6D, 1.6D, 0.02D);
 
+        RPTagMod.LOGGER.info("RP Tag: banir de {} em {}", p.getName().getString(),
+                alvo == null ? "ninguem (sem alvo na mira)" : alvo.getName().getString());
         if (alvo instanceof ServerPlayer vitima) {
             // vai para a DIMENSÃO DO OUTRO MOD (é "a dimensão do banir" — nada de terceira)
             if (!JuizoReino.banirPara(vitima)) {
@@ -379,6 +381,33 @@ public final class VazioPoderes {
         try {
             Vec3 olho = p.getEyePosition();
             Vec3 dir = p.getLookAngle().normalize();
+            // (5.34.0) PRIMEIRO A MIRA DE VERDADE: quem está na linha do olho, até 48 blocos.
+            // O dono: "o banir eu quero conseguir banir quem eu ver". Se a pessoa está na
+            // frente, é ela — sem depender de estar exatamente no centro do cone.
+            try {
+                Vec3 fim = olho.add(dir.scale(alcance));
+                net.minecraft.world.phys.AABB area = new net.minecraft.world.phys.AABB(olho, fim).inflate(1.2D);
+                LivingEntity naLinha = null;
+                double menorDist = Double.MAX_VALUE;
+                for (LivingEntity e : p.serverLevel().getEntitiesOfClass(LivingEntity.class, area,
+                        e -> e != p && e.isAlive())) {
+                    net.minecraft.world.phys.AABB caixa = e.getBoundingBox().inflate(0.35D);
+                    java.util.Optional<Vec3> bate = caixa.clip(olho, fim);
+                    if (bate.isEmpty()) {
+                        continue;
+                    }
+                    double d = bate.get().distanceToSqr(olho);
+                    if (d < menorDist) {
+                        menorDist = d;
+                        naLinha = e;
+                    }
+                }
+                if (naLinha != null) {
+                    return naLinha;
+                }
+            } catch (Throwable ignorado) {
+                // sem mira exata: cai no cone
+            }
             LivingEntity melhor = null;
             double melhorDot = cosMinimo;
             for (LivingEntity e : p.serverLevel().getEntitiesOfClass(LivingEntity.class,

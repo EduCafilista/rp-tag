@@ -14,6 +14,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -92,6 +93,15 @@ public final class PoderLeque {
     private static long abertoEm;
     private static int ultimo = -1;
     private static int apontado = -1;
+    /**
+     * (5.34.0) <b>A HABILIDADE ESCOLHIDA NO LEQUE.</b>
+     *
+     * <p>O dono: <i>"depois de escolher a habilidade na wheel de poderes, eu quero poder usar o
+     * botão direito por exemplo para atacar as magias"</i>. Então o leque não é mais um menu de
+     * tiro-e-queda: o que você escolhe fica <b>armado</b> (-1 = nada armado) e o botão direito
+     * solta. As teclas 1-6 e o X continuam valendo.
+     */
+    private static int selecionado = -1;
     /** quando cada poder volta a estar pronto (ms) — só para o desenho. */
     private static final long[] PRONTO = new long[6];
     private static boolean mouseAntes;
@@ -197,6 +207,103 @@ public final class PoderLeque {
         }
     }
 
+    /** (5.34.0) qual habilidade está armada (-1 = nenhuma). */
+    public static int selecionado() {
+        return selecionado;
+    }
+
+    /**
+     * (5.34.0) <b>BOTÃO DIREITO SOLTA A HABILIDADE ARMADA.</b>
+     *
+     * <p>Pedido do dono: <i>"depois de escolher a habilidade na wheel de poderes, eu quero poder
+     * usar o botão direito para atacar as magias"</i>.
+     *
+     * <p>Regras para não estragar o jogo normal:
+     * <ul>
+     *   <li>só onde os poderes respondem (vazio, reino do Juízo, ou ADM);</li>
+     *   <li><b>agachado (shift)</b> = interação normal (baú, porta, botão) — o poder sai do
+     *       caminho;</li>
+     *   <li>com o leque aberto o clique é do leque.</li>
+     * </ul>
+     */
+    @SubscribeEvent
+    public static void onClique(InputEvent.InteractionKeyMappingTriggered event) {
+        try {
+            if (!event.isUseItem()) {
+                return;
+            }
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null || mc.level == null) {
+                return;
+            }
+            if (aberto) {
+                event.setCanceled(true);      // o clique é do leque
+                event.setSwingHand(false);
+                return;
+            }
+            if (selecionado < 0 || mc.player.isShiftKeyDown()) {
+                return;
+            }
+            if (!podeAqui(mc.player)) {
+                return;
+            }
+            // (5.34.0) NÃO roubar o clique de quem precisa do clique:
+            //  • com a CHAVE DO JULGAMENTO na mão (é ela que abre o portal da sala);
+            //  • mirando na pedra do retorno (obsidiana chorosa) ou na escuridão do portal.
+            if (cliqueTemDono(mc)) {
+                return;
+            }
+            event.setCanceled(true);
+            event.setSwingHand(false);
+            mandar(selecionado);
+        } catch (Throwable ignorado) {
+            // o clique nunca pode derrubar o jogo
+        }
+    }
+
+    /**
+     * (5.34.0) esse clique direito pertence a um bloco/item nosso (e não a um poder)?
+     *
+     * <p>Sem isso, com uma habilidade armada o jogador não conseguiria mais abrir o portal da
+     * sala: o botão direito viraria magia antes de chegar no bloco.
+     */
+    private static boolean cliqueTemDono(Minecraft mc) {
+        try {
+            var mao = mc.player.getMainHandItem();
+            if (mao != null && !mao.isEmpty()) {
+                String id = mao.getItem().builtInRegistryHolder().key().location().toString();
+                if (id.equals("rptag:chave_julgamento")) {
+                    return true;
+                }
+            }
+            if (mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult bh
+                    && mc.level != null) {
+                var estado = mc.level.getBlockState(bh.getBlockPos());
+                String bloco = estado.getBlock().builtInRegistryHolder().key().location().toString();
+                if (bloco.equals("rptag:escuridao") || bloco.equals("minecraft:crying_obsidian")) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignorado) {
+            // na dúvida, deixa o clique passar
+            return true;
+        }
+        return false;
+    }
+
+    /** (5.34.0) espelho do {@code VazioPoderes.temPoder} do servidor (decide só o desenho). */
+    private static boolean podeAqui(net.minecraft.client.player.LocalPlayer p) {
+        try {
+            String dim = p.level().dimension().location().toString();
+            if (dim.equals("rptag:exilio") || dim.equals("rptag:juizo_reino")) {
+                return true;
+            }
+            return p.hasPermissions(2);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     /**
      * (5.33.0) solta/prende o cursor do jogo.
      *
@@ -221,6 +328,7 @@ public final class PoderLeque {
     private static void mandar(int poder) {
         try {
             ultimo = poder;
+            selecionado = poder;          // (5.34.0) fica armado para o botão direito
             abertoEm = System.currentTimeMillis();
             PRONTO[poder] = System.currentTimeMillis() + RECARGA[poder];
             PacketDistributor.sendToServer(new VazioPoderC2S(poder));

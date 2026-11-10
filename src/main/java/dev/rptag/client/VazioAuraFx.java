@@ -81,8 +81,21 @@ public final class VazioAuraFx {
         ultimoPoder = System.currentTimeMillis();
     }
 
+    /**
+     * (5.34.0) <b>A AURA DE PENAS SAIU DO DESENHO.</b>
+     *
+     * <p>O dono (pedido 91) mandou a screenshot do que estava em volta dele — um bloco preto na
+     * cabeça, lascas escuras e pontinhos — e disse: <i>"era para tirar ISSO que está agora"</i>.
+     * O que ele quer no lugar são os <b>raios vermelhos</b> ({@link RaiosVazioFx}). Então esta
+     * aura não desenha mais nada; a classe fica só com o estado ({@link #pulsar()} e
+     * {@link #acenderPor(long)}) para quem já chama não quebrar.
+     */
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
+        return;
+    }
+
+    private static void desenharAuraAntiga(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
             return;
         }

@@ -132,28 +132,64 @@ public final class VazioPoderFx {
 
     private static void desenhar(VertexConsumer vc, org.joml.Matrix4f mat, Efeito e, float vida) {
         switch (e.tipo()) {
-            case 0 -> {   // RAIO: a lança escura com o fio carmesim, some rápido
+            case 0 -> {   // (5.34.0) RAIO: lança carmesim com NÚCLEO branco e explosão de impacto
                 float alfa = (1.0F - vida) * (vida < 0.15F ? vida / 0.15F : 1.0F);
-                tubo(vc, mat, e.de(), e.ate(), 0.16F, cor(0.85F * alfa, 0x1A, 0x03, 0x06));
-                tubo(vc, mat, e.de(), e.ate(), 0.055F, cor(alfa, 0xFF, 0x30, 0x3C));
-                // a explosão onde bate
-                float raio = 0.6F + vida * 5.0F;
-                esfera(vc, mat, e.ate(), raio, cor(0.55F * (1.0F - vida), 0xC0, 0x10, 0x1E));
+                // capa escura (dá volume), corpo vermelho, fio branco-quente no meio
+                tubo(vc, mat, e.de(), e.ate(), 0.22F, cor(0.85F * alfa, 0x14, 0x02, 0x05));
+                tubo(vc, mat, e.de(), e.ate(), 0.10F, cor(alfa, 0xFF, 0x24, 0x34));
+                tubo(vc, mat, e.de(), e.ate(), 0.035F, cor(alfa, 0xFF, 0xE8, 0xEE));
+                // a explosão onde bate: clarão + dois anéis de choque
+                esfera(vc, mat, e.ate(), 0.6F + vida * 5.0F,
+                        cor(0.55F * (1.0F - vida), 0xC0, 0x10, 0x1E));
+                anel(vc, mat, e.ate(), 0.8F + vida * 6.5F,
+                        cor(0.7F * (1.0F - vida), 0xFF, 0x38, 0x48), 32);
+                anel(vc, mat, e.ate(), 0.4F + vida * 4.0F,
+                        cor(0.9F * (1.0F - vida), 0xFF, 0xA0, 0xB0), 24);
             }
-            case 1 -> {   // ORBE: bolha carmesim + rastro
+            case 1 -> {   // (5.34.0) ORBE: núcleo escuro, casca pulsando e rastro duplo
                 float alfa = 1.0F - vida;
-                esfera(vc, mat, e.ate(), 0.75F + 0.35F * (float) Math.sin(vida * 9.0), cor(0.8F * alfa, 0xD8, 0x18, 0x28));
-                tubo(vc, mat, e.de(), e.ate(), 0.07F, cor(0.5F * alfa, 0xFF, 0x40, 0x50));
+                float puls = 1.0F + 0.16F * (float) Math.sin(vida * 22.0);
+                esfera(vc, mat, e.ate(), 0.42F * puls, cor(0.95F * alfa, 0x08, 0x00, 0x02));
+                esfera(vc, mat, e.ate(), 0.78F * puls, cor(0.75F * alfa, 0xD8, 0x18, 0x28));
+                esfera(vc, mat, e.ate(), 1.05F * puls, cor(0.28F * alfa, 0x88, 0x08, 0x14));
+                anel(vc, mat, e.ate(), 1.15F * puls, cor(0.6F * alfa, 0xFF, 0x50, 0x60), 28);
+                tubo(vc, mat, e.de(), e.ate(), 0.13F, cor(0.35F * alfa, 0x60, 0x04, 0x0A));
+                tubo(vc, mat, e.de(), e.ate(), 0.05F, cor(0.7F * alfa, 0xFF, 0x50, 0x5C));
             }
-            case 2 -> {   // ONDA DA MORTE: anel que varre o chão
+            case 2 -> {   // (5.34.0) ONDA DA MORTE: três anéis + a CORTINA que sobe do chão
                 float raio = 1.0F + vida * 17.0F;
                 float alfa = (1.0F - vida) * 0.75F;
                 anel(vc, mat, e.ate(), raio, cor(alfa, 0xB0, 0x10, 0x1C), 48);
                 anel(vc, mat, e.ate(), raio * 0.78F, cor(alfa * 0.6F, 0x60, 0x06, 0x0C), 48);
+                anel(vc, mat, e.ate(), raio * 0.55F, cor(alfa * 0.35F, 0x40, 0x02, 0x06), 40);
+                // a cortina: 36 colunas curtas subindo na borda da onda
+                float altura = 1.25F * (1.0F - vida * 0.5F);
+                Vec3 c = e.ate();
+                for (int i = 0; i < 36; i++) {
+                    double a = i / 36.0 * Math.PI * 2.0;
+                    double x0 = c.x + Math.cos(a) * raio, z0 = c.z + Math.sin(a) * raio;
+                    double x1 = c.x + Math.cos(a) * (raio + 0.45), z1 = c.z + Math.sin(a) * (raio + 0.45);
+                    tubo(vc, mat, new Vec3(x0, c.y + 0.05, z0), new Vec3(x1, c.y + altura, z1),
+                            0.10F, cor(alfa * 0.5F, 0xD0, 0x14, 0x22));
+                }
             }
-            case 3 -> {   // OLHOS: riscos finos, vários alvos
+            case 3 -> {   // (5.34.0) OLHOS: risco + o OLHO aberto no alvo (pálpebra e pupila)
                 float alfa = 1.0F - vida;
-                tubo(vc, mat, e.de(), e.ate(), 0.03F, cor(alfa, 0xFF, 0x50, 0x5A));
+                tubo(vc, mat, e.de(), e.ate(), 0.04F, cor(alfa, 0xFF, 0x50, 0x5A));
+                float abre = Math.min(1.0F, vida * 4.0F);
+                Vec3 a = e.ate();
+                // a pálpebra: dois arcos (losango) no plano da câmera
+                for (int i = 0; i < 2; i++) {
+                    float s = i == 0 ? 1.0F : -1.0F;
+                    tubo(vc, mat, new Vec3(a.x - 0.55, a.y, a.z),
+                            new Vec3(a.x, a.y + 0.34F * abre * s, a.z),
+                            0.045F, cor(alfa, 0xFF, 0xC0, 0xC8));
+                    tubo(vc, mat, new Vec3(a.x, a.y + 0.34F * abre * s, a.z),
+                            new Vec3(a.x + 0.55, a.y, a.z),
+                            0.045F, cor(alfa, 0xFF, 0xC0, 0xC8));
+                }
+                esfera(vc, mat, a, 0.16F, cor(alfa, 0xFF, 0x20, 0x30));
+                esfera(vc, mat, a, 0.07F, cor(alfa, 0x02, 0x00, 0x00));
             }
             case 5 -> chuvaDePenas(vc, mat, e, vida);
             case 6 -> olhoQueBane(vc, mat, e, vida);
@@ -184,32 +220,20 @@ public final class VazioPoderFx {
             double t, float vida) {
         float cx = (float) base.x;
         float cz = (float) base.z;
-        float chao = (float) base.y;
-        float altura = 3.4F;                    // o olho fica no meio da moldura, no ar
-        float cy = chao + altura * 0.55F;
+        float cy = (float) base.y;          // (5.34.0) o pacote já manda o CENTRO da boca
         int lados = 48;
 
-        // ---- 1) A MOLDURA: pedra quase preta, dois pilares e o arco
-        int pedra = cor(1.0F, 0x0A, 0x06, 0x0A);
-        int pedraFio = cor(0.9F, 0x2A, 0x08, 0x10);
-        float meia = 2.3F;
-        quadZ(vc, mat, cx - meia - 0.5F, chao, cx - meia, chao + altura + 0.6F, cz, pedra);
-        quadZ(vc, mat, cx + meia, chao, cx + meia + 0.5F, chao + altura + 0.6F, cz, pedra);
-        quadZ(vc, mat, cx - meia - 0.5F, chao + altura + 0.6F, cx + meia + 0.5F,
-                chao + altura + 1.0F, cz, pedra);
-        // o fio carmesim correndo na moldura (a "veia" do portal)
-        quadZ(vc, mat, cx - meia - 0.06F, chao, cx - meia - 0.02F, chao + altura + 0.6F,
-                cz - 0.03F, pedraFio);
-        quadZ(vc, mat, cx + meia + 0.02F, chao, cx + meia + 0.06F, chao + altura + 0.6F,
-                cz - 0.03F, pedraFio);
+        // (5.34.0) A MOLDURA DE PEDRA DO CLIENTE SAIU. O dono: "o portal está bugado na parte
+        // de trás". Era isto: o cliente desenhava uma moldura de pedra POR CIMA da moldura de
+        // blocos, em outro plano — de trás apareciam duas molduras e o olho parecia solto.
+        // Agora a moldura é só a de blocos (obsidiana chorosa) e aqui fica só o VÓRTICE.
 
-        // ---- 2) O VÓRTICE: 3 anéis de pás girando (o miolo escuro + as pás carmesim)
-        float raio = 1.62F;
-        // miolo: disco quase preto
+        // ---- 1) O VÓRTICE: disco escuro + 3 espirais girando
+        float raio = 1.35F;                 // cabe dentro do vão de 3 x 5 blocos
         for (int i = 0; i < lados; i++) {
             double a0 = i / (double) lados * Math.PI * 2.0;
             double a1 = (i + 1) / (double) lados * Math.PI * 2.0;
-            int corMiolo = cor(0.95F, 0x06, 0x01, 0x03);
+            int corMiolo = cor(0.97F, 0x06, 0x01, 0x03);
             vc.addVertex(mat, cx, cy, cz + 0.02F).setColor(corMiolo);
             vc.addVertex(mat, cx + (float) Math.cos(a0) * raio, cy + (float) Math.sin(a0) * raio,
                     cz + 0.02F).setColor(corMiolo);
@@ -218,44 +242,39 @@ public final class VazioPoderFx {
             vc.addVertex(mat, cx + (float) Math.cos(a1) * raio, cy + (float) Math.sin(a1) * raio,
                     cz + 0.02F).setColor(corMiolo);
         }
-        // as pás do vórtice (espirais grossas girando)
         for (int volta = 0; volta < 3; volta++) {
-            float raioInterno = 0.18F + volta * 0.42F;
-            float raioExterno = raioInterno + 0.55F;
+            float raioInterno = 0.14F + volta * 0.36F;
+            float raioExterno = raioInterno + 0.46F;
             double giro = t * (1.6 + volta * 0.5) * (volta % 2 == 0 ? 1 : -1);
             int pas = 14;
             for (int i = 0; i < pas; i++) {
                 double a0 = i / (double) pas * Math.PI * 2.0 + giro;
                 double a1 = (i + 1) / (double) pas * Math.PI * 2.0 + giro;
-                double curva = 0.35;   // a pá "arrasta" (espiral)
+                double curva = 0.35;
                 float alfa = 0.55F - volta * 0.12F;
                 int cInt = cor(alfa * 0.35F, 0x60, 0x04, 0x0A);
                 int cExt = cor(alfa, 0xE8, 0x18, 0x28);
-                float x0i = cx + (float) (Math.cos(a0) * raioInterno);
-                float y0i = cy + (float) (Math.sin(a0) * raioInterno);
-                float x1i = cx + (float) (Math.cos(a1) * raioInterno);
-                float y1i = cy + (float) (Math.sin(a1) * raioInterno);
-                float x0e = cx + (float) (Math.cos(a0 + curva) * raioExterno);
-                float y0e = cy + (float) (Math.sin(a0 + curva) * raioExterno);
-                float x1e = cx + (float) (Math.cos(a1 + curva) * raioExterno);
-                float y1e = cy + (float) (Math.sin(a1 + curva) * raioExterno);
-                vc.addVertex(mat, x0i, y0i, cz + 0.04F).setColor(cInt);
-                vc.addVertex(mat, x1i, y1i, cz + 0.04F).setColor(cInt);
-                vc.addVertex(mat, x1e, y1e, cz + 0.04F).setColor(cExt);
-                vc.addVertex(mat, x0e, y0e, cz + 0.04F).setColor(cExt);
+                vc.addVertex(mat, cx + (float) (Math.cos(a0) * raioInterno),
+                        cy + (float) (Math.sin(a0) * raioInterno), cz + 0.04F).setColor(cInt);
+                vc.addVertex(mat, cx + (float) (Math.cos(a1) * raioInterno),
+                        cy + (float) (Math.sin(a1) * raioInterno), cz + 0.04F).setColor(cInt);
+                vc.addVertex(mat, cx + (float) (Math.cos(a1 + curva) * raioExterno),
+                        cy + (float) (Math.sin(a1 + curva) * raioExterno), cz + 0.04F).setColor(cExt);
+                vc.addVertex(mat, cx + (float) (Math.cos(a0 + curva) * raioExterno),
+                        cy + (float) (Math.sin(a0 + curva) * raioExterno), cz + 0.04F).setColor(cExt);
             }
         }
 
-        // ---- 3) A ÍRIS: anel carmesim com a PUPULA que olha pra quem chega
+        // ---- 2) A ÍRIS com a pupila que olha pra quem chega
         float olhandoX = 0.0F, olhandoY = 0.0F;
         try {
             var mc = net.minecraft.client.Minecraft.getInstance();
             if (mc.player != null) {
                 Vec3 p = mc.player.position();
-                double dx = p.x - base.x, dy = (p.y + 1.0) - (cy);
+                double dx = p.x - base.x, dy = (p.y + 1.0) - cy;
                 double d = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
-                olhandoX = (float) (dx / d) * 0.16F;
-                olhandoY = (float) (dy / d) * 0.16F;
+                olhandoX = (float) (dx / d) * 0.14F;
+                olhandoY = (float) (dy / d) * 0.14F;
             }
         } catch (Throwable ignorado) {
             // sem jogador: pupila no centro
@@ -266,56 +285,49 @@ public final class VazioPoderFx {
             double a1 = (i + 1) / (double) lados * Math.PI * 2.0;
             int cIris = cor(0.85F, 0xB4, 0x0E, 0x1C);
             vc.addVertex(mat, cx + olhandoX * 0.5F, cy + olhandoY * 0.5F, cz + 0.06F).setColor(cIris);
-            vc.addVertex(mat, cx + (float) Math.cos(a0) * 0.62F * pulso,
-                    cy + (float) Math.sin(a0) * 0.62F * pulso, cz + 0.06F).setColor(cIris);
-            vc.addVertex(mat, cx + (float) Math.cos(a1) * 0.62F * pulso,
-                    cy + (float) Math.sin(a1) * 0.62F * pulso, cz + 0.06F).setColor(cIris);
-            vc.addVertex(mat, cx + (float) Math.cos(a1) * 0.62F * pulso,
-                    cy + (float) Math.sin(a1) * 0.62F * pulso, cz + 0.06F).setColor(cIris);
+            vc.addVertex(mat, cx + (float) Math.cos(a0) * 0.52F * pulso,
+                    cy + (float) Math.sin(a0) * 0.52F * pulso, cz + 0.06F).setColor(cIris);
+            vc.addVertex(mat, cx + (float) Math.cos(a1) * 0.52F * pulso,
+                    cy + (float) Math.sin(a1) * 0.52F * pulso, cz + 0.06F).setColor(cIris);
+            vc.addVertex(mat, cx + (float) Math.cos(a1) * 0.52F * pulso,
+                    cy + (float) Math.sin(a1) * 0.52F * pulso, cz + 0.06F).setColor(cIris);
             int cPupila = cor(1.0F, 0x01, 0x00, 0x00);
             vc.addVertex(mat, cx + olhandoX, cy + olhandoY, cz + 0.08F).setColor(cPupila);
-            vc.addVertex(mat, cx + olhandoX + (float) Math.cos(a0) * 0.26F,
-                    cy + olhandoY + (float) Math.sin(a0) * 0.26F, cz + 0.08F).setColor(cPupila);
-            vc.addVertex(mat, cx + olhandoX + (float) Math.cos(a1) * 0.26F,
-                    cy + olhandoY + (float) Math.sin(a1) * 0.26F, cz + 0.08F).setColor(cPupila);
-            vc.addVertex(mat, cx + olhandoX + (float) Math.cos(a1) * 0.26F,
-                    cy + olhandoY + (float) Math.sin(a1) * 0.26F, cz + 0.08F).setColor(cPupila);
+            vc.addVertex(mat, cx + olhandoX + (float) Math.cos(a0) * 0.22F,
+                    cy + olhandoY + (float) Math.sin(a0) * 0.22F, cz + 0.08F).setColor(cPupila);
+            vc.addVertex(mat, cx + olhandoX + (float) Math.cos(a1) * 0.22F,
+                    cy + olhandoY + (float) Math.sin(a1) * 0.22F, cz + 0.08F).setColor(cPupila);
+            vc.addVertex(mat, cx + olhandoX + (float) Math.cos(a1) * 0.22F,
+                    cy + olhandoY + (float) Math.sin(a1) * 0.22F, cz + 0.08F).setColor(cPupila);
         }
 
-        // ---- 4) os 8 OLHOS pequenos em volta (o "DeathRiftEyes" do mod)
+        // ---- 3) os 8 olhinhos, agora DENTRO do vórtice (antes ficavam atrás da parede)
         for (int i = 0; i < 8; i++) {
             double ang = i / 8.0 * Math.PI * 2.0 + t * 0.25;
-            float ex = cx + (float) Math.cos(ang) * (raio + 0.62F);
-            float ey = cy + (float) Math.sin(ang) * (raio + 0.62F);
+            float ex = cx + (float) Math.cos(ang) * (raio * 0.80F);
+            float ey = cy + (float) Math.sin(ang) * (raio * 0.80F);
             float pisca = 0.55F + 0.45F * (float) Math.sin(t * 2.3 + i * 1.7);
             int cOlho = cor(0.85F * pisca, 0xFF, 0x2A, 0x38);
-            vc.addVertex(mat, ex - 0.16F, ey, cz - 0.02F).setColor(cOlho);
-            vc.addVertex(mat, ex + 0.16F, ey, cz - 0.02F).setColor(cOlho);
-            vc.addVertex(mat, ex, ey + 0.09F, cz - 0.02F).setColor(cOlho);
-            vc.addVertex(mat, ex, ey - 0.09F, cz - 0.02F).setColor(cOlho);
+            vc.addVertex(mat, ex - 0.13F, ey, cz + 0.10F).setColor(cOlho);
+            vc.addVertex(mat, ex + 0.13F, ey, cz + 0.10F).setColor(cOlho);
+            vc.addVertex(mat, ex, ey + 0.07F, cz + 0.10F).setColor(cOlho);
+            vc.addVertex(mat, ex, ey - 0.07F, cz + 0.10F).setColor(cOlho);
         }
 
-        // ---- 5) as PENAS-PÁLPEBRA
+        // ---- 4) as penas-pálpebra, coladas na borda do vórtice
         for (int i = 0; i < 12; i++) {
             double ang = i / 12.0 * Math.PI * 2.0 + t * 0.7;
-            float px = cx + (float) Math.cos(ang) * (raio + 1.05F);
-            float py = cy + (float) Math.sin(ang) * (raio + 0.9F);
-            float comp = 0.55F + 0.25F * (float) Math.sin(t * 2.6 + i);
-            pena(vc, mat, px, py, cz - 0.06F,
+            float px = cx + (float) Math.cos(ang) * (raio * 0.98F);
+            float py = cy + (float) Math.sin(ang) * (raio * 0.98F);
+            float comp = 0.34F + 0.16F * (float) Math.sin(t * 2.6 + i);
+            pena(vc, mat, px, py, cz + 0.09F,
                     Math.cos(ang) * comp, Math.sin(ang) * comp, 0,
-                    0.085F, cor(0.75F, 0x06, 0x01, 0x02), cor(0.8F, 0xE2, 0x18, 0x26));
+                    0.06F, cor(0.75F, 0x06, 0x01, 0x02), cor(0.8F, 0xE2, 0x18, 0x26));
         }
 
-        // ---- 6) a LUZ no chão + a coluna de vazio
-        anel(vc, mat, new Vec3(base.x, chao + 0.06, base.z), 2.0F + 0.15F * (float) Math.sin(t * 2.2),
-                cor(0.55F, 0xB8, 0x12, 0x22), 40);
-        for (int i = 0; i < 5; i++) {
-            double ang = i / 5.0 * Math.PI * 2.0 + t * 0.4;
-            float lx = cx + (float) Math.cos(ang) * 1.4F;
-            tubo(vc, mat, new Vec3(lx, chao, cz + Math.sin(ang) * 1.4F),
-                    new Vec3(lx, chao + 3.0F, cz + Math.sin(ang) * 1.4F),
-                    0.09F, cor(0.16F, 0xA0, 0x10, 0x1E));
-        }
+        // ---- 5) a luz no chão (só o anel, sem tubo atravessando parede)
+        anel(vc, mat, new Vec3(base.x, base.y - 2.0F + 0.06F, base.z),
+                1.9F + 0.15F * (float) Math.sin(t * 2.2), cor(0.55F, 0xB8, 0x12, 0x22), 40);
     }
 
     // ---------------------------------------------------------------- penas

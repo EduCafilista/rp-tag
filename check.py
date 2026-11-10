@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.33.0'
+VER = '5.34.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1548,17 +1548,18 @@ check('5.11.1: os raios vermelhos voltaram (pedido do dono) e os tentaculos de p
       os.path.exists(C + '/RaiosVazioFx.java')
       and not os.path.exists(C + '/TentaculosVazioFx.java')
       and 'class RaiosVazioFx' in _rvz)
-check('5.33.0 (90): os espinhos/raios em volta do jogador SAIRAM (onRenderLevel nao desenha)',
-      'RenderType.debugQuads()' not in _rvz and 'Mth.cos(el)' not in _rvz
-      and 'onRenderLevel' in _rvz)
-check('5.33.0 (90): o desenho dos raios saiu do arquivo (nem 3 passadas, nem nucleo)',
-      'CAPA vermelho-escura' not in _rvz and 'CORPO vermelho vivo' not in _rvz)
-check('5.33.0 (90): nada de raio preso no corpo (a classe so guarda quem e o vazio)',
-      'Mth.cos(el)' not in _rvz and 'r.origem' not in _rvz)
-check('5.33.0 (90): sem serrilhado/estalo de raio (o desenho nao existe mais)',
-      'ESTALO' not in _rvz and 'proxEstalo' not in _rvz)
-check('5.33.0 (90): nao sobrou CERDAS nem giro de raios no corpo (o dono achou horrivel)',
-      'CERDAS' not in _rvz and 'giro +=' not in _rvz)
+check('5.34.0 (91): os RAIOS vermelhos VOLTARAM ao /vazio ligar (o dono reclamou)',
+      'RenderType.debugQuads()' in _rvz and 'Mth.cos(el)' in _rvz)
+check('5.34.0 (91): os raios sao longos e grossos (relampago, nao espinho)',
+      'LONGOS = 16' in _rvz and '0.045F + SORTE.nextFloat() * 0.055F' in _rvz)
+check('5.34.0 (91): nenhuma CERDA curta colada no corpo (era o "espinho" horrivel)',
+      'CERDAS = 0' in _rvz and 'boolean cerda = i >= LONGOS' not in _rvz
+      and 'r.alcance = 0.35F + SORTE.nextFloat() * 0.75F' not in _rvz)
+check('5.34.0 (91): a coluna preta em volta do corpo SAIU (era a "caixa preta" da foto)',
+      'desenharSombra' not in _rvz and 'lados = 10' not in _rvz)
+check('5.34.0 (91): a aura de penas tambem nao desenha mais (lascas cinzas da foto)',
+      'A AURA DE PENAS SAIU DO DESENHO' in rd(C + '/VazioAuraFx.java')
+      and 'return;' in rd(C + '/VazioAuraFx.java'))
 check('5.7.4: o pacote AURA leva o UUID de quem e o vazio (todos os clientes veem)',
       'record Aura(java.util.UUID alvo' in rd(R + '/NeptunePackets.java')
       and 'RaiosVazioFx.definir' in _nf3)
@@ -1772,7 +1773,7 @@ check('5.7.7: CODIGOS VERDES em volta do player na saida (3D, no mundo)',
 check('5.7.3: SAIU o borrao de fumaca/rachadura DESENHADO na tela (era o que ficava esquisito no F5)',
       'fumaca(' not in _vad and 'rachadura(' not in _vad and 'tentaculo(' not in _vad
       and _vad.count('b.vinheta(') >= 1 and 'granula' in _vad.lower())
-check('5.33.0 (90): aura NO MUNDO sem tela (o rastro continua, os raios nao)',
+check('5.34.0 (90): aura NO MUNDO sem tela (o rastro continua, os raios nao)',
       'desenharManto' not in _rvz and 'desenharSombra' not in _rvz)
 check('5.7.3: som novo do terremoto com corpo (nao so zumbido grave)',
       os.path.getsize(A + '/sounds/rumble_terremoto.ogg') > 100_000
@@ -2288,7 +2289,7 @@ check('5.13.2: ESCURIDÃO é um bloco de verdade (não é black concrete)',
       and os.path.exists(A + '/blockstates/escuridao.json')
       and os.path.exists(A + '/textures/block/escuridao.png')
       and 'escuridao' in rd(A + '/lang/pt_br.json'))
-check('5.33.0 (90): a coluna de escuridão tambem saiu do corpo (era o "manto" de antes)',
+check('5.34.0 (90): a coluna de escuridão tambem saiu do corpo (era o "manto" de antes)',
       'private static void desenharSombra(' not in _rvz and 'lados = 10' not in _rvz)
 check('5.13.2: rastro de ESCURIDÃO no chão atrás do deus (mancha + lascas)',
       'private static void sombra(VertexConsumer vc' in rd(C + '/RastroVazioFx.java'))
@@ -2697,8 +2698,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.33.0.jar')
-      and os.path.getsize('build/libs/rptag-5.33.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.34.0.jar')
+      and os.path.getsize('build/libs/rptag-5.34.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3016,9 +3017,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.33.0: a versao subiu pra 5.33.0 no jar, no mod e no gradle',
-      "version = '5.33.0'" in rd('build.gradle')
-      and '5.33.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.34.0 no jar, no mod e no gradle',
+      "version = '5.34.0'" in rd('build.gradle')
+      and '5.34.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3254,8 +3255,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.33.0: a versao subiu pra 5.33.0 (jar, mod e gradle)',
-      "version = '5.33.0'" in rd('build.gradle') and '5.33.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.34.0 (jar, mod e gradle)',
+      "version = '5.34.0'" in rd('build.gradle') and '5.34.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3313,8 +3314,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.33.0: a versao subiu pra 5.33.0 (jar, mod e gradle)',
-      "version = '5.33.0'" in rd('build.gradle') and '5.33.0' in _rm)
+check('5.34.0: a versao subiu pra 5.34.0 (jar, mod e gradle)',
+      "version = '5.34.0'" in rd('build.gradle') and '5.34.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3336,8 +3337,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.33.0: a versao subiu pra 5.33.0 (jar, mod e gradle)',
-      "version = '5.33.0'" in rd('build.gradle') and '5.33.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.34.0 (jar, mod e gradle)',
+      "version = '5.34.0'" in rd('build.gradle') and '5.34.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3374,8 +3375,9 @@ check('5.27.0 (4): a fenda cava 3 blocos de fundo (o player cai e fica preso)',
       re.search(r'for \(int (d|prof)\w* = 1; \1 \w*= ?3', _ne) is not None
       or _ne.count('cavarFendaFundo') >= 2)
 _rv = rd(C + '/RaiosVazioFx.java')
-check('5.33.0 (90): o arquivo dos raios nao tem mais cor de raio (sobrou so o estado)',
-      '0.22F' not in _rv.replace(', ', ', '))
+check('5.34.0 (91): o metodo antigo da aura ficou guardado mas nunca e chamado',
+      'desenharAuraAntiga' in rd(C + '/VazioAuraFx.java')
+      and 'VazioAuraFx.desenharAuraAntiga' not in rd(C + '/ClientEvents.java'))
 _vp = rd(C + '/VazioPortalFx.java')
 check('5.27.0 (6): os pedestais do vazio tem animacao nova (anel girando + fagulhas)',
       'quadPequeno3d' in _vp and 'anel' in _vp.lower())
@@ -3654,22 +3656,22 @@ check('5.32.0 (89): o dano dos poderes conserta a invulnerabilidade (era o bug d
       'invulnerableTime = 0' in _vp2 and 'private static boolean ferir(' in _vp2)
 check('5.32.0 (89): o raio agora acerta TODOS na linha (nao so o primeiro)',
       'comprimento > 60.0D' in _vp2 and 'distancia > 2.2D' in _vp2)
-check('5.32.0 (89): o portal do Juizo virou VORTICE que gira (base: o portal do outro mod)',
-      'O VÓRTICE' in _vfx2 and 'pás do vórtice' in _vfx2)
-check('5.32.0 (89): o portal tem os 8 olhinhos e a pupila que segue o jogador',
-      'os 8 OLHOS pequenos' in _vfx2 and 'olhandoX' in _vfx2)
+check('5.34.0 (91): o portal do Juizo virou VORTICE que gira (e sem moldura fantasma)',
+      'O VÓRTICE' in _vfx2 and 'pás do vórtice' not in _vfx2)
+check('5.34.0 (91): o portal tem os 8 olhinhos DENTRO do vortice e a pupila viva',
+      'os 8 olhinhos' in _vfx2 and 'olhandoX' in _vfx2)
 check('5.32.0 (89): o aviso O JULGAMENTO e ao ENTRAR no labirinto (nao na sala)',
       '"\\u00a74\\u00a7lO JULGAMENTO", 8, 4' in _jf3)
 check('5.32.0 (89): a sala mostra o cartaz do JUIZO com frase',
       'FRASES_DO_JUIZO' in _jf3 and 'JUIZO' in _jf3 and 'REDEN' in _jf3)
-check('5.33.0 (90): o chat continua limpo (3 dicas da pedra do retorno viraram barra de acao)',
+check('5.34.0 (90): o chat continua limpo (3 dicas da pedra do retorno viraram barra de acao)',
       _jf3.count('displayClientMessage') <= 6
       and 'pedra escura ao lado do trono' in _jf3)
 check('5.32.0 (89): o /vazio ligar usa a aura nova do leque',
       'acenderAura' in _ne and 'public static void acenderAura' in _vp2)
 
 
-# ===================== PEDIDO 90 — 5.33.0 =====================
+# ===================== PEDIDO 90 — 5.34.0 =====================
 _nc = rd(R + '/NeptuneCommands.java')
 _eb = rd(R + '/EscuridaoBlock.java')
 _jr = rd(R + '/JuizoReino.java')
@@ -3678,41 +3680,76 @@ _pl = rd(C + '/PoderLeque.java')
 _vp3 = rd(R + '/VazioPoderes.java')
 _rvz3 = rd(C + '/RaiosVazioFx.java')
 
-check('5.33.0 (90): os espinhos vermelhos NAO existem mais (nem depois de /vazio desligar)',
-      'onRenderLevel' in _rvz3 and 'LISTA' not in _rvz3 and 'Raio[]' not in _rvz3)
-check('5.33.0 (90): o leque SOLTA o cursor do jogo para escolher a magia',
+check('5.34.0 (91): os raios voltaram COM desenho (LISTA de raios viva outra vez)',
+      'onRenderLevel' in _rvz3 and 'Raio[]' in _rvz3 and 'LISTA[i]' in _rvz3)
+check('5.34.0 (90): o leque SOLTA o cursor do jogo para escolher a magia',
       'releaseMouse()' in _pl and 'grabMouse()' in _pl)
-check('5.33.0 (90): o leque usa a ARTE do dono (roda roxa) e melhorou ela',
+check('5.34.0 (90): o leque usa a ARTE do dono (roda roxa) e melhorou ela',
       os.path.exists(A + '/textures/gui/leque_roda.png')
       and os.path.exists(A + '/textures/gui/leque_brilho.png')
       and os.path.exists(A + '/textures/gui/leque_apagado.png')
       and all(os.path.exists(A + '/textures/gui/leque_%s.png' % n)
               for n in ('raio', 'orbe', 'onda', 'olhos', 'penas', 'banir')))
-check('5.33.0 (90): o leque desenha o NUMERO no aro e o brilho da casa apontada',
+check('5.34.0 (90): o leque desenha o NUMERO no aro e o brilho da casa apontada',
       'raio * 0.845' in _pl and 'TEX_BRILHO' in _pl and 'TEX_APAGADO' in _pl)
-check('5.33.0 (90): BANIR nunca bane o conjurador (alvo == p nao faz nada)',
+check('5.34.0 (90): BANIR nunca bane o conjurador (alvo == p nao faz nada)',
       'public static boolean banirAlvo(ServerPlayer p, LivingEntity alvo)' in _vp3
       and 'if (alvo == p)' in _vp3 and 'return false;' in _vp3)
-check('5.33.0 (90): banir leva a vitima para a dimensao do outro mod (banirPara)',
+check('5.34.0 (90): banir leva a vitima para a dimensao do outro mod (banirPara)',
       'JuizoReino.banirPara(vitima)' in _vp3 and 'banirPara' in _jr)
-check('5.33.0 (90): /vazio soltar tem PODER (com jogador) e EXILIO no mesmo no',
+check('5.34.0 (90): /vazio soltar tem PODER (com jogador) e EXILIO no mesmo no',
       'literal("poder")' in _nc and 'literal("exilio")' in _nc
       and 'soltarPoder' in _nc and 'soltarDoExilio' in _nc)
-check('5.33.0 (90): o labirinto do Juizo voltou (entrar nao chama mais o reino do outro mod)',
+check('5.34.0 (90): o labirinto do Juizo voltou (entrar nao chama mais o reino do outro mod)',
       'if (false &&' not in _jf4)
-check('5.33.0 (90): a PEDRA DO RETORNO existe na sala (obsidiana chorosa)',
+check('5.34.0 (90): a PEDRA DO RETORNO existe na sala (obsidiana chorosa)',
       'BLOCO_GERADOR' in _jf4 and 'CRYING_OBSIDIAN' in _jf4 and 'garantirGerador' in _jf4)
-check('5.33.0 (90): o portal so NASCE do clique na pedra (gerarPortal)',
+check('5.34.0 (90): o portal so NASCE do clique na pedra (gerarPortal)',
       'public static boolean usarGerador(ServerPlayer p, BlockPos pos)' in _jf4
       and 'public static boolean gerarPortal(ServerPlayer p, ServerLevel sala)' in _jf4
       and 'JuizoFinal.usarGerador(p, event.getPos())' in rd(R + '/ServerEvents.java'))
-check('5.33.0 (90): o portal da sala tem moldura + miolo de escuridao + vortice',
+check('5.34.0 (90): o portal da sala tem moldura + miolo de escuridao + vortice',
       'CRYING_OBSIDIAN' in _jf4 and 'RPTagMod.ESCURIDAO.get().defaultBlockState()' in _jf4
       and 'new VazioPoderPayload(4' in _jf4)
-check('5.33.0 (90): o "aviso de morte" acabou (a escuridao da sala agora e a SAIDA)',
+check('5.34.0 (90): o "aviso de morte" acabou (a escuridao da sala agora e a SAIDA)',
       'atravessarPortao' in _eb and 'Esta escurid\u00e3o est\u00e1 morta' not in _eb)
-check('5.33.0 (90): o portal da sala leva de volta pra casa (vitoria = +2 vidas)',
+check('5.34.0 (90): o portal da sala leva de volta pra casa (vitoria = +2 vidas)',
       'vitoria(p);' in _jf4 and 'public static boolean atravessarPortao' in _jf4)
+
+
+# ===================== PEDIDO 91 — 5.34.0 =====================
+_rvz4 = rd(C + '/RaiosVazioFx.java')
+_pl4 = rd(C + '/PoderLeque.java')
+_jf5 = rd(R + '/JuizoFinal.java')
+_vp4 = rd(R + '/VazioPoderes.java')
+
+check('5.34.0 (91): o botao DIREITO solta a habilidade escolhida no leque',
+      'InteractionKeyMappingTriggered' in _pl4 and 'event.isUseItem()' in _pl4
+      and 'mandar(selecionado)' in _pl4)
+check('5.34.0 (91): a escolha do leque fica ARMADA (selecionado) e o X/1-6 continuam',
+      'private static int selecionado = -1;' in _pl4 and 'selecionado = poder;' in _pl4)
+check('5.34.0 (91): agachado = interacao normal (o poder sai da frente)',
+      'isShiftKeyDown()' in _pl4 and 'cliqueTemDono' in _pl4)
+check('5.34.0 (91): o BANIR pega quem esta na linha do olho (e depois cai no cone)',
+      'PRIMEIRO A MIRA DE VERDADE' in _vp4 and '.clip(olho, fim)' in _vp4)
+check('5.34.0 (91): o banir tem animacao (olho que bane) disparada junto',
+      'case 6 -> olhoQueBane' in rd(C + '/VazioPoderFx.java'))
+check('5.34.0 (91): o portal da sala tem PAREDE DE FUNDO (fim do bug da parte de tras)',
+      'A PAREDE DE FUNDO' in _jf5 and 'base.offset(dx, dy, -1)' in _jf5)
+check('5.34.0 (91): o vortice nasce NA FRENTE do miolo (z + 0,55), nao atras',
+      'base.getZ() + 0.55D' in _jf5)
+check('5.34.0 (91): a chave e OBRIGATORIA na pedra do retorno (e se gasta no portal)',
+      'CHAVE_JULGAMENTO.get()' in _jf5 and 'Traga a' in _jf5 and 'shrink(1)' in _jf5)
+check('5.34.0 (91): sem a chave a escuridao NAO leva ninguem (so avisa)',
+      'Esta escurid' in _jf5 and 'CHAVE DO JULGAMENTO' in _jf5)
+check('5.34.0 (91): os poderes ficaram mais bonitos (raio com nucleo branco e aneis)',
+      'fio branco-quente' in rd(C + '/VazioPoderFx.java')
+      and 'a cortina' in rd(C + '/VazioPoderFx.java')
+      and 'o OLHO aberto no alvo' in rd(C + '/VazioPoderFx.java'))
+check('5.34.0 (91): nada de CODIGO do outro mod dentro do nosso (so ideias proprias)',
+      'dev.mian' not in rd(C + '/VazioPoderFx.java')
+      and 'dev.mian' not in rd(C + '/PoderLeque.java')
+      and 'dev.mian.ronova' not in rd(C + '/VazioPoderFx.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -435,7 +435,28 @@ public final class JuizoFinal {
             }
             ServerLevel sala = (ServerLevel) p.level();
             garantirGerador(sala);
-            return gerarPortal(p, sala);
+            // (5.34.0) SÓ ABRE COM A CHAVE NA MÃO — o dono: "ele só pode entrar depois de
+            // colocar a chave na obsidiana e abrir o portal no juizo sala".
+            boolean temChave = p.getMainHandItem().is(RPTagMod.CHAVE_JULGAMENTO.get())
+                    || p.getOffhandItem().is(RPTagMod.CHAVE_JULGAMENTO.get());
+            if (!temChave) {
+                p.displayClientMessage(Component.literal(
+                        "\u00a78A pedra est\u00e1 fria. \u00a77Traga a \u00a7fCHAVE DO JULGAMENTO"
+                        + "\u00a77 e clique aqui.").withStyle(ChatFormatting.DARK_GRAY), true);
+                return true;      // consome o clique: nada de portal sem chave
+            }
+            if (!gerarPortal(p, sala)) {
+                return true;
+            }
+            // a chave se gasta no portal (é o "colocar a chave na obsidiana")
+            if (!p.isCreative()) {
+                if (p.getMainHandItem().is(RPTagMod.CHAVE_JULGAMENTO.get())) {
+                    p.getMainHandItem().shrink(1);
+                } else {
+                    p.getOffhandItem().shrink(1);
+                }
+            }
+            return true;
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: clique na pedra do retorno falhou", t);
             return false;
@@ -476,16 +497,27 @@ public final class JuizoFinal {
             BlockPos base = pontoPortao != null ? pontoPortao
                     : new BlockPos(0, SALA_Y + 2, ARENA_Z + 6);
             portaoAberto = false;
-            // 1) bolsão de ar: 5 de largura, 6 de altura, 3 de profundidade
-            for (int dx = -2; dx <= 2; dx++) {
-                for (int dy = -1; dy <= 4; dy++) {
-                    for (int dz = -1; dz <= 1; dz++) {
+
+            // 1) bolsão de ar: 7 de largura, 8 de altura, 3 de profundidade
+            for (int dx = -3; dx <= 3; dx++) {
+                for (int dy = -2; dy <= 5; dy++) {
+                    for (int dz = -2; dz <= 1; dz++) {
                         sala.setBlock(base.offset(dx, dy, dz),
                                 net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 2);
                     }
                 }
             }
-            // 2) moldura + miolo (a boca do portal: 3 de largura por 5 de altura)
+            // 2) A PAREDE DE FUNDO — (5.34.0) era AQUI o bug da "parte de trás": a moldura
+            // tinha um bloco só de espessura, então por trás se via o vazio/estrutura e o
+            // vórtice parecia flutuando. Agora o portal tem costas fechadas de obsidiana.
+            for (int dx = -3; dx <= 3; dx++) {
+                for (int dy = -2; dy <= 5; dy++) {
+                    sala.setBlock(base.offset(dx, dy, -1),
+                            net.minecraft.world.level.block.Blocks.CRYING_OBSIDIAN
+                                    .defaultBlockState(), 2);
+                }
+            }
+            // 3) a moldura da frente (anel de obsidiana chorosa em volta da boca)
             for (int dx = -2; dx <= 2; dx++) {
                 for (int dy = -1; dy <= 4; dy++) {
                     boolean borda = Math.abs(dx) == 2 || dy == -1 || dy == 4;
@@ -496,14 +528,15 @@ public final class JuizoFinal {
                     }
                 }
             }
+            // 4) o miolo: a escuridão do portal (3 de largura por 5 de altura)
             for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = 0; dy <= 3; dy++) {
+                for (int dy = 0; dy <= 4; dy++) {
                     sala.setBlock(base.offset(dx, dy, 0),
                             RPTagMod.ESCURIDAO.get().defaultBlockState(), 2);
                 }
             }
-            // o chão em frente e atrás, para ninguém cair num buraco ao atravessar
-            for (int dx = -2; dx <= 2; dx++) {
+            // 5) o chão em frente e atrás, para ninguém cair num buraco ao atravessar
+            for (int dx = -3; dx <= 3; dx++) {
                 for (int dz = -2; dz <= 2; dz++) {
                     if (sala.getBlockState(base.offset(dx, -2, dz)).isAir()) {
                         sala.setBlock(base.offset(dx, -2, dz),
@@ -513,12 +546,15 @@ public final class JuizoFinal {
                 }
             }
             portaoAberto = true;
-            // 3) o vórtice do cliente (o olho), em cima do miolo
+            // 6) O VÓRTICE — (5.34.0) agora NA FRENTE do miolo (z + 0,55), virado para a sala.
+            // Antes ele nascia atrás (z - 0,6) e ficava enterrado na parede: era o "bugado".
+            double vx = base.getX() + 0.5D;
+            double vy = base.getY() + 2.2D;
+            double vz = base.getZ() + 0.55D;
             for (ServerPlayer outro : sala.players()) {
                 try {
                     PacketDistributor.sendToPlayer(outro,
-                            new VazioPoderPayload(4, base.getX() + 0.5D, base.getY() + 0.5D,
-                                    base.getZ() - 0.6D, 0.0D, 0.0D, 0.0D));
+                            new VazioPoderPayload(4, vx, vy, vz, 0.0D, 0.0D, 0.0D));
                 } catch (Throwable ignorado) {
                     // jogador de teste: sem conexão
                 }
@@ -528,8 +564,7 @@ public final class JuizoFinal {
             sala.playSound(null, base, net.minecraft.sounds.SoundEvents.END_PORTAL_SPAWN,
                     net.minecraft.sounds.SoundSource.AMBIENT, 1.0F, 0.7F);
             sala.sendParticles(net.minecraft.core.particles.ParticleTypes.REVERSE_PORTAL,
-                    base.getX() + 0.5D, base.getY() + 2.0D, base.getZ() + 0.5D,
-                    90, 1.4D, 2.2D, 0.4D, 0.05D);
+                    vx, vy, vz, 90, 1.4D, 2.2D, 0.4D, 0.05D);
             aviso(p, "\u00a75\u00a7lO PORT\u00c3O SE ABRIU", 7, 4);
             try {
                 p.displayClientMessage(Component.literal(
@@ -563,9 +598,9 @@ public final class JuizoFinal {
             }
             if (!portaoAberto) {
                 p.displayClientMessage(Component.literal(
-                        "\u00a78O port\u00e3o ainda dorme. \u00a77Clique com o bot\u00e3o direito "
-                        + "na pedra escura ao lado do trono.").withStyle(ChatFormatting.DARK_GRAY),
-                        true);
+                        "\u00a78Esta escurid\u00e3o ainda est\u00e1 dormente. \u00a77Ponha a "
+                        + "\u00a7fCHAVE DO JULGAMENTO\u00a77 na pedra escura ao lado do trono.")
+                        .withStyle(ChatFormatting.DARK_GRAY), true);
                 return true;
             }
             vitoria(p);
