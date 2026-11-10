@@ -31,8 +31,16 @@ public final class JuizoPortalExterno {
             if (!(event.getEntity() instanceof ServerPlayer p)) {
                 return;
             }
-            if (!JuizoReino.ehChave(event.getFrom())) {
-                return;                       // não veio do reino: não é problema nosso
+            // (5.32.0) vale para QUALQUER dimensão de outro mod (o reino do Ronova, o Além
+            // dele e a nossa própria juizo_reino): sair do "mundo da morte" durante o
+            // Julgamento entrega a pessoa na ARENA, não no overworld.
+            boolean doReino = JuizoReino.ehChave(event.getFrom())
+                    || (event.getFrom() != null
+                        && !"minecraft".equals(event.getFrom().location().getNamespace())
+                        && !RPTagMod.MODID.equals(event.getFrom().location().getNamespace())
+                        && !"rptag:exilio".equals(event.getFrom().location().toString()));
+            if (!doReino) {
+                return;
             }
             if (!JuizoFinal.estaProcurando(p.getUUID())) {
                 return;                       // não está no meio do Julgamento

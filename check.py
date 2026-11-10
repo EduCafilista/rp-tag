@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.31.0'
+VER = '5.32.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2699,8 +2699,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.31.0.jar')
-      and os.path.getsize('build/libs/rptag-5.31.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.32.0.jar')
+      and os.path.getsize('build/libs/rptag-5.32.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3018,9 +3018,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.31.0: a versao subiu pra 5.31.0 no jar, no mod e no gradle',
-      "version = '5.31.0'" in rd('build.gradle')
-      and '5.31.0' in rd(R + '/RPTagMod.java'))
+check('5.32.0: a versao subiu pra 5.32.0 no jar, no mod e no gradle',
+      "version = '5.32.0'" in rd('build.gradle')
+      and '5.32.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3256,8 +3256,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.31.0: a versao subiu pra 5.31.0 (jar, mod e gradle)',
-      "version = '5.31.0'" in rd('build.gradle') and '5.31.0' in rd(R + '/RPTagMod.java'))
+check('5.32.0: a versao subiu pra 5.32.0 (jar, mod e gradle)',
+      "version = '5.32.0'" in rd('build.gradle') and '5.32.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3315,8 +3315,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.31.0: a versao subiu pra 5.31.0 (jar, mod e gradle)',
-      "version = '5.31.0'" in rd('build.gradle') and '5.31.0' in _rm)
+check('5.32.0: a versao subiu pra 5.32.0 (jar, mod e gradle)',
+      "version = '5.32.0'" in rd('build.gradle') and '5.32.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3338,8 +3338,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.31.0: a versao subiu pra 5.31.0 (jar, mod e gradle)',
-      "version = '5.31.0'" in rd('build.gradle') and '5.31.0' in rd(R + '/RPTagMod.java'))
+check('5.32.0: a versao subiu pra 5.32.0 (jar, mod e gradle)',
+      "version = '5.32.0'" in rd('build.gradle') and '5.32.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3443,9 +3443,9 @@ check('5.28.0 (e): a CHAVE abre o portao atras do trono',
       os.path.exists(R + '/ChaveJulgamentoItem.java')
       and 'abrirPortao' in _ju and 'CRYING_OBSIDIAN' in _ju
       and 'CHAVE_JULGAMENTO' in rd(R + '/RPTagMod.java'))
-check('5.31.0 (e): vencer devolve a vida com +2 vidas canonicas',
+check('5.32.0 (e): vencer devolve a vida com +2 vidas canonicas',
       'Math.min(5, atuais + 2)' in _ju)
-check('5.31.0 (86): o mod NAO da item na vitoria (quem da o item e o ADM)',
+check('5.32.0 (86): o mod NAO da item na vitoria (quem da o item e o ADM)',
       'darItemDoBoss' not in _ju and 'RELIQUIA_JULGAMENTO' not in rd(R + '/RPTagMod.java')
       and not os.path.exists(A + '/textures/item/reliquia_julgamento.png')
       and not os.path.exists(A + '/models/item/reliquia_julgamento.json'))
@@ -3465,26 +3465,26 @@ check('5.28.0: nenhum comando de TESTE saiu no jar (nada de _prova/_juizo)',
       '_prova' not in rd(R + '/RPCommands.java')
       and not os.path.exists(R + '/_ProvaJuizo.java'))
 
-# ============ 5.31.0: O LABIRINTO SEM CAMINHO SEM SAIDA ============
+# ============ 5.32.0: O LABIRINTO SEM CAMINHO SEM SAIDA ============
 _ju2 = rd(R + '/JuizoFinal.java')
-check('5.31.0: a parede do labirinto segue a regra que garante passagem (ehParede)',
+check('5.32.0: a parede do labirinto segue a regra que garante passagem (ehParede)',
       'private static boolean ehParede(int celX, int celZ, int lx, int lz)' in _ju2
       and 'Math.floorMod(celZ, 2) == 0' in _ju2
       and 'Math.floorMod(celZ, 2) != 0' in _ju2
       and 'parede = ehParede(celX, celZ, lx, lz);' in _ju2
       and 'hash(celX, celZ, 10)' not in _ju2)
-check('5.31.0: as aberturas extras so ABREM (lacos), nunca fecham a passagem garantida',
+check('5.32.0: as aberturas extras so ABREM (lacos), nunca fecham a passagem garantida',
       '|| hash(' not in _ju2.split('private static boolean ehParede')[1][:1400]
       and 'return true;' in _ju2.split('private static boolean ehParede')[1][:1400])
-check('5.31.0: a saida e encostada no CENTRO DO CORREDOR (nunca dentro de parede)',
+check('5.32.0: a saida e encostada no CENTRO DO CORREDOR (nunca dentro de parede)',
       'private static int snapCelula(int w)' in _ju2
       and 'int sx = snapCelula(' in _ju2 and 'int sz = snapCelula(' in _ju2)
-check('5.31.0: a prova da conectividade esta escrita no codigo (nao e promessa)',
+check('5.32.0: a prova da conectividade esta escrita no codigo (nao e promessa)',
       'Prova da conectividade' in _ju2 and 'inclusive para as partes que ainda não' in _ju2)
-check('5.31.0: nenhum comando de teste saiu no jar (nada de _lab/_prova)',
+check('5.32.0: nenhum comando de teste saiu no jar (nada de _lab/_prova)',
       not os.path.exists(R + '/_ProvaLab.java') and '_prova' not in rd(R + '/RPCommands.java'))
 
-# ===================== PEDIDO 86 — 5.31.0 =====================
+# ===================== PEDIDO 86 — 5.32.0 =====================
 _js = rd(R + '/JuizoSala.java')
 _jf = rd(R + '/JuizoFinal.java')
 _rj = rd(R + '/RegrasDoJuizo.java')
@@ -3494,89 +3494,89 @@ _vf = rd(C + '/VazioPoderFx.java')
 _ch = rd(R + '/ChaveJulgamentoItem.java')
 _nc = rd(R + '/NeptuneCommands.java')
 
-check('5.31.0 (86): o boss NAO tem boneco/entidade — quem interpreta e o ADM',
+check('5.32.0 (86): o boss NAO tem boneco/entidade — quem interpreta e o ADM',
       'ArmorStand' not in _jf and 'SEM boneco' in _jf)
-check('5.31.0 (86): a INTRODUCAO continua (som + aviso), so sem o stand',
+check('5.32.0 (86): a INTRODUCAO continua (som + aviso), so sem o stand',
       'vultoDoBoss' in _jf and 'aviso(' in _jf)
-check('5.31.0 (86): a CHAVE DO JULGAMENTO tem textura propria (nao e o amuleto)',
+check('5.32.0 (86): a CHAVE DO JULGAMENTO tem textura propria (nao e o amuleto)',
       os.path.exists(A + '/textures/item/chave_julgamento.png')
       and 'rptag:item/chave_julgamento' in rd(A + '/models/item/chave_julgamento.json')
       and 'amuleto' not in rd(A + '/models/item/chave_julgamento.json'))
-check('5.31.0 (86): a chave nao e copia do amuleto (arquivos diferentes)',
+check('5.32.0 (86): a chave nao e copia do amuleto (arquivos diferentes)',
       os.path.getsize(A + '/textures/item/chave_julgamento.png')
       != os.path.getsize(A + '/textures/item/amuleto_eclipse.png'))
-check('5.31.0 (86): A SALA DO BOSS e a arena do .schem (98 x 71 x 93)',
+check('5.32.0 (86): A SALA DO BOSS e a arena do .schem (98 x 71 x 93)',
       'LARGURA = 98' in _js and 'ALTURA = 71' in _js and 'COMPRIMENTO = 93' in _js
       and 'JuizoSala.construir' in _jf)
-check('5.31.0 (86): a arena vem COMPRIMIDA (Base64 + gzip + RLE), nao em 647 mil linhas',
+check('5.32.0 (86): a arena vem COMPRIMIDA (Base64 + gzip + RLE), nao em 647 mil linhas',
       'GZIPInputStream' in _js and 'Base64.getDecoder()' in _js and len(_js.split('\n')) < 400)
-check('5.31.0 (86): a paleta da arena e resolvida PELO NOME no registro do jogo',
+check('5.32.0 (86): a paleta da arena e resolvida PELO NOME no registro do jogo',
       'BuiltInRegistries.BLOCK.containsKey' in _js and 'defaultBlockState' in _js)
-check('5.31.0 (86): ninguem cava para CIMA nem para BAIXO (vazio/labirinto)',
+check('5.32.0 (86): ninguem cava para CIMA nem para BAIXO (vazio/labirinto)',
       'BlockEvent.BreakEvent' in _rj
       and 'alvo.getY() > pes' in _rj and 'alvo.getY() < pes' in _rj)
-check('5.31.0 (86): a sala do Julgamento e cenario intocavel',
+check('5.32.0 (86): a sala do Julgamento e cenario intocavel',
       'ehSala(lv)' in _rj and 'setCanceled(true)' in _rj)
-check('5.31.0 (86): os PODERES DO VAZIO existem (raio, orbe, onda, olhos)',
+check('5.32.0 (86): os PODERES DO VAZIO existem (raio, orbe, onda, olhos)',
       'RAIO("raio"' in _vp and 'ORBE("orbe"' in _vp
       and 'ONDA("onda"' in _vp and 'OLHOS("olhos"' in _vp)
-check('5.31.0 (88): SEM comando de ligar/desligar poder — o gate e o LUGAR ou o cargo de ADM',
+check('5.32.0 (88): SEM comando de ligar/desligar poder — o gate e o LUGAR ou o cargo de ADM',
       'PODER_VAZIO' not in rd(R + '/RPEffects.java')
       and 'JuizoReino.eh(p.level())' in _vp and 'hasPermissions(2)' in _vp
       and 'literal("poder")' not in rd(R + '/NeptuneCommands.java'))
-check('5.31.0 (86): a AURA em volta copia a do Ronova (penas carmesim em coroas)',
+check('5.32.0 (86): a AURA em volta copia a do Ronova (penas carmesim em coroas)',
       'PENAS' in _va and 'pena(' in _va and '0x0A0204' in _va)
-check('5.31.0 (86): a aura e GEOMETRIA (aparece com particulas no minimo)',
+check('5.32.0 (86): a aura e GEOMETRIA (aparece com particulas no minimo)',
       'debugQuads' in _va and 'RenderLevelStageEvent' in _va)
-check('5.31.0 (86): o PORTAL DO JUIZO foi refeito (o olho, nao mais o retangulo)',
+check('5.32.0 (86): o PORTAL DO JUIZO foi refeito (o olho, nao mais o retangulo)',
       'private static void portal(' in _vf and 'pálpebra' in _vf)
-check('5.31.0 (86): o portal acende quando a chave abre o portao',
+check('5.32.0 (86): o portal acende quando a chave abre o portao',
       'VazioPoderPayload(4' in _jf)
-check('5.31.0 (86): o raio e uma lanca escura com fio carmesim (visual do Ronova)',
+check('5.32.0 (86): o raio e uma lanca escura com fio carmesim (visual do Ronova)',
       'tubo(' in _vf and '0xFF, 0x30, 0x3C' in _vf)
-check('5.31.0 (86): /vazio soltar continua existindo como plano B (a tecla e o normal)',
+check('5.32.0 (86): /vazio soltar continua existindo como plano B (a tecla e o normal)',
       'literal("soltar")' in _nc)
-check('5.31.0 (86): a chave continua abrindo o portao atras do boss',
+check('5.32.0 (86): a chave continua abrindo o portao atras do boss',
       'abrirPortao' in _ch and 'CHAVE_JULGAMENTO' in rd(R + '/RPTagMod.java'))
 
-# ===================== PEDIDO 87 — 5.31.0 =====================
+# ===================== PEDIDO 87 — 5.32.0 =====================
 _jr = rd(R + '/JuizoReino.java')
 _jpe = rd(R + '/JuizoPortalExterno.java')
 _jf2 = rd(R + '/JuizoFinal.java')
 _jc = rd(R + '/JuizoCommands.java')
 _rj2 = rd(R + '/RegrasDoJuizo.java')
 
-check('5.31.0 (87): o labirinto do Julgamento agora e a DIMENSAO DO OUTRO MOD',
+check('5.32.0 (87): o labirinto do Julgamento agora e a DIMENSAO DO OUTRO MOD',
       'JuizoReino.entrar(p)' in _jf2 and 'class JuizoReino' in _jr)
-check('5.31.0 (87): a dimensao do outro mod e DESCOBERTA (nao fixada no codigo)',
+check('5.32.0 (87): a dimensao do outro mod e DESCOBERTA (nao fixada no codigo)',
       'servidor.levelKeys()' in _jr and 'notaDe(' in _jr and 'ronova' in _jr)
-check('5.31.0 (87): a ordem de escolha prefere o REINO (realm) do outro mod',
+check('5.32.0 (87): a ordem de escolha prefere o REINO (realm) do outro mod',
       "caminho.contains(\"realm\")" in _jr and 'nota += 40' in _jr)
-check('5.31.0 (87): o ADM pode fixar/trocar a dimensao na mao (sem build nova)',
+check('5.32.0 (87): o ADM pode fixar/trocar a dimensao na mao (sem build nova)',
       'public static void fixar(' in _jr and 'literal("dimensao")' in _jc
       and 'literal("definir")' in _jc and 'literal("listar")' in _jc)
-check('5.31.0 (87): entrando no reino, o jogador para num lugar COM CHAO (nao cai no vazio)',
+check('5.32.0 (87): entrando no reino, o jogador para num lugar COM CHAO (nao cai no vazio)',
       'pontoSeguro(' in _jr and 'Heightmap.Types.MOTION_BLOCKING' in _jr
       and 'isEmptyBlock(p.above())' in _jr)
-check('5.31.0 (87): o PORTAL do reino NAO leva ao overworld — leva pra ARENA do .schem',
+check('5.32.0 (87): o PORTAL do reino NAO leva ao overworld — leva pra ARENA do .schem',
       'PlayerChangedDimensionEvent' in _jpe and 'achouSaida(p)' in _jpe
       and 'ehChave(event.getFrom())' in _jpe)
-check('5.31.0 (87): o desvio do portal e no tick seguinte (nao no meio do evento)',
+check('5.32.0 (87): o desvio do portal e no tick seguinte (nao no meio do evento)',
       'p.server.execute(' in _jpe)
-check('5.31.0 (87): quem o ADM tirou do Julgamento NAO e desviado pelo portal',
+check('5.32.0 (87): quem o ADM tirou do Julgamento NAO e desviado pelo portal',
       'estaProcurando(p.getUUID())' in _jpe and 'public static boolean estaProcurando' in _jf2)
-check('5.31.0 (87): o tick nao expulsa quem esta no reino (a saida e o portal)',
+check('5.32.0 (87): o tick nao expulsa quem esta no reino (a saida e o portal)',
       'JuizoReino.eh(p.level())' in _jf2)
-check('5.31.0 (87): morrer no reino volta pro reino (morrer nao e fuga)',
+check('5.32.0 (87): morrer no reino volta pro reino (morrer nao e fuga)',
       'JuizoReino.entrar(p)' in _jf2.split('aoRenascer')[1][:900])
-check('5.31.0 (87): o labirinto antigo do RP Tag fica so como RESERVA (servidor sem o outro mod)',
+check('5.32.0 (87): o labirinto antigo do RP Tag fica so como RESERVA (servidor sem o outro mod)',
       'CHAVE_JUIZO)' in _jf2 and 'reserva' in _jf2)
-check('5.31.0 (87): a regra de nao cavar para cima/baixo vale no reino tambem',
+check('5.32.0 (87): a regra de nao cavar para cima/baixo vale no reino tambem',
       'JuizoReino.eh(lv)' in _rj2)
-check('5.31.0 (87): comandar /juizo dimensao mostra a dimensao em uso',
+check('5.32.0 (87): comandar /juizo dimensao mostra a dimensao em uso',
       'LABIRINTO DO JULGAMENTO' in _jc and 'dimensão em uso' in _jc)
 
-# ===================== PEDIDO 88 — 5.31.0 =====================
+# ===================== PEDIDO 88 — 5.32.0 =====================
 _pl = rd(C + '/PoderLeque.java')
 _vfx = rd(C + '/VazioPoderFx.java')
 _va2 = rd(C + '/VazioAuraFx.java')
@@ -3584,40 +3584,90 @@ _rj3 = rd(R + '/RegrasDoJuizo.java')
 _mn = rd(R + '/ModNetworking.java')
 _lang = rd('src/main/resources/assets/rptag/lang/pt_br.json')
 
-check('5.31.0 (88): os poderes sao por TECLA (leque), nao por comando',
+check('5.32.0 (88): os poderes sao por TECLA (leque), nao por comando',
       'KeyMapping' in _pl and 'RegisterKeyMappingsEvent' in _pl and 'GLFW_KEY_R' in _pl)
-check('5.31.0 (88): a tecla abre o LEQUE com as habilidades na tela',
-      'registerAboveAll' in _pl and 'PODERES DO VAZIO' in _pl and 'NOMES' in _pl)
-check('5.31.0 (88): 1 a 6 arremessa a habilidade escolhida',
+check('5.32.0 (88): a tecla abre o LEQUE com as habilidades na tela',
+      'registerAboveAll' in _pl and 'O VAZIO ETERNO' in _pl and 'NOMES' in _pl)
+check('5.32.0 (88): 1 a 6 arremessa a habilidade escolhida',
       'GLFW_KEY_1 + i' in _pl and 'VazioPoderC2S' in _pl)
-check('5.31.0 (88): as teclas aparecem em Opcoes -> Controles (traduzidas)',
+check('5.32.0 (88): as teclas aparecem em Opcoes -> Controles (traduzidas)',
       'key.rptag.leque' in _lang and 'key.rptag.repetir' in _lang)
-check('5.31.0 (88): o servidor recebe a habilidade pelo pacote e valida',
+check('5.32.0 (88): o servidor recebe a habilidade pelo pacote e valida',
       'playToServer(dev.rptag.VazioPoderC2S.TYPE' in _mn
       and 'VazioPoderes.usar(sp, poder)' in _mn)
-check('5.31.0 (88): senao da para arremessar, o motivo aparece na tela',
-      'Os poderes do vazio só respondem' in _vp)
-check('5.31.0 (88): O OLHO VERMELHO que BANE existe (abre, encara, arranca, fecha)',
-      'olhoQueBane' in _vfx and 'abertura da pálpebra' in _vfx
-      and 'a COLUNA' in _vfx and 'a ÍRIS' in _vfx)
-check('5.31.0 (88): banir manda o alvo para a dimensao do OUTRO mod',
+check('5.32.0 (88): se nao da para arremessar, o motivo aparece (curto, na barra de acao)',
+      'Os poderes só respondem no vazio' in _vp)
+check('5.32.0 (88): O OLHO VERMELHO que BANE existe (abre, encara, arranca, fecha)',
+      'olhoQueBane' in _vfx and 'a PÁLPEBRA' in _vfx
+      and 'o CLARÃO e a COLUNA' in _vfx and 'a ÍRIS + a PUPILA' in _vfx)
+check('5.32.0 (88): banir manda o alvo para a dimensao do OUTRO mod',
       'JuizoReino.entrar(vitima)' in _vp)
-check('5.31.0 (88): a chuva de penas existe como habilidade',
+check('5.32.0 (88): a chuva de penas existe como habilidade',
       'chuvaDePenas' in _vfx and 'PENAS("penas"' in _vp)
-check('5.31.0 (88): a textura da aura ficou MAIS NEGRA (corpo preto, ponta carmesim)',
+check('5.32.0 (88): a textura da aura ficou MAIS NEGRA (corpo preto, ponta carmesim)',
       '0x0A0204' in _va2 and '0xE01020' in _va2 and 'LASCAS NEGRAS' in _va2)
-check('5.31.0 (88): a aura acende a CADA poder (nao so raio/orbe)',
+check('5.32.0 (89): a aura NAO aparece em mapa novo (so depois de usar poder)',
+      'boolean usando = pulso > 0.0F' in _va2 and 'if (!usando)' in _va2)
+check('5.32.0 (88): a aura acende a CADA poder (nao so raio/orbe)',
       'VazioAuraFx.pulsar();' in _vfx and 'TOdo poder acende' not in _vfx)
-check('5.31.0 (88): a aura nao depende mais de efeito nem de comando',
+check('5.32.0 (88): a aura nao depende mais de efeito nem de comando',
       'hasEffect(' not in _va2)
-check('5.31.0 (88): a "juizo sala" NAO se quebra (evento na prioridade mais alta)',
+check('5.32.0 (88): a "juizo sala" NAO se quebra (evento na prioridade mais alta)',
       'BlockEvent.BreakEvent' in _rj3 and 'EventPriority.HIGHEST' in _rj3)
-check('5.31.0 (88): a "juizo sala" NAO aceita BLOCO (nao da pra emparedar a arena)',
+check('5.32.0 (88): a "juizo sala" NAO aceita BLOCO (nao da pra emparedar a arena)',
       'BlockEvent.EntityPlaceEvent' in _rj3 and 'não aceita blocos' in _rj3)
-check('5.31.0 (88): a arena do dono e protegida pela CAIXA (nao so pela dimensao)',
+check('5.32.0 (88): a arena do dono e protegida pela CAIXA (nao so pela dimensao)',
       'dentroDaArena(' in _rj3 and 'JuizoSala.LARGURA' in _rj3)
-check('5.31.0 (88): balde/liquido nao entra na sala',
+check('5.32.0 (88): balde/liquido nao entra na sala',
       'BucketItem' in _rj3)
+
+# ===================== PEDIDO 89 — 5.32.0 =====================
+_pl2 = rd(C + '/PoderLeque.java')
+_vp2 = rd(R + '/VazioPoderes.java')
+_jr2 = rd(R + '/JuizoReino.java')
+_ne = rd(R + '/NeptuneEventos.java')
+_jf3 = rd(R + '/JuizoFinal.java')
+_vfx2 = rd(C + '/VazioPoderFx.java')
+
+check('5.32.0 (89): o APAGAR nao e mais hitkill — mata AOS POUCOS com dano',
+      'SangueApagando' in _ne and 'tickApagarLento' in _ne
+      and 'aos poucos com dano' in _ne)
+check('5.32.0 (89): o apagar tira uma fatia da vida por segundo e MATA no fim',
+      'alvo.getHealth() / segundos' in _ne and 'matarDefinitivo(alvo' in _ne)
+check('5.32.0 (89): ninguem cai no VOID ao entrar no reino (pousada construida)',
+      'construirPousada' in _jr2 and 'acharChao' in _jr2)
+check('5.32.0 (89): a NOVA dimensao rptag:juizo_reino existe (json)',
+      os.path.exists('src/main/resources/data/rptag/dimension/juizo_reino.json')
+      and os.path.exists('src/main/resources/data/rptag/dimension_type/juizo_reino.json'))
+check('5.32.0 (89): a nova dimensao tem chao solido (blackstone), nao ar',
+      'blackstone' in rd('src/main/resources/data/rptag/dimension/juizo_reino.json'))
+check('5.32.0 (89): o leque virou RODA com textura propria e animacao de abrir',
+      'leque_roda' in _pl2 and 'animado' in _pl2 and 'ease(' in _pl2)
+check('5.32.0 (89): o leque tem os 6 icones desenhados (raio, orbe, onda, olhos, penas, banir)',
+      all(os.path.exists(A + '/textures/gui/leque_' + n + '.png')
+          for n in ('raio', 'orbe', 'onda', 'olhos', 'penas', 'banir')))
+check('5.32.0 (89): o mouse escolhe a casa e o clique arremessa',
+      'casaSobMouse' in _pl2 and 'GLFW_MOUSE_BUTTON_LEFT' in _pl2)
+check('5.32.0 (89): a casa em recarga aparece escurecida com o tempo',
+      'recarregando' in _pl2 and 'PRONTO[' in _pl2)
+check('5.32.0 (89): a ONDA nao mostra mais aviso na tela',
+      'avisar(p, "\\u00a74A onda' not in _vp2)
+check('5.32.0 (89): o dano dos poderes conserta a invulnerabilidade (era o bug do "nao da dano")',
+      'invulnerableTime = 0' in _vp2 and 'private static boolean ferir(' in _vp2)
+check('5.32.0 (89): o raio agora acerta TODOS na linha (nao so o primeiro)',
+      'comprimento > 60.0D' in _vp2 and 'distancia > 2.2D' in _vp2)
+check('5.32.0 (89): o portal do Juizo virou VORTICE que gira (base: o portal do outro mod)',
+      'O VÓRTICE' in _vfx2 and 'pás do vórtice' in _vfx2)
+check('5.32.0 (89): o portal tem os 8 olhinhos e a pupila que segue o jogador',
+      'os 8 OLHOS pequenos' in _vfx2 and 'olhandoX' in _vfx2)
+check('5.32.0 (89): o aviso O JULGAMENTO e ao ENTRAR no labirinto (nao na sala)',
+      '"\\u00a74\\u00a7lO JULGAMENTO", 8, 4' in _jf3)
+check('5.32.0 (89): a sala mostra o cartaz do JUIZO com frase',
+      'FRASES_DO_JUIZO' in _jf3 and 'JUIZO' in _jf3 and 'REDEN' in _jf3)
+check('5.32.0 (89): o chat foi limpo (sem mensagens de enfeite)',
+      _jf3.count('displayClientMessage') <= 3)
+check('5.32.0 (89): o /vazio ligar usa a aura nova do leque',
+      'acenderAura' in _ne and 'public static void acenderAura' in _vp2)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

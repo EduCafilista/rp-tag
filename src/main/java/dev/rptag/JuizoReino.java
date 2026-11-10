@@ -56,8 +56,11 @@ public final class JuizoReino {
             for (ResourceKey<Level> k : servidor.levelKeys()) {
                 ResourceLocation id = k.location();
                 String ns = id.getNamespace();
-                if ("minecraft".equals(ns) || RPTagMod.MODID.equals(ns)) {
+                if ("minecraft".equals(ns)) {
                     continue;
+                }
+                if (RPTagMod.MODID.equals(ns) && !"juizo_reino".equals(id.getPath())) {
+                    continue;   // só a nossa dimensão nova entra na lista
                 }
                 fora.add(k);
             }
@@ -78,6 +81,15 @@ public final class JuizoReino {
         }
         procurou = true;
         if (fixadaNaMao) {
+            return escolhida;
+        }
+        // (5.32.0) o dono pediu uma dimensão NOVA: rptag:juizo_reino (vazio de ardósia negra)
+        ResourceKey<Level> propria = ResourceKey.create(
+                net.minecraft.core.registries.Registries.DIMENSION,
+                ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "juizo_reino"));
+        if (servidor.getLevel(propria) != null) {
+            escolhida = propria;
+            RPTagMod.LOGGER.info("RP Tag: o labirinto do Julgamento e a dimensao propria {}", propria.location());
             return escolhida;
         }
         ResourceKey<Level> melhor = null;
@@ -106,7 +118,10 @@ public final class JuizoReino {
         String caminho = id.getPath().toLowerCase(java.util.Locale.ROOT);
         int nota = 1;                       // qualquer dimensão de mod já serve de reserva
         if (ns.contains("ronova")) {
-            nota += 100;
+            nota += 200;
+        }
+        if ("rptag".equals(ns) && caminho.contains("juizo_reino")) {
+            nota += 100;        // (5.32.0) a NOSSA dimensão é a primeira da fila
         }
         if (caminho.contains("realm") || caminho.contains("reino")) {
             nota += 40;
@@ -188,16 +203,36 @@ public final class JuizoReino {
     }
 
     /**
-     * Um lugar de pé: procura perto do spawn uma coluna com chão sólido e dois blocos de ar.
-     * (o Reino é um vazio com ilhas flutuando — cair no vazio seria perder o jogador)
+     * Um lugar de pé no reino.
+     *
+     * <p>(5.32.0) <b>O REINO DO RONOVA É AR PURO</b> (o {@code dimension/realm.json} dele tem uma
+     * camada de {@code minecraft:air} e nada mais). Na 5.30/5.31 eu procurava chão e, não achando,
+     * usava o spawn da dimensão — o jogador caía no void e morria entrando no Juízo. Agora, se não
+     * houver chão nenhum, o RP Tag <b>constrói uma pousada</b> (uma ilhota de pedra negra com
+     * tochas) embaixo do ponto de chegada. Quem entra nunca cai.
      */
     private static BlockPos pontoSeguro(ServerLevel lv) {
         BlockPos spawn = lv.getSharedSpawnPos();
+        try {
+            BlockPos chao = acharChao(lv, spawn);
+            if (chao != null) {
+                return chao;
+            }
+            // não tem chão NENHUM (é o caso do reino): constrói a pousada
+            return construirPousada(lv, spawn);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: procurar chao no reino falhou", t);
+            return spawn;
+        }
+    }
+
+    /** procura uma coluna com chão sólido e dois blocos de ar (até 40 blocos do spawn). */
+    private static BlockPos acharChao(ServerLevel lv, BlockPos spawn) {
         for (int r = 0; r <= 40; r += 4) {
             for (int dx = -r; dx <= r; dx += 4) {
                 for (int dz = -r; dz <= r; dz += 4) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != r) {
-                        continue;   // só o anel de raio r
+                        continue;
                     }
                     int x = spawn.getX() + dx, z = spawn.getZ() + dz;
                     int topo;
@@ -217,6 +252,53 @@ public final class JuizoReino {
                 }
             }
         }
-        return spawn;   // não achou: o spawn do próprio mod (o melhor palpite honesto)
+        return null;
+    }
+
+    /**
+     * (5.32.0) A POUSADA DO REINO — uma ilhota de pedra negra no vazio do outro mod.
+     *
+     * <p>9x9 de {@code polished_blackstone}, borda de {@code crying_obsidian}, quatro tochas de
+     * alma e um anel de {@code light} em volta — dá para enxergar o lugar no breu e, mais
+     * importante, <b>tem chão para pisar</b>.
+     */
+    public static BlockPos construirPousada(ServerLevel lv, BlockPos spawn) {
+        BlockPos centro = new BlockPos(spawn.getX(), 96, spawn.getZ());   // alto, longe do void
+        try {
+            var piso = net.minecraft.world.level.block.Blocks.POLISHED_BLACKSTONE.defaultBlockState();
+            var borda = net.minecraft.world.level.block.Blocks.CRYING_OBSIDIAN.defaultBlockState();
+            var tocha = net.minecraft.world.level.block.Blocks.SOUL_TORCH.defaultBlockState();
+            for (int dx = -5; dx <= 5; dx++) {
+                for (int dz = -5; dz <= 5; dz++) {
+                    boolean canto = Math.abs(dx) == 5 || Math.abs(dz) == 5;
+                    for (int dy = 1; dy <= 3; dy++) {
+                        lv.setBlock(centro.offset(dx, -dy, dz), piso, 2);   // 3 de espessura
+                    }
+                    lv.setBlock(centro.offset(dx, -4, dz), borda, 2);
+                    if (canto) {
+                        lv.setBlock(centro.offset(dx, 0, dz), borda, 2);
+                        if ((dx == -5 || dx == 5) && (dz == -5 || dz == 5)) {
+                            lv.setBlock(centro.offset(dx, 1, dz), tocha, 2);
+                        }
+                    }
+                }
+            }
+            lv.setBlock(centro.offset(0, -1, 0), net.minecraft.world.level.block.Blocks.SEA_LANTERN.defaultBlockState(), 2);
+            RPTagMod.LOGGER.info("RP Tag: pousada do reino construida em {}", centro);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: construir pousada no reino falhou", t);
+        }
+        // a laje fica em centro-1; o jogador pisa EM centro (era centro+1 e ele caía)
+        return centro;
+    }
+
+    /** (5.32.0) garante que existe chão no ponto de chegada (constrói a pousada se preciso). */
+    public static BlockPos garantirChao(ServerLevel lv) {
+        return pontoSeguro(lv);
+    }
+
+    /** (5.32.0) o reino tem chão? (usado para decidir se constrói a pousada) */
+    public static boolean precisaDeChao(ServerLevel lv) {
+        return acharChao(lv, lv.getSharedSpawnPos()) == null;
     }
 }

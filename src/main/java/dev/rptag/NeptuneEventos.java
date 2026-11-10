@@ -121,6 +121,10 @@ public final class NeptuneEventos {
     private static final Map<UUID, Object[]> ORIGEM = new HashMap<>();
     /** (5.7.7) APAGADOS: a animação de cinzas/alma em volta de quem o vazio apagou. */
     private static final List<Apagando> APAGANDO = new ArrayList<>();
+    /** (5.32.0) os "apagares" em andamento (morte LENTA com dano, como o dono pediu). */
+    private static final java.util.Map<java.util.UUID, SangueApagando> APAGANDO_SANGUE =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
     /** (5.7.7) BICHO: primeiro toque (som) -> depois de 4 s, o segundo dá o susto. */
     private static final Map<BlockPos, Long> TOQUES_CAIXA = new HashMap<>();
 
@@ -186,6 +190,7 @@ public final class NeptuneEventos {
             tickManchas(server);
             tickApagando(server);
             tickApagados(server, System.currentTimeMillis());
+            tickApagarLento(server);   // (5.32.0) o apagar agora MATA aos poucos
             tickExilioMundo(server);
             // (5.13.1) portais invocados em OUTRAS dimensões (o dono invocou no overworld)
             VazioReino.tickPortaisInvocados(server, System.currentTimeMillis());
@@ -1026,10 +1031,9 @@ public final class NeptuneEventos {
         p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
                 "\u00a78\u00a7l\u2588 \u00a75\u00a7lO VAZIO CAMINHA ENTRE NÓS\u00a78 \u00a7l\u2588")
                 .withStyle(ChatFormatting.DARK_PURPLE), false);
-        p.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
-                "\u00a78Uma escuridão sem fundo acompanha \u00a7f" + p.getName().getString()
-                        + "\u00a78. Não chegue perto.").withStyle(ChatFormatting.DARK_GRAY), false);
-        // (5.7.6) A TRANSFORMAÇÃO: rajada de RAIOS VERMELHOS por 2,2 s
+        // (5.32.0) A TRANSFORMAÇÃO nova: a aura de penas pretas em duas coroas (a mesma do
+        // leque) + o surto escuro. O dono: "o vazio ligar não está bonito igual eu te pedi".
+        dev.rptag.VazioPoderes.acenderAura(p);
         if (p.level() instanceof ServerLevel nv) {
             surtoTransformacao(nv, p);
         }
@@ -1871,13 +1875,77 @@ public final class NeptuneEventos {
                                 .withStyle(ChatFormatting.DARK_PURPLE))
                         .append(Component.literal(" da existência").withStyle(ChatFormatting.DARK_GRAY)),
                 false);
-        // (5.12.0) PEDIDO 49: "/apagar deve MATAR 100% o player atingido — não
-        // deixar só deitado". O hurt(magic) antigo era revertido pelo mod de
-        // revive do modpack (o corpo ficava caído e alguém levantava). Agora a
-        // morte não passa pelo caminho do dano: zera a vida e chama die() na
-        // marra — e fica SELADO por 60 s (se um mod levantar o corpo, cai de
-        // novo no tick seguinte; um respawn de verdade encerra o selo).
-        matarDefinitivo(alvo, alvo.damageSources().genericKill());
+        // (5.32.0) PEDIDO 89 — O DONO MUDOU A REGRA:
+        //   "eu nao quero que o apagar seja um hitkill so isso, quero que seja levando a pessoa
+        //    aos poucos com dano para o MATAR"
+        // Então o apagar deixou de ser `matarDefinitivo` na hora: agora é um SANGRAMENTO
+        // controlado — a pessoa vai perdendo vida em gotas (a cada 1 s), vê o corpo se
+        // desfazendo, e morre quando a barra chega no fim. Sem totem, sem cura que seguire,
+        // sem levantada por mod de revive: a única saída é a tela de morte.
+        APAGANDO_SANGUE.put(alvo.getUUID(), new SangueApagando(
+                quem == null ? "o vazio" : quem.getName().getString(),
+                System.currentTimeMillis() + 12000L));   // no máximo 12 s (não dá pra fugir)
+    }
+
+    /** (5.32.0) um "apagar" em andamento: quem apagou e até quando pode durar. */
+    public record SangueApagando(String quem, long prazo) {
+    }
+
+    /**
+     * (5.32.0) <b>O APAGAR LENTO</b> — chamado pelo tick.
+     *
+     * <p>A cada segundo tira uma fatia da vida e o corpo se desfaz um pouco mais. A vida cai
+     * sempre em frações iguais ({@code vida / segundos_restantes}), então nunca é hitkill e
+     * sempre MATA no fim — não importa a vida máxima, armadura, resistência ou regeneração.
+     */
+    private static void tickApagarLento(MinecraftServer servidor) {
+        if (APAGANDO_SANGUE.isEmpty()) {
+            return;
+        }
+        long agora = System.currentTimeMillis();
+        java.util.Iterator<java.util.Map.Entry<java.util.UUID, SangueApagando>> ele =
+                APAGANDO_SANGUE.entrySet().iterator();
+        while (ele.hasNext()) {
+            var par = ele.next();
+            ServerPlayer alvo = servidor.getPlayerList().getPlayer(par.getKey());
+            if (alvo == null || alvo.isDeadOrDying()) {
+                ele.remove();
+                continue;
+            }
+            long falta = par.getValue().prazo() - agora;
+            if (falta <= 0) {
+                ele.remove();
+                matarDefinitivo(alvo, alvo.damageSources().genericKill());
+                continue;
+            }
+            try {
+                int segundos = (int) Math.max(1L, (falta / 1000L));
+                float fatia = Math.max(1.0F, alvo.getHealth() / segundos);
+                if (alvo.getHealth() - fatia <= 0.1F) {
+                    ele.remove();
+                    matarDefinitivo(alvo, alvo.damageSources().genericKill());
+                    continue;
+                }
+                alvo.invulnerableTime = 0;
+                alvo.hurt(alvo.damageSources().magic(), fatia);
+                alvo.invulnerableTime = 0;
+                // o corpo se desfaz um pouco a cada segundo
+                if (alvo.level() instanceof ServerLevel nv) {
+                    Vec3 pos = alvo.position();
+                    nv.sendParticles(ParticleTypes.SQUID_INK, pos.x, pos.y + 1.0, pos.z,
+                            24, 0.5, 0.9, 0.5, 0.02);
+                    nv.sendParticles(ParticleTypes.DUST_PLUME, pos.x, pos.y + 1.0, pos.z,
+                            14, 0.4, 0.8, 0.4, 0.01);
+                }
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: apagar lento falhou (segue no proximo segundo)", t);
+            }
+        }
+    }
+
+    /** (5.32.0) o apagamento em curso deste jogador (ou null). */
+    public static SangueApagando apagandoDe(java.util.UUID id) {
+        return APAGANDO_SANGUE.get(id);
     }
 
     /**

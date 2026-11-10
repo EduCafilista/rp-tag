@@ -127,6 +127,29 @@ public final class JuizoFinal {
     /** o portão atrás do trono está aberto? */
     private static boolean portaoAberto = false;
 
+    /**
+     * (5.32.0) AS FRASES DO JUIZO — o que o dono pediu: um aviso curto no estilo "JUIZO: FRASE",
+     * daqueles simples que aparecem no meio da tela, no lugar do "ACHA QUE CONSEGUE SUA REDENÇÃO?".
+     */
+    public static final String[] FRASES_DO_JUIZO = {
+        "ACHA QUE CONSEGUE A REDENÇÃO?",
+        "SUAS MÃOS NÃO ESTÃO LIMPAS.",
+        "AQUI, TODOS CONFESSAM.",
+        "A BALANÇA NÃO SE COMPRA.",
+        "DE PÉ, CONDENADO.",
+        "O SILÊNCIO TAMBÉM É CULPA.",
+        "NINGUÉM SAI INOCENTE.",
+    };
+
+    /** (5.32.0) toca um som no jogador sem estourar quando é jogador de teste. */
+    private static void som(ServerPlayer p, net.minecraft.sounds.SoundEvent som, float vol, float tom) {
+        try {
+            p.playNotifySound(som, net.minecraft.sounds.SoundSource.AMBIENT, vol, tom);
+        } catch (Throwable ignorado) {
+            // jogador de teste: sem som
+        }
+    }
+
     // ================================================================ ENTRADA
     /**
      * <b>ZEROU AS VIDAS.</b> Marca pra levar ao labirinto em {@code ms} (dá tempo do ritual da
@@ -158,17 +181,10 @@ public final class JuizoFinal {
             p.setHealth(p.getMaxHealth());
             p.getFoodData().setFoodLevel(20);
             p.removeAllEffects();
-            aviso(p, "\u00a74\u00a7lO JULGAMENTO", 10, 4);
-            try {
-                p.playNotifySound(net.minecraft.sounds.SoundEvents.WITHER_SPAWN,
-                        net.minecraft.sounds.SoundSource.AMBIENT, 0.7F, 0.6F);
-                p.displayClientMessage(Component.literal(
-                        "\u00a78Você acordou no reino da Morte. \u00a77O portal do reino é a única "
-                        + "saída \u2014 atravesse e ele te leva ao trono do Juízo.")
-                        .withStyle(ChatFormatting.DARK_GRAY), false);
-            } catch (Throwable ignorado) {
-                // jogador de teste: sem chat/tela
-            }
+            // (5.32.0) o dono: "o aviso o julgamento começa é quando entrar no labirinto" e
+            // "tira esse tanto de aviso do chat, se o player ler fica foda". Aqui é SÓ a tela.
+            aviso(p, "\u00a74\u00a7lO JULGAMENTO", 8, 4);
+            som(p, net.minecraft.sounds.SoundEvents.WITHER_SPAWN, 0.7F, 0.6F);
             RPTagMod.LOGGER.info("RP Tag: {} caiu no reino do outro mod ({})",
                     p.getName().getString(), JuizoReino.nome());
             return true;
@@ -198,16 +214,9 @@ public final class JuizoFinal {
             p.setHealth(p.getMaxHealth());
             p.getFoodData().setFoodLevel(20);
             p.removeAllEffects();
-            aviso(p, "\u00a74\u00a7lO JULGAMENTO", 10, 4);
-            try {
-                p.playNotifySound(net.minecraft.sounds.SoundEvents.WITHER_SPAWN,
-                        net.minecraft.sounds.SoundSource.AMBIENT, 0.7F, 0.6F);
-                p.displayClientMessage(Component.literal(
-                        "\u00a78Você acordou no labirinto. \u00a77Ache a saída \u2014 ela brilha no escuro.")
-                        .withStyle(ChatFormatting.DARK_GRAY), false);
-            } catch (Throwable ignorado) {
-                // jogador de teste: sem chat/tela
-            }
+            // (5.32.0) só a TELA (nada de chat): "tira esse tanto de aviso do chat"
+            aviso(p, "\u00a74\u00a7lO JULGAMENTO", 8, 4);
+            som(p, net.minecraft.sounds.SoundEvents.WITHER_SPAWN, 0.7F, 0.6F);
             return true;
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: entrada no julgamento falhou (o jogo segue)", t);
@@ -260,18 +269,12 @@ public final class JuizoFinal {
             p.teleportTo(sala, entrada.getX() + 0.5D, entrada.getY(), entrada.getZ() + 0.5D,
                     180.0F, 0.0F);
             p.setHealth(p.getMaxHealth());
-            // a INTRODUÇÃO do boss (o ADM assume daqui pra frente)
-            aviso(p, "\u00a7f\u00a7lO JULGAMENTO COME\u00c7A", 10, 4);
+            // (5.32.0) a INTRODUÇÃO da arena — o dono pediu um cartaz curto, estilo "Frases":
+            // "JUIZO: FRASE" (aqueles avisos simples e bonitos, sem encher o chat).
+            String frase = FRASES_DO_JUIZO[(int) (Math.random() * FRASES_DO_JUIZO.length)];
+            aviso(p, "\u00a74\u00a7lJUIZO\u00a7r\u00a77: \u00a7f" + frase, 9, 4);
             vultoDoBoss(sala);
-            try {
-                p.playNotifySound(net.minecraft.sounds.SoundEvents.ENDER_DRAGON_GROWL,
-                        net.minecraft.sounds.SoundSource.AMBIENT, 0.8F, 0.7F);
-                p.displayClientMessage(Component.literal(
-                        "\u00a7fA sala é branca. \u00a77Alguém espera por você no trono.")
-                        .withStyle(ChatFormatting.GRAY), false);
-            } catch (Throwable ignorado) {
-                // jogador de teste: sem chat/tela
-            }
+            som(p, net.minecraft.sounds.SoundEvents.ENDER_DRAGON_GROWL, 0.8F, 0.7F);
             for (ServerPlayer adm : p.getServer().getPlayerList().getPlayers()) {
                 if (adm.hasPermissions(2)) {
                     adm.sendSystemMessage(Component.literal(
@@ -400,14 +403,7 @@ public final class JuizoFinal {
             }
             sala.playSound(null, base, net.minecraft.sounds.SoundEvents.PORTAL_TRIGGER,
                     net.minecraft.sounds.SoundSource.AMBIENT, 1.0F, 0.6F);
-            aviso(p, "\u00a7a\u00a7lO PORT\u00c3O SE ABRIU", 6, 0);
-            try {
-                p.displayClientMessage(Component.literal(
-                        "\u00a7aO portal atrás do boss está aberto. \u00a77Atravesse para voltar à vida.")
-                        .withStyle(ChatFormatting.GREEN), false);
-            } catch (Throwable ignorado) {
-                // jogador de teste
-            }
+            aviso(p, "\u00a7a\u00a7lO PORT\u00c3O SE ABRIU", 7, 4);
             return true;
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: abrir o portão do julgamento falhou", t);
@@ -501,8 +497,7 @@ public final class JuizoFinal {
     /** entrega a CHAVE (o ADM dropa no chão ou entrega na mão). */
     public static void darChave(ServerPlayer p) {
         p.getInventory().add(new net.minecraft.world.item.ItemStack(RPTagMod.CHAVE_JULGAMENTO.get()));
-        p.displayClientMessage(Component.literal(
-                "\u00a7eA CHAVE DO JULGAMENTO está na sua mão.").withStyle(ChatFormatting.YELLOW), false);
+        aviso(p, "\u00a7e\u00a7lA CHAVE DO JULGAMENTO", 5, 4);   // (5.32.0) tela, não chat
     }
 
     // ================================================================ O LABIRINTO

@@ -56,6 +56,25 @@ public final class VazioAuraFx {
     private static final Random SORTE = new Random(29L);
     private static final List<float[]> POEIRA = new ArrayList<>();   // x,y,z,vel
 
+    /** (5.32.0) quanto tempo (ms) a aura fica acesa depois do último gatilho. */
+    private static long janela = 14000L;
+
+    /** (5.32.0) acende a aura por um tempo maior (usado pelo modo deus do vazio). */
+    public static void acenderPor(long ms) {
+        janela = Math.max(14000L, ms);
+        pulso = 1.0F;
+        ultimoPoder = System.currentTimeMillis();
+    }
+
+    /** (5.32.0) a força da aura: 1,0 logo depois do poder, apagando até 0 na janela. */
+    private static float depuis(long ms) {
+        if (ms < 0) {
+            return 0.0F;
+        }
+        float f = 1.0F - ms / (float) janela;
+        return f < 0.0F ? 0.0F : (f > 1.0F ? 1.0F : f);
+    }
+
     /** chamado pelo FX dos poderes quando o jogador solta algo. */
     public static void pulsar() {
         pulso = 1.0F;
@@ -75,13 +94,17 @@ public final class VazioAuraFx {
             }
             // (5.31.0) a aura não depende mais de efeito/comando: ela acende em quem está no
             // vazio (ou no reino do Juízo, ou é ADM) e ACENDE FORTE por 14 s a cada poder usado
-            boolean lugar = VazioReino.ehVazio(mc.level) || dev.rptag.JuizoReino.eh(mc.level);
-            boolean adm = mc.player.hasPermissions(2);
-            boolean usando = pulso > 0.0F || (System.currentTimeMillis() - ultimoPoder) < 14000L;
-            if (!(lugar || adm) && !usando) {
+            // (5.32.0) A AURA SÓ APARECE SE VOCÊ USA PODER.
+            // O dono: "por algum motivo na hora que começo um mapa estou com essa aura vermelha
+            // em volta". O culpado era `hasPermissions(2)`: em mundo novo (com cheats) o jogador
+            // é operador, então a aura acendia para todo mundo. Agora só acende quem soltou um
+            // poder nos últimos 14 s — e ela nasce e morre suave.
+            boolean usando = pulso > 0.0F || (System.currentTimeMillis() - ultimoPoder) < janela;
+            if (!usando) {
                 return;
             }
-            float forca = usando ? 1.0F : 0.45F;   // fora do poder fica discreta
+            long desde = System.currentTimeMillis() - ultimoPoder;
+            float forca = 0.35F + 0.65F * depuis(desde);
             Vec3 cam = event.getCamera().getPosition();
             PoseStack pose = event.getPoseStack();
             MultiBufferSource.BufferSource buf = mc.renderBuffers().bufferSource();
