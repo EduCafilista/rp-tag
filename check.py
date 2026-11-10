@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.34.0'
+VER = '5.35.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1510,8 +1510,8 @@ check('5.7.5: SAIU a rachadura desenhada na tela (nada de vidro rachado na lente
       and 'A RACHADURA DE TELA SAIU' in _nf3)
 check('5.7.5: sobrou so uma faixa de poeira (10% do rodape) no lugar do rabisco',
       'faixa = h * 0.10F' in _nf3 and 'fillGradient(0, h - (int) faixa' in _nf3)
-check('5.6.0: a queda tomba a camera e poe a tela no fundo da cova',
-      'desenharQueda' in _nf3 and 'pitch += 22.0F * tomba' in _nf3 and 'roll += 14.0F * tomba' in _nf3)
+check('5.35.0 (92): a queda tomba a camera DE LEVE (era 22/14 e saia da tela)',
+      'desenharQueda' in _nf3 and 'pitch += 7.0F * tomba' in _nf3 and 'roll += 4.0F * tomba' in _nf3)
 # (5.7.2) o dono VETOU a abertura antiga ("nao quero essa animacao quando
 # comecou o terremoto"): saiu o flash branco de 0.55 e o blur 3.5.
 check('5.7.5: ABERTURA nao desenha rachadura nenhuma (nem flash branco)',
@@ -1521,8 +1521,8 @@ check('5.7.5: ABERTURA nao desenha rachadura nenhuma (nem flash branco)',
 check('5.7.5: abertura ACONTECE NO MUNDO (fenda real + pedra + poeira do bloco)',
       'aberturaNoMundo' in _ne2 and 'ParticleTypes.FALLING_DUST' in _ne2
       and 'ParticleTypes.BLOCK, estado' in _ne2)
-check('5.7.5: abertura curta (0,9 s) e sem blur de 3,5',
-      'desfocar(1.0F' in _nf3 and 'desfocar(3.5F' not in _nf3
+check('5.35.0 (92): abertura curta (0,9 s) e SEM blur nenhum (o blur volta preto)',
+      'desfocar(' not in _nf3.split('public static void desfocar')[1].split('// ----')[0]
       and 'CENA_ESTOURO, 1.0F, 900' in rd(R + '/NeptuneEventos.java'))
 check('5.7.5: fendas quebrando blocos MAIS frequentes (2,8 a 4,6 s)',
       'agora + 2800 +' in rd(R + '/NeptuneEventos.java'))
@@ -1703,9 +1703,9 @@ check('5.7.1: AURA DO VAZIO (/vazio ligar) = prototipo VoidAuraDark do dono',
 _ncmd = rd(R + '/NeptuneCommands.java')
 _npk = rd(R + '/NeptunePackets.java')
 _cb = rd(R + '/CaixaBichoBlock.java')
-check('5.7.6: TERREMOTO deixa o player ANDAR (peso, nao imobilizar)',
+check('5.35.0 (92): TERREMOTO deixa o player ANDAR e PULAR (peso leve, nao imobiliza)',
       'private static void pesado(' in _ne2 and 'pesado(p, true);' in _ne2
-      and 'MOD_LENTO' in _ne2 and '-0.45' in _ne2)
+      and 'MOD_LENTO' in _ne2 and '-0.25' in _ne2)
 check('5.7.6: pulso travado NAO chama mais imobilizar (zerava a velocidade)',
       'imobilizar(p, true);' not in _ne2.split('private static void tickTerremoto')[1]
       .split('private static void')[0])
@@ -1747,8 +1747,8 @@ check('5.7.7: EXILIO maior (aro no chao + tentaculos + estouro final)',
       'BURACO NO CH' in _ne2 and 'TENTÁCULOS' in _ne2 and 'O ESTOURO FINAL' in _ne2)
 check('5.7.7: terremoto com FENDAS aleatorias (nao mais no pe do jogador)',
       'fendas devem acontecer aleatoriamente' in _ne2 and 'double dist = 2.0 + Math.random() * 10.0;' in _ne2)
-check('5.7.7: tela do terremoto BALANCEADA (nebulosa/blur/detritos menores)',
-      'desfocar(0.8F + 1.2F * pulso * f)' in _nfx and 'for (int i = 0; i < 18; i++) {' in _nfx)
+check('5.35.0 (92): tela do terremoto SEM blur e SEM preto chapado',
+      'desfocar(0.8F + 1.2F * pulso * f)' not in _nfx and 'O BLUR DO TERREMOTO SAIU' in _nfx)
 check('5.7.7: SAIU o som que o bot tinha posto no vazio (WITHER_SPAWN)',
       'SoundEvents.WITHER_SPAWN' not in _ne2)
 check('5.7.7: trilha do vazio PARA de verdade no /vazio desligar',
@@ -2194,8 +2194,8 @@ check('5.12.0: o dano do void é CANCELADO enquanto a contagem corre',
 # 5) NADA de tela preta no terremoto
 check('5.12.0: o Nebulosa(5, true) que escurecia a tela de TODOS no exílio saiu',
       'new NeptunePackets.Nebulosa(5, true)' not in _nev)
-check('5.12.0: a nebulosa não faz mais disco preto (miolo 0,62 / lavagem 0,16)',
-      '0.62f * pico' in _nfx and '0.16f * pico * forca' in _nfx)
+check('5.35.0 (92): a nebulosa clareou de vez (miolo 0,32 / lavagem 0,16)',
+      '0.32f * pico' in _nfx and '0.16f * pico * forca' in _nfx)
 # (5.13.2) O DONO: "A DIMENSAO PAROU DE FUNCIONAR? PQ TA TUDO PRETO, NAO VEJO NEM
 # MINHA HOTBAR MAIS". A cortina de 50% + nebulosa SAIA da tela e cobria a hotbar.
 check('5.13.2: SEM cortina preta na tela dentro do vazio (não cobre a hotbar)',
@@ -2698,8 +2698,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.34.0.jar')
-      and os.path.getsize('build/libs/rptag-5.34.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.35.0.jar')
+      and os.path.getsize('build/libs/rptag-5.35.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3017,9 +3017,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.34.0 no jar, no mod e no gradle',
-      "version = '5.34.0'" in rd('build.gradle')
-      and '5.34.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.35.0 no jar, no mod e no gradle',
+      "version = '5.35.0'" in rd('build.gradle')
+      and '5.35.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3255,8 +3255,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.34.0 (jar, mod e gradle)',
-      "version = '5.34.0'" in rd('build.gradle') and '5.34.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.35.0 (jar, mod e gradle)',
+      "version = '5.35.0'" in rd('build.gradle') and '5.35.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3314,8 +3314,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.34.0 (jar, mod e gradle)',
-      "version = '5.34.0'" in rd('build.gradle') and '5.34.0' in _rm)
+check('5.34.0: a versao subiu pra 5.35.0 (jar, mod e gradle)',
+      "version = '5.35.0'" in rd('build.gradle') and '5.35.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3337,8 +3337,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.34.0 (jar, mod e gradle)',
-      "version = '5.34.0'" in rd('build.gradle') and '5.34.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.35.0 (jar, mod e gradle)',
+      "version = '5.35.0'" in rd('build.gradle') and '5.35.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3750,6 +3750,40 @@ check('5.34.0 (91): nada de CODIGO do outro mod dentro do nosso (so ideias propr
       'dev.mian' not in rd(C + '/VazioPoderFx.java')
       and 'dev.mian' not in rd(C + '/PoderLeque.java')
       and 'dev.mian.ronova' not in rd(C + '/VazioPoderFx.java'))
+
+
+# ===================== PEDIDO 92 — 5.35.0 =====================
+_vp5 = rd(R + '/VazioPoderes.java')
+_nfx = rd(C + '/NeptuneFx.java')
+_nev = rd(R + '/NeptuneEventos.java')
+_jf6 = rd(R + '/JuizoFinal.java')
+
+check('5.35.0 (92): a ORBE varre o caminho de 0,4 em 0,4 e estoura no primeiro que encostar',
+      'd += 0.4D' in _vp5 and 'acertado = achou;' in _vp5)
+check('5.35.0 (92): a ORBE fere de verdade (dano direto + estouro em area)',
+      'ferir(p, acertado, 16.0F)' in _vp5 and 'ferir(p, perto, 9.0F)' in _vp5)
+check('5.35.0 (92): a ORBE para na parede (clip) e nao voa 28 blocos a toa',
+      'ClipContext.Block.COLLIDER' in _vp5 and 'parede.getType() != HitResult.Type.MISS' in _vp5)
+check('5.35.0 (92): o TERREMOTO nao usa mais desfoque (era a tela preta)',
+      'desfocar(0.8F' not in _nfx and 'desfocar(2.5F' not in _nfx
+      and 'O BLUR DO TERREMOTO SAIU' in _nfx)
+check('5.35.0 (92): a cena da queda ficou clara (sem vinheta preta de 62%, sem faixas pretas)',
+      '0.62F * k' not in _nfx and '0x120C05, 0.18F * k' in _nfx)
+check('5.35.0 (92): o miolo da nebulosa nao e mais PRETO 62%',
+      '0x000000, 0.62f * pico' not in _nfx)
+check('5.35.0 (92): a camera da queda nao tomba a ponto de perder o mundo',
+      'roll += 4.0F * tomba;' in _nfx and 'pitch += 7.0F * tomba;' in _nfx)
+check('5.35.0 (92): o terremoto nao prende o jogador (Lentidao I, sem fadiga, pulo livre)',
+      'MOVEMENT_SLOWDOWN, 130, 0' in _nev
+      and 'addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN' not in _nev
+      and 'O PULO NÃO É MAIS PENALIZADO' in _nev)
+check('5.35.0 (92): a cova do terremoto tem DEGRAU (miolo 2, borda 1) para dar saida',
+      'boolean miolo = dx == 0 && dz == 0;' in _nev)
+check('5.35.0 (92): dentro do Juizo o jogador NAO sente fome (barra sempre cheia)',
+      'public static void semFome(ServerPlayer p)' in _jf6
+      and 'comida.setFoodLevel(20)' in _jf6 and 'semFome(p);' in _jf6)
+check('5.35.0 (92): a fome vale no labirinto, na arena e no reino do outro mod',
+      'ehJuizo(p.level()) || ehSala(p.level()) || JuizoReino.eh(p.level())' in _jf6)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

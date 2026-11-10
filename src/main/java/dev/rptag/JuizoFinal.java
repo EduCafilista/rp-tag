@@ -946,6 +946,14 @@ public final class JuizoFinal {
         }
         for (ServerPlayer p : servidor.getPlayerList().getPlayers()) {
             try {
+                // (5.35.0) NO JUÍZO NINGUÉM SENTE FOME.
+                // O dono: "o player que estiver dentro do juízo não deve sentir fome, porque ele
+                // vai correr muito, então não precisa comer". Vale para o labirinto, a arena e o
+                // reino do outro mod: a barra fica cheia e a saturação no teto (sem comer, sem
+                // perder vida por fome no meio da fuga).
+                if (ehJuizo(p.level()) || ehSala(p.level()) || JuizoReino.eh(p.level())) {
+                    semFome(p);
+                }
                 if (ehJuizo(p.level())) {
                     tickLabirinto(p, (ServerLevel) p.level(), agora);
                 } else if (ehSala(p.level())) {
@@ -962,6 +970,28 @@ public final class JuizoFinal {
                 RPTagMod.LOGGER.warn("RP Tag: tick do julgamento falhou para "
                         + p.getName().getString(), t);
             }
+        }
+    }
+
+    /**
+     * (5.35.0) <b>SEM FOME NO JUÍZO</b> — pedido do dono: <i>"o player que estiver dentro do
+     * juízo não deve sentir fome, porque ele vai correr muito, então não precisa comer"</i>.
+     *
+     * <p>Mantém comida e saturação no máximo e tira qualquer efeito de fome que tenha sobrado.
+     * É barato: só roda para quem está dentro das dimensões do julgamento.
+     */
+    public static void semFome(ServerPlayer p) {
+        try {
+            var comida = p.getFoodData();
+            if (comida.getFoodLevel() < 20) {
+                comida.setFoodLevel(20);
+            }
+            if (comida.getSaturationLevel() < 5.0F) {
+                comida.setSaturation(5.0F);
+            }
+            p.removeEffect(net.minecraft.world.effect.MobEffects.HUNGER);
+        } catch (Throwable ignorado) {
+            // jogador de teste / versão diferente: a fome só não é reposta
         }
     }
 

@@ -231,9 +231,11 @@ public final class NeptuneFx {
             if (quedaInicio != 0L && now < quedaFim) {
                 float kq = (float) (now - quedaInicio) / (float) Math.max(1L, quedaFim - quedaInicio);
                 float tomba = (float) Math.sin(Math.PI * Math.min(1.0F, kq * 1.4F));
-                roll += 14.0F * tomba;
-                pitch += 22.0F * tomba;
-                yaw += 5.0F * tomba * (float) Math.sin(t * 1.7);
+                // (5.35.0) era 14° de rolo + 22° de pitch: o mundo saía da tela e
+                // parecia que o jogador não podia fazer nada. Agora é só um tropeço.
+                roll += 4.0F * tomba;
+                pitch += 7.0F * tomba;
+                yaw += 2.0F * tomba * (float) Math.sin(t * 1.7);
             }
             event.setRoll(event.getRoll() + roll);
             event.setYaw(event.getYaw() + yaw);
@@ -346,14 +348,12 @@ public final class NeptuneFx {
                 0, 0, w + m, h + m, w + m, h + m);
         com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1, 1, 1, 1);
 
-        // (a2) BLUR de verdade no pulso travado (o mesmo post-process do menu
-        //      de pausa) — é o "estunado" com cara de espaço, e sai sozinho
-        if (tremorCampea) {
-            // (5.7.7) o desfoque do pulso era 1,6–4,4 (cegava no pico).
-            // Agora é 0,8–2,0: dá o "estufado" sem embaçar o mundo.
-            float pulso = 0.5F + 0.5F * (float) Math.sin(now * 0.006);
-            desfocar(0.8F + 1.2F * pulso * f);
-        }
+        // (5.35.0) <b>O BLUR DO TERREMOTO SAIU.</b>
+        //
+        // O dono: <i>"o terremoto de novo está me deixando com tela preta sem poder fazer
+        // nada"</i>. O culpado era este `desfocar()`: é o post-process do menu de pausa e,
+        // com shader (Iris/Sodium) ou placa mais fraca, ele volta PRETO — a tela inteira some
+        // e o jogador acha que travou. Não existe mais blur em lugar nenhum do terremoto.
 
         // (b) (5.4.1) POEIRA NA BORDA — antes eram quadradinhos marrons soltos
         // que o dono leu como fumaça estranha. Agora é um pó fino rente ao chão:
@@ -472,7 +472,7 @@ public final class NeptuneFx {
         for (int i = 0; i < faixas; i++) {
             float kk = i / (float) faixas;
             b.rect(0, h - alturaTerra + kk * alturaTerra, w, alturaTerra / faixas + 1F,
-                    col(0x1C1409, (0.10F + 0.42F * kk) * k));
+                    col(0x1C1409, (0.04F + 0.16F * kk) * k));
         }
         // (b) poeira subindo (bolinhas de pó da cova)
         int n = 46;
@@ -485,21 +485,14 @@ public final class NeptuneFx {
             float rr = 3F + 9F * s2;
             disco(b, px, py, rr, 0x6B5B48, 0.16F * k * (1F - fase * 0.6F), 10);
         }
-        // (c) vinheta de terra fechando os cantos
-        b.vinheta(w, h, Math.min(w, h) * 0.34F, 0x120C05, 0.62F * k);
-        // (d) tremor do impacto (faixas escuras rápidas nos 2 primeiros 25%)
-        if (u < 0.25F) {
-            float choque = 1F - u / 0.25F;
-            for (int i = 0; i < 7; i++) {
-                float yy = (i / 7F) * h + (float) Math.sin(now * 0.03F + i) * 8F;
-                b.rect(0, yy, w, 3F + 6F * choque, col(0x000000, 0.20F * choque));
-            }
-        }
+        // (5.35.0) A VINHETA DE TERRA E AS FAIXAS PRETAS SAÍRAM.
+        // Eram elas + o desfoque que faziam a "tela preta": 62% de terra por cima dos cantos,
+        // 7 faixas pretas no impacto e um blur de até 6,5 (que volta preto em muita placa).
+        // Ficou só a poeira da cova (leve) e uma sombra de 18% nos cantos.
+        b.vinheta(w, h, Math.min(w, h) * 0.34F, 0x120C05, 0.18F * k);
         b.flush();
         AvisoFxUtil.normal();
-
-        // (e) o mundo desfoca (ele está atordoado no fundo do buraco)
-        desfocar(2.5F + 2.5F * (1F - u) + 1.5F * (float) Math.sin(now * 0.004));
+        // (e) sem desfoque: quem caiu continua VENDO o mundo (e consegue sair do buraco)
     }
 
     // ============ (5.7.2) ABERTURA DO TERREMOTO: o chão racha, sem flash ====
@@ -539,7 +532,7 @@ public final class NeptuneFx {
         b.flush();
         AvisoFxUtil.normal();
         if (u < 0.18F) {
-            desfocar(1.0F * (1F - u / 0.18F));
+        // (5.35.0) sem desfoque (era o que escurecia a tela)
         }
     }
 
@@ -874,9 +867,11 @@ public final class NeptuneFx {
         // (5.12.0) o miolo do disco era preto 0,92 = tela preta com borda
         // macia. Agora o miolo para em 0,62 e o resto em 0,38/0,46: sombra
         // funda, mas o mundo continua aparecendo por baixo.
-        disco(b, cx, cy + escala * 0.02f, raio * 1.55f, 0x0B0713, 0.34f * pico, 48);
-        disco(b, cx, cy, raio * 1.05f, 0x06040B, 0.46f * pico, 48);
-        disco(b, cx, cy, raio * 0.55f, 0x000000, 0.62f * pico, 48);
+        // (5.35.0) o miolo era PRETO 62%: era a "tela preta" que sobrava. Agora o centro
+        // para em 0,32 e o mundo continua visível por baixo do efeito.
+        disco(b, cx, cy + escala * 0.02f, raio * 1.55f, 0x0B0713, 0.18f * pico, 48);
+        disco(b, cx, cy, raio * 1.05f, 0x06040B, 0.24f * pico, 48);
+        disco(b, cx, cy, raio * 0.55f, 0x000000, 0.32f * pico, 48);
 
         // (c) a SILHUETA de quem está sendo apagado, se desfazendo de baixo
         //     pra cima (o corpo vira sombra e escorre)
@@ -929,7 +924,7 @@ public final class NeptuneFx {
         b.anel(cx, cy, raio * 1.02f, 64, 1.6f, semente, 0x3A2A55, 0.35f * pico);
 
         // (f) vinheta fechando nas bordas (degradê, sem canto)
-        b.vinheta(w, h, escala * 0.30f, 0x000000, 0.62f * pico * forca);
+        b.vinheta(w, h, escala * 0.30f, 0x000000, 0.35f * pico * forca);   // (5.35.0) era 0,62 (tela preta)
 
         b.flush();
         AvisoFxUtil.normal();

@@ -16,7 +16,9 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -207,26 +209,84 @@ public final class VazioPoderes {
         ServerLevel lv = p.serverLevel();
         Vec3 olho = p.getEyePosition();
         Vec3 dir = p.getLookAngle().normalize();
-        Vec3 fim = olho.add(dir.scale(28.0D));
-        HitResult hit = ProjectileUtil.getEntityHitResult(p, olho, fim,
-                p.getBoundingBox().inflate(28.0D), e -> e instanceof LivingEntity && e != p, 0.6F);
-        if (hit instanceof EntityHitResult ehr && ehr.getEntity() instanceof LivingEntity alvo) {
-            fim = ehr.getLocation();
-            ferir(p, alvo, 12.0F);
-            alvo.setRemainingFireTicks(80);
+        double alcance = 28.0D;
+        Vec3 impacto = olho.add(dir.scale(alcance));
+
+        // (5.35.0) <b>A ORBE NÃO DAVA DANO — e o motivo era o caminho.</b>
+        //
+        // <p>Antes eu perguntava ao jogo "tem alguém na linha?" com um raycast. Só que a
+        // entidade tem que estar EXATAMENTE na linha do olho: meio bloco de diferença e a
+        // resposta era "ninguém", então a orbe caía a 28 blocos de distância e estourava no
+        // ar. Agora ela é <b>varrida de verdade</b>: o trajeto é percorrido de 0,4 em 0,4
+        // bloco e a primeira criatura que estiver naquele ponto (com folga de 0,85) é o alvo.
+        // Depois disso o estouro pega todo mundo colado no impacto.
+        try {
+            BlockHitResult parede = lv.clip(new ClipContext(olho, impacto,
+                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
+            if (parede.getType() != HitResult.Type.MISS) {
+                impacto = parede.getLocation();      // bateu na parede: estoura ali
+            }
+        } catch (Throwable ignorado) {
+            // sem clip: segue a linha inteira
         }
-        // estouro em área (pega quem estiver colado no ponto de impacto)
+
+        LivingEntity acertado = null;
+        double limite = olho.distanceTo(impacto);
+        Vec3 ponto = impacto;
+        for (double d = 0.6D; d <= limite; d += 0.4D) {
+            Vec3 amostra = olho.add(dir.scale(d));
+            LivingEntity achou = null;
+            double menor = Double.MAX_VALUE;
+            for (LivingEntity e : lv.getEntitiesOfClass(LivingEntity.class,
+                    new AABB(amostra.x - 0.9D, amostra.y - 0.9D, amostra.z - 0.9D,
+                            amostra.x + 0.9D, amostra.y + 0.9D, amostra.z + 0.9D),
+                    e -> e != p && e.isAlive())) {
+                double q = e.position().add(0, e.getBbHeight() * 0.5D, 0).distanceToSqr(amostra);
+                if (q < menor) {
+                    menor = q;
+                    achou = e;
+                }
+            }
+            if (achou != null) {
+                acertado = achou;
+                ponto = amostra;
+                break;
+            }
+        }
+        impacto = ponto;
+
+        // o dano direto em quem foi atingido
+        if (acertado != null) {
+            ferir(p, acertado, 16.0F);
+            acertado.setRemainingFireTicks(100);
+            acertado.push(dir.x * 0.8D, 0.35D, dir.z * 0.8D);
+        }
+        // o estouro em área (pega quem estiver colado no ponto de impacto)
+        final LivingEntity jaAtingido = acertado;
+        final Vec3 onde = impacto;
         for (LivingEntity perto : lv.getEntitiesOfClass(LivingEntity.class,
-                new AABB(fim.x - 3.5, fim.y - 3.5, fim.z - 3.5, fim.x + 3.5, fim.y + 3.5, fim.z + 3.5),
-                e -> e != p && e.isAlive())) {
-            ferir(p, perto, 7.0F);
+                new AABB(onde.x - 4.0D, onde.y - 4.0D, onde.z - 4.0D,
+                        onde.x + 4.0D, onde.y + 4.0D, onde.z + 4.0D),
+                e -> e != p && e != jaAtingido && e.isAlive())) {
+            ferir(p, perto, 9.0F);
+            perto.setRemainingFireTicks(60);
+            Vec3 fora = perto.position().subtract(onde).normalize().scale(0.6D);
+            perto.push(fora.x, 0.35D, fora.z);
         }
-        lv.sendParticles(ParticleTypes.DRAGON_BREATH, fim.x, fim.y, fim.z, 40, 0.8D, 0.8D, 0.8D, 0.05D);
+        lv.sendParticles(ParticleTypes.DRAGON_BREATH, impacto.x, impacto.y, impacto.z,
+                40, 0.8D, 0.8D, 0.8D, 0.05D);
+        lv.sendParticles(ParticleTypes.EXPLOSION, impacto.x, impacto.y, impacto.z,
+                1, 0.0D, 0.0D, 0.0D, 0.0D);
         lv.playSound(null, p.blockPosition(), SoundEvents.ENDER_DRAGON_HURT,
                 SoundSource.PLAYERS, 0.6F, 1.4F);
-        mandar(lv, p, 1, olho, fim);
+        lv.playSound(null, net.minecraft.core.BlockPos.containing(impacto),
+                SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.9F, 1.3F);
+        mandar(lv, p, 1, olho, impacto);
+        RPTagMod.LOGGER.info("RP Tag: orbe de {} -> {} ({} bloco(s))",
+                p.getName().getString(),
+                acertado == null ? "o chao/vazio" : acertado.getName().getString(),
+                (int) olho.distanceTo(impacto));
     }
-
 
     // ------------------------------------------------------------------ ONDA
     /**

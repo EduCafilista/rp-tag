@@ -429,8 +429,11 @@ public final class NeptuneEventos {
             enviarTerremoto(server, true, 1.0F, restam, faseTravado);
             if (faseTravado) {
                 for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-                    p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 130, 2, false, false, false));
-                    p.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 130, 1, false, false, false));
+                    // (5.35.0) O PESO DIMINUIU. Era Lentidão III + fadiga de mineração +
+                    // -45% de velocidade e -20% de pulo: junto com o buraco, o jogador ficava
+                    // PRESO sem fazer nada. Agora é Lentidão I, sem fadiga e ainda dá para pular
+                    // (é o que tira a pessoa da cova).
+                    p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 130, 0, false, false, false));
                     // (5.7.6) O DONO PEDIU: "o player não deve ficar 100%
                     // parado, ele deve conseguir andar, mais lento, mas
                     // andar". Então SAIU o imobilizar (que zerava a
@@ -722,11 +725,17 @@ public final class NeptuneEventos {
     private static boolean cavarFenda(ServerLevel nv, BlockPos chao, java.util.Random r,
             ServerPlayer p) {
         {
-            // (1) a COVA: 3x3, dois blocos de profundidade -> ele cai 2
+            // (1) a COVA: 3x3 — o MIOLO cai dois blocos; a BORDA cai um só.
+            // (5.35.0) o degrau é o que deixa a pessoa SAIR andando/pulando. Antes a cova
+            // era 3x3x2 lisa: com o pulo reduzido, quem caía ficava preso até o evento acabar
+            // ("o terremoto me deixa sem poder fazer nada").
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dz = -1; dz <= 1; dz++) {
                     cavar(nv, chao.offset(dx, 0, dz), r);
-                    cavar(nv, chao.offset(dx, -1, dz), r);
+                    boolean miolo = dx == 0 && dz == 0;
+                    if (miolo) {
+                        cavar(nv, chao.offset(dx, -1, dz), r);
+                    }
                 }
             }
             // (2) as RACHADURAS: 4 a 6 braços serpenteando pela superfície
@@ -934,13 +943,11 @@ public final class NeptuneEventos {
             var pulo = p.getAttribute(Attributes.JUMP_STRENGTH);
             if (lento) {
                 if (vel != null) {
-                    vel.addOrUpdateTransientModifier(new AttributeModifier(MOD_LENTO, -0.45,
+                    vel.addOrUpdateTransientModifier(new AttributeModifier(MOD_LENTO, -0.25,
                             AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
                 }
-                if (pulo != null) {
-                    pulo.addOrUpdateTransientModifier(new AttributeModifier(MOD_LENTO, -0.20,
-                            AttributeModifier.Operation.ADD_VALUE));
-                }
+                // (5.35.0) O PULO NÃO É MAIS PENALIZADO: era ele que impedia de sair da
+                // cova aberta pelo próprio terremoto ("sem poder fazer nada").
             } else {
                 if (vel != null) {
                     vel.removeModifier(MOD_LENTO);
