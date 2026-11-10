@@ -49,12 +49,19 @@ public class EscuridaoBlock extends Block {
             return InteractionResult.SUCCESS;        // não deixa o braço "bater" no bloco
         }
         if (level instanceof ServerLevel sl && player instanceof ServerPlayer sp) {
+            // (5.33.0) na SALA DO JULGAMENTO a escuridão é a SAÍDA (pedido 90: o dono reclamou
+            // do "aviso de morte" a cada clique direito — era esta mensagem). Quem clica nela
+            // com o portão aberto volta à vida com +2 vidas.
+            if (JuizoFinal.atravessarPortao(sp)) {
+                return InteractionResult.CONSUME;
+            }
             boolean usado = VazioReino.interagirPortal(sp, sl, pos);
             if (usado) {
                 return InteractionResult.CONSUME;
             }
+            // fora da sala: texto neutro, sem falar em "morte"
             sp.displayClientMessage(Component.literal(
-                    "\u00a78Esta escuridão está morta. \u00a77O portal só responde perto de quem o abriu."),
+                    "\u00a78Aqui a escuridão é só pedra. \u00a77Nada atravessa daqui."),
                     true);
         }
         return InteractionResult.CONSUME;

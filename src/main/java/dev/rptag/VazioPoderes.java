@@ -319,36 +319,87 @@ public final class VazioPoderes {
      * testa a cena).
      */
     private static void banir(ServerPlayer p) {
+        // (5.33.0) o cone de mira decide quem vai; sem alvo, nada acontece (nunca o próprio)
+        banirAlvo(p, alvoNaMira(p, 40.0D, 0.55D));
+    }
+
+    /**
+     * (5.33.0) <b>BANIR UM ALVO CONCRETO</b> — o miolo do poder, separado da mira.
+     *
+     * <p>Serve para os dois caminhos: o leque/tecla (que passa o que está na mira) e o
+     * {@code /vazio soltar poder banir <jogador>} (que passa a pessoa escolhida pelo ADM).
+     * O conjurador <b>nunca</b> é banido: se o alvo for ele mesmo, o método devolve
+     * {@code false} e não faz nada.
+     *
+     * @return true se alguém foi mandado para a dimensão do banir
+     */
+    public static boolean banirAlvo(ServerPlayer p, LivingEntity alvo) {
         ServerLevel lv = p.serverLevel();
         Vec3 olho = p.getEyePosition();
         Vec3 dir = p.getLookAngle().normalize();
         Vec3 olhoPos = olho.add(dir.scale(4.0D));
-        Vec3 fim = olho.add(dir.scale(40.0D));
-        LivingEntity alvo = null;
-        HitResult hit = ProjectileUtil.getEntityHitResult(p, olho, fim,
-                p.getBoundingBox().inflate(40.0D), e -> e instanceof LivingEntity && e != p, 0.6F);
-        if (hit instanceof EntityHitResult ehr && ehr.getEntity() instanceof LivingEntity le) {
-            alvo = le;
+        if (alvo == p) {
+            return false;                       // o conjurador nunca paga a conta
         }
-        // o OLHO: o cliente desenha a abertura + a íris + o clarão
-        mandar(lv, p, 6, olhoPos, alvo != null ? alvo.position() : fim);
+        Vec3 alvoPos = alvo != null
+                ? alvo.position().add(0, alvo.getBbHeight() * 0.5, 0)
+                : olho.add(dir.scale(30.0D));
+
+        // o OLHO abre na frente de quem conjura, virado pro alvo
+        mandar(lv, p, 6, olhoPos, alvoPos);
         lv.playSound(null, p.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM,
                 SoundSource.PLAYERS, 1.4F, 0.5F);
         lv.playSound(null, p.blockPosition(), SoundEvents.END_PORTAL_SPAWN,
                 SoundSource.PLAYERS, 0.8F, 0.6F);
         lv.sendParticles(ParticleTypes.SQUID_INK, olhoPos.x, olhoPos.y, olhoPos.z, 80, 1.6D, 1.6D, 1.6D, 0.02D);
+
         if (alvo instanceof ServerPlayer vitima) {
-            if (!JuizoReino.entrar(vitima)) {
-                RPTagMod.LOGGER.warn("RP Tag: banir nao achou dimensao destino");
+            // vai para a DIMENSÃO DO OUTRO MOD (é "a dimensão do banir" — nada de terceira)
+            if (!JuizoReino.banirPara(vitima)) {
+                RPTagMod.LOGGER.warn("RP Tag: banir nao achou a dimensao do outro mod");
+                lv.sendParticles(ParticleTypes.SMOKE, alvoPos.x, alvoPos.y, alvoPos.z, 40, 1, 1, 1, 0.02);
+                return false;
             }
-        } else if (alvo != null) {
-            // mob: não atravessa dimensão, é apagado pelo olho
-            alvo.hurt(lv.damageSources().magic(), 30.0F);
+            return true;
+        }
+        if (alvo != null) {
+            alvo.hurt(lv.damageSources().magic(), 40.0F);   // mob não atravessa dimensão: é apagado
             alvo.discard();
-        } else {
-            JuizoReino.entrar(p);
+            return true;
+        }
+        return false;                            // (5.33.0) SEM ALVO = SEM BANIMENTO
+    }
+
+    /**
+     * (5.33.0) acha o ser vivo mais perto da mira, dentro de um cone (aim assist suave).
+     *
+     * @param cosMinimo 1.0 = mira perfeita; 0.55 ≈ 56° de abertura
+     */
+    public static LivingEntity alvoNaMira(ServerPlayer p, double alcance, double cosMinimo) {
+        try {
+            Vec3 olho = p.getEyePosition();
+            Vec3 dir = p.getLookAngle().normalize();
+            LivingEntity melhor = null;
+            double melhorDot = cosMinimo;
+            for (LivingEntity e : p.serverLevel().getEntitiesOfClass(LivingEntity.class,
+                    p.getBoundingBox().inflate(alcance), e -> e != p && e.isAlive())) {
+                Vec3 ate = e.position().add(0, e.getBbHeight() * 0.5, 0).subtract(olho);
+                double dist = ate.length();
+                if (dist > alcance || dist < 0.4) {
+                    continue;
+                }
+                double dot = ate.normalize().dot(dir);
+                if (dot > melhorDot) {
+                    melhorDot = dot;
+                    melhor = e;
+                }
+            }
+            return melhor;
+        } catch (Throwable t) {
+            return null;
         }
     }
+
 
     // ------------------------------------------------------------------ ajuda
     private static void mandar(ServerLevel lv, ServerPlayer p, int tipo, Vec3 de, Vec3 ate) {

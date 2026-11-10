@@ -178,6 +178,54 @@ public final class JuizoReino {
         return escolhida == null ? "(nenhuma)" : escolhida.location().toString();
     }
 
+    /**
+     * (5.33.0) <b>BANIR</b> — manda a pessoa para a dimensão do OUTRO MOD (a do banimento).
+     *
+     * <p>O dono: <i>"no leque de habilidades atual o olho você fez ele banir para uma nova
+     * dimensão? uma terceira? pq? se é só jogar a pessoa que estiver na mira para a dimensão do
+     * banir"</i>. Então: nada de dimensão nova — usamos a primeira dimensão de outro mod que
+     * existir (o reino/afterlife deles), com a pousada se for ar puro.
+     */
+    public static boolean banirPara(ServerPlayer alvo) {
+        MinecraftServer servidor = alvo.getServer();
+        try {
+            ServerLevel lv = doOutroMod(servidor);
+            if (lv == null) {
+                return false;
+            }
+            BlockPos chegada = pontoSeguro(lv);
+            alvo.stopRiding();
+            alvo.teleportTo(lv, chegada.getX() + 0.5D, chegada.getY() + 0.1D, chegada.getZ() + 0.5D, 0.0F, 0.0F);
+            lv.sendParticles(net.minecraft.core.particles.ParticleTypes.SQUID_INK,
+                    alvo.getX(), alvo.getY() + 1, alvo.getZ(), 60, 0.8, 1.2, 0.8, 0.02);
+            return true;
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: banir falhou", t);
+            return false;
+        }
+    }
+
+    /** a dimensão de OUTRO MOD (nunca uma nossa). */
+    public static ServerLevel doOutroMod(MinecraftServer servidor) {
+        if (servidor == null) {
+            return null;
+        }
+        ResourceKey<Level> melhor = null;
+        int melhorNota = 0;
+        for (ResourceKey<Level> k : candidatas(servidor)) {
+            String ns = k.location().getNamespace();
+            if (RPTagMod.MODID.equals(ns)) {
+                continue;                     // (5.33.0) só de OUTRO mod
+            }
+            int nota = notaDe(k.location());
+            if (nota > melhorNota) {
+                melhorNota = nota;
+                melhor = k;
+            }
+        }
+        return melhor == null ? null : servidor.getLevel(melhor);
+    }
+
     // ---------------------------------------------------------------- entrada
 
     /**

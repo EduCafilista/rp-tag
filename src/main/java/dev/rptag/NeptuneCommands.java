@@ -159,27 +159,6 @@ public final class NeptuneCommands {
         // O dono: "não quero esse comando de ativar poderes ou desativar" — o dom agora vem do
         // lugar (vazio/reino) ou do cargo de ADM, e quem arremessa é a TECLA (R abre o leque).
         // Este comando fica só como plano B para teste/console; a tecla é o caminho normal.
-        vazio.then(Commands.literal("soltar")
-                .then(Commands.argument("poder", com.mojang.brigadier.arguments.StringArgumentType.word())
-                        .suggests((ctx, b) -> {
-                            for (String n : new String[]{"raio", "orbe", "onda", "olhos", "penas", "banir"}) {
-                                b.suggest(n);
-                            }
-                            return b.buildFuture();
-                        })
-                        .executes(ctx -> {
-                            ServerPlayer p = ctx.getSource().getPlayerOrException();
-                            String nome = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "poder");
-                            dev.rptag.VazioPoderes.Poder poder = dev.rptag.VazioPoderes.Poder.porId(nome);
-                            if (poder == null) {
-                                ctx.getSource().sendFailure(Component.literal(
-                                        "\u00a7cPoderes: raio, orbe, onda, olhos, penas, banir."));
-                                return 0;
-                            }
-                            int r = dev.rptag.VazioPoderes.usar(p, poder);
-                            return r == 1 ? Command.SINGLE_SUCCESS : 0;
-                        })));
-
         vazio.then(Commands.literal("desligar").executes(ctx -> {
             ServerPlayer p = ctx.getSource().getPlayerOrException();
             NeptuneEventos.desligarDeus(p);
@@ -197,14 +176,35 @@ public final class NeptuneCommands {
                     return Command.SINGLE_SUCCESS;
                 })));
 
-        // (5.5.0) tira do EXÍLIO (o admin sempre devolve o jogador)
+        // (5.33.0) /vazio soltar — UM comando, duas formas:
+        //   /vazio soltar <poder> [jogador]   → solta o poder (o ADM pode escolher em quem)
+        //   /vazio soltar <jogador>           → tira a pessoa do exílio (era a forma antiga)
+        // O dono: "o vazio soltar não solta mais o player escolhido, mostra apenas o soltar
+        // poderes" — as DUAS voltaram, e o /help mostra as duas.
         vazio.then(Commands.literal("soltar")
+                .then(Commands.literal("poder")
+                        .then(Commands.argument("qual", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                .suggests((ctx, b) -> {
+                                    for (String n : new String[]{"raio", "orbe", "onda", "olhos", "penas", "banir"}) {
+                                        b.suggest(n);
+                                    }
+                                    return b.buildFuture();
+                                })
+                                .executes(ctx -> soltarPoder(ctx, null))
+                                .then(Commands.argument("jogador", EntityArgument.player())
+                                        .executes(ctx -> soltarPoder(ctx, EntityArgument.getPlayer(ctx, "jogador"))))))
+                .then(Commands.literal("exilio")
+                        .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
+                            ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                            NeptuneEventos.soltarDoExilio(alvo);
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "\u00a7a" + alvo.getName().getString()
+                                            + " vai voltar do ex\u00edlio no SPAWN dele."), false);
+                            return Command.SINGLE_SUCCESS;
+                        })))
                 .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
                     ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
                     NeptuneEventos.soltarDoExilio(alvo);
-                    // (5.13.5) o aviso é SÓ para quem digitou (era broadcast: o jogador via
-                    // "rp admin" avisando na tela dele) e o texto agora diz a verdade —
-                    // a saída é no SPAWN dele, não num lugar aleatório.
                     ctx.getSource().sendSuccess(() -> Component.literal(
                             "\u00a7a" + alvo.getName().getString()
                                     + " vai voltar do ex\u00edlio no SPAWN dele."), false);
@@ -519,5 +519,49 @@ public final class NeptuneCommands {
     private static int iniciar(CommandSourceStack src, int segundos) {
         NeptuneEventos.iniciarTerremoto(src.getServer(), segundos);
         return Command.SINGLE_SUCCESS;
+    }
+
+    /**
+     * (5.33.0) <b>/vazio soltar poder &lt;qual&gt; [jogador]</b> — o "soltar poderes" de volta.
+     *
+     * <p>O dono (pedido 90): <i>"o vazio soltar não solta mais o player escolhido, mostra apenas
+     * o soltar poderes, corrige"</i>. Então o comando agora faz <b>as duas coisas</b>: sem
+     * jogador escolhido ele arremessa o poder normalmente (mira/leque) e, com um jogador
+     * escolhido, o <b>banir</b> manda exatamente aquela pessoa para a dimensão do banir — nada de
+     * banir o próprio conjurador por acidente.
+     */
+    private static int soltarPoder(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx,
+            ServerPlayer alvo) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer p = ctx.getSource().getPlayerOrException();
+        String nome = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "qual");
+        VazioPoderes.Poder poder = VazioPoderes.Poder.porId(nome);
+        if (poder == null) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "\u00a7cPoderes: raio, orbe, onda, olhos, penas, banir."));
+            return 0;
+        }
+        // com jogador escolhido + banir: a vítima é ELE, nunca o conjurador
+        if (alvo != null && poder == VazioPoderes.Poder.BANIR) {
+            if (alvo.getUUID().equals(p.getUUID())) {
+                ctx.getSource().sendFailure(Component.literal(
+                        "\u00a7cVoc\u00ea n\u00e3o pode banir VOC\u00ca mesmo."));
+                return 0;
+            }
+            boolean ok = VazioPoderes.banirAlvo(p, alvo);
+            ctx.getSource().sendSuccess(() -> Component.literal(ok
+                    ? "\u00a78Banido: \u00a75" + alvo.getName().getString()
+                    : "\u00a7cA dimens\u00e3o do banir n\u00e3o respondeu."), false);
+            return ok ? Command.SINGLE_SUCCESS : 0;
+        }
+        if (alvo != null) {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "\u00a77O jogador escolhido s\u00f3 muda o poder \u00a75banir\u00a77."), false);
+        }
+        int r = VazioPoderes.usar(p, poder);
+        if (r == 0) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "\u00a7cN\u00e3o saiu: poder fora do vazio/reino, em recarga ou sem alvo na mira."));
+        }
+        return r == 1 ? Command.SINGLE_SUCCESS : 0;
     }
 }

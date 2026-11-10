@@ -128,6 +128,15 @@ public final class ServerEvents {
                 event.setUseBlock(net.neoforged.neoforge.common.util.TriState.FALSE);
                 event.setUseItem(net.neoforged.neoforge.common.util.TriState.FALSE);
                 event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
+                return;
+            }
+            // (5.33.0) A PEDRA DO RETORNO — o portal da sala do Julgamento só nasce do clique
+            // nela (pedido 90). O clique é consumido para o bloco não fazer mais nada.
+            if (JuizoFinal.usarGerador(p, event.getPos())) {
+                event.setCanceled(true);
+                event.setUseBlock(net.neoforged.neoforge.common.util.TriState.FALSE);
+                event.setUseItem(net.neoforged.neoforge.common.util.TriState.FALSE);
+                event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
             }
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: clique no pedestal falhou (o jogo segue)", t);

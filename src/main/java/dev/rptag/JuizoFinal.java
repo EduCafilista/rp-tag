@@ -109,6 +109,15 @@ public final class JuizoFinal {
     private static BlockPos pontoEntrada;
     private static BlockPos pontoTrono;
     private static BlockPos pontoPortao;
+    /**
+     * (5.33.0) A PEDRA DO RETORNO — o bloco que o dono clica com o botão direito para o
+     * portal de saída nascer (pedido 90: <i>"o portal deveria aparecer só depois de eu clicar
+     * com botão direito no bloco que vai gerar o portal"</i>).
+     */
+    private static BlockPos pontoGerador;
+    /** o bloco clicável que gera o portal. */
+    public static final net.minecraft.world.level.block.Block BLOCO_GERADOR =
+            net.minecraft.world.level.block.Blocks.CRYING_OBSIDIAN;
 
     // ---------------------------------------------------------------- estado
     private static final Set<UUID> NO_JUIZO = new HashSet<>();
@@ -172,23 +181,10 @@ public final class JuizoFinal {
      * (sem ele, o jogador que zerasse as vidas não teria pra onde ir).
      */
     public static boolean entrar(ServerPlayer p) {
-        if (JuizoReino.entrar(p)) {
-            NO_JUIZO.add(p.getUUID());
-            NA_SALA.remove(p.getUUID());
-            SAIDA.remove(p.getUUID());
-            ULTIMO_BICHO.remove(p.getUUID());
-            ENTROU_EM.put(p.getUUID(), System.currentTimeMillis());
-            p.setHealth(p.getMaxHealth());
-            p.getFoodData().setFoodLevel(20);
-            p.removeAllEffects();
-            // (5.32.0) o dono: "o aviso o julgamento começa é quando entrar no labirinto" e
-            // "tira esse tanto de aviso do chat, se o player ler fica foda". Aqui é SÓ a tela.
-            aviso(p, "\u00a74\u00a7lO JULGAMENTO", 8, 4);
-            som(p, net.minecraft.sounds.SoundEvents.WITHER_SPAWN, 0.7F, 0.6F);
-            RPTagMod.LOGGER.info("RP Tag: {} caiu no reino do outro mod ({})",
-                    p.getName().getString(), JuizoReino.nome());
-            return true;
-        }
+        // (5.33.0) O LABIRINTO VOLTOU. O dono: "o juizo entrar, você tirou o labirinto? eu falei
+        // para deixar, volta a versão e deixa aquele último labirinto que você fez". O que era
+        // para virar dimensão do outro mod era SÓ a animação do portal. Então quem zera as
+        // vidas cai no labirinto de blocos do próprio RP Tag, como na 5.28.1.
         ServerLevel lv = p.getServer().getLevel(CHAVE_JUIZO);
         if (lv == null) {
             RPTagMod.LOGGER.warn("RP Tag: a dimensão do julgamento não existe (json faltando?)");
@@ -264,6 +260,7 @@ public final class JuizoFinal {
             SAIDA.remove(p.getUUID());
             NA_SALA.add(p.getUUID());
             construirSala(sala);
+            garantirGerador(sala);       // (5.33.0) a pedra do retorno sempre existe
             BlockPos entrada = pontoEntrada != null ? pontoEntrada
                     : new BlockPos(0, SALA_Y + 2, ARENA_Z + JuizoSala.COMPRIMENTO - 12);
             p.teleportTo(sala, entrada.getX() + 0.5D, entrada.getY(), entrada.getZ() + 0.5D,
@@ -273,6 +270,14 @@ public final class JuizoFinal {
             // "JUIZO: FRASE" (aqueles avisos simples e bonitos, sem encher o chat).
             String frase = FRASES_DO_JUIZO[(int) (Math.random() * FRASES_DO_JUIZO.length)];
             aviso(p, "\u00a74\u00a7lJUIZO\u00a7r\u00a77: \u00a7f" + frase, 9, 4);
+            // (5.33.0) a dica da saída: o portal só nasce do clique na pedra do retorno
+            try {
+                p.displayClientMessage(Component.literal(
+                        "\u00a78A sa\u00edda \u00e9 a \u00a77pedra escura ao lado do trono\u00a78 "
+                        + "— bot\u00e3o direito nela.").withStyle(ChatFormatting.DARK_GRAY), false);
+            } catch (Throwable ignorado) {
+                // jogador de teste
+            }
             vultoDoBoss(sala);
             som(p, net.minecraft.sounds.SoundEvents.ENDER_DRAGON_GROWL, 0.8F, 0.7F);
             for (ServerPlayer adm : p.getServer().getPlayerList().getPlayers()) {
@@ -303,6 +308,7 @@ public final class JuizoFinal {
             pontoTrono = colunaLivre(lv, new BlockPos(0, SALA_Y + 2, ARENA_Z + 14));
             pontoPortao = colunaLivre(lv, new BlockPos(0, SALA_Y + 2, ARENA_Z + 6));
             portaoAberto = false;
+            garantirGerador(lv);
             RPTagMod.LOGGER.info("RP Tag: arena do Julgamento pronta (entrada {}, trono {}, portao {})",
                     pontoEntrada, pontoTrono, pontoPortao);
         } catch (Throwable t) {
@@ -362,40 +368,156 @@ public final class JuizoFinal {
     }
 
 
-    /** a CHAVE abre o portal atrás do boss. */
+    /**
+     * (5.33.0) <b>A PEDRA DO RETORNO — o portal nasce do clique, não sozinho.</b>
+     *
+     * <p>O dono (pedido 90, item 7): <i>"o portal está bugado, e ele deveria aparecer só depois de
+     * eu clicar com botão direito no bloco que vai gerar o portal, olha o mod, e veja como
+     * funciona o portal dele"</i>. É exatamente o desenho do Ronova: no mod o portal não existe
+     * no mundo — ele é <b>criado</b> por um bloco/uso (o rift), com o vórtice desenhado por cima.
+     *
+     * <p>Aqui a pedra é uma <b>obsidiana chorosa</b> plantada de frente para o trono, em cima de
+     * um altarzinho de deepslate. Clique direito nela → a moldura e o miolo de escuridão crescem
+     * <b>atrás do trono</b>, com o vórtice do cliente por cima. Antes dela não existia portal
+     * nenhum na sala (era por isso que não tinha para onde ir).
+     */
+    public static void garantirGerador(ServerLevel lv) {
+        try {
+            if (!ehSala(lv)) {
+                return;
+            }
+            if (pontoGerador == null) {
+                // em frente ao trono, no caminho de quem entra
+                pontoGerador = colunaLivre(lv,
+                        new BlockPos(0, SALA_Y + 2, ARENA_Z + 20));
+            }
+            BlockPos g = pontoGerador;
+            // o altarzinho: base 3x3 e a pedra no meio (só põe o que estiver faltando)
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    BlockPos chao = g.offset(dx, -1, dz);
+                    if (dx == 0 && dz == 0) {
+                        continue;
+                    }
+                    if (lv.getBlockState(chao).isAir()) {
+                        lv.setBlock(chao, net.minecraft.world.level.block.Blocks
+                                .POLISHED_DEEPSLATE.defaultBlockState(), 2);
+                    }
+                }
+            }
+            if (!lv.getBlockState(g).is(BLOCO_GERADOR)) {
+                lv.setBlock(g, BLOCO_GERADOR.defaultBlockState(), 2);
+            }
+            // o chão embaixo da pedra, para ela nunca ficar flutuando
+            if (lv.getBlockState(g.below()).isAir()) {
+                lv.setBlock(g.below(), net.minecraft.world.level.block.Blocks
+                        .POLISHED_DEEPSLATE.defaultBlockState(), 2);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: pedra do retorno falhou", t);
+        }
+    }
+
+    /**
+     * (5.33.0) clique direito na PEDRA DO RETORNO.
+     *
+     * @return true se o clique era nela (aí o jogo não faz mais nada com o clique)
+     */
+    public static boolean usarGerador(ServerPlayer p, BlockPos pos) {
+        try {
+            if (!ehSala(p.level()) || pos == null) {
+                return false;
+            }
+            boolean eh = (pontoGerador != null && pontoGerador.equals(pos))
+                    || p.level().getBlockState(pos).is(BLOCO_GERADOR);
+            if (!eh) {
+                return false;
+            }
+            ServerLevel sala = (ServerLevel) p.level();
+            garantirGerador(sala);
+            return gerarPortal(p, sala);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: clique na pedra do retorno falhou", t);
+            return false;
+        }
+    }
+
+    /** a CHAVE abre o portal atrás do boss (o caminho antigo continua valendo). */
     public static boolean abrirPortao(ServerPlayer p) {
-        ServerLevel sala = p.getServer().getLevel(CHAVE_SALA);
-        if (sala == null || !ehSala(p.level())) {
+        if (!ehSala(p.level())) {
             try {
                 p.displayClientMessage(Component.literal(
-                        "\u00a78A chave só gira na sala do julgamento.")
+                        "\u00a78A chave s\u00f3 gira na sala do julgamento.")
                         .withStyle(ChatFormatting.DARK_GRAY), true);
             } catch (Throwable ignorado) {
                 // jogador de teste
             }
             return false;
         }
+        return gerarPortal(p, (ServerLevel) p.level());
+    }
+
+    /**
+     * (5.33.0) <b>O PORTAL DE SAÍDA NASCE AQUI.</b>
+     *
+     * <p>Um método só, chamado pela pedra do retorno e pela chave. Ele:
+     * <ol>
+     *   <li>limpa um bolsão de ar (o portal nunca mais fica enterrado na estrutura);</li>
+     *   <li>levanta a moldura de obsidiana chorosa e o miolo de escuridão atrás do trono;</li>
+     *   <li>manda o vórtice para o cliente (o mesmo olho do portal do outro mod);</li>
+     *   <li>marca o portão como aberto — quem atravessar volta à vida com +2 vidas.</li>
+     * </ol>
+     */
+    public static boolean gerarPortal(ServerPlayer p, ServerLevel sala) {
         try {
-            construirSala(sala);
+            if (!JuizoSala.pronta()) {
+                construirSala(sala);
+            }
             BlockPos base = pontoPortao != null ? pontoPortao
                     : new BlockPos(0, SALA_Y + 2, ARENA_Z + 6);
-            // (5.29.0) o PORTÃO: um portal de escuridão na arena do dono. É ele que o
-            // cliente desenha com o vórtice novo (VazioPortalFx estilo Juízo).
+            portaoAberto = false;
+            // 1) bolsão de ar: 5 de largura, 6 de altura, 3 de profundidade
             for (int dx = -2; dx <= 2; dx++) {
-                for (int dy = 0; dy <= 4; dy++) {
-                    boolean dentro = Math.abs(dx) <= 1 && dy <= 3;
-                    if (dentro) {
+                for (int dy = -1; dy <= 4; dy++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        sala.setBlock(base.offset(dx, dy, dz),
+                                net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 2);
+                    }
+                }
+            }
+            // 2) moldura + miolo (a boca do portal: 3 de largura por 5 de altura)
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dy = -1; dy <= 4; dy++) {
+                    boolean borda = Math.abs(dx) == 2 || dy == -1 || dy == 4;
+                    if (borda) {
                         sala.setBlock(base.offset(dx, dy, 0),
-                                RPTagMod.ESCURIDAO.get().defaultBlockState(), 2);
+                                net.minecraft.world.level.block.Blocks.CRYING_OBSIDIAN
+                                        .defaultBlockState(), 2);
+                    }
+                }
+            }
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = 0; dy <= 3; dy++) {
+                    sala.setBlock(base.offset(dx, dy, 0),
+                            RPTagMod.ESCURIDAO.get().defaultBlockState(), 2);
+                }
+            }
+            // o chão em frente e atrás, para ninguém cair num buraco ao atravessar
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dz = -2; dz <= 2; dz++) {
+                    if (sala.getBlockState(base.offset(dx, -2, dz)).isAir()) {
+                        sala.setBlock(base.offset(dx, -2, dz),
+                                net.minecraft.world.level.block.Blocks.POLISHED_DEEPSLATE
+                                        .defaultBlockState(), 2);
                     }
                 }
             }
             portaoAberto = true;
-            // (5.29.0) o cliente desenha o portal novo (o olho) em cima desse ponto
+            // 3) o vórtice do cliente (o olho), em cima do miolo
             for (ServerPlayer outro : sala.players()) {
                 try {
-                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(outro,
-                            new VazioPoderPayload(4, base.getX() + 0.5D, base.getY(),
+                    PacketDistributor.sendToPlayer(outro,
+                            new VazioPoderPayload(4, base.getX() + 0.5D, base.getY() + 0.5D,
                                     base.getZ() - 0.6D, 0.0D, 0.0D, 0.0D));
                 } catch (Throwable ignorado) {
                     // jogador de teste: sem conexão
@@ -403,14 +525,56 @@ public final class JuizoFinal {
             }
             sala.playSound(null, base, net.minecraft.sounds.SoundEvents.PORTAL_TRIGGER,
                     net.minecraft.sounds.SoundSource.AMBIENT, 1.0F, 0.6F);
-            aviso(p, "\u00a7a\u00a7lO PORT\u00c3O SE ABRIU", 7, 4);
+            sala.playSound(null, base, net.minecraft.sounds.SoundEvents.END_PORTAL_SPAWN,
+                    net.minecraft.sounds.SoundSource.AMBIENT, 1.0F, 0.7F);
+            sala.sendParticles(net.minecraft.core.particles.ParticleTypes.REVERSE_PORTAL,
+                    base.getX() + 0.5D, base.getY() + 2.0D, base.getZ() + 0.5D,
+                    90, 1.4D, 2.2D, 0.4D, 0.05D);
+            aviso(p, "\u00a75\u00a7lO PORT\u00c3O SE ABRIU", 7, 4);
+            try {
+                p.displayClientMessage(Component.literal(
+                        "\u00a78Atravesse a escurid\u00e3o atr\u00e1s do trono para voltar \u00e0 vida.")
+                        .withStyle(ChatFormatting.DARK_GRAY), true);
+            } catch (Throwable ignorado) {
+                // jogador de teste
+            }
+            RPTagMod.LOGGER.info("RP Tag: portal de saida do Julgamento gerado em {}", base);
             return true;
         } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: abrir o portão do julgamento falhou", t);
+            RPTagMod.LOGGER.warn("RP Tag: gerar o portal de saida falhou", t);
             return false;
         }
     }
 
+    /**
+     * (5.33.0) clique direito na ESCURIDÃO da sala — o jeito mais natural de sair.
+     *
+     * <p>Era daqui que vinha o "aviso de morte" que o dono reclamou: o bloco de escuridão
+     * respondia <i>"esta escuridão está morta"</i> em qualquer dimensão. Na sala agora ele
+     * <b>atravessa</b> (vitória, +2 vidas); se o portão ainda não abriu, ele só avisa onde está
+     * a pedra do retorno — nada de "morta".
+     *
+     * @return true se o clique foi tratado aqui
+     */
+    public static boolean atravessarPortao(ServerPlayer p) {
+        try {
+            if (!ehSala(p.level())) {
+                return false;
+            }
+            if (!portaoAberto) {
+                p.displayClientMessage(Component.literal(
+                        "\u00a78O port\u00e3o ainda dorme. \u00a77Clique com o bot\u00e3o direito "
+                        + "na pedra escura ao lado do trono.").withStyle(ChatFormatting.DARK_GRAY),
+                        true);
+                return true;
+            }
+            vitoria(p);
+            return true;
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: atravessar o portao falhou", t);
+            return true;
+        }
+    }
 
     // ================================================================ RESULTADOS
     /**

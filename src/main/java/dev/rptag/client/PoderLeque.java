@@ -65,6 +65,12 @@ public final class PoderLeque {
 
     private static final ResourceLocation TEX_RODA =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/leque_roda.png");
+    /** (5.33.0) o halo roxo da casa apontada (a arte do dono tem brilho). */
+    private static final ResourceLocation TEX_BRILHO =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/leque_brilho.png");
+    /** (5.33.0) a tampa escura redonda da casa em recarga. */
+    private static final ResourceLocation TEX_APAGADO =
+            ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/leque_apagado.png");
     private static final ResourceLocation[] TEX_ICONE = new ResourceLocation[6];
 
     static {
@@ -108,6 +114,15 @@ public final class PoderLeque {
         return aberto;
     }
 
+    /** (5.33.0) fecha o leque e devolve o cursor para o jogo. */
+    private static void fechar() {
+        if (!aberto) {
+            return;
+        }
+        aberto = false;
+        soltarMouse(Minecraft.getInstance(), false);
+    }
+
     // ------------------------------------------------------------- tick
 
     @SubscribeEvent
@@ -124,6 +139,11 @@ public final class PoderLeque {
                 aberto = !aberto;
                 abertoEm = System.currentTimeMillis();
                 apontado = -1;
+                // (5.33.0) O CURSOR PRECISA FICAR LIVRE — era isso que deixava o leque
+                // "travado": no Minecraft o mouse fica preso no centro da tela, então
+                // não dava pra apontar a casa. Abrindo o leque a gente solta o cursor e,
+                // ao fechar, prende de novo (senão a câmera não responde).
+                soltarMouse(mc, aberto);
             }
             // a animação roda sempre (para fechar suave)
             long agora = System.nanoTime();
@@ -141,8 +161,8 @@ public final class PoderLeque {
                 return;
             }
             // fecha sozinho depois de 10 s parado
-            if (System.currentTimeMillis() - abertoEm > 10000L) {
-                aberto = false;
+            if (System.currentTimeMillis() - abertoEm > 15000L) {
+                fechar();
                 return;
             }
             // teclas 1..6
@@ -150,7 +170,7 @@ public final class PoderLeque {
             for (int i = 0; i < NOMES.length; i++) {
                 if (InputConstants.isKeyDown(janela, GLFW.GLFW_KEY_1 + i)) {
                     mandar(i);
-                    aberto = false;
+                    fechar();
                     return;
                 }
             }
@@ -164,11 +184,37 @@ public final class PoderLeque {
             boolean clicando = GLFW.glfwGetMouseButton(janela, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
             if (clicando && !mouseAntes && apontado >= 0) {
                 mandar(apontado);
-                aberto = false;
+                fechar();
+            }
+            // ESC fecha
+            if (InputConstants.isKeyDown(janela, GLFW.GLFW_KEY_ESCAPE)) {
+                fechar();
+                return;
             }
             mouseAntes = clicando;
         } catch (Throwable ignorado) {
             // a roda é enfeite: nunca derruba o jogo
+        }
+    }
+
+    /**
+     * (5.33.0) solta/prende o cursor do jogo.
+     *
+     * <p>Sem isso o mouse fica travado no meio da tela e o jogador não consegue escolher a
+     * habilidade — era exatamente a reclamação ("eu teria que poder mexer para escolher").
+     */
+    private static void soltarMouse(Minecraft mc, boolean soltar) {
+        try {
+            if (mc.screen != null) {
+                return;
+            }
+            if (soltar) {
+                mc.mouseHandler.releaseMouse();
+            } else {
+                mc.mouseHandler.grabMouse();
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: soltar o cursor do leque falhou", t);
         }
     }
 
@@ -232,70 +278,101 @@ public final class PoderLeque {
             float e = animado;                                  // 0..1
             float escala = 0.86F + 0.14F * ease(e);
             int alfa = (int) (255 * ease(e));
+            float raio = lado / 2.0F;
+            long agora = System.currentTimeMillis();
 
             var pose = g.pose();
             pose.pushPose();
             pose.translate(cx, cy, 0);
             pose.scale(escala, escala, 1.0F);
 
-            // ---- a roda
+            // ---- a roda (a arte do dono: aro roxo, seis casas, diamantes e estrelas)
             g.setColor(1.0F, 1.0F, 1.0F, alfa / 255.0F);
             g.blit(TEX_RODA, -lado / 2, -lado / 2, 0, 0, lado, lado, lado, lado);
             g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
 
+            // ---- o brilho por trás da casa apontada (antes das casas, senão cobre o ícone)
+            if (apontado >= 0) {
+                double[] pb = casaPos(apontado, lado);
+                int gs = (int) (raio * 0.66);
+                g.setColor(0.78F, 0.46F, 1.0F, 0.85F * e);
+                g.blit(TEX_BRILHO, (int) (pb[0] - gs / 2.0), (int) (pb[1] - gs / 2.0),
+                        0, 0, gs, gs, gs, gs);
+                g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+            }
+
             // ---- as seis casas
-            long agora = System.currentTimeMillis();
-            int icone = (int) (lado * 0.108);
+            int icone = (int) (lado * 0.105);
+            int diametroCasa = (int) (lado * 0.170);
             for (int i = 0; i < 6; i++) {
                 double[] p = casaPos(i, lado);
                 boolean escolhida = (i == apontado) || (apontado < 0 && i == Math.max(0, ultimo));
                 boolean recarregando = agora < PRONTO[i];
-                int tam = escolhida ? (int) (icone * 1.22) : icone;
+                float crescer = escolhida ? 1.18F : 1.0F;
+                int tam = (int) (icone * crescer);
                 int x = (int) (p[0] - tam / 2.0), y = (int) (p[1] - tam / 2.0);
 
                 g.setColor(1, 1, 1, alfa / 255.0F);
                 g.blit(TEX_ICONE[i], x, y, 0, 0, tam, tam, tam, tam);
-                if (recarregando) {
-                    g.fill(x, y, x + tam, y + tam, 0xB0000000);
-                    long falta = (PRONTO[i] - agora) / 1000L + 1;
-                    g.drawCenteredString(mc.font, "§7" + falta + "s",
-                            x + tam / 2, y + tam / 2 - 4, 0xFFFFFF);
-                }
                 g.setColor(1, 1, 1, 1);
-                // o número da tecla, na borda da casa
-                String num = String.valueOf(i + 1);
-                int nx = (int) (p[0] + Math.cos(-Math.PI / 2 + i * Math.PI / 3) * (lado * 0.115));
-                int ny = (int) (p[1] + Math.sin(-Math.PI / 2 + i * Math.PI / 3) * (lado * 0.115));
-                g.drawCenteredString(mc.font, (escolhida ? "§c§l" : "§8") + num, nx, ny - 4, 0xFFFFFF);
+
+                if (recarregando) {
+                    int d2 = (int) (diametroCasa * 0.96);
+                    g.blit(TEX_APAGADO, (int) (p[0] - d2 / 2.0), (int) (p[1] - d2 / 2.0),
+                            0, 0, d2, d2, d2, d2);
+                    long falta = (PRONTO[i] - agora) / 1000L + 1;
+                    g.drawCenteredString(mc.font, "\u00a7d\u00a7l" + falta + "s",
+                            (int) p[0], (int) p[1] - 4, 0xFFFFFF);
+                }
+
+                // (5.33.0) o NÚMERO no aro, do jeito da arte do dono
+                double ang = -Math.PI / 2 + i * (Math.PI / 3.0);
+                int nx = (int) (Math.cos(ang) * raio * 0.845);
+                int ny = (int) (Math.sin(ang) * raio * 0.845) - 4;
+                boolean aceso = (i == apontado);
+                g.drawCenteredString(mc.font, (aceso ? "\u00a7d\u00a7l" : "\u00a75") + (i + 1),
+                        nx, ny, 0xFFFFFF);
             }
 
-            // ---- o miolo: nome + descrição
+            // ---- o miolo: título, habilidade escolhida e a descrição
             int escolhido = apontado >= 0 ? apontado : Math.max(0, ultimo);
-            g.drawCenteredString(mc.font, "§4§lO VAZIO ETERNO",
-                    0, (int) (-lado * 0.055), 0xFFFFFF);
-            g.drawCenteredString(mc.font, "§f§l" + NOMES[escolhido],
-                    0, (int) (-lado * 0.020), 0xFFFFFF);
-            // quebra a descrição em duas linhas curtas
-            String d = DESC[escolhido];
-            String l1 = d, l2 = "";
-            if (d.length() > 26) {
-                int corte = d.lastIndexOf(' ', 26);
-                if (corte < 8) {
-                    corte = 26;
+            float fonte = lado / 320.0F;                 // a fonte não muda: a roda sim
+            float fr = raio / fonte;                     // raio em unidades de fonte
+            pose.pushPose();
+            pose.scale(fonte, fonte, 1.0F);
+            g.drawCenteredString(mc.font, "\u00a75\u00a7lO VAZIO ETERNO",
+                    0, (int) (-fr * 0.225F), 0xFFFFFF);
+            if (apontado < 0) {
+                g.drawCenteredString(mc.font, "\u00a78Selecione uma habilidade",
+                        0, (int) (-fr * 0.045F), 0xFFFFFF);
+                g.drawCenteredString(mc.font, "\u00a77\u00a7l" + NOMES[escolhido],
+                        0, (int) (fr * 0.035F), 0xFFFFFF);
+            } else {
+                g.drawCenteredString(mc.font, "\u00a7d\u00a7l" + NOMES[escolhido],
+                        0, (int) (-fr * 0.045F), 0xFFFFFF);
+                String d = DESC[escolhido];
+                String l1 = d, l2 = "";
+                if (d.length() > 24) {
+                    int corte = d.lastIndexOf(' ', 24);
+                    if (corte < 8) {
+                        corte = 24;
+                    }
+                    l1 = d.substring(0, corte);
+                    l2 = d.substring(Math.min(corte + 1, d.length()));
                 }
-                l1 = d.substring(0, corte);
-                l2 = d.substring(Math.min(corte + 1, d.length()));
+                g.drawCenteredString(mc.font, "\u00a77" + l1, 0, (int) (fr * 0.025F), 0xFFFFFF);
+                if (!l2.isEmpty()) {
+                    g.drawCenteredString(mc.font, "\u00a77" + l2, 0, (int) (fr * 0.100F), 0xFFFFFF);
+                }
             }
-            g.drawCenteredString(mc.font, "§7" + l1, 0, (int) (lado * 0.005), 0xFFFFFF);
-            if (!l2.isEmpty()) {
-                g.drawCenteredString(mc.font, "§7" + l2, 0, (int) (lado * 0.030), 0xFFFFFF);
-            }
-            g.drawCenteredString(mc.font, "§8clique para arremessar", 0, (int) (lado * 0.105), 0xFFFFFF);
+            pose.popPose();
 
             pose.popPose();
 
             // ---- a tecla escrita embaixo da roda
-            g.drawCenteredString(mc.font, "§8R fecha  §8•  §81-6 arremessa  §8•  §8X repete",
+            g.drawCenteredString(mc.font,
+                    "\u00a78R fecha  \u00a78\u2022  \u00a781-6 arremessa  \u00a78\u2022  "
+                    + "\u00a78clique escolhe  \u00a78\u2022  \u00a78X repete",
                     w / 2, (int) (cy + lado * 0.5F * escala + 8), 0xFFFFFF);
         } catch (Throwable t) {
             aberto = false;
