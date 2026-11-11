@@ -68,22 +68,24 @@ public final class CamadaUmbrella {
         PartDefinition raiz = malha.getRoot();
         for (int setor = 0; setor < 16; setor++) {
             double ang = 2.0D * Math.PI * setor / 16.0D;
-            CubeListBuilder cubos = CubeListBuilder.create().texOffs(0, 0);
+            // (5.37.0) cada anel aponta pra uma faixa de TECIDO da textura (a ponta de metal
+            // fica só na ponteira) — antes tudo mirava no (0,0) e a cúpula saía branca
+            CubeListBuilder cubos = CubeListBuilder.create();
             // anel de dentro (o miolo, colado no topo): raio 2,4 -> 5,4
-            cubos.addBox(2.4F, -0.5F, -1.0F, 3, 1, 2);
+            cubos.texOffs(4, 1).addBox(2.4F, -0.5F, -1.0F, 3, 1, 2);
             // anel do meio: raio 5,4 -> 8,0
-            cubos.addBox(5.4F, -1.1F, -1.5F, 3, 1, 3);
+            cubos.texOffs(4, 4).addBox(5.4F, -1.1F, -1.5F, 3, 1, 3);
             // aba (cai fundo e passa da largura da cabeça): raio 8,0 -> 10,4
-            cubos.addBox(8.0F, -1.9F, -1.9F, 3, 1, 4);
-            // vareta pendurada na ponta da aba
-            cubos.addBox(10.2F, -0.9F, -0.25F, 1, 3, 1);
+            cubos.texOffs(4, 6).addBox(8.0F, -1.9F, -1.9F, 3, 1, 4);
+            // vareta pendurada na ponta da aba (faixa escura da textura)
+            cubos.texOffs(0, 12).addBox(10.2F, -0.9F, -0.25F, 1, 3, 1);
             raiz.addOrReplaceChild("setor_" + setor, cubos,
                     PartPose.rotation(0.0F, (float) ang, 0.0F));
         }
         // ponteira em cima e o cabo que desce até a cabeça
         raiz.addOrReplaceChild("ponteira", CubeListBuilder.create().texOffs(0, 0)
                 .addBox(-0.5F, -3.0F, -0.5F, 1, 2, 1), PartPose.ZERO);
-        raiz.addOrReplaceChild("cabo", CubeListBuilder.create().texOffs(0, 0)
+        raiz.addOrReplaceChild("cabo", CubeListBuilder.create().texOffs(2, 2)
                 .addBox(-0.4F, 0.4F, -0.4F, 1, 1, 1), PartPose.ZERO);
         return malha.getRoot().bake(16, 16);
     }

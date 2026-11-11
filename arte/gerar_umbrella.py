@@ -84,6 +84,13 @@ def textura_item(claro, escuro, detalhe):
 
 # ------------------------------------------------------------------ textura da CÚPULA (cabeça)
 def textura_cupula(claro, escuro, detalhe):
+    """16x16: tecido listrado (nervuras a cada 4 px) + metal na ponta + faixa escura (varetas).
+
+    As UVs da camada da cabeça apontam assim:
+      (0,0)  ponteira de metal      (4,1) anel de dentro
+      (4,4)  anel do meio           (4,7) aba de fora
+      (0,12) vareta pendurada
+    """
     img = novo(16, 16)
     for y in range(16):
         for x in range(16):
@@ -95,9 +102,12 @@ def textura_cupula(claro, escuro, detalhe):
     for x in range(0, 16, 4):                      # nervuras
         for y in range(16):
             px(img, x, y, zera(escuro, 0.72))
-    for y in range(3):                             # ponteira clara
+    for y in range(3):                             # ponteira de metal (canto 0,0)
         for x in range(3):
             px(img, x, y, detalhe)
+    for y in range(12, 16):                        # faixa escura das varetas (0,12)
+        for x in range(4):
+            px(img, x, y, zera(escuro, 0.55))
     return img
 
 
