@@ -9,8 +9,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * (5.37.0) <b>O UMBRELLA DE SOMBRA NO JOGO</b> — duas coisas:
@@ -22,11 +20,15 @@ import net.neoforged.fml.common.EventBusSubscriber;
  *       enquanto está aberto — ver {@code CamadaUmbrella}.</li>
  * </ol>
  *
+ * <p><b>(5.37.2) NÃO use {@code @EventBusSubscriber} aqui:</b> esta classe não escuta evento
+ * nenhum — quem chama é a camada de HUD registrada em {@code ClientGuiLayers}. Na 5.37.1 a
+ * anotação ficou sobrando e o NeoForge <b>derrubou a construção do mod</b> inteiro
+ * ("has no @SubscribeEvent methods, but register was called anyway").
+ *
  * <p>O estado "aberto" é o MESMO que o servidor usa pra barrar o sol
  * ({@code VampiroSistema.guardaChuvaAberto}: item em uso). Cliente e servidor não têm como
  * discordar: quem manda é o pacote de uso do item do próprio Minecraft.
  */
-@EventBusSubscriber(modid = RPTagMod.MODID, value = Dist.CLIENT)
 public final class UmbrellaHud {
 
     /** quantas cores existem (as mesmas 8 do gerador de arte). */
