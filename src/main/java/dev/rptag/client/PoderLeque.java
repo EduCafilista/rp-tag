@@ -63,6 +63,8 @@ public final class PoderLeque {
     };
     /** o piso de recarga de cada uma (ms) — o servidor é quem manda, isto é só o desenho. */
     public static final long[] RECARGA = {1200L, 600L, 6000L, 4000L, 3500L, 12000L};
+    /** (5.36.0) o dano de cada uma, só para mostrar no miolo (quem aplica é o servidor). */
+    public static final float[] DANO = {16.0F, 16.0F, 9.0F, 7.0F, 10.0F, 0.0F};
 
     private static final ResourceLocation TEX_RODA =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/leque_roda.png");
@@ -124,6 +126,20 @@ public final class PoderLeque {
         return aberto;
     }
 
+    /**
+     * (5.36.0) <b>O LEQUE AGORA TEM VOZ.</b> Um cristalzinho quando abre, um clique de menu
+     * quando escolhe e um "não" seco quando a casa está em recarga — dá o retorno que faltava
+     * para saber que o clique pegou.
+     */
+    private static void som(net.minecraft.sounds.SoundEvent evento, float tom, float volume) {
+        try {
+            Minecraft.getInstance().getSoundManager().play(
+                    net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(evento, tom, volume));
+        } catch (Throwable ignorado) {
+            // sem áudio (ou versão diferente): o leque continua mudo
+        }
+    }
+
     /** (5.33.0) fecha o leque e devolve o cursor para o jogo. */
     private static void fechar() {
         if (!aberto) {
@@ -149,6 +165,8 @@ public final class PoderLeque {
                 aberto = !aberto;
                 abertoEm = System.currentTimeMillis();
                 apontado = -1;
+                som(aberto ? net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME
+                        : net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 1.4F, 0.7F);
                 // (5.33.0) O CURSOR PRECISA FICAR LIVRE — era isso que deixava o leque
                 // "travado": no Minecraft o mouse fica preso no centro da tela, então
                 // não dava pra apontar a casa. Abrindo o leque a gente solta o cursor e,
@@ -331,6 +349,7 @@ public final class PoderLeque {
             selecionado = poder;          // (5.34.0) fica armado para o botão direito
             abertoEm = System.currentTimeMillis();
             PRONTO[poder] = System.currentTimeMillis() + RECARGA[poder];
+            som(net.minecraft.sounds.SoundEvents.TRIDENT_THROW.value(), 1.25F, 0.55F);
             PacketDistributor.sendToServer(new VazioPoderC2S(poder));
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: mandar o poder {} falhou", poder, t);
@@ -428,6 +447,11 @@ public final class PoderLeque {
                     int d2 = (int) (diametroCasa * 0.96);
                     g.blit(TEX_APAGADO, (int) (p[0] - d2 / 2.0), (int) (p[1] - d2 / 2.0),
                             0, 0, d2, d2, d2, d2);
+                    // (5.36.0) o ARCO que vai fechando: dá para ver a recarga sem ler número
+                    float faltaK = (PRONTO[i] - agora) / (float) Math.max(1L, RECARGA[i]);
+                    arco(g, (float) p[0], (float) p[1], diametroCasa * 0.52F,
+                            Math.max(0.0F, Math.min(1.0F, 1.0F - faltaK)),
+                            (255 << 24) | 0xC060FF, alfa);
                     long falta = (PRONTO[i] - agora) / 1000L + 1;
                     g.drawCenteredString(mc.font, "\u00a7d\u00a7l" + falta + "s",
                             (int) p[0], (int) p[1] - 4, 0xFFFFFF);
@@ -472,10 +496,19 @@ public final class PoderLeque {
                 if (!l2.isEmpty()) {
                     g.drawCenteredString(mc.font, "\u00a77" + l2, 0, (int) (fr * 0.100F), 0xFFFFFF);
                 }
+                // (5.36.0) os números da habilidade (quem aplica é o servidor, isto é vitrine)
+                String ficha = DANO[escolhido] > 0.0F
+                        ? "\u00a7c" + (int) DANO[escolhido] + " de dano \u00a78\u00b7 \u00a77"
+                                + (RECARGA[escolhido] / 1000L) + "s"
+                        : "\u00a7cbanimento \u00a78\u00b7 \u00a77" + (RECARGA[escolhido] / 1000L) + "s";
+                g.drawCenteredString(mc.font, ficha, 0, (int) (fr * 0.175F), 0xFFFFFF);
             }
             pose.popPose();
 
             pose.popPose();
+
+            // ---- (5.36.0) o HUD do poder ARMADO (aparece mesmo com o leque fechado)
+            desenharArmado(g, mc, w, h, agora);
 
             // ---- a tecla escrita embaixo da roda
             g.drawCenteredString(mc.font,
@@ -484,6 +517,76 @@ public final class PoderLeque {
                     w / 2, (int) (cy + lado * 0.5F * escala + 8), 0xFFFFFF);
         } catch (Throwable t) {
             aberto = false;
+        }
+    }
+
+    /**
+     * (5.36.0) o selo do poder ARMADO direto no HUD do jogo (sem abrir a roda).
+     *
+     * <p>É o que o dono pediu com <i>"de uma melhorada na wheel"</i>: saber qual magia está na
+     * mão e quanto falta pra ela voltar, sem precisar apertar R. Some sozinho quando abre
+     * qualquer tela (a roda desenha a versão grande dela).
+     */
+    public static void desenharHud(GuiGraphics g) {
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc == null || mc.player == null || mc.options.hideGui || mc.screen != null) {
+                return;
+            }
+            desenharArmado(g, mc, g.guiWidth(), g.guiHeight(), System.currentTimeMillis());
+        } catch (Throwable ignorado) {
+            // HUD é enfeite: nunca derruba o resto
+        }
+    }
+
+    /**
+     * (5.36.0) o ARCO de recarga desenhado em fatias (a GUI só tem retângulo; 40 fatias finas
+     * leem como um círculo perfeito nesse tamanho).
+     */
+    private static void arco(GuiGraphics g, float cx, float cy, float raio, float fracao,
+            int cor, int alfa) {
+        int fatias = 40;
+        int quantas = (int) (fatias * Math.max(0.0F, Math.min(1.0F, fracao)));
+        for (int i = 0; i < quantas; i++) {
+            double a = -Math.PI / 2 + (Math.PI * 2.0 * i / fatias);
+            int x = (int) (cx + Math.cos(a) * raio);
+            int y = (int) (cy + Math.sin(a) * raio);
+            g.fill(x - 1, y - 1, x + 2, y + 2, (cor & 0x00FFFFFF) | (Math.min(255, alfa) << 24));
+        }
+    }
+
+    /**
+     * (5.36.0) <b>O QUE O BOTÃO DIREITO VAI FAZER</b> — um selo pequeno no canto direito, em cima
+     * da hotbar, com o ícone da habilidade armada, o nome dela e a recarga. Antes, ao fechar o
+     * leque, não sobrava nenhuma pista de qual magia estava pronta para sair.
+     */
+    private static void desenharArmado(GuiGraphics g, Minecraft mc, int w, int h, long agora) {
+        if (selecionado < 0 || mc.player == null) {
+            return;
+        }
+        try {
+            int tam = 20;
+            int x = w - tam - 10;
+            int y = h - 70;
+            int alfaSel = 255;
+            g.setColor(1, 1, 1, alfaSel / 255.0F);
+            g.blit(TEX_ICONE[selecionado], x, y, 0, 0, tam, tam, tam, tam);
+            g.setColor(1, 1, 1, 1);
+            String nome = NOMES[selecionado];
+            int lx = x - 4 - mc.font.width(nome);
+            g.drawString(mc.font, "\u00a7d" + nome, lx, y + 6, 0xFFFFFF, true);
+            // a recarga em segundos, embaixo do ícone
+            long falta = PRONTO[selecionado] - agora;
+            if (falta > 0L) {
+                g.fill(x, y, x + tam, y + tam, 0x99000000);
+                g.drawCenteredString(mc.font, "\u00a7d" + (falta / 1000L + 1) + "s",
+                        x + tam / 2, y + 6, 0xFFFFFF);
+            } else {
+                arco(g, x + tam / 2.0F, y + tam / 2.0F, tam * 0.72F, 1.0F, 0xC060FF, 220);
+            }
+            g.drawString(mc.font, "\u00a78bot\u00e3o direito", lx, y + 17, 0xFFFFFF, false);
+        } catch (Throwable ignorado) {
+            // o selo é enfeite: nunca derruba o resto
         }
     }
 

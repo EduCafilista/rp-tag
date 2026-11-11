@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.35.0'
+VER = '5.36.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2698,8 +2698,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.35.0.jar')
-      and os.path.getsize('build/libs/rptag-5.35.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-5.36.0.jar')
+      and os.path.getsize('build/libs/rptag-5.36.0.jar') < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3017,9 +3017,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.35.0 no jar, no mod e no gradle',
-      "version = '5.35.0'" in rd('build.gradle')
-      and '5.35.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.36.0 no jar, no mod e no gradle',
+      "version = '5.36.0'" in rd('build.gradle')
+      and '5.36.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3255,8 +3255,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.35.0 (jar, mod e gradle)',
-      "version = '5.35.0'" in rd('build.gradle') and '5.35.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.36.0 (jar, mod e gradle)',
+      "version = '5.36.0'" in rd('build.gradle') and '5.36.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3314,8 +3314,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.35.0 (jar, mod e gradle)',
-      "version = '5.35.0'" in rd('build.gradle') and '5.35.0' in _rm)
+check('5.34.0: a versao subiu pra 5.36.0 (jar, mod e gradle)',
+      "version = '5.36.0'" in rd('build.gradle') and '5.36.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3337,8 +3337,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.35.0 (jar, mod e gradle)',
-      "version = '5.35.0'" in rd('build.gradle') and '5.35.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.36.0 (jar, mod e gradle)',
+      "version = '5.36.0'" in rd('build.gradle') and '5.36.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3567,8 +3567,9 @@ check('5.32.0 (87): quem o ADM tirou do Julgamento NAO e desviado pelo portal',
       'estaProcurando(p.getUUID())' in _jpe and 'public static boolean estaProcurando' in _jf2)
 check('5.32.0 (87): o tick nao expulsa quem esta no reino (a saida e o portal)',
       'JuizoReino.eh(p.level())' in _jf2)
+_arn = _jf2.split('public static void aoRenascer')[1][:2600]
 check('5.32.0 (87): morrer no reino volta pro reino (morrer nao e fuga)',
-      'JuizoReino.entrar(p)' in _jf2.split('aoRenascer')[1][:900])
+      'juizo_reino' in _arn and 'JuizoReino.entrar(p)' in _arn)
 check('5.32.0 (87): o labirinto antigo do RP Tag fica so como RESERVA (servidor sem o outro mod)',
       'CHAVE_JUIZO)' in _jf2 and 'reserva' in _jf2)
 check('5.32.0 (87): a regra de nao cavar para cima/baixo vale no reino tambem',
@@ -3784,6 +3785,64 @@ check('5.35.0 (92): dentro do Juizo o jogador NAO sente fome (barra sempre cheia
       and 'comida.setFoodLevel(20)' in _jf6 and 'semFome(p);' in _jf6)
 check('5.35.0 (92): a fome vale no labirinto, na arena e no reino do outro mod',
       'ehJuizo(p.level()) || ehSala(p.level()) || JuizoReino.eh(p.level())' in _jf6)
+
+# ===================== PEDIDO 93 — 5.36.0 =====================
+_jf7 = rd(R + '/JuizoFinal.java')
+_sev = rd(R + '/ServerEvents.java')
+_nc7 = rd(R + '/NeptuneCommands.java')
+_nev7 = rd(R + '/NeptuneEventos.java')
+_pl7 = rd(C + '/PoderLeque.java')
+_arn7 = _jf7.split('public static void aoRenascer')[1][:3000]
+
+check('5.36.0 (93): a morte guarda ONDE morreu (mapa MORREU_EM por jogador)',
+      'MORREU_EM' in _jf7 and 'public static void marcarMorte(ServerPlayer p)' in _jf7
+      and 'public static String consumirMorte(ServerPlayer p)' in _jf7)
+check('5.36.0 (93): quem morre no Juizo e lembrado como visto (nao some do estado)',
+      'VISTO_NO_JUIZO' in _jf7)
+check('5.36.0 (93): toda morte de jogador grava a dimensao (server side, sem chutar pelo conjunto)',
+      'JuizoFinal.marcarMorte(p)' in _sev and 'onDeath' in _sev)
+check('5.36.0 (93): morrer na SALA renasce na ARENA de novo (nao no overworld)',
+      'sala_julgamento' in _arn7 and 'construirSala(sala)' in _arn7
+      and 'garantirGerador(sala)' in _arn7)
+check('5.36.0 (93): morrer no labirinto renasce no CENTRO do labirinto, com vida cheia',
+      'juizo' in _arn7 and 'p.setHealth(p.getMaxHealth())' in _arn7
+      and 'p.getFoodData().setFoodLevel(20)' in _arn7)
+check('5.36.0 (93): morrer em QUALQUER outro mundo nao arrasta ninguem pro Juizo',
+      'dadosDeVolta(p);' in _arn7 and 'overworld' not in _arn7.lower())
+check('5.36.0 (93): o respawn rebuilda a SAIDA do labirinto se ela nao existir',
+      'SAIDA.put(p.getUUID(), saida)' in _arn7)
+check('5.36.0 (93): /vazio entrar LIMPA a marca do Juizo antes de exilar (era a causa do bug)',
+      'JuizoFinal.sair(quem);' in _nc7 and 'NeptuneEventos.entrarNoExilio(quem);' in _nc7
+      and _nc7.index('JuizoFinal.sair(quem);') < _nc7.index('NeptuneEventos.entrarNoExilio(quem);'))
+check('5.36.0 (93): o tick solta a marca NA_SALA de quem foi teleportado pra fora',
+      'dadosDeVolta(p)' in _jf7 and 'NA_SALA' in _jf7
+      and 'NO_JUIZO.contains(p.getUUID()) || NA_SALA.contains(p.getUUID())' in _jf7)
+check('5.36.0 (93): /vazio onde existe e diz a DIMENSAO + as coordenadas',
+      'Commands.literal("onde")' in _nc7 and 'NeptuneEventos.ondeEstou(p)' in _nc7
+      and 'public static void dizerOnde(ServerPlayer p)' in _nev7
+      and 'public static String ondeEstou(ServerPlayer p)' in _nev7)
+check('5.36.0 (93): o /vazio onde conhece todas as dimensoes do mod',
+      all(k in _nev7 for k in ('sala_julgamento', 'juizo_reino', 'exilio', 'the_nether', 'the_end')))
+check('5.36.0 (93): o /vazio onde fala na BARRA DE ACAO (chat limpo)',
+      'displayClientMessage(Component.literal(onde), true)' in _nev7
+      or 'displayClientMessage(onde, true)' in _nev7
+      or ', true);' in _nev7)
+check('5.36.0 (93): ao entrar em exilio o jogador ja sabe onde caiu',
+      'dizerOnde(alvo);' in _nev7)
+check('5.36.0 (93): a roda de habilidades mostra o DANO de cada casa',
+      'float[] DANO = {' in _pl7 and 'de dano' in _pl7)
+check('5.36.0 (93): a roda tem SOM de abrir, de escolher e de fechar',
+      'AMETHYST_BLOCK_CHIME' in _pl7 and 'UI_BUTTON_CLICK' in _pl7
+      and 'TRIDENT_THROW' in _pl7)
+check('5.36.0 (93): a recarga virou ARCO em volta da casa (e tem ficha no miolo)',
+      'private static void arco' in _pl7 or 'static void arco(' in _pl7)
+check('5.36.0 (93): a habilidade armada aparece no HUD (icone, nome e recarga)',
+      'desenharArmado' in _pl7 and 'public static void desenharHud(GuiGraphics g)' in _pl7)
+_gl7 = rd(C + '/ClientGuiLayers.java')
+check('5.36.0 (93): o HUD do poder armado e uma CAMADA de tela (aparece com a roda fechada)',
+      '"poder_armado"' in _gl7 and 'PoderLeque.desenharHud(g)' in _gl7)
+check('5.36.0 (93): morto no Juizo o jogador NAO e jogado pro overworld (sem teleporte pra casa)',
+      'overworld' not in _arn7.lower())
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -2505,6 +2505,7 @@ public final class NeptuneEventos {
             Vec3 chegada = chegadaNoExilio(destino);
             alvo.teleportTo(destino, chegada.x, chegada.y, chegada.z,
                     java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
+            dizerOnde(alvo);          // (5.36.0) "onde eu parei?
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: exilio falhou (o jogo segue)", t);
         }
@@ -2646,6 +2647,41 @@ public final class NeptuneEventos {
                     SoundSource.AMBIENT, 0.8F, 0.8F);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: nao consegui levar ao portal", t);
+        }
+    }
+
+    /**
+     * (5.36.0) <b>"ONDE EU ESTOU?"</b> — o nome da dimensão em que a pessoa está, em PT-BR.
+     *
+     * <p>O dono: <i>"as dimensões estão bugando... vejo o local certo, corrija os erros que forem
+     * perceptíveis"</i>. Além de corrigir os teleportes, o mod agora <b>diz onde você está</b> na
+     * barra de ação a cada troca de mundo — então dá para ver na hora se caiu no lugar certo.
+     */
+    public static String ondeEstou(ServerPlayer p) {
+        String id = p.level().dimension().location().toString();
+        String nome;
+        switch (id) {
+            case "rptag:exilio" -> nome = "\u00a75O VAZIO";
+            case "rptag:vazio" -> nome = "\u00a75O VAZIO (antigo)";
+            case "rptag:juizo" -> nome = "\u00a74O LABIRINTO DO JULGAMENTO";
+            case "rptag:sala_julgamento" -> nome = "\u00a74A ARENA DO JULGAMENTO";
+            case "rptag:juizo_reino" -> nome = "\u00a74O REINO DO JUIZO";
+            case "minecraft:overworld" -> nome = "\u00a7aO MUNDO";
+            case "minecraft:the_nether" -> nome = "\u00a7cO NETHER";
+            case "minecraft:the_end" -> nome = "\u00a75O END";
+            default -> nome = "\u00a77" + id;
+        }
+        return "\u00a78Voc\u00ea est\u00e1 em \u00a7r" + nome + "\u00a78  \u00b7  \u00a77"
+                + p.blockPosition().getX() + ", " + p.blockPosition().getY() + ", "
+                + p.blockPosition().getZ();
+    }
+
+    /** (5.36.0) manda o nome do lugar na barra de ação (usado depois de cada teleporte). */
+    public static void dizerOnde(ServerPlayer p) {
+        try {
+            p.displayClientMessage(Component.literal(ondeEstou(p)), true);
+        } catch (Throwable ignorado) {
+            // jogador de teste: sem chat
         }
     }
 

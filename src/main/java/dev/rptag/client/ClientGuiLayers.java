@@ -127,6 +127,10 @@ public final class ClientGuiLayers {
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "aviso_hud"),
                 (g, delta) -> ClientEffects.desenhaAviso(g));
+        // (5.36.0) o selo do poder ARMADO (ícone + nome + recarga) no canto da tela
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "poder_armado"),
+                (g, delta) -> PoderLeque.desenharHud(g));
         // (3.77.0) BANNER da vida canônica (na camada oficial = com shaders)
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "canon_banner"),

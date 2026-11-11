@@ -215,6 +215,14 @@ public final class NeptuneCommands {
         // O dono: "cade as montanhas que voce tinha feito anteriormente no vazio? sumiram
         // todas, volte para elas". O relevo agora é absoluto e repetível: este comando joga a
         // fila de novo e levanta o que estiver faltando — sem duplicar nada.
+        // (5.36.0) /onde — responde em que dimensão (e lugar) você está, do jeito do mod.
+        // Serve para conferir na hora se o portal/comando mandou mesmo para o mundo certo.
+        vazio.then(Commands.literal("onde").executes(ctx -> {
+            ServerPlayer p = ctx.getSource().getPlayerOrException();
+            ctx.getSource().sendSuccess(() -> Component.literal(NeptuneEventos.ondeEstou(p)), false);
+            return Command.SINGLE_SUCCESS;
+        }));
+
         vazio.then(Commands.literal("relevo").executes(ctx -> {
             var server = ctx.getSource().getServer();
             var nv = server.getLevel(NeptuneEventos.CHAVE_EXILIO_PUBLICA);
@@ -298,6 +306,9 @@ public final class NeptuneCommands {
         // ambiente (andar no escuro, monólitos, sussurros) sem punir ninguém.
         vazio.then(Commands.literal("entrar").executes(ctx -> {
             ServerPlayer quem = ctx.getSource().getPlayerOrException();
+            // (5.36.0) entrar no vazio LIMPA qualquer marca do Juízo. Era essa marca que fazia
+            // a pessoa, ao morrer no vazio, reaparecer na sala do Julgamento.
+            JuizoFinal.sair(quem);
             NeptuneEventos.entrarNoExilio(quem);
             // (5.13.5) feedback SÓ para quem digitou: o dono não quer mensagem de admin
             // aparecendo na tela dos outros jogadores.

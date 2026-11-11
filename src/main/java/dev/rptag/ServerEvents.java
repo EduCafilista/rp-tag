@@ -291,6 +291,16 @@ public final class ServerEvents {
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: marcação de morte no vazio falhou", t);
         }
+        // (5.36.0) TODA morte de jogador grava a dimensão: é isso que faz o respawn devolver a
+        // pessoa para o lugar certo (morrer no Juízo = continuar no Juízo; morrer no vazio =
+        // continuar no vazio; morrer no mundo = mundo).
+        try {
+            if (event.getEntity() instanceof ServerPlayer p) {
+                JuizoFinal.marcarMorte(p);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: anotar a dimensao da morte falhou", t);
+        }
     }
 
     /**
@@ -462,6 +472,18 @@ public final class ServerEvents {
             }
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: troca de dimensao (aviso de lugar) falhou", t);
+        }
+    }
+
+    @SubscribeEvent
+    public static void limparEstadoDoJuizo(PlayerEvent.PlayerLoggedOutEvent event) {
+        // (5.36.0) quem sai do servidor não pode deixar marca de Juízo pro próximo login.
+        try {
+            if (event.getEntity() instanceof ServerPlayer p) {
+                JuizoFinal.esquecer(p);
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: limpeza do juizo no logout falhou (o jogo segue)", t);
         }
     }
 

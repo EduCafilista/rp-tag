@@ -137,6 +137,48 @@ public final class JuizoFinal {
     private static boolean portaoAberto = false;
 
     /**
+     * (5.36.0) <b>ONDE CADA UM MORREU</b> — o conserto do "morri no juízo e fui parar em outro
+     * lugar".
+     *
+     * <p>Antes o respawn adivinhava pelo conjunto {@code NA_SALA}/{@code NO_JUIZO}. Só que esses
+     * conjuntos só eram limpos por alguns caminhos: quem saía da arena por teleporte (comando,
+     * portal, morte seguida de outro teleporte) ficava marcado <b>para sempre</b>. Resultado: a
+     * pessoa entrava no VAZIO e, na primeira morte, era jogada na SALA DO JULGAMENTO — exatamente
+     * o "fui parar em juizo sala" que o dono viu.
+     *
+     * <p>Agora a morte grava a dimensão de verdade ({@link #marcarMorte(ServerPlayer)}) e o
+     * respawn devolve a pessoa <b>para a dimensão em que ela morreu</b>, nada mais.
+     */
+    private static final Map<UUID, String> MORREU_EM = new HashMap<>();
+    /** quando cada jogador foi visto pela última vez dentro de uma dimensão do Juízo. */
+    private static final Map<UUID, Long> VISTO_NO_JUIZO = new HashMap<>();
+
+    /** (5.36.0) chamado no evento de morte: guarda a dimensão para o respawn. */
+    public static void marcarMorte(ServerPlayer p) {
+        try {
+            MORREU_EM.put(p.getUUID(), p.level().dimension().location().toString());
+        } catch (Throwable ignorado) {
+            // sem memória: o respawn cai na regra pelos conjuntos
+        }
+    }
+
+    /** (5.36.0) esquece tudo de um jogador (logout): nada de estado vazando pra próxima sessão. */
+    public static void esquecer(ServerPlayer p) {
+        dadosDeVolta(p);
+        MORREU_EM.remove(p.getUUID());
+        VISTO_NO_JUIZO.remove(p.getUUID());
+    }
+
+    /** (5.36.0) limpa a marca de morte (chamado no respawn e na saída do jogador). */
+    public static String consumirMorte(ServerPlayer p) {
+        try {
+            return MORREU_EM.remove(p.getUUID());
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /**
      * (5.32.0) AS FRASES DO JUIZO — o que o dono pediu: um aviso curto no estilo "JUIZO: FRASE",
      * daqueles simples que aparecem no meio da tela, no lugar do "ACHA QUE CONSEGUE SUA REDENÇÃO?".
      */
@@ -953,6 +995,7 @@ public final class JuizoFinal {
                 // perder vida por fome no meio da fuga).
                 if (ehJuizo(p.level()) || ehSala(p.level()) || JuizoReino.eh(p.level())) {
                     semFome(p);
+                    VISTO_NO_JUIZO.put(p.getUUID(), agora);
                 }
                 if (ehJuizo(p.level())) {
                     tickLabirinto(p, (ServerLevel) p.level(), agora);
@@ -962,8 +1005,11 @@ public final class JuizoFinal {
                     // (5.30.0) está no reino do outro mod: o relógio do labirinto não manda
                     // aqui — quem decide a saída é o portal do reino (JuizoPortalExterno)
                     continue;
-                } else if (NO_JUIZO.contains(p.getUUID())) {
-                    // fugiu por teleporte (comando/porta): sai da lista, o jogo segue
+                } else if (NO_JUIZO.contains(p.getUUID()) || NA_SALA.contains(p.getUUID())) {
+                    // (5.36.0) fugiu por teleporte (comando/porta/morte): sai da lista.
+                    // Antes só o NO_JUIZO era limpo aqui — o NA_SALA FICAVA PRESO para sempre,
+                    // e era ele que jogava a pessoa na arena no respawn seguinte (o bug do
+                    // "entrei no vazio e fui parar em juizo sala").
                     dadosDeVolta(p);
                 }
             } catch (Throwable t) {
@@ -1062,28 +1108,74 @@ public final class JuizoFinal {
     }
 
     // ================================================================ ENTRADA POR MORTE
+    /**
+     * (5.36.0) <b>MORRER NO JUÍZO = CONTINUAR NO JUÍZO.</b>
+     *
+     * <p>Pedido do dono: <i>"se eu morrer no juízo eu não devia ficar no juízo?"</i>. Agora sim:
+     * o respawn olha <b>a dimensão onde a pessoa morreu</b> (gravada no evento de morte) e
+     * devolve ela para lá:
+     * <ul>
+     *   <li><b>labirinto</b> → centro do labirinto (a saída sorteada continua valendo);</li>
+     *   <li><b>arena</b> → a porta da arena (de frente para o trono);</li>
+     *   <li><b>reino do outro mod</b> → o ponto de chegada do reino;</li>
+     *   <li>qualquer outro lugar → não mexe (o respawn normal do jogo decide).</li>
+     * </ul>
+     * Os conjuntos {@code NO_JUIZO}/{@code NA_SALA} continuam valendo como plano B, mas só
+     * quando a pessoa está de fato dentro de uma das dimensões do Juízo.
+     */
     public static void aoRenascer(ServerPlayer p) {
-        // morreu DENTRO do julgamento: volta pra dentro (morrer não é fuga)
-        if (!NO_JUIZO.contains(p.getUUID()) && !NA_SALA.contains(p.getUUID())) {
-            return;
-        }
-        if (NA_SALA.contains(p.getUUID())) {
+        String ondeMorreu = consumirMorte(p);
+        String dim = ondeMorreu != null ? ondeMorreu
+                : p.level().dimension().location().toString();
+
+        if (dim.equals(RPTagMod.MODID + ":sala_julgamento")) {
             ServerLevel sala = p.getServer().getLevel(CHAVE_SALA);
             if (sala != null) {
+                construirSala(sala);
+                garantirGerador(sala);
                 BlockPos ent = pontoEntrada != null ? pontoEntrada
                         : new BlockPos(0, SALA_Y + 2, ARENA_Z + JuizoSala.COMPRIMENTO - 12);
                 p.teleportTo(sala, ent.getX() + 0.5D, ent.getY(), ent.getZ() + 0.5D, 180.0F, 0.0F);
+                NA_SALA.add(p.getUUID());
+                aviso(p, "\u00a74\u00a7lO JULGAMENTO\n\u00a77n\u00e3o devolve ningu\u00e9m", 4, 7);
+                RPTagMod.LOGGER.info("RP Tag: {} renasceu DENTRO da arena do Julgamento",
+                        p.getName().getString());
+                return;
             }
-            return;
         }
-        // (5.30.0) morreu no reino do outro mod? volta pro reino (morrer não é fuga)
-        if (JuizoReino.entrar(p)) {
-            return;
+        if (dim.equals(RPTagMod.MODID + ":juizo")) {
+            ServerLevel lv = p.getServer().getLevel(CHAVE_JUIZO);
+            if (lv != null) {
+                BlockPos centro = new BlockPos(0, PISO + 1, 0);
+                construirEmVolta(lv, centro, 1);
+                BlockPos saida = SAIDA.get(p.getUUID());
+                if (saida == null) {
+                    saida = new BlockPos(snapCelula(220), PISO + 1, snapCelula(-180));
+                    SAIDA.put(p.getUUID(), saida);
+                }
+                NO_JUIZO.add(p.getUUID());
+                NA_SALA.remove(p.getUUID());
+                p.teleportTo(lv, centro.getX() + 0.5D, centro.getY() + 0.1D,
+                        centro.getZ() + 0.5D, 0.0F, 0.0F);
+                p.setHealth(p.getMaxHealth());
+                p.getFoodData().setFoodLevel(20);
+                // (5.36.0) aviso de TELA (o chat já é enxuto demais pra gastar linha com isso)
+                aviso(p, "\u00a74\u00a7lO JULGAMENTO\n\u00a77n\u00e3o devolve ningu\u00e9m", 4, 7);
+                RPTagMod.LOGGER.info("RP Tag: {} renasceu DENTRO do labirinto",
+                        p.getName().getString());
+                return;
+            }
         }
-        ServerLevel lv = p.getServer().getLevel(CHAVE_JUIZO);
-        if (lv != null) {
-            construirEmVolta(lv, new BlockPos(0, PISO + 1, 0), 1);
-            p.teleportTo(lv, 0.5D, PISO + 1.0D, 0.5D, 0.0F, 0.0F);
+        if (dim.equals(RPTagMod.MODID + ":juizo_reino")) {
+            if (JuizoReino.entrar(p)) {
+                RPTagMod.LOGGER.info("RP Tag: {} renasceu DENTRO do reino",
+                        p.getName().getString());
+                return;
+            }
+        }
+        // morreu em qualquer outro lugar: o respawn do jogo decide, e a gente só limpa o estado
+        if (!ehJuizo(p.level()) && !ehSala(p.level()) && !JuizoReino.eh(p.level())) {
+            dadosDeVolta(p);
         }
     }
 }
