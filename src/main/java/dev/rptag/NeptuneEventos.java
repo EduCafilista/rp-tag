@@ -2274,6 +2274,28 @@ public final class NeptuneEventos {
         // do dono) roda na tela dele E na de todo mundo por perto. Ele fica
         // 5,2 s sendo puxado pra baixo e só então é teleportado.
         EXILIOS.add(new Object[]{ agora + 5200L, alvo.getUUID(), 0, agora });
+        // (5.38.1) AQUI ESTAVA O BURACO DO PEDIDO: o /vazio exilar <jogador> (e o
+        // /terremoto engolir, que passa por este mesmo método) não mandava cena NENHUMA —
+        // o jogador só via partícula no mundo, e o dono reclamou: "só partícula fica feio,
+        // entrar tem que ser algo lindo, uma sombra negra, um buraco negro".
+        // O buraco negro agora dura o tempo todo da espera (5,2 s) e engole a tela
+        // exatamente quando a pessoa é teleportada; a chegada abre a íris (levarProExilio).
+        try {
+            PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
+                    NeptunePackets.Cena.CENA_BURACO_NEGRO, 1.0F, 5200, System.nanoTime()));
+            // quem está por perto também vê (mais curto, pra não atrapalhar a luta de ninguém)
+            if (alvo.level() instanceof ServerLevel nvPerto) {
+                for (ServerPlayer perto : nvPerto.players()) {
+                    if (perto != alvo && perto.position().distanceTo(alvo.position()) <= 24.0D) {
+                        PacketDistributor.sendToPlayer(perto, new NeptunePackets.Cena(
+                                NeptunePackets.Cena.CENA_BURACO_NEGRO, 1.0F, 1600,
+                                System.nanoTime()));
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: o buraco negro do exilio nao pode ser enviado", t);
+        }
         // (5.13.4) ENTRADA SILENCIOSA — pedido 53: nada de aviso na tela nem no chat.
         // Saíram o ScreenTextPayload de ENGOLIR (o dono: "tira esse aviso que tocou
         // quando entrei no void"), o SOM_VAZIO de notificação e o broadcast
@@ -2322,6 +2344,7 @@ public final class NeptuneEventos {
         // agora é geometria desenhada na tela do jogador (client/BuracoNegroFx).
         PacketDistributor.sendToPlayer(quem, new NeptunePackets.Cena(
                 NeptunePackets.Cena.CENA_BURACO_NEGRO, 1.0F, 2600, System.nanoTime()));
+        // (5.38.1) e a chegada abre a escuridão em círculo (a íris é mandada no levarProExilio)
         EXILIOS.add(new Object[]{ System.currentTimeMillis() + 2400L, quem.getUUID(), 0,
                 System.currentTimeMillis() });
         // (5.13.4) sem mensagem na entrada (pedido 53)

@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.38.0'
+VER = '5.38.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3022,9 +3022,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.38.0 no jar, no mod e no gradle',
-      "version = '5.38.0'" in rd('build.gradle')
-      and '5.38.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.38.1 no jar, no mod e no gradle',
+      "version = '5.38.1'" in rd('build.gradle')
+      and '5.38.1' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3260,8 +3260,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.38.0 (jar, mod e gradle)',
-      "version = '5.38.0'" in rd('build.gradle') and '5.38.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.38.1 (jar, mod e gradle)',
+      "version = '5.38.1'" in rd('build.gradle') and '5.38.1' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3319,8 +3319,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.38.0 (jar, mod e gradle)',
-      "version = '5.38.0'" in rd('build.gradle') and '5.38.0' in _rm)
+check('5.34.0: a versao subiu pra 5.38.1 (jar, mod e gradle)',
+      "version = '5.38.1'" in rd('build.gradle') and '5.38.1' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3342,8 +3342,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.38.0 (jar, mod e gradle)',
-      "version = '5.38.0'" in rd('build.gradle') and '5.38.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.38.1 (jar, mod e gradle)',
+      "version = '5.38.1'" in rd('build.gradle') and '5.38.1' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3991,6 +3991,20 @@ check('5.38.0 (95): o buraco negro tem protecao total (try/catch nao derruba o j
       'catch (Throwable t)' in _bn and 'buracoInicio = 0L;' in _bn)
 check('5.38.0 (95): a previa offline do efeito existe (arte/previa_buraco_negro.py)',
       os.path.exists('arte/previa_buraco_negro.py'))
+
+# ===================== PEDIDO 95-b — 5.38.1 (o buraco negro em TODOS os caminhos) =====================
+_ex9 = _ne9[_ne9.index('public static void exilar('):]
+_ex9 = _ex9[:_ex9.index('private static Vec3 chegadaNoExilio')]
+
+check('5.38.1: o /vazio exilar (e o /terremoto engolir) TAMBEM manda o buraco negro',
+      'Cena.CENA_BURACO_NEGRO' in _ex9)
+check('5.38.1: o buraco negro dura a espera inteira (5,2 s) e engole na hora do teleporte',
+      'CENA_BURACO_NEGRO, 1.0F, 5200' in _ex9)
+check('5.38.1: quem esta por perto ve o amigo sendo engolido (versao curta)',
+      'perto.position().distanceTo(alvo.position()) <= 24.0D' in _ex9
+      and 'CENA_BURACO_NEGRO, 1.0F, 1600' in _ex9)
+check('5.38.1: TODO caminho que leva alguem pro vazio manda o buraco negro',
+      _ne9.count('Cena.CENA_BURACO_NEGRO') >= 2)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
