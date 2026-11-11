@@ -157,6 +157,18 @@ public final class NeptuneFx {
                 voltaFim = agora + ms;
                 exilioInicio = 0L;
             }
+            case NeptunePackets.Cena.CENA_BURACO_NEGRO -> {
+                // (5.38.0) o dono: "entrar tem que ser algo lindo, uma sombra negra, um buraco
+                // negro" — nada de partícula: é o BuracoNegroFx (geometria) que desenha.
+                BuracoNegroFx.buraco(ms);
+                BuracoNegroFx.somEntrada();
+                exilioInicio = 0L;   // a cena antiga (discos + brasas) não entra junto
+            }
+            case NeptunePackets.Cena.CENA_IRIS -> {
+                BuracoNegroFx.iris(ms);
+                exilioInicio = 0L;
+                voltaInicio = 0L;
+            }
             case NeptunePackets.Cena.CENA_ESTOURO -> {
                 estouroInicio = agora;
                 estouroFim = agora + ms;
@@ -285,6 +297,7 @@ public final class NeptuneFx {
         }
         try {
             desenharExilioCena(g);
+            BuracoNegroFx.desenhar(g);   // (5.38.0) buraco negro de entrar no vazio
         } catch (Throwable t) {
             RPTagMod.LOGGER.error("RP Tag: cena do exilio desligada", t);
         }

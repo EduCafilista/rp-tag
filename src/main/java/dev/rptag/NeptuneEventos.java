@@ -2317,8 +2317,11 @@ public final class NeptuneEventos {
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: nao consegui salvar o lugar de volta (admin)", t);
         }
+        // (5.38.0) O BURACO NEGRO. O dono: "entrar tem que ser algo lindo, uma sombra negra, um
+        // buraco negro" — a cena antiga (vinheta + brasas + partícula em espiral) saiu daqui:
+        // agora é geometria desenhada na tela do jogador (client/BuracoNegroFx).
         PacketDistributor.sendToPlayer(quem, new NeptunePackets.Cena(
-                NeptunePackets.Cena.CENA_EXILIO, 1.0F, 2600, System.nanoTime()));
+                NeptunePackets.Cena.CENA_BURACO_NEGRO, 1.0F, 2600, System.nanoTime()));
         EXILIOS.add(new Object[]{ System.currentTimeMillis() + 2400L, quem.getUUID(), 0,
                 System.currentTimeMillis() });
         // (5.13.4) sem mensagem na entrada (pedido 53)
@@ -2375,89 +2378,33 @@ public final class NeptuneEventos {
     }
 
     /** (5.7.6) as partículas do exílio (k = 0..1). {@code voltando} inverte a direção. */
+    /**
+     * (5.38.0) <b>AS PARTICULAS DO EXILIO FICARAM DISCRETAS.</b>
+     *
+     * <p>O dono: <i>"so particula fica feio, entrar tem que ser algo lindo, uma sombra negra, um
+     * buraco negro"</i>. Antes daqui saia espiral de tinta, pedaco de chao voando, raio vermelho,
+     * cinza e um estouro de brasa em circulo — bonito de longe, sujo de perto.
+     *
+     * <p>Agora o espetaculo e a <b>sombra</b> (o buraco negro desenhado no cliente, em
+     * {@code client/BuracoNegroFx}); aqui no mundo fica so uma <b>coluna de fumaca preta</b>
+     * discreta, que quem esta por perto ve de longe sem poluir.
+     */
     private static void particulasExilio(ServerLevel nv, Vec3 pos, float k, boolean voltando) {
-        DustParticleOptions negro = new DustParticleOptions(new org.joml.Vector3f(0.03f, 0.0f, 0.05f), 2.2f);
-        DustParticleOptions vermelho = new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.08f, 0.05f), 1.4f);
-        // o chão de onde ele está sendo arrancado (poeira certa, SEM verde)
-        BlockState estado = estadoPoeira(nv.getBlockState(BlockPos.containing(pos.x, pos.y - 0.5, pos.z)));
-        double fase = System.currentTimeMillis() / 1000.0;
-        // 1) ESPIRAL DE ESCURIDÃO: engolindo (subindo) ou abrindo (descendo)
-        for (int i = 0; i < 12; i++) {
-            double a = (i / 12.0) * Math.PI * 2 + fase * (voltando ? -2.2 : 2.2);
-            double h = voltando ? (1.0 - k) * 2.2 : k * 2.2;
-            double r = 0.75 * (1.0 - 0.55 * h / 2.2);
-            double x = pos.x + Math.cos(a) * r;
-            double z = pos.z + Math.sin(a) * r;
-            double y = pos.y + 0.1 + h + (i % 3) * 0.12;
-            nv.sendParticles(negro, x, y, z, 1, 0.02, 0.02, 0.02, 0.0);
-            nv.sendParticles(ParticleTypes.SQUID_INK, x, y, z, 1, 0.03, 0.03, 0.03, 0.0);
-        }
-        // 2) SUCÇÃO: pedaços do chão voando PRA DENTRO do corpo (e o contrário na volta)
-        for (int i = 0; i < 5; i++) {
-            double a = Math.random() * Math.PI * 2;
-            double r = voltando ? (0.4 + Math.random() * 0.8) : (2.6 - 2.0 * k + Math.random() * 0.8);
-            double x = pos.x + Math.cos(a) * r;
-            double z = pos.z + Math.sin(a) * r;
-            double y = pos.y + 0.1 + Math.random() * 1.8;
-            nv.sendParticles(new net.minecraft.core.particles.BlockParticleOption(
-                            ParticleTypes.BLOCK, estado),
-                    x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
-        }
-        // 3) RAIOS vermelhos estalando (mais fortes no auge)
-        float auge = 1.0F - Math.abs(k - 0.5F) * 2.0F;
-        if (auge > 0.25F && Math.random() < 0.55) {
-            double ang = Math.random() * Math.PI * 2;
-            double alcance = 1.6 + Math.random() * 2.6;
-            for (int s2 = 1; s2 <= 6; s2++) {
-                double f = s2 / 6.0;
-                double x = pos.x + Math.cos(ang) * alcance * f;
-                double z = pos.z + Math.sin(ang) * alcance * f;
-                double y = pos.y + 0.35 + f * 1.4 + (Math.random() - 0.5) * 0.18;
-                nv.sendParticles(vermelho, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
+        try {
+            double altura = voltando ? (1.0D - k) * 2.4D : k * 2.4D;
+            for (int i = 0; i < 6; i++) {
+                double a = (i / 6.0) * Math.PI * 2 + k * (voltando ? -1.8 : 1.8);
+                double r = 0.55D * (1.0D - 0.4D * (altura / 2.4D));
+                nv.sendParticles(ParticleTypes.SQUID_INK,
+                        pos.x + Math.cos(a) * r, pos.y + 0.15D + altura,
+                        pos.z + Math.sin(a) * r, 1, 0.02D, 0.02D, 0.02D, 0.0D);
             }
-        }
-        // 4) CINZA subindo devagar
-        if (Math.random() < 0.5) {
-            nv.sendParticles(ParticleTypes.ASH, pos.x, pos.y + 0.2 + Math.random(), pos.z,
-                    2, 0.45, 0.45, 0.45, 0.01);
-        }
-
-        // ================= (5.7.7) O EXÍLIO FICOU MAIOR =================
-        // 5) BURACO NO CHÃO: um aro de escuridão que ABRE (cresce) e depois
-        //    fecha, como se o chão fosse um papel sendo rasgado por baixo.
-        float abrir = (float) Math.sin(Math.PI * Math.min(1.0, k * 1.1));
-        double raio = 0.35 + 1.75 * abrir;
-        int aro = 26;
-        for (int a = 0; a < aro; a++) {
-            double ang = (a / (double) aro) * Math.PI * 2 + fase * 0.6;
-            double x = pos.x + Math.cos(ang) * raio;
-            double z = pos.z + Math.sin(ang) * raio;
-            nv.sendParticles(ParticleTypes.SQUID_INK, x, pos.y + 0.06, z, 1, 0.01, 0.0, 0.01, 0.0);
-            nv.sendParticles(negro, x, pos.y + 0.05, z, 1, 0.0, 0.0, 0.0, 0.0);
-        }
-        // 6) TENTÁCULOS: 6 colunas tortas de escuridão em volta do corpo
-        if (Math.random() < 0.7) {
-            for (int t = 0; t < 6; t++) {
-                double ang = (t / 6.0) * Math.PI * 2 + fase * 0.4;
-                double rr = 0.75 + Math.random() * 0.25;
-                for (int j = 0; j < 4; j++) {
-                    double y = pos.y + 0.1 + j * 0.45 + Math.sin(fase * 2 + j + t) * 0.08;
-                    double xx = pos.x + Math.cos(ang) * rr + Math.sin(fase * 1.3 + j) * 0.10;
-                    double zz = pos.z + Math.sin(ang) * rr + Math.cos(fase * 1.1 + j) * 0.10;
-                    nv.sendParticles(t % 2 == 0 ? ParticleTypes.SQUID_INK : negro,
-                            xx, y, zz, 1, 0.01, 0.01, 0.01, 0.0);
-                }
+            if (Math.random() < 0.25D) {
+                nv.sendParticles(ParticleTypes.ASH, pos.x, pos.y + 0.3D + altura, pos.z,
+                        1, 0.25D, 0.25D, 0.25D, 0.005D);
             }
-        }
-        // 7) O ESTOURO FINAL: brasa vermelha em círculo (o vazio "cuspindo")
-        if (k > 0.82F) {
-            double r2 = 0.5 + 0.6 * Math.random();
-            for (int a = 0; a < 40; a++) {
-                double ang = (a / 40.0) * Math.PI * 2;
-                nv.sendParticles(vermelho, pos.x + Math.cos(ang) * r2, pos.y + 0.9 + Math.random() * 0.9,
-                        pos.z + Math.sin(ang) * r2, 1, 0.0, 0.0, 0.0, 0.0);
-            }
-            nv.sendParticles(ParticleTypes.EXPLOSION, pos.x, pos.y + 1.0, pos.z, 1, 0.0, 0.0, 0.0, 0.0);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: as particulas discretas do exilio falharam", t);
         }
     }
 
@@ -2505,6 +2452,13 @@ public final class NeptuneEventos {
             Vec3 chegada = chegadaNoExilio(destino);
             alvo.teleportTo(destino, chegada.x, chegada.y, chegada.z,
                     java.util.Set.of(), alvo.getYRot(), alvo.getXRot());
+            // (5.38.0) CHEGOU: a escuridão ABRE num círculo e mostra o vazio (a íris).
+            try {
+                PacketDistributor.sendToPlayer(alvo, new NeptunePackets.Cena(
+                        NeptunePackets.Cena.CENA_IRIS, 1.0F, 1500, System.nanoTime()));
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: a iris do vazio nao pode ser enviada", t);
+            }
             dizerOnde(alvo);          // (5.36.0) "onde eu parei?
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: exilio falhou (o jogo segue)", t);

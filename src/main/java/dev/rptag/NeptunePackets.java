@@ -162,6 +162,10 @@ public final class NeptunePackets {
         public static final int CENA_EXILIO = 3;
         /** (5.7.6) o jogador está VOLTANDO do exílio (escuridão se abrindo). */
         public static final int CENA_VOLTA = 4;
+        /** (5.38.0) ENTRAR NO VAZIO: o buraco negro (geometria na tela, sem partícula). */
+        public static final int CENA_BURACO_NEGRO = 5;
+        /** (5.38.0) A ESCURIDÃO ABRINDO depois do teleporte (a íris). */
+        public static final int CENA_IRIS = 6;
 
         public static final Type<Cena> TYPE = new Type<>(id("neptune_cena"));
         public static final StreamCodec<ByteBuf, Cena> STREAM_CODEC = StreamCodec.of(

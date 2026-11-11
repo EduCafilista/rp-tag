@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.37.3'
+VER = '5.38.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1743,8 +1743,13 @@ _glif = rd(C + '/GlifosSaidaFx.java')
 check('5.7.7: o vazio NAO fica cego em F1 (particula alta vai so pros outros)',
       'private static void auraPart(' in _ne2 and 'boolean alto = y > dono.getY() + 0.95;' in _ne2
       and 'if (o == dono && alto)' in _ne2)
-check('5.7.7: EXILIO maior (aro no chao + tentaculos + estouro final)',
-      'BURACO NO CH' in _ne2 and 'TENTÁCULOS' in _ne2 and 'O ESTOURO FINAL' in _ne2)
+# (5.38.0) O DONO MUDOU A REGRA: "so particula fica feio, entrar tem que ser algo lindo,
+# uma sombra negra, um buraco negro". A cena de particula pesada do exilio saiu do servidor e o
+# espetaculo virou GEOMETRIA no cliente (client/BuracoNegroFx). A prova agora cobra o contrario:
+# nada de tentaculo/estouro de brasa no codigo do servidor.
+check('5.38.0 (95): a cena antiga de particula do exilio saiu (agora e o buraco negro)',
+      'TENTÁCULOS' not in _ne2 and 'O ESTOURO FINAL' not in _ne2
+      and 'ParticleTypes.SQUID_INK' in _ne2)
 check('5.7.7: terremoto com FENDAS aleatorias (nao mais no pe do jogador)',
       'fendas devem acontecer aleatoriamente' in _ne2 and 'double dist = 2.0 + Math.random() * 10.0;' in _ne2)
 check('5.35.0 (92): tela do terremoto SEM blur e SEM preto chapado',
@@ -3017,9 +3022,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.37.3 no jar, no mod e no gradle',
-      "version = '5.37.3'" in rd('build.gradle')
-      and '5.37.3' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.38.0 no jar, no mod e no gradle',
+      "version = '5.38.0'" in rd('build.gradle')
+      and '5.38.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3255,8 +3260,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.37.3 (jar, mod e gradle)',
-      "version = '5.37.3'" in rd('build.gradle') and '5.37.3' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.38.0 (jar, mod e gradle)',
+      "version = '5.38.0'" in rd('build.gradle') and '5.38.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3314,8 +3319,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.37.3 (jar, mod e gradle)',
-      "version = '5.37.3'" in rd('build.gradle') and '5.37.3' in _rm)
+check('5.34.0: a versao subiu pra 5.38.0 (jar, mod e gradle)',
+      "version = '5.38.0'" in rd('build.gradle') and '5.38.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3337,8 +3342,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.37.3 (jar, mod e gradle)',
-      "version = '5.37.3'" in rd('build.gradle') and '5.37.3' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.38.0 (jar, mod e gradle)',
+      "version = '5.38.0'" in rd('build.gradle') and '5.38.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3953,6 +3958,39 @@ check('5.37.3: o display usa os numeros do VANILLA (o lugar onde os itens da mao
       and _base_f['display']['firstperson_righthand']['translation'] == [1.13, 3.2, 1.13])
 check('5.37.3: o /umbrella info existe (diagnostico do item na mao)',
       'literal("info")' in _uc)
+
+# ===================== PEDIDO 95 — 5.38.0 (BURACO NEGRO DO VAZIO) =====================
+_bn = rd(C + '/BuracoNegroFx.java')
+_np = rd(R + '/NeptunePackets.java')
+_ne9 = rd(R + '/NeptuneEventos.java')
+_nfx9 = rd(C + '/NeptuneFx.java')
+
+check('5.38.0 (95): entrar no vazio manda a CENA do buraco negro (nao a cena antiga)',
+      'CENA_BURACO_NEGRO' in _np and 'Cena.CENA_BURACO_NEGRO' in _ne9
+      and 'Cena.CENA_EXILIO, 1.0F, 2600' not in _ne9)
+check('5.38.0 (95): o cliente desenha o buraco negro na tela',
+      'BuracoNegroFx.desenhar(g)' in _nfx9 and 'public static void desenhar(GuiGraphics g)' in _bn)
+check('5.38.0 (95): e de GEOMETRIA (lente, disco, horizonte, anel de fotons), nao de particula',
+      all(k in _bn for k in ('desenharDisco(', 'desenharEspirais(', 'b.anel(', 'b.vinheta('))
+      and 'ParticleTypes' not in _bn)
+check('5.38.0 (95): o disco de acrecao tem DOPPLER (um lado mais quente que o outro)',
+      'doppler' in _bn and 'Math.max(0.0F, AvisoFxUtil.cos(a0 - 0.7F))' in _bn)
+check('5.38.0 (95): o disco e faixa cheia (7 aneis concentricos), nao arame',
+      'for (int anelFino = 0; anelFino < 7; anelFino++)' in _bn)
+check('5.38.0 (95): o buraco ENGOLIR a tela no fim (e nao fica preto pra sempre)',
+      'engolir = AvisoFxUtil.ss(0.70F, 1.0F, u)' in _bn and 'b.rect(0, 0, w, h' in _bn)
+check('5.38.0 (95): chegando no vazio a escuridao ABRE (iris)',
+      'CENA_IRIS' in _np and 'BuracoNegroFx.iris(ms)' in _nfx9
+      and 'Cena.CENA_IRIS' in _ne9 and 'desenharIris(' in _bn)
+check('5.38.0 (95): a cena tem som proprio (portal do end + batida + amethyst)',
+      'END_PORTAL_SPAWN' in _bn and 'WARDEN_HEARTBEAT' in _bn)
+check('5.38.0 (95): as particulas do exilio ficaram DISCRETAS (so fumaca preta)',
+      'SO PARTICULA FICA FEIO' in _ne9.upper().replace('SÓ', 'SO')
+      or 'particula fica feio' in _ne9)
+check('5.38.0 (95): o buraco negro tem protecao total (try/catch nao derruba o jogo)',
+      'catch (Throwable t)' in _bn and 'buracoInicio = 0L;' in _bn)
+check('5.38.0 (95): a previa offline do efeito existe (arte/previa_buraco_negro.py)',
+      os.path.exists('arte/previa_buraco_negro.py'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
