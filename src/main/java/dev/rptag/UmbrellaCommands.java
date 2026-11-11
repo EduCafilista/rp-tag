@@ -49,6 +49,23 @@ public final class UmbrellaCommands {
     @SubscribeEvent
     public static void aoRegistrarComandos(RegisterCommandsEvent evento) {
         evento.getDispatcher().register(Commands.literal("umbrella")
+                .then(Commands.literal("info").executes(ctx -> {
+                    // (5.37.3) diagnóstico: o que o item na mão realmente carrega
+                    ServerPlayer quem = ctx.getSource().getPlayerOrException();
+                    ItemStack naMao = quem.getMainHandItem();
+                    boolean ehUmbrella = naMao.getItem() instanceof VarinhaSombraItem;
+                    String cmd = String.valueOf(naMao.get(DataComponents.CUSTOM_MODEL_DATA));
+                    String id = String.valueOf(net.minecraft.core.registries.BuiltInRegistries.ITEM
+                            .getKey(naMao.getItem()));
+                    String msg = "\u00a78item na mão: \u00a7f" + id
+                            + "\u00a78 · é umbrella? \u00a7f" + ehUmbrella
+                            + "\u00a78 · custom_model_data: \u00a7f" + cmd
+                            + "\u00a78 · aberto? \u00a7f" + VampiroSistema.guardaChuvaAberto(quem);
+                    quem.displayClientMessage(Component.literal(msg), true);
+                    ctx.getSource().sendSuccess(() -> Component.literal(msg), false);
+                    RPTagMod.LOGGER.info("RP Tag: /umbrella info -> {}", msg.replace("\u00a7", "§"));
+                    return Command.SINGLE_SUCCESS;
+                }))
                 .then(Commands.literal("cores").executes(ctx -> {
                     StringBuilder linhas = new StringBuilder("\u00a78cores do umbrella: ");
                     for (int i = 0; i < CORES.length; i++) {

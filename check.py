@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.37.2'
+VER = '5.37.3'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3017,9 +3017,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.37.2 no jar, no mod e no gradle',
-      "version = '5.37.2'" in rd('build.gradle')
-      and '5.37.2' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.37.3 no jar, no mod e no gradle',
+      "version = '5.37.3'" in rd('build.gradle')
+      and '5.37.3' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3255,8 +3255,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.37.2 (jar, mod e gradle)',
-      "version = '5.37.2'" in rd('build.gradle') and '5.37.2' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.37.3 (jar, mod e gradle)',
+      "version = '5.37.3'" in rd('build.gradle') and '5.37.3' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3314,8 +3314,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.37.2 (jar, mod e gradle)',
-      "version = '5.37.2'" in rd('build.gradle') and '5.37.2' in _rm)
+check('5.34.0: a versao subiu pra 5.37.3 (jar, mod e gradle)',
+      "version = '5.37.3'" in rd('build.gradle') and '5.37.3' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3337,8 +3337,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.37.2 (jar, mod e gradle)',
-      "version = '5.37.2'" in rd('build.gradle') and '5.37.2' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.37.3 (jar, mod e gradle)',
+      "version = '5.37.3'" in rd('build.gradle') and '5.37.3' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3930,6 +3930,29 @@ check('5.37.2: nenhuma classe com @EventBusSubscriber ficou SEM @SubscribeEvent 
       not _orelhas)
 if _orelhas:
     print('       sem ouvinte:', _orelhas)
+
+# ===================== PEDIDO 94-b — 5.37.3 (o modelo aparecer na mao) =====================
+_base_f = _json.loads(rd(A + '/models/item/umbrella_fechado_base.json'))
+_base_a = _json.loads(rd(A + '/models/item/umbrella_aberto_base.json'))
+_item_m = _json.loads(rd(A + '/models/item/umbrella_sombra.json'))
+
+check('5.37.3: o modelo 3D usa o parent CANONICO de cubos (block/block), nao item/generated',
+      _base_f['parent'] == 'minecraft:block/block' and _base_a['parent'] == 'minecraft:block/block')
+check('5.37.3: as faces apontam pra #layer0 (o nome que o vanilla todo usa)',
+      all(f['texture'] == '#layer0'
+          for e in _base_f['elements'] for f in e['faces'].values()))
+check('5.37.3: a BASE do item e um icone 2D (item/generated) — nunca mais "nada na mao"',
+      _item_m['parent'] == 'minecraft:item/generated'
+      and _item_m['textures']['layer0'] == 'rptag:item/umbrella_icon')
+check('5.37.3: o icone 2D existe nos 8 tons',
+      all(os.path.exists(A + '/textures/item/umbrella_icon_%d.png' % i) for i in range(8)))
+check('5.37.3: o display usa os numeros do VANILLA (o lugar onde os itens da mao aparecem)',
+      _base_f['display']['thirdperson_righthand'] == {'rotation': [0, -90, 55],
+                                                     'translation': [0, 4, 0.5],
+                                                     'scale': [0.85, 0.85, 0.85]}
+      and _base_f['display']['firstperson_righthand']['translation'] == [1.13, 3.2, 1.13])
+check('5.37.3: o /umbrella info existe (diagnostico do item na mao)',
+      'literal("info")' in _uc)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

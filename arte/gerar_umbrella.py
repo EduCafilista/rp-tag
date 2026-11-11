@@ -139,10 +139,43 @@ def sprite_hud(claro, escuro, detalhe):
     return img
 
 
+
+# ------------------------------------------------------------------ ícone 2D (rede de segurança)
+def icone_item(claro, escuro, detalhe):
+    """Ícone 16x16 do guarda-chuva ABERTO, usado como modelo BASE do item.
+
+    (5.37.3) O dono: "nao aparece nada na minha mao... nao tem modelo nem nada". O modelo 3D
+    ficou nas variantes; a BASE é este ícone (item/generated), que é o caminho mais simples do
+    Minecraft e SEMPRE aparece. Se algo do 3D falhar, ainda dá pra ver o guarda-chuva.
+    """
+    img = novo(16, 16)
+    cxm = 7.5
+    for x in range(16):
+        t = (x - cxm) / 7.5
+        y_up = int(2 + 3.4 * t * t)
+        y_low = y_up + 3 + int(1.4 * abs(t))
+        for y in range(y_up, min(y_low, 15) + 1):
+            cor = zera(claro, 1.2) if (y - y_up) <= 1 else (claro if (y - y_up) <= 2 else escuro)
+            px(img, x, y, cor)
+        px(img, x, y_low + 1, escuro if x % 4 else claro)
+    for x in (1, 4, 8, 11, 14):
+        for y in range(2, 8):
+            if img.getpixel((x, y))[3]:
+                px(img, x, y, zera(escuro, 0.75))
+    for y in range(6, 14):
+        px(img, 7, y, (96, 66, 42))
+        px(img, 8, y, (128, 92, 60))
+    for i in range(3):
+        px(img, 7 - i, 14 + (i // 2), (96, 66, 42))
+    px(img, 7, 0, detalhe)
+    px(img, 8, 1, detalhe)
+    return img
+
+
 # ------------------------------------------------------------------ geometria do item
 def cubo(x0, y0, z0, x1, y1, z1, uv, rot=None):
     el = {"from": [x0, y0, z0], "to": [x1, y1, z1],
-          "faces": {f: {"texture": "#0", "uv": list(uv)}
+          "faces": {f: {"texture": "#layer0", "uv": list(uv)}
                     for f in ("north", "south", "east", "west", "up", "down")}}
     if rot:
         el["rotation"] = rot
@@ -220,10 +253,11 @@ def modelo_aberto():
 
 
 DISPLAY = {
-    "thirdperson_righthand": {"rotation": [0, -90, 22], "translation": [1.0, 2.6, 1.0], "scale": [0.58, 0.58, 0.58]},
-    "thirdperson_lefthand": {"rotation": [0, 90, 22], "translation": [1.0, 2.6, 1.0], "scale": [0.58, 0.58, 0.58]},
-    "firstperson_righthand": {"rotation": [0, -82, 12], "translation": [1.9, 2.2, 1.4], "scale": [0.62, 0.62, 0.62]},
-    "firstperson_lefthand": {"rotation": [0, 82, 12], "translation": [1.9, 2.2, 1.4], "scale": [0.62, 0.62, 0.62]},
+    # (5.37.3) números copiados do item/handheld do vanilla: é onde os itens NA MÃO aparecem.
+    "thirdperson_righthand": {"rotation": [0, -90, 55], "translation": [0, 4, 0.5], "scale": [0.85, 0.85, 0.85]},
+    "thirdperson_lefthand": {"rotation": [0, 90, 55], "translation": [0, 4, 0.5], "scale": [0.85, 0.85, 0.85]},
+    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.68, 0.68, 0.68]},
+    "firstperson_lefthand": {"rotation": [0, 90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.68, 0.68, 0.68]},
     "gui": {"rotation": [18, 224, 0], "translation": [0, 1.2, 0], "scale": [0.74, 0.74, 0.74]},
     "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.4, 0.4, 0.4]},
     "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [0.72, 0.72, 0.72]},
@@ -252,19 +286,28 @@ def main():
             os.path.join(tex_ent, "dome_%d.png" % i))
         sprite_hud(claro, escuro, detalhe).save(
             os.path.join(tex_gui, "umbrella_hud_%d.png" % i))
+        icone_item(claro, escuro, detalhe).save(
+            os.path.join(tex_item, "umbrella_icon_%d.png" % i))
 
     # 2) geometrias base (uma fechada, uma aberta) — a cor entra pela textura
     for estado, elementos in (("fechado", modelo_fechado()), ("aberto", modelo_aberto())):
+        # (5.37.3) parent "block/block": é o caminho canônico do vanilla pra modelo COM CUBOS
+        # (todo item 3D do jogo — tocha, placa, cerca — vem daí). Antes era "item/handheld",
+        # que herda de item/generated -> builtin/generated (o gerador de quad 2D) e podia
+        # simplesmente ignorar os elementos.
         escrever(os.path.join(mod_item, "umbrella_%s_base.json" % estado), {
-            "parent": "minecraft:item/handheld",
-            "textures": {"0": "rptag:item/umbrella_tex_0"},
+            "parent": "minecraft:block/block",
+            "ambientocclusion": False,
+            "textures": {"layer0": "rptag:item/umbrella_tex_0",
+                         "particle": "rptag:item/umbrella_tex_0"},
             "elements": elementos,
             "display": DISPLAY,
         })
         for i in range(len(CORES)):
             escrever(os.path.join(mod_item, "umbrella_%s_%d.json" % (estado, i)), {
                 "parent": "rptag:item/umbrella_%s_base" % estado,
-                "textures": {"0": "rptag:item/umbrella_tex_%d" % i},
+                "textures": {"layer0": "rptag:item/umbrella_tex_%d" % i,
+                             "particle": "rptag:item/umbrella_tex_%d" % i},
             })
 
     # 3) o item: fechado por padrão, e cada cor x aberto/fechado
@@ -276,8 +319,8 @@ def main():
         overrides.append({"predicate": {"custom_model_data": i, "using": 1},
                           "model": "rptag:item/umbrella_aberto_%d" % i})
     escrever(os.path.join(mod_item, "umbrella_sombra.json"), {
-        "parent": "rptag:item/umbrella_fechado_base",
-        "textures": {"0": "rptag:item/umbrella_tex_0"},
+        "parent": "minecraft:item/generated",          # <- a BASE sempre desenha (ícone 2D)
+        "textures": {"layer0": "rptag:item/umbrella_icon"},
         "overrides": overrides,
     })
 

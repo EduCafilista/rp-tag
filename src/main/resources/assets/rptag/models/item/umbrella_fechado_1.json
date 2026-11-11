@@ -1,6 +1,7 @@
 {
   "parent": "rptag:item/umbrella_fechado_base",
   "textures": {
-    "0": "rptag:item/umbrella_tex_1"
+    "layer0": "rptag:item/umbrella_tex_1",
+    "particle": "rptag:item/umbrella_tex_1"
   }
 }
