@@ -47,7 +47,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.36.0";
+    public static final String VERSION = "5.37.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -252,6 +252,16 @@ public final class RPTagMod {
             () -> new AmuletoEclipseItem(new net.minecraft.world.item.Item.Properties()
                     .stacksTo(1)
                     .rarity(net.minecraft.world.item.Rarity.RARE)));
+
+    /**
+     * (5.37.0) UMBRELLA DE SOMBRA — o guarda-chuva 3D do vampiro. Só protege do sol com a
+     * cúpula ABERTA (clique direito); a arte tem 8 cores (ver {@code arte/gerar_umbrella.py}).
+     */
+    public static final net.neoforged.neoforge.registries.DeferredHolder<Item, VarinhaSombraItem>
+            UMBRELLA = ITEMS.register("umbrella_sombra",
+            () -> new VarinhaSombraItem(new Item.Properties()
+                    .stacksTo(1)
+                    .rarity(net.minecraft.world.item.Rarity.UNCOMMON)));
 
     public RPTagMod(IEventBus modEventBus, ModContainer modContainer) {
         // (5.25.0) o ATRIBUTO do vampiro (rptag:vampiro) — registro oficial

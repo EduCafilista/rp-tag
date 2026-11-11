@@ -105,6 +105,10 @@ public final class ClientGuiLayers {
         // (5.17.0) a BARRA que fica sempre na tela e a AXION no canto inferior direito
         seguro("barra_hud_fx", () -> BarraHudFx.registrar(event));
         AxionHud.registrar(event);
+        // (5.37.0) O UMBRELLA: cúpula + estado (ABERTO/fechado) e os segundos que faltam
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "umbrella_hud"),
+                (g, delta) -> UmbrellaHud.desenhar(g));
         // (5.12.0) 23 = ENGOLIR (o terremoto levando a pessoa — protótipo do dono)
         seguro("engolir_fx", () -> EngolirFx.registrar(event));
         // (5.7.2) SOMBRA DA MORTE: a escuridão saindo do corpo de quem morre

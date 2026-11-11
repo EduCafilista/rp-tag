@@ -1,0 +1,6 @@
+{
+  "parent": "rptag:item/umbrella_fechado_base",
+  "textures": {
+    "0": "rptag:item/umbrella_tex_5"
+  }
+}

@@ -105,8 +105,24 @@ public final class VampiroSistema {
         if (p.hasEffect(RPEffects.SOMBRA)) {
             return true;
         }
-        return p.getMainHandItem().is(RPTagMod.AMULETO_ECLIPSE.get())
-                || p.getOffhandItem().is(RPTagMod.AMULETO_ECLIPSE.get());
+        if (p.getMainHandItem().is(RPTagMod.AMULETO_ECLIPSE.get())
+                || p.getOffhandItem().is(RPTagMod.AMULETO_ECLIPSE.get())) {
+            return true;
+        }
+        // (5.37.0) O UMBRELLA DE SOMBRA. O dono decidiu: "só quando ABERTO". Aberto = o item
+        // está EM USO (segurando o botão direito). Fechado na mão não protege nada.
+        return guardaChuvaAberto(p);
+    }
+
+    /**
+     * (5.37.0) <b>O GUARDA-CHUVA ESTÁ ABERTO?</b> — pedido do dono: <i>"tenho que fazer um
+     * umbrella 3d, para os vampiros nao tomar dano do sol"</i>, e ele escolheu que a proteção
+     * vale <b>só com a cúpula aberta</b>.
+     *
+     * <p>Serve também pro cliente (ícone/HUD) e pra checagem rápida em outros lugares.
+     */
+    public static boolean guardaChuvaAberto(ServerPlayer p) {
+        return p.isUsingItem() && p.getUseItem().getItem() instanceof VarinhaSombraItem;
     }
 
     // ------------------------------------------------------------------ o sol

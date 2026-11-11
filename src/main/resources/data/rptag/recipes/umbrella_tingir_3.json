@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    {
+      "item": "rptag:umbrella_sombra"
+    },
+    {
+      "item": "minecraft:gunpowder"
+    }
+  ],
+  "result": {
+    "id": "rptag:umbrella_sombra",
+    "count": 1,
+    "components": {
+      "minecraft:custom_model_data": 3
+    }
+  }
+}
