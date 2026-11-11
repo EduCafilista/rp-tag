@@ -2698,8 +2698,8 @@ _se2 = rd(R + '/ServerEvents.java')
 
 # ---- peso
 check('5.17.0: o jar emagreceu (os quadros de vídeo saíram de 1280x720)',
-      os.path.exists('build/libs/rptag-5.36.0.jar')
-      and os.path.getsize('build/libs/rptag-5.36.0.jar') < 45_000_000)
+      os.path.exists('build/libs/rptag-%s.jar' % VER)
+      and os.path.getsize('build/libs/rptag-%s.jar' % VER) < 45_000_000)
 check('5.17.0: o player de vídeo aceita o tamanho do ARQUIVO (não exige mais 1280x720)',
       'int w = cor.getWidth(), h = cor.getHeight();' in rd(C + '/VideoFrameLoader.java')
       and 'nao e 1280x720' not in rd(C + '/VideoFrameLoader.java'))
@@ -3017,9 +3017,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.36.0 no jar, no mod e no gradle',
-      "version = '5.36.0'" in rd('build.gradle')
-      and '5.36.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.37.0 no jar, no mod e no gradle',
+      "version = '5.37.0'" in rd('build.gradle')
+      and '5.37.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3255,8 +3255,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.36.0 (jar, mod e gradle)',
-      "version = '5.36.0'" in rd('build.gradle') and '5.36.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.37.0 (jar, mod e gradle)',
+      "version = '5.37.0'" in rd('build.gradle') and '5.37.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3314,8 +3314,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.36.0 (jar, mod e gradle)',
-      "version = '5.36.0'" in rd('build.gradle') and '5.36.0' in _rm)
+check('5.34.0: a versao subiu pra 5.37.0 (jar, mod e gradle)',
+      "version = '5.37.0'" in rd('build.gradle') and '5.37.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3337,8 +3337,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.36.0 (jar, mod e gradle)',
-      "version = '5.36.0'" in rd('build.gradle') and '5.36.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.37.0 (jar, mod e gradle)',
+      "version = '5.37.0'" in rd('build.gradle') and '5.37.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3843,6 +3843,75 @@ check('5.36.0 (93): o HUD do poder armado e uma CAMADA de tela (aparece com a ro
       '"poder_armado"' in _gl7 and 'PoderLeque.desenharHud(g)' in _gl7)
 check('5.36.0 (93): morto no Juizo o jogador NAO e jogado pro overworld (sem teleporte pra casa)',
       'overworld' not in _arn7.lower())
+
+# ===================== PEDIDO 94 — 5.37.0 (UMBRELLA 3D) =====================
+_vs = rd(R + '/VampiroSistema.java')
+_vi = rd(R + '/VarinhaSombraItem.java')
+_mod7 = rd(R + '/RPTagMod.java')
+_uc = rd(R + '/UmbrellaCommands.java')
+_cu = rd(C + '/CamadaUmbrella.java')
+_uh = rd(C + '/UmbrellaHud.java')
+_gl8 = rd(C + '/ClientGuiLayers.java')
+
+check('5.37.0 (94): o UMBRELLA existe e e um item de verdade',
+      'ITEMS.register("umbrella_sombra"' in _mod7 and 'class VarinhaSombraItem extends Item' in _vi)
+check('5.37.0 (94): SO ABERTO protege do sol (pedido do dono: "só quando ABERTO")',
+      'guardaChuvaAberto(p)' in _vs
+      and 'p.isUsingItem() && p.getUseItem().getItem() instanceof VarinhaSombraItem' in _vs)
+check('5.37.0 (94): o guarda-chuva fechado NAO protege (nao e o mesmo que o amuleto)',
+      'p.getMainHandItem().is(RPTagMod.AMULETO_ECLIPSE.get())\n' in _vs
+      and 'return guardaChuvaAberto(p);' in _vs
+      and 'getMainHandItem().is(RPTagMod.UMBRELLA' not in _vs)
+check('5.37.0 (94): abrir e segurar o botao direito (startUsingItem) por 65 s',
+      'p.startUsingItem(mao)' in _vi and 'ABERTURA_SEGUNDOS = 65' in _vi)
+check('5.37.0 (94): agachado fecha na hora e o item tem recarga',
+      'p.isShiftKeyDown()' in _vi and 'RECARGA_SEGUNDOS' in _vi and 'stopUsingItem()' in _vi)
+check('5.37.0 (94): sao 8 CORES (o dono: "faz de varias cores")',
+      'CORES = {' in _uc and all(c in _uc for c in
+      ('sangue', 'noite', 'juizo', 'sombra', 'veneno', 'luar', 'ouro', 'rosa')))
+check('5.37.0 (94): cada cor tem textura de item, cupula e sprite de HUD',
+      all(os.path.exists(A + '/textures/item/umbrella_tex_%d.png' % i) for i in range(8))
+      and all(os.path.exists(A + '/textures/entity/umbrella/dome_%d.png' % i) for i in range(8))
+      and all(os.path.exists(A + '/textures/gui/umbrella_hud_%d.png' % i) for i in range(8)))
+check('5.37.0 (94): o modelo tem GEOMETRIA 3D de verdade (cubos, fechado e aberto)',
+      '"elements"' in rd(A + '/models/item/umbrella_fechado_base.json')
+      and '"elements"' in rd(A + '/models/item/umbrella_aberto_base.json'))
+_ab = rd(A + '/models/item/umbrella_aberto_base.json')
+check('5.37.0 (94): a cupula aberta e em DEGRAUS (3 aneis) com varetas penduradas',
+      _ab.count('"rescale": false') >= 6
+      and sum(1 for e in _json.loads(_ab)['elements']
+              if e['faces']['north']['uv'] == [0, 8, 4, 16]) >= 8)
+_fc = rd(A + '/models/item/umbrella_fechado_base.json')
+check('5.37.0 (94): fechado tem o pano dobrado em degraus (4 mangas) e a haste',
+      _fc.count('"axis": "y"') >= 8 and 'R_TECIDO' not in _fc and '"7.5, 4.2"' in _fc.replace(' ', '').replace('[', '').replace(']', '') or '4.2' in _fc)
+check('5.37.0 (94): o item troca de modelo por COR e por ABERTO/FECHADO',
+      rd(A + '/models/item/umbrella_sombra.json').count('"custom_model_data"') == 16
+      and rd(A + '/models/item/umbrella_sombra.json').count('"using"') == 16)
+check('5.37.0 (94): as 8 cores se craftam (e da pra tingir depois)',
+      len([f for f in os.listdir('src/main/resources/data/rptag/recipes')
+           if f.startswith('umbrella_')]) == 16)
+check('5.37.0 (94): a CUPULA aparece sobre a cabeca quando aberto (pedido: "aberto sobre a cabeca")',
+      'RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>>' in _cu
+      and 'entitySolid(tex)' in _cu and 'getParentModel().head.translateAndRotate(pose)' in _cu)
+check('5.37.0 (94): a cupula e redonda (16 setores com rotacao em Y)',
+      'for (int setor = 0; setor < 16; setor++)' in _cu and 'PartPose.rotation(0.0F, (float) ang, 0.0F)' in _cu)
+check('5.37.0 (94): a camada da cabeca e registrada nas duas peles (classica e slim)',
+      'EntityRenderersEvent.AddLayers' in _cu and 'getSkins()' in _cu and 'PlayerRenderer pr' in _cu)
+check('5.37.0 (94): o HUD mostra ABERTO/fechado, a cor e os segundos que faltam',
+      'UmbrellaHud.desenhar(g)' in _gl8 and '"umbrella_hud"' in _gl8
+      and 'ABERTO' in _uh and 'getUseItemRemainingTicks()' in _uh)
+check('5.37.0 (94): /umbrella dar e /umbrella cores existem',
+      'Commands.literal("umbrella")' in _uc and 'literal("cores")' in _uc
+      and 'literal("dar")' in _uc and 'custom_model_data' in _uc.lower().replace('minecraft:', ''))
+check('5.37.0 (94): o nome aparece nos dois idiomas',
+      'item.rptag.umbrella_sombra' in rd(A + '/lang/pt_br.json')
+      and 'item.rptag.umbrella_sombra' in rd(A + '/lang/en_us.json'))
+check('5.37.0 (94): a arte do umbrella e GERADA por script (da pra refazer)',
+      os.path.exists('arte/gerar_umbrella.py') and os.path.exists('arte/render_umbrella_offline.py'))
+check('5.37.0 (94): o eclipse continua funcionando (o amuleto nao foi tocado)',
+      'RPEffects.SOMBRA' in rd(R + '/AmuletoEclipseItem.java'))
+check('5.37.0 (94): nada de arquivo de PROVA dentro do mod',
+      not any('_Prova' in f for f in os.listdir(R)))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
