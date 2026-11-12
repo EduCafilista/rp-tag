@@ -1,170 +1,93 @@
-# RP Tag 5.16.0 — AS OITO CARTAS DE TARÔ (Eremita, Estrela, Julgamento, Lua, Mago, Morte, Sol, Torre)
+# RP Tag 5.40.0 — O UMBRELLA NA MÃO (tamanho certo, virado pra cima e com a versão ABERTA)
 
 **O arquivo para baixar:**
-[rptag-5.16.0.jar](https://github.com/EduCafilista/rp-tag/releases/download/v5.16.0/rptag-5.16.0.jar)
-· 69.481.747 bytes · `md5 9f402f0807ecfd557937cafaef10a100`
-· `sha256 19f2e0fc83edba7f1969e5805161a19bd304fbc84f376c193c7b0ac479ff1773`
+[rptag-5.40.0.jar](https://github.com/EduCafilista/rp-tag/releases/download/v5.40.0/rptag-5.40.0.jar)
+· 36.884.475 bytes · `md5 73117e47dc0cefe9b5cd0e5fc736f9d4`
+· `sha256 0962c26f8c978014956f07a5d79b64db4692612c456e5d3595be0d277baec4d1`
 
-**Página da release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.16.0
+**Página da release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.40.0
 
-> **Troque o jar no servidor E no cliente.** O desenho é do cliente; o comando é do servidor.
+> **Tire o jar antigo da pasta `mods`.** Um jar do mod por vez — se os dois ficarem lá, o jogo
+> pode carregar o velho. Troque no servidor **e** no cliente (o modelo e a cúpula são do cliente;
+> a proteção do sol é do servidor).
+
+---
+
+## O que você reclamou, e o que era
+
+> *"o umbrella tá muito pequena, não existe a versão dele aberto, está todo bugado ainda"*
+
+Quatro defeitos, todos no mesmo lugar. Nenhum era falta de arte:
+
+**1. A versão aberta nunca era escolhida.** O modelo troca do guarda-chuva fechado pro aberto
+por um "predicado" de estado — e o predicado que eu tinha usado (`using`) **não era registrado
+em lugar nenhum**. Predicado sem registro vale **0 pra sempre**: os 8 modelos abertos estavam
+dentro do jar, com a arte certa, e o jogo nunca perguntava por eles. Era literalmente isso o
+"não existe a versão aberto". Agora existe uma classe que registra o predicado `rptag:aberto`
+no cliente e responde 1 quando você está segurando o botão direito.
+
+**2. Muito pequena.** Na 5.39.0 eu tinha tirado o `display` do modelo e deixado ele herdar o
+tamanho do `block/block` do Minecraft (escala 0,375) — daí o guarda-chuva minúsculo do seu
+print. Voltou o `display` do `item/handheld` (o mesmo padrão de espada, picareta, haste), com
+escala maior.
+
+**3. A cúpula sobre a cabeça estava 8,9 BLOCOS abaixo de você.** Eu escrevi `-8,9` no código
+achando que era pixel, mas ali a conta já é em **blocos**. Ela era desenhada enterrada no chão,
+embaixo do jogador. Agora a altura é `0,72` bloco — logo acima do chapéu.
+
+**4. De quebra, dois problemas que eu achei revisando:**
+- **As duas geometrias estavam de cabeça pra baixo**: o gancho do cabo em cima e a ponteira
+  embaixo. Agora o cabo tem gancho embaixo, o pano sobe e a ponteira fica no alto (padrão de
+  item na mão do Minecraft).
+- **Os anéis usavam rotação de 90°/135°** — ângulo que o Minecraft **recusa** em modelo de
+  item. Se tivesse ido assim, o guarda-chuva voltaria a aparecer rosa/preto. Agora são discos
+  de 5 placas cruzadas, só com ângulos de −45° a 45°.
 
 ---
 
 ## Como usar
 
 ```
-/rp admin avisar @a eremita    Um grande perigo se aproxima.
-/rp admin avisar @a estrela    ...
-/rp admin avisar @a julgamento ...
-/rp admin avisar @a lua        ...
-/rp admin avisar @a mago       ...
-/rp admin avisar @a morte2     ...
-/rp admin avisar @a sol        ...
-/rp admin avisar @a torre      ...
-/rp admin avisar @a tolo       ...
+/umbrella dar <jogador> <cor>     dá o guarda-chuva na cor pedida (1 a 8)
+/umbrella dar <jogador>           dá na cor "sangue"
+/umbrella info                    mostra a cor, se está aberto e quantos segundos faltam
 ```
 
-- **`tolo`** é a **mesma carta do Louco**: você mandou o arquivo do TOLO igualzinho ao do Louco
-  (comparei byte a byte, é o mesmo programa), então ele abre o aviso do Louco (estilo 25). Se um
-  dia você mudar a carta do Tolo, é só mandar o arquivo novo que eu separo.
-- **`morte2`** é a **carta A MORTE** (XIII). O nome `morte` já era o aviso de morte antigo do mod
-  (estilo 4) e eu não troquei o que já existia. Também aceita **`ceifador`** e **`morte_carta`**.
-- Todos aceitam **texto livre** (aparece digitado no meio do aviso) e qualquer seletor (`@a`, nome,
-  lista).
-- **Para testar sozinho**, sem passar pelo servidor: `/rpfx teste eremita`, `/rpfx teste torre`, etc.
-- Nos avisos por zona: `/lorezone aviso <id> eremita <segundos> <texto>` (os oito estão na lista).
+**Na mão:** clique direito e **segure** — em 1 segundo o guarda-chuva abre (na mão e sobre a
+cabeça) e o sol para de te queimar. Dura até 65 segundos; soltar o botão ou agachar fecha na
+hora, com 5 segundos de recarga.
+
+> **Só aberto protege.** Fechado, ele é só um guarda-chuva bonito na sua mão — testado no
+> servidor: fechado `protegido=false`, aberto `protegido=true`.
+
+**As 8 cores:** sangue, noite, juízo, sombra, veneno, luar, ouro e rosa. Cada uma se crafta
+(3 fios + 3 lã + 1 graveto) e dá pra tingir o que você já tem com o corante certo.
 
 ---
 
-## O que entrou
+## O que garante que não volta a quebrar
 
-Cada arquivo que você mandou é o **mesmo programa** (um canvas de 800×600, uma "carta" que sobe,
-vira e mostra o título AVISO e três linhas). Em vez de copiar o desenho "por fora", eu portei o
-**motor do protótipo** para dentro do mod:
+O `check.py` agora tem **1288 provas** e falha o build antes de eu publicar se:
 
-- um **canvas 800×600** igual ao seu (centro em 400,255), escalado para a tela do jogador;
-- a **pilha de transformação** (`translate` / `rotate` / `scale` / `save` / `restore`) e o
-  **alfa global**, como no JavaFX;
-- as **primitivas do `GraphicsContext`**: `fillRect`, `fillOval`, `strokeOval`, `fillPolygon`,
-  `strokePolyline`, `strokeLine`, `fillArc`, `quadraticCurveTo`, `bezierCurveTo`, estrela de 8
-  pontas, hexagrama, glifos e os símbolos alquímicos.
+- algum modelo apontar pra uma textura ou pra um pai que **não existe** (foi o rosa/preto da 5.39.0);
+- algum modelo usar rotação fora de −45°..45° (o jogo recusa e o item vira "faltando");
+- o predicado do estado aberto **não** estiver registrado no cliente, ou o nome dele no Java
+  não for o mesmo do JSON;
+- algum dos 16 modelos (8 cores × aberto/fechado) sumir;
+- o `display` voltar a ficar minúsculo, ou o guarda-chuva voltar a ficar de cabeça pra baixo;
+- os cubos da cúpula no Java não baterem com a geometria de referência.
 
-Por isso **cada carta é quase uma cópia linha a linha do seu arquivo** — mesmas cores, mesmas
-posições, mesmos tempos.
+A cúpula virou **fonte única**: `arte/dome_geometria.json` é lido pelo jogo, pela prévia fora do
+jogo e pelo validador. Se um dia divergir, o build para.
 
-**O que TODAS as oito fazem igual** (é o esqueleto comum do protótipo):
-
-| tempo | o que acontece |
-|---|---|
-| 0,0 s | escurece e abre o céu da carta |
-| 0,3 s | entra o **sigilo de 22 caminhos** (anéis que se fecham, 22 glifos, as Sequências 9→0 girando ao contrário) |
-| 1,6 s | a **carta** começa a subir do rodapé |
-| 2,4 s | a carta para de subir e flutua |
-| 3,2 – 4,1 s | a carta **vira** (virada em perspectiva) |
-| 4,8 s | entra o **título AVISO** letra por letra, com o fio e a linha embaixo |
-| 5,6 s | as **cinco cartas** começam a orbitar (metade na frente, metade atrás) |
-| 5,0 – 11,5 s | as **palavras da carta** sussurram subindo pela tela |
-| 6,0 s | 1ª fala (a frase da carta) |
-| 7,4 s | **o seu texto**, digitado com cursor |
-| 9,0 s | 3ª fala (a frase final) |
-| 12,4 s | escurece e fecha em 14 s |
+**Prévia (desenhada fora do jogo, com a mesma geometria):** `arte/previa_umbrella.png`
 
 ---
 
-## 1. O EREMITA (IX) — estilo 28
+## Testes desta versão
 
-Montanhas de neve em três camadas, aurora verde-azul, 60 estrelas piscando e a **lanterna
-pendurada balançando** — ela acende a neve em volta (os flocos perto dela ficam dourados).
-A carta: a estrela de seis pontas, a montanha, o cajado e a lanterna.
-Falas: *"Na solidão da montanha, só a lanterna conhece o caminho."* / *"Ela já foi até você."*
-
-## 2. A ESTRELA (XVII) — estilo 29
-
-A **estrela de oito pontas** gigante no alto, 120 estrelas, a **constelação de sete** ligada por
-linhas, a aurora e um risco de luz que passa de vez em quando. Os dois **rios de luz** descem das
-bordas até a carta, com anéis pulsando na chegada. A carta: a mulher, os dois jarros e as sete
-estrelinhas. Falas: *"Mesmo na noite mais escura, uma estrela sabe onde você está."* /
-*"Não deixe a calma enganar você."*
-
-## 3. O JULGAMENTO (XX) — estilo 30
-
-As **asas gigantes** abertas (nove penas de cada lado, curvas fechadas), as **ondas douradas** do
-som da trombeta, as **almas** subindo em espiral com halo, as penas caindo e nove feixes de luz.
-A carta: o anjo com a trombeta, as nuvens e os túmulos abertos.
-Falas: *"A trombeta soou: todos serão chamados a responder."* / *"Sua hora chegou."*
-
-## 4. A LUA (XVIII) — estilo 31
-
-A **lua cheia** enorme com as crateras e o halo, 80 estrelas, a **água prateada** com 14 reflexos,
-os dois **lobos uivando** (com os anéis do uivo subindo) e as gotas caindo. No sigilo, as **oito
-fases da lua** girando.
-Falas: *"Sob a lua, nada é o que parece ser."* / *"Ouça o uivo ao longe."*
-
-## 5. O MAGO (I) — estilo 32
-
-A **chuva de runas** verdes caindo em 16 colunas, a **lemniscata** (o infinito) desenhada no céu
-com uma **cauda de luz** percorrendo e soltando faíscas, e os **quatro elementos** (fogo, água,
-terra e ar) girando em volta com o seu símbolo alquímico.
-A carta: a mesa com o bastão, a taça, a espada e as moedas.
-Falas: *"Como acima, assim abaixo: a vontade molda o mundo."* / *"O feitiço já foi lançado."*
-
-## 6. A MORTE (XIII) — estilo 33 (`morte2`)
-
-O **sol pálido** nascendo entre as duas torres, a **bandeira negra** tremulando com o emblema, a
-**lâmina de luz** atravessando a tela de tempos em tempos e pétalas caindo (algumas vermelhas). No
-sigilo, os treze X girando, um vermelho por vez.
-Falas: *"Nada escapa do fim: tudo o que vive um dia se despede."* / *"A sua vez chegou."*
-
-## 7. O SOL (XIX) — estilo 34
-
-O **sol dourado** com 24 raios girando, as três **colunas de luz**, os dois girassóis, as penas
-caindo e a poeira de luz subindo. No sigilo, doze sois pequenos girando.
-Falas: *"Quando o sol nasce, nenhuma sombra se esconde."* / *"A luz já encontrou você."*
-
-## 8. A TORRE (XVI) — estilo 35
-
-O **raio** caindo na torre **cinco vezes** (2,2 s · 3,5 s · 4,8 s · 7,0 s · 9,2 s — cada um é um
-raio novo, cheio de ramificações, com clarão), a **coroa arrancada voando**, os **destroços** e as
-**duas figuras caindo**. As brasas sobem o tempo todo.
-Falas: *"O que foi construído sobre a mentira não resiste ao raio."* / *"A torre já está caindo."*
-
----
-
-## Regras que continuam valendo
-
-- **sem partícula do jogo e sem vídeo**: é tudo geometria e texto do próprio mod (por isso o jar
-  não cresceu quase nada: 61 KB);
-- **só o alvo vê** (o pacote vai para quem foi escolhido no seletor);
-- **respeita o modo reduzido** — com os efeitos reduzidos ligados o aviso desenha mais leve;
-- o aviso **roda inteiro sozinho** (nada de clique nem tecla);
-- **falha em um aviso nunca derruba a tela**: o desenho é protegido por `try/catch`.
-
----
-
-## Correção achada nesta versão
-
-O sorteio das palavras sussurradas guardava o texto num índice e lia em **outro** índice. Quando
-os dois não batiam, vinha `null` e **o resto do aviso parava de desenhar no meio** (o título AVISO
-e as falas sumiam). Achei isso rodando o mesmo código das cartas num canvas Java de teste, gerei
-24 imagens e olhei uma por uma. Corrigido: agora cada palavra leva o próprio texto junto.
-
-Esse teste virou uma ferramenta: `previa/` roda o motor das cartas fora do jogo e salva PNGs —
-se você quiser, na próxima eu te mostro as imagens antes de publicar.
-
----
-
-## Conferido antes de publicar
-
-- `javac` (Java 21, NeoForge 21.1.249): **0 erros**;
-- `check.py`: **919 PASS / 0 FAIL** (14 regras novas só para as cartas, incluindo "a morte2 não
-  bate com a morte antiga" e "os estilos 28–35 não existiam antes");
-- servidor de teste com o jar novo: **0 exceções**;
-- `rp admin avisar @a <estilo> teste` para os **dez** nomes (os oito + `tolo` + `louco`): todos
-  responderam (com 0 jogador online o servidor responde "No player was found" — é o servidor
-  reclamando que não há ninguém, não o comando falhando);
-- as oito cartas foram desenhadas e conferidas em imagem antes de entrar no jar.
-
----
-
-**Arquivos:** `rptag-5.16.0.jar` (instalar em `mods/` do servidor **e** do cliente).
+- `check.py`: **1288 PASS / 0 FAIL**
+- `arte/validar.py`: 54 ok, 0 falhas
+- Servidor de teste: `RP Tag 5.40.0 (rptag)` → `Done (1.436s)!`, sem erro
+- Jar: 19 modelos de umbrella, 8 texturas de item, 8 de cúpula, 8 de HUD, ícone sem número
+  presente; nenhuma sonda de teste dentro do jar
