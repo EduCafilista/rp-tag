@@ -204,8 +204,7 @@ def modelo_fechado():
         el.append(cubo(7.7, y0, 8 - raio, 8.3, y1, 8 + raio, R_TECIDO))
         for ang in (45, -45):
             el.append(cubo(8 - raio, y0, 7.7, 8 + raio, y1, 8.3, R_TECIDO,
-                           {"origin": [8, (y0 + y1) / 2.0, 8], "axis": "y", "angle": ang,
-                            "rescale": False}))
+                           {"origin": [8, (y0 + y1) / 2.0, 8], "axis": "y", "angle": ang}))
     # amarração escura no meio do pano
     el.append(cubo(5.9, 8.5, 7.7, 10.1, 9.0, 8.3, R_ESCURO))
     el.append(cubo(7.7, 8.5, 5.9, 8.3, 9.0, 10.1, R_ESCURO))
@@ -236,8 +235,7 @@ def modelo_aberto():
         el.append(cubo(6.9, y0, 8 - raio, 9.1, y1, 8 + raio, R_TECIDO))
         for ang in (45, -45):
             el.append(cubo(8 - raio, y0, 6.9, 8 + raio, y1, 9.1, R_TECIDO,
-                           {"origin": [8, (y0 + y1) / 2.0, 8], "axis": "y", "angle": ang,
-                            "rescale": False}))
+                           {"origin": [8, (y0 + y1) / 2.0, 8], "axis": "y", "angle": ang}))
     # varetas penduradas nas 8 pontas da aba
     for (x0, z0) in ((-0.3, 7.75), (15.5, 7.75), (7.75, -0.3), (7.75, 15.5),
                      (1.7, 1.7), (13.7, 1.7), (1.7, 13.7), (13.7, 13.7)):
@@ -288,6 +286,11 @@ def main():
             os.path.join(tex_gui, "umbrella_hud_%d.png" % i))
         icone_item(claro, escuro, detalhe).save(
             os.path.join(tex_item, "umbrella_icon_%d.png" % i))
+    # (5.39.0) O ARQUIVO QUE FALTAVA: `umbrella_sombra.json` apontava pra
+    # `rptag:item/umbrella_icon` (sem numero) e ele nunca era gerado -> o jogo mostrava a
+    # TEXTURA ROSA/PRETA de "faltando" na mao. Agora ele existe (tom 0 = sangue).
+    icone_item(CORES[0][1], CORES[0][2], CORES[0][3]).save(
+        os.path.join(tex_item, "umbrella_icon.png"))
 
     # 2) geometrias base (uma fechada, uma aberta) — a cor entra pela textura
     for estado, elementos in (("fechado", modelo_fechado()), ("aberto", modelo_aberto())):
@@ -295,13 +298,14 @@ def main():
         # (todo item 3D do jogo — tocha, placa, cerca — vem daí). Antes era "item/handheld",
         # que herda de item/generated -> builtin/generated (o gerador de quad 2D) e podia
         # simplesmente ignorar os elementos.
+        # (5.39.0) o DISPLAY saiu: herda o do `block/block` (scale 0,375 / 0,4), que é o
+        # tamanho certo pra um modelo de 1 bloco na mao. Os numeros que eu tinha inventado
+        # (0,68 / 0,85) deixavam o guarda-chuva DO TAMANHO DA TELA no print do dono.
         escrever(os.path.join(mod_item, "umbrella_%s_base.json" % estado), {
             "parent": "minecraft:block/block",
-            "ambientocclusion": False,
             "textures": {"layer0": "rptag:item/umbrella_tex_0",
                          "particle": "rptag:item/umbrella_tex_0"},
             "elements": elementos,
-            "display": DISPLAY,
         })
         for i in range(len(CORES)):
             escrever(os.path.join(mod_item, "umbrella_%s_%d.json" % (estado, i)), {
@@ -318,9 +322,13 @@ def main():
     for i in range(len(CORES)):
         overrides.append({"predicate": {"custom_model_data": i, "using": 1},
                           "model": "rptag:item/umbrella_aberto_%d" % i})
+    # (5.39.0) a base é o MODELO 3D fechado (textura que existe de verdade). Antes a base era
+    # um `item/generated` apontando pra um arquivo que eu nunca gerei: o jogo desenhava o quad
+    # com a textura de "faltando" (o quadriculado rosa/preto do print do dono).
     escrever(os.path.join(mod_item, "umbrella_sombra.json"), {
-        "parent": "minecraft:item/generated",          # <- a BASE sempre desenha (ícone 2D)
-        "textures": {"layer0": "rptag:item/umbrella_icon"},
+        "parent": "rptag:item/umbrella_fechado_base",
+        "textures": {"layer0": "rptag:item/umbrella_tex_0",
+                     "particle": "rptag:item/umbrella_tex_0"},
         "overrides": overrides,
     })
 

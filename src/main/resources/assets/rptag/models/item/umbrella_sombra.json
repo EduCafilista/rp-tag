@@ -1,7 +1,8 @@
 {
-  "parent": "minecraft:item/generated",
+  "parent": "rptag:item/umbrella_fechado_base",
   "textures": {
-    "layer0": "rptag:item/umbrella_icon"
+    "layer0": "rptag:item/umbrella_tex_0",
+    "particle": "rptag:item/umbrella_tex_0"
   },
   "overrides": [
     {

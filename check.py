@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.38.1'
+VER = '5.39.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3022,9 +3022,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.38.1 no jar, no mod e no gradle',
-      "version = '5.38.1'" in rd('build.gradle')
-      and '5.38.1' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.39.0 no jar, no mod e no gradle',
+      "version = '5.39.0'" in rd('build.gradle')
+      and '5.39.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3260,8 +3260,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.38.1 (jar, mod e gradle)',
-      "version = '5.38.1'" in rd('build.gradle') and '5.38.1' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.39.0 (jar, mod e gradle)',
+      "version = '5.39.0'" in rd('build.gradle') and '5.39.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3319,8 +3319,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.38.1 (jar, mod e gradle)',
-      "version = '5.38.1'" in rd('build.gradle') and '5.38.1' in _rm)
+check('5.34.0: a versao subiu pra 5.39.0 (jar, mod e gradle)',
+      "version = '5.39.0'" in rd('build.gradle') and '5.39.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3342,8 +3342,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.38.1 (jar, mod e gradle)',
-      "version = '5.38.1'" in rd('build.gradle') and '5.38.1' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.39.0 (jar, mod e gradle)',
+      "version = '5.39.0'" in rd('build.gradle') and '5.39.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3882,9 +3882,12 @@ check('5.37.0 (94): o modelo tem GEOMETRIA 3D de verdade (cubos, fechado e abert
       '"elements"' in rd(A + '/models/item/umbrella_fechado_base.json')
       and '"elements"' in rd(A + '/models/item/umbrella_aberto_base.json'))
 _ab = rd(A + '/models/item/umbrella_aberto_base.json')
+# (5.39.0) o "rescale" saiu dos modelos (campo opcional que podia derrubar o parser do jogo):
+# agora a prova conta as PLACAS diagonais (as 45 graus) e as varetas penduradas.
+_abj = _json.loads(_ab)
 check('5.37.0 (94): a cupula aberta e em DEGRAUS (3 aneis) com varetas penduradas',
-      _ab.count('"rescale": false') >= 6
-      and sum(1 for e in _json.loads(_ab)['elements']
+      sum(1 for e in _abj['elements'] if e.get('rotation', {}).get('axis') == 'y') >= 6
+      and sum(1 for e in _abj['elements']
               if e['faces']['north']['uv'] == [0, 8, 4, 16]) >= 8)
 _fc = rd(A + '/models/item/umbrella_fechado_base.json')
 check('5.37.0 (94): fechado tem o pano dobrado em degraus (4 mangas) e a haste',
@@ -3946,16 +3949,17 @@ check('5.37.3: o modelo 3D usa o parent CANONICO de cubos (block/block), nao ite
 check('5.37.3: as faces apontam pra #layer0 (o nome que o vanilla todo usa)',
       all(f['texture'] == '#layer0'
           for e in _base_f['elements'] for f in e['faces'].values()))
-check('5.37.3: a BASE do item e um icone 2D (item/generated) — nunca mais "nada na mao"',
-      _item_m['parent'] == 'minecraft:item/generated'
-      and _item_m['textures']['layer0'] == 'rptag:item/umbrella_icon')
+# (5.39.0) A base voltou a ser o modelo 3D: o quad 2D com textura faltando era o rosa/preto do
+# print do dono. O que garante "nunca mais nada na mao" agora e a textura existir (prova abaixo).
+check('5.39.0: a BASE do item e o modelo 3D com textura que existe',
+      _item_m['parent'] == 'rptag:item/umbrella_fechado_base'
+      and os.path.exists(A + '/textures/item/umbrella_tex_0.png'))
 check('5.37.3: o icone 2D existe nos 8 tons',
       all(os.path.exists(A + '/textures/item/umbrella_icon_%d.png' % i) for i in range(8)))
-check('5.37.3: o display usa os numeros do VANILLA (o lugar onde os itens da mao aparecem)',
-      _base_f['display']['thirdperson_righthand'] == {'rotation': [0, -90, 55],
-                                                     'translation': [0, 4, 0.5],
-                                                     'scale': [0.85, 0.85, 0.85]}
-      and _base_f['display']['firstperson_righthand']['translation'] == [1.13, 3.2, 1.13])
+# (5.39.0) o display inventado saiu: herdamos o do `block/block` (scale 0,375 / 0,4), que é o
+# tamanho certo pra um modelo de 1 bloco na mao (o print do dono mostrava o guarda-chuva gigante).
+check('5.39.0: o modelo herda o display do block/block (sem escala inventada gigante)',
+      'display' not in _base_f and _base_f['parent'] == 'minecraft:block/block')
 check('5.37.3: o /umbrella info existe (diagnostico do item na mao)',
       'literal("info")' in _uc)
 
@@ -4005,6 +4009,83 @@ check('5.38.1: quem esta por perto ve o amigo sendo engolido (versao curta)',
       and 'CENA_BURACO_NEGRO, 1.0F, 1600' in _ex9)
 check('5.38.1: TODO caminho que leva alguem pro vazio manda o buraco negro',
       _ne9.count('Cena.CENA_BURACO_NEGRO') >= 2)
+
+# ===================== PEDIDO 94-c — 5.39.0 (o umbrella aparecer DE VERDADE) =====================
+# (5.39.0) O print do dono mostrou o modelo de "faltando" (quadriculado rosa/preto) na mao.
+# Causa: `umbrella_sombra.json` apontava pra `rptag:item/umbrella_icon`, um arquivo que o gerador
+# NUNCA criava. Aqui ficam as provas permanentes de que todo modelo do umbrella carrega:
+_AB = A
+_MODELOS = os.path.join(_AB, 'models')
+
+
+def _modelo(caminho):
+    with open(caminho, encoding='utf-8') as fp:
+        return _json.load(fp)
+
+
+def _cadeia(nome, visto=None):
+    """segue os pais de um modelo (rptag:...) e devolve a lista de jsons encontrados."""
+    visto = visto or []
+    p_ = os.path.join(_MODELOS, nome.replace('rptag:', '') + '.json')
+    if not os.path.exists(p_):
+        return visto, False
+    j = _modelo(p_)
+    visto.append((p_, j))
+    pai = j.get('parent', '')
+    if pai.startswith('rptag:'):
+        return _cadeia(pai, visto)
+    return visto, True
+
+
+_umbrellas = sorted(f for f in os.listdir(os.path.join(_MODELOS, 'item')) if f.startswith('umbrella_'))
+_erros_modelo = []
+for _arq in _umbrellas:
+    _cam, _ok_pai = _cadeia('rptag:item/' + _arq[:-5])
+    if not _ok_pai:
+        _erros_modelo.append(_arq + ': pai NAO existe')
+        continue
+    _tex = {}
+    for _c, _j in _cam:
+        _tex.update(_j.get('textures', {}))
+    for _c, _j in _cam:
+        for _e in _j.get('elements', []):
+            _f, _t = _e.get('from', [0, 0, 0]), _e.get('to', [0, 0, 0])
+            if not all(a < b for a, b in zip(_f, _t)):
+                _erros_modelo.append(_arq + ': elemento com from >= to')
+            for _v in _f + _t:
+                if not -16 <= _v <= 32:
+                    _erros_modelo.append(_arq + ': coordenada fora de -16..32')
+            _rot = _e.get('rotation')
+            if _rot:
+                if _rot.get('axis') not in ('x', 'y', 'z'):
+                    _erros_modelo.append(_arq + ': eixo de rotacao invalido')
+                if _rot.get('angle') not in (-45, -22.5, 0, 22.5, 45):
+                    _erros_modelo.append(_arq + ': angulo de rotacao invalido')
+            for _face in _e.get('faces', {}).values():
+                _ref = _face.get('texture', '')
+                if _ref.startswith('#') and _ref[1:] not in _tex:
+                    _erros_modelo.append(_arq + ': slot ' + _ref + ' nao definido')
+                if len(_face.get('uv', [])) != 4:
+                    _erros_modelo.append(_arq + ': uv sem 4 numeros')
+    for _v in _tex.values():
+        if isinstance(_v, str) and _v.startswith('rptag:'):
+            if not os.path.exists(os.path.join(_AB, 'textures',
+                                               _v.split(':', 1)[1] + '.png')):
+                _erros_modelo.append(_arq + ': textura FALTA -> ' + _v)
+
+check('5.39.0 (94-c): TODO modelo do umbrella carrega (pais, texturas, cubos e rotacoes validos)',
+      not _erros_modelo)
+if _erros_modelo:
+    print('       modelos com problema:', _erros_modelo[:6])
+check('5.39.0 (94-c): o icone SEM NUMERO existe (era ele que faltava e dava rosa/preto)',
+      os.path.exists(A + '/textures/item/umbrella_icon.png'))
+check('5.39.0 (94-c): a base do item e o MODELO 3D (nao um quad 2D gigante)',
+      _json.loads(rd(A + '/models/item/umbrella_sombra.json'))['parent']
+      == 'rptag:item/umbrella_fechado_base')
+check('5.39.0 (94-c): o modelo NAO traz mais display inventado (herda o tamanho do block/block)',
+      'display' not in _json.loads(rd(A + '/models/item/umbrella_fechado_base.json')))
+check('5.39.0 (94-c): todas as 8 texturas de item existem (16x16)',
+      all(os.path.exists(A + '/textures/item/umbrella_tex_%d.png' % i) for i in range(8)))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
