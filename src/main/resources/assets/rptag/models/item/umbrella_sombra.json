@@ -7,113 +7,97 @@
   "overrides": [
     {
       "predicate": {
-        "custom_model_data": 0,
-        "rptag:aberto": 0
+        "custom_model_data": 0
       },
       "model": "rptag:item/umbrella_fechado_0"
     },
     {
       "predicate": {
-        "custom_model_data": 1,
-        "rptag:aberto": 0
+        "custom_model_data": 1
       },
       "model": "rptag:item/umbrella_fechado_1"
     },
     {
       "predicate": {
-        "custom_model_data": 2,
-        "rptag:aberto": 0
+        "custom_model_data": 2
       },
       "model": "rptag:item/umbrella_fechado_2"
     },
     {
       "predicate": {
-        "custom_model_data": 3,
-        "rptag:aberto": 0
+        "custom_model_data": 3
       },
       "model": "rptag:item/umbrella_fechado_3"
     },
     {
       "predicate": {
-        "custom_model_data": 4,
-        "rptag:aberto": 0
+        "custom_model_data": 4
       },
       "model": "rptag:item/umbrella_fechado_4"
     },
     {
       "predicate": {
-        "custom_model_data": 5,
-        "rptag:aberto": 0
+        "custom_model_data": 5
       },
       "model": "rptag:item/umbrella_fechado_5"
     },
     {
       "predicate": {
-        "custom_model_data": 6,
-        "rptag:aberto": 0
+        "custom_model_data": 6
       },
       "model": "rptag:item/umbrella_fechado_6"
     },
     {
       "predicate": {
-        "custom_model_data": 7,
-        "rptag:aberto": 0
+        "custom_model_data": 7
       },
       "model": "rptag:item/umbrella_fechado_7"
     },
     {
       "predicate": {
-        "custom_model_data": 0,
-        "rptag:aberto": 1
+        "custom_model_data": 8
       },
       "model": "rptag:item/umbrella_aberto_0"
     },
     {
       "predicate": {
-        "custom_model_data": 1,
-        "rptag:aberto": 1
+        "custom_model_data": 9
       },
       "model": "rptag:item/umbrella_aberto_1"
     },
     {
       "predicate": {
-        "custom_model_data": 2,
-        "rptag:aberto": 1
+        "custom_model_data": 10
       },
       "model": "rptag:item/umbrella_aberto_2"
     },
     {
       "predicate": {
-        "custom_model_data": 3,
-        "rptag:aberto": 1
+        "custom_model_data": 11
       },
       "model": "rptag:item/umbrella_aberto_3"
     },
     {
       "predicate": {
-        "custom_model_data": 4,
-        "rptag:aberto": 1
+        "custom_model_data": 12
       },
       "model": "rptag:item/umbrella_aberto_4"
     },
     {
       "predicate": {
-        "custom_model_data": 5,
-        "rptag:aberto": 1
+        "custom_model_data": 13
       },
       "model": "rptag:item/umbrella_aberto_5"
     },
     {
       "predicate": {
-        "custom_model_data": 6,
-        "rptag:aberto": 1
+        "custom_model_data": 14
       },
       "model": "rptag:item/umbrella_aberto_6"
     },
     {
       "predicate": {
-        "custom_model_data": 7,
-        "rptag:aberto": 1
+        "custom_model_data": 15
       },
       "model": "rptag:item/umbrella_aberto_7"
     }

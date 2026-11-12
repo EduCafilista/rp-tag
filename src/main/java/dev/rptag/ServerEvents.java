@@ -475,11 +475,90 @@ public final class ServerEvents {
         }
     }
 
+
+    // ================================================================
+    //  (5.41.0) A POWER WHEEL SÓ EXISTE PRA QUEM TEM O DOM
+    // ================================================================
+
+    /** quando foi a última vez que mandamos o estado de acesso (por jogador). */
+    private static final java.util.Map<java.util.UUID, Boolean> ACESSO_ENVIADO =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    /** marcador do último tique em que conferimos a lista inteira. */
+    private static long proximaConferencia;
+
+    /**
+     * (5.41.0) O dono: <i>"a powerwheel aparece mesmo sem o player ter o vazio ligado,
+     * corrija isso"</i>.
+     *
+     * <p>A roda de poderes ({@code client/PoderLeque}, tecla R) abria para qualquer jogador:
+     * o servidor só recusava na hora de soltar o poder. Agora o servidor manda o estado de
+     * acesso ({@link VazioAcessoPayload}) e o cliente <b>nem desenha</b> a roda de quem não
+     * tem o dom. Quem decide continua sendo {@link VazioPoderes#temPoder} — o cliente nunca
+     * decide sozinho.
+     */
+    @SubscribeEvent
+    public static void enviarAcessoAosPoderes(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
+        try {
+            var servidor = event.getServer();
+            long tique = servidor.getTickCount();
+            // a cada 20 ticks (1 s) conferimos todo mundo: pega entrar/sair do vazio, virar
+            // ADM e qualquer caminho que eu não tenha coberto com evento próprio
+            if (tique < proximaConferencia) {
+                return;
+            }
+            proximaConferencia = tique + 20L;
+            for (ServerPlayer p : servidor.getPlayerList().getPlayers()) {
+                boolean pode = VazioPoderes.temPoder(p);
+                Boolean antes = ACESSO_ENVIADO.get(p.getUUID());
+                if (antes == null || antes != pode) {
+                    ACESSO_ENVIADO.put(p.getUUID(), pode);
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p,
+                            new VazioAcessoPayload(pode));
+                }
+            }
+            // limpa quem saiu (o mapa não pode crescer pra sempre)
+            ACESSO_ENVIADO.keySet().removeIf(id -> servidor.getPlayerList().getPlayer(id) == null);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: mandar o acesso aos poderes falhou", t);
+        }
+    }
+
+    /** no login, o cliente recebe o estado na hora (antes da primeira conferida). */
+    @SubscribeEvent
+    public static void acessoNoLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        try {
+            if (event.getEntity() instanceof ServerPlayer p) {
+                boolean pode = VazioPoderes.temPoder(p);
+                ACESSO_ENVIADO.put(p.getUUID(), pode);
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p,
+                        new VazioAcessoPayload(pode));
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: mandar o acesso aos poderes no login falhou", t);
+        }
+    }
+
+    /** ao trocar de dimensão (entrar/sair do vazio e do reino), confere na hora. */
+    @SubscribeEvent
+    public static void acessoNaTrocaDeDimensao(PlayerEvent.PlayerChangedDimensionEvent event) {
+        try {
+            if (event.getEntity() instanceof ServerPlayer p) {
+                boolean pode = VazioPoderes.temPoder(p);
+                ACESSO_ENVIADO.put(p.getUUID(), pode);
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p,
+                        new VazioAcessoPayload(pode));
+            }
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: mandar o acesso aos poderes na troca de dimensao falhou", t);
+        }
+    }
+
     @SubscribeEvent
     public static void limparEstadoDoJuizo(PlayerEvent.PlayerLoggedOutEvent event) {
         // (5.36.0) quem sai do servidor não pode deixar marca de Juízo pro próximo login.
         try {
             if (event.getEntity() instanceof ServerPlayer p) {
+                ACESSO_ENVIADO.remove(p.getUUID());
                 JuizoFinal.esquecer(p);
             }
         } catch (Throwable t) {

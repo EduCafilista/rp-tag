@@ -109,8 +109,8 @@ public final class VampiroSistema {
                 || p.getOffhandItem().is(RPTagMod.AMULETO_ECLIPSE.get())) {
             return true;
         }
-        // (5.37.0) O UMBRELLA DE SOMBRA. O dono decidiu: "só quando ABERTO". Aberto = o item
-        // está EM USO (segurando o botão direito). Fechado na mão não protege nada.
+        // (5.37.0) O UMBRELLA DE SOMBRA. O dono decidiu: "só quando ABERTO". Desde a 5.41.0
+        // aberto é um estado do ITEM (custom_model_data >= 8), não "estar segurando o botão".
         return guardaChuvaAberto(p);
     }
 
@@ -122,7 +122,15 @@ public final class VampiroSistema {
      * <p>Serve também pro cliente (ícone/HUD) e pra checagem rápida em outros lugares.
      */
     public static boolean guardaChuvaAberto(ServerPlayer p) {
-        return p.isUsingItem() && p.getUseItem().getItem() instanceof VarinhaSombraItem;
+        // (5.41.0) o estado mora no item (custom_model_data >= 8), não no "está usando":
+        // assim abrir com um clique basta, e o guarda-chuva continua aberto nas duas mãos,
+        // no inventário e através de troca de dimensão.
+        for (var mao : net.minecraft.world.InteractionHand.values()) {
+            if (VarinhaSombraItem.aberto(p.getItemInHand(mao))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------ o sol

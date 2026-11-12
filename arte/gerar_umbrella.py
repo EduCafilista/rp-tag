@@ -36,11 +36,12 @@ CORES = [
     ("rosa",    (204, 92, 128), (112, 42, 68), (255, 200, 218)),
 ]
 
-# regiões da textura do item (16x16)
-R_TECIDO = (0, 0, 16, 8)      # 0..16 x 0..8
-R_MADEIRA = (0, 8, 8, 16)     # 0..8  x 8..16
-R_METAL = (8, 8, 12, 12)      # 8..12 x 8..12
-R_ESCURO = (12, 8, 16, 16)    # 12..16 x 8..16
+# regiões da textura do item (16x16) — (5.41.0) reorganizadas pra ter DOIS tons de tecido
+R_TECIDO = (0, 0, 16, 8)      # tecido claro  (os gomos de cima)
+R_TECIDO2 = (0, 8, 8, 12)     # tecido escuro (os gomos de baixo — o padrão de 8 painéis)
+R_MADEIRA = (0, 12, 8, 16)    # madeira do cabo
+R_METAL = (8, 8, 12, 11)      # metal: ponteira, luva e as pontas das varetas
+R_ESCURO = (12, 8, 16, 16)    # tecido preto: amarração e varetas
 
 
 def novo(larg=16, alt=16):
@@ -58,28 +59,57 @@ def zera(cor, f):
 
 # ------------------------------------------------------------------ textura do item
 def textura_item(claro, escuro, detalhe):
+    """16x16 com as 5 regiões do modelo — VOLUME, não listra chapada.
+
+    (5.41.0) A reclamação do dono: <i>"não está bonita, deixe mais modelada"</i>. A textura
+    antiga era uma diagonal chapada, então cada cubo virava uma mancha lisa. Agora:
+
+      * <b>tecido claro</b> (0..16 x 0..8): 4 gomos com costura escura, nervura brilhante no
+        meio de cada gomo e sombra de cima pra baixo;
+      * <b>tecido escuro</b> (0..8 x 8..12): o mesmo desenho, um tom abaixo — é o que faz o
+        padrão de 8 painéis quando as duas placas do octógono se cruzam;
+      * <b>madeira</b> (0..8 x 12..16): veios verticais com nó;
+      * <b>metal</b> (8..12 x 8..11): brilho diagonal;
+      * <b>tecido preto</b> (12..16 x 8..16): varetas e amarração.
+    """
     img = novo(16, 16)
-    # tecido: listras diagonais (dá volume no guarda-chuva)
-    for y in range(R_TECIDO[1], R_TECIDO[3]):
-        for x in range(R_TECIDO[0], R_TECIDO[2]):
-            faixa = (x + y) % 6
-            cor = claro if faixa < 3 else escuro
-            if faixa == 0:
-                cor = zera(claro, 1.22)
-            px(img, x, y, cor)
-    # madeira do cabo
-    for y in range(R_MADEIRA[1], R_MADEIRA[3]):
-        for x in range(R_MADEIRA[0], R_MADEIRA[2]):
-            cor = (96, 66, 42) if (x + y) % 5 else (120, 86, 56)
-            px(img, x, y, cor)
-    # metal da ponteira
-    for y in range(R_METAL[1], R_METAL[3]):
-        for x in range(R_METAL[0], R_METAL[2]):
-            px(img, x, y, detalhe if (x + y) % 3 else zera(detalhe, 0.75))
-    # tecido escuro (amarrações e varetas)
-    for y in range(R_ESCURO[1], R_ESCURO[3]):
-        for x in range(R_ESCURO[0], R_ESCURO[2]):
-            px(img, x, y, zera(escuro, 0.8) if (x + y) % 4 else zera(escuro, 0.55))
+
+    def gomos(x0, y0, x1, y1, cor_clara, passo=4, brilho=1.20):
+        """pinta uma faixa de tecido com gomos (costura, nervura e sombra)."""
+        for y in range(y0, y1):
+            altura = max(1, y1 - y0 - 1)
+            for x in range(x0, x1):
+                dentro = (x - x0) % passo
+                cor = cor_clara if ((x - x0) // passo) % 2 == 0 else zera(cor_clara, 0.86)
+                if dentro == 0:
+                    cor = zera(cor_clara, 0.55)
+                elif dentro == 1:
+                    cor = zera(cor, brilho)
+                elif dentro == passo - 1:
+                    cor = zera(cor, 0.80)
+                cor = zera(cor, 1.12 - 0.09 * (y - y0) * (8.0 / altura))
+                px(img, x, y, cor)
+
+    gomos(0, 0, 16, 8, claro)                 # tecido claro
+    gomos(0, 8, 8, 12, zera(claro, 0.80))     # tecido escuro
+    # ---- madeira: veios verticais com um nó
+    for y in range(12, 16):
+        for x in range(0, 8):
+            base = (98, 68, 44) if (x * 7 + y) % 9 else (130, 94, 60)
+            if x in (0, 5):
+                base = zera(base, 0.70)
+            if (x, y) in ((2, 13), (3, 13), (2, 14)):
+                base = zera(base, 0.60)
+            px(img, x, y, base)
+    # ---- metal: brilho diagonal
+    for y in range(8, 11):
+        for x in range(8, 12):
+            d = (x - 8) + (y - 8)
+            px(img, x, y, zera(detalhe, min(1.30, 1.0 + 0.22 * (3 - abs(d - 2)))))
+    # ---- tecido preto (varetas e amarração)
+    for y in range(8, 16):
+        for x in range(12, 16):
+            px(img, x, y, zera(escuro, 0.92) if (x + y) % 4 else zera(escuro, 0.58))
     return img
 
 
@@ -183,82 +213,116 @@ def cubo(x0, y0, z0, x1, y1, z1, uv, rot=None):
     return el
 
 
-def disco(raio, y0, y1, uv, centro=8.0):
-    """um DISCO de tecido (um "anel" cheio) feito de 5 placas cruzadas.
+def octogono(raio, y0, y1, cor_claro=R_TECIDO, cor_escuro=R_TECIDO2, centro=8.0,
+             borda=None, lado_borda=0.3):
+    """um OCTÓGONO — e o truque é o mesmo do pixel art: <b>dois quadrados</b>.
 
-    <b>Por que 5 e nao 16 setores?</b> Modelo de item no Minecraft só aceita rotação de
-    <b>-45° a 45°</b> (`rotation.angle`). Girar em 90°/135° faz o jogo REJEITAR o modelo
-    inteiro — e o item volta a aparecer como o quadriculado rosa/preto de "faltando", que é
-    exatamente o bug que o dono reportou. Então: 5 placas de diâmetro inteiro, giradas em
-    -45, -22,5, 0, 22,5 e 45 graus. Cada placa dá dois braços (θ e θ+180°), então o disco
-    fecha em 20 braços a cada 18° — sem furo no meio e sem ângulo ilegal.
+    Um quadrado e outro girado 45° por cima, do mesmo tamanho aproximado, formam um octógono
+    perfeito. Isso resolve o problema de golpe de vista que vinha me perseguindo: o Minecraft
+    só aceita rotação de <b>-45° a 45°</b> em modelo de item (90° faz o jogo rejeitar o modelo
+    inteiro e o item vira o quadriculado rosa/preto), então qualquer coisa "redonda" tem de
+    ser montada com quadrados e ±45°. Dois quadrados = octógono, e o desenho sai LIMPO: as
+    duas placas usam tons diferentes de tecido e o cruzamento das pontas desenha os 8 gomos.
+
+    @param raio   raio do octógono (o canto do quadrado girado encosta nele)
+    @param borda  se não for nulo, um anel fino mais escuro logo abaixo (a "barriga" do pano)
     """
     el = []
-    # espessura da placa = a corda do braço (senão aparecem frestas entre os braços)
-    esp = max(1.0, min(3.0, 2.0 * raio * math.sin(math.radians(9.0))))
-    for ang in (-45, -22.5, 0, 22.5, 45):
-        el.append(cubo(centro - raio, y0, centro - esp / 2.0,
-                       centro + raio, y1, centro + esp / 2.0, uv,
-                       {"origin": [centro, (y0 + y1) / 2.0, centro], "axis": "y", "angle": ang}))
+    lado = 1.414 * raio
+    lado2 = 1.075 * raio
+    for (l, uv, rot) in ((lado, cor_claro, None), (lado2, cor_escuro, 45)):
+        el.append(cubo(centro - l / 2.0, y0, centro - l / 2.0,
+                       centro + l / 2.0, y1, centro + l / 2.0, uv,
+                       {"origin": [centro, (y0 + y1) / 2.0, centro], "axis": "y", "angle": rot}
+                       if rot else None))
+        if borda is not None:
+            el.append(cubo(centro - l / 2.0, y0 - lado_borda, centro - l / 2.0,
+                           centro + l / 2.0, y0, centro + l / 2.0, borda,
+                           {"origin": [centro, y0, centro], "axis": "y", "angle": rot}
+                           if rot else None))
+    return el
+
+
+def pontas(raio, y, uv=R_METAL, centro=8.0, tam=0.7):
+    """as 8 pontas das varetas na borda do octógono (uma por canto dos dois quadrados)."""
+    el = []
+    for k in range(8):
+        a = math.radians(45.0 * k)
+        cx, cz = centro + raio * math.cos(a), centro + raio * math.sin(a)
+        el.append(cubo(cx - tam / 2.0, y, cz - tam / 2.0,
+                       cx + tam / 2.0, y + tam, cz + tam / 2.0, uv))
     return el
 
 
 def haste_e_cabo(uv_madeira, y_cabo, y_alto):
-    """a haste (de baixo pra cima) e o cabo em gancho — iguais no fechado e no aberto."""
-    el = [cubo(7.55, y_cabo + 1.2, 7.55, 8.45, y_alto, 8.45, uv_madeira)]
+    """a haste (de baixo pra cima), a luva de metal e o cabo em gancho."""
+    el = [cubo(7.6, y_cabo + 1.2, 7.6, 8.4, y_alto, 8.4, uv_madeira)]
+    el.append(cubo(7.42, y_cabo + 2.4, 7.42, 8.58, y_cabo + 3.3, 8.58, R_METAL))
     # cabo: desce, vira pra esquerda e sobe na ponta (o gancho)
-    el.append(cubo(7.55, y_cabo + 0.35, 7.55, 8.45, y_cabo + 1.5, 8.45, uv_madeira))
-    el.append(cubo(5.60, y_cabo + 0.35, 7.55, 7.60, y_cabo + 1.1, 8.45, uv_madeira))
-    el.append(cubo(5.60, y_cabo + 0.35, 7.55, 6.40, y_cabo + 1.7, 8.45, uv_madeira))
+    el.append(cubo(7.6, y_cabo + 0.35, 7.6, 8.4, y_cabo + 1.45, 8.4, uv_madeira))
+    el.append(cubo(5.5, y_cabo + 0.35, 7.6, 7.6, y_cabo + 1.05, 8.4, uv_madeira))
+    el.append(cubo(5.5, y_cabo + 0.35, 7.6, 6.3, y_cabo + 1.85, 8.4, uv_madeira))
     return el
 
 
 def modelo_fechado():
     """guarda-chuva FECHADO: cabo com gancho EMBAIXO, pano enrolado subindo, ponteira no alto.
 
-    (5.40.0) Antes o modelo estava DE CABEÇA PRA BAIXO (gancho no alto, ponteira no pé) — na
-    mão saía um guarda-chuva invertido. Agora segue o padrão do `item/handheld` do vanilla:
-    cabo embaixo, corpo subindo, ponta em cima. O pano é feito de 5 anéis radiais que
-    ENGORDAM pra cima, e o modelo fica centrado em (8, 8) pra aparecer no lugar certo na mão.
+    (5.40.0) Antes o modelo estava DE CABEÇA PRA BAIXO (gancho no alto, ponteira no pé).
+    (5.41.0) Agora são 5 anéis octogonais que <b>engordam pra cima</b> (o pano enrolado),
+    alternando os dois tons de tecido — o dono pediu <i>"deixe mais modelada"</i> e a
+    silhueta passou a ter degraus de verdade em vez de um tubo liso.
     """
     el = []
-    for raio1, y0, y1, uv in (
-            (1.5, 13.6, 14.4, R_ESCURO),   # topo do pano (junto da ponteira)
-            (2.0, 12.1, 13.6, R_TECIDO),
-            (2.4, 10.4, 12.1, R_TECIDO),
-            (2.7, 8.7, 10.4, R_TECIDO),
-            (3.0, 7.0, 8.7, R_TECIDO)):     # a saia do pano (bem embaixo)
-        el += disco(raio1, y0, y1, uv)
-    # a fita escura que amarra o pano
-    el += disco(3.1, 8.5, 9.3, R_ESCURO)
-    el += haste_e_cabo(R_MADEIRA, y_cabo=0.6, y_alto=14.2)
-    # ponteira de metal no alto
-    el.append(cubo(7.55, 14.4, 7.55, 8.45, 15.9, 8.45, R_METAL))
+    aneis = [
+        # (raio, y de baixo, y de cima)
+        (1.50, 13.4, 14.4),
+        (1.95, 12.0, 13.4),
+        (2.45, 10.4, 12.0),
+        (2.80, 8.6, 10.4),
+        (3.05, 6.8, 8.6),
+    ]
+    for i, (raio, y0, y1) in enumerate(aneis):
+        # alterna qual placa é a clara (dá o efeito de tecido dobrado)
+        claro, escuro = (R_TECIDO, R_TECIDO2) if i % 2 == 0 else (R_TECIDO2, R_TECIDO)
+        el += octogono(raio, y0, y1, claro, escuro)
+    # amarração preta no meio do pano
+    el += octogono(3.12, 8.9, 9.6, R_ESCURO, R_ESCURO)
+    # as pontas das varetas aparecem logo acima da amarração
+    el += pontas(2.85, 9.6, R_METAL, tam=0.62)
+    el += haste_e_cabo(R_MADEIRA, y_cabo=0.6, y_alto=14.0)
+    # ponteira de metal no alto (com aro)
+    el.append(cubo(7.5, 14.4, 7.5, 8.5, 15.8, 8.5, R_METAL))
+    el.append(cubo(7.22, 14.05, 7.22, 8.78, 14.4, 8.78, R_METAL))
     return el
 
 
 def modelo_aberto():
-    """guarda-chuva ABERTO: cúpula larga de 3 anéis no ALTO, haste descendo, gancho no pé.
+    """guarda-chuva ABERTO: cúpula octogonal de 4 degraus, com a borda caindo.
 
-    (5.40.0) O mesmo defeito do fechado, e pior: a cúpula estava em y 0,4..6,4 (embaixo) e a
-    haste subia até 16,8 — saía de ponta-cabeça. E as 3 placas em cruz por anel liam como
-    tábuas soltas; agora são anéis radiais de 8 setores, iguais aos da cúpula da cabeça, então
-    o guarda-chuva fecha e aparece REDONDO. A cúpula tem 16px de ponta a ponta (1 bloco).
+    (5.40.0) O mesmo defeito do fechado, e pior: a cúpula estava em y 0,4..6,4 (embaixo).
+    (5.41.0) <b>Mais modelado</b> (pedido: <i>"deixe mais modelada"</i>): 4 degraus de
+    octógono, cada um com uma <b>borda fina e escura</b> embaixo (a barriga do pano), as
+    <b>8 pontas das varetas</b> saindo da aba e o topo com bojo de metal. O cruzamento das
+    duas placas de cada degrau desenha os 8 gomos. A cúpula tem 16px de ponta a ponta.
     """
     el = []
-    for raio1, y0, y1, uv in (
-            (3.0, 13.2, 14.4, R_TECIDO),    # miolo (logo abaixo da ponteira)
-            (5.8, 11.4, 13.2, R_TECIDO),    # meio
-            (8.3, 9.4, 11.4, R_TECIDO)):    # aba, caindo
-        el += disco(raio1, y0, y1, uv)
-    # as 8 pontas dos varões, penduradas na borda da aba
-    for k in range(8):
-        a = math.radians(45.0 * k)
-        cx, cz = 8.0 + 7.6 * math.cos(a), 8.0 + 7.6 * math.sin(a)
-        el.append(cubo(cx - 0.4, 7.2, cz - 0.4, cx + 0.4, 9.6, cz + 0.4, R_ESCURO))
-    el += haste_e_cabo(R_MADEIRA, y_cabo=0.6, y_alto=13.4)
-    # ponteira de metal no alto da cúpula
-    el.append(cubo(7.55, 14.4, 7.55, 8.45, 16.1, 8.45, R_METAL))
+    degraus = [
+        # (raio, y de baixo, y de cima)
+        (8.1, 9.3, 10.5),    # aba (a borda de fora)
+        (6.0, 10.5, 11.6),   # segundo
+        (3.9, 11.6, 12.7),   # terceiro
+        (1.9, 12.7, 13.9),   # topo (o miolo)
+    ]
+    for i, (raio, y0, y1) in enumerate(degraus):
+        claro, escuro = (R_TECIDO, R_TECIDO2) if i % 2 == 0 else (R_TECIDO2, R_TECIDO)
+        el += octogono(raio, y0, y1, claro, escuro, borda=R_ESCURO, lado_borda=0.35)
+    # as 8 pontas das varetas na aba
+    el += pontas(8.05, 9.0, R_METAL, tam=0.8)
+    el += haste_e_cabo(R_MADEIRA, y_cabo=0.6, y_alto=13.2)
+    # topo: bojo de metal e a ponteira
+    el += octogono(1.6, 13.9, 14.6, R_METAL, R_METAL)
+    el.append(cubo(7.45, 14.6, 7.45, 8.55, 15.9, 8.55, R_METAL))
     return el
 
 
@@ -381,12 +445,16 @@ def main():
             })
 
     # 3) o item: fechado por padrão, e cada cor x aberto/fechado
+    # (5.41.0) O ESTADO MORA NO custom_model_data: 0..7 = FECHADO (a cor), 8..15 = ABERTO
+    # (a cor + 8). `custom_model_data` é predicado VANILLA — o jogo troca o modelo 3D na mão
+    # sozinho, sem predicado de cliente pra registrar (era esse o furo das 5.39/5.40: um
+    # predicado caseiro que ninguém registrava, então o modelo aberto nunca era escolhido).
     overrides = []
     for i in range(len(CORES)):
-        overrides.append({"predicate": {"custom_model_data": i, "rptag:aberto": 0},
+        overrides.append({"predicate": {"custom_model_data": i},
                           "model": "rptag:item/umbrella_fechado_%d" % i})
     for i in range(len(CORES)):
-        overrides.append({"predicate": {"custom_model_data": i, "rptag:aberto": 1},
+        overrides.append({"predicate": {"custom_model_data": i + len(CORES)},
                           "model": "rptag:item/umbrella_aberto_%d" % i})
     # (5.39.0) a base é o MODELO 3D fechado (textura que existe de verdade). Antes a base era
     # um `item/generated` apontando pra um arquivo que eu nunca gerei: o jogo desenhava o quad

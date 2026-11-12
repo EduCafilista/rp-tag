@@ -150,6 +150,23 @@ public final class ClientPayloadHandler {
         });
     }
 
+    /**
+     * (5.41.0) o servidor diz se este jogador tem o dom dos poderes do vazio.
+     *
+     * <p>O leque (tecla R) só abre para quem tem — antes ele abria para todo mundo e o
+     * servidor recusava na hora de soltar. Ver {@code PoderLeque.podeUsar}.
+     */
+    public static void handleVazioAcesso(final dev.rptag.VazioAcessoPayload payload,
+            final IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                dev.rptag.client.PoderLeque.definirAcesso(payload.pode());
+            } catch (Throwable erro) {
+                dev.rptag.RPTagMod.LOGGER.warn("RP Tag: acesso aos poderes falhou", erro);
+            }
+        });
+    }
+
     /** (5.17.0) a barra de progressão do HUD (o ADM manda rótulo, valor e cores). */
     public static void handleBarra(final dev.rptag.BarraPayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {

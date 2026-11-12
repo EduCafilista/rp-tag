@@ -81,6 +81,10 @@ public final class ModNetworking {
         // (5.29.0) os poderes do vazio (raio, orbe, onda, olhos) e o portal do juízo
         registrar.playToClient(dev.rptag.VazioPoderPayload.TYPE, dev.rptag.VazioPoderPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleVazioPoder);
+        // (5.41.0) o servidor avisa se o jogador PODE usar os poderes (a roda só aparece
+        // pra quem pode — pedido do dono: "a powerwheel aparece mesmo sem o player ter o vazio")
+        registrar.playToClient(dev.rptag.VazioAcessoPayload.TYPE, dev.rptag.VazioAcessoPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleVazioAcesso);
         registrar.playToClient(dev.rptag.ZoneShowPayload.TYPE, dev.rptag.ZoneShowPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleZoneShow);
 

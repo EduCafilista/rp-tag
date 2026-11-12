@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.40.0'
+VER = '5.41.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3022,9 +3022,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.40.0 no jar, no mod e no gradle',
-      "version = '5.40.0'" in rd('build.gradle')
-      and '5.40.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.41.0 no jar, no mod e no gradle',
+      "version = '5.41.0'" in rd('build.gradle')
+      and '5.41.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3260,8 +3260,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.40.0 (jar, mod e gradle)',
-      "version = '5.40.0'" in rd('build.gradle') and '5.40.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.41.0 (jar, mod e gradle)',
+      "version = '5.41.0'" in rd('build.gradle') and '5.41.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3319,8 +3319,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.40.0 (jar, mod e gradle)',
-      "version = '5.40.0'" in rd('build.gradle') and '5.40.0' in _rm)
+check('5.34.0: a versao subiu pra 5.41.0 (jar, mod e gradle)',
+      "version = '5.41.0'" in rd('build.gradle') and '5.41.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3342,8 +3342,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.40.0 (jar, mod e gradle)',
-      "version = '5.40.0'" in rd('build.gradle') and '5.40.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.41.0 (jar, mod e gradle)',
+      "version = '5.41.0'" in rd('build.gradle') and '5.41.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3860,17 +3860,19 @@ _gl8 = rd(C + '/ClientGuiLayers.java')
 
 check('5.37.0 (94): o UMBRELLA existe e e um item de verdade',
       'ITEMS.register("umbrella_sombra"' in _mod7 and 'class VarinhaSombraItem extends Item' in _vi)
+# (5.41.0) aberto virou ESTADO DO ITEM (custom_model_data >= 8), nao mais "esta usando"
 check('5.37.0 (94): SO ABERTO protege do sol (pedido do dono: "só quando ABERTO")',
       'guardaChuvaAberto(p)' in _vs
-      and 'p.isUsingItem() && p.getUseItem().getItem() instanceof VarinhaSombraItem' in _vs)
+      and 'VarinhaSombraItem.aberto(p.getItemInHand(mao))' in _vs)
 check('5.37.0 (94): o guarda-chuva fechado NAO protege (nao e o mesmo que o amuleto)',
       'p.getMainHandItem().is(RPTagMod.AMULETO_ECLIPSE.get())\n' in _vs
       and 'return guardaChuvaAberto(p);' in _vs
       and 'getMainHandItem().is(RPTagMod.UMBRELLA' not in _vs)
-check('5.37.0 (94): abrir e segurar o botao direito (startUsingItem) por 65 s',
-      'p.startUsingItem(mao)' in _vi and 'ABERTURA_SEGUNDOS = 65' in _vi)
+check('5.37.0 (94): abrir com um CLIQUE e durar 65 s (5.41.0: sem segurar botao)',
+      'abrir(stack, lv)' in _vi and 'ABERTURA_SEGUNDOS = 65' in _vi
+      and 'startUsingItem' not in _vi)
 check('5.37.0 (94): agachado fecha na hora e o item tem recarga',
-      'p.isShiftKeyDown()' in _vi and 'RECARGA_SEGUNDOS' in _vi and 'stopUsingItem()' in _vi)
+      'p.isShiftKeyDown()' in _vi and 'RECARGA_SEGUNDOS' in _vi and 'fechar(stack)' in _vi)
 check('5.37.0 (94): sao 8 CORES (o dono: "faz de varias cores")',
       'CORES = {' in _uc and all(c in _uc for c in
       ('sangue', 'noite', 'juizo', 'sombra', 'veneno', 'luar', 'ouro', 'rosa')))
@@ -3885,20 +3887,21 @@ _ab = rd(A + '/models/item/umbrella_aberto_base.json')
 # (5.39.0) o "rescale" saiu dos modelos (campo opcional que podia derrubar o parser do jogo):
 # agora a prova conta as PLACAS diagonais (as 45 graus) e as varetas penduradas.
 _abj = _json.loads(_ab)
-check('5.37.0 (94): a cupula aberta e em DEGRAUS (3 aneis) com varetas penduradas',
-      sum(1 for e in _abj['elements'] if e.get('rotation', {}).get('axis') == 'y') >= 12
+# (5.41.0) a cupula e de OCTOGONOS (dois quadrados, um girado 45): 4 degraus + bordas
+check('5.37.0 (94): a cupula aberta e em DEGRAUS e tem as 8 pontas das varetas',
+      sum(1 for e in _abj['elements'] if e.get('rotation', {}).get('axis') == 'y') >= 8
       and sum(1 for e in _abj['elements']
-              if e['faces']['north']['uv'] == [12, 8, 16, 16]) == 8)
+              if e['faces']['north']['uv'] == [8, 8, 12, 11]) >= 8)
 _fc = rd(A + '/models/item/umbrella_fechado_base.json')
 # (5.40.0) o fechado agora sao 5 aneis radiais de 8 setores (o pano enrolado) + a haste
 check('5.37.0 (94): fechado tem o pano enrolado em aneis e a haste',
-      _fc.count('"axis": "y"') >= 25 and len(_json.loads(_fc)['elements']) >= 30)
-# (5.40.0) o predicado de estado chama `rptag:aberto` (nome proprio, registrado no cliente
-# por client/UmbrellaModelo.java) — antes era `using`, que NINGUEM registrava e por isso
-# valia 0 pra sempre: os 8 modelos abertos nunca eram escolhidos.
+      _fc.count('"axis": "y"') >= 5 and len(_json.loads(_fc)['elements']) >= 24)
+# (5.41.0) O estado mora no PROPRIO item: custom_model_data 0..7 = fechado (cor), 8..15 =
+# aberto. Como `custom_model_data` e predicado vanilla, o jogo troca o modelo 3D sozinho —
+# nao existe mais predicado de cliente pra registrar (foi o que falhou na 5.40.0).
 check('5.37.0 (94): o item troca de modelo por COR e por ABERTO/FECHADO',
       rd(A + '/models/item/umbrella_sombra.json').count('"custom_model_data"') == 16
-      and rd(A + '/models/item/umbrella_sombra.json').count('"rptag:aberto"') == 16)
+      and '"rptag:aberto"' not in rd(A + '/models/item/umbrella_sombra.json'))
 check('5.37.0 (94): as 8 cores se craftam (e da pra tingir depois)',
       len([f for f in os.listdir('src/main/resources/data/rptag/recipes')
            if f.startswith('umbrella_')]) == 16)
@@ -3912,7 +3915,7 @@ check('5.37.0 (94): a camada da cabeca e registrada nas duas peles (classica e s
       'EntityRenderersEvent.AddLayers' in _cu and 'getSkins()' in _cu and 'PlayerRenderer pr' in _cu)
 check('5.37.0 (94): o HUD mostra ABERTO/fechado, a cor e os segundos que faltam',
       'UmbrellaHud.desenhar(g)' in _gl8 and '"umbrella_hud"' in _gl8
-      and 'ABERTO' in _uh and 'getUseItemRemainingTicks()' in _uh)
+      and 'ABERTO' in _uh and 'VarinhaSombraItem.segundosRestantes' in _uh)
 check('5.37.0 (94): /umbrella dar e /umbrella cores existem',
       'Commands.literal("umbrella")' in _uc and 'literal("cores")' in _uc
       and 'literal("dar")' in _uc and 'custom_model_data' in _uc.lower().replace('minecraft:', ''))
@@ -4098,7 +4101,6 @@ check('5.39.0 (94-c): todas as 8 texturas de item existem (16x16)',
 _BASE_F = _json.loads(rd(A + '/models/item/umbrella_fechado_base.json'))
 _BASE_A = _json.loads(rd(A + '/models/item/umbrella_aberto_base.json'))
 _ITEM_U = _json.loads(rd(A + '/models/item/umbrella_sombra.json'))
-_UM = rd(C + '/UmbrellaModelo.java')
 _CU = rd(C + '/CamadaUmbrella.java')
 _GER = rd('arte/gerar_umbrella.py')
 _DOME = _json.loads(rd('arte/dome_geometria.json'))
@@ -4115,14 +4117,23 @@ def _largo(modelo):
     return max(modelo['elements'], key=lambda e: e['to'][0] - e['from'][0])
 
 
-check('5.40.0 (94-d): o predicado `rptag:aberto` e REGISTRADO no cliente (sem isso o modelo '
-      'aberto nunca e escolhido)',
-      'ItemProperties.register(RPTagMod.UMBRELLA.get(), ABERTO' in _UM
-      and 'FMLClientSetupEvent' in _UM and 'enqueueWork' in _UM
-      and 'isUsingItem()' in _UM)
-check('5.40.0 (94-d): o nome do predicado no Java e o MESMO do umbrella_sombra.json',
-      'ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "aberto")' in _UM
-      and all(o['predicate'].get('rptag:aberto') in (0, 1) for o in _ITEM_U['overrides']))
+# (5.41.0) o estado aberto/fechado virou `custom_model_data` 0..7 / 8..15: predicado
+# VANILLA, sem registrar nada. As provas conferem que a tabela do gerador bate com o Java.
+_CMDS = sorted(o['predicate']['custom_model_data'] for o in _ITEM_U['overrides'])
+check('5.41.0 (94-e): sao 16 valores de custom_model_data (0..7 fechado, 8..15 aberto)',
+      _CMDS == list(range(16)))
+check('5.41.0 (94-e): o Java usa a MESMA tabela (CORES=8; aberto soma CORES)',
+      'public static final int CORES = 8;' in _vi
+      and 'Math.floorMod(cru(stack), CORES)' in _vi
+      and 'cru(stack) >= CORES' in _vi
+      and 'Math.floorMod(cor, CORES) + (aberto ? CORES : 0)' in _vi)
+check('5.41.0 (94-e): o estado viaja em componente VANILLA (sincroniza sozinho, sem registro)',
+      'DataComponents.CUSTOM_MODEL_DATA' in _vi and 'new CustomModelData(valor)' in _vi
+      and 'DataComponents.CUSTOM_DATA' in _vi)
+check('5.41.0 (94-e): NAO existe mais predicado caseiro de cliente (foi a causa do bug)',
+      not os.path.exists(C + '/UmbrellaModelo.java')
+      and 'isUsingItem' not in _vi
+      and 'getUseItem' not in _vi)
 check('5.40.0 (94-d): os 16 overrides apontam pra modelos que EXISTEM (fechado e aberto, 8 cores)',
       all(os.path.exists(os.path.join(_MODELOS, 'item',
                                       o['model'].replace('rptag:item/', '') + '.json'))
@@ -4154,8 +4165,10 @@ check('5.40.0 (94-d): a cupula aberta e LARGA (1 bloco de ponta a ponta) e cobre
       (_extremos(_BASE_A, 0)[1] - _extremos(_BASE_A, 0)[0]) >= 15.0
       and (_extremos(_BASE_A, 2)[1] - _extremos(_BASE_A, 2)[0]) >= 15.0)
 check('5.40.0 (94-d): o fechado e MAGRO na mao (nao e uma cupula aberta)',
-      (_extremos(_BASE_F, 0)[1] - _extremos(_BASE_F, 0)[0]) <= 6.5
-      and (_extremos(_BASE_F, 2)[1] - _extremos(_BASE_F, 2)[0]) <= 6.0)
+      (_extremos(_BASE_F, 0)[1] - _extremos(_BASE_F, 0)[0]) <= 7.0
+      and (_extremos(_BASE_F, 2)[1] - _extremos(_BASE_F, 2)[0]) <= 7.0
+      and (_extremos(_BASE_A, 0)[1] - _extremos(_BASE_A, 0)[0])
+          > 2.0 * (_extremos(_BASE_F, 0)[1] - _extremos(_BASE_F, 0)[0]))
 # (c) A CUPULA SOBRE A CABECA: em BLOCOS, e a mesma geometria da previa/gerador
 check('5.40.0 (94-d): a cupula da cabeca sobe em BLOCOS (nao 8,9 blocos pra baixo)',
       'pose.translate(0.0F, TRANSLATE_Y, 0.0F)' in _CU
@@ -4171,9 +4184,61 @@ check('5.40.0 (94-d): os cubos da cupula no Java batem com o dome_geometria.json
       and len(_DOME['cubos']) == 6 and int(_DOME['setores']) == 16)
 check('5.40.0 (94-d): a cupula e feita de SETORES girados (redonda, nao uma estrela de tabuas)',
       'SETORES = 16' in _CU and 'PartPose.rotation(0.0F, (float) ang, 0.0F)' in _CU
-      and 'def disco(' in _GER)
+      and 'def octogono(' in _GER)
 check('5.40.0 (94-d): a previa offline le a MESMA geometria da cupula (nao copia a mao)',
       'dome_geometria.json' in rd('arte/render_umbrella_offline.py'))
+
+
+# ============ PEDIDO 96 — 5.41.0 (a power wheel só aparece pra quem tem o vazio) ============
+# (5.41.0) O dono: "a powerwheel aparece mesmo sem o player ter o vazio ligado, corrija isso".
+# Antes o leque (tecla R) abria pra QUALQUER jogador; o servidor só recusava na hora de soltar.
+_pl9 = rd(C + '/PoderLeque.java')
+_va = rd(R + '/VazioAcessoPayload.java')
+_se9 = rd(R + '/ServerEvents.java')
+_cph = rd(C + '/ClientPayloadHandler.java')
+_mn = rd(R + '/ModNetworking.java')
+check('5.41.0 (96): existe o pacote que diz se o jogador tem o dom (S2C)',
+      'record VazioAcessoPayload(boolean pode)' in _va and 'vazio_acesso' in _va)
+check('5.41.0 (96): o pacote esta registrado e tem handler no cliente',
+      'VazioAcessoPayload.TYPE' in _mn and 'handleVazioAcesso' in _cph
+      and 'PoderLeque.definirAcesso(payload.pode())' in _cph)
+check('5.41.0 (96): o servidor decide (temPoder) e manda quando muda, no login e na dimensao',
+      'VazioPoderes.temPoder(p)' in _se9
+      and 'enviarAcessoAosPoderes' in _se9 and 'acessoNoLogin' in _se9
+      and 'acessoNaTrocaDeDimensao' in _se9)
+check('5.41.0 (96): SEM o dom a roda NAO abre, nao desenha e nao aceita os atalhos',
+      'if (!aberto && !temAcesso)' in _pl9
+      and 'animado <= 0.02F || !temAcesso' in _pl9
+      and 'float alvo = (aberto && temAcesso) ? 1.0F : 0.0F;' in _pl9
+      and 'return aberto && temAcesso;' in _pl9)
+check('5.41.0 (96): quem perde o dom perde a roda e a habilidade armada',
+      'fechar();          // perdeu o dom no meio do uso' in _pl9
+      and 'selecionado = -1;  // e desarma a habilidade escolhida' in _pl9)
+check('5.41.0 (96): o jogador sem o dom recebe um aviso claro (nao um menu que nao funciona)',
+      'avisarSemAcesso' in _pl9 and 'Os poderes do vazio' in _pl9)
+
+# ============ 5.41.0 — o UMBRELLA "modelado" e o brilho fora (pedidos do print) ============
+check('5.41.0 (94-e): o umbrella NAO e mais encantado (o brilho saiu a pedido do dono)',
+      'isFoil' not in _vi)
+check('5.41.0 (94-e): a arte tem DOIS tons de tecido, metal e madeira (nao e mais chapado)',
+      all(k in _GER for k in ('R_TECIDO2', 'R_METAL', 'R_MADEIRA', 'R_ESCURO')))
+check('5.41.0 (94-e): a geometria usa OCTOGONOS (dois quadrados, um a 45) + 8 pontas',
+      'def octogono(' in _GER and 'def pontas(' in _GER
+      and len([e for e in _BASE_A['elements']
+               if e['faces']['north']['uv'] == [8, 8, 12, 11]]) >= 8)
+check('5.41.0 (94-e): NENHUM elemento usa rotacao acima de 45 (o jogo rejeitaria o modelo)',
+      all(abs(e['rotation']['angle']) <= 45
+          for m in (_BASE_F, _BASE_A)
+          for e in m['elements'] if e.get('rotation')))
+
+# ============ 5.41.0 — varredura geral (pedido: "passe por todo o mod") ============
+check('5.41.0: o auditor geral do mod roda limpo (pacotes, eventos, texturas, receitas, lang)',
+      subprocess.run([sys.executable, '-I', 'arte/auditar.py'],
+                     capture_output=True).returncode == 0)
+check('5.41.0: todo item registrado tem nome nos dois idiomas',
+      all(('item.rptag.' + a) in rd(A + '/lang/pt_br.json')
+          and ('item.rptag.' + a) in rd(A + '/lang/en_us.json')
+          for a in ('escuridao', 'coracao_canon', 'chave_julgamento', 'umbrella_sombra')))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

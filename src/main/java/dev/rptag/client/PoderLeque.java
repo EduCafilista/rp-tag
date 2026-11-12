@@ -87,6 +87,29 @@ public final class PoderLeque {
     public static KeyMapping TECLA_LEQUE;
     public static KeyMapping TECLA_REPETIR;
 
+    /**
+     * (5.41.0) <b>O JOGADOR TEM O DOM?</b> Vem do servidor ({@code VazioAcessoPayload}).
+     *
+     * <p>O dono: <i>"a powerwheel aparece mesmo sem o player ter o vazio ligado, corrija
+     * isso"</i>. Antes a roda abria para qualquer um e o servidor só recusava depois. Agora,
+     * sem o dom, a roda <b>nem abre</b> — e quem decide é o servidor.
+     */
+    private static boolean temAcesso;
+    /** quando o último aviso "sem o dom" foi mostrado (evita spammar a tela). */
+    private static long ultimoAvisoSemAcesso;
+
+    public static void definirAcesso(boolean pode) {
+        temAcesso = pode;
+        if (!pode) {
+            fechar();          // perdeu o dom no meio do uso: fecha a roda na hora
+            selecionado = -1;  // e desarma a habilidade escolhida
+        }
+    }
+
+    public static boolean temAcesso() {
+        return temAcesso;
+    }
+
     /** a roda está aberta? */
     private static boolean aberto;
     /** animação: 0 = fechada, 1 = aberta (interpola suave). */
@@ -123,7 +146,28 @@ public final class PoderLeque {
     }
 
     public static boolean estaAberto() {
-        return aberto;
+        return aberto && temAcesso;
+    }
+
+    /**
+     * (5.41.0) O aviso de "você não tem o dom": discreto, no action bar, no máximo a cada 2 s.
+     * Antes a roda simplesmente abria e o servidor recusava — o jogador não entendia nada.
+     */
+    private static void avisarSemAcesso(Minecraft mc) {
+        long agora = System.currentTimeMillis();
+        if (agora - ultimoAvisoSemAcesso < 2000L) {
+            return;
+        }
+        ultimoAvisoSemAcesso = agora;
+        try {
+            mc.player.displayClientMessage(
+                    net.minecraft.network.chat.Component.literal(
+                            "\u00a78Os poderes do vazio não respondem a você."),
+                    true);
+            som(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 0.6F, 0.4F);
+        } catch (Throwable ignorado) {
+            // sem HUD: segue calado
+        }
     }
 
     /**
@@ -162,6 +206,12 @@ public final class PoderLeque {
                 if (mc.screen != null) {
                     continue;
                 }
+                // (5.41.0) SEM O DOM A RODA NAO ABRE (o servidor manda o estado). Antes ela
+                // abria pra qualquer jogador do servidor — bug reportado pelo dono.
+                if (!aberto && !temAcesso) {
+                    avisarSemAcesso(mc);
+                    continue;
+                }
                 aberto = !aberto;
                 abertoEm = System.currentTimeMillis();
                 apontado = -1;
@@ -177,7 +227,7 @@ public final class PoderLeque {
             long agora = System.nanoTime();
             float dt = Math.min(0.1F, (agora - ultimoTick) / 1_000_000_000.0F);
             ultimoTick = agora;
-            float alvo = aberto ? 1.0F : 0.0F;
+            float alvo = (aberto && temAcesso) ? 1.0F : 0.0F;   // (5.41.0) sem o dom, some
             animado = Mth.lerp(Math.min(1.0F, dt * 14.0F), animado, alvo);
 
             if (!aberto) {
@@ -190,6 +240,10 @@ public final class PoderLeque {
             }
             // fecha sozinho depois de 10 s parado
             if (System.currentTimeMillis() - abertoEm > 15000L) {
+                fechar();
+                return;
+            }
+            if (!temAcesso) {          // (5.41.0) sem o dom nem teclas nem clique
                 fechar();
                 return;
             }
@@ -391,7 +445,7 @@ public final class PoderLeque {
     // ------------------------------------------------------------- desenho
 
     private static void render(GuiGraphics g, net.minecraft.client.DeltaTracker dt) {
-        if (animado <= 0.02F) {
+        if (animado <= 0.02F || !temAcesso) {   // (5.41.0) sem o dom a roda não é desenhada
             return;
         }
         try {

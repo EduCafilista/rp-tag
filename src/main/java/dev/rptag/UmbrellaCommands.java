@@ -1,9 +1,11 @@
 package dev.rptag;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.core.component.DataComponents;
@@ -46,6 +48,28 @@ public final class UmbrellaCommands {
         return stack;
     }
 
+    /** (5.41.0) abre ou fecha o umbrella da mão de quem executou o comando. */
+    private static int alternar(CommandContext<CommandSourceStack> ctx, boolean abrir)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer quem = ctx.getSource().getPlayerOrException();
+        ItemStack mao = quem.getMainHandItem();
+        if (!(mao.getItem() instanceof VarinhaSombraItem)) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "\u00a78Ponha o umbrella na mão principal primeiro."));
+            return 0;
+        }
+        if (abrir) {
+            int seg = VarinhaSombraItem.abrir(mao, quem.level());
+            quem.displayClientMessage(Component.literal("\u00a77guarda-chuva \u00a7dABERTO \u00a78por "
+                    + seg + " s").withStyle(ChatFormatting.GRAY), true);
+        } else {
+            VarinhaSombraItem.fechar(mao);
+            quem.displayClientMessage(Component.literal("\u00a78guarda-chuva fechado")
+                    .withStyle(ChatFormatting.DARK_GRAY), true);
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
     @SubscribeEvent
     public static void aoRegistrarComandos(RegisterCommandsEvent evento) {
         evento.getDispatcher().register(Commands.literal("umbrella")
@@ -57,15 +81,24 @@ public final class UmbrellaCommands {
                     String cmd = String.valueOf(naMao.get(DataComponents.CUSTOM_MODEL_DATA));
                     String id = String.valueOf(net.minecraft.core.registries.BuiltInRegistries.ITEM
                             .getKey(naMao.getItem()));
+                    int valor = VarinhaSombraItem.cru(naMao);
                     String msg = "\u00a78item na mão: \u00a7f" + id
                             + "\u00a78 · é umbrella? \u00a7f" + ehUmbrella
                             + "\u00a78 · custom_model_data: \u00a7f" + cmd
+                            + "\u00a78 · cor: \u00a7f" + VarinhaSombraItem.corDo(naMao)
+                            + "\u00a78 (" + CORES[VarinhaSombraItem.corDo(naMao)] + ")"
+                            + "\u00a78 · modelo: \u00a7f"
+                            + (VarinhaSombraItem.aberto(naMao) ? "ABERTO (" + valor + ")" : "fechado (" + valor + ")")
                             + "\u00a78 · aberto? \u00a7f" + VampiroSistema.guardaChuvaAberto(quem);
                     quem.displayClientMessage(Component.literal(msg), true);
                     ctx.getSource().sendSuccess(() -> Component.literal(msg), false);
                     RPTagMod.LOGGER.info("RP Tag: /umbrella info -> {}", msg.replace("\u00a7", "§"));
                     return Command.SINGLE_SUCCESS;
                 }))
+                // (5.41.0) abre/fecha o guarda-chuva da mão sem esperar o clique — útil pra
+                // testar o modelo aberto e pra cenas de lore (o ADM abre o de alguém).
+                .then(Commands.literal("abrir").executes(ctx -> alternar(ctx, true)))
+                .then(Commands.literal("fechar").executes(ctx -> alternar(ctx, false)))
                 .then(Commands.literal("cores").executes(ctx -> {
                     StringBuilder linhas = new StringBuilder("\u00a78cores do umbrella: ");
                     for (int i = 0; i < CORES.length; i++) {
