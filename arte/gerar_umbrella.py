@@ -14,6 +14,7 @@ Saída:
 Uso: python3 arte/gerar_umbrella.py
 """
 import json
+import math
 import os
 
 from PIL import Image
@@ -182,84 +183,146 @@ def cubo(x0, y0, z0, x1, y1, z1, uv, rot=None):
     return el
 
 
-DISPLAY_INVENTARIO = {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]}
+def disco(raio, y0, y1, uv, centro=8.0):
+    """um DISCO de tecido (um "anel" cheio) feito de 5 placas cruzadas.
+
+    <b>Por que 5 e nao 16 setores?</b> Modelo de item no Minecraft só aceita rotação de
+    <b>-45° a 45°</b> (`rotation.angle`). Girar em 90°/135° faz o jogo REJEITAR o modelo
+    inteiro — e o item volta a aparecer como o quadriculado rosa/preto de "faltando", que é
+    exatamente o bug que o dono reportou. Então: 5 placas de diâmetro inteiro, giradas em
+    -45, -22,5, 0, 22,5 e 45 graus. Cada placa dá dois braços (θ e θ+180°), então o disco
+    fecha em 20 braços a cada 18° — sem furo no meio e sem ângulo ilegal.
+    """
+    el = []
+    # espessura da placa = a corda do braço (senão aparecem frestas entre os braços)
+    esp = max(1.0, min(3.0, 2.0 * raio * math.sin(math.radians(9.0))))
+    for ang in (-45, -22.5, 0, 22.5, 45):
+        el.append(cubo(centro - raio, y0, centro - esp / 2.0,
+                       centro + raio, y1, centro + esp / 2.0, uv,
+                       {"origin": [centro, (y0 + y1) / 2.0, centro], "axis": "y", "angle": ang}))
+    return el
+
+
+def haste_e_cabo(uv_madeira, y_cabo, y_alto):
+    """a haste (de baixo pra cima) e o cabo em gancho — iguais no fechado e no aberto."""
+    el = [cubo(7.55, y_cabo + 1.2, 7.55, 8.45, y_alto, 8.45, uv_madeira)]
+    # cabo: desce, vira pra esquerda e sobe na ponta (o gancho)
+    el.append(cubo(7.55, y_cabo + 0.35, 7.55, 8.45, y_cabo + 1.5, 8.45, uv_madeira))
+    el.append(cubo(5.60, y_cabo + 0.35, 7.55, 7.60, y_cabo + 1.1, 8.45, uv_madeira))
+    el.append(cubo(5.60, y_cabo + 0.35, 7.55, 6.40, y_cabo + 1.7, 8.45, uv_madeira))
+    return el
 
 
 def modelo_fechado():
-    """guarda-chuva FECHADO: o pano dobrado descendo em degraus pela haste (cone invertido).
+    """guarda-chuva FECHADO: cabo com gancho EMBAIXO, pano enrolado subindo, ponteira no alto.
 
-    Quatro "mangas" de tecido, da mais larga (embaixo) para a mais fina (em cima), dão a
-    silhueta de guarda-chuva fechado de verdade — nada de travesseiro na haste.
+    (5.40.0) Antes o modelo estava DE CABEÇA PRA BAIXO (gancho no alto, ponteira no pé) — na
+    mão saía um guarda-chuva invertido. Agora segue o padrão do `item/handheld` do vanilla:
+    cabo embaixo, corpo subindo, ponta em cima. O pano é feito de 5 anéis radiais que
+    ENGORDAM pra cima, e o modelo fica centrado em (8, 8) pra aparecer no lugar certo na mão.
     """
     el = []
-    mangas = [
-        # (raio, y0, y1)
-        (2.7, 10.6, 12.0),   # a saia do pano (ponta de baixo)
-        (2.2, 9.0, 10.6),
-        (1.7, 7.4, 9.0),
-        (1.25, 5.8, 7.4),    # topo do pano, colado na haste
-    ]
-    for raio, y0, y1 in mangas:
-        el.append(cubo(8 - raio, y0, 7.7, 8 + raio, y1, 8.3, R_TECIDO))
-        el.append(cubo(7.7, y0, 8 - raio, 8.3, y1, 8 + raio, R_TECIDO))
-        for ang in (45, -45):
-            el.append(cubo(8 - raio, y0, 7.7, 8 + raio, y1, 8.3, R_TECIDO,
-                           {"origin": [8, (y0 + y1) / 2.0, 8], "axis": "y", "angle": ang}))
-    # amarração escura no meio do pano
-    el.append(cubo(5.9, 8.5, 7.7, 10.1, 9.0, 8.3, R_ESCURO))
-    el.append(cubo(7.7, 8.5, 5.9, 8.3, 9.0, 10.1, R_ESCURO))
-    # haste (de baixo do pano até a mão) e gancho
-    el.append(cubo(7.5, 4.2, 7.5, 8.5, 16.0, 8.5, [0, 8, 8, 16]))
-    el.append(cubo(5.2, 16.0, 7.6, 7.5, 16.8, 8.4, [0, 8, 8, 16]))
-    el.append(cubo(4.4, 15.2, 7.6, 5.2, 16.0, 8.4, [0, 8, 8, 16]))
-    # ponteira de metal no alto do pano
-    el.append(cubo(7.55, 4.4, 7.55, 8.45, 5.8, 8.45, R_METAL))
+    for raio1, y0, y1, uv in (
+            (1.5, 13.6, 14.4, R_ESCURO),   # topo do pano (junto da ponteira)
+            (2.0, 12.1, 13.6, R_TECIDO),
+            (2.4, 10.4, 12.1, R_TECIDO),
+            (2.7, 8.7, 10.4, R_TECIDO),
+            (3.0, 7.0, 8.7, R_TECIDO)):     # a saia do pano (bem embaixo)
+        el += disco(raio1, y0, y1, uv)
+    # a fita escura que amarra o pano
+    el += disco(3.1, 8.5, 9.3, R_ESCURO)
+    el += haste_e_cabo(R_MADEIRA, y_cabo=0.6, y_alto=14.2)
+    # ponteira de metal no alto
+    el.append(cubo(7.55, 14.4, 7.55, 8.45, 15.9, 8.45, R_METAL))
     return el
 
 
 def modelo_aberto():
-    """guarda-chuva aberto: cúpula em DEGRAUS (3 anéis fundos), varetas, haste e gancho.
+    """guarda-chuva ABERTO: cúpula larga de 3 anéis no ALTO, haste descendo, gancho no pé.
 
-    Cada anel é uma cruz de 4 placas grossas (X, Z e as duas diagonais) — juntas leem como cone
-    redondo. O degrau entre os anéis é fundo de propósito: é isso que dá a sombra de cúpula.
+    (5.40.0) O mesmo defeito do fechado, e pior: a cúpula estava em y 0,4..6,4 (embaixo) e a
+    haste subia até 16,8 — saía de ponta-cabeça. E as 3 placas em cruz por anel liam como
+    tábuas soltas; agora são anéis radiais de 8 setores, iguais aos da cúpula da cabeça, então
+    o guarda-chuva fecha e aparece REDONDO. A cúpula tem 16px de ponta a ponta (1 bloco).
     """
     el = []
-    aneis = [
-        # (raio, y de cima, y de baixo)
-        (2.4, 1.4, 2.6),    # topo (o miolo, logo abaixo da ponteira)
-        (5.4, 2.8, 4.2),    # meio
-        (8.3, 4.6, 6.4),    # aba (cai fundo: é o que faz parecer cúpula)
-    ]
-    for raio, y0, y1 in aneis:
-        el.append(cubo(8 - raio, y0, 6.9, 8 + raio, y1, 9.1, R_TECIDO))
-        el.append(cubo(6.9, y0, 8 - raio, 9.1, y1, 8 + raio, R_TECIDO))
-        for ang in (45, -45):
-            el.append(cubo(8 - raio, y0, 6.9, 8 + raio, y1, 9.1, R_TECIDO,
-                           {"origin": [8, (y0 + y1) / 2.0, 8], "axis": "y", "angle": ang}))
-    # varetas penduradas nas 8 pontas da aba
-    for (x0, z0) in ((-0.3, 7.75), (15.5, 7.75), (7.75, -0.3), (7.75, 15.5),
-                     (1.7, 1.7), (13.7, 1.7), (1.7, 13.7), (13.7, 13.7)):
-        el.append(cubo(x0, 6.4, z0, x0 + 0.8, 9.2, z0 + 0.5, [0, 8, 4, 16]))
-    # ponteira e haste
-    el.append(cubo(7.55, 0.4, 7.55, 8.45, 1.6, 8.45, R_METAL))
-    el.append(cubo(7.45, 5.6, 7.45, 8.55, 15.4, 8.55, [0, 8, 8, 16]))
-    # gancho do cabo
-    el.append(cubo(7.45, 15.4, 7.45, 8.55, 16.6, 8.55, [0, 8, 8, 16]))
-    el.append(cubo(5.2, 16.0, 7.4, 7.45, 16.8, 8.6, [0, 8, 8, 16]))
-    el.append(cubo(4.4, 15.2, 7.4, 5.2, 16.0, 8.6, [0, 8, 8, 16]))
+    for raio1, y0, y1, uv in (
+            (3.0, 13.2, 14.4, R_TECIDO),    # miolo (logo abaixo da ponteira)
+            (5.8, 11.4, 13.2, R_TECIDO),    # meio
+            (8.3, 9.4, 11.4, R_TECIDO)):    # aba, caindo
+        el += disco(raio1, y0, y1, uv)
+    # as 8 pontas dos varões, penduradas na borda da aba
+    for k in range(8):
+        a = math.radians(45.0 * k)
+        cx, cz = 8.0 + 7.6 * math.cos(a), 8.0 + 7.6 * math.sin(a)
+        el.append(cubo(cx - 0.4, 7.2, cz - 0.4, cx + 0.4, 9.6, cz + 0.4, R_ESCURO))
+    el += haste_e_cabo(R_MADEIRA, y_cabo=0.6, y_alto=13.4)
+    # ponteira de metal no alto da cúpula
+    el.append(cubo(7.55, 14.4, 7.55, 8.45, 16.1, 8.45, R_METAL))
     return el
 
 
-DISPLAY = {
-    # (5.37.3) números copiados do item/handheld do vanilla: é onde os itens NA MÃO aparecem.
-    "thirdperson_righthand": {"rotation": [0, -90, 55], "translation": [0, 4, 0.5], "scale": [0.85, 0.85, 0.85]},
-    "thirdperson_lefthand": {"rotation": [0, 90, 55], "translation": [0, 4, 0.5], "scale": [0.85, 0.85, 0.85]},
-    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.68, 0.68, 0.68]},
-    "firstperson_lefthand": {"rotation": [0, 90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.68, 0.68, 0.68]},
-    "gui": {"rotation": [18, 224, 0], "translation": [0, 1.2, 0], "scale": [0.74, 0.74, 0.74]},
-    "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.4, 0.4, 0.4]},
-    "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [0.72, 0.72, 0.72]},
-}
+# (5.40.0) O TAMANHO NA MÃO. Herdar o `display` do `block/block` (scale 0,375) deixava o
+# guarda-chuva MINÚSCULO na mão — foi a reclamação do dono no print da 5.39.0. Estes números
+# são os do `item/handheld` do vanilla (o padrão de TODO item na mão: espada, picareta,
+# haste) com a escala aumentada, porque o guarda-chuva tem 1 bloco de comprimento e precisa
+# aparecer inteiro. O aberto é mais largo (cúpula de 1 bloco), então fica um pouco menor na
+# primeira pessoa pra não tampar a tela toda.
+def _display(tp, fp, mao_y=4, mao_z=0.5, gui=1.5):
+    return {
+        "thirdperson_righthand": {"rotation": [0, -90, 55], "translation": [0, mao_y, mao_z],
+                                  "scale": [tp, tp, tp]},
+        "thirdperson_lefthand": {"rotation": [0, 90, 55], "translation": [0, mao_y, mao_z],
+                                 "scale": [tp, tp, tp]},
+        "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13],
+                                  "scale": [fp, fp, fp]},
+        "firstperson_lefthand": {"rotation": [0, 90, 25], "translation": [1.13, 3.2, 1.13],
+                                 "scale": [fp, fp, fp]},
+        "gui": {"rotation": [20, 224, 0], "translation": [0, gui, 0], "scale": [1, 1, 1]},
+        "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.6, 0.6, 0.6]},
+        "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]},
+    }
+
+
+DISPLAY_FECHADO = _display(tp=1.25, fp=1.0)
+DISPLAY_ABERTO = _display(tp=1.05, fp=0.70)
+
+
+
+# ------------------------------------------------------------------ cúpula sobre a cabeça
+# (5.40.0) A GEOMETRIA DA CÚPULA em UM lugar só. Era o ponto onde tudo divergia: o Java
+# (client/CamadaUmbrella.java) desenhava uma coisa, a prévia offline desenhava outra e a
+# cúpula saía 8,9 BLOCOS abaixo do jogador (unidade trocada: o Java estava em pixels, o
+# espaço da camada é em BLOCOS). Este arquivo é gravado em arte/dome_geometria.json e o
+# check.py compara os números com os `addBox(...)` do Java — se divergir, o build falha.
+#
+# Cada cubo é um "raio" da cúpula: vai do centro (x=0) para fora em +X, fino em Z, e é
+# repetido em 16 setores girados em Y (22,5° cada) — é isso que faz a cúpula ser REDONDA.
+# A profundidade em Z cresce com o raio para os setores se encostarem (senão o guarda-chuva
+# vira uma estrela de varões soltos).
+DOME_SETORES = 16
+DOME_TRANSLATE_Y = 0.72     # em BLOCOS, acima do pivô da cabeça (o topo do chapéu fica a 0,53)
+DOME_CUBOS = [
+    # (texOffs x, texOffs y), x, y, z, largura, altura, profundidade   [pixels do modelo]
+    ((0, 0),   0.0, -0.6, -1.4, 2.8, 1.0, 2.8),   # tampa do miolo (fecha o buraco do centro)
+    ((4, 3),   2.6, -2.0, -1.6, 3.8, 1.0, 3.2),   # anel de dentro
+    ((4, 6),   5.8, -3.6, -2.2, 3.8, 1.0, 4.4),   # anel do meio
+    ((4, 9),   8.8, -5.2, -2.9, 3.8, 1.0, 5.8),   # aba (a borda que cai)
+    ((0, 12), 11.4, -8.4, -0.4, 0.8, 3.2, 0.8),   # vareta pendurada na ponta da aba
+    # ponteira de metal no alto (não gira: fica no eixo)
+    ((4, 12),  -0.6,  0.4, -0.6, 1.2, 2.4, 1.2),
+]
+
+
+def escrever_dome():
+    """grava a geometria da cúpula para a prévia offline e para a prova do check.py."""
+    dados = {
+        "setores": DOME_SETORES,
+        "translate_y_blocos": DOME_TRANSLATE_Y,
+        "cubos": [{"texOffs": list(t), "x": x, "y": y, "z": z, "w": w, "h": h, "d": d}
+                  for (t, x, y, z, w, h, d) in DOME_CUBOS],
+    }
+    escrever(os.path.join(RAIZ, "arte", "dome_geometria.json"), dados)
 
 
 def escrever(path, dados):
@@ -293,19 +356,22 @@ def main():
         os.path.join(tex_item, "umbrella_icon.png"))
 
     # 2) geometrias base (uma fechada, uma aberta) — a cor entra pela textura
-    for estado, elementos in (("fechado", modelo_fechado()), ("aberto", modelo_aberto())):
+    for estado, elementos, disp in (("fechado", modelo_fechado(), DISPLAY_FECHADO),
+                                    ("aberto", modelo_aberto(), DISPLAY_ABERTO)):
         # (5.37.3) parent "block/block": é o caminho canônico do vanilla pra modelo COM CUBOS
         # (todo item 3D do jogo — tocha, placa, cerca — vem daí). Antes era "item/handheld",
         # que herda de item/generated -> builtin/generated (o gerador de quad 2D) e podia
         # simplesmente ignorar os elementos.
-        # (5.39.0) o DISPLAY saiu: herda o do `block/block` (scale 0,375 / 0,4), que é o
-        # tamanho certo pra um modelo de 1 bloco na mao. Os numeros que eu tinha inventado
-        # (0,68 / 0,85) deixavam o guarda-chuva DO TAMANHO DA TELA no print do dono.
+        # (5.40.0) o DISPLAY VOLTOU, agora com numeros de verdade: os do `item/handheld`
+        # do vanilla com a escala maior (ver DISPLAY_FECHADO/DISPLAY_ABERTO logo acima).
+        # Na 5.39.0 eu tinha tirado o display e deixado herdar o do `block/block`
+        # (scale 0,375) -> o guarda-chuva saiu MINUSCULO na mao (print do dono).
         escrever(os.path.join(mod_item, "umbrella_%s_base.json" % estado), {
             "parent": "minecraft:block/block",
             "textures": {"layer0": "rptag:item/umbrella_tex_0",
                          "particle": "rptag:item/umbrella_tex_0"},
             "elements": elementos,
+            "display": disp,
         })
         for i in range(len(CORES)):
             escrever(os.path.join(mod_item, "umbrella_%s_%d.json" % (estado, i)), {
@@ -317,10 +383,10 @@ def main():
     # 3) o item: fechado por padrão, e cada cor x aberto/fechado
     overrides = []
     for i in range(len(CORES)):
-        overrides.append({"predicate": {"custom_model_data": i, "using": 0},
+        overrides.append({"predicate": {"custom_model_data": i, "rptag:aberto": 0},
                           "model": "rptag:item/umbrella_fechado_%d" % i})
     for i in range(len(CORES)):
-        overrides.append({"predicate": {"custom_model_data": i, "using": 1},
+        overrides.append({"predicate": {"custom_model_data": i, "rptag:aberto": 1},
                           "model": "rptag:item/umbrella_aberto_%d" % i})
     # (5.39.0) a base é o MODELO 3D fechado (textura que existe de verdade). Antes a base era
     # um `item/generated` apontando pra um arquivo que eu nunca gerei: o jogo desenhava o quad
@@ -362,6 +428,7 @@ def main():
                        "components": {"minecraft:custom_model_data": i}},
         })
 
+    escrever_dome()
     print("umbrella: %d cores | texturas de item/cupula/HUD | 2 geometrias 3D | %d receitas"
           % (len(CORES), len(CORES) * 2))
 

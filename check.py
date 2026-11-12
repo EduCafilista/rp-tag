@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.39.0'
+VER = '5.40.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3022,9 +3022,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.39.0 no jar, no mod e no gradle',
-      "version = '5.39.0'" in rd('build.gradle')
-      and '5.39.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.40.0 no jar, no mod e no gradle',
+      "version = '5.40.0'" in rd('build.gradle')
+      and '5.40.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3260,8 +3260,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.39.0 (jar, mod e gradle)',
-      "version = '5.39.0'" in rd('build.gradle') and '5.39.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.40.0 (jar, mod e gradle)',
+      "version = '5.40.0'" in rd('build.gradle') and '5.40.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3319,8 +3319,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.39.0 (jar, mod e gradle)',
-      "version = '5.39.0'" in rd('build.gradle') and '5.39.0' in _rm)
+check('5.34.0: a versao subiu pra 5.40.0 (jar, mod e gradle)',
+      "version = '5.40.0'" in rd('build.gradle') and '5.40.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3342,8 +3342,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.39.0 (jar, mod e gradle)',
-      "version = '5.39.0'" in rd('build.gradle') and '5.39.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.40.0 (jar, mod e gradle)',
+      "version = '5.40.0'" in rd('build.gradle') and '5.40.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3886,15 +3886,19 @@ _ab = rd(A + '/models/item/umbrella_aberto_base.json')
 # agora a prova conta as PLACAS diagonais (as 45 graus) e as varetas penduradas.
 _abj = _json.loads(_ab)
 check('5.37.0 (94): a cupula aberta e em DEGRAUS (3 aneis) com varetas penduradas',
-      sum(1 for e in _abj['elements'] if e.get('rotation', {}).get('axis') == 'y') >= 6
+      sum(1 for e in _abj['elements'] if e.get('rotation', {}).get('axis') == 'y') >= 12
       and sum(1 for e in _abj['elements']
-              if e['faces']['north']['uv'] == [0, 8, 4, 16]) >= 8)
+              if e['faces']['north']['uv'] == [12, 8, 16, 16]) == 8)
 _fc = rd(A + '/models/item/umbrella_fechado_base.json')
-check('5.37.0 (94): fechado tem o pano dobrado em degraus (4 mangas) e a haste',
-      _fc.count('"axis": "y"') >= 8 and 'R_TECIDO' not in _fc and '"7.5, 4.2"' in _fc.replace(' ', '').replace('[', '').replace(']', '') or '4.2' in _fc)
+# (5.40.0) o fechado agora sao 5 aneis radiais de 8 setores (o pano enrolado) + a haste
+check('5.37.0 (94): fechado tem o pano enrolado em aneis e a haste',
+      _fc.count('"axis": "y"') >= 25 and len(_json.loads(_fc)['elements']) >= 30)
+# (5.40.0) o predicado de estado chama `rptag:aberto` (nome proprio, registrado no cliente
+# por client/UmbrellaModelo.java) — antes era `using`, que NINGUEM registrava e por isso
+# valia 0 pra sempre: os 8 modelos abertos nunca eram escolhidos.
 check('5.37.0 (94): o item troca de modelo por COR e por ABERTO/FECHADO',
       rd(A + '/models/item/umbrella_sombra.json').count('"custom_model_data"') == 16
-      and rd(A + '/models/item/umbrella_sombra.json').count('"using"') == 16)
+      and rd(A + '/models/item/umbrella_sombra.json').count('"rptag:aberto"') == 16)
 check('5.37.0 (94): as 8 cores se craftam (e da pra tingir depois)',
       len([f for f in os.listdir('src/main/resources/data/rptag/recipes')
            if f.startswith('umbrella_')]) == 16)
@@ -3902,7 +3906,8 @@ check('5.37.0 (94): a CUPULA aparece sobre a cabeca quando aberto (pedido: "aber
       'RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>>' in _cu
       and 'entitySolid(tex)' in _cu and 'getParentModel().head.translateAndRotate(pose)' in _cu)
 check('5.37.0 (94): a cupula e redonda (16 setores com rotacao em Y)',
-      'for (int setor = 0; setor < 16; setor++)' in _cu and 'PartPose.rotation(0.0F, (float) ang, 0.0F)' in _cu)
+      'for (int setor = 0; setor < SETORES; setor++)' in _cu
+      and 'PartPose.rotation(0.0F, (float) ang, 0.0F)' in _cu and 'SETORES = 16' in _cu)
 check('5.37.0 (94): a camada da cabeca e registrada nas duas peles (classica e slim)',
       'EntityRenderersEvent.AddLayers' in _cu and 'getSkins()' in _cu and 'PlayerRenderer pr' in _cu)
 check('5.37.0 (94): o HUD mostra ABERTO/fechado, a cor e os segundos que faltam',
@@ -3956,10 +3961,6 @@ check('5.39.0: a BASE do item e o modelo 3D com textura que existe',
       and os.path.exists(A + '/textures/item/umbrella_tex_0.png'))
 check('5.37.3: o icone 2D existe nos 8 tons',
       all(os.path.exists(A + '/textures/item/umbrella_icon_%d.png' % i) for i in range(8)))
-# (5.39.0) o display inventado saiu: herdamos o do `block/block` (scale 0,375 / 0,4), que é o
-# tamanho certo pra um modelo de 1 bloco na mao (o print do dono mostrava o guarda-chuva gigante).
-check('5.39.0: o modelo herda o display do block/block (sem escala inventada gigante)',
-      'display' not in _base_f and _base_f['parent'] == 'minecraft:block/block')
 check('5.37.3: o /umbrella info existe (diagnostico do item na mao)',
       'literal("info")' in _uc)
 
@@ -4082,10 +4083,97 @@ check('5.39.0 (94-c): o icone SEM NUMERO existe (era ele que faltava e dava rosa
 check('5.39.0 (94-c): a base do item e o MODELO 3D (nao um quad 2D gigante)',
       _json.loads(rd(A + '/models/item/umbrella_sombra.json'))['parent']
       == 'rptag:item/umbrella_fechado_base')
-check('5.39.0 (94-c): o modelo NAO traz mais display inventado (herda o tamanho do block/block)',
-      'display' not in _json.loads(rd(A + '/models/item/umbrella_fechado_base.json')))
 check('5.39.0 (94-c): todas as 8 texturas de item existem (16x16)',
       all(os.path.exists(A + '/textures/item/umbrella_tex_%d.png' % i) for i in range(8)))
+
+
+# ============ PEDIDO 94-d — 5.40.0 (o umbrella na mao: tamanho, orientacao e o ABERTO) ============
+# (5.40.0) O dono mandou print: o guarda-chuva apareceu MINUSCULO na mao e "nao existe a versao
+# aberto". Duas causas, cada uma com prova permanente aqui:
+#   (a) o display herdado do `block/block` (scale 0,375) deixava o item minusculo;
+#   (b) os overrides usavam o predicado `using`, que NINGUEM registrava -> valia 0 pra sempre
+#       e os 8 modelos abertos nunca eram escolhidos (estavam no jar, invisisveis);
+#   (c) a cupula sobre a cabeca era desenhada 8,9 BLOCOS abaixo do jogador (pixels x blocos).
+# Bonus encontrado no caminho: as duas geometrias estavam DE CABECA PRA BAIXO (gancho no alto).
+_BASE_F = _json.loads(rd(A + '/models/item/umbrella_fechado_base.json'))
+_BASE_A = _json.loads(rd(A + '/models/item/umbrella_aberto_base.json'))
+_ITEM_U = _json.loads(rd(A + '/models/item/umbrella_sombra.json'))
+_UM = rd(C + '/UmbrellaModelo.java')
+_CU = rd(C + '/CamadaUmbrella.java')
+_GER = rd('arte/gerar_umbrella.py')
+_DOME = _json.loads(rd('arte/dome_geometria.json'))
+
+
+def _extremos(modelo, eixo):
+    """(min, max) de um eixo em todos os cubos do modelo."""
+    vals = [v for e in modelo['elements'] for v in (e['from'][eixo], e['to'][eixo])]
+    return min(vals), max(vals)
+
+
+def _largo(modelo):
+    """o cubo mais LARGO do modelo (em X) — na cupula aberta e a aba."""
+    return max(modelo['elements'], key=lambda e: e['to'][0] - e['from'][0])
+
+
+check('5.40.0 (94-d): o predicado `rptag:aberto` e REGISTRADO no cliente (sem isso o modelo '
+      'aberto nunca e escolhido)',
+      'ItemProperties.register(RPTagMod.UMBRELLA.get(), ABERTO' in _UM
+      and 'FMLClientSetupEvent' in _UM and 'enqueueWork' in _UM
+      and 'isUsingItem()' in _UM)
+check('5.40.0 (94-d): o nome do predicado no Java e o MESMO do umbrella_sombra.json',
+      'ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "aberto")' in _UM
+      and all(o['predicate'].get('rptag:aberto') in (0, 1) for o in _ITEM_U['overrides']))
+check('5.40.0 (94-d): os 16 overrides apontam pra modelos que EXISTEM (fechado e aberto, 8 cores)',
+      all(os.path.exists(os.path.join(_MODELOS, 'item',
+                                      o['model'].replace('rptag:item/', '') + '.json'))
+          for o in _ITEM_U['overrides'])
+      and len({o['model'] for o in _ITEM_U['overrides']}) == 16)
+check('5.40.0 (94-d): existe um modelo ABERTO pra cada uma das 8 cores',
+      all(_json.loads(rd(A + '/models/item/umbrella_aberto_%d.json' % i))['parent']
+          == 'rptag:item/umbrella_aberto_base' for i in range(8)))
+# (a) TAMANHO: o display tem de ser o do item/handheld com escala de gente grande
+_disp_f = _BASE_F['display']
+check('5.40.0 (94-d): o display voltou e nao e minusculo (3a pessoa >= 1,0 / 1a pessoa >= 0,6)',
+      _disp_f['thirdperson_righthand']['scale'][0] >= 1.0
+      and _disp_f['firstperson_righthand']['scale'][0] >= 0.6
+      and _BASE_A['display']['thirdperson_righthand']['scale'][0] >= 1.0)
+check('5.40.0 (94-d): o display usa os angulos do item/handheld do vanilla (0,-90,55 na mao)',
+      _disp_f['thirdperson_righthand']['rotation'] == [0, -90, 55]
+      and _BASE_A['display']['thirdperson_righthand']['rotation'] == [0, -90, 55])
+# (bonus) ORIENTACAO: cabo/gancho embaixo, cupula em cima, ponteira no alto
+_fmin, _fmax = _extremos(_BASE_F, 1)
+_amin, _amax = _extremos(_BASE_A, 1)
+_largo_a = _largo(_BASE_A)
+check('5.40.0 (94-d): o guarda-chuva nao esta mais de cabeca pra baixo (gancho embaixo, '
+      'cupula/ponteira no alto)',
+      min(e['from'][1] for e in _BASE_F['elements']) <= 2.0
+      and _largo_a['from'][1] >= 9.0            # a aba aberta fica em cima
+      and _amin <= 2.0 and _amax >= 15.5
+      and max(e['to'][1] for e in _BASE_A['elements']) >= 15.5)
+check('5.40.0 (94-d): a cupula aberta e LARGA (1 bloco de ponta a ponta) e cobre a cabeca',
+      (_extremos(_BASE_A, 0)[1] - _extremos(_BASE_A, 0)[0]) >= 15.0
+      and (_extremos(_BASE_A, 2)[1] - _extremos(_BASE_A, 2)[0]) >= 15.0)
+check('5.40.0 (94-d): o fechado e MAGRO na mao (nao e uma cupula aberta)',
+      (_extremos(_BASE_F, 0)[1] - _extremos(_BASE_F, 0)[0]) <= 6.5
+      and (_extremos(_BASE_F, 2)[1] - _extremos(_BASE_F, 2)[0]) <= 6.0)
+# (c) A CUPULA SOBRE A CABECA: em BLOCOS, e a mesma geometria da previa/gerador
+check('5.40.0 (94-d): a cupula da cabeca sobe em BLOCOS (nao 8,9 blocos pra baixo)',
+      'pose.translate(0.0F, TRANSLATE_Y, 0.0F)' in _CU
+      and 'TRANSLATE_Y = ' in _CU and '-8.9F' not in _CU)
+check('5.40.0 (94-d): a altura da cupula no Java e a MESMA de arte/dome_geometria.json',
+      ('TRANSLATE_Y = %.2fF' % _DOME['translate_y_blocos']) in _CU.replace('0.72', '%.2f' % 0.72))
+_java_box = _CU[_CU.index('public static ModelPart construir'):]
+_java_box = _java_box[:_java_box.index('return malha.getRoot().bake')]
+check('5.40.0 (94-d): os cubos da cupula no Java batem com o dome_geometria.json',
+      all(('addBox(%.1fF, %.1fF, %.1fF, %.1fF, %.1fF, %.1fF)' %
+           (c['x'], c['y'], c['z'], c['w'], c['h'], c['d'])) in _java_box
+          for c in _DOME['cubos'])
+      and len(_DOME['cubos']) == 6 and int(_DOME['setores']) == 16)
+check('5.40.0 (94-d): a cupula e feita de SETORES girados (redonda, nao uma estrela de tabuas)',
+      'SETORES = 16' in _CU and 'PartPose.rotation(0.0F, (float) ang, 0.0F)' in _CU
+      and 'def disco(' in _GER)
+check('5.40.0 (94-d): a previa offline le a MESMA geometria da cupula (nao copia a mao)',
+      'dome_geometria.json' in rd('arte/render_umbrella_offline.py'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

@@ -62,31 +62,56 @@ public final class CamadaUmbrella {
         }
     }
 
-    /** monta os 8 setores de uma cor (feito uma vez por cor, no cliente). */
+    /**
+     * (5.40.0) <b>ONDE a cúpula fica</b>, em BLOCOS acima do pivô da cabeça.
+     *
+     * <p>O erro que fez o guarda-chuva aberto "não existir": o {@code render} traduzia
+     * {@code -8,9} achando que estava em pixels, mas o espaço da camada — depois de
+     * {@code head.translateAndRotate} — já está em <b>blocos</b> (o {@code ModelPart} divide
+     * as coordenadas dos cubos por 16 sozinho). Resultado: a cúpula era desenhada 8,9 BLOCOS
+     * abaixo do jogador, enterrada, e ninguém nunca a viu.
+     *
+     * <p>O topo do chapéu do jogador fica a 0,53 bloco acima do pivô da cabeça; 0,72 deixa a
+     * aba passando por cima dele. O número também está em {@code arte/dome_geometria.json},
+     * e o {@code check.py} compara os dois.
+     */
+    public static final float TRANSLATE_Y = 0.72F;
+
+    /** quantos setores girados em Y formam a cúpula (22,5° cada). */
+    public static final int SETORES = 16;
+
+    /**
+     * Monta a cúpula de uma cor (feito uma vez por cor, no cliente).
+     *
+     * <p>Cada setor é um "raio": vai do centro para fora em +X, fino em Z. A profundidade em Z
+     * cresce junto com o raio porque a corda do setor também cresce — assim os 16 setores se
+     * encostam e a cúpula fecha, em vez de virar uma estrela de varões soltos.
+     *
+     * <p>Estes números têm de ser os mesmos de {@code arte/dome_geometria.json} (gerado por
+     * {@code arte/gerar_umbrella.py}); o {@code check.py} compara os dois.
+     */
     public static ModelPart construir(int cor) {
         MeshDefinition malha = new MeshDefinition();
         PartDefinition raiz = malha.getRoot();
-        for (int setor = 0; setor < 16; setor++) {
-            double ang = 2.0D * Math.PI * setor / 16.0D;
-            // (5.37.0) cada anel aponta pra uma faixa de TECIDO da textura (a ponta de metal
-            // fica só na ponteira) — antes tudo mirava no (0,0) e a cúpula saía branca
+        for (int setor = 0; setor < SETORES; setor++) {
+            double ang = 2.0D * Math.PI * setor / SETORES;
             CubeListBuilder cubos = CubeListBuilder.create();
-            // anel de dentro (o miolo, colado no topo): raio 2,4 -> 5,4
-            cubos.texOffs(4, 1).addBox(2.4F, -0.5F, -1.0F, 3, 1, 2);
-            // anel do meio: raio 5,4 -> 8,0
-            cubos.texOffs(4, 4).addBox(5.4F, -1.1F, -1.5F, 3, 1, 3);
-            // aba (cai fundo e passa da largura da cabeça): raio 8,0 -> 10,4
-            cubos.texOffs(4, 6).addBox(8.0F, -1.9F, -1.9F, 3, 1, 4);
+            // tampa do miolo (fecha o buraco do centro)
+            cubos.texOffs(0, 0).addBox(0.0F, -0.6F, -1.4F, 2.8F, 1.0F, 2.8F);
+            // anel de dentro
+            cubos.texOffs(4, 3).addBox(2.6F, -2.0F, -1.6F, 3.8F, 1.0F, 3.2F);
+            // anel do meio
+            cubos.texOffs(4, 6).addBox(5.8F, -3.6F, -2.2F, 3.8F, 1.0F, 4.4F);
+            // aba: a borda que cai (é o que dá a silhueta de guarda-chuva de lado)
+            cubos.texOffs(4, 9).addBox(8.8F, -5.2F, -2.9F, 3.8F, 1.0F, 5.8F);
             // vareta pendurada na ponta da aba (faixa escura da textura)
-            cubos.texOffs(0, 12).addBox(10.2F, -0.9F, -0.25F, 1, 3, 1);
+            cubos.texOffs(0, 12).addBox(11.4F, -8.4F, -0.4F, 0.8F, 3.2F, 0.8F);
             raiz.addOrReplaceChild("setor_" + setor, cubos,
                     PartPose.rotation(0.0F, (float) ang, 0.0F));
         }
-        // ponteira em cima e o cabo que desce até a cabeça
-        raiz.addOrReplaceChild("ponteira", CubeListBuilder.create().texOffs(0, 0)
-                .addBox(-0.5F, -3.0F, -0.5F, 1, 2, 1), PartPose.ZERO);
-        raiz.addOrReplaceChild("cabo", CubeListBuilder.create().texOffs(2, 2)
-                .addBox(-0.4F, 0.4F, -0.4F, 1, 1, 1), PartPose.ZERO);
+        // ponteira de metal no alto, no eixo (não gira com os setores)
+        raiz.addOrReplaceChild("ponteira", CubeListBuilder.create().texOffs(4, 12)
+                .addBox(-0.6F, 0.4F, -0.6F, 1.2F, 2.4F, 1.2F), PartPose.ZERO);
         return malha.getRoot().bake(16, 16);
     }
 
@@ -123,7 +148,10 @@ public final class CamadaUmbrella {
                 pose.pushPose();
                 // acima da cabeça, girando com ela
                 getParentModel().head.translateAndRotate(pose);
-                pose.translate(0.0F, -8.9F, 0.0F);   // modelo usa 1 unidade = 1/16 de bloco
+                // (5.40.0) em BLOCOS (aqui 1,0 = 1 bloco; o ModelPart já divide os cubos
+                // por 16 sozinho). Antes eram -8,9 "pixels" -> a cúpula ia pra 8,9 blocos
+                // abaixo do jogador e era isso que fazia o guarda-chuva aberto "não existir".
+                pose.translate(0.0F, TRANSLATE_Y, 0.0F);
                 pose.scale(1.0F, 1.0F, 1.0F);
                 cupula.render(pose, vc, luz, OverlayTexture.NO_OVERLAY);
                 pose.popPose();

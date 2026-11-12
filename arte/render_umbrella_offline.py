@@ -102,17 +102,38 @@ def amostra(tex, u, v):
 
 # ------------------------------------------------------------------ render
 def renderizar(elements, display, tex, largura=260, altura=260, yaw=-35, pitch=18, zoom=620,
-               extras=()):
+               extras=(), centrar=False, regua=False):
     img = Image.new("RGBA", (largura, altura), (18, 16, 24, 255))
     des = ImageDraw.Draw(img)
     cy, sy = math.radians(yaw), math.sin(math.radians(yaw))
     cp, sp = math.cos(math.radians(pitch)), math.sin(math.radians(pitch))
     yaw_c, yaw_s = math.cos(math.radians(yaw)), sy
 
+    if regua:
+        # um CUBO DE 1 BLOCO como régua (contorno), pra ver o tamanho do item sem chutar
+        extras = tuple(extras) + tuple(
+            caixa(x0, y0, z0, x0 + 0.4, y0 + 16.0, z0 + 0.4, [0, 0, 0, 0])
+            for (x0, y0, z0) in ((-8, -8, -8), (7.6, -8, -8), (-8, -8, 7.6), (7.6, -8, 7.6)))
     todas = [(el, False) for el in elements] + [(el, True) for el in extras]
+    # (5.40.0) o jogo, depois do display, faz translate(-0,5 -0,5 -0,5) pra pôr o CENTRO do
+    # modelo na mão (é o `ItemRenderer`). Aqui, pra caber no quadro, a câmera mira o centro do
+    # que sobrou disso (`centrar`) — o tamanho RELATIVO continua o mesmo.
+    desloc = [0.0, 0.0, 0.0]
+    if centrar:
+        pts_todos = []
+        for el in elements:
+            pts_todos += [(x - 0.5, y - 0.5, z - 0.5)
+                          for (x, y, z) in aplicar_display(cantos(el), display)]
+        if pts_todos:
+            desloc = [(min(p[i] for p in pts_todos) + max(p[i] for p in pts_todos)) / 2.0
+                      for i in range(3)]
     faces = []
     for el, referencia in todas:
-        pts3 = aplicar_display(cantos(el), display) if not referencia else cantos(el)
+        if referencia:
+            pts3 = [(x - desloc[0], y - desloc[1], z - desloc[2]) for (x, y, z) in cantos(el)]
+        else:
+            pts3 = [(x - 0.5 - desloc[0], y - 0.5 - desloc[1], z - 0.5 - desloc[2])
+                    for (x, y, z) in aplicar_display(cantos(el), display)]
         vis = []
         for (x, y, z) in pts3:
             x1 = x * yaw_c + z * yaw_s
@@ -165,6 +186,29 @@ def carregar(nome):
     return j
 
 
+def cupula_do_json():
+    """monta a cúpula a partir de arte/dome_geometria.json (a MESMA geometria do Java).
+
+    Os cubos vêm em pixels de modelo; o Java os repete em `setores` setores girados em Y e
+    depois sobe a cúpula `translate_y_blocos` acima do pivô da cabeça. Aqui é igual, com a
+    subida já embutida em pixels (o referencial desta prévia vira Y pra cima no `cantos`).
+    """
+    caminho = os.path.join(RAIZ, "arte", "dome_geometria.json")
+    with open(caminho, encoding="utf-8") as fp:
+        g = json.load(fp)
+    setores = int(g.get("setores", 16))
+    ty = float(g.get("translate_y_blocos", 0.0))
+    cubos = []
+    for setor in range(setores):
+        ang = 360.0 * setor / setores
+        for c in g["cubos"]:
+            cubos.append(caixa(c["x"], c["y"] - ty * 16.0, c["z"],
+                               c["x"] + c["w"], c["y"] + c["h"] - ty * 16.0, c["z"] + c["d"],
+                               [0, 0, 8, 8],
+                               {"origin": [0, 0, 0], "axis": "y", "angle": ang}))
+    return cubos, ty
+
+
 def main():
     cor = int(sys.argv[1]) if len(sys.argv) > 1 else 0
     tex = None
@@ -176,27 +220,21 @@ def main():
     fechado = carregar("umbrella_fechado_%d.json" % cor)
     aberto = carregar("umbrella_aberto_%d.json" % cor)
 
-    # a cabeça do jogador (referência) e a cúpula montada como no Java (16 setores)
+    # (5.40.0) a cabeça do jogador (referência) e a cúpula LIDA de arte/dome_geometria.json —
+    # a mesma fonte que o Java usa. Antes estava copiada à mão aqui e divergia do jogo.
     cabeca = caixa(-4, -8, -4, 4, 0, 4, [0, 0, 0, 0])
-    cupula = []
-    for setor in range(16):
-        ang = 360.0 * setor / 16.0
-        cupula.append(caixa(2.5, -9.4, 7.0 - 1.0, 5.5, -8.4, 7.0 + 1.0, [0, 0, 8, 8],
-                            {"origin": [0, 0, 8], "axis": "y", "angle": ang}))
-        cupula.append(caixa(5.5, -10.2, 5.2, 8.5, -9.2, 8.8, [0, 0, 8, 8],
-                            {"origin": [0, 0, 8], "axis": "y", "angle": ang}))
-        cupula.append(caixa(7.9, -8.8, 7.75, 8.9, -5.8, 8.25, [0, 8, 4, 12],
-                            {"origin": [0, 0, 8], "axis": "y", "angle": ang}))
-    cupula.append(caixa(-0.5, -11.5, 7.5, 0.5, -9.6, 8.5, [4, 8, 8, 12]))
+    cupula, ty = cupula_do_json()
 
     paineis = [
-        ("FECHADO na mao", renderizar(fechado["elements"],
-                                      fechado.get("display", {}).get("thirdperson_righthand", {}), tex)),
-        ("ABERTO na mao", renderizar(aberto["elements"],
-                                     aberto.get("display", {}).get("thirdperson_righthand", {}), tex)),
+        ("FECHADO na mao (3a pessoa)", renderizar(
+            fechado["elements"], fechado.get("display", {}).get("thirdperson_righthand", {}),
+            tex, centrar=True, regua=True, yaw=-38, pitch=14, zoom=430)),
+        ("ABERTO na mao (3a pessoa)", renderizar(
+            aberto["elements"], aberto.get("display", {}).get("thirdperson_righthand", {}),
+            tex, centrar=True, regua=True, yaw=-38, pitch=14, zoom=430)),
         ("CUPULA sobre a cabeca", renderizar([], {}, tex, yaw=-30, pitch=12, zoom=300,
                                              extras=cupula)),
-        ("CUPULA de frente", renderizar([], {}, tex, yaw=0, pitch=55, zoom=300,
+        ("CUPULA de frente", renderizar([], {}, tex, yaw=0, pitch=48, zoom=300,
                                         extras=cupula)),
     ]
     folha = Image.new("RGBA", (260 * len(paineis), 290), (18, 16, 24, 255))
