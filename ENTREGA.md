@@ -1,100 +1,58 @@
-# RP Tag 5.41.0 — o umbrella ABRE de verdade, mais modelado e sem brilho + a power wheel só pra quem tem o vazio
+# RP Tag 5.41.1 — A ANIMAÇÃO DO UMBRELLA + VARREDURA DO MOD
 
 **O arquivo para baixar:**
-[rptag-5.41.0.jar](https://github.com/EduCafilista/rp-tag/releases/download/v5.41.0/rptag-5.41.0.jar)
-· 36.890.066 bytes · `md5 20ead4d58cea17a8bad35dae153df6b1`
-· `sha256 7dc4c4108cf7c70dd06efce39d84d93eb5bbac2c93829423e295149779935206`
+[rptag-5.41.1.jar](https://github.com/EduCafilista/rp-tag/releases/download/v5.41.1/rptag-5.41.1.jar)
+· 36.891.292 bytes · `md5 ce8e24e376d89b26f80a8588ee0990fe`
+· `sha256 720cc6bfb9e54ca2c033699b31a58266c35d8683830b64449ed714a8b3e22a9d`
 
-**Página da release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.41.0
+**Página da release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.41.1
 
-> **Tire o jar antigo da pasta `mods`.** Um jar do mod por vez — se os dois ficarem lá, o jogo
-> pode carregar o velho. Troque no servidor **e** no cliente.
+> **Tire o jar antigo da pasta `mods`.** Um jar do mod por vez, no servidor **e** no cliente.
 
 ---
 
-## 1. "não tem a animação dele aberto, não fica aberto" — era o mecanismo errado
+## O que você pediu, e o que mudou
 
-Até a 5.40.0 o guarda-chuva só era considerado aberto **enquanto você estava segurando o botão
-direito** (`isUsingItem`), e o modelo aberto era escolhido por um predicado que o cliente tinha
-de registrar. Essa corrente tinha dois elos fracos: qualquer coisa que cancele o "uso" fecha o
-guarda-chuva, e um predicado que ninguém registra vale **0 para sempre** (foi o bug da 5.39).
+> *"ele não precisa ficar encantado, não está bonita a animação, melhore, deixe mais modelada,
+> não tem a animação dele aberto, não fica aberto no caso, corrija isso, a powerwheel aparece
+> mesmo sem o player ter o vazio ligar, corrija isso, lembrando passe por todo o mod e veja
+> quais erros você consegue arrumar"*
 
-**Agora o estado mora no próprio item**, num componente que o Minecraft já sincroniza sozinho:
-
-| `custom_model_data` | estado |
+| O que você pediu | O que está feito |
 |---|---|
-| **0 a 7** | **FECHADO** (o número é a cor) |
-| **8 a 15** | **ABERTO** (a cor + 8) |
+| **não precisa ficar encantado** | O brilho de encantamento (aqueles pontinhos roxos girando) **saiu** do guarda-chuva. |
+| **não fica aberto / não tem a animação** | Abrir deixou de depender de "segurar o botão". Agora é **um clique** e ele fica aberto de verdade. O estado mora no próprio item (o índice do modelo, que o Minecraft entende sozinho) — não depende mais de animação do jogador. |
+| **a animação não está bonita** | A cúpula **se desdobra**: começa pequena (18%) e girada 55° e cresce girando em 0,26 s, assentando no fim. Ao fechar, encolhe em 0,2 s (antes desaparecia de um quadro pro outro). Aberta, tem um balanço leve de pano. |
+| **deixe mais modelada** | A textura foi refeita com **volume**: gomos com costura e nervura, madeira com veio e nó, metal com brilho. A geometria virou **octogonal** (dois quadrados, um a 45°) com bordas e as 8 pontas das varetas. |
+| **a powerwheel aparece sem o vazio** | A roda **só existe** pra quem tem o dom. O servidor manda um pacote (`vazio_acesso`) no login, na troca de dimensão e quando o estado muda; sem ele o cliente **não abre, não desenha e não aceita o atalho**. |
+| **passe por todo o mod** | Entrou o `arte/auditar.py`: confere pacote registrado, classe de evento órfã (aquilo que já crashou o cliente uma vez), som/textura/receita que não existe e nome faltando no idioma. Ele roda junto com o `check.py` e hoje dá **0 erro**. Nesta passada, três itens que apareciam com o nome cru (`fita`, `nucleo_vial`, `nucleo_vial_quebrado`) ganharam nome nos dois idiomas. |
 
-`custom_model_data` é predicado **vanilla**: o jogo troca o modelo 3D na mão **sem nenhum código
-de cliente**. Não há mais nada para registrar, e o modelo não pode "não achar" o estado.
-
-Na prática:
-- **clique direito** → abre. Clique de novo → fecha. Agachado → fecha na hora.
-- fica aberto **65 segundos** e fecha sozinho (relógio no `inventoryTick` do servidor).
-- `/umbrella abrir` e `/umbrella fechar` para cena e teste.
-- `/umbrella info` agora mostra cor, valor do `custom_model_data`, se o modelo é ABERTO ou
-  fechado e se a proteção do sol está ativa.
-
-> **Só aberto protege do sol** — e essa é a mesma regra do servidor
-> (`VampiroSistema.guardaChuvaAberto`), agora lendo o estado do item.
-
-## 2. "ele não precisa ficar encantado"
-
-Saiu o `isFoil`. O brilho de encantamento não aparece mais no guarda-chuva.
-
-## 3. "não está bonita, deixe mais modelada"
-
-**Textura** refeita com 5 regiões e volume (antes era uma listra diagonal chapada, o que fazia
-todo cubo virar uma mancha):
-- tecido **claro** e **escuro** com gomos, costura entre eles, nervura pegando luz e sombra de
-  cima pra baixo;
-- madeira com **veio e nó**; metal com **brilho diagonal**; tecido preto para as varetas.
-
-**Geometria** reconstruída em octógonos — e o motivo técnico: o Minecraft só aceita rotação de
-**−45° a 45°** em modelo de item (90° faz o jogo **rejeitar** o modelo e o item volta a aparecer
-rosa/preto). Então "redondo" tem de ser feito com quadrados: **dois quadrados, um girado 45° =
-octógono**. Com isso:
-- cúpula aberta em 4 degraus, cada um com borda fina e escura (a "barriga" do pano);
-- pano enrolado do fechado em 5 anéis que engordam pra cima;
-- **as 8 pontas das varetas** saindo da aba e da cúpula, e bojo de metal no topo.
-
-## 4. "a power wheel aparece mesmo sem o player ter o vazio ligado"
-
-Antes a roda (tecla R) abria para **qualquer jogador** — o servidor só recusava na hora de
-soltar o poder. Agora o servidor manda o estado de acesso (`VazioAcessoPayload`, calculado em
-`VazioPoderes.temPoder`) **no login, na troca de dimensão e sempre que muda**. Sem o dom:
-
-- a roda **não abre** (com um aviso curto em vez de um menu que não funciona);
-- **não é desenhada** (nem no meio da animação);
-- os atalhos 1–6 e o clique **não respondem**;
-- se você perder o dom com a roda aberta, ela fecha e desarma a habilidade.
-
-Quem decide continua sendo o **servidor** — o cliente só obedece.
-
-## 5. Varredura do mod ("passe por todo o mod e veja quais erros")
-
-Entrou o `arte/auditar.py`, que roda junto com o build e reprova:
-
-- pacote de rede **sem registro**;
-- classe com `@EventBusSubscriber` e **sem nenhum `@SubscribeEvent`** (isso já derrubou o
-  cliente uma vez);
-- som, textura ou receita apontando para **arquivo que não existe**;
-- item registrado **sem nome** nos dois idiomas;
-- comando com `literal()` repetido no mesmo lugar.
-
-O que ele achou e já está corrigido nesta versão: **3 itens apareciam com o nome cru** no
-inventário — `escuridao`, `coracao_canon` e `chave_julgamento` ganharam nome em PT-BR e inglês.
+E, revisando a cúpula na prévia, achei um quinto defeito: ela estava **de ponta-cabeça e flutuando
+um bloco acima da cabeça** (miolo embaixo, aba em cima). Corrigido — agora é um cone com a aba
+encostando no chapéu e os varões pendurados.
 
 ---
 
-## Testes desta versão
+## Como usar
 
-- `check.py`: **1302 PASS / 0 FAIL**
-- `arte/auditar.py`: **0 erro**
+```
+/umbrella dar <jogador> <cor>     dá o guarda-chuva (cor 1..8)
+/umbrella abrir                   abre na hora
+/umbrella fechar                  fecha na hora
+/umbrella info                    cor, aberto/fechado e segundos restantes
+```
+
+Na mão: **clique direito** para abrir (dura 65 s), clique de novo — ou agache — para fechar,
+com 5 s de recarga. **Só aberto protege do sol.**
+
+**Prévia da animação (desenhada fora do jogo, mesma conta do Java):** `arte/previa_abertura.png`
+**Prévia dos modelos nas 8 cores:** `arte/previa_umbrella.png` e `arte/previa_umbrella_cores.png`
+
+---
+
+## Testes
+
+- `check.py`: **1308 PASS / 0 FAIL**
+- `arte/auditar.py`: **0 erro**, 14 avisos (literais repetidos em comandos — normais)
 - `arte/validar.py`: 54 ok, 0 falhas
-- Servidor: `RP Tag 5.41.0 (rptag)` → `Done (1.202s)!`; `/umbrella cores` responde as 8 cores
-- Jar: sem sonda de teste, 19 modelos de umbrella, 8 texturas × 3 (item, cúpula, HUD)
-
-**Prévias fora do jogo:** `arte/previa_umbrella.png` (as 4 vistas) e
-`arte/previa_umbrella_cores.png` (as 8 cores).
+- Servidor: `RP Tag 5.41.1 (rptag)` → `Done (1.317s)!`, sem erro

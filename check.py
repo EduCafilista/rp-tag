@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.41.0'
+VER = '5.41.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3022,9 +3022,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.41.0 no jar, no mod e no gradle',
-      "version = '5.41.0'" in rd('build.gradle')
-      and '5.41.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.41.1 no jar, no mod e no gradle',
+      "version = '5.41.1'" in rd('build.gradle')
+      and '5.41.1' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3260,8 +3260,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.41.0 (jar, mod e gradle)',
-      "version = '5.41.0'" in rd('build.gradle') and '5.41.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.41.1 (jar, mod e gradle)',
+      "version = '5.41.1'" in rd('build.gradle') and '5.41.1' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3319,8 +3319,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.41.0 (jar, mod e gradle)',
-      "version = '5.41.0'" in rd('build.gradle') and '5.41.0' in _rm)
+check('5.34.0: a versao subiu pra 5.41.1 (jar, mod e gradle)',
+      "version = '5.41.1'" in rd('build.gradle') and '5.41.1' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3342,8 +3342,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.41.0 (jar, mod e gradle)',
-      "version = '5.41.0'" in rd('build.gradle') and '5.41.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.41.1 (jar, mod e gradle)',
+      "version = '5.41.1'" in rd('build.gradle') and '5.41.1' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -4171,7 +4171,7 @@ check('5.40.0 (94-d): o fechado e MAGRO na mao (nao e uma cupula aberta)',
           > 2.0 * (_extremos(_BASE_F, 0)[1] - _extremos(_BASE_F, 0)[0]))
 # (c) A CUPULA SOBRE A CABECA: em BLOCOS, e a mesma geometria da previa/gerador
 check('5.40.0 (94-d): a cupula da cabeca sobe em BLOCOS (nao 8,9 blocos pra baixo)',
-      'pose.translate(0.0F, TRANSLATE_Y, 0.0F)' in _CU
+      'TRANSLATE_Y' in _CU and 'pose.translate(0.0F, TRANSLATE_Y' in _CU
       and 'TRANSLATE_Y = ' in _CU and '-8.9F' not in _CU)
 check('5.40.0 (94-d): a altura da cupula no Java e a MESMA de arte/dome_geometria.json',
       ('TRANSLATE_Y = %.2fF' % _DOME['translate_y_blocos']) in _CU.replace('0.72', '%.2f' % 0.72))
@@ -4239,6 +4239,33 @@ check('5.41.0: todo item registrado tem nome nos dois idiomas',
       all(('item.rptag.' + a) in rd(A + '/lang/pt_br.json')
           and ('item.rptag.' + a) in rd(A + '/lang/en_us.json')
           for a in ('escuridao', 'coracao_canon', 'chave_julgamento', 'umbrella_sombra')))
+
+
+# ============ PEDIDO 94-f/97 — 5.41.1 (animação da abertura + varredura do mod) ============
+# (5.41.1) O dono: "não está bonita a animação, melhore" — a cúpula dava um "pop" seco, aparecia
+# com o tamanho final no primeiro quadro. Agora ela se desdobra (cresce girando) e encolhe ao
+# fechar. Estas provas seguram a animação e a varredura de recursos.
+_CU11 = rd(C + '/CamadaUmbrella.java')
+_AUD = 'arte/auditar.py'
+check('5.41.1 (94-f): a cupula se DESDOBRA ao abrir (cresce e gira, nao aparece de uma vez)',
+      'ABRIR_MS' in _CU11 and 'quantoAberta' in _CU11
+      and 'pose.scale(escala, escala, escala)' in _CU11
+      and 'Axis.YP.rotationDegrees(55.0F * (1.0F - abre))' in _CU11)
+check('5.41.1 (94-f): a abertura usa curva ease-out (nao linear) e tem encolhida ao fechar',
+      '1.0F - (1.0F - u) * (1.0F - u) * (1.0F - u)' in _CU11 and 'FECHAR_MS' in _CU11)
+check('5.41.1 (94-f): a cupula aberta tem balanco de pano (nao fica dura)',
+      'balanco' in _CU11 and 'Axis.ZP.rotationDegrees' in _CU11)
+check('5.41.1 (97): o auditor do mod existe e nao acha ERRO nenhum',
+      os.path.exists(_AUD)
+      and subprocess.run([sys.executable, '-I', _AUD],
+                         capture_output=True).returncode == 0)
+_en = _json.loads(rd(A + '/lang/en_us.json'))
+_pt = _json.loads(rd(A + '/lang/pt_br.json'))
+check('5.41.1 (97): nenhum texto do jogo fica so em portugues (en_us completo)',
+      not [k for k in _pt if k not in _en] and not [k for k in _en if k not in _pt])
+check('5.41.1 (97): os 3 itens que apareciam com nome cru agora tem nome nos 2 idiomas',
+      all(k in _en and k in _pt for k in
+          ('item.rptag.fita', 'item.rptag.nucleo_vial', 'item.rptag.nucleo_vial_quebrado')))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

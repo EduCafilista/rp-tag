@@ -102,7 +102,7 @@ def amostra(tex, u, v):
 
 # ------------------------------------------------------------------ render
 def renderizar(elements, display, tex, largura=260, altura=260, yaw=-35, pitch=18, zoom=620,
-               extras=(), centrar=False, regua=False):
+               extras=(), centrar=False, regua=False, vazia=False):
     img = Image.new("RGBA", (largura, altura), (18, 16, 24, 255))
     des = ImageDraw.Draw(img)
     cy, sy = math.radians(yaw), math.sin(math.radians(yaw))
@@ -114,7 +114,7 @@ def renderizar(elements, display, tex, largura=260, altura=260, yaw=-35, pitch=1
         extras = tuple(extras) + tuple(
             caixa(x0, y0, z0, x0 + 0.4, y0 + 16.0, z0 + 0.4, [0, 0, 0, 0])
             for (x0, y0, z0) in ((-8, -8, -8), (7.6, -8, -8), (-8, -8, 7.6), (7.6, -8, 7.6)))
-    todas = [(el, False) for el in elements] + [(el, True) for el in extras]
+    todas = [(el, False) for el in ([] if vazia else elements)] + [(el, True) for el in extras]
     # (5.40.0) o jogo, depois do display, faz translate(-0,5 -0,5 -0,5) pra pôr o CENTRO do
     # modelo na mão (é o `ItemRenderer`). Aqui, pra caber no quadro, a câmera mira o centro do
     # que sobrou disso (`centrar`) — o tamanho RELATIVO continua o mesmo.

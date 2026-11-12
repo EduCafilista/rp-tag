@@ -365,16 +365,19 @@ DISPLAY_ABERTO = _display(tp=1.05, fp=0.70)
 # A profundidade em Z cresce com o raio para os setores se encostarem (senão o guarda-chuva
 # vira uma estrela de varões soltos).
 DOME_SETORES = 16
-DOME_TRANSLATE_Y = 0.72     # em BLOCOS, acima do pivô da cabeça (o topo do chapéu fica a 0,53)
+DOME_TRANSLATE_Y = 0.45     # em BLOCOS, acima do pivô da cabeça (o topo do chapéu fica a 0,53)
+# No espaço do ModelPart o Y CRESCE PRA BAIXO, então "acima" é y negativo. A cúpula tem de ser:
+# miolo/ponteira no ALTO (y bem negativo), aba caindo pra perto da cabeça (y perto de 0) e as
+# varetas penduradas da aba pra baixo (y positivo). Na 5.41.0 estava ao contrário — aba em cima
+# e miolo embaixo — e por isso a prévia mostrava uma tigela chata flutuando.
 DOME_CUBOS = [
     # (texOffs x, texOffs y), x, y, z, largura, altura, profundidade   [pixels do modelo]
-    ((0, 0),   0.0, -0.6, -1.4, 2.8, 1.0, 2.8),   # tampa do miolo (fecha o buraco do centro)
-    ((4, 3),   2.6, -2.0, -1.6, 3.8, 1.0, 3.2),   # anel de dentro
-    ((4, 6),   5.8, -3.6, -2.2, 3.8, 1.0, 4.4),   # anel do meio
-    ((4, 9),   8.8, -5.2, -2.9, 3.8, 1.0, 5.8),   # aba (a borda que cai)
-    ((0, 12), 11.4, -8.4, -0.4, 0.8, 3.2, 0.8),   # vareta pendurada na ponta da aba
-    # ponteira de metal no alto (não gira: fica no eixo)
-    ((4, 12),  -0.6,  0.4, -0.6, 1.2, 2.4, 1.2),
+    ((4, 12),  -0.6, -8.2, -0.6, 1.2, 2.2, 1.2),   # ponteira de metal, no ponto mais alto
+    ((0, 0),    0.0, -6.0, -1.4, 2.8, 1.0, 2.8),   # tampa do miolo (fecha o buraco do centro)
+    ((4, 3),    2.6, -4.8, -1.6, 3.8, 1.0, 3.2),   # anel de dentro
+    ((4, 6),    5.8, -3.4, -2.2, 3.8, 1.0, 4.4),   # anel do meio
+    ((4, 9),    8.8, -1.8, -2.9, 3.8, 1.0, 5.8),   # aba: a borda que cai
+    ((0, 12),  11.4, -1.6, -0.4, 0.8, 3.0, 0.8),   # vareta pendurada na ponta da aba
 ]
 
 

@@ -21,5 +21,8 @@
   "item.rptag.umbrella_sombra": "Umbrella of Shadow",
   "item.rptag.escuridao": "Darkness",
   "item.rptag.coracao_canon": "Canon Heart",
-  "item.rptag.chave_julgamento": "Judgment Key"
+  "item.rptag.chave_julgamento": "Judgment Key",
+  "item.rptag.nucleo_vial": "Vial Energy Core",
+  "item.rptag.nucleo_vial_quebrado": "Vial Energy Core (broken)",
+  "item.rptag.fita": "Cassette Tape"
 }
