@@ -112,6 +112,10 @@ public final class PoderLeque {
 
     /** a roda está aberta? */
     private static boolean aberto;
+    /** (5.42.0) quando o botão direito foi atendido pelo evento (ms) — evita soltar 2x. */
+    private static long ultimoCliqueEvento;
+    /** (5.42.0) o botão direito estava apertado no tick anterior (detecção de borda). */
+    private static boolean direitoAntes;
     /** animação: 0 = fechada, 1 = aberta (interpola suave). */
     private static float animado;
     private static long ultimoTick = System.nanoTime();
@@ -232,8 +236,9 @@ public final class PoderLeque {
 
             if (!aberto) {
                 while (TECLA_REPETIR.consumeClick()) {
-                    if (ultimo >= 0) {
-                        mandar(ultimo);
+                    // (5.42.0) repetir o último poder: conjura de verdade (é um atalho de uso)
+                    if (selecionado >= 0 && PRONTO[selecionado] <= System.currentTimeMillis()) {
+                        mandar(selecionado);
                     }
                 }
                 return;
@@ -245,14 +250,23 @@ public final class PoderLeque {
             }
             if (!temAcesso) {          // (5.41.0) sem o dom nem teclas nem clique
                 fechar();
+                selecionado = -1;
+                return;
+            }
+            // (5.42.0) saiu do vazio/reino (ou deixou de ser ADM)? fecha na hora e desarma.
+            // O dono: "a roda de poderes ainda aparece para quem já ativou o poder ... se
+            // desativou não aparece mais".
+            if (!podeAqui(mc.player)) {
+                fechar();
+                selecionado = -1;
                 return;
             }
             // teclas 1..6
             long janela = mc.getWindow().getWindow();
             for (int i = 0; i < NOMES.length; i++) {
                 if (InputConstants.isKeyDown(janela, GLFW.GLFW_KEY_1 + i)) {
-                    mandar(i);
-                    fechar();
+                    armar(i);        // (5.42.0) só arma...
+                    fechar();        // ...e fecha a roda (o botão direito solta depois)
                     return;
                 }
             }
@@ -265,8 +279,10 @@ public final class PoderLeque {
             apontado = casaSobMouse(w, h, mx, my);
             boolean clicando = GLFW.glfwGetMouseButton(janela, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
             if (clicando && !mouseAntes && apontado >= 0) {
-                mandar(apontado);
+                armar(apontado);     // (5.42.0) escolher ≠ conjurar
                 fechar();
+                mouseAntes = false;
+                return;
             }
             // ESC fecha
             if (InputConstants.isKeyDown(janela, GLFW.GLFW_KEY_ESCAPE)) {
@@ -277,6 +293,43 @@ public final class PoderLeque {
         } catch (Throwable ignorado) {
             // a roda é enfeite: nunca derruba o jogo
         }
+        // (5.42.0) REDE DE SEGURANÇA DO BOTÃO DIREITO.
+        // O disparo normal é o evento `InteractionKeyMappingTriggered` (logo abaixo), que
+        // também cancela a interação do vanilla. Só que em algumas combinações (tela aberta,
+        // tecla remapeada, mod de terceiro consumindo o clique) esse evento não chega — e o
+        // jogador ficava com a habilidade armada e o botão direito sem fazer nada ("os
+        // poderes não saem mais com o botão direito"). Aqui a gente lê a tecla direto: se
+        // ela acabou de descer e o evento NÃO atendeu esse clique, solta a habilidade.
+        try {
+            acionarPeloBotaoDireito();
+        } catch (Throwable ignorado) {
+            // nunca derruba o jogo
+        }
+    }
+
+    /** (5.42.0) solta a habilidade armada quando o botão direito desce (borda). */
+    private static void acionarPeloBotaoDireito() {
+        Minecraft mc = Minecraft.getInstance();
+        boolean apertado = mc.options != null && mc.options.keyUse.isDown();
+        boolean desceu = apertado && !direitoAntes;
+        direitoAntes = apertado;
+        if (!desceu || aberto || mc.screen != null || mc.player == null || mc.level == null) {
+            return;
+        }
+        if (selecionado < 0 || mc.player.isShiftKeyDown()) {
+            return;
+        }
+        // o evento já atendeu este clique? então não solta de novo
+        if (System.currentTimeMillis() - ultimoCliqueEvento < 150L) {
+            return;
+        }
+        if (!podeAqui(mc.player) || cliqueTemDono(mc)) {
+            return;
+        }
+        if (PRONTO[selecionado] > System.currentTimeMillis()) {
+            return;      // ainda em recarga: o selo da tela já mostra os segundos
+        }
+        mandar(selecionado);
     }
 
     /** (5.34.0) qual habilidade está armada (-1 = nenhuma). */
@@ -327,6 +380,7 @@ public final class PoderLeque {
             }
             event.setCanceled(true);
             event.setSwingHand(false);
+            ultimoCliqueEvento = System.currentTimeMillis();
             mandar(selecionado);
         } catch (Throwable ignorado) {
             // o clique nunca pode derrubar o jogo
@@ -397,10 +451,36 @@ public final class PoderLeque {
         }
     }
 
+    /**
+     * (5.42.0) <b>ESCOLHER NA RODA = só ARMAR.</b>
+     *
+     * <p>O dono: <i>"os poderes não saem mais com o botão direito, e após selecionar o poder
+     * deve fechar a wheel"</i>.
+     *
+     * <p>O defeito: escolher na roda <b>já conjurava</b> o poder — mandava pro servidor e
+     * marcava a recarga na hora. Aí, quando o jogador apertava o botão direito pra usar (que é
+     * o que ele quer), o poder estava em recarga e o servidor recusava. Era isso o "não sai
+     * mais com o botão direito".
+     *
+     * <p>Agora escolher só <b>arma</b> a habilidade (com um clique curtinho de confirmação) e
+     * a roda fecha. Quem solta o poder é o botão direito, em {@link #mandar}.
+     */
+    private static void armar(int poder) {
+        try {
+            selecionado = Math.floorMod(poder, NOMES.length);
+            ultimo = selecionado;
+            abertoEm = System.currentTimeMillis();
+            som(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 0.6F, 1.8F);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: armar o poder {} falhou", poder, t);
+        }
+    }
+
+    /** (5.42.0) SOLTA o poder armado: é o botão direito (e o comando de teste). */
     private static void mandar(int poder) {
         try {
             ultimo = poder;
-            selecionado = poder;          // (5.34.0) fica armado para o botão direito
+            selecionado = poder;
             abertoEm = System.currentTimeMillis();
             PRONTO[poder] = System.currentTimeMillis() + RECARGA[poder];
             som(net.minecraft.sounds.SoundEvents.TRIDENT_THROW.value(), 1.25F, 0.55F);

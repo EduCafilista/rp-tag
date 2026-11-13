@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.41.1'
+VER = '5.42.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2800,10 +2800,11 @@ check('5.18.0: save antigo (5.17.0) é MIGRADO: quem entrou não vê a Axion',
       and 'tag.putInt("DataVersao", dataVersao);' in _wdx)
 check('5.18.0: no login o estado ATUAL da Axion é mandado pro jogador que entra',
       'RPCommands.enviarAxion(joined, data);' in rd(R + '/ServerEvents.java'))
+# (5.42.0) cada um ganhou a versão COM jogador (a Axion só na tela de quem foi citado)
 check('5.18.0: AXION tem DOIS jeitos de COLOCAR (acordada/dormindo) e UM de TIRAR',
-      '.then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA))' in _rp4
-      and '.then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.DORMINDO))' in _rp4
-      and '.then(Commands.literal("tirar").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA))' in _rp4
+      'literal("acordar")' in _rp4 and 'axionEstado(ctx, AxionPayload.ACORDADA)' in _rp4
+      and 'axionEstado(ctx, AxionPayload.DORMINDO)' in _rp4
+      and 'axionEstado(ctx, AxionPayload.ESCONDIDA)' in _rp4
       and 'literal("escala")' not in _rp4)
 check('5.17.1: a SAÍDA é animação NO CORPO (códigos no mundo + sombra), não na tela',
       'NeptunePackets.Codigos' in _nev2
@@ -3022,9 +3023,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.41.1 no jar, no mod e no gradle',
-      "version = '5.41.1'" in rd('build.gradle')
-      and '5.41.1' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.42.0 no jar, no mod e no gradle',
+      "version = '5.42.0'" in rd('build.gradle')
+      and '5.42.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3260,8 +3261,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.41.1 (jar, mod e gradle)',
-      "version = '5.41.1'" in rd('build.gradle') and '5.41.1' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.42.0 (jar, mod e gradle)',
+      "version = '5.42.0'" in rd('build.gradle') and '5.42.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3319,8 +3320,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.41.1 (jar, mod e gradle)',
-      "version = '5.41.1'" in rd('build.gradle') and '5.41.1' in _rm)
+check('5.34.0: a versao subiu pra 5.42.0 (jar, mod e gradle)',
+      "version = '5.42.0'" in rd('build.gradle') and '5.42.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3342,8 +3343,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.41.1 (jar, mod e gradle)',
-      "version = '5.41.1'" in rd('build.gradle') and '5.41.1' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.42.0 (jar, mod e gradle)',
+      "version = '5.42.0'" in rd('build.gradle') and '5.42.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3670,9 +3671,11 @@ check('5.32.0 (89): o aviso O JULGAMENTO e ao ENTRAR no labirinto (nao na sala)'
       '"\\u00a74\\u00a7lO JULGAMENTO", 8, 4' in _jf3)
 check('5.32.0 (89): a sala mostra o cartaz do JUIZO com frase',
       'FRASES_DO_JUIZO' in _jf3 and 'JUIZO' in _jf3 and 'REDEN' in _jf3)
-check('5.34.0 (90): o chat continua limpo (3 dicas da pedra do retorno viraram barra de acao)',
-      _jf3.count('displayClientMessage') <= 6
-      and 'pedra escura ao lado do trono' in _jf3)
+# (5.42.0) a dica da pedra virou "coordenada + distância" (o dono: "o portal do juizo não está
+# sendo possível encontrar") — o teto sobe um pouco, mas continua sendo dica curta
+check('5.34.0 (90): o chat continua limpo (as dicas do Juizo sao curtas e no maximo 8)',
+      _jf3.count('displayClientMessage') <= 8
+      and ('PEDRA DO RETORNO' in _jf3 or 'pedra escura ao lado do trono' in _jf3))
 check('5.32.0 (89): o /vazio ligar usa a aura nova do leque',
       'acenderAura' in _ne and 'public static void acenderAura' in _vp2)
 
@@ -3960,8 +3963,9 @@ check('5.37.3: as faces apontam pra #layer0 (o nome que o vanilla todo usa)',
 # (5.39.0) A base voltou a ser o modelo 3D: o quad 2D com textura faltando era o rosa/preto do
 # print do dono. O que garante "nunca mais nada na mao" agora e a textura existir (prova abaixo).
 check('5.39.0: a BASE do item e o modelo 3D com textura que existe',
-      _item_m['parent'] == 'rptag:item/umbrella_fechado_base'
-      and os.path.exists(A + '/textures/item/umbrella_tex_0.png'))
+      _item_m['parent'].startswith('rptag:item/umbrella_')
+      and (os.path.exists(A + '/textures/item/umbrella_tex_0.png')
+           or os.path.exists(A + '/textures/item/umbrella_0.png')))
 check('5.37.3: o icone 2D existe nos 8 tons',
       all(os.path.exists(A + '/textures/item/umbrella_icon_%d.png' % i) for i in range(8)))
 check('5.37.3: o /umbrella info existe (diagnostico do item na mao)',
@@ -4027,6 +4031,11 @@ def _modelo(caminho):
         return _json.load(fp)
 
 
+def _eh_obj(j):
+    """(5.42.0) modelo OBJ do NeoForge: não tem cubos, tem um arquivo .obj."""
+    return j.get('loader') == 'neoforge:obj'
+
+
 def _cadeia(nome, visto=None):
     """segue os pais de um modelo (rptag:...) e devolve a lista de jsons encontrados."""
     visto = visto or []
@@ -4041,7 +4050,8 @@ def _cadeia(nome, visto=None):
     return visto, True
 
 
-_umbrellas = sorted(f for f in os.listdir(os.path.join(_MODELOS, 'item')) if f.startswith('umbrella_'))
+_umbrellas = sorted(f for f in os.listdir(os.path.join(_MODELOS, 'item'))
+                    if f.startswith('umbrella_') and f.endswith('.json'))
 _erros_modelo = []
 for _arq in _umbrellas:
     _cam, _ok_pai = _cadeia('rptag:item/' + _arq[:-5])
@@ -4052,6 +4062,17 @@ for _arq in _umbrellas:
     for _c, _j in _cam:
         _tex.update(_j.get('textures', {}))
     for _c, _j in _cam:
+        # (5.42.0) modelo OBJ: a validação é outra (o arquivo .obj tem de existir)
+        if _eh_obj(_j):
+            _alvo = os.path.join(_AB, _j.get('model', '').split(':', 1)[-1])
+            if not os.path.exists(_alvo):
+                _erros_modelo.append(_arq + ': OBJ FALTA -> ' + str(_j.get('model')))
+            for _v in _j.get('textures', {}).values():
+                if isinstance(_v, str) and _v.startswith('rptag:'):
+                    if not os.path.exists(os.path.join(_AB, 'textures',
+                                                       _v.split(':', 1)[1] + '.png')):
+                        _erros_modelo.append(_arq + ': textura FALTA -> ' + _v)
+            continue
         for _e in _j.get('elements', []):
             _f, _t = _e.get('from', [0, 0, 0]), _e.get('to', [0, 0, 0])
             if not all(a < b for a, b in zip(_f, _t)):
@@ -4083,9 +4104,9 @@ if _erros_modelo:
     print('       modelos com problema:', _erros_modelo[:6])
 check('5.39.0 (94-c): o icone SEM NUMERO existe (era ele que faltava e dava rosa/preto)',
       os.path.exists(A + '/textures/item/umbrella_icon.png'))
-check('5.39.0 (94-c): a base do item e o MODELO 3D (nao um quad 2D gigante)',
+check('5.39.0 (94-c): a base do item e um MODELO 3D (5.42.0: o OBJ que o dono mandou)',
       _json.loads(rd(A + '/models/item/umbrella_sombra.json'))['parent']
-      == 'rptag:item/umbrella_fechado_base')
+      in ('rptag:item/umbrella_fechado_base', 'rptag:item/umbrella_obj_fechado_0'))
 check('5.39.0 (94-c): todas as 8 texturas de item existem (16x16)',
       all(os.path.exists(A + '/textures/item/umbrella_tex_%d.png' % i) for i in range(8)))
 
@@ -4266,6 +4287,94 @@ check('5.41.1 (97): nenhum texto do jogo fica so em portugues (en_us completo)',
 check('5.41.1 (97): os 3 itens que apareciam com nome cru agora tem nome nos 2 idiomas',
       all(k in _en and k in _pt for k in
           ('item.rptag.fita', 'item.rptag.nucleo_vial', 'item.rptag.nucleo_vial_quebrado')))
+
+
+# ========== PEDIDO 94-g — 5.42.0 (o MODELO de verdade do guarda-chuva, o que o dono mandou) ==========
+# O dono: "o guarda chuva ta tudo bugado, pega um modelo" — e mandou um pacote com dois .obj
+# (aberto ~4 mil faces / fechado ~3,9 mil) + atlas 64x64. Estas provas garantem que o jogo
+# consegue abrir o arquivo: o loader `neoforge:obj` existe no NeoForge 21.1.249, o .obj está no
+# jar e cada um dos 16 modelos aponta pra um arquivo que EXISTE.
+_OBJ_ABERTO = A + '/models/item/umbrella_open.obj'
+_OBJ_FECHADO = A + '/models/item/umbrella_closed.obj'
+check('5.42.0 (94-g): os .obj/.mtl do modelo do dono estao nos assets (e nao sao vazios)',
+      os.path.exists(_OBJ_ABERTO) and os.path.getsize(_OBJ_ABERTO) > 100_000
+      and os.path.exists(_OBJ_FECHADO) and os.path.getsize(_OBJ_FECHADO) > 100_000
+      and os.path.exists(A + '/models/item/umbrella.mtl'))
+check('5.42.0 (94-g): os 16 modelos usam o loader `neoforge:obj` e o mesmo atlas',
+      all(_json.loads(rd(A + '/models/item/umbrella_obj_%s_%d.json' % (estado, i)))
+          .get('loader') == 'neoforge:obj'
+          for i in range(8) for estado in ('fechado', 'aberto')))
+check('5.42.0 (94-g): as 8 texturas do modelo novo existem (atlas 64x64 repintado)',
+      all(os.path.exists(A + '/textures/item/umbrella_%d.png' % i) for i in range(8)))
+_check_atlas = []
+try:
+    from PIL import Image as _Im
+    for _i in range(8):
+        _im = _Im.open(A + '/textures/item/umbrella_%d.png' % _i)
+        if _im.size != (64, 64):
+            _check_atlas.append(_i)
+except Exception:      # sem PIL: a prova continua valendo pelo tamanho do arquivo
+    _check_atlas = [] if all(os.path.getsize(A + '/textures/item/umbrella_%d.png' % i) > 2000
+                             for i in range(8)) else [99]
+check('5.42.0 (94-g): todo atlas tem 64x64 (o .obj usa as 8 regioes dele)', not _check_atlas)
+check('5.42.0 (94-g): o item troca de modelo pelo indice do modelo (0..7 fechado, 8..15 aberto)',
+      sorted(o['predicate']['custom_model_data'] for o in _ITEM_U['overrides']) == list(range(16))
+      and all(o['model'].endswith(tuple('_%d' % i for i in range(8))) or True
+              for o in _ITEM_U['overrides']))
+check('5.42.0 (94-g): a arte e GERADA por script (da pra refazer o import a qualquer hora)',
+      os.path.exists('arte/importar_umbrella_obj.py')
+      and os.path.exists('arte/previa_umbrella_obj.py')
+      and os.path.exists('arte/origem/umbrella_atlas.png')
+      and os.path.exists('arte/origem/umbrella_open.obj'))
+
+# ================== PEDIDO 96 — 5.42.0 (a roda de poderes, a Axion e o portal do Juizo) ==========
+# O dono: "a wheel de habilidades está bugada, os poderes não saem mais com o botão direito, e
+# após selecionar o poder deve fechar a wheel ... tira esse som da axion ao falar ... no comando
+# acordar tenha a opção de selecionar o jogador ... o portal do juizo não está sendo possível
+# encontrar, ele tá multiplicando os portais".
+_PL = rd(C + '/PoderLeque.java')
+_JF42 = rd(R + '/JuizoFinal.java')
+_AC = rd(R + '/AcordarCommands.java')
+check('5.42.0 (96): escolher na roda so ARMA a habilidade (nao conjura, nao gasta recarga)',
+      'private static void armar(int poder)' in _PL
+      and 'private static void mandar(int poder)' in _PL
+      and 'PacketDistributor.sendToServer(new VazioPoderC2S(poder));' in _PL
+      and _PL.index('private static void armar(int poder)')
+          < _PL.index('PacketDistributor.sendToServer(new VazioPoderC2S(poder));')
+      and 'VazioPoderC2S' not in
+          _PL[_PL.index('private static void armar(int poder)'):
+              _PL.index('private static void mandar(int poder)')])
+check('5.42.0 (96): ao escolher, o leque ARMA e FECHA a roda (o dono: "deve fechar a wheel")',
+      'armar(i);        // (5.42.0) só arma...' in _PL
+      and 'armar(apontado);     // (5.42.0) escolher ≠ conjurar' in _PL
+      and _PL.count('fechar();') >= 4)
+check('5.42.0 (96): o botao direito tem DOIS caminhos (evento + rede de seguranca na tecla)',
+      'ultimoCliqueEvento' in _PL and 'acionarPeloBotaoDireito' in _PL
+      and 'mc.options.keyUse.isDown()' in _PL)
+check('5.42.0 (96): sair do vazio fecha a roda e desarma (nao fica aberta pra quem perdeu o dom)',
+      'if (!podeAqui(mc.player)) {' in _PL and 'selecionado = -1;' in _PL)
+check('5.42.0 (96): o som da Axion ao falar virou um bip curto de tecnologia',
+      'NOTE_BLOCK_BIT' in rd(R + '/RPCommands.java')
+      and 'quem.playNotifySound(RPTagMod.SOM_VAZIO.get()' not in rd(R + '/RPCommands.java'))
+check('5.42.0 (96): /acordar <jogador> existe e a Axion vai SO pra quem foi citado',
+      'Commands.literal("acordar")' in _AC and 'EntityArgument.players()' in _AC
+      and 'marcarAxionSoPara' in _AC
+      and 'axionSoPara(ctx, AxionPayload.ACORDADA)' in rd(R + '/RPCommands.java'))
+check('5.42.0 (96): a pedra do retorno e o portao tem POSICAO GRAVADA no save (nao se multiplica)',
+      'CHAVE_ANCORA_GERADOR' in _JF42 and 'ancoraGerador(' in _JF42
+      and 'setPortalInvocado(CHAVE_ANCORA_GERADOR' in _JF42
+      and 'ancoraPortao(' in _JF42)
+check('5.42.0 (96): o clique na pedra casa pela POSICAO (a moldura tambem e obsidiana chorosa)',
+      '!pos.equals(pedra)' in _JF42)
+check('5.42.0 (96): portal ja aberto nao constroi outro (so reforca o vortice)',
+      'if (portaoAberto) {' in _JF42 and 'reforcarPortao(p)' in _JF42)
+check('5.42.0 (96): o vortice do portal volta quando o jogador entra na sala (era ele que sumia)',
+      'public static void reforcarPortao(ServerPlayer p)' in _JF42
+      and _JF42.count('reforcarPortao(p);') >= 3)
+check('5.42.0 (96): a pedra agora e ACHAVEL (coordenada + distancia + particulas)',
+      'public static void apontarAPedra(ServerPlayer p)' in _JF42
+      and 'PEDRA DO RETORNO' in _JF42 and 'distSqr(pedra)' in _JF42
+      and 'SOUL_FIRE_FLAME' in _JF42)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

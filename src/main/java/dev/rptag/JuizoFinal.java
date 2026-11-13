@@ -115,6 +115,50 @@ public final class JuizoFinal {
      * com botão direito no bloco que vai gerar o portal"</i>).
      */
     private static BlockPos pontoGerador;
+    /** (5.42.0) chaves das âncoras gravadas no save do mundo (ver {@link RPWorldData}). */
+    private static final String CHAVE_ANCORA_GERADOR = "juizo:pedra";
+    private static final String CHAVE_ANCORA_PORTAO = "juizo:portao";
+
+    /**
+     * (5.42.0) a posição da PEDRA DO RETORNO — a mesma em toda sessão do servidor.
+     *
+     * <p>Primeiro tenta a que está gravada no mundo; se ainda não existe (primeira vez),
+     * procura e grava. Sem isso, reiniciar o servidor fazia a pedra "andar" e cada clique
+     * nascia um portal novo em outro lugar.
+     */
+    private static BlockPos ancoraGerador(ServerLevel lv) {
+        if (pontoGerador != null) {
+            return pontoGerador;
+        }
+        RPWorldData d = RPWorldData.get(lv.getServer());
+        RPWorldData.Portal salvo = d.getPortalInvocado(CHAVE_ANCORA_GERADOR);
+        if (salvo != null) {
+            pontoGerador = new BlockPos(salvo.x(), salvo.y(), salvo.z());
+            return pontoGerador;
+        }
+        pontoGerador = colunaLivre(lv, new BlockPos(0, SALA_Y + 2, ARENA_Z + 20));
+        d.setPortalInvocado(CHAVE_ANCORA_GERADOR,
+                pontoGerador.getX(), pontoGerador.getY(), pontoGerador.getZ());
+        return pontoGerador;
+    }
+
+    /** (5.42.0) a posição do PORTÃO de saída — mesma ideia da pedra. */
+    private static BlockPos ancoraPortao(ServerLevel lv) {
+        if (pontoPortao != null) {
+            return pontoPortao;
+        }
+        RPWorldData d = RPWorldData.get(lv.getServer());
+        RPWorldData.Portal salvo = d.getPortalInvocado(CHAVE_ANCORA_PORTAO);
+        if (salvo != null) {
+            pontoPortao = new BlockPos(salvo.x(), salvo.y(), salvo.z());
+            return pontoPortao;
+        }
+        pontoPortao = colunaLivre(lv, new BlockPos(0, SALA_Y + 2, ARENA_Z + 6));
+        d.setPortalInvocado(CHAVE_ANCORA_PORTAO,
+                pontoPortao.getX(), pontoPortao.getY(), pontoPortao.getZ());
+        return pontoPortao;
+    }
+
     /** o bloco clicável que gera o portal. */
     public static final net.minecraft.world.level.block.Block BLOCO_GERADOR =
             net.minecraft.world.level.block.Blocks.CRYING_OBSIDIAN;
@@ -303,6 +347,8 @@ public final class JuizoFinal {
             NA_SALA.add(p.getUUID());
             construirSala(sala);
             garantirGerador(sala);       // (5.33.0) a pedra do retorno sempre existe
+            apontarAPedra(p);            // (5.42.0) coordenada + partículas: dá pra achar
+            reforcarPortao(p);           // (5.42.0) o vórtice volta se ele já estava aberto
             BlockPos entrada = pontoEntrada != null ? pontoEntrada
                     : new BlockPos(0, SALA_Y + 2, ARENA_Z + JuizoSala.COMPRIMENTO - 12);
             p.teleportTo(sala, entrada.getX() + 0.5D, entrada.getY(), entrada.getZ() + 0.5D,
@@ -349,6 +395,17 @@ public final class JuizoFinal {
             pontoEntrada = colunaLivre(lv, new BlockPos(0, SALA_Y + 2, ARENA_Z + JuizoSala.COMPRIMENTO - 12));
             pontoTrono = colunaLivre(lv, new BlockPos(0, SALA_Y + 2, ARENA_Z + 14));
             pontoPortao = colunaLivre(lv, new BlockPos(0, SALA_Y + 2, ARENA_Z + 6));
+            // (5.42.0) AS ÂNCORAS FICAM SALVAS NO MUNDO. Era aqui o "ele tá bugando e
+            // multiplicando os portais": as posições da pedra e do portão só existiam em
+            // memória. Depois de um reinício do servidor elas voltavam a ser procuradas no
+            // escuro (colunaLivre procura a coluna livre perto de um ponto), podiam cair em
+            // OUTRO lugar — e o clique gerava um portal novo, deixando o antigo lá. Agora o
+            // lugar é achado UMA vez e fica gravado no save do mundo.
+            RPWorldData d = RPWorldData.get(lv.getServer());
+            d.setPortalInvocado(CHAVE_ANCORA_GERADOR,
+                    pontoGerador.getX(), pontoGerador.getY(), pontoGerador.getZ());
+            d.setPortalInvocado(CHAVE_ANCORA_PORTAO,
+                    pontoPortao.getX(), pontoPortao.getY(), pontoPortao.getZ());
             portaoAberto = false;
             garantirGerador(lv);
             RPTagMod.LOGGER.info("RP Tag: arena do Julgamento pronta (entrada {}, trono {}, portao {})",
@@ -428,12 +485,7 @@ public final class JuizoFinal {
             if (!ehSala(lv)) {
                 return;
             }
-            if (pontoGerador == null) {
-                // em frente ao trono, no caminho de quem entra
-                pontoGerador = colunaLivre(lv,
-                        new BlockPos(0, SALA_Y + 2, ARENA_Z + 20));
-            }
-            BlockPos g = pontoGerador;
+            BlockPos g = ancoraGerador(lv);
             // o altarzinho: base 3x3 e a pedra no meio (só põe o que estiver faltando)
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dz = -1; dz <= 1; dz++) {
@@ -447,7 +499,10 @@ public final class JuizoFinal {
                     }
                 }
             }
-            if (!lv.getBlockState(g).is(BLOCO_GERADOR)) {
+            // (5.42.0) só põe a pedra onde está VAZIO. Antes ela era recolocada por cima do
+            // que estivesse ali — inclusive do miolo de escuridão do portal, o que "quebrava"
+            // e obrigava a abrir outro.
+            if (lv.getBlockState(g).isAir()) {
                 lv.setBlock(g, BLOCO_GERADOR.defaultBlockState(), 2);
             }
             // o chão embaixo da pedra, para ela nunca ficar flutuando
@@ -470,13 +525,23 @@ public final class JuizoFinal {
             if (!ehSala(p.level()) || pos == null) {
                 return false;
             }
-            boolean eh = (pontoGerador != null && pontoGerador.equals(pos))
-                    || p.level().getBlockState(pos).is(BLOCO_GERADOR);
-            if (!eh) {
+            // (5.42.0) a pedra é reconhecida pela POSIÇÃO gravada. Antes valia "qualquer
+            // obsidiana chorosa" — e a moldura do portal também é de obsidiana chorosa, então
+            // clicar nela abria outro portal em cima do que já existia ("multiplicando").
+            BlockPos pedra = ancoraGerador((ServerLevel) p.level());
+            if (pos == null || !pos.equals(pedra)) {
                 return false;
             }
             ServerLevel sala = (ServerLevel) p.level();
             garantirGerador(sala);
+            // (5.42.0) já está aberto? não constrói OUTRO — só reforça o vórtice e avisa.
+            if (portaoAberto) {
+                reforcarPortao(p);
+                p.displayClientMessage(Component.literal(
+                        "\u00a7aO PORT\u00c3O J\u00c1 EST\u00c1 ABERTO\u00a77 \u2014 atravesse a "
+                        + "escurid\u00e3o.").withStyle(ChatFormatting.GREEN), true);
+                return true;
+            }
             // (5.34.0) SÓ ABRE COM A CHAVE NA MÃO — o dono: "ele só pode entrar depois de
             // colocar a chave na obsidiana e abrir o portal no juizo sala".
             boolean temChave = p.getMainHandItem().is(RPTagMod.CHAVE_JULGAMENTO.get())
@@ -536,8 +601,7 @@ public final class JuizoFinal {
             if (!JuizoSala.pronta()) {
                 construirSala(sala);
             }
-            BlockPos base = pontoPortao != null ? pontoPortao
-                    : new BlockPos(0, SALA_Y + 2, ARENA_Z + 6);
+            BlockPos base = ancoraPortao(sala);
             portaoAberto = false;
 
             // 1) bolsão de ar: 7 de largura, 8 de altura, 3 de profundidade
@@ -588,6 +652,7 @@ public final class JuizoFinal {
                 }
             }
             portaoAberto = true;
+            RPTagMod.LOGGER.info("RP Tag: portal de saida do Julgamento aberto em {}", base);
             // 6) O VÓRTICE — (5.34.0) agora NA FRENTE do miolo (z + 0,55), virado para a sala.
             // Antes ele nascia atrás (z - 0,6) e ficava enterrado na parede: era o "bugado".
             double vx = base.getX() + 0.5D;
@@ -620,6 +685,63 @@ public final class JuizoFinal {
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: gerar o portal de saida falhou", t);
             return false;
+        }
+    }
+
+    /**
+     * (5.42.0) <b>O VÓRTICE QUE SUMIA.</b>
+     *
+     * <p>O dono: <i>"o portal do juizo não está sendo possível encontrar"</i>. O portal de
+     * blocos está lá desde o clique — mas o <b>vórtice</b> (o desenho animado) é um efeito do
+     * cliente que só existe por 8 minutos e <b>não volta</b> quando o jogador reconecta ou
+     * troca de dimensão. Quem voltava depois via só um buraco de obsidiana no chão e não
+     * achava nada.
+     *
+     * <p>Agora toda vez que alguém entra na sala (ou renasce nela) com o portão aberto, o
+     * vórtice é reenviado pra essa pessoa — e sai uma coluna de partículas marcando o lugar.
+     */
+    public static void reforcarPortao(ServerPlayer p) {
+        try {
+            if (!portaoAberto || p == null || !ehSala((ServerLevel) p.level())) {
+                return;
+            }
+            ServerLevel sala = (ServerLevel) p.level();
+            BlockPos base = ancoraPortao(sala);
+            double vx = base.getX() + 0.5D, vy = base.getY() + 2.2D, vz = base.getZ() + 0.55D;
+            PacketDistributor.sendToPlayer(p, new VazioPoderPayload(4, vx, vy, vz, 0.0D, 0.0D, 0.0D));
+            sala.sendParticles(net.minecraft.core.particles.ParticleTypes.REVERSE_PORTAL,
+                    vx, vy, vz, 40, 1.2D, 1.8D, 0.3D, 0.03D);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: reforcar o portal do Juizo falhou", t);
+        }
+    }
+
+    /**
+     * (5.42.0) <b>ONDE FICA A PEDRA</b> — a dica de quem entra na sala.
+     *
+     * <p>Antes era uma frase solta ("a saída é a pedra escura ao lado do trono"), sem dizer
+     * distância nem direção, e o trono é grande. Agora o jogador recebe a coordenada e a
+     * distância em blocos; perto da pedra (< 6 blocos) sai uma coluna de partículas de alma.
+     */
+    public static void apontarAPedra(ServerPlayer p) {
+        try {
+            if (p == null || !ehSala((ServerLevel) p.level())) {
+                return;
+            }
+            ServerLevel sala = (ServerLevel) p.level();
+            BlockPos pedra = ancoraGerador(sala);
+            int dist = (int) Math.round(Math.sqrt(p.blockPosition().distSqr(pedra)));
+            p.displayClientMessage(Component.literal(
+                    "\u00a77A \u00a7fPEDRA DO RETORNO\u00a77 fica a \u00a7f" + dist
+                    + "\u00a77 blocos de voc\u00ea \u2014 coordenada \u00a7f"
+                    + pedra.getX() + " " + pedra.getY() + " " + pedra.getZ()
+                    + "\u00a77. Leve a CHAVE e clique nela.")
+                    .withStyle(ChatFormatting.DARK_GRAY), false);
+            sala.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+                    pedra.getX() + 0.5D, pedra.getY() + 1.0D, pedra.getZ() + 0.5D,
+                    30, 0.35D, 1.4D, 0.35D, 0.01D);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: apontar a pedra do Juizo falhou", t);
         }
     }
 
@@ -1133,6 +1255,7 @@ public final class JuizoFinal {
             if (sala != null) {
                 construirSala(sala);
                 garantirGerador(sala);
+                reforcarPortao(p);
                 BlockPos ent = pontoEntrada != null ? pontoEntrada
                         : new BlockPos(0, SALA_Y + 2, ARENA_Z + JuizoSala.COMPRIMENTO - 12);
                 p.teleportTo(sala, ent.getX() + 0.5D, ent.getY(), ent.getZ() + 0.5D, 180.0F, 0.0F);

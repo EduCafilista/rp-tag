@@ -1566,10 +1566,24 @@ public final class RPCommands {
                 //   acordar -> COLOCA ela na tela, ACORDADA
                 //   dormir  -> COLOCA ela na tela, DORMINDO
                 //   tirar   -> TIRA ela da tela (volta a ficar escondida)
+                // (5.42.0) O dono: "no comando acordar, tenha a opção de selecionar o acordar
+                // eduujgaa por exemplo, para saber em qual player vai acordar, senão vai
+                // aparecer na tela de todo mundo". Então acordar/dormir/tirar aceitam
+                // OPCIONALMENTE de quem são: sem o nome, é pra todo mundo (como era); com o
+                // nome, a Axion aparece SÓ na tela daquele jogador.
                 .then(Commands.literal("axion")
-                        .then(Commands.literal("acordar").executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA)))
-                        .then(Commands.literal("dormir").executes(ctx -> axionEstado(ctx, AxionPayload.DORMINDO)))
-                        .then(Commands.literal("tirar").executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA)))
+                        .then(Commands.literal("acordar")
+                                .executes(ctx -> axionEstado(ctx, AxionPayload.ACORDADA))
+                                .then(Commands.argument("jogadores", EntityArgument.players())
+                                        .executes(ctx -> axionSoPara(ctx, AxionPayload.ACORDADA))))
+                        .then(Commands.literal("dormir")
+                                .executes(ctx -> axionEstado(ctx, AxionPayload.DORMINDO))
+                                .then(Commands.argument("jogadores", EntityArgument.players())
+                                        .executes(ctx -> axionSoPara(ctx, AxionPayload.DORMINDO))))
+                        .then(Commands.literal("tirar")
+                                .executes(ctx -> axionEstado(ctx, AxionPayload.ESCONDIDA))
+                                .then(Commands.argument("jogadores", EntityArgument.players())
+                                        .executes(ctx -> axionSoPara(ctx, AxionPayload.ESCONDIDA))))
                         // (5.24.0) de quem é a Axion (o balão dela só aparece pra essa pessoa)
                         .then(Commands.literal("dono")
                                 .then(Commands.argument("jogador", EntityArgument.player())
@@ -2261,8 +2275,13 @@ public final class RPCommands {
         final ServerPlayer quem = destinatario;
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(quem,
                 new AxionFalaPayload(limpo, 8));
-        quem.playNotifySound(RPTagMod.SOM_VAZIO.get(),
-                net.minecraft.sounds.SoundSource.NEUTRAL, 0.35F, 1.6F);
+        // (5.42.0) O SOM. O dono: "tira esse som da axion ao falar, coloca algo tecnologia e
+        // curto". Antes era o SOM_VAZIO (grave, longo, arrastado). Agora são dois bips de
+        // chiptune (NOTE_BLOCK_BIT) colados — um "bip-bop" de terminal, que dura ~0,2 s.
+        quem.playNotifySound(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BIT.value(),
+                net.minecraft.sounds.SoundSource.NEUTRAL, 0.42F, 1.45F);
+        quem.playNotifySound(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BIT.value(),
+                net.minecraft.sounds.SoundSource.NEUTRAL, 0.34F, 2.05F);
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "\u00a7aAxion fala: \u00a74\u00a7l\"" + limpo + "\"\u00a7r \u00a77(balão só na tela de \u00a7f"
                         + quem.getName().getString() + "\u00a77)")
@@ -2321,8 +2340,57 @@ public final class RPCommands {
         return Command.SINGLE_SUCCESS;
     }
 
+    /** (5.42.0) quem recebeu a Axion por NOME (a tela é só desses, não do servidor todo). */
+    private static final java.util.Set<java.util.UUID> AXION_SO_PARA =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** (5.42.0) marca que a Axion daquele jogador é "só dele" (usado pelo /acordar). */
+    public static void marcarAxionSoPara(ServerPlayer p) {
+        if (p != null) {
+            AXION_SO_PARA.add(p.getUUID());
+        }
+    }
+
+    /**
+     * (5.42.0) {@code /rp admin axion acordar <jogadores>} — a Axion aparece <b>só</b> na tela
+     * de quem foi escolhido.
+     *
+     * <p>Sem escolher ninguém o estado é do mundo inteiro (era assim e continua assim); com o
+     * nome, o pacote vai <b>direto</b> pra aquela pessoa e a lista fica guardada, pra ninguém
+     * mais receber a Axion por tabela numa reconexão ou troca de dimensão.
+     */
+    private static int axionSoPara(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            int estado) {
+        java.util.Collection<ServerPlayer> alvos;
+        try {
+            alvos = EntityArgument.getPlayers(ctx, "jogadores");
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            ctx.getSource().sendFailure(Component.literal("\u00a7cJogador n\u00e3o encontrado."));
+            return 0;
+        }
+        var d = RPWorldData.get(ctx.getSource().getServer());
+        for (ServerPlayer alvo : alvos) {
+            AXION_SO_PARA.add(alvo.getUUID());
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo,
+                    new AxionPayload(estado, d.axionEscala(), 0.995F, 0.995F));
+        }
+        String nome = estado == AxionPayload.ACORDADA ? "\u00a7cACORDADA \u00a77(na tela)"
+                : estado == AxionPayload.DORMINDO ? "\u00a77DORMINDO (na tela)"
+                : "\u00a78fora da tela";
+        String quem = String.join(", ", alvos.stream().map(p -> p.getName().getString()).toList());
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                        "\u00a7aAxion " + nome + " \u00a77s\u00f3 para \u00a7f" + quem)
+                .withStyle(ChatFormatting.GREEN), true);
+        return Command.SINGLE_SUCCESS;
+    }
+
     /** (5.17.0) manda o estado da Axion pra um jogador. */
     public static void enviarAxion(ServerPlayer alvo, RPWorldData d) {
+        // (5.42.0) quem recebeu a Axion por NOME não é atropelado pelo estado global
+        if (AXION_SO_PARA.contains(alvo.getUUID())) {
+            return;
+        }
         // (5.24.0) ela mora com UMA pessoa: quem não é o dono recebe "escondida".
         int estado = d.axionEstado();
         if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID())) {
