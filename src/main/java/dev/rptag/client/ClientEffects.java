@@ -64,6 +64,11 @@ public final class ClientEffects {
     // (3.77.0) BANNER da vida canônica (LORE ON/OFF)
     private static volatile String bannerTitle = null;
     private static volatile String bannerSub = "";
+    /** (5.43.2) o MESMO texto sem os codigos de cor (§x). Era recalculado com
+     * replaceAll() — que COMPILA a regex — quatro vezes por quadro enquanto o
+     * banner aparecia; agora uma vez so, quando o banner comeca. */
+    private static volatile String bannerTitleLimpo = "";
+    private static volatile String bannerSubLimpo = "";
     private static volatile long bannerStart = 0;
     private static volatile long bannerDuration = 0;
     private static volatile boolean bannerOn = true;
@@ -400,10 +405,30 @@ public final class ClientEffects {
         LOGOU_AVISO = false;
         RPTagMod.LOGGER.info("RP Tag: AVISO recebido (estilo {}, {}s) — exibindo", style, seconds);
     }
+    /** (5.43.2) tira os codigos de cor SEM regex (replaceAll compila um Pattern a
+     * cada chamada — caro demais para algo que roda por quadro). */
+    static String semCor(String s) {
+        if (s == null || s.indexOf('\u00a7') < 0) {
+            return s == null ? "" : s;
+        }
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\u00a7') {
+                i++; // pula o codigo de cor inteiro (§ + 1 caractere)
+                continue;
+            }
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
     /** (3.77.0) recebe o BANNER da vida canônica (LORE ON/OFF). */
     public static void startCanonBanner(String title, String sub, int seconds, boolean on) {
         bannerTitle = title;
         bannerSub = sub;
+        bannerTitleLimpo = semCor(title);
+        bannerSubLimpo = semCor(sub);
         bannerStart = System.currentTimeMillis();
         bannerDuration = Math.max(1, Math.min(30, seconds)) * 1000L;
         bannerOn = on;
@@ -513,18 +538,20 @@ public final class ClientEffects {
             int sombra = (int) (200 * vis) << 24 | (bannerOn ? 0x07130A : 0x160404);
             int base = (int) (255 * vis) << 24 | (bannerOn ? 0x3FA34D : 0xC41F1F);
             String sub = bannerSub;
-            float tEsc = Math.min(2.6F, (w - 30.0F) / Math.max(1, font.width(
-                    title.replaceAll("\u00a7.", ""))));
-            float sEsc = Math.min(1.1F, (w - 30.0F) / Math.max(1, font.width(
-                    sub.replaceAll("\u00a7.", ""))));
+            // (5.43.2) textos sem cor JA CALCULADOS no startCanonBanner — nada de
+            // replaceAll() por quadro (4 compilacoes de regex por quadro antes).
+            String titleLimpo = bannerTitleLimpo;
+            String subLimpo = bannerSubLimpo;
+            float tEsc = Math.min(2.6F, (w - 30.0F) / Math.max(1, font.width(titleLimpo)));
+            float sEsc = Math.min(1.1F, (w - 30.0F) / Math.max(1, font.width(subLimpo)));
             float cyT = h * 0.34F;
             float cyS = cyT + font.lineHeight * tEsc / 2.0F + font.lineHeight * sEsc / 2.0F + 8.0F;
             com.mojang.blaze3d.systems.RenderSystem.enableBlend();
             // (3.79.0) FAIXA ESCURA atras das duas linhas — o verde/vermelho
             // texturizado morria contra o ceu (print: "quase nao consegue
             // enxergar"). Agora o banner le em qualquer cenario.
-            int tW = (int) (font.width(title.replaceAll("\u00a7.", "")) * tEsc);
-            int sW = (int) (font.width(sub.replaceAll("\u00a7.", "")) * sEsc);
+            int tW = (int) (font.width(titleLimpo) * tEsc);
+            int sW = (int) (font.width(subLimpo) * sEsc);
             int bandW = Math.max(tW, sW) + 56;
             int bandY0 = (int) cyT - 16;
             int bandY1 = (int) (cyS + font.lineHeight * sEsc) + 16;

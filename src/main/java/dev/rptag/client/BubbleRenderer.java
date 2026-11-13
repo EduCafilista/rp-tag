@@ -508,9 +508,11 @@ public final class BubbleRenderer {
         // (antes o gap era fixo e baloes de 2-3 linhas se cruzavam)
         Font fontH = minecraft.font;
         int count = stack.size();
-        int[] hPx = new int[count];
+        // (5.43.2) o array de alturas e REAPROVEITADO (era um new int[] por jogador
+        // por quadro) e cada altura vem do layout cacheado do balao.
+        int[] hPx = alturasScratch(count);
         for (int i = 0; i < count; i++) {
-            hPx[i] = bubbleHeightPx(fontH, stack.get(i));
+            hPx[i] = layoutDe(fontH, stack.get(i)).alturaPx;
         }
         for (int i = 0; i < count; i++) {
             float belowBlocks = 0.0F;
@@ -633,19 +635,103 @@ public final class BubbleRenderer {
         return a | (r << 16) | (g << 8) | b;
     }
 
-    private static int bubbleHeightPx(Font font, ClientBubbleCache.Bubble bubble) {
-        // (3.32.0) fala = TEXTO PURO; os emotes moram na faixa (so a faixa conta)
-        String speech = bubble.text();
-        // (3.64.0) typewriter: a ALTURA da pilha acompanha o texto digitado
-        long agoraT = System.currentTimeMillis();
-        if (ClientBubbleCache.TYPEWRITER) {
-            int visCh = (int) Math.min(speech.length(),
-                    (agoraT - bubble.bornMillis()) / TYPE_MS_PER_CHAR);
-            if (visCh < speech.length()) {
-                speech = speech.substring(0, visCh);
-            }
+    // ===================== (5.43.2) DESEMPENHO: LAYOUT CACHEADO =====================
+    // O balao era o UNICO lugar do mod que gastava CPU de verdade: renderOne() refazia
+    // o layout INTEIRO (quebra de linha + Stickers.styled() + font.width() por palavra)
+    // em TODO QUADRO, pra CADA balao de CADA jogador. Depois que o efeito de maquina de
+    // escrever termina, o texto nao muda mais — refazer a conta 60x por segundo era
+    // trabalho 100% jogado fora. Agora o layout e calculado UMA vez por estado do texto
+    // (ou seja: ~28x por segundo durante a digitacao, e ZERO depois dela).
+    static final class Layout {
+        /** quantos caracteres estavam visiveis quando este layout foi calculado. */
+        final int visivel;
+        /** linhas ja equilibradas (a quebra de linha do balao). */
+        final List<String> linhasTxt;
+        /** cada linha ja fatiada em segmentos (adesivo x texto). */
+        final List<List<Seg>> segLinhas;
+        /** largura em pixels de cada linha (o que o font.width devolvia). */
+        final int[] larguras;
+        /** altura da pilula em pixels (o que bubbleHeightPx devolvia). */
+        final int alturaPx;
+
+        Layout(int visivel, List<String> linhasTxt, List<List<Seg>> segLinhas,
+                int[] larguras, int alturaPx) {
+            this.visivel = visivel;
+            this.linhasTxt = linhasTxt;
+            this.segLinhas = segLinhas;
+            this.larguras = larguras;
+            this.alturaPx = alturaPx;
         }
-        int nLines = wrapBalanced(font, speech).size();
+    }
+
+    /** a chave e o PROPRIO balao (o record e o mesmo objeto enquanto ele vive). */
+    private static final java.util.IdentityHashMap<ClientBubbleCache.Bubble, Layout> LAYOUTS =
+            new java.util.IdentityHashMap<>();
+    /** teto de seguranca: 3 baloes por jogador x jogadores na tela — 128 sobra. */
+    private static final int LAYOUT_MAX = 128;
+    /** quadro de alturas reaproveitado (era um new int[] por jogador por quadro). */
+    private static int[] ALTURAS = new int[8];
+    /** o "Look" da geometria procedural, reaproveitado quadro a quadro. */
+    private static final BubbleGeometry.Look LOOK = new BubbleGeometry.Look();
+
+    /** (5.43.2) quantos caracteres do typewriter ja apareceram. */
+    static int visiveis(ClientBubbleCache.Bubble bubble, long agora) {
+        if (!ClientBubbleCache.TYPEWRITER) {
+            return Integer.MAX_VALUE; // texto inteiro na hora
+        }
+        int n = bubble.text().length();
+        long v = (agora - bubble.bornMillis()) / TYPE_MS_PER_CHAR;
+        return (int) Math.max(0L, Math.min(n, v));
+    }
+
+    /** (5.43.2) o layout do balao — do cache quando o texto visivel nao mudou. */
+    private static Layout layoutDe(Font font, ClientBubbleCache.Bubble bubble) {
+        final long agora = System.currentTimeMillis();
+        final int vis = visiveis(bubble, agora);
+        Layout pronto = LAYOUTS.get(bubble);
+        if (pronto != null && pronto.visivel == vis) {
+            return pronto; // caminho quente: nem uma conta, so um get
+        }
+        String speech = bubble.text();
+        if (vis < speech.length()) {
+            speech = speech.substring(0, vis);
+        }
+        // (3.38.0) linhas EQUILIBRADAS (fim da palavra orfa na quebra de linha)
+        List<String> linhas = wrapBalanced(font, speech);
+        List<List<Seg>> segLinhas = new ArrayList<>(linhas.size());
+        int[] larguras = new int[linhas.size()];
+        for (int i = 0; i < linhas.size(); i++) {
+            List<Seg> segs = segment(Stickers.styled(linhas.get(i)).getVisualOrderText());
+            segLinhas.add(segs);
+            int lw = 0;
+            for (Seg seg : segs) {
+                lw += font.width(seq(seg));
+            }
+            larguras[i] = lw;
+        }
+        Layout novo = new Layout(vis, linhas, segLinhas, larguras, alturaPxDe(bubble, linhas.size()));
+        if (LAYOUTS.size() >= LAYOUT_MAX) {
+            podarLayouts(agora); // balao que ja morreu nao segura layout na memoria
+        }
+        LAYOUTS.put(bubble, novo);
+        return novo;
+    }
+
+    /** (5.43.2) tira do cache os baloes que ja expiraram. */
+    private static void podarLayouts(long agora) {
+        LAYOUTS.entrySet().removeIf(e -> e.getKey().expired());
+    }
+
+    /** (5.43.2) o array de alturas reaproveitado (cresce so quando precisa). */
+    private static int[] alturasScratch(int n) {
+        if (ALTURAS.length < n) {
+            ALTURAS = new int[Math.max(n, 8)];
+        }
+        return ALTURAS;
+    }
+
+    /** (5.43.2) altura da pilula em pixels, a partir do numero de linhas. */
+    private static int alturaPxDe(ClientBubbleCache.Bubble bubble, int nLines) {
         if (nLines == 0) {
             return 0;
         }
@@ -671,28 +757,15 @@ public final class BubbleRenderer {
         // (3.32.0) EMOJIS SO NAS BORDAS: os extras NAO entram mais no texto!
         // A fala e 100% texto; os emojis moram na FAIXA (igual ao adesivo) —
         // linha de emoji NUNCA mais (fim do espaco vazio do print).
-        String speech = bubble.text();
-        // (3.64.0) TYPEWRITER: a fala se ESCREVE SOZINHA, letra por letra
-        // (mecanica dos mods famosos de balao: o nascedouro ja e registrado
-        // em bornMillis — basta revelar por tempo). O balao cresce junto.
-        long agoraT = System.currentTimeMillis();
-        // (3.65.0) OPCAO do jogador: typewriter desligado = texto inteiro na hora
-        if (ClientBubbleCache.TYPEWRITER) {
-            int visCh = (int) Math.min(speech.length(),
-                    (agoraT - bubble.bornMillis()) / TYPE_MS_PER_CHAR);
-            if (visCh < speech.length()) {
-                speech = speech.substring(0, visCh);
-            }
-        }
-        // (3.38.0) linhas EQUILIBRADAS (fim da palavra orfa na quebra de linha)
-        List<String> linesTxt = wrapBalanced(font, speech);
+        // (5.43.2) DESEMPENHO: o layout (typewriter + quebra de linha equilibrada +
+        // segmentos + larguras) vem do CACHE. Antes isso era refeito em TODO quadro,
+        // mesmo depois que a fala terminava de ser digitada e o texto nao mudava mais.
+        Layout layout = layoutDe(font, bubble);
+        List<String> linesTxt = layout.linhasTxt;
         if (linesTxt.isEmpty()) {
             return;
         }
-        List<List<Seg>> segLines = new ArrayList<>();
-        for (String lineTxt : linesTxt) {
-            segLines.add(segment(Stickers.styled(lineTxt).getVisualOrderText()));
-        }
+        List<List<Seg>> segLines = layout.segLinhas;
 
         long now = System.currentTimeMillis();
         long age = now - bubble.bornMillis();
@@ -713,12 +786,10 @@ public final class BubbleRenderer {
         textColor = withAlpha(textColor, alpha);
 
         // ---- geometria (pixels inteiros) ----
+        // (5.43.2) as larguras das linhas tambem vem do cache (era um font.width
+        // por segmento, por linha, por balao, por quadro).
         int textW = 0;
-        for (List<Seg> segs : segLines) {
-            int lw = 0;
-            for (Seg seg : segs) {
-                lw += font.width(seq(seg));
-            }
+        for (int lw : layout.larguras) {
             textW = Math.max(textW, lw);
         }
         int n = linesTxt.size();
@@ -802,7 +873,11 @@ public final class BubbleRenderer {
             // ---- (3.60.0) BALAO PROCEDURAL: UMA silhueta (corpo + rabicho de HQ no
             // mesmo contorno), contorno de espessura exata, sombra macia, degrade e
             // gloss — tudo geometria, sem textura. Mesmo codigo da previa do /balao.
-            BubbleGeometry.Look look = new BubbleGeometry.Look();
+            // (5.43.2) DESEMPENHO: o Look e REAPROVEITADO (era um objeto novo por
+            // balao por quadro). Todos os campos sao reescritos abaixo — ele nao
+            // guarda estado de um balao pro outro.
+            BubbleGeometry.Look look = LOOK;
+            look.shadow = true;
             look.style = Math.max(0, Math.min(bs, 4));
             look.fill = fill;
             look.border = border;

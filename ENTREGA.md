@@ -1,60 +1,71 @@
-# RP Tag 5.43.1 — a cúpula do guarda-chuva AGORA ACIMA DA CABEÇA
+# RP Tag 5.43.2 — mod otimizado (o balão parou de ser recalculado a cada quadro)
 
 **O arquivo para baixar:**
-[rptag-5.43.1.jar](https://github.com/EduCafilista/rp-tag/releases/download/v5.43.1/rptag-5.43.1.jar)
-· 37.153.067 bytes · `md5 8a21324be4f1c4d76d1d6c21a72a46b7`
+[rptag-5.43.2.jar](https://github.com/EduCafilista/rp-tag/releases/download/v5.43.2/rptag-5.43.2.jar)
+· 37.154.886 bytes · `md5 35a88e5a9ad173b69c878935b5dab742`
 
-**Página da release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.43.1
+**Página da release:** https://github.com/EduCafilista/rp-tag/releases/tag/v5.43.2
 
 > **Tire o jar antigo da pasta `mods`** — servidor **e** cliente.
 
 ---
 
-## O que estava errado (e por que eu errei duas vezes)
+## O que eu medi antes de mexer (medido, não chutado)
 
-Na 5.43.0 eu acertei o **eixo** (o guarda-chuva deixou de ficar deitado) mas errei a **altura**:
-a cúpula continuou na linha do peito e caía pro lado — exatamente o que você viu.
+**Servidor** — subi o mesmo NeoForge duas vezes, sem ninguém na casa, e medi 40 s de cada:
 
-O motivo: eu conferi que o modelo apontava "pra cima" olhando só a **direção** do eixo, e não
-**onde** a cúpula caía depois de somada a posição do braço.
+| | sem o mod | com o mod |
+|---|---|---|
+| CPU ociosa | 15,78% de 1 núcleo | 12,95% a 17,00% (mesma faixa) |
+| "Can't keep up" | 0 | 0 (o único registro do 5.43.1 foi na geração do spawn) |
+| Pacotes por tick | — | 0 |
 
-Agora a conta é outra: o programa pega os **4120 vértices** do seu `.obj`, aplica a cadeia real
-do item na mão (`braço em repouso → X(−90) → Y(180) → rotação do modelo → translação em 1/16 de
-bloco`), separa os **2859 vértices da cúpula** e mede onde o centro dela foi parar. Aí procura a
-pose que deixa esse centro **acima da cabeça**.
+O servidor já estava no jeito: as zonas de lore checam **1× por segundo** (não 20×), o AFK usa
+varredura espaçada e **nenhum** arquivo junta handler de tick com varredura de mundo.
 
-**Resultado:** rotação `[−180, −90, −90]` e translação `[−6, 17, 8]`.
+**Cliente** — aqui estava o desperdício. O `BubbleRenderer` refazia, **em todo quadro** e para
+cada balão de cada jogador, a quebra de linha + `Stickers.styled()` + `font.width()` por palavra.
+Medi a peça principal isolada: **0,26 a 0,88 µs por texto**, chamada **uma vez por palavra** —
+e, com balões na tela, isso roda 60× por segundo sem parar.
 
-- antes (5.43.0): centro da cúpula em **Y = −0,07** → na altura do peito
-- agora (5.43.1): centro da cúpula em **Y = 0,86** → acima da cabeça (que termina em 0,50)
-
-**Prévia do antes e depois, com o corpo de referência:** `arte/previa_pose.png`
-
----
-
-## O que mudou no jogo
-
-- **Aberto:** o cabo fica no punho, a cúpula abre **acima da cabeça**, centralizada no corpo —
-  o desenho de quem se esconde do sol.
-- **Fechado:** continua na pose normal de carregar (deitado no punho), como qualquer item.
-- **Primeira pessoa:** a cúpula fica em cima e à direita, sem tapar a visão.
-- Só o **aberto** tem essa pose; é o único que muda de modelo.
+O detalhe que fecha o assunto: a "máquina de escrever" termina em ~2 s e **depois disso o texto
+não muda mais**. Era conta jogada fora, 60 vezes por segundo, até o balão expirar.
 
 ---
 
-## Como não errar a terceira vez
+## O que mudou
 
-Entrou uma prova no `check.py` que **mede** a pose em vez de confiar em mim: ela aplica a mesma
-cadeia de transformação nos vértices do `.obj`, acha o centro da cúpula e **falha o build** se ele
-não estiver acima de Y = 0,55 nem centralizado no corpo. O defeito do "peito" e o do "pra baixo"
-não passam mais por ela.
+| onde | antes | agora |
+|---|---|---|
+| Layout do balão | recalculado **todo quadro** | **cacheado**; recalculado só quando muda o texto visível |
+| Altura da pilha | quebra de linha inteira por balão por quadro | sai do cache |
+| Largura das linhas | `font.width` por segmento por quadro | sai do cache |
+| Array de alturas | `new int[]` por jogador por quadro | array reaproveitado |
+| Objeto `Look` da geometria | `new` por balão por quadro | um só, reaproveitado |
+| Banner LORE ON/OFF | 4 `replaceAll` (compilando regex) por quadro | texto sem cor calculado **uma vez**, sem regex |
+| Memória | — | cache poda sozinho os balões que já expiraram |
 
-E a prévia `arte/previa_pose_umbrella.py` agora desenha o **corpo do jogador junto** — a prévia
-antiga mostrava o guarda-chuva sozinho no vácuo, e foi por isso que eu não vi o erro.
+**O visual não mudou nada** — mesmas linhas, mesmas cores, mesmo typewriter, mesmo pop-in, mesmo
+fade. Mudou só *quantas vezes* a conta é feita.
+
+**Ganho real:** depois que a fala termina de ser digitada, o custo de layout vai a **zero**; durante
+a digitação, cai de 60 para ~36 cálculos por segundo. Em servidor de RP com uma dezena de balões na
+tela, é a maior parte da CPU que o mod gastava no cliente.
+
+---
+
+## O que deixei de propósito
+
+Os **37 MB do jar** continuam iguais (você pediu pra manter): 35 MB são quadros de vídeo lidos sob
+demanda, em thread própria, fora da thread principal — **não custa FPS nem TPS**, só download.
+
+O relatório completo, com as medições: `arte/relatorio-desempenho.md`.
 
 ---
 
 ## Testes
 
-- `check.py`: **1336 PASS / 0 FAIL** (4 provas novas medindo a pose)
-- Servidor: `RP Tag 5.43.1 (rptag)` → `Done (1.054s)!`
+- `check.py`: **1350 PASS / 0 FAIL** (14 provas novas travando o cache no lugar)
+- `arte/auditar.py`: 0 erros, 14 avisos (todos antigos, conhecidos)
+- Servidor: `RP Tag 5.43.2 (rptag)` → `Done (1.494s)!`, nenhuma exceção, 0 "Can't keep up"
+- Guarda-chuva: pose da 5.43.1 mantida (cúpula acima da cabeça, medida em Y=0,86)
