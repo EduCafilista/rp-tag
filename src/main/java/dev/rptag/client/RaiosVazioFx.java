@@ -364,31 +364,34 @@ public final class RaiosVazioFx {
             // que saem no vazio ligar, podem ser mais escuros, mais vazio né?". As três camadas
             // desceram de tom: a capa virou sangue seco, o corpo um vermelho fundo de breu e o
             // núcleo deixou de ser quase branco (era o que fazia parecer "energia", não vazio).
-            // ---------------- 1) CAPA vermelho-escura, larga ----------------
-            // (é a que segura o raio contra céu claro / shader claro: alpha normal,
-            //  não soma, então o vermelho "mancha" a tela em vez de lavar)
+            // (5.43.0) AMARELO E NEGRO. O dono: "o vazio ligar tem que mudar a cor dos raios,
+            // cor amarela, negro".
+            // A ordem de desenho é a mesma de antes (capa larga -> corpo -> núcleo fino); só a
+            // paleta virou carvão embaixo e amarelo em cima, o que dá o raio "de energia negra"
+            // — a casca some contra o cenário escuro e o amarelo salta por cima dela.
+            // ---------------- 1) CAPA NEGRA, larga ----------------
             fita(vc, mat, a, b, perp, w * 2.35F, afina0, afina1,
-                    cor(0.22F, 0.005F, 0.012F, 0.42F * forca),
-                    cor(0.28F, 0.008F, 0.018F, 0.36F * forca));
+                    cor(0.030F, 0.028F, 0.035F, 0.50F * forca),
+                    cor(0.060F, 0.055F, 0.070F, 0.42F * forca));
 
-            // ---------------- 2) CORPO vermelho vivo ----------------
+            // ---------------- 2) CORPO AMARELO ----------------
             Vec3 a2 = a.add(e1), b2 = b.add(e1);
             fita(vc, mat, a2, b2, perp, w, afina0, afina1,
-                    cor(0.44F, 0.012F, 0.025F, 0.80F * forca),
-                    cor(0.52F, 0.020F, 0.030F, 0.72F * forca));
+                    cor(0.86F, 0.70F, 0.10F, 0.82F * forca),
+                    cor(0.94F, 0.82F, 0.22F, 0.74F * forca));
 
-            // ---------------- 3) NÚCLEO quente, quase branco ----------------
+            // ---------------- 3) NÚCLEO amarelo-claro, quase branco ----------------
             Vec3 a3 = a.add(e2), b3 = b.add(e2);
             fita(vc, mat, a3, b3, perp, w * 0.38F, afina0, afina1,
-                    cor(0.66F, 0.10F, 0.08F, 0.85F * forca),
-                    cor(0.58F, 0.06F, 0.05F, 0.78F * forca));
+                    cor(1.00F, 0.95F, 0.62F, 0.88F * forca),
+                    cor(0.98F, 0.88F, 0.38F, 0.80F * forca));
         }
 
         // ponta "estalando": um losango quente no fim do raio
         Vec3 p = pts[n];
         float t = r.largura * (surto ? 3.0F : 2.4F);
         if (p.distanceToSqr(cam.subtract(base)) > 2.0) {
-            quadPequeno(vc, mat, p, t, cor(0.62F, 0.08F, 0.06F, 0.80F * forca));
+            quadPequeno(vc, mat, p, t, cor(1.00F, 0.86F, 0.28F, 0.86F * forca));
         }
     }
 

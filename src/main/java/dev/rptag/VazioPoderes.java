@@ -87,10 +87,16 @@ public final class VazioPoderes {
             return false;
         }
         try {
+            // dentro do vazio / reino do Juízo o dom é do lugar
             if (VazioReino.ehVazio(p.level()) || JuizoReino.eh(p.level())) {
                 return true;
             }
-            return p.hasPermissions(2);
+            // (5.43.0) O DONO: "o ativar poderes ainda tá bugando, consigo ativar até com o
+            // vazio desligado, ARRUMA ISSO".
+            // O defeito: fora do vazio bastava ser ADM — e o dono É ADM, então os poderes
+            // respondiam sempre, mesmo depois do /vazio desligar. Agora, fora do vazio, o ADM
+            // precisa ter LIGADO o vazio (/vazio ligar); desligou, os poderes param na hora.
+            return p.hasPermissions(2) && NeptuneEventos.ehDeus(p.getUUID());
         } catch (Throwable t) {
             return false;
         }

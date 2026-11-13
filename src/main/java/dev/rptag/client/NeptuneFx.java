@@ -333,8 +333,16 @@ public final class NeptuneFx {
     }
 
     // ---- TERREMOTO: nebulosa de espaço + poeira + visão dupla quando travado
+    //
+    // (5.43.0) O DONO: "tira esse trem da tela no terremoto".
+    // Tudo o que era DESENHADO por cima da tela durante o terremoto (nebulosa, poeira,
+    // faixas de visão dupla, rachadura) saiu: a tela fica limpa e o que resta é o chão
+    // tremendo (o tremor da câmera) e o som. A constante fica pra ligar de novo se um dia
+    // ele quiser.
+    private static final boolean TERREMOTO_DESENHA_NA_TELA = false;
+
     private static void desenharTerremoto(GuiGraphics g) {
-        if (quakeOff) {
+        if (quakeOff || !TERREMOTO_DESENHA_NA_TELA) {
             return;
         }
         long now = System.currentTimeMillis();

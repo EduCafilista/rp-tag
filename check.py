@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.42.0'
+VER = '5.43.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3023,9 +3023,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.42.0 no jar, no mod e no gradle',
-      "version = '5.42.0'" in rd('build.gradle')
-      and '5.42.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.43.0 no jar, no mod e no gradle',
+      "version = '5.43.0'" in rd('build.gradle')
+      and '5.43.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3261,8 +3261,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.42.0 (jar, mod e gradle)',
-      "version = '5.42.0'" in rd('build.gradle') and '5.42.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.43.0 (jar, mod e gradle)',
+      "version = '5.43.0'" in rd('build.gradle') and '5.43.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3320,8 +3320,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.42.0 (jar, mod e gradle)',
-      "version = '5.42.0'" in rd('build.gradle') and '5.42.0' in _rm)
+check('5.34.0: a versao subiu pra 5.43.0 (jar, mod e gradle)',
+      "version = '5.43.0'" in rd('build.gradle') and '5.43.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3343,8 +3343,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.42.0 (jar, mod e gradle)',
-      "version = '5.42.0'" in rd('build.gradle') and '5.42.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.43.0 (jar, mod e gradle)',
+      "version = '5.43.0'" in rd('build.gradle') and '5.43.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -4375,6 +4375,63 @@ check('5.42.0 (96): a pedra agora e ACHAVEL (coordenada + distancia + particulas
       'public static void apontarAPedra(ServerPlayer p)' in _JF42
       and 'PEDRA DO RETORNO' in _JF42 and 'distSqr(pedra)' in _JF42
       and 'SOUL_FIRE_FLAME' in _JF42)
+
+
+# ============ PEDIDO 94-h / 98 — 5.43.0 (a pose do guarda-chuva, o gate dos poderes e o resto) ============
+# O dono, nesta rodada: "o guarda chuva deve ficar na mao e para cima ... está bugando o antigo no
+# meu peito"; "o ativar poderes ainda ta bugando, consigo ativar ate com vazio desligar"; "tira
+# esse trem da tela no terremoto"; "o vazio ligar tem que mudar a cor dos raios, cor amarela,
+# negro"; "melhore o design do /balao para ficar mais legivel".
+_IMP = rd('arte/importar_umbrella_obj.py')
+_VP43 = rd(R + '/VazioPoderes.java')
+_NF43 = rd(C + '/NeptuneFx.java')
+_RY43 = rd(C + '/RaiosVazioFx.java')
+_BR43 = rd(C + '/BubbleRenderer.java')
+_aberto0 = _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))
+
+
+def _dir_de(rot):
+    """pra onde o +Y do modelo aponta no mundo, com a cadeia do item na mao (3a pessoa)."""
+    import math
+    def rx(a):
+        c, s = math.cos(math.radians(a)), math.sin(math.radians(a))
+        return [[1, 0, 0], [0, c, -s], [0, s, c]]
+    def ry(a):
+        c, s = math.cos(math.radians(a)), math.sin(math.radians(a))
+        return [[c, 0, s], [0, 1, 0], [-s, 0, c]]
+    def rz(a):
+        c, s = math.cos(math.radians(a)), math.sin(math.radians(a))
+        return [[c, -s, 0], [s, c, 0], [0, 0, 1]]
+    def mul(a, b):
+        return [[sum(a[i][k] * b[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
+    def aplica(m, v):
+        return [sum(m[i][k] * v[k] for k in range(3)) for i in range(3)]
+    # cadeia do ItemInHandLayer: braço em repouso (~-10°) · X(-90) · Y(180) · display
+    m = mul(rx(-10), mul(rx(-90), ry(180)))
+    m = mul(m, mul(rx(rot[0]), mul(ry(rot[1]), rz(rot[2]))))
+    return aplica(m, [0, 1, 0])
+
+
+_dir = _dir_de(_aberto0['display']['thirdperson_righthand']['rotation'])
+check('5.43.0 (94-h): o guarda-chuva ABERTO aponta PRA CIMA na mao (o dono: "na mao e para cima")',
+      _dir[1] > 0.90)
+check('5.43.0 (94-h): a pose foi CALCULADA (a conta fica no gerador, com a cadeia do braco)',
+      'X(-90) · Y(180)' in _IMP and '-180, -90, -80' in _IMP
+      and 'braço(repouso)' in _IMP)
+check('5.43.0 (94-h): o fechado continua na pose de carregar (deitado no punho)',
+      _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))
+      ['display']['thirdperson_righthand']['rotation'] == [0, -90, 10])
+check('5.43.0 (98): fora do vazio, ADM so usa poder com o vazio LIGADO (/vazio ligar)',
+      'NeptuneEventos.ehDeus(p.getUUID())' in _VP43
+      and 'p.hasPermissions(2) &&' in _VP43)
+check('5.43.0 (98): o terremoto NAO desenha mais nada por cima da tela',
+      'TERREMOTO_DESENHA_NA_TELA = false' in _NF43)
+check('5.43.0 (98): os raios do vazio ligar sao AMARELO e NEGRO (nao mais vermelhos)',
+      'cor(0.030F, 0.028F, 0.035F, 0.50F * forca)' in _RY43
+      and 'cor(0.86F, 0.70F, 0.10F, 0.82F * forca)' in _RY43
+      and 'cor(0.44F, 0.012F, 0.025F, 0.80F * forca)' not in _RY43)
+check('5.43.0 (98): o texto do balao ganhou CONTORNO de contraste (le em qualquer cor)',
+      'haloDe(' in _BR43 and 'float[][] desloc' in _BR43)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

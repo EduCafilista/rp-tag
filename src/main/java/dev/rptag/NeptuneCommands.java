@@ -149,7 +149,7 @@ public final class NeptuneCommands {
             ServerPlayer p = ctx.getSource().getPlayerOrException();
             NeptuneEventos.ligarDeus(p);
             ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a75\u2588 VOCÊ É O VAZIO. \u00a77Aura de RAIOS VERMELHOS saindo do corpo "
+                    "\u00a75\u2588 VOCÊ É O VAZIO. \u00a77Aura de RAIOS AMARELOS E NEGROS saindo do corpo "
                     + "(voando também), trilha ao andar, medo em quem chega perto.\n"
                     + "\u00a77Use /vazio apagar <jogador> ou /vazio exilar <jogador>."), false);
             return Command.SINGLE_SUCCESS;

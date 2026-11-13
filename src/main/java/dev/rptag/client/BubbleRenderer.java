@@ -299,6 +299,17 @@ public final class BubbleRenderer {
      * Desenha uma linha por segmentos: adesivos em BRANCO (cor verdadeira,
      * herdando o alfa global) e texto na cor normal.
      */
+    /**
+     * (5.43.0) a cor do CONTORNO: o oposto do texto, com alfa proporcional ao fade do balão.
+     * Texto claro ganha contorno escuro; texto escuro ganha contorno claro.
+     */
+    private static int haloDe(int corDoTexto, float alfa) {
+        int r = (corDoTexto >> 16) & 0xFF, g = (corDoTexto >> 8) & 0xFF, b = corDoTexto & 0xFF;
+        float lum = (0.299F * r + 0.587F * g + 0.114F * b) / 255.0F;
+        int a = (int) (Math.max(0.0F, Math.min(1.0F, alfa)) * 190.0F);
+        return (a << 24) | (lum > 0.55F ? 0x101014 : 0xF2F2F2);
+    }
+
     private static float drawLine(Font font, Matrix4f matrix, MultiBufferSource buffers,
             List<Seg> segs, float x, float y, int textColor, float alpha, int tone) {
         float pen = x;
@@ -325,6 +336,20 @@ public final class BubbleRenderer {
             // NEGRITO FAKE (2a passada 0.75px ao lado, mesmo avanço).
             Style tom = tone == 1 ? Style.EMPTY.withItalic(true) : Style.EMPTY;
             float sx = pen;
+            // (5.43.0) CONTORNO DE CONTRASTE — o dono: "melhore para ficar mais legível dos
+            // players verem e entenderem". Antes o texto era desenhado SEM sombra e sem
+            // contorno: em balão claro, letra clara sumia; em balão escuro, letra escura
+            // sumia. Agora cada letra ganha um halo de 1px na cor OPOSTA (escuro embaixo de
+            // texto claro, claro embaixo de texto escuro) — lê em qualquer cor de balão e em
+            // qualquer fundo do mundo, sem borrar (é contorno, não sombra difusa).
+            int halo = haloDe(textColor, alpha);
+            if (halo != 0) {
+                float[][] desloc = {{-1.0F, 0.0F}, {1.0F, 0.0F}, {0.0F, -1.0F}, {0.0F, 1.0F}};
+                for (float[] d : desloc) {
+                    font.drawInBatch(seq(seg, tom), pen + d[0], y + d[1], halo, false, matrix,
+                            buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                }
+            }
             pen = font.drawInBatch(seq(seg, tom), pen, y, textColor, false, matrix, buffers,
                     Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             if (tone == 2) {

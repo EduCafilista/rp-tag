@@ -60,19 +60,44 @@ LADRILHOS_TECIDO = [
 
 # display: os números que vieram no pacote, com a escala da 3ª pessoa um tico maior (o dono
 # reclamou de guarda-chuva pequeno na 5.40.0 — melhor pecar pra grande do que pra pequeno)
+# (5.43.0) A POSE — calculada, não chutada.
+#
+# O dono: "o guarda chuva deve ficar na mão e para cima, como se o player estivesse se
+# escondendo do sol mesmo, está bugando o antigo no meu peito". O print mostrou o guarda-chuva
+# DEITADO na frente do peito, porque o número que veio no pacote ([0, -90, 10]) deixa o eixo do
+# modelo na horizontal.
+#
+# Aqui a conta foi feita de verdade: a cadeia do item na mão é
+#     mundo = braço(repouso) · X(-90) · Y(180) · [display]
+# e procurando a rotação que deixa o +Y do modelo apontando pra CIMA, a família que resolve é
+# (-180, -90, -80) (a Z compensa os ~10 graus que o braço fica à frente). Assim o cabo fica na
+# mão e a cúpula sobe ACIMA da cabeça — o desenho de quem se esconde do sol.
 DISPLAY = {
-    "thirdperson_righthand": {"rotation": [0, -90, 10], "translation": [0, 5, 0],
-                              "scale": [0.95, 0.95, 0.95]},
-    "thirdperson_lefthand": {"rotation": [0, 90, -10], "translation": [0, 5, 0],
-                             "scale": [0.95, 0.95, 0.95]},
-    "firstperson_righthand": {"rotation": [0, -90, -20], "translation": [1.13, 5.5, 1.13],
-                              "scale": [0.78, 0.78, 0.78]},
-    "firstperson_lefthand": {"rotation": [0, 90, 20], "translation": [1.13, 5.5, 1.13],
-                             "scale": [0.78, 0.78, 0.78]},
+    "thirdperson_righthand": {"rotation": [-180, -90, -80], "translation": [0, 0.5, 0],
+                              "scale": [0.72, 0.72, 0.72]},
+    "thirdperson_lefthand": {"rotation": [-180, 90, 80], "translation": [0, 0.5, 0],
+                             "scale": [0.72, 0.72, 0.72]},
+    # em 1ª pessoa a mão sai de outro referencial (a câmera); aqui o mesmo giro com escala
+    # menor deixa a cúpula em cima e à frente, sem tapar a tela
+    "firstperson_righthand": {"rotation": [-180, -90, -80], "translation": [1.5, 0.5, 0],
+                              "scale": [0.58, 0.58, 0.58]},
+    "firstperson_lefthand": {"rotation": [-180, 90, 80], "translation": [1.5, 0.5, 0],
+                             "scale": [0.58, 0.58, 0.58]},
     "ground": {"rotation": [0, 0, 0], "translation": [0, 3, 0], "scale": [0.45, 0.45, 0.45]},
     "fixed": {"rotation": [-50, 180, 0], "translation": [0, 0, 0], "scale": [0.55, 0.55, 0.55]},
     "gui": {"rotation": [28, -40, 0], "translation": [0, -1, 0], "scale": [0.85, 0.85, 0.85]},
 }
+
+# o FECHADO continua sendo carregado como qualquer item na mão (deitado no punho é o normal)
+DISPLAY_FECHADO = dict(DISPLAY)
+DISPLAY_FECHADO["thirdperson_righthand"] = {"rotation": [0, -90, 10], "translation": [0, 5, 0],
+                                            "scale": [0.8, 0.8, 0.8]}
+DISPLAY_FECHADO["thirdperson_lefthand"] = {"rotation": [0, 90, -10], "translation": [0, 5, 0],
+                                           "scale": [0.8, 0.8, 0.8]}
+DISPLAY_FECHADO["firstperson_righthand"] = {"rotation": [0, -90, -20], "translation": [1.13, 5.5, 1.13],
+                                            "scale": [0.7, 0.7, 0.7]}
+DISPLAY_FECHADO["firstperson_lefthand"] = {"rotation": [0, 90, 20], "translation": [1.13, 5.5, 1.13],
+                                           "scale": [0.7, 0.7, 0.7]}
 
 
 def _mistura(a, b, t):
@@ -113,7 +138,7 @@ def recolorir(atlas, cor, escuro, detalhe):
     return saida
 
 
-def modelo_obj(nome_obj, textura):
+def modelo_obj(nome_obj, textura, display=None):
     """o JSON de um modelo de item que usa o loader OBJ do NeoForge."""
     return {
         "loader": "neoforge:obj",
@@ -125,7 +150,7 @@ def modelo_obj(nome_obj, textura):
             "atlas": "rptag:item/" + textura,
             "particle": "rptag:item/" + textura,
         },
-        "display": DISPLAY,
+        "display": display or DISPLAY,
     }
 
 
@@ -153,7 +178,8 @@ def main():
                             ("aberto", "umbrella_open.obj")):
             caminho = os.path.join(MODELOS, "umbrella_obj_%s_%d.json" % (estado, i))
             with open(caminho, "w", encoding="utf-8") as fp:
-                fp.write(json.dumps(modelo_obj(obj, "umbrella_%d" % i), indent=2) + "\n")
+                disp = DISPLAY if estado == "aberto" else DISPLAY_FECHADO
+                fp.write(json.dumps(modelo_obj(obj, "umbrella_%d" % i, disp), indent=2) + "\n")
 
     # 4) o item aponta para eles: custom_model_data 0..7 fechado, 8..15 aberto
     overrides = []
