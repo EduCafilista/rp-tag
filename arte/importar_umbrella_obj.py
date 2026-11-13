@@ -73,16 +73,23 @@ LADRILHOS_TECIDO = [
 # (-180, -90, -80) (a Z compensa os ~10 graus que o braço fica à frente). Assim o cabo fica na
 # mão e a cúpula sobe ACIMA da cabeça — o desenho de quem se esconde do sol.
 DISPLAY = {
-    "thirdperson_righthand": {"rotation": [-180, -90, -80], "translation": [0, 0.5, 0],
+    # (5.43.1) A CÚPULA ACIMA DA CABEÇA.
+    # Na 5.43.0 eu tinha acertado o eixo (pra cima) mas deixado a translação quase zerada: a
+    # cúpula continuava na ALTURA DO PEITO e caía pro lado — exatamente o print do dono
+    # ("está bugado no meu peito, e está indo para baixo agora").
+    # O que resolveu: rotação [-180, -90, -90] e translação [-6, 17, 8] (em 1/16 de bloco).
+    # A conta não foi no olho: o otimizador em arte/previa_umbrella_obj.py mede o CENTRO DA
+    # CÚPULA depois da transformação e procura a pose que o deixa 0,86 bloco acima do pivô da
+    # cabeça (o topo da cabeça fica em 0,5) e centralizado no corpo.
+    "thirdperson_righthand": {"rotation": [-180, -90, -90], "translation": [-6, 17, 8],
                               "scale": [0.72, 0.72, 0.72]},
-    "thirdperson_lefthand": {"rotation": [-180, 90, 80], "translation": [0, 0.5, 0],
+    "thirdperson_lefthand": {"rotation": [-180, 90, 90], "translation": [6, 17, 8],
                              "scale": [0.72, 0.72, 0.72]},
-    # em 1ª pessoa a mão sai de outro referencial (a câmera); aqui o mesmo giro com escala
-    # menor deixa a cúpula em cima e à frente, sem tapar a tela
-    "firstperson_righthand": {"rotation": [-180, -90, -80], "translation": [1.5, 0.5, 0],
-                              "scale": [0.58, 0.58, 0.58]},
-    "firstperson_lefthand": {"rotation": [-180, 90, 80], "translation": [1.5, 0.5, 0],
-                             "scale": [0.58, 0.58, 0.58]},
+    # em 1ª pessoa a cúpula fica em cima e à direita, sem tapar a visão
+    "firstperson_righthand": {"rotation": [-180, -90, -90], "translation": [3.5, 12, 1.0],
+                              "scale": [0.5, 0.5, 0.5]},
+    "firstperson_lefthand": {"rotation": [-180, 90, 90], "translation": [3.5, 12, 1.0],
+                             "scale": [0.5, 0.5, 0.5]},
     "ground": {"rotation": [0, 0, 0], "translation": [0, 3, 0], "scale": [0.45, 0.45, 0.45]},
     "fixed": {"rotation": [-50, 180, 0], "translation": [0, 0, 0], "scale": [0.55, 0.55, 0.55]},
     "gui": {"rotation": [28, -40, 0], "translation": [0, -1, 0], "scale": [0.85, 0.85, 0.85]},

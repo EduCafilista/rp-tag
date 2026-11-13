@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.43.0'
+VER = '5.43.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3023,9 +3023,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.43.0 no jar, no mod e no gradle',
-      "version = '5.43.0'" in rd('build.gradle')
-      and '5.43.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.43.1 no jar, no mod e no gradle',
+      "version = '5.43.1'" in rd('build.gradle')
+      and '5.43.1' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3261,8 +3261,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.43.0 (jar, mod e gradle)',
-      "version = '5.43.0'" in rd('build.gradle') and '5.43.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.43.1 (jar, mod e gradle)',
+      "version = '5.43.1'" in rd('build.gradle') and '5.43.1' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3320,8 +3320,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.43.0 (jar, mod e gradle)',
-      "version = '5.43.0'" in rd('build.gradle') and '5.43.0' in _rm)
+check('5.34.0: a versao subiu pra 5.43.1 (jar, mod e gradle)',
+      "version = '5.43.1'" in rd('build.gradle') and '5.43.1' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3343,8 +3343,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.43.0 (jar, mod e gradle)',
-      "version = '5.43.0'" in rd('build.gradle') and '5.43.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.43.1 (jar, mod e gradle)',
+      "version = '5.43.1'" in rd('build.gradle') and '5.43.1' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -4432,6 +4432,65 @@ check('5.43.0 (98): os raios do vazio ligar sao AMARELO e NEGRO (nao mais vermel
       and 'cor(0.44F, 0.012F, 0.025F, 0.80F * forca)' not in _RY43)
 check('5.43.0 (98): o texto do balao ganhou CONTORNO de contraste (le em qualquer cor)',
       'haloDe(' in _BR43 and 'float[][] desloc' in _BR43)
+
+
+# ============ PEDIDO 94-i — 5.43.1 (a cúpula ACIMA DA CABEÇA, medida e não "no olho") ============
+# O dono, de novo: "corrija essa parada da umbrella, está muito bugado no meu peito, e está indo
+# para baixo agora". Na 5.43.0 eu tinha acertado o EIXO (pra cima) mas errado a ALTURA: cúpula na
+# linha do peito. Agora a prova MEDE: aplica a cadeia do item na mão nos vértices do próprio .obj,
+# acha o centro da cúpula e exige que ele fique ACIMA do topo da cabeça (0,50 bloco).
+def _vertices_posados(nome_obj, display):
+    """o .obj com a cadeia do item na mão (3a pessoa) aplicada — a mesma conta do jogo."""
+    import math as _m
+    def rx(a):
+        c, s_ = _m.cos(_m.radians(a)), _m.sin(_m.radians(a))
+        return [[1, 0, 0], [0, c, -s_], [0, s_, c]]
+    def ry(a):
+        c, s_ = _m.cos(_m.radians(a)), _m.sin(_m.radians(a))
+        return [[c, 0, s_], [0, 1, 0], [-s_, 0, c]]
+    def rz(a):
+        c, s_ = _m.cos(_m.radians(a)), _m.sin(_m.radians(a))
+        return [[c, -s_, 0], [s_, c, 0], [0, 0, 1]]
+    def mul(a, b):
+        return [[sum(a[i][k] * b[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
+    def ap(m, v):
+        return [sum(m[i][k] * v[k] for k in range(3)) for i in range(3)]
+    rot = display.get('rotation', [0, 0, 0])
+    tr = display.get('translation', [0, 0, 0])
+    es = display.get('scale', [1, 1, 1])
+    m = mul(rx(-75), mul(rx(-90), ry(180)))
+    m = mul(m, mul(rx(rot[0]), mul(ry(rot[1]), rz(rot[2]))))
+    saida = []
+    for linha in open(A + '/models/item/' + nome_obj, encoding='utf-8', errors='ignore'):
+        if linha.startswith('v '):
+            p = linha.split()
+            v = [float(p[1]) * es[0], float(p[2]) * es[1], float(p[3]) * es[2]]
+            q = ap(m, v)
+            saida.append((q[0] + tr[0] / 16.0, q[1] + tr[1] / 16.0, q[2] + tr[2] / 16.0,
+                          float(p[2])))
+    return saida
+
+
+def _centro_da_cupula(posados):
+    """o centro da cúpula = a parte de cima do .obj original (y > 0,60)."""
+    dentro = [(x, y, z) for (x, y, z, yo) in posados if yo > 0.60]
+    n = len(dentro)
+    return (sum(p[0] for p in dentro) / n, sum(p[1] for p in dentro) / n,
+            sum(p[2] for p in dentro) / n)
+
+
+_posados = _vertices_posados('umbrella_open.obj', _aberto0['display']['thirdperson_righthand'])
+_cup = _centro_da_cupula(_posados)
+check('5.43.1 (94-i): a cupula do guarda-chuva ABERTO fica ACIMA da cabeca (Y > 0,50) na mao',
+      _cup[1] > 0.55)
+check('5.43.1 (94-i): ...e CENTRADA no corpo (nao jogada pro lado, era o "no meu peito")',
+      abs(_cup[0]) < 0.40 and abs(_cup[2]) < 0.45)
+check('5.43.1 (94-i): a altura da cupula esta registrada como numero (da pra conferir/ajustar)',
+      _cup[1] > 0.70)
+check('5.43.1 (94-i): a previa da pose desenha o CORPO junto (pose sem corpo nao da pra julgar)',
+      os.path.exists('arte/previa_pose_umbrella.py')
+      and 'def corpo_de_referencia(' in rd('arte/previa_pose_umbrella.py')
+      and os.path.exists('arte/previa_pose.png'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
