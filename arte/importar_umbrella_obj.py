@@ -58,53 +58,57 @@ LADRILHOS_TECIDO = [
     (48, 0, 64, 16, "claro_baixo"),
 ]
 
-# display: os números que vieram no pacote, com a escala da 3ª pessoa um tico maior (o dono
-# reclamou de guarda-chuva pequeno na 5.40.0 — melhor pecar pra grande do que pra pequeno)
-# (5.43.0) A POSE — calculada, não chutada.
+# display: (5.43.4) OS NUMEROS DO VAMPIRISM, COPIADOS DE LA.
 #
-# O dono: "o guarda chuva deve ficar na mão e para cima, como se o player estivesse se
-# escondendo do sol mesmo, está bugando o antigo no meu peito". O print mostrou o guarda-chuva
-# DEITADO na frente do peito, porque o número que veio no pacote ([0, -90, 10]) deixa o eixo do
-# modelo na horizontal.
+# O dono, olhando o guarda-chuva deitado na print dele: "veja como fica o umbrella do mod
+# vampirism, ai fica daquela maneira". Entao a pose nao e mais calculada no chute nem por
+# otimizador caseiro: e a MESMA tabela do modelo deles —
+#   https://github.com/maxanier/Vampirism
+#   src/main/resources/assets/vampirism/models/item/umbrella.json  (display)
+# que e um guarda-chuva de geometria Y-pra-cima igual ao nosso (.obj do dono, cabo embaixo,
+# cupula em cima, ~1 bloco). Como os dois modelos tem a mesma orientacao e o mesmo tamanho,
+# os numeros valem direto.
 #
-# Aqui a conta foi feita de verdade: a cadeia do item na mão é
-#     mundo = braço(repouso) · X(-90) · Y(180) · [display]
-# e procurando a rotação que deixa o +Y do modelo apontando pra CIMA, a família que resolve é
-# (-180, -90, -80) (a Z compensa os ~10 graus que o braço fica à frente). Assim o cabo fica na
-# mão e a cúpula sobe ACIMA da cabeça — o desenho de quem se esconde do sol.
+# Por que os numeros antigos estavam errados: a nossa geometria ja vem Y-pra-cima (e o loader
+# OBJ do NeoForge nao reorienta nada — conferido no ObjModel do 1.21.1), mas a gente girava
+# [-180,-90,-90] como se ela viesse Z-pra-cima. Resultado: o guarda-chuva deitava do lado do
+# corpo, com o cabo pra cima — exatamente o que apareceu na print.
+VAMPIRISM_3A = {"rotation": [81, -85, -2],
+                "translation": [-1.391, 2.7826, 15.303],
+                "scale": [1.0, 1.7737, 1.0]}
+VAMPIRISM_1A = {"rotation": [22, -5, 2],
+                "translation": [-3.478, 7.6521, 0.0],
+                "scale": [1.0, 1.6956, 0.9652]}
 DISPLAY = {
-    # (5.43.1) A CÚPULA ACIMA DA CABEÇA.
-    # Na 5.43.0 eu tinha acertado o eixo (pra cima) mas deixado a translação quase zerada: a
-    # cúpula continuava na ALTURA DO PEITO e caía pro lado — exatamente o print do dono
-    # ("está bugado no meu peito, e está indo para baixo agora").
-    # O que resolveu: rotação [-180, -90, -90] e translação [-6, 17, 8] (em 1/16 de bloco).
-    # A conta não foi no olho: o otimizador em arte/previa_umbrella_obj.py mede o CENTRO DA
-    # CÚPULA depois da transformação e procura a pose que o deixa 0,86 bloco acima do pivô da
-    # cabeça (o topo da cabeça fica em 0,5) e centralizado no corpo.
-    "thirdperson_righthand": {"rotation": [-180, -90, -90], "translation": [-6, 17, 8],
-                              "scale": [0.72, 0.72, 0.72]},
-    "thirdperson_lefthand": {"rotation": [-180, 90, 90], "translation": [6, 17, 8],
-                             "scale": [0.72, 0.72, 0.72]},
-    # em 1ª pessoa a cúpula fica em cima e à direita, sem tapar a visão
-    "firstperson_righthand": {"rotation": [-180, -90, -90], "translation": [3.5, 12, 1.0],
-                              "scale": [0.5, 0.5, 0.5]},
-    "firstperson_lefthand": {"rotation": [-180, 90, 90], "translation": [3.5, 12, 1.0],
-                             "scale": [0.5, 0.5, 0.5]},
-    "ground": {"rotation": [0, 0, 0], "translation": [0, 3, 0], "scale": [0.45, 0.45, 0.45]},
-    "fixed": {"rotation": [-50, 180, 0], "translation": [0, 0, 0], "scale": [0.55, 0.55, 0.55]},
-    "gui": {"rotation": [28, -40, 0], "translation": [0, -1, 0], "scale": [0.85, 0.85, 0.85]},
+    "thirdperson_righthand": VAMPIRISM_3A,
+    # o espelho do esquerdo: o deles usa rotação [81, 90, 0] com a MESMA translação
+    "thirdperson_lefthand": {"rotation": [81, 90, 0],
+                             "translation": [-1.391, 2.7826, 15.303],
+                             "scale": [1.0, 1.7737, 1.0]},
+    "firstperson_righthand": VAMPIRISM_1A,
+    "firstperson_lefthand": VAMPIRISM_1A,
+    # no chao/na vitrine/gui: os mesmos do Vampirism
+    "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
+    "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.5, 0.5, 0.5]},
+    "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]},
 }
 
 # o FECHADO continua sendo carregado como qualquer item na mão (deitado no punho é o normal)
 DISPLAY_FECHADO = dict(DISPLAY)
-DISPLAY_FECHADO["thirdperson_righthand"] = {"rotation": [0, -90, 10], "translation": [0, 5, 0],
-                                            "scale": [0.8, 0.8, 0.8]}
-DISPLAY_FECHADO["thirdperson_lefthand"] = {"rotation": [0, 90, -10], "translation": [0, 5, 0],
-                                           "scale": [0.8, 0.8, 0.8]}
-DISPLAY_FECHADO["firstperson_righthand"] = {"rotation": [0, -90, -20], "translation": [1.13, 5.5, 1.13],
-                                            "scale": [0.7, 0.7, 0.7]}
-DISPLAY_FECHADO["firstperson_lefthand"] = {"rotation": [0, 90, 20], "translation": [1.13, 5.5, 1.13],
-                                           "scale": [0.7, 0.7, 0.7]}
+# (5.43.4) o FECHADO fica na MESMA inclinacao do aberto (é o mesmo guarda-chuva, só recolhido):
+# assim, ao abrir, o objeto não "pula" de lugar — ele só desenrola.
+DISPLAY_FECHADO["thirdperson_righthand"] = {"rotation": [81, -85, -2],
+                                            "translation": [-1.391, 2.7826, 15.303],
+                                            "scale": [1.0, 1.0, 1.0]}
+DISPLAY_FECHADO["thirdperson_lefthand"] = {"rotation": [81, 90, 0],
+                                           "translation": [-1.391, 2.7826, 15.303],
+                                           "scale": [1.0, 1.0, 1.0]}
+DISPLAY_FECHADO["firstperson_righthand"] = {"rotation": [22, -5, 2],
+                                            "translation": [-3.478, 7.6521, 0.0],
+                                            "scale": [1.0, 1.0, 0.9652]}
+DISPLAY_FECHADO["firstperson_lefthand"] = {"rotation": [22, -5, 2],
+                                           "translation": [-3.478, 7.6521, 0.0],
+                                           "scale": [1.0, 1.0, 0.9652]}
 
 
 def _mistura(a, b, t):
