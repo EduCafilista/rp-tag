@@ -66,7 +66,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.43.2'
+VER = '5.43.3'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1831,8 +1831,12 @@ _vrp = rd(R + '/VazioReino.java')
 check('5.7.9/5.13.1: exilio com praca larga e superficie plana (agora no VazioReino)',
       'prepararPraca(' in _ne2 and 'CHISELED_POLISHED_BLACKSTONE' in _vrp
       and 'POLISHED_DEEPSLATE' in _vrp and 'RAIO_PRACA' in _vrp)
-check('5.7.9/5.13.1: a praca tem luz (colunas de obsidiana com lanterna de alma)',
-      'for (int i = 0; i < 8; i++)' in _vrp and 'SOUL_LANTERN' in _vrp)
+# (5.43.3/96) O dono viu "varias pilar spawnando na praca" e mandou parar: as 8 colunas de
+# obsidiana com lanterna de alma agora estao DESLIGADAS (PILARES_DA_PRACA = false). A prova
+# cobra o contrario do que cobrava antes.
+check('5.43.3/96: a praca do vazio nao recebe mais coluna nem lanterna (pedido do dono)',
+      'public static final boolean PILARES_DA_PRACA = false;' in _vrp
+      and 'PILARES_DA_PRACA && i < 8' in _vrp)
 check('5.7.9: ANIMACAO DE SAIDA automatica quando o player sai do jogo',
       'saidaAutomatica' in rd(R + '/ServerEvents.java') and 'sombraChuva' in _ne2
       and 'se desfez em sombra' in _ne2)
@@ -3023,9 +3027,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.43.2 no jar, no mod e no gradle',
-      "version = '5.43.2'" in rd('build.gradle')
-      and '5.43.2' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.43.3 no jar, no mod e no gradle',
+      "version = '5.43.3'" in rd('build.gradle')
+      and '5.43.3' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3261,8 +3265,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.43.2 (jar, mod e gradle)',
-      "version = '5.43.2'" in rd('build.gradle') and '5.43.2' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.43.3 (jar, mod e gradle)',
+      "version = '5.43.3'" in rd('build.gradle') and '5.43.3' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3320,8 +3324,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.43.2 (jar, mod e gradle)',
-      "version = '5.43.2'" in rd('build.gradle') and '5.43.2' in _rm)
+check('5.34.0: a versao subiu pra 5.43.3 (jar, mod e gradle)',
+      "version = '5.43.3'" in rd('build.gradle') and '5.43.3' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3343,8 +3347,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.43.2 (jar, mod e gradle)',
-      "version = '5.43.2'" in rd('build.gradle') and '5.43.2' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.43.3 (jar, mod e gradle)',
+      "version = '5.43.3'" in rd('build.gradle') and '5.43.3' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3857,7 +3861,6 @@ _vs = rd(R + '/VampiroSistema.java')
 _vi = rd(R + '/VarinhaSombraItem.java')
 _mod7 = rd(R + '/RPTagMod.java')
 _uc = rd(R + '/UmbrellaCommands.java')
-_cu = rd(C + '/CamadaUmbrella.java')
 _uh = rd(C + '/UmbrellaHud.java')
 _gl8 = rd(C + '/ClientGuiLayers.java')
 
@@ -3879,9 +3882,10 @@ check('5.37.0 (94): agachado fecha na hora e o item tem recarga',
 check('5.37.0 (94): sao 8 CORES (o dono: "faz de varias cores")',
       'CORES = {' in _uc and all(c in _uc for c in
       ('sangue', 'noite', 'juizo', 'sombra', 'veneno', 'luar', 'ouro', 'rosa')))
-check('5.37.0 (94): cada cor tem textura de item, cupula e sprite de HUD',
+# (5.43.3/96) a CUPULA SOBRE A CABECA saiu do mod (o dono: "tira a antiga animacao do guarda
+# chuva"). A cor agora tem: textura do .obj e sprite do HUD — a dome_*.png nao existe mais.
+check('5.37.0 (94): cada cor tem textura de item e sprite de HUD',
       all(os.path.exists(A + '/textures/item/umbrella_tex_%d.png' % i) for i in range(8))
-      and all(os.path.exists(A + '/textures/entity/umbrella/dome_%d.png' % i) for i in range(8))
       and all(os.path.exists(A + '/textures/gui/umbrella_hud_%d.png' % i) for i in range(8)))
 check('5.37.0 (94): o modelo tem GEOMETRIA 3D de verdade (cubos, fechado e aberto)',
       '"elements"' in rd(A + '/models/item/umbrella_fechado_base.json')
@@ -3908,14 +3912,9 @@ check('5.37.0 (94): o item troca de modelo por COR e por ABERTO/FECHADO',
 check('5.37.0 (94): as 8 cores se craftam (e da pra tingir depois)',
       len([f for f in os.listdir('src/main/resources/data/rptag/recipes')
            if f.startswith('umbrella_')]) == 16)
-check('5.37.0 (94): a CUPULA aparece sobre a cabeca quando aberto (pedido: "aberto sobre a cabeca")',
-      'RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>>' in _cu
-      and 'entitySolid(tex)' in _cu and 'getParentModel().head.translateAndRotate(pose)' in _cu)
-check('5.37.0 (94): a cupula e redonda (16 setores com rotacao em Y)',
-      'for (int setor = 0; setor < SETORES; setor++)' in _cu
-      and 'PartPose.rotation(0.0F, (float) ang, 0.0F)' in _cu and 'SETORES = 16' in _cu)
-check('5.37.0 (94): a camada da cabeca e registrada nas duas peles (classica e slim)',
-      'EntityRenderersEvent.AddLayers' in _cu and 'getSkins()' in _cu and 'PlayerRenderer pr' in _cu)
+# (5.43.3/96) A CUPULA/PILULA SOBRE A CABECA (camada de render antiga, 5.37.0) FOI REMOVIDA.
+# O dono: "TIRA A ANTIGA ANIMACAO DE GUARDA CHUVA, VOCE ENTENDEU?????" — quem desenha agora e
+# SO o modelo .obj na mao do jogador (pedido 94-g/5.42.0). O bloco 5.43.3 cobra que nao volte.
 check('5.37.0 (94): o HUD mostra ABERTO/fechado, a cor e os segundos que faltam',
       'UmbrellaHud.desenhar(g)' in _gl8 and '"umbrella_hud"' in _gl8
       and 'ABERTO' in _uh and 'VarinhaSombraItem.segundosRestantes' in _uh)
@@ -4122,9 +4121,7 @@ check('5.39.0 (94-c): todas as 8 texturas de item existem (16x16)',
 _BASE_F = _json.loads(rd(A + '/models/item/umbrella_fechado_base.json'))
 _BASE_A = _json.loads(rd(A + '/models/item/umbrella_aberto_base.json'))
 _ITEM_U = _json.loads(rd(A + '/models/item/umbrella_sombra.json'))
-_CU = rd(C + '/CamadaUmbrella.java')
 _GER = rd('arte/gerar_umbrella.py')
-_DOME = _json.loads(rd('arte/dome_geometria.json'))
 
 
 def _extremos(modelo, eixo):
@@ -4190,24 +4187,9 @@ check('5.40.0 (94-d): o fechado e MAGRO na mao (nao e uma cupula aberta)',
       and (_extremos(_BASE_F, 2)[1] - _extremos(_BASE_F, 2)[0]) <= 7.0
       and (_extremos(_BASE_A, 0)[1] - _extremos(_BASE_A, 0)[0])
           > 2.0 * (_extremos(_BASE_F, 0)[1] - _extremos(_BASE_F, 0)[0]))
-# (c) A CUPULA SOBRE A CABECA: em BLOCOS, e a mesma geometria da previa/gerador
-check('5.40.0 (94-d): a cupula da cabeca sobe em BLOCOS (nao 8,9 blocos pra baixo)',
-      'TRANSLATE_Y' in _CU and 'pose.translate(0.0F, TRANSLATE_Y' in _CU
-      and 'TRANSLATE_Y = ' in _CU and '-8.9F' not in _CU)
-check('5.40.0 (94-d): a altura da cupula no Java e a MESMA de arte/dome_geometria.json',
-      ('TRANSLATE_Y = %.2fF' % _DOME['translate_y_blocos']) in _CU.replace('0.72', '%.2f' % 0.72))
-_java_box = _CU[_CU.index('public static ModelPart construir'):]
-_java_box = _java_box[:_java_box.index('return malha.getRoot().bake')]
-check('5.40.0 (94-d): os cubos da cupula no Java batem com o dome_geometria.json',
-      all(('addBox(%.1fF, %.1fF, %.1fF, %.1fF, %.1fF, %.1fF)' %
-           (c['x'], c['y'], c['z'], c['w'], c['h'], c['d'])) in _java_box
-          for c in _DOME['cubos'])
-      and len(_DOME['cubos']) == 6 and int(_DOME['setores']) == 16)
-check('5.40.0 (94-d): a cupula e feita de SETORES girados (redonda, nao uma estrela de tabuas)',
-      'SETORES = 16' in _CU and 'PartPose.rotation(0.0F, (float) ang, 0.0F)' in _CU
-      and 'def octogono(' in _GER)
-check('5.40.0 (94-d): a previa offline le a MESMA geometria da cupula (nao copia a mao)',
-      'dome_geometria.json' in rd('arte/render_umbrella_offline.py'))
+# (c) A CUPULA SOBRE A CABECA SAIU (5.43.3/96). As provas antigas comparavam a geometria de
+# `client/CamadaUmbrella.java` com `arte/dome_geometria.json` — as duas coisas nao existem mais.
+# Quem desenha o guarda-chuva agora e SO o modelo .obj na mao do jogador (pedido 94-g).
 
 
 # ============ PEDIDO 96 — 5.41.0 (a power wheel só aparece pra quem tem o vazio) ============
@@ -4262,20 +4244,11 @@ check('5.41.0: todo item registrado tem nome nos dois idiomas',
           for a in ('escuridao', 'coracao_canon', 'chave_julgamento', 'umbrella_sombra')))
 
 
-# ============ PEDIDO 94-f/97 — 5.41.1 (animação da abertura + varredura do mod) ============
-# (5.41.1) O dono: "não está bonita a animação, melhore" — a cúpula dava um "pop" seco, aparecia
-# com o tamanho final no primeiro quadro. Agora ela se desdobra (cresce girando) e encolhe ao
-# fechar. Estas provas seguram a animação e a varredura de recursos.
-_CU11 = rd(C + '/CamadaUmbrella.java')
+# ============ PEDIDO 94-f/97 — 5.41.1 (varredura do mod) ============
+# (5.43.3/96) A ANIMACAO DA CUPULA (CamadaUmbrella: desdobrar/encolher/balanco) FOI REMOVIDA a
+# pedido do dono — "TIRA A ANTIGA ANIMACAO DE GUARDA CHUVA, VOCE ENTENDEU?????". As provas dela
+# saíram junto; as do auditor e dos idiomas continuam aqui.
 _AUD = 'arte/auditar.py'
-check('5.41.1 (94-f): a cupula se DESDOBRA ao abrir (cresce e gira, nao aparece de uma vez)',
-      'ABRIR_MS' in _CU11 and 'quantoAberta' in _CU11
-      and 'pose.scale(escala, escala, escala)' in _CU11
-      and 'Axis.YP.rotationDegrees(55.0F * (1.0F - abre))' in _CU11)
-check('5.41.1 (94-f): a abertura usa curva ease-out (nao linear) e tem encolhida ao fechar',
-      '1.0F - (1.0F - u) * (1.0F - u) * (1.0F - u)' in _CU11 and 'FECHAR_MS' in _CU11)
-check('5.41.1 (94-f): a cupula aberta tem balanco de pano (nao fica dura)',
-      'balanco' in _CU11 and 'Axis.ZP.rotationDegrees' in _CU11)
 check('5.41.1 (97): o auditor do mod existe e nao acha ERRO nenhum',
       os.path.exists(_AUD)
       and subprocess.run([sys.executable, '-I', _AUD],
@@ -4552,6 +4525,67 @@ check('5.43.2 (95): o tipo de balao/vida/efeitos NAO mudou (o visual continua ig
       and 'popScale(' in _br and 'withAlpha(' in _br)
 check('5.43.2 (95): o relatorio do medidor de desempenho esta no repo',
       os.path.exists('/home/user/relatorio-desempenho.md'))
+
+
+# ============== PEDIDO 96 — 5.43.3 (a camada antiga do guarda-chuva SAI, e a praça do vazio fica em paz) ==============
+# O dono, na mesma mensagem:
+#   "TIRA A ANTIGA ANIMAÇAO DE GUARDA CHUVA, VOCE ENTENDEU?????"
+#   "VOÇÊ VEZ ALGUMA COISA NO VAZIO QUE TA SPAWNANDO VARIAS PILAR NA PRAÇA, PARA DE MEXER NISSO"
+# Até a 5.43.2 existiam DUAS coisas desenhando guarda-chuva: a camada antiga de 5.37.0 (cubos 3D
+# animados sobre a cabeça do jogador) e o modelo .obj na mão (5.42.0). Agora só existe o .obj.
+_r96 = R
+_vr96 = rd(R + '/VazioReino.java')
+_uh96 = rd(C + '/UmbrellaHud.java')
+
+
+def _java96():
+    """todos os .java do mod (texto)."""
+    saida = []
+    for raiz, _, arqs in os.walk(R):
+        for a in arqs:
+            if a.endswith('.java'):
+                saida.append(rd(os.path.join(raiz, a)))
+    return saida
+
+
+_TODOS_JAVA = _java96()
+
+check('5.43.3 (96): A CAMADA ANTIGA DO GUARDA-CHUVA NAO EXISTE MAIS (arquivo apagado)',
+      not os.path.exists(C + '/CamadaUmbrella.java'))
+check('5.43.3 (96): nenhum arquivo do mod cita a camada antiga (nada de referencia quebrada)',
+      not any('CamadaUmbrella' in t for t in _TODOS_JAVA))
+check('5.43.3 (96): a animacao antiga (desdobrar/encolher/balanco) nao esta em lugar nenhum',
+      not any(k in t for t in _TODOS_JAVA
+              for k in ('quantoAberta', 'ABRIR_MS', 'FECHAR_MS', 'INSTANTE_FECHOU')))
+check('5.43.3 (96): o HUD do umbrella continua (so a cupula 3D sobre a cabeca saiu)',
+      'UmbrellaHud.desenhar(g)' in rd(C + '/ClientGuiLayers.java')
+      and 'spriteHud(' in _uh96 and 'texturaCupula' not in _uh96 and 'camadas()' not in _uh96)
+check('5.43.3 (96): as texturas da cupula antiga sairam dos assets (dome_*.png nao existe mais)',
+      not os.path.exists(A + '/textures/entity/umbrella')
+      or not [f for f in os.listdir(A + '/textures/entity/umbrella') if f.startswith('dome_')])
+check('5.43.3 (96): o GUARDA-CHUVA em si continua no jogo (o .obj na mao, 16 modelos)',
+      os.path.exists(A + '/models/item/umbrella_open.obj')
+      and os.path.exists(A + '/models/item/umbrella_closed.obj')
+      and rd(A + '/models/item/umbrella_sombra.json').count('"custom_model_data"') == 16)
+check('5.43.3 (96): os 8 umbrellas continuam craftaveis (nada foi tirado do jogo)',
+      len([f for f in os.listdir('src/main/resources/data/rptag/recipes')
+           if f.startswith('umbrella_')]) == 16)
+
+# --- a praça do vazio ---
+check('5.43.3 (96): os PILARES da praca estao DESLIGADOS por um interruptor no codigo',
+      'public static final boolean PILARES_DA_PRACA = false;' in _vr96
+      and 'PILARES_DA_PRACA && i < 8' in _vr96)
+_esc96 = _vr96[_vr96.index('private static void esculpirChunk'):]
+_esc96 = _esc96[:_esc96.index('private static void vestirChao(')]
+check('5.43.3 (96): o relevo NAO toca na praca — o raio e conferido ANTES de pintar o chao',
+      _esc96.index('if (dist < RAIO_PRACA + 12)') < _esc96.index('vestirChao(nv, x, z)')
+      and _esc96.index('if (dist < RAIO_PRACA + 12)') < _esc96.index('assentarColuna(nv, x, z)'))
+_pp96 = _vr96[_vr96.index('private static void prepararPraca'):]
+_pp96 = _pp96[:_pp96.index('public static net.minecraft.world.phys.Vec3 chegada')]
+check('5.43.3 (96): a praca so e montada UMA vez na vida do mundo (marca no save)',
+      'if (!marcar(nv, "praca"))' in _pp96)
+check('5.43.3 (96): nada de coluna/lanterna nova dentro da praca (o que o dono viu)',
+      'SOUL_LANTERN' not in _pp96 or 'PILARES_DA_PRACA && i < 8' in _pp96)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

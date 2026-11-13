@@ -477,10 +477,13 @@ public final class VazioReino {
                     }
                 }
             }
-            // (5.13.0) 8 colunas de obsidiana com lanterna de alma na BORDA da praça
-            // (fora do anel dos pedestais, que é em r=13): a praça é o único lugar
-            // iluminado do vazio — é por isso que ela é vista de longe.
-            for (int i = 0; i < 8; i++) {
+            // (5.43.3) OS 8 PILARES DA PRAÇA ESTÃO DESLIGADOS.
+            // O dono: "VOÇÊ VEZ ALGUMA COISA NO VAZIO QUE TA SPAWNANDO VARIAS PILAR NA PRAÇA,
+            // PARA DE MEXER NISSO". Ele viu as colunas de obsidiana com lanterna de alma
+            // aparecendo no meio da praça — e o recado foi claro: parar. O código fica aqui
+            // (é só virar o interruptor se um dia ele pedir de volta), mas não constrói mais
+            // nada: nem na primeira vez, nem em mundo novo, nem em /vazio relevo.
+            for (int i = 0; PILARES_DA_PRACA && i < 8; i++) {
                 double a = i * Math.PI * 2 / 8 + Math.PI / 8;
                 int cxp = (int) Math.round(Math.cos(a) * (RAIO_PRACA - 2));
                 int czp = (int) Math.round(Math.sin(a) * (RAIO_PRACA - 2));
@@ -654,6 +657,15 @@ public final class VazioReino {
      * <b>uma vez por chunk</b> ({@code R:cx,cz} no save), 2 chunks por tick, e nunca por
      * cima de construção — só mexe em bloco NATURAL.
      */
+    /**
+     * (5.43.3) <b>PILARES DA PRAÇA — DESLIGADO A PEDIDO DO DONO.</b>
+     *
+     * <p><i>"VOÇÊ VEZ ALGUMA COISA NO VAZIO QUE TA SPAWNANDO VARIAS PILAR NA PRAÇA, PARA DE
+     * MEXER NISSO"</i>. Eram as 8 colunas de obsidiana com lanterna de alma na borda da praça
+     * (5.13.0). Ficam desligadas: a praça não recebe mais nada do mod.
+     */
+    public static final boolean PILARES_DA_PRACA = false;
+
     /** (5.18.0) quantos blocos o relevo já mexeu nesta sessão (relatório no log). */
     private static int relevoSessao = 0;
 
@@ -1229,14 +1241,19 @@ public final class VazioReino {
             for (int dz = 0; dz < 16; dz++) {
                 int x = cx * 16 + dx, z = cz * 16 + dz;
                 double dist = Math.hypot(x, z);
+                // (5.43.3) A PRAÇA VEM PRIMEIRO — e por isso ela fica INTACTA.
+                // O dono: "tem varias pilar spawnando na praca, PARA DE MEXER NISSO". O relevo
+                // re-pintava o piso e rebaixava colunas dentro da praça ANTES de olhar o raio
+                // (as duas chamadas abaixo rodavam para TODO x,z). Agora o raio é conferido
+                // antes: dentro da praça, o relevo não encosta em bloco nenhum, nunca.
+                if (dist < RAIO_PRACA + 12) {
+                    continue;                          // praça intacta
+                }
                 // (5.21.0) AS TREVAS — o piso cinza-claro do gerador sai e entra pedra preta
                 vestirChao(nv, x, z);
                 // (5.21.0) e o mundo antigo (montanha flutuando 1 bloco acima do piso) é
                 // rebaixado aqui: o relevo das versões anteriores começava 1 bloco alto.
                 assentarColuna(nv, x, z);
-                if (dist < RAIO_PRACA + 12) {
-                    continue;                          // praça intacta
-                }
                 // (5.20.0) sem teto de distância: o relevo vale para o mundo inteiro
                 if (Math.abs(x) <= 10 && z > -36 && z < 8) {
                     continue;                          // caminho do portal

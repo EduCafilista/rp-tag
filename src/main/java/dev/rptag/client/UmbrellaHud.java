@@ -11,14 +11,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * (5.37.0) <b>O UMBRELLA DE SOMBRA NO JOGO</b> — duas coisas:
+ * (5.37.0) <b>O UMBRELLA DE SOMBRA NO JOGO</b> — o HUD:
  *
- * <ol>
- *   <li>no HUD (este arquivo): o sprite da cúpula + o estado — <b>ABERTO (protegido)</b> ou
- *       fechado com a dica do clique direito, e quantos segundos ainda restam de abertura;</li>
- *   <li>sobre a cabeça (o irmão {@link #camadas()}): a cúpula 3D aparece em cima do personagem
- *       enquanto está aberto — ver {@code CamadaUmbrella}.</li>
- * </ol>
+ * <ul>
+ *   <li>o sprite da cúpula + o estado — <b>ABERTO (protegido)</b> ou fechado com a dica do
+ *       clique direito, e quantos segundos ainda restam de abertura.</li>
+ * </ul>
+ *
+ * <p><b>(5.43.3) A CÚPULA SOBRE A CABEÇA FOI REMOVIDA.</b> O dono: <i>"TIRA A ANTIGA ANIMAÇÃO
+ * DE GUARDA CHUVA, VOCE ENTENDEU?????"</i>. Até a 5.43.2 existiam DUAS coisas desenhando o
+ * guarda-chuva: esta camada antiga (cubos 3D animados em cima do jogador, desde a 5.37.0) e o
+ * modelo <b>.obj</b> na mão (desde a 5.42.0). Agora só existe o .obj — quem desenha é o
+ * próprio item, com a pose de {@code arte/importar_umbrella_obj.py}.</p>
  *
  * <p><b>(5.37.2) NÃO use {@code @EventBusSubscriber} aqui:</b> esta classe não escuta evento
  * nenhum — quem chama é a camada de HUD registrada em {@code ClientGuiLayers}. Na 5.37.1 a
@@ -84,11 +88,6 @@ public final class UmbrellaHud {
                 "textures/gui/umbrella_hud_" + Math.floorMod(cor, CORES) + ".png");
     }
 
-    public static ResourceLocation texturaCupula(int cor) {
-        return ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID,
-                "textures/entity/umbrella/dome_" + Math.floorMod(cor, CORES) + ".png");
-    }
-
     /** o desenho do HUD (chamado pela camada registrada em {@code ClientGuiLayers}). */
     public static void desenhar(GuiGraphics g) {
         try {
@@ -128,10 +127,5 @@ public final class UmbrellaHud {
         } catch (Throwable ignorado) {
             // HUD é enfeite: nunca derruba o resto
         }
-    }
-
-    /** só para o javadoc de cima apontar pra alguém. */
-    static Class<?> camadas() {
-        return CamadaUmbrella.class;
     }
 }

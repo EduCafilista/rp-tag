@@ -54,7 +54,7 @@ import net.minecraft.world.level.Level;
  *   <li><b>clique direito</b>: abre. Clique direito de novo: fecha. Agachado fecha na hora;</li>
  *   <li>aberto, o <b>sol não queima</b> o vampiro (ver {@link VampiroSistema#protegido});</li>
  *   <li>a abertura dura {@value #ABERTURA_SEGUNDOS} segundos e fecha sozinha;</li>
- *   <li>a cúpula sobre a cabeça é desenhada por {@code client/CamadaUmbrella}.</li>
+ *   <li>a cúpula é o próprio modelo .obj do item na mão (a camada antiga saiu na 5.43.3).</li>
  * </ul>
  *
  * <p>O item <b>não é encantado</b> (o brilho saiu a pedido do dono: <i>"ele não precisa ficar
