@@ -145,26 +145,54 @@ public final class NeptuneCommands {
         LiteralArgumentBuilder<CommandSourceStack> vazio = Commands.literal("vazio")
                 .requires(src -> src.hasPermission(2));
 
-        vazio.then(Commands.literal("ligar").executes(ctx -> {
-            ServerPlayer p = ctx.getSource().getPlayerOrException();
-            NeptuneEventos.ligarDeus(p);
-            ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a75\u2588 VOCÊ É O VAZIO. \u00a77Aura de RAIOS AMARELOS E NEGROS saindo do corpo "
-                    + "(voando também), trilha ao andar, medo em quem chega perto.\n"
-                    + "\u00a77Use /vazio apagar <jogador> ou /vazio exilar <jogador>."), false);
-            return Command.SINGLE_SUCCESS;
-        }));
+        // (5.44.2) O DOM É DO JOGADOR — e o ADM pode dar pra outro.
+        // O dono: "a roda abre pra quem não tem o dom". Agora ninguém ganha o dom por estar no
+        // vazio: quem tem é quem foi LIGADO aqui (e isso fica salvo no save do mundo).
+        // `/vazio ligar` (sem alvo) continua ligando em você; com alvo, liga no jogador citado.
+        vazio.then(Commands.literal("ligar")
+                .executes(ctx -> {
+                    ServerPlayer p = ctx.getSource().getPlayerOrException();
+                    NeptuneEventos.ligarDeus(p);
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a75\u2588 VOCÊ É O VAZIO. \u00a77Aura de RAIOS AMARELOS E NEGROS saindo do corpo "
+                            + "(voando também), trilha ao andar, medo em quem chega perto.\n"
+                            + "\u00a77A roda de poderes (tecla R) agora é sua. Use /vazio apagar <jogador> "
+                            + "ou /vazio exilar <jogador>."), false);
+                    return Command.SINGLE_SUCCESS;
+                })
+                .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
+                    ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                    NeptuneEventos.ligarDeus(alvo);
+                    alvo.displayClientMessage(Component.literal(
+                            "\u00a75\u2588 O VAZIO DESPERTOU EM VOCÊ. \u00a77Aperte \u00a7fR\u00a77 para abrir "
+                            + "a roda de poderes."), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a75O dom do vazio foi ligado em \u00a7f" + alvo.getName().getString()
+                            + "\u00a75."), false);
+                    return Command.SINGLE_SUCCESS;
+                })));
 
         // ================= (5.31.0) OS PODERES DO VAZIO =================
         // O dono: "não quero esse comando de ativar poderes ou desativar" — o dom agora vem do
         // lugar (vazio/reino) ou do cargo de ADM, e quem arremessa é a TECLA (R abre o leque).
         // Este comando fica só como plano B para teste/console; a tecla é o caminho normal.
-        vazio.then(Commands.literal("desligar").executes(ctx -> {
-            ServerPlayer p = ctx.getSource().getPlayerOrException();
-            NeptuneEventos.desligarDeus(p);
-            ctx.getSource().sendSuccess(() -> Component.literal("\u00a77Modo vazio desligado."), false);
-            return Command.SINGLE_SUCCESS;
-        }));
+        vazio.then(Commands.literal("desligar")
+                .executes(ctx -> {
+                    ServerPlayer p = ctx.getSource().getPlayerOrException();
+                    NeptuneEventos.desligarDeus(p);
+                    ctx.getSource().sendSuccess(() -> Component.literal("\u00a77Modo vazio desligado."), false);
+                    return Command.SINGLE_SUCCESS;
+                })
+                .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {
+                    ServerPlayer alvo = EntityArgument.getPlayer(ctx, "jogador");
+                    NeptuneEventos.desligarDeus(alvo);
+                    alvo.displayClientMessage(Component.literal(
+                            "\u00a78O vazio se apagou em você. A roda de poderes não responde mais."), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "\u00a77O dom do vazio foi desligado em \u00a7f"
+                            + alvo.getName().getString() + "\u00a77."), false);
+                    return Command.SINGLE_SUCCESS;
+                })));
 
         vazio.then(Commands.literal("apagar")
                 .then(Commands.argument("jogador", EntityArgument.player()).executes(ctx -> {

@@ -87,7 +87,17 @@ public final class VazioPoderes {
             return false;
         }
         try {
-            // dentro do vazio / reino do Juízo o dom é do lugar
+            // (5.44.2) O BURACO QUE O DONO ACHOU: "a roda abre pra quem não tem o dom".
+            //
+            // Até aqui a PRIMEIRA pergunta era o LUGAR — e isso dava o dom de graça para
+            // QUALQUER jogador que entrasse no vazio ou no reino do Juízo, mesmo sem nunca
+            // ter ligado o vazio. Agora a primeira pergunta é a única que importa: o dom é
+            // do JOGADOR (`/vazio ligar`, salvo no save do mundo). Sem isso, nada de roda,
+            // nada de poder — em dimensão nenhuma.
+            if (!NeptuneEventos.ehDeus(p.getUUID())) {
+                return false;
+            }
+            // com o dom ligado ele responde no vazio e no reino do Juízo (o palco da cena)...
             if (VazioReino.ehVazio(p.level()) || JuizoReino.eh(p.level())) {
                 return true;
             }
@@ -96,7 +106,8 @@ public final class VazioPoderes {
             // O defeito: fora do vazio bastava ser ADM — e o dono É ADM, então os poderes
             // respondiam sempre, mesmo depois do /vazio desligar. Agora, fora do vazio, o ADM
             // precisa ter LIGADO o vazio (/vazio ligar); desligou, os poderes param na hora.
-            return p.hasPermissions(2) && NeptuneEventos.ehDeus(p.getUUID());
+            // ...e, fora deles, só o ADM (é assim que se ensaia a cena no overworld).
+            return p.hasPermissions(2);
         } catch (Throwable t) {
             return false;
         }

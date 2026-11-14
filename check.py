@@ -78,7 +78,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.44.1'
+VER = '5.44.2'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3039,9 +3039,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.44.1 no jar, no mod e no gradle',
-      "version = '5.44.1'" in rd('build.gradle')
-      and '5.44.1' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.44.2 no jar, no mod e no gradle',
+      "version = '5.44.2'" in rd('build.gradle')
+      and '5.44.2' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3277,8 +3277,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.44.1 (jar, mod e gradle)',
-      "version = '5.44.1'" in rd('build.gradle') and '5.44.1' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.44.2 (jar, mod e gradle)',
+      "version = '5.44.2'" in rd('build.gradle') and '5.44.2' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3336,8 +3336,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.44.1 (jar, mod e gradle)',
-      "version = '5.44.1'" in rd('build.gradle') and '5.44.1' in _rm)
+check('5.34.0: a versao subiu pra 5.44.2 (jar, mod e gradle)',
+      "version = '5.44.2'" in rd('build.gradle') and '5.44.2' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3359,8 +3359,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.44.1 (jar, mod e gradle)',
-      "version = '5.44.1'" in rd('build.gradle') and '5.44.1' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.44.2 (jar, mod e gradle)',
+      "version = '5.44.2'" in rd('build.gradle') and '5.44.2' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -4415,7 +4415,7 @@ check('5.44.1 (96): o FECHADO tem a MESMA rotacao do aberto (nao pula de lugar a
       ['display']['thirdperson_righthand']['rotation'] == [-100, 0, 0])
 check('5.43.0 (98): fora do vazio, ADM so usa poder com o vazio LIGADO (/vazio ligar)',
       'NeptuneEventos.ehDeus(p.getUUID())' in _VP43
-      and 'p.hasPermissions(2) &&' in _VP43)
+      and 'p.hasPermissions(2)' in _VP43)
 check('5.43.0 (98): o terremoto NAO desenha mais nada por cima da tela',
       'TERREMOTO_DESENHA_NA_TELA = false' in _NF43)
 check('5.43.0 (98): os raios do vazio ligar sao AMARELO e NEGRO (nao mais vermelhos)',
@@ -4770,6 +4770,32 @@ check('5.44.0 (97): as pastas de dados estao no nome do 1.21 (recipe e loot_tabl
       and not os.path.isdir('src/main/resources/data/rptag/loot_tables'))
 
 
+
+
+# ============== PEDIDO 98 — 5.44.2 (o DOM é do JOGADOR, não do LUGAR) ==============
+# O dono, na conversa sobre a roda: "a roda abre pra quem não tem o dom". O buraco estava na
+# PRIMEIRA pergunta do `temPoder`: bastava ESTAR no vazio/reino pra ganhar o dom de graça.
+_VP442 = rd(R + '/VazioPoderes.java')
+_NC442 = rd(R + '/NeptuneCommands.java')
+_DOM = _VP442[_VP442.index('public static boolean temPoder'):]
+_DOM = _DOM[:_DOM.index('public static int usar')]
+
+check('5.44.2 (98): o dom se pergunta ao JOGADOR primeiro (ehDeus), nao ao lugar',
+      _DOM.index('if (!NeptuneEventos.ehDeus(p.getUUID()))') < _DOM.index('VazioReino.ehVazio(')
+      and _DOM.count('return false;') >= 2)
+check('5.44.2 (98): estar no vazio/reino SEM o dom nao da poder nenhum',
+      'if (!NeptuneEventos.ehDeus(p.getUUID())) {\n                return false;\n            }' in _DOM)
+check('5.44.2 (98): o unico caminho de acesso sem lugar e o ADM — e ainda com o dom ligado',
+      'return p.hasPermissions(2);' in _DOM
+      and 'p.hasPermissions(2) && NeptuneEventos.ehDeus' not in _DOM)
+check('5.44.2 (98): o ADM pode LIGAR/DESLIGAR o dom em outro jogador (/vazio ligar <jogador>)',
+      'literal("ligar")' in _NC442 and 'literal("desligar")' in _NC442
+      and _NC442.count('EntityArgument.getPlayer(ctx, "jogador")') >= 2
+      and 'NeptuneEventos.ligarDeus(alvo)' in _NC442
+      and 'NeptuneEventos.desligarDeus(alvo)' in _NC442)
+check('5.44.2 (98): o cliente NAO decide nada — sem o pacote do servidor, a roda nao abre',
+      'private static boolean temAcesso;' in rd(C + '/PoderLeque.java')
+      and 'if (!aberto && !temAcesso)' in rd(C + '/PoderLeque.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
