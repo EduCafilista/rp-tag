@@ -203,6 +203,20 @@ public final class NeptuneFx {
         }
     }
 
+    // ---------------------------------------------------- estado pro ceu de sangue
+    /**
+     * (5.45.0) o chão está rachando AGORA? (usado pelo {@link CeuDeSangueFx}, que pinta o céu
+     * de vermelho e troca sol/lua pela lua rachada de lava).
+     */
+    public static boolean terremotoNaTela() {
+        return quakeAtivo && System.currentTimeMillis() <= quakeFim;
+    }
+
+    /** (5.45.0) força do terremoto (0..1,5) — é o que dá a intensidade do céu vermelho. */
+    public static float forcaDoTerremoto() {
+        return quakeForca;
+    }
+
     public static void onNebulosa(NeptunePackets.Nebulosa p) {
         long agora = System.currentTimeMillis();
         if (p.segundos() <= 0) {
@@ -230,7 +244,13 @@ public final class NeptuneFx {
             // o tremor tem DUAS vozes: uma grave (o chão balançando) e outra
             // rápida (o tranco dos escombros) — igual à sensação de terremoto
             float f = quakeForca;
-            float roll = (2.6F * (float) Math.sin(t * 5.1) + 1.1F * (float) Math.sin(t * 17.3)) * f;
+            // (5.45.0) PEDIDO 101: "esse terremoto tem que tombar a tela, ficar meio inclinado
+            // para mostrar que tem algo acontecendo". Antes o rolo era só tremor (±3,7°); agora
+            // soma uma INCLINAÇÃO de verdade (~9°), que respira devagar — o mundo fica torto o
+            // tempo todo, e é isso que dá o susto de "o chão não é mais confiável".
+            float inclinacao = 9.0F * f * (1.0F + 0.16F * (float) Math.sin(t * 0.9F));
+            float roll = inclinacao + (2.6F * (float) Math.sin(t * 5.1)
+                    + 1.1F * (float) Math.sin(t * 17.3)) * f;
             float yaw = (1.3F * (float) Math.sin(t * 4.3 + 1.1) + 0.5F * (float) Math.sin(t * 21.7)) * f;
             float pitch = (1.0F * (float) Math.sin(t * 6.7 + 0.4) + 0.4F * (float) Math.sin(t * 25.1)) * f;
             // tremor forte (pulso "travado") = soma um chacoalho curto

@@ -164,10 +164,9 @@ public final class PoderLeque {
         }
         ultimoAvisoSemAcesso = agora;
         try {
-            mc.player.displayClientMessage(
-                    net.minecraft.network.chat.Component.literal(
-                            "\u00a78Os poderes do vazio não respondem a você."),
-                    true);
+            // (5.45.0) O DONO: "não deve aparecer 'os poderes do vazio não respondem a você'
+            // — SÓ NÃO PRECISA DE MENSAGEM, SÓ NÃO PRECISA". Então: nenhum texto. Só o
+            // estalo seco do botão, que já diz tudo sem escrever nada na tela.
             som(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 0.6F, 0.4F);
         } catch (Throwable ignorado) {
             // sem HUD: segue calado
@@ -417,17 +416,19 @@ public final class PoderLeque {
         return false;
     }
 
-    /** (5.34.0) espelho do {@code VazioPoderes.temPoder} do servidor (decide só o desenho). */
+    /**
+     * (5.45.0) <b>O CLIENTE NÃO DECIDE MAIS NADA.</b> — pedido 100/101 do dono:
+     * <i>"a roda abre pra quem não tem o dom"</i>.
+     *
+     * <p>Antes esta função era um <b>espelho velho</b> do servidor: bastava estar no
+     * {@code rptag:exilio}/{@code rptag:juizo_reino} ou ser ADM. O servidor, desde a 5.44.2,
+     * exige o dom ligado ({@code /vazio ligar}) — então o cliente abria a roda, deixava
+     * escolher e o poder morria no servidor (era o <i>"os poderes não estão saindo"</i>).
+     *
+     * <p>Agora a única fonte é o pacote do servidor ({@link #temAcesso}).
+     */
     private static boolean podeAqui(net.minecraft.client.player.LocalPlayer p) {
-        try {
-            String dim = p.level().dimension().location().toString();
-            if (dim.equals("rptag:exilio") || dim.equals("rptag:juizo_reino")) {
-                return true;
-            }
-            return p.hasPermissions(2);
-        } catch (Throwable t) {
-            return false;
-        }
+        return temAcesso;
     }
 
     /**

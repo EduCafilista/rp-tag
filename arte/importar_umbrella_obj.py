@@ -59,33 +59,38 @@ LADRILHOS_TECIDO = [
     (48, 0, 64, 16, "claro_baixo"),
 ]
 
-# display: (5.44.1) A POSE PADRAO — NENHUMA.
+# display: (5.45.0) A POSE PADRAO — NENHUMA.
 #
 # Histórico curto do sofrimento: 5.43.0 tentou [-180,-90,-80], 5.43.1 [-180,-90,-90] com
-# translação [-6,17,8], 5.43.4 copiou os números do Vampirism ([81,-85,-2], tr 15,3 em Z).
-# Nas TRÊS o dono viu o guarda-chuva longe da mão — na última, flutuando no ar a um bloco do
-# corpo. O erro nunca foi o número escolhido: era a GEOMETRIA. Os .obj do pacote estão com o
-# centro em (0.5, 0, 0.5) e o cabo em y=0.03, ou seja, DESLOCADOS da origem do item; qualquer
-# rotação/translação faz esse deslocamento virar braço de alavanca e joga o modelo pra longe.
+# translação [-6,17,8], 5.43.4 copiou os números do Vampirism ([81,-85,-2], tr 15,3 em Z) e a
+# 5.44.1 tentou [-100,0,0]. Em TODAS o dono viu o guarda-chuva fora da mão; na última (foto dele
+# no jogo) a cúpula aparecia na altura das PERNAS.
 #
-# A correção definitiva: centralizar a geometria na origem do item (ver `centralizar()`), e aí
-# a pose volta a ser a de QUALQUER item do jogo — identidade. Item com display neutro é
-# desenhado pelo próprio jogo no lugar exato da mão; não existe número pra errar.
+# Duas coisas estavam erradas, e as duas foram consertadas:
+#   1. A GEOMETRIA (feito na 5.44.1): os .obj vinham com o centro em (0.5, 0, 0.5) e o cabo em
+#      y=0.03 — deslocados da origem do item. Qualquer rotação transformava isso em braço de
+#      alavanca. Ver `centralizar()`: agora o CABO fica na origem (X/Z em volta de 0, Y de 0
+#      pra cima) e a translação do display é ZERO.
+#   2. O SENTIDO DA ROTAÇÃO (agora): a conta da 5.44.1 usou a cadeia com X(-90) e chegou em
+#      -100°, mas a cadeia real da mão tem o eixo invertido — o resultado era o guarda-chuva
+#      apontando PRA BAIXO (cúpula nas pernas, exatamente o que a foto dele mostra).
+#
+# A CONTA CERTA, com a cadeia real (braço · X(+90) · Y(180) · display):
+#   +Y do modelo (cabo -> cúpula) depois de X(a):      (0, cos a, sin a)
+#   depois de Y(180):                                  (0, cos a, -sin a)
+#   depois de X(90):  y' = -z = sin a ;  z' = y = cos a
+#   querendo PRA CIMA (0,1,0):  sin a = 1  ->  a = 90°
+# e 80° é o mesmo 90° com os 10° de inclinação pra frente que dão naturalidade à pose.
+# TRANSLATION ZERO: o item é desenhado em volta da origem, que o jogo põe NA MÃO — não existe
+# distância pra ele fugir.
 DISPLAY = {
-    # (5.44.1) A CONTA CERTA, agora com a geometria centrada:
-    #   cadeia do item na mão = braço(repouso) · X(-90) · Y(180) · [display]
-    # e queremos o +Y do modelo (cabo -> cúpula) apontando PRA CIMA. Resolvendo para uma
-    # rotação só em X:  -0,1736·cos a - 0,9848·sin a = 1  ->  a = -100°.
-    # TRANSLATION ZERO: é isso que garante que o guarda-chuva NUNCA saia da mão — ele é
-    # desenhado em volta da origem do item, que o jogo põe na mão do jogador.
-    # A escala 1,6 em Y é só para a cúpula passar da cabeça (o modelo tem 0,9 bloco).
-    "thirdperson_righthand": {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
-                              "scale": [1.0, 1.6, 1.0]},
-    "thirdperson_lefthand": {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
-                             "scale": [1.0, 1.6, 1.0]},
-    "firstperson_righthand": {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
+    "thirdperson_righthand": {"rotation": [80, 0, 0], "translation": [0, 0, 0],
+                              "scale": [1.1, 1.6, 1.1]},
+    "thirdperson_lefthand": {"rotation": [80, 0, 0], "translation": [0, 0, 0],
+                             "scale": [1.1, 1.6, 1.1]},
+    "firstperson_righthand": {"rotation": [80, 0, 0], "translation": [0, 0, 0],
                               "scale": [0.85, 1.35, 0.85]},
-    "firstperson_lefthand": {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
+    "firstperson_lefthand": {"rotation": [80, 0, 0], "translation": [0, 0, 0],
                              "scale": [0.85, 1.35, 0.85]},
     # no chão, na moldura e no inventário o modelo só é DEITADO/girado pra caber bonito —
     # são contextos em que ninguém segura nada, então não há mão pra errar.
@@ -94,19 +99,9 @@ DISPLAY = {
     "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]},
 }
 
-# o FECHADO continua sendo carregado como qualquer item na mão (deitado no punho é o normal)
-DISPLAY_FECHADO = dict(DISPLAY)
-DISPLAY_FECHADO["thirdperson_righthand"] = {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
-                                            "scale": [1.0, 1.0, 1.0]}
-DISPLAY_FECHADO["thirdperson_lefthand"] = {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
-                                           "scale": [1.0, 1.0, 1.0]}
-# (5.44.1) o FECHADO usa a MESMA tabela: é o mesmo guarda-chuva, só recolhido. Assim abrir não
+# (5.45.0) o FECHADO usa a MESMA tabela: é o mesmo guarda-chuva, só recolhido. Assim abrir não
 # muda o objeto de lugar — ele só desenrola, na mão.
 DISPLAY_FECHADO = dict(DISPLAY)
-DISPLAY_FECHADO["thirdperson_righthand"] = {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
-                                            "scale": [1.0, 1.0, 1.0]}
-DISPLAY_FECHADO["thirdperson_lefthand"] = {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
-                                           "scale": [1.0, 1.0, 1.0]}
 
 
 def _mistura(a, b, t):

@@ -7,8 +7,9 @@ do lado. Esta desenha o torso e a cabeça (blocos de 1,75 m) junto, então dá p
 relance se a cúpula está ACIMA DA CABEÇA (o pedido: "como se o player estivesse se escondendo
 do sol") ou caindo na altura do peito.
 
-A conta da pose é a mesma do jogo:
-    mundo = braço(repouso) · X(-90) · Y(180) · [rotação do display]
+A conta da pose é a mesma do jogo (corrigida na 5.45.0 — antes o X era -90 e a prévia
+mentia: dizia "cúpula acima da cabeça" com o guarda-chuva apontando pra baixo):
+    mundo = braço(repouso) · X(+90) · Y(180) · [rotação do display]
 e a translação do display entra em 1/16 de bloco.
 
 Uso:
@@ -81,7 +82,10 @@ def posar(vs, display, braco_x=0.0):
     rot = display.get("rotation", [0, 0, 0])
     tr = display.get("translation", [0, 0, 0])
     es = display.get("scale", [1, 1, 1])
-    base = _mul(_rx(braco_x), _mul(_rx(-90.0), _ry(180.0)))
+    # (5.45.0) A CADEIA REAL DA MÃO: braço · X(+90) · Y(180).
+    # Era X(-90) aqui — e é por isso que a prévia dizia "cúpula acima da cabeça" enquanto o
+    # jogo (e a foto do dono) mostrava a cúpula nas PERNAS. O eixo estava invertido.
+    base = _mul(_rx(braco_x), _mul(_rx(90.0), _ry(180.0)))
     m = _mul(base, _mul(_rx(rot[0]), _mul(_ry(rot[1]), _rz(rot[2]))))
     out = []
     for v in vs:

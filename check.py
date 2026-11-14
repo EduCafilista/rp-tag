@@ -78,7 +78,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.44.2'
+VER = '5.45.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3039,9 +3039,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.44.2 no jar, no mod e no gradle',
-      "version = '5.44.2'" in rd('build.gradle')
-      and '5.44.2' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.45.0 no jar, no mod e no gradle',
+      "version = '5.45.0'" in rd('build.gradle')
+      and '5.45.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3277,8 +3277,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.44.2 (jar, mod e gradle)',
-      "version = '5.44.2'" in rd('build.gradle') and '5.44.2' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.45.0 (jar, mod e gradle)',
+      "version = '5.45.0'" in rd('build.gradle') and '5.45.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3336,8 +3336,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.44.2 (jar, mod e gradle)',
-      "version = '5.44.2'" in rd('build.gradle') and '5.44.2' in _rm)
+check('5.34.0: a versao subiu pra 5.45.0 (jar, mod e gradle)',
+      "version = '5.45.0'" in rd('build.gradle') and '5.45.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3359,8 +3359,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.44.2 (jar, mod e gradle)',
-      "version = '5.44.2'" in rd('build.gradle') and '5.44.2' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.45.0 (jar, mod e gradle)',
+      "version = '5.45.0'" in rd('build.gradle') and '5.45.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3618,8 +3618,9 @@ check('5.32.0 (88): as teclas aparecem em Opcoes -> Controles (traduzidas)',
 check('5.32.0 (88): o servidor recebe a habilidade pelo pacote e valida',
       'playToServer(dev.rptag.VazioPoderC2S.TYPE' in _mn
       and 'VazioPoderes.usar(sp, poder)' in _mn)
-check('5.32.0 (88): se nao da para arremessar, o motivo aparece (curto, na barra de acao)',
-      'Os poderes só respondem no vazio' in _vp)
+check('5.32.0 (88): se nao da para arremessar, NAO aparece mensagem (o dono pediu silencio na 5.45.0)',
+      'Os poderes só respondem no vazio' not in _vp
+      and 'sem mensagem de recusa' in _vp)
 check('5.32.0 (88): O OLHO VERMELHO que BANE existe (abre, encara, arranca, fecha)',
       'olhoQueBane' in _vfx and 'a PÁLPEBRA' in _vfx
       and 'o CLARÃO e a COLUNA' in _vfx and 'a ÍRIS + a PUPILA' in _vfx)
@@ -4229,8 +4230,8 @@ check('5.41.0 (96): SEM o dom a roda NAO abre, nao desenha e nao aceita os atalh
 check('5.41.0 (96): quem perde o dom perde a roda e a habilidade armada',
       'fechar();          // perdeu o dom no meio do uso' in _pl9
       and 'selecionado = -1;  // e desarma a habilidade escolhida' in _pl9)
-check('5.41.0 (96): o jogador sem o dom recebe um aviso claro (nao um menu que nao funciona)',
-      'avisarSemAcesso' in _pl9 and 'Os poderes do vazio' in _pl9)
+check('5.41.0 (96): sem o dom a roda nao abre — e sem texto na tela (5.45.0 tirou o aviso)',
+      'avisarSemAcesso' in _pl9 and 'Os poderes do vazio' not in _pl9)
 
 # ============ 5.41.0 — o UMBRELLA "modelado" e o brilho fora (pedidos do print) ============
 check('5.41.0 (94-e): o umbrella NAO e mais encantado (o brilho saiu a pedido do dono)',
@@ -4391,11 +4392,11 @@ def _dir_de(rot):
         return [[sum(a[i][k] * b[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
     def aplica(m, v):
         return [sum(m[i][k] * v[k] for k in range(3)) for i in range(3)]
-    # cadeia do ItemInHandLayer: braço em repouso (~-10°) · X(-90) · Y(180) · [display]
-    # (5.44.1) o "180° de correção" que entrou na 5.43.4 saiu: ele estava compensando a
-    # GEOMETRIA descentrada (centro em 0,5 em vez da origem), não a cadeia. Com o .obj
-    # centralizado, esta é a conta que bate com o jogo.
-    m = mul(rx(-10), mul(rx(-90), ry(180)))
+    # cadeia do ItemInHandLayer: braço em repouso (~-10°) · X(+90) · Y(180) · [display]
+    # (5.45.0) AQUI ESTAVA O ERRO QUE CUSTOU TRÊS VERSÕES: com X(-90) esta conta dizia que a
+    # rotação -100° apontava pra cima — e no jogo (foto do dono) a cúpula aparecia nas PERNAS.
+    # A cadeia real é X(+90); com ela, -100° dá -1,00 em Y (pra baixo) e 80° dá +1,00 (pra cima).
+    m = mul(rx(-10), mul(rx(90), ry(180)))
     m = mul(m, mul(rx(rot[0]), mul(ry(rot[1]), rz(rot[2]))))
     return aplica(m, [0, 1, 0])
 
@@ -4407,12 +4408,12 @@ check('5.43.0 (94-h): o guarda-chuva ABERTO aponta PRA CIMA na mao (o dono: "na 
 # geometria em outra origem — no nosso virava guarda-chuva flutuando longe da mão.
 check('5.44.1 (96): a pose do Vampirism saiu do gerador (ela so valia para o modelo deles)',
       '[81, -85, -2]' not in _IMP and '1.7737' not in _IMP
-      and '"rotation": [-100, 0, 0]' in _IMP)
+      and '"rotation": [80, 0, 0]' in _IMP)
 check('5.44.1 (96): o FECHADO tem a MESMA rotacao do aberto (nao pula de lugar ao abrir)',
       _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))
-      ['display']['thirdperson_righthand']['rotation'] == [-100, 0, 0]
+      ['display']['thirdperson_righthand']['rotation'] == [80, 0, 0]
       and _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))
-      ['display']['thirdperson_righthand']['rotation'] == [-100, 0, 0])
+      ['display']['thirdperson_righthand']['rotation'] == [80, 0, 0])
 check('5.43.0 (98): fora do vazio, ADM so usa poder com o vazio LIGADO (/vazio ligar)',
       'NeptuneEventos.ehDeus(p.getUUID())' in _VP43
       and 'p.hasPermissions(2)' in _VP43)
@@ -4450,8 +4451,10 @@ def _vertices_posados(nome_obj, display):
     rot = display.get('rotation', [0, 0, 0])
     tr = display.get('translation', [0, 0, 0])
     es = display.get('scale', [1, 1, 1])
-    # (5.44.1) braço em REPOUSO = 0° (era -75°, que é braço erguido) e sem o 180° falso.
-    m = mul(rx(0), mul(rx(-90), ry(180)))
+    # (5.45.0) braço em repouso = 0° e a cadeia REAL da mão: X(+90) · Y(180).
+    # Aqui também estava X(-90) — o mesmo erro que fez a 5.44.1 achar que -100° era "pra cima"
+    # enquanto o jogo mostrava a cúpula nas pernas.
+    m = mul(rx(0), mul(rx(90), ry(180)))
     m = mul(m, mul(rx(rot[0]), mul(ry(rot[1]), rz(rot[2]))))
     saida = []
     for linha in open(A + '/models/item/' + nome_obj, encoding='utf-8', errors='ignore'):
@@ -4630,9 +4633,9 @@ check('5.44.1 (96): a geometria do .obj esta CENTRADA no cabo (X e Z em volta de
       all(abs(_bbox_obj(o)[0]) < 0.03 and abs(_bbox_obj(o)[2]) < 0.03
           and abs(_bbox_obj(o)[1]) < 0.01
           for o in ('umbrella_open.obj', 'umbrella_closed.obj')))
-check('5.44.1 (96): a rotacao e a CALCULADA que deixa o +Y do modelo PRA CIMA (-100 graus)',
-      _ab44['thirdperson_righthand']['rotation'] == [-100, 0, 0]
-      and _IMP44.count('-0,1736·cos a - 0,9848·sin a = 1') == 1)
+check('5.44.1 (96): a rotacao e a CALCULADA que deixa o +Y do modelo PRA CIMA (80 graus)',
+      _ab44['thirdperson_righthand']['rotation'] == [80, 0, 0]
+      and _IMP44.count('sin a = 1  ->  a = 90') == 1)
 check('5.44.1 (96): o gerador explica a conta e diz que a translacao e zero de proposito',
       'TRANSLATION ZERO' in _IMP44)
 check('5.43.4 (96): as 8 cores usam a MESMA pose (a cor muda o tecido, nao o jeito de segurar)',
@@ -4796,6 +4799,83 @@ check('5.44.2 (98): o ADM pode LIGAR/DESLIGAR o dom em outro jogador (/vazio lig
 check('5.44.2 (98): o cliente NAO decide nada — sem o pacote do servidor, a roda nao abre',
       'private static boolean temAcesso;' in rd(C + '/PoderLeque.java')
       and 'if (!aberto && !temAcesso)' in rd(C + '/PoderLeque.java'))
+
+
+# ======== PEDIDO 101 / 102 — 5.45.0 (guarda-chuva na mão DE VERDADE, raios, roda, rastro e lua de sangue) ========
+# O dono, nesta rodada: "EDITA DIREITO ESSA UMBRELA EU TE PEDI"; "corrige desses raios do vazio
+# ligar, não aparecer na tela do jogador com poder ativado"; "os poderes não estão saindo, quando
+# selecionar o poder fecha a roda"; "não deve aparecer 'os poderes do vazio não respondem a você'
+# — SÓ NÃO PRECISA DE MENSAGEM"; "no juízo, faça um rastro para o player seguir"; "mexa no
+# terremoto, o céu deve começar a ficar vermelho... lua/SOL do local... tombar a tela".
+_RV45 = rd(C + '/RaiosVazioFx.java')
+_PL45 = rd(C + '/PoderLeque.java')
+_VP45 = rd(R + '/VazioPoderes.java')
+_NF45 = rd(C + '/NeptuneFx.java')
+_CS45 = rd(C + '/CeuDeSangueFx.java')
+_JR45 = rd(R + '/JuizoRastro.java')
+_IMP45 = rd('arte/importar_umbrella_obj.py')
+_ab45 = _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))['display']
+_fe45 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display']
+
+# ---- 1. o guarda-chuva (de novo, e agora com a conta certa)
+_dir45 = _dir_de(_ab45['thirdperson_righthand']['rotation'])
+check('5.45.0 (102): a cadeia REAL da mao e X(+90) na prova, na previa e no gerador',
+      'mul(rx(90), ry(180))' in rd('check.py')
+      and 'mul(_rx(90.0), _ry(180.0))' in rd('arte/previa_pose_umbrella.py'))
+check('5.45.0 (102): com 80 graus o +Y (cabo -> cupula) aponta PRA CIMA na mao', _dir45[1] > 0.99)
+check('5.45.0 (102): o ABERTO e o FECHADO usam a MESMA rotacao (abrir nao muda de lugar)',
+      _ab45['thirdperson_righthand']['rotation'] == [80, 0, 0]
+      and _fe45['thirdperson_righthand']['rotation'] == [80, 0, 0])
+check('5.45.0 (102): TRANSLACAO ZERO nas duas maos e nas duas pessoas (nao existe distancia pra fugir)',
+      all(_ab45[c]['translation'] == [0, 0, 0] for c in
+          ('thirdperson_righthand', 'thirdperson_lefthand',
+           'firstperson_righthand', 'firstperson_lefthand')))
+check('5.45.0 (102): o gerador escreve a conta certa (sin a = 1 -> a = 90, e 80 com os 10 de inclinacao)',
+      'sin a = 1  ->  a = 90' in _IMP45 and '"rotation": [80, 0, 0]' in _IMP45)
+
+# ---- 2. os raios do /vazio ligar nao aparecem pra quem tem o poder
+check('5.45.0 (101): quem TEM o vazio nao ve raio nenhum na propria tela (a visao fica limpa)',
+      'if (euSou) {\n                return;\n            }' in _RV45
+      and 'a tela dele fica limpa' in _RV45)
+check('5.45.0 (101): quem olha de fora continua vendo a aura inteira (nao sobrou corte de 2/3)',
+      'idx % 3 == 0' not in _RV45)
+
+# ---- 3. a roda: cliente obedece o servidor e nao existe mais mensagem de recusa
+check('5.45.0 (101): o cliente NAO decide acesso — podeAqui e o pacote do servidor',
+      'private static boolean podeAqui(net.minecraft.client.player.LocalPlayer p) {\n        return temAcesso;\n    }' in _PL45)
+check('5.45.0 (101): a mensagem "os poderes do vazio nao respondem a voce" NAO EXISTE MAIS',
+      'Os poderes do vazio não respondem' not in _PL45
+      and 'Os poderes só respondem no vazio' not in _VP45)
+check('5.45.0 (101): selecionar na roda ARMA, FECHA a roda e o botao direito solta o poder',
+      'armar(apontado);     // (5.42.0) escolher ≠ conjurar' in _PL45
+      and 'fechar();\n                mouseAntes = false;' in _PL45
+      and 'mandar(selecionado);' in _PL45)
+
+# ---- 4. o rastro do Juizo ate o portal
+check('5.45.0 (101): o Juizo tem RASTRO no chao guiando ate a saida', 'JuizoRastro' in _JF42
+      or 'JuizoRastro' in rd(R + '/JuizoFinal.java'))
+check('5.45.0 (101): o rastro sai do jogador rumo a saida, para na parede e acende brasa perto do portal',
+      'SOUL_FIRE_FLAME' in _JR45 and 'JuizoFinal.saidaDe(' in _JR45
+      and 'if (parede(lv, bp, p))' in _JR45 and 'ParticleTypes.FLAME' in _JR45
+      and 'public static BlockPos saidaDe(UUID id)' in rd(R + '/JuizoFinal.java'))
+
+# ---- 5. a lua de sangue no terremoto
+check('5.45.0 (101): o ceu do terremoto fica VERMELHO (domo de 150 blocos em volta da camera)',
+      'RAIO = 150.0F' in _CS45 and 'desenharDomo(' in _CS45
+      and 'Stage.AFTER_SKY' in _CS45)
+check('5.45.0 (101): o SOL e a LUA de sangue sao desenhados na posicao real do ceu do mundo',
+      'getTimeOfDay(pt)' in _CS45 and 'rotationDegrees(tempoDoDia * 360.0F)' in _CS45
+      and 'desenharAstro(' in _CS45)
+check('5.45.0 (101): a lua tem rachaduras de lava que pulsam e borda acesa (a referencia que ele mandou)',
+      'RACHADURAS DE LAVA' in _CS45 and 'borda acesa' in _CS45 and 'pulso' in _CS45)
+check('5.45.0 (101): a neblina do horizonte fica vermelha junto com o ceu',
+      'ViewportEvent.ComputeFogColor' in _CS45 and 'event.setRed(' in _CS45)
+check('5.45.0 (101): a TELA TOMBA de verdade no terremoto (inclinacao de 9 graus, nao so tremor)',
+      'float inclinacao = 9.0F * f' in _NF45 and 'event.setRoll(event.getRoll() + roll)' in _NF45)
+check('5.45.0 (101): o ceu de sangue so aparece com o terremoto ligado (estado vem do pacote)',
+      'public static boolean terremotoNaTela()' in _NF45
+      and 'public static float forcaDoTerremoto()' in _NF45
+      and 'NeptuneFx.terremotoNaTela()' in _CS45)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

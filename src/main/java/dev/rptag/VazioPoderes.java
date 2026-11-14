@@ -120,7 +120,7 @@ public final class VazioPoderes {
      */
     public static int usar(ServerPlayer p, Poder poder) {
         if (!temPoder(p)) {
-            avisar(p, "\u00a78Os poderes só respondem no vazio, no reino ou para o ADM.");
+            // (5.45.0) sem mensagem de recusa: o dono pediu "só não precisa de mensagem".
             return 0;
         }
         long agora = System.currentTimeMillis();

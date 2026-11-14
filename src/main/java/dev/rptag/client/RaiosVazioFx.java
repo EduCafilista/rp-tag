@@ -176,6 +176,13 @@ public final class RaiosVazioFx {
             if (dono == null || dono.isSpectator()) {
                 return;
             }
+            // (5.45.0) PEDIDO 101 DO DONO: "corrige esses raios do vazio ligar, não aparecer na
+            // tela do jogador com poder ativado, os raios ficam atrapalhando a visão".
+            // Então: quem É o vazio não vê raio nenhum — a tela dele fica limpa pra jogar. Quem
+            // olha de fora continua vendo a aura inteira (é a cena que o dono quis).
+            if (euSou) {
+                return;
+            }
             Vec3 cam = event.getCamera().getPosition();
             float pt = event.getPartialTick().getGameTimeDeltaPartialTick(false);
             Vec3 base = dono.getPosition(pt);
@@ -220,10 +227,6 @@ public final class RaiosVazioFx {
             int idx = 0;
             for (Raio r : LISTA) {
                 idx++;
-                // quem É o vazio vê 2/3 dos raios (a tela dele tem que ficar legível)
-                if (euSou && (idx % 3 == 0)) {
-                    continue;
-                }
                 try {
                     desenhar(vc, pose.last().pose(), r, base, cam, agora);
                 } catch (Throwable ignorado) {

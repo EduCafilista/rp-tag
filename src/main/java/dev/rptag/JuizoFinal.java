@@ -324,6 +324,19 @@ public final class JuizoFinal {
         aviso(p, texto, segundos, estilo);
     }
 
+    /**
+     * (5.45.0) onde fica a saída deste jogador no labirinto (null = não está procurando).
+     *
+     * <p>Usado pelo {@link JuizoRastro} pra acender o rastro de almas no chão até o portal.
+     */
+    public static BlockPos saidaDe(UUID id) {
+        try {
+            return SAIDA.get(id);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
     /** (5.30.0) o jogador está procurando a saída (é a marca que o portal do reino respeita). */
     public static boolean estaProcurando(UUID id) {
         return NO_JUIZO.contains(id);
