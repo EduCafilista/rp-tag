@@ -14,6 +14,17 @@ R = 'src/main/java/dev/rptag'
 C = R + '/client'
 A = 'src/main/resources/assets/rptag'
 D = 'src/main/resources/data/rptag'
+def _bbox_obj(nome):
+    """(centro X, Y minimo, centro Z) do .obj, em unidades do modelo."""
+    xs, ys, zs = [], [], []
+    for linha in io.open(A + '/models/item/' + nome, encoding='utf-8', errors='ignore'):
+        if linha.startswith('v '):
+            p = linha.split()
+            xs.append(float(p[1]))
+            ys.append(float(p[2]))
+            zs.append(float(p[3]))
+    return ((min(xs) + max(xs)) / 2.0, min(ys), (min(zs) + max(zs)) / 2.0)
+
 S = A + '/sounds'
 
 def rd(p):
@@ -67,7 +78,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.44.0'
+VER = '5.44.1'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3028,9 +3039,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.44.0 no jar, no mod e no gradle',
-      "version = '5.44.0'" in rd('build.gradle')
-      and '5.44.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.44.1 no jar, no mod e no gradle',
+      "version = '5.44.1'" in rd('build.gradle')
+      and '5.44.1' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3266,8 +3277,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.44.0 (jar, mod e gradle)',
-      "version = '5.44.0'" in rd('build.gradle') and '5.44.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.44.1 (jar, mod e gradle)',
+      "version = '5.44.1'" in rd('build.gradle') and '5.44.1' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3325,8 +3336,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.44.0 (jar, mod e gradle)',
-      "version = '5.44.0'" in rd('build.gradle') and '5.44.0' in _rm)
+check('5.34.0: a versao subiu pra 5.44.1 (jar, mod e gradle)',
+      "version = '5.44.1'" in rd('build.gradle') and '5.44.1' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3348,8 +3359,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.44.0 (jar, mod e gradle)',
-      "version = '5.44.0'" in rd('build.gradle') and '5.44.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.44.1 (jar, mod e gradle)',
+      "version = '5.44.1'" in rd('build.gradle') and '5.44.1' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -4380,10 +4391,11 @@ def _dir_de(rot):
         return [[sum(a[i][k] * b[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
     def aplica(m, v):
         return [sum(m[i][k] * v[k] for k in range(3)) for i in range(3)]
-    # (5.43.4) CADEIA CORRIGIDA. Até a 5.43.3 este helper dizia "a cúpula está acima da cabeça"
-    # justamente na pose em que o dono via o guarda-chuva DEITADO no quadril com o cabo pra
-    # cima — a conta estava 180° fora. A print do dono é a prova; a linha certa é esta.
-    m = mul(rx(180), mul(rx(-10), mul(rx(-90), ry(180))))
+    # cadeia do ItemInHandLayer: braço em repouso (~-10°) · X(-90) · Y(180) · [display]
+    # (5.44.1) o "180° de correção" que entrou na 5.43.4 saiu: ele estava compensando a
+    # GEOMETRIA descentrada (centro em 0,5 em vez da origem), não a cadeia. Com o .obj
+    # centralizado, esta é a conta que bate com o jogo.
+    m = mul(rx(-10), mul(rx(-90), ry(180)))
     m = mul(m, mul(rx(rot[0]), mul(ry(rot[1]), rz(rot[2]))))
     return aplica(m, [0, 1, 0])
 
@@ -4391,14 +4403,16 @@ def _dir_de(rot):
 _dir = _dir_de(_aberto0['display']['thirdperson_righthand']['rotation'])
 check('5.43.0 (94-h): o guarda-chuva ABERTO aponta PRA CIMA na mao (o dono: "na mao e para cima")',
       _dir[1] > 0.90)   # (5.43.4) com a cadeia corrigida, a pose do Vampirism da +1,00 em Y
-check('5.43.4 (96): a pose agora e a do VAMPIRISM, copiada de la (com o link no gerador)',
-      'maxanier/Vampirism' in _IMP and 'models/item/umbrella.json' in _IMP
-      and '"rotation": [81, -85, -2]' in _IMP and '1.7737' in _IMP)
-check('5.43.4 (96): o FECHADO tem a MESMA inclinacao do aberto (nao pula de lugar ao abrir)',
+# (5.44.1) a pose do Vampirism foi ABANDONADA: ela funcionava no modelo deles, que tem a
+# geometria em outra origem — no nosso virava guarda-chuva flutuando longe da mão.
+check('5.44.1 (96): a pose do Vampirism saiu do gerador (ela so valia para o modelo deles)',
+      '[81, -85, -2]' not in _IMP and '1.7737' not in _IMP
+      and '"rotation": [-100, 0, 0]' in _IMP)
+check('5.44.1 (96): o FECHADO tem a MESMA rotacao do aberto (nao pula de lugar ao abrir)',
       _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))
-      ['display']['thirdperson_righthand']['rotation'] == [81, -85, -2]
+      ['display']['thirdperson_righthand']['rotation'] == [-100, 0, 0]
       and _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))
-      ['display']['thirdperson_righthand']['rotation'] == [81, -85, -2])
+      ['display']['thirdperson_righthand']['rotation'] == [-100, 0, 0])
 check('5.43.0 (98): fora do vazio, ADM so usa poder com o vazio LIGADO (/vazio ligar)',
       'NeptuneEventos.ehDeus(p.getUUID())' in _VP43
       and 'p.hasPermissions(2) &&' in _VP43)
@@ -4436,8 +4450,8 @@ def _vertices_posados(nome_obj, display):
     rot = display.get('rotation', [0, 0, 0])
     tr = display.get('translation', [0, 0, 0])
     es = display.get('scale', [1, 1, 1])
-    # (5.43.4) braço em REPOUSO = 0° (era -75°, que é braço erguido) e o 180° em X que faltava.
-    m = mul(rx(180), mul(rx(0), mul(rx(-90), ry(180))))
+    # (5.44.1) braço em REPOUSO = 0° (era -75°, que é braço erguido) e sem o 180° falso.
+    m = mul(rx(0), mul(rx(-90), ry(180)))
     m = mul(m, mul(rx(rot[0]), mul(ry(rot[1]), rz(rot[2]))))
     saida = []
     for linha in open(A + '/models/item/' + nome_obj, encoding='utf-8', errors='ignore'):
@@ -4461,11 +4475,11 @@ def _centro_da_cupula(posados):
 _posados = _vertices_posados('umbrella_open.obj', _aberto0['display']['thirdperson_righthand'])
 _cup = _centro_da_cupula(_posados)
 check('5.43.1 (94-i): a cupula do guarda-chuva ABERTO fica ACIMA da cabeca (Y > 0,50) na mao',
-      _cup[1] > 1.20)   # (5.43.4) pose do Vampirism, medida: Y=1,57 (a cabeca acaba em 0,50)
+      _cup[1] > 1.00)   # (5.44.1) medida: Y=1,12 acima da mao (a cabeca acaba em 0,50)
 check('5.43.1 (94-i): ...e CENTRADA no corpo (nao jogada pro lado, era o "no meu peito")',
-      abs(_cup[0]) < 0.50 and 0.30 < _cup[2] < 1.20)   # medido: X=0,36 e Z=0,58
+      abs(_cup[0]) < 0.20 and abs(_cup[2]) < 0.40)   # medido: X=0,00 e Z=0,00 (em cima da mao)
 check('5.43.1 (94-i): a altura da cupula esta registrada como numero (da pra conferir/ajustar)',
-      _cup[1] > 1.40)
+      _cup[1] > 1.05)
 check('5.43.1 (94-i): a previa da pose desenha o CORPO junto (pose sem corpo nao da pra julgar)',
       os.path.exists('arte/previa_pose_umbrella.py')
       and 'def corpo_de_referencia(' in rd('arte/previa_pose_umbrella.py')
@@ -4602,16 +4616,25 @@ _IMP44 = rd('arte/importar_umbrella_obj.py')
 _ab44 = _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))['display']
 _fe44 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display']
 
-check('5.43.4 (96): a 3a pessoa e a do VAMPIRISM, numero por numero (rot/tr/escala)',
-      _ab44['thirdperson_righthand']['rotation'] == [81, -85, -2]
-      and _ab44['thirdperson_righthand']['translation'] == [-1.391, 2.7826, 15.303]
-      and _ab44['thirdperson_righthand']['scale'] == [1.0, 1.7737, 1.0])
-check('5.43.4 (96): a 1a pessoa tambem (rotacao [22, -5, 2], o mesmo do Vampirism)',
-      _ab44['firstperson_righthand']['rotation'] == [22, -5, 2]
-      and _ab44['firstperson_righthand']['translation'] == [-3.478, 7.6521, 0.0])
-check('5.43.4 (96): o gerador diz DE ONDE veio a pose (link do repositorio do Vampirism)',
-      'maxanier/Vampirism' in _IMP44
-      and 'assets/vampirism/models/item/umbrella.json' in _IMP44)
+# (5.44.1) O DONO: "POR ACASO A UMBRELA ABERTA ESTA NA MINHA MAO? CORRIJE ISSO". Não estava:
+# com translação no display o guarda-chuva era desenhado LONGE da mão. Agora a regra é dura e
+# provada: translação ZERO em 3ª e 1ª pessoa (o modelo é desenhado em volta da origem do item,
+# que é a mão) e a geometria do .obj centrada no cabo.
+check('5.44.1 (96): O GUARDA-CHUVA NAO SAI DA MAO — translacao ZERO no display (3a e 1a pessoa)',
+      all(_ab44[c]['translation'] == [0, 0, 0] for c in
+          ('thirdperson_righthand', 'thirdperson_lefthand',
+           'firstperson_righthand', 'firstperson_lefthand'))
+      and all(_fe44[c]['translation'] == [0, 0, 0] for c in
+              ('thirdperson_righthand', 'thirdperson_lefthand')))
+check('5.44.1 (96): a geometria do .obj esta CENTRADA no cabo (X e Z em volta de 0, Y de 0 pra cima)',
+      all(abs(_bbox_obj(o)[0]) < 0.03 and abs(_bbox_obj(o)[2]) < 0.03
+          and abs(_bbox_obj(o)[1]) < 0.01
+          for o in ('umbrella_open.obj', 'umbrella_closed.obj')))
+check('5.44.1 (96): a rotacao e a CALCULADA que deixa o +Y do modelo PRA CIMA (-100 graus)',
+      _ab44['thirdperson_righthand']['rotation'] == [-100, 0, 0]
+      and _IMP44.count('-0,1736·cos a - 0,9848·sin a = 1') == 1)
+check('5.44.1 (96): o gerador explica a conta e diz que a translacao e zero de proposito',
+      'TRANSLATION ZERO' in _IMP44)
 check('5.43.4 (96): as 8 cores usam a MESMA pose (a cor muda o tecido, nao o jeito de segurar)',
       all(_json.loads(rd(A + '/models/item/umbrella_obj_aberto_%d.json' % i))
           ['display']['thirdperson_righthand'] == _ab44['thirdperson_righthand'] for i in range(8))
@@ -4630,9 +4653,29 @@ def _rgb(caminho):
     return list(im.getdata())
 
 
+def _textura_vanilla(relativo):
+    """extrai (uma vez) uma textura de DENTRO do jar do cliente — nada de depender de /tmp."""
+    import zipfile
+    destino = '/tmp/check_mc/' + relativo
+    if os.path.exists(destino):
+        return destino
+    jar = ('/home/user/mcclient/libraries/net/minecraft/client/1.21.1-20240808.144430/'
+           'client-1.21.1-20240808.144430-extra.jar')
+    if not os.path.exists(jar):
+        return None
+    os.makedirs(os.path.dirname(destino), exist_ok=True)
+    with zipfile.ZipFile(jar) as z:
+        with z.open('assets/minecraft/textures/' + relativo) as fp, open(destino, 'wb') as out:
+            out.write(fp.read())
+    return destino
+
+
 def _mesma_luminancia(origem, fluxo):
     """a textura do Fluxo tem a MESMA luminância da ametista da vanilla, pixel a pixel."""
-    a = _rgb('/tmp/ameth/assets/minecraft/textures/' + origem)
+    caminho = _textura_vanilla(origem)
+    if caminho is None:
+        return False
+    a = _rgb(caminho)
     b = _rgb(A + '/textures/' + fluxo)
     if len(a) != len(b):
         return False
@@ -4725,6 +4768,8 @@ check('5.44.0 (97): as pastas de dados estao no nome do 1.21 (recipe e loot_tabl
       and not os.path.isdir('src/main/resources/data/rptag/recipes')
       and os.path.isdir('src/main/resources/data/rptag/loot_table')
       and not os.path.isdir('src/main/resources/data/rptag/loot_tables'))
+
+
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

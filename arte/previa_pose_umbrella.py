@@ -76,7 +76,7 @@ def _ap(m, v):
     return [sum(m[i][k] * v[k] for k in range(3)) for i in range(3)]
 
 
-def posar(vs, display, braco_x=-75.0):
+def posar(vs, display, braco_x=0.0):
     """aplica a cadeia REAL do item na mão (3ª pessoa) e devolve os vértices no mundo."""
     rot = display.get("rotation", [0, 0, 0])
     tr = display.get("translation", [0, 0, 0])

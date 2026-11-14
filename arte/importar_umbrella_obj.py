@@ -25,6 +25,7 @@ cabeça (``client/CamadaUmbrella``), que é outra coisa.
 
 Uso: python3 arte/importar_umbrella_obj.py
 """
+import io
 import colorsys
 import json
 import os
@@ -58,36 +59,36 @@ LADRILHOS_TECIDO = [
     (48, 0, 64, 16, "claro_baixo"),
 ]
 
-# display: (5.43.4) OS NUMEROS DO VAMPIRISM, COPIADOS DE LA.
+# display: (5.44.1) A POSE PADRAO — NENHUMA.
 #
-# O dono, olhando o guarda-chuva deitado na print dele: "veja como fica o umbrella do mod
-# vampirism, ai fica daquela maneira". Entao a pose nao e mais calculada no chute nem por
-# otimizador caseiro: e a MESMA tabela do modelo deles —
-#   https://github.com/maxanier/Vampirism
-#   src/main/resources/assets/vampirism/models/item/umbrella.json  (display)
-# que e um guarda-chuva de geometria Y-pra-cima igual ao nosso (.obj do dono, cabo embaixo,
-# cupula em cima, ~1 bloco). Como os dois modelos tem a mesma orientacao e o mesmo tamanho,
-# os numeros valem direto.
+# Histórico curto do sofrimento: 5.43.0 tentou [-180,-90,-80], 5.43.1 [-180,-90,-90] com
+# translação [-6,17,8], 5.43.4 copiou os números do Vampirism ([81,-85,-2], tr 15,3 em Z).
+# Nas TRÊS o dono viu o guarda-chuva longe da mão — na última, flutuando no ar a um bloco do
+# corpo. O erro nunca foi o número escolhido: era a GEOMETRIA. Os .obj do pacote estão com o
+# centro em (0.5, 0, 0.5) e o cabo em y=0.03, ou seja, DESLOCADOS da origem do item; qualquer
+# rotação/translação faz esse deslocamento virar braço de alavanca e joga o modelo pra longe.
 #
-# Por que os numeros antigos estavam errados: a nossa geometria ja vem Y-pra-cima (e o loader
-# OBJ do NeoForge nao reorienta nada — conferido no ObjModel do 1.21.1), mas a gente girava
-# [-180,-90,-90] como se ela viesse Z-pra-cima. Resultado: o guarda-chuva deitava do lado do
-# corpo, com o cabo pra cima — exatamente o que apareceu na print.
-VAMPIRISM_3A = {"rotation": [81, -85, -2],
-                "translation": [-1.391, 2.7826, 15.303],
-                "scale": [1.0, 1.7737, 1.0]}
-VAMPIRISM_1A = {"rotation": [22, -5, 2],
-                "translation": [-3.478, 7.6521, 0.0],
-                "scale": [1.0, 1.6956, 0.9652]}
+# A correção definitiva: centralizar a geometria na origem do item (ver `centralizar()`), e aí
+# a pose volta a ser a de QUALQUER item do jogo — identidade. Item com display neutro é
+# desenhado pelo próprio jogo no lugar exato da mão; não existe número pra errar.
 DISPLAY = {
-    "thirdperson_righthand": VAMPIRISM_3A,
-    # o espelho do esquerdo: o deles usa rotação [81, 90, 0] com a MESMA translação
-    "thirdperson_lefthand": {"rotation": [81, 90, 0],
-                             "translation": [-1.391, 2.7826, 15.303],
-                             "scale": [1.0, 1.7737, 1.0]},
-    "firstperson_righthand": VAMPIRISM_1A,
-    "firstperson_lefthand": VAMPIRISM_1A,
-    # no chao/na vitrine/gui: os mesmos do Vampirism
+    # (5.44.1) A CONTA CERTA, agora com a geometria centrada:
+    #   cadeia do item na mão = braço(repouso) · X(-90) · Y(180) · [display]
+    # e queremos o +Y do modelo (cabo -> cúpula) apontando PRA CIMA. Resolvendo para uma
+    # rotação só em X:  -0,1736·cos a - 0,9848·sin a = 1  ->  a = -100°.
+    # TRANSLATION ZERO: é isso que garante que o guarda-chuva NUNCA saia da mão — ele é
+    # desenhado em volta da origem do item, que o jogo põe na mão do jogador.
+    # A escala 1,6 em Y é só para a cúpula passar da cabeça (o modelo tem 0,9 bloco).
+    "thirdperson_righthand": {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
+                              "scale": [1.0, 1.6, 1.0]},
+    "thirdperson_lefthand": {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
+                             "scale": [1.0, 1.6, 1.0]},
+    "firstperson_righthand": {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
+                              "scale": [0.85, 1.35, 0.85]},
+    "firstperson_lefthand": {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
+                             "scale": [0.85, 1.35, 0.85]},
+    # no chão, na moldura e no inventário o modelo só é DEITADO/girado pra caber bonito —
+    # são contextos em que ninguém segura nada, então não há mão pra errar.
     "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
     "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.5, 0.5, 0.5]},
     "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]},
@@ -95,20 +96,17 @@ DISPLAY = {
 
 # o FECHADO continua sendo carregado como qualquer item na mão (deitado no punho é o normal)
 DISPLAY_FECHADO = dict(DISPLAY)
-# (5.43.4) o FECHADO fica na MESMA inclinacao do aberto (é o mesmo guarda-chuva, só recolhido):
-# assim, ao abrir, o objeto não "pula" de lugar — ele só desenrola.
-DISPLAY_FECHADO["thirdperson_righthand"] = {"rotation": [81, -85, -2],
-                                            "translation": [-1.391, 2.7826, 15.303],
+DISPLAY_FECHADO["thirdperson_righthand"] = {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
                                             "scale": [1.0, 1.0, 1.0]}
-DISPLAY_FECHADO["thirdperson_lefthand"] = {"rotation": [81, 90, 0],
-                                           "translation": [-1.391, 2.7826, 15.303],
+DISPLAY_FECHADO["thirdperson_lefthand"] = {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
                                            "scale": [1.0, 1.0, 1.0]}
-DISPLAY_FECHADO["firstperson_righthand"] = {"rotation": [22, -5, 2],
-                                            "translation": [-3.478, 7.6521, 0.0],
-                                            "scale": [1.0, 1.0, 0.9652]}
-DISPLAY_FECHADO["firstperson_lefthand"] = {"rotation": [22, -5, 2],
-                                           "translation": [-3.478, 7.6521, 0.0],
-                                           "scale": [1.0, 1.0, 0.9652]}
+# (5.44.1) o FECHADO usa a MESMA tabela: é o mesmo guarda-chuva, só recolhido. Assim abrir não
+# muda o objeto de lugar — ele só desenrola, na mão.
+DISPLAY_FECHADO = dict(DISPLAY)
+DISPLAY_FECHADO["thirdperson_righthand"] = {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
+                                            "scale": [1.0, 1.0, 1.0]}
+DISPLAY_FECHADO["thirdperson_lefthand"] = {"rotation": [-100, 0, 0], "translation": [0, 0, 0],
+                                           "scale": [1.0, 1.0, 1.0]}
 
 
 def _mistura(a, b, t):
@@ -165,18 +163,61 @@ def modelo_obj(nome_obj, textura, display=None):
     }
 
 
+def centralizar(vertices):
+    """leva a geometria para a ORIGEM do item: centro em X/Z = 0 e o cabo em Y = 0.
+
+    É isto que impede o guarda-chuva de "flutuar longe da mão": com o modelo centrado, girar
+    ou transladar não cria braço de alavanca — ele gira em volta de si mesmo, no lugar da mão.
+    """
+    xs = [v[0] for v in vertices]
+    ys = [v[1] for v in vertices]
+    zs = [v[2] for v in vertices]
+    cx = (min(xs) + max(xs)) / 2.0
+    cz = (min(zs) + max(zs)) / 2.0
+    y0 = min(ys)
+    return [[v[0] - cx, v[1] - y0, v[2] - cz] for v in vertices]
+
+
+def escrever_centralizado(origem, destino):
+    """copia o .obj trocando só as linhas `v` pelas centralizadas (faces/normais/mtl iguais)."""
+    linhas = []
+    vertices = []
+    for linha in io.open(origem, encoding="utf-8", errors="ignore"):
+        if linha.startswith("v "):
+            p = linha.split()
+            vertices.append([float(p[1]), float(p[2]), float(p[3])])
+            linhas.append(None)                     # marcador: reescreve depois
+        else:
+            linhas.append(linha)
+    novos = centralizar(vertices)
+    saida = []
+    i = 0
+    for linha in linhas:
+        if linha is None:
+            v = novos[i]
+            i += 1
+            saida.append("v %.6f %.6f %.6f\n" % (v[0], v[1], v[2]))
+        else:
+            saida.append(linha)
+    with io.open(destino, "w", encoding="utf-8") as fp:
+        fp.write("".join(saida))
+    return novos
+
+
 def main():
     fonte = os.path.join(ORIGEM, "umbrella_atlas.png")
     if not os.path.exists(fonte):
         raise SystemExit("falta a textura de origem: " + fonte)
     atlas = Image.open(fonte).convert("RGBA")
 
-    # 1) os .obj/.mtl vão para onde o jogo lê
-    for arq in ("umbrella_open.obj", "umbrella_closed.obj", "umbrella.mtl"):
+    # 1) os .obj/.mtl vão para onde o jogo lê — os .obj CENTRALIZADOS na origem do item
+    for arq in ("umbrella_open.obj", "umbrella_closed.obj"):
         origem = os.path.join(ORIGEM, arq)
         if not os.path.exists(origem):
             raise SystemExit("falta o modelo de origem: " + origem)
-        shutil.copyfile(origem, os.path.join(MODELOS, arq))
+        escrever_centralizado(origem, os.path.join(MODELOS, arq))
+    shutil.copyfile(os.path.join(ORIGEM, "umbrella.mtl"),
+                    os.path.join(MODELOS, "umbrella.mtl"))
 
     # 2) o atlas nas 8 cores
     for i, (nome, cor, escuro, detalhe) in enumerate(CORES):
