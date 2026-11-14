@@ -59,39 +59,40 @@ LADRILHOS_TECIDO = [
     (48, 0, 64, 16, "claro_baixo"),
 ]
 
-# display: (5.45.0) A POSE PADRAO — NENHUMA.
+# display: (5.46.0) A POSE — MEDIDA, NÃO ADIVINHADA.
 #
-# Histórico curto do sofrimento: 5.43.0 tentou [-180,-90,-80], 5.43.1 [-180,-90,-90] com
-# translação [-6,17,8], 5.43.4 copiou os números do Vampirism ([81,-85,-2], tr 15,3 em Z) e a
-# 5.44.1 tentou [-100,0,0]. Em TODAS o dono viu o guarda-chuva fora da mão; na última (foto dele
-# no jogo) a cúpula aparecia na altura das PERNAS.
+# Histórico: 5.43.0 [-180,-90,-80], 5.43.1 [-180,-90,-90] com translação [-6,17,8], 5.43.4
+# copiou o Vampirism, 5.44.1 [-100,0,0] (cúpula nas pernas), 5.45.0 [80,0,0] (guarda-chuva
+# subiu, mas o cabo ficou na altura do tornozelo e a cúpula longe da cabeça). Todas erradas
+# porque eram CHUTE.
 #
-# Duas coisas estavam erradas, e as duas foram consertadas:
-#   1. A GEOMETRIA (feito na 5.44.1): os .obj vinham com o centro em (0.5, 0, 0.5) e o cabo em
-#      y=0.03 — deslocados da origem do item. Qualquer rotação transformava isso em braço de
-#      alavanca. Ver `centralizar()`: agora o CABO fica na origem (X/Z em volta de 0, Y de 0
-#      pra cima) e a translação do display é ZERO.
-#   2. O SENTIDO DA ROTAÇÃO (agora): a conta da 5.44.1 usou a cadeia com X(-90) e chegou em
-#      -100°, mas a cadeia real da mão tem o eixo invertido — o resultado era o guarda-chuva
-#      apontando PRA BAIXO (cúpula nas pernas, exatamente o que a foto dele mostra).
+# A partir da 5.46.0 existe uma SIMULAÇÃO da cadeia real do jogo (a mesma conta que o
+# Minecraft faz ao desenhar item na mão em 3ª pessoa), e ela foi VALIDADA contra duas fotos do
+# dono no jogo:
 #
-# A CONTA CERTA, com a cadeia real (braço · X(+90) · Y(180) · display):
-#   +Y do modelo (cabo -> cúpula) depois de X(a):      (0, cos a, sin a)
-#   depois de Y(180):                                  (0, cos a, -sin a)
-#   depois de X(90):  y' = -z = sin a ;  z' = y = cos a
-#   querendo PRA CIMA (0,1,0):  sin a = 1  ->  a = 90°
-# e 80° é o mesmo 90° com os 10° de inclinação pra frente que dão naturalidade à pose.
-# TRANSLATION ZERO: o item é desenhado em volta da origem, que o jogo põe NA MÃO — não existe
-# distância pra ele fugir.
+#   mundo = T(0,1.5,0) · S(-1,-1,1)            (origem do jogador -> modelo)
+#         · T(-5/16, 2/16, 0) · RX(braço)      (pivô do braço direito)
+#         · T(-1/16, 7/16, 1/16)               (translateToHand)
+#         · RX(-90) · RY(180)                  (ItemInHandLayer)
+#         · T(1/16, 2/16, -10/16)              (posição do item na mão)
+#         · T(translação/16) · R(rotação) · S(escala)     (o display que está aqui embaixo)
+#
+# Com [80,0,0] e translação zero a simulação prevê exatamente o que a foto mostrou: cabo em
+# Y=0,31 (tornozelo) e cúpula em Y=1,44 — longe da cabeça. Agora, resolvendo para:
+#   * o CABO na mão                  -> Y ≈ 0,74
+#   * o guarda-chuva VERTICAL        -> eixo (0, +1,60, -0,02) em 95°
+#   * a CÚPULA acima da cabeça       -> Y 1,70..2,19 (a cabeça acaba em 1,80)
+# dá rotação 95° e translação [-1, 1, 7] em 1/16 de bloco.
+# A translação NÃO é chute: é a solução de M·t = (alvo − cabo), onde M são os eixos da mão.
 DISPLAY = {
-    "thirdperson_righthand": {"rotation": [80, 0, 0], "translation": [0, 0, 0],
+    "thirdperson_righthand": {"rotation": [95, 0, 0], "translation": [-1, 1, 7],
                               "scale": [1.1, 1.6, 1.1]},
-    "thirdperson_lefthand": {"rotation": [80, 0, 0], "translation": [0, 0, 0],
+    "thirdperson_lefthand": {"rotation": [95, 0, 0], "translation": [-1, 1, 7],
                              "scale": [1.1, 1.6, 1.1]},
-    "firstperson_righthand": {"rotation": [80, 0, 0], "translation": [0, 0, 0],
-                              "scale": [0.85, 1.35, 0.85]},
-    "firstperson_lefthand": {"rotation": [80, 0, 0], "translation": [0, 0, 0],
-                             "scale": [0.85, 1.35, 0.85]},
+    "firstperson_righthand": {"rotation": [95, 0, 0], "translation": [0, 4, 0],
+                              "scale": [0.9, 1.2, 0.9]},
+    "firstperson_lefthand": {"rotation": [95, 0, 0], "translation": [0, 4, 0],
+                             "scale": [0.9, 1.2, 0.9]},
     # no chão, na moldura e no inventário o modelo só é DEITADO/girado pra caber bonito —
     # são contextos em que ninguém segura nada, então não há mão pra errar.
     "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
@@ -99,9 +100,14 @@ DISPLAY = {
     "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]},
 }
 
-# (5.45.0) o FECHADO usa a MESMA tabela: é o mesmo guarda-chuva, só recolhido. Assim abrir não
-# muda o objeto de lugar — ele só desenrola, na mão.
+# (5.46.0) o FECHADO tem a MESMA rotação e a MESMA translação — abrir não muda o guarda-chuva
+# de lugar, ele só desenrola na mão. O que muda é a escala em Y: recolhido ele é um bastão de
+# ~0,95 bloco (a escala 1,6 deixava um poste de 1,5 bloco passando da cabeça).
 DISPLAY_FECHADO = dict(DISPLAY)
+DISPLAY_FECHADO["thirdperson_righthand"] = {
+    "rotation": [95, 0, 0], "translation": [-1, 1, 7], "scale": [1.0, 1.0, 1.0]}
+DISPLAY_FECHADO["thirdperson_lefthand"] = {
+    "rotation": [95, 0, 0], "translation": [-1, 1, 7], "scale": [1.0, 1.0, 1.0]}
 
 
 def _mistura(a, b, t):

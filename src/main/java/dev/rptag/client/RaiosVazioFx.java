@@ -176,11 +176,11 @@ public final class RaiosVazioFx {
             if (dono == null || dono.isSpectator()) {
                 return;
             }
-            // (5.45.0) PEDIDO 101 DO DONO: "corrige esses raios do vazio ligar, não aparecer na
-            // tela do jogador com poder ativado, os raios ficam atrapalhando a visão".
-            // Então: quem É o vazio não vê raio nenhum — a tela dele fica limpa pra jogar. Quem
-            // olha de fora continua vendo a aura inteira (é a cena que o dono quis).
-            if (euSou) {
+            // (5.46.0) O DONO, corrigindo a 5.45.0: "os raios ainda devem aparecer, no f5, so
+            // nao deve aparecer na primeira pessoa".
+            // Então o corte é só na PRIMEIRA pessoa: em F5 (3ª pessoa) o vazio vê a própria
+            // aura, igual todo mundo. Na 1ª pessoa nada de raio — era o que atrapalhava a visão.
+            if (euSou && mc.options.getCameraType().isFirstPerson()) {
                 return;
             }
             Vec3 cam = event.getCamera().getPosition();

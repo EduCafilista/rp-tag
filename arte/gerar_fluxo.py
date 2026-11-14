@@ -47,17 +47,27 @@ TEXTURAS = [
 # o vermelho do Fluxo: matiz alvo (graus) e uma faixa para o alaranjado, para a pedra ter o
 # mesmo "degradê de cor" que o roxo da ametista (que vai de ~250° a ~300°).
 MATIZ_ALVO = 0.0
-MATIZ_LEQUE = 14.0     # quanto a matiz original "espalha" em volta do alvo
+MATIZ_LEQUE = 9.0      # quanto a matiz original "espalha" em volta do alvo
+
+# (5.46.0) O DONO: "a ametista vermelha deve ser MAIS VERMELHA, muito mais vermelha".
+# A 5.44.0 só girava a matiz e mantinha a saturação ORIGINAL — e a ametista do Minecraft é
+# lavada (roxo claro, saturação ~0,35), então o resultado saiu rosa/salmão em vez de sangue.
+# Agora a saturação é empurrada para perto do máximo e o valor desce um tico: é vermelho de
+# verdade, mantendo as facetas (a luminância continua sendo a da textura original).
+SAT_ESCALA = 2.6
+SAT_PISO = 0.92
+VALOR = 0.96
 
 
 def _vermelho(h, s, v):
-    """troca a matiz da ametista (roxo) pela do Fluxo (vermelho), sem tocar em S nem V."""
+    """troca a matiz da ametista (roxo) pela do Fluxo (vermelho) e SATURA o vermelho."""
     # a ametista vai de ~250° (0.69) a ~300° (0.83); normaliza dentro dessa faixa em -1..1
     faixa = (h - 0.75) / 0.10
     faixa = max(-1.5, min(1.5, faixa))
-    alvo = MATIZ_ALVO + faixa * MATIZ_LEQUE
-    alvo %= 360.0
-    return colorsys.hsv_to_rgb(alvo / 360.0, s, v)
+    alvo = (MATIZ_ALVO + faixa * MATIZ_LEQUE) % 360.0
+    s2 = max(SAT_PISO, min(1.0, s * SAT_ESCALA))
+    v2 = max(0.0, min(1.0, v * VALOR))
+    return colorsys.hsv_to_rgb(alvo / 360.0, s2, v2)
 
 
 def converter(imagem):

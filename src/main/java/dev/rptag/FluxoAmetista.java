@@ -85,19 +85,28 @@ public final class FluxoAmetista {
     /** a ametista de Fluxo em FORMAÇÃO — a que cresce. */
     public static final DeferredBlock<FluxoBuddingBlock> BUDDING =
             BLOCKS.register("fluxo_budding", () -> new FluxoBuddingBlock(props().randomTicks()));
-    /** os brotos e o cacho, com a mesma altura e o mesmo "deslocamento" dos da vanilla. */
-    public static final DeferredBlock<AmethystClusterBlock> BUD_PEQUENO =
+    /**
+     * os brotos e o cacho, com a mesma altura e o mesmo "deslocamento" dos da vanilla.
+     *
+     * <p>(5.46.0) <b>PEDIDO DO DONO: "as bud eu não consigo colocar como um bloco".</b>
+     * Era isso mesmo: o {@link AmethystClusterBlock} da vanilla recusa nascer em qualquer lugar
+     * que não seja a ametista em formação ({@code canSurvive} falso) — então o broto era
+     * colocado e sumia no tick seguinte, ou nem entrava. Agora eles usam
+     * {@link FluxoClusterBlock}, que aceita qualquer apoio: dá para decorar parede, chão e
+     * teto com broto de Fluxo como se fosse bloco normal.
+     */
+    public static final DeferredBlock<FluxoClusterBlock> BUD_PEQUENO =
             BLOCKS.register("fluxo_bud_pequeno",
-                    () -> new AmethystClusterBlock(3.0F, 4.0F, propsBroto(1)));
-    public static final DeferredBlock<AmethystClusterBlock> BUD_MEDIO =
+                    () -> new FluxoClusterBlock(3.0F, 4.0F, propsBroto(1)));
+    public static final DeferredBlock<FluxoClusterBlock> BUD_MEDIO =
             BLOCKS.register("fluxo_bud_medio",
-                    () -> new AmethystClusterBlock(4.0F, 3.0F, propsBroto(2)));
-    public static final DeferredBlock<AmethystClusterBlock> BUD_GRANDE =
+                    () -> new FluxoClusterBlock(4.0F, 3.0F, propsBroto(2)));
+    public static final DeferredBlock<FluxoClusterBlock> BUD_GRANDE =
             BLOCKS.register("fluxo_bud_grande",
-                    () -> new AmethystClusterBlock(5.0F, 3.0F, propsBroto(4)));
-    public static final DeferredBlock<AmethystClusterBlock> CLUSTER =
+                    () -> new FluxoClusterBlock(5.0F, 3.0F, propsBroto(4)));
+    public static final DeferredBlock<FluxoClusterBlock> CLUSTER =
             BLOCKS.register("fluxo_cluster",
-                    () -> new AmethystClusterBlock(7.0F, 3.0F, propsBroto(5)));
+                    () -> new FluxoClusterBlock(7.0F, 3.0F, propsBroto(5)));
 
     /** o item de cada bloco (dá para pegar, colocar e craftar). */
     public static final DeferredItem<?> ITEM_BLOCO = ITEMS.registerSimpleBlockItem(BLOCO);
@@ -110,6 +119,27 @@ public final class FluxoAmetista {
     /** o FRAGMENTO DE FLUXO (o item da família, o "amethyst shard" vermelho). */
     public static final DeferredItem<?> SHARD =
             ITEMS.registerSimpleItem("fluxo_shard", new net.minecraft.world.item.Item.Properties());
+
+    /**
+     * (5.46.0) <b>O BROTO QUE ACEITA QUALQUER APOIO.</b>
+     *
+     * <p>A vanilla só deixa o cacho nascer colado na ametista em formação; aqui o dono quer
+     * poder <b>colocar</b> o broto como bloco de decoração. Tudo o mais é igual ao da vanilla:
+     * mesma forma, mesma luz, mesma água, mesmo drop.
+     */
+    public static class FluxoClusterBlock extends AmethystClusterBlock {
+
+        public FluxoClusterBlock(float altura, float largura, BlockBehaviour.Properties props) {
+            super(altura, largura, props);
+        }
+
+        /** aceita qualquer apoio (é decoração, não precisa de ametista em formação atrás). */
+        @Override
+        protected boolean canSurvive(BlockState state, net.minecraft.world.level.LevelReader level,
+                                     BlockPos pos) {
+            return true;
+        }
+    }
 
     /**
      * (5.44.0) <b>AMETISTA DE FLUXO EM FORMAÇÃO.</b>

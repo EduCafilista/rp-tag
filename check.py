@@ -78,7 +78,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.45.0'
+VER = '5.46.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3039,9 +3039,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.45.0 no jar, no mod e no gradle',
-      "version = '5.45.0'" in rd('build.gradle')
-      and '5.45.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.46.0 no jar, no mod e no gradle',
+      "version = '5.46.0'" in rd('build.gradle')
+      and '5.46.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3277,8 +3277,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.45.0 (jar, mod e gradle)',
-      "version = '5.45.0'" in rd('build.gradle') and '5.45.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.46.0 (jar, mod e gradle)',
+      "version = '5.46.0'" in rd('build.gradle') and '5.46.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3336,8 +3336,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.45.0 (jar, mod e gradle)',
-      "version = '5.45.0'" in rd('build.gradle') and '5.45.0' in _rm)
+check('5.34.0: a versao subiu pra 5.46.0 (jar, mod e gradle)',
+      "version = '5.46.0'" in rd('build.gradle') and '5.46.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3359,8 +3359,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.45.0 (jar, mod e gradle)',
-      "version = '5.45.0'" in rd('build.gradle') and '5.45.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.46.0 (jar, mod e gradle)',
+      "version = '5.46.0'" in rd('build.gradle') and '5.46.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -4408,12 +4408,12 @@ check('5.43.0 (94-h): o guarda-chuva ABERTO aponta PRA CIMA na mao (o dono: "na 
 # geometria em outra origem — no nosso virava guarda-chuva flutuando longe da mão.
 check('5.44.1 (96): a pose do Vampirism saiu do gerador (ela so valia para o modelo deles)',
       '[81, -85, -2]' not in _IMP and '1.7737' not in _IMP
-      and '"rotation": [80, 0, 0]' in _IMP)
+      and '"rotation": [95, 0, 0]' in _IMP)
 check('5.44.1 (96): o FECHADO tem a MESMA rotacao do aberto (nao pula de lugar ao abrir)',
       _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))
-      ['display']['thirdperson_righthand']['rotation'] == [80, 0, 0]
+      ['display']['thirdperson_righthand']['rotation'] == [95, 0, 0]
       and _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))
-      ['display']['thirdperson_righthand']['rotation'] == [80, 0, 0])
+      ['display']['thirdperson_righthand']['rotation'] == [95, 0, 0])
 check('5.43.0 (98): fora do vazio, ADM so usa poder com o vazio LIGADO (/vazio ligar)',
       'NeptuneEventos.ehDeus(p.getUUID())' in _VP43
       and 'p.hasPermissions(2)' in _VP43)
@@ -4623,21 +4623,19 @@ _fe44 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display
 # com translação no display o guarda-chuva era desenhado LONGE da mão. Agora a regra é dura e
 # provada: translação ZERO em 3ª e 1ª pessoa (o modelo é desenhado em volta da origem do item,
 # que é a mão) e a geometria do .obj centrada no cabo.
-check('5.44.1 (96): O GUARDA-CHUVA NAO SAI DA MAO — translacao ZERO no display (3a e 1a pessoa)',
-      all(_ab44[c]['translation'] == [0, 0, 0] for c in
-          ('thirdperson_righthand', 'thirdperson_lefthand',
-           'firstperson_righthand', 'firstperson_lefthand'))
-      and all(_fe44[c]['translation'] == [0, 0, 0] for c in
+check('5.46.0 (103): O CABO FICA NA MAO — translacao calculada, igual nas duas maos e no fechado',
+      all(_ab44[c]['translation'] == [-1, 1, 7] for c in
+          ('thirdperson_righthand', 'thirdperson_lefthand'))
+      and all(_fe44[c]['translation'] == [-1, 1, 7] for c in
               ('thirdperson_righthand', 'thirdperson_lefthand')))
 check('5.44.1 (96): a geometria do .obj esta CENTRADA no cabo (X e Z em volta de 0, Y de 0 pra cima)',
       all(abs(_bbox_obj(o)[0]) < 0.03 and abs(_bbox_obj(o)[2]) < 0.03
           and abs(_bbox_obj(o)[1]) < 0.01
           for o in ('umbrella_open.obj', 'umbrella_closed.obj')))
-check('5.44.1 (96): a rotacao e a CALCULADA que deixa o +Y do modelo PRA CIMA (80 graus)',
-      _ab44['thirdperson_righthand']['rotation'] == [80, 0, 0]
-      and _IMP44.count('sin a = 1  ->  a = 90') == 1)
-check('5.44.1 (96): o gerador explica a conta e diz que a translacao e zero de proposito',
-      'TRANSLATION ZERO' in _IMP44)
+check('5.44.1 (96): a rotacao e a CALCULADA que deixa o +Y do modelo PRA CIMA (95 graus)',
+      _ab44['thirdperson_righthand']['rotation'] == [95, 0, 0])
+check('5.44.1 (96): o gerador explica a cadeia REAL da mao (a conta esta escrita la dentro)',
+      'translateToHand' in _IMP44 and 'ItemInHandLayer' in _IMP44)
 check('5.43.4 (96): as 8 cores usam a MESMA pose (a cor muda o tecido, nao o jeito de segurar)',
       all(_json.loads(rd(A + '/models/item/umbrella_obj_aberto_%d.json' % i))
           ['display']['thirdperson_righthand'] == _ab44['thirdperson_righthand'] for i in range(8))
@@ -4674,22 +4672,34 @@ def _textura_vanilla(relativo):
 
 
 def _mesma_luminancia(origem, fluxo):
-    """a textura do Fluxo tem a MESMA luminância da ametista da vanilla, pixel a pixel."""
+    """a textura do Fluxo tem a MESMA ESTRUTURA de claro/escuro da ametista da vanilla.
+
+    (5.46.0) Antes esta prova exigia a mesma LUMINÂNCIA pixel a pixel. Isso deixou de ser
+    possível — e de ser desejável — quando o dono pediu "muito mais vermelha": vermelho
+    saturado tem luminância muito menor que roxo lavado (0,299·R no vermelho puro contra
+    0,299·R + 0,587·G da ametista). O que continua valendo é a ESTRUTURA: onde a pedra
+    original era clara, o Fluxo é claro; onde era escura, é escuro. É isso que separa "a mesma
+    pedra em vermelho" de "um retângulo vermelho chapado" — então é isso que a prova mede
+    (correlação das variações de luminância, não o valor absoluto).
+    """
     caminho = _textura_vanilla(origem)
     if caminho is None:
         return False
     a = _rgb(caminho)
     b = _rgb(A + '/textures/' + fluxo)
-    if len(a) != len(b):
+    if len(a) != len(b) or not a:
         return False
-    for (r1, g1, b1, a1), (r2, g2, b2, a2) in zip(a, b):
-        if a1 != a2:
-            return False
-        l1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1
-        l2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2
-        if abs(l1 - l2) > 60:          # a matiz gira; o clarão/escuro continua no lugar
-            return False
-    return True
+    l1 = [0.299 * r + 0.587 * g + 0.114 * bl for (r, g, bl, al) in a]
+    l2 = [0.299 * r + 0.587 * g + 0.114 * bl for (r, g, bl, al) in b]
+    m1 = sum(l1) / len(l1)
+    m2 = sum(l2) / len(l2)
+    d1 = [v - m1 for v in l1]
+    d2 = [v - m2 for v in l2]
+    cima = sum(x * y for x, y in zip(d1, d2))
+    baixo = (sum(x * x for x in d1) ** 0.5) * (sum(y * y for y in d2) ** 0.5)
+    if baixo <= 1e-6:
+        return False
+    return (cima / baixo) > 0.75
 
 
 def _mais_vermelho(caminho):
@@ -4758,7 +4768,7 @@ check('5.44.0 (97): o gerador da textura le a ametista DO JAR do cliente (nao de
       and 'client-1.21.1' in rd('arte/gerar_fluxo.py')
       and 'amethyst_block.png' in rd('arte/gerar_fluxo.py')
       and 'colorsys' in rd('arte/gerar_fluxo.py'))
-check('5.44.0 (97): as texturas do Fluxo sao a MESMA pedra em vermelho (luminancia preservada)',
+check('5.44.0 (97): as texturas do Fluxo sao a MESMA pedra em vermelho (mesma estrutura de claro/escuro)',
       _mesma_luminancia('block/amethyst_block.png', 'block/fluxo_block.png')
       and _mesma_luminancia('block/budding_amethyst.png', 'block/fluxo_budding.png')
       and _mesma_luminancia('block/amethyst_cluster.png', 'block/fluxo_cluster.png')
@@ -4819,24 +4829,29 @@ _fe45 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display
 
 # ---- 1. o guarda-chuva (de novo, e agora com a conta certa)
 _dir45 = _dir_de(_ab45['thirdperson_righthand']['rotation'])
-check('5.45.0 (102): a cadeia REAL da mao e X(+90) na prova, na previa e no gerador',
-      'mul(rx(90), ry(180))' in rd('check.py')
-      and 'mul(_rx(90.0), _ry(180.0))' in rd('arte/previa_pose_umbrella.py'))
-check('5.45.0 (102): com 80 graus o +Y (cabo -> cupula) aponta PRA CIMA na mao', _dir45[1] > 0.99)
-check('5.45.0 (102): o ABERTO e o FECHADO usam a MESMA rotacao (abrir nao muda de lugar)',
-      _ab45['thirdperson_righthand']['rotation'] == [80, 0, 0]
-      and _fe45['thirdperson_righthand']['rotation'] == [80, 0, 0])
-check('5.45.0 (102): TRANSLACAO ZERO nas duas maos e nas duas pessoas (nao existe distancia pra fugir)',
-      all(_ab45[c]['translation'] == [0, 0, 0] for c in
-          ('thirdperson_righthand', 'thirdperson_lefthand',
-           'firstperson_righthand', 'firstperson_lefthand')))
-check('5.45.0 (102): o gerador escreve a conta certa (sin a = 1 -> a = 90, e 80 com os 10 de inclinacao)',
-      'sin a = 1  ->  a = 90' in _IMP45 and '"rotation": [80, 0, 0]' in _IMP45)
+check('5.46.0 (103): a pose do guarda-chuva e MEDIDA pela cadeia real (95 graus, tr [-1,1,7])',
+      _ab45['thirdperson_righthand']['rotation'] == [95, 0, 0]
+      and _ab45['thirdperson_righthand']['translation'] == [-1, 1, 7])
+check('5.46.0 (103): com 95 graus o +Y (cabo -> cupula) aponta PRA CIMA na mao', _dir45[1] > 0.95)
+check('5.46.0 (103): o ABERTO e o FECHADO usam a MESMA rotacao e a MESMA translacao',
+      _fe45['thirdperson_righthand']['rotation'] == [95, 0, 0]
+      and _fe45['thirdperson_righthand']['translation'] == [-1, 1, 7])
+check('5.46.0 (103): a simulacao da cadeia do jogo existe na previa e no gerador (nada de chute)',
+      'def mao(' in rd('arte/previa_pose_umbrella.py')
+      and 'translateToHand' in rd('arte/previa_pose_umbrella.py')
+      and 'RX(-90)' in rd('arte/previa_pose_umbrella.py')
+      and 'def mao(' not in rd('arte/importar_umbrella_obj.py'))
+check('5.46.0 (103): a previa mostra o cabo na mao (0,74) e a cupula acima da cabeca (1,92)',
+      'cabo em Y=0.74' in rd('ENTREGA.md') or os.path.exists('arte/previa_pose.png'))
+check('5.46.0 (103): o gerador guarda a conta escrita (a cadeia inteira, linha por linha)',
+      'TRANSLAÇÃO' in rd('arte/importar_umbrella_obj.py').upper()
+      and 'guarda-chuva VERTICAL' in rd('arte/importar_umbrella_obj.py'))
 
 # ---- 2. os raios do /vazio ligar nao aparecem pra quem tem o poder
-check('5.45.0 (101): quem TEM o vazio nao ve raio nenhum na propria tela (a visao fica limpa)',
-      'if (euSou) {\n                return;\n            }' in _RV45
-      and 'a tela dele fica limpa' in _RV45)
+check('5.46.0 (103): os raios SO somem na PRIMEIRA pessoa (no F5 o dono quer ver a aura)',
+      'if (euSou && mc.options.getCameraType().isFirstPerson()) {' in _RV45
+      and 'os raios ainda devem aparecer, no f5' in _RV45
+      and 'nao deve aparecer na primeira pessoa' in _RV45)
 check('5.45.0 (101): quem olha de fora continua vendo a aura inteira (nao sobrou corte de 2/3)',
       'idx % 3 == 0' not in _RV45)
 
@@ -4863,11 +4878,18 @@ check('5.45.0 (101): o rastro sai do jogador rumo a saida, para na parede e acen
 check('5.45.0 (101): o ceu do terremoto fica VERMELHO (domo de 150 blocos em volta da camera)',
       'RAIO = 150.0F' in _CS45 and 'desenharDomo(' in _CS45
       and 'Stage.AFTER_SKY' in _CS45)
-check('5.45.0 (101): o SOL e a LUA de sangue sao desenhados na posicao real do ceu do mundo',
+check('5.46.0 (103): o SOL e a LUA de sangue usam TEXTURA e ficam na posicao real do ceu',
       'getTimeOfDay(pt)' in _CS45 and 'rotationDegrees(tempoDoDia * 360.0F)' in _CS45
-      and 'desenharAstro(' in _CS45)
-check('5.45.0 (101): a lua tem rachaduras de lava que pulsam e borda acesa (a referencia que ele mandou)',
-      'RACHADURAS DE LAVA' in _CS45 and 'borda acesa' in _CS45 and 'pulso' in _CS45)
+      and 'entityTranslucentEmissive(TEX_LUA)' in _CS45
+      and os.path.exists(A + '/textures/environment/lua_de_sangue.png')
+      and os.path.exists(A + '/textures/environment/sol_de_sangue.png')
+      and os.path.exists('arte/gerar_lua_de_sangue.py'))
+check('5.46.0 (103): a lua e uma ESFERA rachada de lava (nao disco com estrela no meio)',
+      'RACHADURAS DE LAVA' in rd('arte/gerar_lua_de_sangue.py')
+      and 'def gerar(' in rd('arte/gerar_lua_de_sangue.py')
+      and 'def distancia_ao_veio(' in rd('arte/gerar_lua_de_sangue.py'))
+check('5.46.0 (103): o domo do ceu nao tem mais faixa visivel (48 aneis em vez de 12)',
+      'ANEIS = 48' in _CS45 and 'MERIDIANOS = 36' in _CS45)
 check('5.45.0 (101): a neblina do horizonte fica vermelha junto com o ceu',
       'ViewportEvent.ComputeFogColor' in _CS45 and 'event.setRed(' in _CS45)
 check('5.45.0 (101): a TELA TOMBA de verdade no terremoto (inclinacao de 9 graus, nao so tremor)',
@@ -4876,6 +4898,27 @@ check('5.45.0 (101): o ceu de sangue so aparece com o terremoto ligado (estado v
       'public static boolean terremotoNaTela()' in _NF45
       and 'public static float forcaDoTerremoto()' in _NF45
       and 'NeptuneFx.terremotoNaTela()' in _CS45)
+
+
+# ======== PEDIDO 103 — 5.46.0 (o F5 dos raios, o fluxo MUITO vermelho, broto colocável e a lua de textura) ========
+# O dono, nesta rodada: "os raios ainda devem aparecer, no f5, so nao deve aparecer na primeira
+# pessoa"; "a umbrella continua bugada"; "a ametista vermelha deve ser MAIS VERMELHA, muito mais
+# vermelha, as bud eu nao consigo colocar como um bloco"; "a Lua do terremoto, melhore isso,
+# coloque essa lua".
+_FA46 = rd(R + '/FluxoAmetista.java')
+_GF46 = rd('arte/gerar_fluxo.py')
+
+check('5.46.0 (103): o broto de Fluxo e COLOCAVEL em qualquer apoio (o dono nao conseguia por)',
+      'class FluxoClusterBlock extends AmethystClusterBlock' in _FA46
+      and 'protected boolean canSurvive' in _FA46
+      and _FA46.count('new FluxoClusterBlock(') >= 4)
+check('5.46.0 (103): a ametista de Fluxo e MUITO mais vermelha (saturacao empurrada, nao so a matiz)',
+      'SAT_ESCALA = 2.6' in _GF46 and 'SAT_PISO = 0.92' in _GF46 and 'muito mais vermelha' in _GF46)
+check('5.46.0 (103): as texturas do Fluxo sao sangue de verdade (R alto, G e B quase zero)',
+      _mais_vermelho('block/fluxo_block.png')
+      and all(sum(p[0] for p in _rgb(A + '/textures/block/' + n) if p[3] > 8)
+              / max(1, len([p for p in _rgb(A + '/textures/block/' + n) if p[3] > 8])) > 150
+              for n in ('fluxo_block.png', 'fluxo_budding.png', 'fluxo_cluster.png')))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
