@@ -1,7 +1,0 @@
-{
-  "parent": "rptag:item/umbrella_aberto_base",
-  "textures": {
-    "layer0": "rptag:item/umbrella_tex_5",
-    "particle": "rptag:item/umbrella_tex_5"
-  }
-}

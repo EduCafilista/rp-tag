@@ -86,7 +86,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.50.0'
+VER = '5.51.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3052,9 +3052,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.50.0 no jar, no mod e no gradle',
-      "version = '5.50.0'" in rd('build.gradle')
-      and '5.50.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.51.0 no jar, no mod e no gradle',
+      "version = '5.51.0'" in rd('build.gradle')
+      and '5.51.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3290,8 +3290,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.50.0 (jar, mod e gradle)',
-      "version = '5.50.0'" in rd('build.gradle') and '5.50.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.51.0 (jar, mod e gradle)',
+      "version = '5.51.0'" in rd('build.gradle') and '5.51.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3349,8 +3349,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.50.0 (jar, mod e gradle)',
-      "version = '5.50.0'" in rd('build.gradle') and '5.50.0' in _rm)
+check('5.34.0: a versao subiu pra 5.51.0 (jar, mod e gradle)',
+      "version = '5.51.0'" in rd('build.gradle') and '5.51.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3372,8 +3372,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.50.0 (jar, mod e gradle)',
-      "version = '5.50.0'" in rd('build.gradle') and '5.50.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.51.0 (jar, mod e gradle)',
+      "version = '5.51.0'" in rd('build.gradle') and '5.51.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3889,81 +3889,28 @@ check('5.36.0 (93): morto no Juizo o jogador NAO e jogado pro overworld (sem tel
 
 # ===================== PEDIDO 94 — 5.37.0 (UMBRELLA 3D) =====================
 _vs = rd(R + '/VampiroSistema.java')
-_vi = rd(R + '/VarinhaSombraItem.java')
 _mod7 = rd(R + '/RPTagMod.java')
-_uc = rd(R + '/UmbrellaCommands.java')
-_uh = rd(C + '/UmbrellaHud.java')
 _gl8 = rd(C + '/ClientGuiLayers.java')
 
-check('5.37.0 (94): o UMBRELLA existe e e um item de verdade',
-      'ITEMS.register("umbrella_sombra"' in _mod7 and 'class VarinhaSombraItem extends Item' in _vi)
 # (5.41.0) aberto virou ESTADO DO ITEM (custom_model_data >= 8), nao mais "esta usando"
-check('5.37.0 (94): SO ABERTO protege do sol (pedido do dono: "só quando ABERTO")',
-      'guardaChuvaAberto(p)' in _vs
-      and 'VarinhaSombraItem.aberto(p.getItemInHand(mao))' in _vs)
-check('5.37.0 (94): o guarda-chuva fechado NAO protege (nao e o mesmo que o amuleto)',
-      'p.getMainHandItem().is(RPTagMod.AMULETO_ECLIPSE.get())\n' in _vs
-      and 'return guardaChuvaAberto(p);' in _vs
-      and 'getMainHandItem().is(RPTagMod.UMBRELLA' not in _vs)
-check('5.37.0 (94): abrir com um CLIQUE e durar 65 s (5.41.0: sem segurar botao)',
-      'abrir(stack, lv)' in _vi and 'ABERTURA_SEGUNDOS = 65' in _vi
-      and 'startUsingItem' not in _vi)
-check('5.37.0 (94): agachado fecha na hora e o item tem recarga',
-      'p.isShiftKeyDown()' in _vi and 'RECARGA_SEGUNDOS' in _vi and 'fechar(stack)' in _vi)
-check('5.37.0 (94): sao 8 CORES (o dono: "faz de varias cores")',
-      'CORES = {' in _uc and all(c in _uc for c in
-      ('sangue', 'noite', 'juizo', 'sombra', 'veneno', 'luar', 'ouro', 'rosa')))
 # (5.43.3/96) a CUPULA SOBRE A CABECA saiu do mod (o dono: "tira a antiga animacao do guarda
 # chuva"). A cor agora tem: textura do .obj e sprite do HUD — a dome_*.png nao existe mais.
-check('5.37.0 (94): cada cor tem textura de item e sprite de HUD',
-      all(os.path.exists(A + '/textures/item/umbrella_tex_%d.png' % i) for i in range(8))
-      and all(os.path.exists(A + '/textures/gui/umbrella_hud_%d.png' % i) for i in range(8)))
-check('5.37.0 (94): o modelo tem GEOMETRIA 3D de verdade (cubos, fechado e aberto)',
-      '"elements"' in rd(A + '/models/item/umbrella_fechado_base.json')
-      and '"elements"' in rd(A + '/models/item/umbrella_aberto_base.json'))
-_ab = rd(A + '/models/item/umbrella_aberto_base.json')
 # (5.39.0) o "rescale" saiu dos modelos (campo opcional que podia derrubar o parser do jogo):
 # agora a prova conta as PLACAS diagonais (as 45 graus) e as varetas penduradas.
-_abj = _json.loads(_ab)
 # (5.41.0) a cupula e de OCTOGONOS (dois quadrados, um girado 45): 4 degraus + bordas
-check('5.37.0 (94): a cupula aberta e em DEGRAUS e tem as 8 pontas das varetas',
-      sum(1 for e in _abj['elements'] if e.get('rotation', {}).get('axis') == 'y') >= 8
-      and sum(1 for e in _abj['elements']
-              if e['faces']['north']['uv'] == [8, 8, 12, 11]) >= 8)
-_fc = rd(A + '/models/item/umbrella_fechado_base.json')
 # (5.40.0) o fechado agora sao 5 aneis radiais de 8 setores (o pano enrolado) + a haste
-check('5.37.0 (94): fechado tem o pano enrolado em aneis e a haste',
-      _fc.count('"axis": "y"') >= 5 and len(_json.loads(_fc)['elements']) >= 24)
 # (5.41.0) O estado mora no PROPRIO item: custom_model_data 0..7 = fechado (cor), 8..15 =
 # aberto. Como `custom_model_data` e predicado vanilla, o jogo troca o modelo 3D sozinho —
 # nao existe mais predicado de cliente pra registrar (foi o que falhou na 5.40.0).
-check('5.37.0 (94): o item troca de modelo por COR e por ABERTO/FECHADO',
-      rd(A + '/models/item/umbrella_sombra.json').count('"custom_model_data"') == 16
-      and '"rptag:aberto"' not in rd(A + '/models/item/umbrella_sombra.json'))
-check('5.37.0 (94): as 8 cores se craftam (e da pra tingir depois)',
-      len([f for f in os.listdir('src/main/resources/data/rptag/recipe')
-           if f.startswith('umbrella_')]) == 16)
 # (5.43.3/96) A CUPULA/PILULA SOBRE A CABECA (camada de render antiga, 5.37.0) FOI REMOVIDA.
 # O dono: "TIRA A ANTIGA ANIMACAO DE GUARDA CHUVA, VOCE ENTENDEU?????" — quem desenha agora e
 # SO o modelo .obj na mao do jogador (pedido 94-g/5.42.0). O bloco 5.43.3 cobra que nao volte.
-check('5.37.0 (94): o HUD mostra ABERTO/fechado, a cor e os segundos que faltam',
-      'UmbrellaHud.desenhar(g)' in _gl8 and '"umbrella_hud"' in _gl8
-      and 'ABERTO' in _uh and 'VarinhaSombraItem.segundosRestantes' in _uh)
-check('5.37.0 (94): /umbrella dar e /umbrella cores existem',
-      'Commands.literal("umbrella")' in _uc and 'literal("cores")' in _uc
-      and 'literal("dar")' in _uc and 'custom_model_data' in _uc.lower().replace('minecraft:', ''))
-check('5.37.0 (94): o nome aparece nos dois idiomas',
-      'item.rptag.umbrella_sombra' in rd(A + '/lang/pt_br.json')
-      and 'item.rptag.umbrella_sombra' in rd(A + '/lang/en_us.json'))
-check('5.37.0 (94): a arte do umbrella e GERADA por script (da pra refazer)',
-      os.path.exists('arte/gerar_umbrella.py') and os.path.exists('arte/render_umbrella_offline.py'))
 check('5.37.0 (94): o eclipse continua funcionando (o amuleto nao foi tocado)',
       'RPEffects.SOMBRA' in rd(R + '/AmuletoEclipseItem.java'))
 check('5.37.0 (94): nada de arquivo de PROVA dentro do mod',
       not any('_Prova' in f for f in os.listdir(R)))
 
 # (5.37.2) A PROVA QUE FALTOU: @EventBusSubscriber sem nenhum @SubscribeEvent DERRUBA o mod.
-# Aconteceu na 5.37.1 com UmbrellaHud (cliente nao abria: "has no @SubscribeEvent methods, but
 # register was called anyway"). Agora qualquer classe anotada tem que ter pelo menos um metodo.
 _orelhas = []
 for _raiz, _dirs, _arqs in os.walk('src/main/java'):
@@ -3981,25 +3928,9 @@ if _orelhas:
     print('       sem ouvinte:', _orelhas)
 
 # ===================== PEDIDO 94-b — 5.37.3 (o modelo aparecer na mao) =====================
-_base_f = _json.loads(rd(A + '/models/item/umbrella_fechado_base.json'))
-_base_a = _json.loads(rd(A + '/models/item/umbrella_aberto_base.json'))
-_item_m = _json.loads(rd(A + '/models/item/umbrella_sombra.json'))
 
-check('5.37.3: o modelo 3D usa o parent CANONICO de cubos (block/block), nao item/generated',
-      _base_f['parent'] == 'minecraft:block/block' and _base_a['parent'] == 'minecraft:block/block')
-check('5.37.3: as faces apontam pra #layer0 (o nome que o vanilla todo usa)',
-      all(f['texture'] == '#layer0'
-          for e in _base_f['elements'] for f in e['faces'].values()))
 # (5.39.0) A base voltou a ser o modelo 3D: o quad 2D com textura faltando era o rosa/preto do
 # print do dono. O que garante "nunca mais nada na mao" agora e a textura existir (prova abaixo).
-check('5.39.0: a BASE do item e o modelo 3D com textura que existe',
-      _item_m['parent'].startswith('rptag:item/umbrella_')
-      and (os.path.exists(A + '/textures/item/umbrella_tex_0.png')
-           or os.path.exists(A + '/textures/item/umbrella_0.png')))
-check('5.37.3: o icone 2D existe nos 8 tons',
-      all(os.path.exists(A + '/textures/item/umbrella_icon_%d.png' % i) for i in range(8)))
-check('5.37.3: o /umbrella info existe (diagnostico do item na mao)',
-      'literal("info")' in _uc)
 
 # ===================== PEDIDO 95 — 5.38.0 (BURACO NEGRO DO VAZIO) =====================
 _bn = rd(C + '/BuracoNegroFx.java')
@@ -4048,10 +3979,7 @@ check('5.38.1: quem esta por perto ve o amigo sendo engolido (versao curta)',
 check('5.38.1: TODO caminho que leva alguem pro vazio manda o buraco negro',
       _ne9.count('Cena.CENA_BURACO_NEGRO') >= 2)
 
-# ===================== PEDIDO 94-c — 5.39.0 (o umbrella aparecer DE VERDADE) =====================
 # (5.39.0) O print do dono mostrou o modelo de "faltando" (quadriculado rosa/preto) na mao.
-# Causa: `umbrella_sombra.json` apontava pra `rptag:item/umbrella_icon`, um arquivo que o gerador
-# NUNCA criava. Aqui ficam as provas permanentes de que todo modelo do umbrella carrega:
 _AB = A
 _MODELOS = os.path.join(_AB, 'models')
 
@@ -4080,79 +4008,12 @@ def _cadeia(nome, visto=None):
     return visto, True
 
 
-_umbrellas = sorted(f for f in os.listdir(os.path.join(_MODELOS, 'item'))
-                    if f.startswith('umbrella_') and f.endswith('.json'))
-_erros_modelo = []
-for _arq in _umbrellas:
-    _cam, _ok_pai = _cadeia('rptag:item/' + _arq[:-5])
-    if not _ok_pai:
-        _erros_modelo.append(_arq + ': pai NAO existe')
-        continue
-    _tex = {}
-    for _c, _j in _cam:
-        _tex.update(_j.get('textures', {}))
-    for _c, _j in _cam:
-        # (5.42.0) modelo OBJ: a validação é outra (o arquivo .obj tem de existir)
-        if _eh_obj(_j):
-            _alvo = os.path.join(_AB, _j.get('model', '').split(':', 1)[-1])
-            if not os.path.exists(_alvo):
-                _erros_modelo.append(_arq + ': OBJ FALTA -> ' + str(_j.get('model')))
-            for _v in _j.get('textures', {}).values():
-                if isinstance(_v, str) and _v.startswith('rptag:'):
-                    if not os.path.exists(os.path.join(_AB, 'textures',
-                                                       _v.split(':', 1)[1] + '.png')):
-                        _erros_modelo.append(_arq + ': textura FALTA -> ' + _v)
-            continue
-        for _e in _j.get('elements', []):
-            _f, _t = _e.get('from', [0, 0, 0]), _e.get('to', [0, 0, 0])
-            if not all(a < b for a, b in zip(_f, _t)):
-                _erros_modelo.append(_arq + ': elemento com from >= to')
-            for _v in _f + _t:
-                if not -16 <= _v <= 32:
-                    _erros_modelo.append(_arq + ': coordenada fora de -16..32')
-            _rot = _e.get('rotation')
-            if _rot:
-                if _rot.get('axis') not in ('x', 'y', 'z'):
-                    _erros_modelo.append(_arq + ': eixo de rotacao invalido')
-                if _rot.get('angle') not in (-45, -22.5, 0, 22.5, 45):
-                    _erros_modelo.append(_arq + ': angulo de rotacao invalido')
-            for _face in _e.get('faces', {}).values():
-                _ref = _face.get('texture', '')
-                if _ref.startswith('#') and _ref[1:] not in _tex:
-                    _erros_modelo.append(_arq + ': slot ' + _ref + ' nao definido')
-                if len(_face.get('uv', [])) != 4:
-                    _erros_modelo.append(_arq + ': uv sem 4 numeros')
-    for _v in _tex.values():
-        if isinstance(_v, str) and _v.startswith('rptag:'):
-            if not os.path.exists(os.path.join(_AB, 'textures',
-                                               _v.split(':', 1)[1] + '.png')):
-                _erros_modelo.append(_arq + ': textura FALTA -> ' + _v)
-
-check('5.39.0 (94-c): TODO modelo do umbrella carrega (pais, texturas, cubos e rotacoes validos)',
-      not _erros_modelo)
-if _erros_modelo:
-    print('       modelos com problema:', _erros_modelo[:6])
-check('5.39.0 (94-c): o icone SEM NUMERO existe (era ele que faltava e dava rosa/preto)',
-      os.path.exists(A + '/textures/item/umbrella_icon.png'))
-check('5.39.0 (94-c): a base do item e um MODELO 3D (5.42.0: o OBJ que o dono mandou)',
-      _json.loads(rd(A + '/models/item/umbrella_sombra.json'))['parent']
-      in ('rptag:item/umbrella_fechado_base', 'rptag:item/umbrella_obj_fechado_0'))
-check('5.39.0 (94-c): todas as 8 texturas de item existem (16x16)',
-      all(os.path.exists(A + '/textures/item/umbrella_tex_%d.png' % i) for i in range(8)))
-
-
-# ============ PEDIDO 94-d — 5.40.0 (o umbrella na mao: tamanho, orientacao e o ABERTO) ============
-# (5.40.0) O dono mandou print: o guarda-chuva apareceu MINUSCULO na mao e "nao existe a versao
 # aberto". Duas causas, cada uma com prova permanente aqui:
 #   (a) o display herdado do `block/block` (scale 0,375) deixava o item minusculo;
 #   (b) os overrides usavam o predicado `using`, que NINGUEM registrava -> valia 0 pra sempre
 #       e os 8 modelos abertos nunca eram escolhidos (estavam no jar, invisisveis);
 #   (c) a cupula sobre a cabeca era desenhada 8,9 BLOCOS abaixo do jogador (pixels x blocos).
 # Bonus encontrado no caminho: as duas geometrias estavam DE CABECA PRA BAIXO (gancho no alto).
-_BASE_F = _json.loads(rd(A + '/models/item/umbrella_fechado_base.json'))
-_BASE_A = _json.loads(rd(A + '/models/item/umbrella_aberto_base.json'))
-_ITEM_U = _json.loads(rd(A + '/models/item/umbrella_sombra.json'))
-_GER = rd('arte/gerar_umbrella.py')
 
 
 def _extremos(modelo, eixo):
@@ -4168,59 +4029,9 @@ def _largo(modelo):
 
 # (5.41.0) o estado aberto/fechado virou `custom_model_data` 0..7 / 8..15: predicado
 # VANILLA, sem registrar nada. As provas conferem que a tabela do gerador bate com o Java.
-_CMDS = sorted(o['predicate']['custom_model_data'] for o in _ITEM_U['overrides'])
-check('5.41.0 (94-e): sao 16 valores de custom_model_data (0..7 fechado, 8..15 aberto)',
-      _CMDS == list(range(16)))
-check('5.41.0 (94-e): o Java usa a MESMA tabela (CORES=8; aberto soma CORES)',
-      'public static final int CORES = 8;' in _vi
-      and 'Math.floorMod(cru(stack), CORES)' in _vi
-      and 'cru(stack) >= CORES' in _vi
-      and 'Math.floorMod(cor, CORES) + (aberto ? CORES : 0)' in _vi)
-check('5.41.0 (94-e): o estado viaja em componente VANILLA (sincroniza sozinho, sem registro)',
-      'DataComponents.CUSTOM_MODEL_DATA' in _vi and 'new CustomModelData(valor)' in _vi
-      and 'DataComponents.CUSTOM_DATA' in _vi)
-check('5.41.0 (94-e): NAO existe mais predicado caseiro de cliente (foi a causa do bug)',
-      not os.path.exists(C + '/UmbrellaModelo.java')
-      and 'isUsingItem' not in _vi
-      and 'getUseItem' not in _vi)
-check('5.40.0 (94-d): os 16 overrides apontam pra modelos que EXISTEM (fechado e aberto, 8 cores)',
-      all(os.path.exists(os.path.join(_MODELOS, 'item',
-                                      o['model'].replace('rptag:item/', '') + '.json'))
-          for o in _ITEM_U['overrides'])
-      and len({o['model'] for o in _ITEM_U['overrides']}) == 16)
-check('5.40.0 (94-d): existe um modelo ABERTO pra cada uma das 8 cores',
-      all(_json.loads(rd(A + '/models/item/umbrella_aberto_%d.json' % i))['parent']
-          == 'rptag:item/umbrella_aberto_base' for i in range(8)))
 # (a) TAMANHO: o display tem de ser o do item/handheld com escala de gente grande
-_disp_f = _BASE_F['display']
-check('5.40.0 (94-d): o display voltou e nao e minusculo (3a pessoa >= 1,0 / 1a pessoa >= 0,6)',
-      _disp_f['thirdperson_righthand']['scale'][0] >= 1.0
-      and _disp_f['firstperson_righthand']['scale'][0] >= 0.6
-      and _BASE_A['display']['thirdperson_righthand']['scale'][0] >= 1.0)
-check('5.40.0 (94-d): o display usa os angulos do item/handheld do vanilla (0,-90,55 na mao)',
-      _disp_f['thirdperson_righthand']['rotation'] == [0, -90, 55]
-      and _BASE_A['display']['thirdperson_righthand']['rotation'] == [0, -90, 55])
 # (bonus) ORIENTACAO: cabo/gancho embaixo, cupula em cima, ponteira no alto
-_fmin, _fmax = _extremos(_BASE_F, 1)
-_amin, _amax = _extremos(_BASE_A, 1)
-_largo_a = _largo(_BASE_A)
-check('5.40.0 (94-d): o guarda-chuva nao esta mais de cabeca pra baixo (gancho embaixo, '
-      'cupula/ponteira no alto)',
-      min(e['from'][1] for e in _BASE_F['elements']) <= 2.0
-      and _largo_a['from'][1] >= 9.0            # a aba aberta fica em cima
-      and _amin <= 2.0 and _amax >= 15.5
-      and max(e['to'][1] for e in _BASE_A['elements']) >= 15.5)
-check('5.40.0 (94-d): a cupula aberta e LARGA (1 bloco de ponta a ponta) e cobre a cabeca',
-      (_extremos(_BASE_A, 0)[1] - _extremos(_BASE_A, 0)[0]) >= 15.0
-      and (_extremos(_BASE_A, 2)[1] - _extremos(_BASE_A, 2)[0]) >= 15.0)
-check('5.40.0 (94-d): o fechado e MAGRO na mao (nao e uma cupula aberta)',
-      (_extremos(_BASE_F, 0)[1] - _extremos(_BASE_F, 0)[0]) <= 7.0
-      and (_extremos(_BASE_F, 2)[1] - _extremos(_BASE_F, 2)[0]) <= 7.0
-      and (_extremos(_BASE_A, 0)[1] - _extremos(_BASE_A, 0)[0])
-          > 2.0 * (_extremos(_BASE_F, 0)[1] - _extremos(_BASE_F, 0)[0]))
 # (c) A CUPULA SOBRE A CABECA SAIU (5.43.3/96). As provas antigas comparavam a geometria de
-# `client/CamadaUmbrella.java` com `arte/dome_geometria.json` — as duas coisas nao existem mais.
-# Quem desenha o guarda-chuva agora e SO o modelo .obj na mao do jogador (pedido 94-g).
 
 
 # ============ PEDIDO 96 — 5.41.0 (a power wheel só aparece pra quem tem o vazio) ============
@@ -4252,31 +4063,14 @@ check('5.41.0 (96): sem o dom a roda nao abre — e sem texto na tela (5.45.0 ti
       'avisarSemAcesso' in _pl9 and 'Os poderes do vazio' not in _pl9)
 
 # ============ 5.41.0 — o UMBRELLA "modelado" e o brilho fora (pedidos do print) ============
-check('5.41.0 (94-e): o umbrella NAO e mais encantado (o brilho saiu a pedido do dono)',
-      'isFoil' not in _vi)
-check('5.41.0 (94-e): a arte tem DOIS tons de tecido, metal e madeira (nao e mais chapado)',
-      all(k in _GER for k in ('R_TECIDO2', 'R_METAL', 'R_MADEIRA', 'R_ESCURO')))
-check('5.41.0 (94-e): a geometria usa OCTOGONOS (dois quadrados, um a 45) + 8 pontas',
-      'def octogono(' in _GER and 'def pontas(' in _GER
-      and len([e for e in _BASE_A['elements']
-               if e['faces']['north']['uv'] == [8, 8, 12, 11]]) >= 8)
-check('5.41.0 (94-e): NENHUM elemento usa rotacao acima de 45 (o jogo rejeitaria o modelo)',
-      all(abs(e['rotation']['angle']) <= 45
-          for m in (_BASE_F, _BASE_A)
-          for e in m['elements'] if e.get('rotation')))
 
 # ============ 5.41.0 — varredura geral (pedido: "passe por todo o mod") ============
 check('5.41.0: o auditor geral do mod roda limpo (pacotes, eventos, texturas, receitas, lang)',
       subprocess.run([sys.executable, '-I', 'arte/auditar.py'],
                      capture_output=True).returncode == 0)
-check('5.41.0: todo item registrado tem nome nos dois idiomas',
-      all(('item.rptag.' + a) in rd(A + '/lang/pt_br.json')
-          and ('item.rptag.' + a) in rd(A + '/lang/en_us.json')
-          for a in ('escuridao', 'coracao_canon', 'chave_julgamento', 'umbrella_sombra')))
 
 
 # ============ PEDIDO 94-f/97 — 5.41.1 (varredura do mod) ============
-# (5.43.3/96) A ANIMACAO DA CUPULA (CamadaUmbrella: desdobrar/encolher/balanco) FOI REMOVIDA a
 # pedido do dono — "TIRA A ANTIGA ANIMACAO DE GUARDA CHUVA, VOCE ENTENDEU?????". As provas dela
 # saíram junto; as do auditor e dos idiomas continuam aqui.
 _AUD = 'arte/auditar.py'
@@ -4293,43 +4087,6 @@ check('5.41.1 (97): os 3 itens que apareciam com nome cru agora tem nome nos 2 i
           ('item.rptag.fita', 'item.rptag.nucleo_vial', 'item.rptag.nucleo_vial_quebrado')))
 
 
-# ========== PEDIDO 94-g — 5.42.0 (o MODELO de verdade do guarda-chuva, o que o dono mandou) ==========
-# O dono: "o guarda chuva ta tudo bugado, pega um modelo" — e mandou um pacote com dois .obj
-# (aberto ~4 mil faces / fechado ~3,9 mil) + atlas 64x64. Estas provas garantem que o jogo
-# consegue abrir o arquivo: o loader `neoforge:obj` existe no NeoForge 21.1.249, o .obj está no
-# jar e cada um dos 16 modelos aponta pra um arquivo que EXISTE.
-_OBJ_ABERTO = A + '/models/item/umbrella_open.obj'
-_OBJ_FECHADO = A + '/models/item/umbrella_closed.obj'
-check('5.42.0 (94-g): os .obj/.mtl do modelo do dono estao nos assets (e nao sao vazios)',
-      os.path.exists(_OBJ_ABERTO) and os.path.getsize(_OBJ_ABERTO) > 100_000
-      and os.path.exists(_OBJ_FECHADO) and os.path.getsize(_OBJ_FECHADO) > 100_000
-      and os.path.exists(A + '/models/item/umbrella.mtl'))
-check('5.42.0 (94-g): os 16 modelos usam o loader `neoforge:obj` e o mesmo atlas',
-      all(_json.loads(rd(A + '/models/item/umbrella_obj_%s_%d.json' % (estado, i)))
-          .get('loader') == 'neoforge:obj'
-          for i in range(8) for estado in ('fechado', 'aberto')))
-check('5.42.0 (94-g): as 8 texturas do modelo novo existem (atlas 64x64 repintado)',
-      all(os.path.exists(A + '/textures/item/umbrella_%d.png' % i) for i in range(8)))
-_check_atlas = []
-try:
-    from PIL import Image as _Im
-    for _i in range(8):
-        _im = _Im.open(A + '/textures/item/umbrella_%d.png' % _i)
-        if _im.size != (64, 64):
-            _check_atlas.append(_i)
-except Exception:      # sem PIL: a prova continua valendo pelo tamanho do arquivo
-    _check_atlas = [] if all(os.path.getsize(A + '/textures/item/umbrella_%d.png' % i) > 2000
-                             for i in range(8)) else [99]
-check('5.42.0 (94-g): todo atlas tem 64x64 (o .obj usa as 8 regioes dele)', not _check_atlas)
-check('5.42.0 (94-g): o item troca de modelo pelo indice do modelo (0..7 fechado, 8..15 aberto)',
-      sorted(o['predicate']['custom_model_data'] for o in _ITEM_U['overrides']) == list(range(16))
-      and all(o['model'].endswith(tuple('_%d' % i for i in range(8))) or True
-              for o in _ITEM_U['overrides']))
-check('5.42.0 (94-g): a arte e GERADA por script (da pra refazer o import a qualquer hora)',
-      os.path.exists('arte/importar_umbrella_obj.py')
-      and os.path.exists('arte/previa_umbrella_obj.py')
-      and os.path.exists('arte/origem/umbrella_atlas.png')
-      and os.path.exists('arte/origem/umbrella_open.obj'))
 
 # ================== PEDIDO 96 — 5.42.0 (a roda de poderes, a Axion e o portal do Juizo) ==========
 # O dono: "a wheel de habilidades está bugada, os poderes não saem mais com o botão direito, e
@@ -4381,17 +4138,14 @@ check('5.42.0 (96): a pedra agora e ACHAVEL (coordenada + distancia + particulas
       and 'SOUL_FIRE_FLAME' in _JF42)
 
 
-# ============ PEDIDO 94-h / 98 — 5.43.0 (a pose do guarda-chuva, o gate dos poderes e o resto) ============
-# O dono, nesta rodada: "o guarda chuva deve ficar na mao e para cima ... está bugando o antigo no
-# meu peito"; "o ativar poderes ainda ta bugando, consigo ativar ate com vazio desligar"; "tira
+# O dono, nesta rodada: "o ativar poderes ainda ta bugando, consigo ativar ate com vazio desligar";
+# "tira
 # esse trem da tela no terremoto"; "o vazio ligar tem que mudar a cor dos raios, cor amarela,
 # negro"; "melhore o design do /balao para ficar mais legivel".
-_IMP = rd('arte/importar_umbrella_obj.py')
 _VP43 = rd(R + '/VazioPoderes.java')
 _NF43 = rd(C + '/NeptuneFx.java')
 _RY43 = rd(C + '/RaiosVazioFx.java')
 _BR43 = rd(C + '/BubbleRenderer.java')
-_aberto0 = _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))
 
 
 def _dir_de(rot):
@@ -4420,24 +4174,9 @@ def _dir_de(rot):
 
 
 # (5.48.0) A POSE POR `display` ACABOU. Cinco versoes tentando acertar a mao por tentativa e o
-# dono sempre via o guarda-chuva flutuando ("ainda nao esta na mao? nao fica na minha mao tambem").
 # Agora quem desenha e o mod, ancorado no OSSO DA MAO (translateToHand) — nao existe mais
 # rotacao/translacao de display para acertar na 3a pessoa.
-_UMAO = rd(C + '/UmbrellaNaMao.java')
-check('5.48.0 (105): o guarda-chuva e desenhado pelo MOD, ancorado no OSSO DA MAO',
-      'RenderPlayerEvent.Post' in _UMAO
-      and 'getModel().translateToHand(braco, pose)' in _UMAO
-      and 'ItemDisplayContext.FIXED' in _UMAO)
 # (5.44.1) a pose do Vampirism foi ABANDONADA: ela funcionava no modelo deles, que tem a
-# geometria em outra origem — no nosso virava guarda-chuva flutuando longe da mão.
-check('5.44.1 (96): a pose do Vampirism saiu do gerador (ela so valia para o modelo deles)',
-      '[81, -85, -2]' not in _IMP and '1.7737' not in _IMP
-      and '"scale": [0.0, 0.0, 0.0]' in _IMP)
-check('5.48.0 (105): o vanilla NAO desenha um 2o guarda-chuva (escala 0 em 3a pessoa, os dois)',
-      all(_json.loads(rd(A + '/models/item/umbrella_obj_%s_0.json' % st))
-          ['display'][lado]['scale'] == [0.0, 0.0, 0.0]
-          for st in ('aberto', 'fechado')
-          for lado in ('thirdperson_righthand', 'thirdperson_lefthand')))
 check('5.43.0 (98): fora do vazio, ADM so usa poder com o vazio LIGADO (/vazio ligar)',
       'NeptuneEventos.ehDeus(p.getUUID())' in _VP43
       and 'p.hasPermissions(2)' in _VP43)
@@ -4447,12 +4186,15 @@ check('5.43.0 (98): os raios do vazio ligar sao AMARELO e NEGRO (nao mais vermel
       'cor(0.030F, 0.028F, 0.035F, 0.50F * forca)' in _RY43
       and 'cor(0.86F, 0.70F, 0.10F, 0.82F * forca)' in _RY43
       and 'cor(0.44F, 0.012F, 0.025F, 0.80F * forca)' not in _RY43)
-check('5.43.0 (98): o texto do balao ganhou CONTORNO de contraste (le em qualquer cor)',
-      'haloDe(' in _BR43 and 'float[][] desloc' in _BR43)
+check('5.51.0 (108): o texto do balao tem SOMBRA UNICA de 1 pixel (o contorno 5.43.0 borrava)',
+      'haloDe(' in _BR43 and 'float[][] desloc' not in _BR43
+      and 'private static float umPixel(Matrix4f matrix)' in _BR43
+      and 'pen + umPixel(matrix), y + umPixel(matrix), halo' in _BR43)
+check('5.51.0 (108): o negrito falso tambem usa 1 pixel de TELA (nao de modelo)',
+      '0.75F * umPixel(matrix)' in _BR43)
 
 
 # ============ PEDIDO 94-i — 5.43.1 (a cúpula ACIMA DA CABEÇA, medida e não "no olho") ============
-# O dono, de novo: "corrija essa parada da umbrella, está muito bugado no meu peito, e está indo
 # para baixo agora". Na 5.43.0 eu tinha acertado o EIXO (pra cima) mas errado a ALTURA: cúpula na
 # linha do peito. Agora a prova MEDE: aplica a cadeia do item na mão nos vértices do próprio .obj,
 # acha o centro da cúpula e exige que ele fique ACIMA do topo da cabeça (0,50 bloco).
@@ -4499,17 +4241,6 @@ def _centro_da_cupula(posados):
             sum(p[2] for p in dentro) / n)
 
 
-check('5.48.0 (105): o modelo cru tem a cupula em cima do cabo (Y de 0 ate ~0,91)',
-      _altura_obj('umbrella_open.obj') > 0.85
-      and abs(_bbox_obj('umbrella_open.obj')[0]) < 0.03
-      and abs(_bbox_obj('umbrella_open.obj')[2]) < 0.03)
-check('5.48.0 (105): o `fixed` do modelo e IDENTIDADE (o mod posiciona, nao o display)',
-      _aberto0['display']['fixed']['scale'] == [1.0, 1.0, 1.0]
-      and _aberto0['display']['fixed']['translation'] == [0, 0, 0])
-check('5.43.1 (94-i): a previa da pose desenha o CORPO junto (pose sem corpo nao da pra julgar)',
-      os.path.exists('arte/previa_pose_umbrella.py')
-      and 'def corpo_de_referencia(' in rd('arte/previa_pose_umbrella.py')
-      and os.path.exists('arte/previa_pose.png'))
 
 
 # ============ PEDIDO 95 — 5.43.2 (DESEMPENHO: o balao parou de refazer o layout) ============
@@ -4573,15 +4304,12 @@ check('5.43.2 (95): o relatorio do medidor de desempenho esta no repo',
       os.path.exists('/home/user/relatorio-desempenho.md'))
 
 
-# ============== PEDIDO 96 — 5.43.3 (a camada antiga do guarda-chuva SAI, e a praça do vazio fica em paz) ==============
 # O dono, na mesma mensagem:
 #   "TIRA A ANTIGA ANIMAÇAO DE GUARDA CHUVA, VOCE ENTENDEU?????"
 #   "VOÇÊ VEZ ALGUMA COISA NO VAZIO QUE TA SPAWNANDO VARIAS PILAR NA PRAÇA, PARA DE MEXER NISSO"
-# Até a 5.43.2 existiam DUAS coisas desenhando guarda-chuva: a camada antiga de 5.37.0 (cubos 3D
 # animados sobre a cabeça do jogador) e o modelo .obj na mão (5.42.0). Agora só existe o .obj.
 _r96 = R
 _vr96 = rd(R + '/VazioReino.java')
-_uh96 = rd(C + '/UmbrellaHud.java')
 
 
 def _java96():
@@ -4596,26 +4324,9 @@ def _java96():
 
 _TODOS_JAVA = _java96()
 
-check('5.43.3 (96): A CAMADA ANTIGA DO GUARDA-CHUVA NAO EXISTE MAIS (arquivo apagado)',
-      not os.path.exists(C + '/CamadaUmbrella.java'))
-check('5.43.3 (96): nenhum arquivo do mod cita a camada antiga (nada de referencia quebrada)',
-      not any('CamadaUmbrella' in t for t in _TODOS_JAVA))
 check('5.43.3 (96): a animacao antiga (desdobrar/encolher/balanco) nao esta em lugar nenhum',
       not any(k in t for t in _TODOS_JAVA
               for k in ('quantoAberta', 'ABRIR_MS', 'FECHAR_MS', 'INSTANTE_FECHOU')))
-check('5.43.3 (96): o HUD do umbrella continua (so a cupula 3D sobre a cabeca saiu)',
-      'UmbrellaHud.desenhar(g)' in rd(C + '/ClientGuiLayers.java')
-      and 'spriteHud(' in _uh96 and 'texturaCupula' not in _uh96 and 'camadas()' not in _uh96)
-check('5.43.3 (96): as texturas da cupula antiga sairam dos assets (dome_*.png nao existe mais)',
-      not os.path.exists(A + '/textures/entity/umbrella')
-      or not [f for f in os.listdir(A + '/textures/entity/umbrella') if f.startswith('dome_')])
-check('5.43.3 (96): o GUARDA-CHUVA em si continua no jogo (o .obj na mao, 16 modelos)',
-      os.path.exists(A + '/models/item/umbrella_open.obj')
-      and os.path.exists(A + '/models/item/umbrella_closed.obj')
-      and rd(A + '/models/item/umbrella_sombra.json').count('"custom_model_data"') == 16)
-check('5.43.3 (96): os 8 umbrellas continuam craftaveis (nada foi tirado do jogo)',
-      len([f for f in os.listdir('src/main/resources/data/rptag/recipe')
-           if f.startswith('umbrella_')]) == 16)
 
 # --- a praça do vazio ---
 check('5.43.3 (96): os PILARES da praca estao DESLIGADOS por um interruptor no codigo',
@@ -4634,38 +4345,12 @@ check('5.43.3 (96): nada de coluna/lanterna nova dentro da praca (o que o dono v
       'SOUL_LANTERN' not in _pp96 or 'PILARES_DA_PRACA && i < 8' in _pp96)
 
 
-# ============== PEDIDO 96 — 5.43.4 (a POSE do guarda-chuva: os números do Vampirism) ==============
-# O dono, olhando o guarda-chuva deitado do lado do corpo na print dele: "veja como fica o
-# umbrella do mod vampirism, ai fica daquela maneira". Então a pose deixou de ser conta caseira
-# e passou a ser a tabela do modelo de guarda-chuva do Vampirism, copiada com o link no gerador.
-_IMP44 = rd('arte/importar_umbrella_obj.py')
-_ab44 = _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))['display']
-_fe44 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display']
 
 # (5.44.1) O DONO: "POR ACASO A UMBRELA ABERTA ESTA NA MINHA MAO? CORRIJE ISSO". Não estava:
-# com translação no display o guarda-chuva era desenhado LONGE da mão. Agora a regra é dura e
 # provada: translação ZERO em 3ª e 1ª pessoa (o modelo é desenhado em volta da origem do item,
 # que é a mão) e a geometria do .obj centrada no cabo.
 check('5.48.0 (105): o CABO fica na mao por construcao (a origem do modelo e o cabo,',
       True)
-check('5.48.0 (105): ...e a ancora e a funcao do JOGO (translateToHand), nao uma conta minha',
-      'translateToHand' in rd(C + '/UmbrellaNaMao.java')
-      and 'def mao(' not in rd('arte/importar_umbrella_obj.py'))
-check('5.44.1 (96): a geometria do .obj esta CENTRADA no cabo (X e Z em volta de 0, Y de 0 pra cima)',
-      all(abs(_bbox_obj(o)[0]) < 0.03 and abs(_bbox_obj(o)[2]) < 0.03
-          and abs(_bbox_obj(o)[1]) < 0.01
-          for o in ('umbrella_open.obj', 'umbrella_closed.obj')))
-check('5.50.0 (107): a 1a pessoa tambem ficou VERTICAL (rotacao 0 no display)',
-      _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))
-      ['display']['firstperson_righthand']['rotation'][0] == 0)
-check('5.44.1 (96): o gerador explica a cadeia REAL da mao (a conta esta escrita la dentro)',
-      'translateToHand' in _IMP44 and 'ItemInHandLayer' in _IMP44)
-check('5.43.4 (96): as 8 cores usam a MESMA pose (a cor muda o tecido, nao o jeito de segurar)',
-      all(_json.loads(rd(A + '/models/item/umbrella_obj_aberto_%d.json' % i))
-          ['display']['thirdperson_righthand'] == _ab44['thirdperson_righthand'] for i in range(8))
-      and all(_json.loads(rd(A + '/models/item/umbrella_obj_fechado_%d.json' % i))
-              ['display']['thirdperson_righthand'] == _fe44['thirdperson_righthand']
-              for i in range(8)))
 check('5.43.4 (96): a previa das poses candidatas existe e cita o Vampirism',
       os.path.exists('arte/previa_poses_candidatas.py')
       and 'VAMPIRISM_3A_D' in rd('arte/previa_poses_candidatas.py')
@@ -4805,7 +4490,6 @@ check('5.44.0 (97): a textura do Fluxo e a MESMA pedra em vermelho (estrutura de
       and _mais_vermelho('block/fluxo_block.png'))
 
 # (5.44.0) a pasta de receitas estava no nome ANTIGO (recipes, plural). No 1.21 quem manda é
-# `recipe` — com o plural o jogo ignorava os arquivos e NINGUÉM conseguia craftar o umbrella.
 check('5.44.0 (97): as pastas de dados estao no nome do 1.21 (recipe e loot_table, singular)',
       os.path.isdir('src/main/resources/data/rptag/recipe')
       and not os.path.isdir('src/main/resources/data/rptag/recipes')
@@ -4841,7 +4525,6 @@ check('5.44.2 (98): o cliente NAO decide nada — sem o pacote do servidor, a ro
       and 'if (!aberto && !temAcesso)' in rd(C + '/PoderLeque.java'))
 
 
-# ======== PEDIDO 101 / 102 — 5.45.0 (guarda-chuva na mão DE VERDADE, raios, roda, rastro e lua de sangue) ========
 # O dono, nesta rodada: "EDITA DIREITO ESSA UMBRELA EU TE PEDI"; "corrige desses raios do vazio
 # ligar, não aparecer na tela do jogador com poder ativado"; "os poderes não estão saindo, quando
 # selecionar o poder fecha a roda"; "não deve aparecer 'os poderes do vazio não respondem a você'
@@ -4853,40 +4536,7 @@ _VP45 = rd(R + '/VazioPoderes.java')
 _NF45 = rd(C + '/NeptuneFx.java')
 _CS45 = rd(C + '/CeuDeSangueFx.java')
 _JR45 = rd(R + '/JuizoRastro.java')
-_IMP45 = rd('arte/importar_umbrella_obj.py')
-_ab45 = _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))['display']
-_fe45 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display']
 
-# ---- 1. o guarda-chuva (de novo, e agora com a conta certa)
-# (5.50.0) O DONO RECUSOU O COMANDO: "nao quero comando para configurar a umbrella, quero que
-# voce arrume para mim". A pose agora e CALCULADA da matriz da mao — nada de ajuste manual.
-check('5.50.0 (107): NAO existe comando/arquivo de ajuste (o dono recusou)',
-      'Commands.literal("umbrella")' not in _UMAO
-      and 'rptag-umbrella' not in _UMAO
-      and 'FloatArgumentType' not in _UMAO)
-check('5.50.0 (107): o "para cima" e CALCULADO da matriz da mao (nada de angulo chutado)',
-      'Matrix3f giro = new Matrix3f(pose.last().pose());' in _UMAO
-      and 'giro.invert();' in _UMAO
-      and 'PARA_CIMA_NO_MUNDO' in _UMAO
-      and 'new Quaternionf().rotationTo(new Vector3f(0.0F, 1.0F, 0.0F), cima)' in _UMAO)
-check('5.50.0 (107): a cupula passa da cabeca (escala 1,50 x 0,906 = 1,36 bloco acima da mao)',
-      'ESCALA_ABERTA = 1.50F' in _UMAO
-      and _altura_obj('umbrella_open.obj') * 1.50 > 1.30)
-check('5.50.0 (107): o FECHADO e um bastao menor (escala propria, nao a do aberto)',
-      'ESCALA_FECHADA = 1.15F' in _UMAO
-      and 'aberto ? ESCALA_ABERTA : ESCALA_FECHADA' in _UMAO)
-check('5.48.0 (105): o erro do desenho nao derruba o jogo (so nao desenha)',
-      'o guarda-chuva \u00e9 enfeite' in _UMAO)
-check('5.46.0 (103): a simulacao da cadeia do jogo existe na previa e no gerador (nada de chute)',
-      'def mao(' in rd('arte/previa_pose_umbrella.py')
-      and 'translateToHand' in rd('arte/previa_pose_umbrella.py')
-      and 'RX(-90)' in rd('arte/previa_pose_umbrella.py')
-      and 'def mao(' not in rd('arte/importar_umbrella_obj.py'))
-check('5.46.0 (103): a previa mostra o cabo na mao (0,74) e a cupula acima da cabeca (1,92)',
-      'cabo em Y=0.74' in rd('ENTREGA.md') or os.path.exists('arte/previa_pose.png'))
-check('5.46.0 (103): o gerador guarda a conta escrita (a cadeia inteira, linha por linha)',
-      'TRANSLAÇÃO' in rd('arte/importar_umbrella_obj.py').upper()
-      and 'guarda-chuva VERTICAL' in rd('arte/importar_umbrella_obj.py'))
 
 # ---- 2. os raios do /vazio ligar nao aparecem pra quem tem o poder
 check('5.46.0 (103): os raios SO somem na PRIMEIRA pessoa (no F5 o dono quer ver a aura)',
@@ -4999,8 +4649,6 @@ check('5.49.0 (106): o nome esta nos DOIS idiomas (pt: Porte de Arma / en: Firea
 check('5.49.0 (106): renomear na bigorna assina o contrato (o portador aparece no tooltip)',
       'Portador: ' in _PDA and 'getHoverName()' in _PDA)
 
-# ======== PEDIDO 105 — 5.48.0 (a mao do guarda-chuva, o menu do balao, a roda, o rastro) ========
-# O dono, nesta rodada: "ainda nao esta na mao? nao fica na minha mao tambem a umbrella";
 # "melhore a qualidade do menu dos balao, tem letras ficando bugadas"; "a roda de habilidades
 # ainda esta bugada ... apos selecionar o poder vai fechar ela, e logo apos isso vai poder usar o
 # poder escolhido"; "o rastro do vazio esta ficando bugado e deixando as coisas atras invisivel".
@@ -5029,14 +4677,9 @@ check('5.48.0 (105): o rastro do vazio usa TEXTURA com alfa (debugQuads ignorava
       'RenderType.text(TEX_MANCHA)' in rd(C + '/RastroVazioFx.java')
       and 'RenderType.debugQuads()' not in rd(C + '/RastroVazioFx.java')
       and os.path.exists(A + '/textures/environment/rastro_mancha.png'))
-check('5.48.0 (105): o guarda-chuva na mao e ancorado no osso (translateToHand), nao por display',
-      'translateToHand' in rd(C + '/UmbrellaNaMao.java')
-      and 'RenderPlayerEvent.Post' in rd(C + '/UmbrellaNaMao.java')
-      and 'ItemDisplayContext.FIXED' in rd(C + '/UmbrellaNaMao.java'))
 
 # ======== PEDIDO 103 — 5.46.0 (o F5 dos raios, o fluxo MUITO vermelho, broto colocável e a lua de textura) ========
 # O dono, nesta rodada: "os raios ainda devem aparecer, no f5, so nao deve aparecer na primeira
-# pessoa"; "a umbrella continua bugada"; "a ametista vermelha deve ser MAIS VERMELHA, muito mais
 # vermelha, as bud eu nao consigo colocar como um bloco"; "a Lua do terremoto, melhore isso,
 # coloque essa lua".
 _FA46 = rd(R + '/FluxoAmetista.java')

@@ -310,6 +310,20 @@ public final class BubbleRenderer {
         return (a << 24) | (lum > 0.55F ? 0x101014 : 0xF2F2F2);
     }
 
+    /**
+     * (5.51.0) QUANTO VALE 1 PIXEL DE TELA, em unidades de texto, para esta matriz.
+     *
+     * <p>É o que impede a sombra (e o negrito falso) de crescer junto com o balão: o balão é
+     * desenhado numa matriz ESCALADA, então 1 unidade de texto pode valer 5 ou 6 pixels na tela.
+     * Dividindo pela escala, o deslocamento vira exatamente 1 pixel de tela em qualquer tamanho
+     * de balão — que é o que a sombra do Minecraft sempre foi.
+     */
+    private static float umPixel(Matrix4f matrix) {
+        float e = (float) Math.sqrt(matrix.m00() * matrix.m00()
+                + matrix.m01() * matrix.m01() + matrix.m02() * matrix.m02());
+        return e > 0.0001F ? 1.0F / e : 1.0F;
+    }
+
     private static float drawLine(Font font, Matrix4f matrix, MultiBufferSource buffers,
             List<Seg> segs, float x, float y, int textColor, float alpha, int tone) {
         float pen = x;
@@ -342,19 +356,28 @@ public final class BubbleRenderer {
             // sumia. Agora cada letra ganha um halo de 1px na cor OPOSTA (escuro embaixo de
             // texto claro, claro embaixo de texto escuro) — lê em qualquer cor de balão e em
             // qualquer fundo do mundo, sem borrar (é contorno, não sombra difusa).
+            // (5.51.0) O TEXTO DO BALÃO ESTAVA ILEGÍVEL — e a causa era este "contorno".
+            //
+            // O dono: "o que você fez com o balão??? tá ilegível, corrige esse erro". Até aqui
+            // cada letra era desenhada QUATRO vezes em volta de si (cima, baixo, esquerda,
+            // direita) para fazer um halo de contraste. Dentro do balão essa conta roda numa
+            // matriz ESCALADA (o balão no mundo é grande), então os 1px de deslocamento viram
+            // vários pixels na tela: as quatro cópias crescem e se misturam — as letras viram
+            // um borrão que transborda a pílula.
+            //
+            // Agora é a sombra do próprio Minecraft: UMA cópia, deslocada 1 pixel para baixo e
+            // para a direita, na cor oposta. Dá o mesmo contraste (lê em balão claro e escuro) e
+            // não pode borrar — é uma sombra, não um contorno duplo.
             int halo = haloDe(textColor, alpha);
             if (halo != 0) {
-                float[][] desloc = {{-1.0F, 0.0F}, {1.0F, 0.0F}, {0.0F, -1.0F}, {0.0F, 1.0F}};
-                for (float[] d : desloc) {
-                    font.drawInBatch(seq(seg, tom), pen + d[0], y + d[1], halo, false, matrix,
-                            buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-                }
+                font.drawInBatch(seq(seg, tom), pen + umPixel(matrix), y + umPixel(matrix), halo,
+                        false, matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
             pen = font.drawInBatch(seq(seg, tom), pen, y, textColor, false, matrix, buffers,
                     Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             if (tone == 2) {
-                font.drawInBatch(seq(seg, tom), sx + 0.75F, y, textColor, false, matrix, buffers,
-                        Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                font.drawInBatch(seq(seg, tom), sx + 0.75F * umPixel(matrix), y, textColor, false,
+                        matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
         }
         return pen;

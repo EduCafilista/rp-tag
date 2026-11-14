@@ -109,27 +109,18 @@ public final class VampiroSistema {
                 || p.getOffhandItem().is(RPTagMod.AMULETO_ECLIPSE.get())) {
             return true;
         }
-        // (5.37.0) O UMBRELLA DE SOMBRA. O dono decidiu: "só quando ABERTO". Desde a 5.41.0
-        // aberto é um estado do ITEM (custom_model_data >= 8), não "estar segurando o botão".
-        return guardaChuvaAberto(p);
+        // (5.51.0) O UMBRELLA SAIU DO MOD — a proteção solar que vinha dele não existe mais.
+        // Quem segura o sol continua sendo o AMULETO DO ECLIPSE (checado logo acima).
+        return false;
     }
 
     /**
-     * (5.37.0) <b>O GUARDA-CHUVA ESTÁ ABERTO?</b> — pedido do dono: <i>"tenho que fazer um
-     * umbrella 3d, para os vampiros nao tomar dano do sol"</i>, e ele escolheu que a proteção
-     * vale <b>só com a cúpula aberta</b>.
+     * (5.51.0) O guarda-chuva foi removido do mod, então isto é sempre falso.
      *
-     * <p>Serve também pro cliente (ícone/HUD) e pra checagem rápida em outros lugares.
+     * <p>O método fica porque outras partes (e provas antigas) perguntam "está protegido pelo
+     * guarda-chuva?" — agora a resposta é honesta: não existe mais guarda-chuva.
      */
-    public static boolean guardaChuvaAberto(ServerPlayer p) {
-        // (5.41.0) o estado mora no item (custom_model_data >= 8), não no "está usando":
-        // assim abrir com um clique basta, e o guarda-chuva continua aberto nas duas mãos,
-        // no inventário e através de troca de dimensão.
-        for (var mao : net.minecraft.world.InteractionHand.values()) {
-            if (VarinhaSombraItem.aberto(p.getItemInHand(mao))) {
-                return true;
-            }
-        }
+    public static boolean guardaChuvaAberto(net.minecraft.server.level.ServerPlayer p) {
         return false;
     }
 
