@@ -11,36 +11,36 @@
   "display": {
     "thirdperson_righthand": {
       "rotation": [
-        95,
+        0,
         0,
         0
       ],
       "translation": [
-        -2,
         0,
-        8
+        0,
+        0
       ],
       "scale": [
-        1.1,
-        1.6,
-        1.1
+        0.0,
+        0.0,
+        0.0
       ]
     },
     "thirdperson_lefthand": {
       "rotation": [
-        95,
+        0,
         0,
         0
       ],
       "translation": [
-        -2,
         0,
-        8
+        0,
+        0
       ],
       "scale": [
-        1.1,
-        1.6,
-        1.1
+        0.0,
+        0.0,
+        0.0
       ]
     },
     "firstperson_righthand": {
@@ -106,9 +106,9 @@
         0
       ],
       "scale": [
-        0.5,
-        0.5,
-        0.5
+        1.0,
+        1.0,
+        1.0
       ]
     },
     "gui": {

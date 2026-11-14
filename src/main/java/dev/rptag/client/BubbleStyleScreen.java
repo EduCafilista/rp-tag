@@ -1010,6 +1010,15 @@ public class BubbleStyleScreen extends Screen {
         return null;
     }
 
+    /** (5.48.0) a maior largura de uma lista de linhas (para medir a pílula da prévia). */
+    private int maiorLargura(java.util.List<String> linhas) {
+        int maior = 0;
+        for (String l : linhas) {
+            maior = Math.max(maior, this.font.width(l));
+        }
+        return maior;
+    }
+
     private void outline(GuiGraphics g, int x, int y, int w, int h, int color) {
         g.fill(x, y, x + w, y + 1, color);
         g.fill(x, y + h - 1, x + w, y + h, color);
@@ -1098,25 +1107,26 @@ public class BubbleStyleScreen extends Screen {
                 ? ex.length() * BADGE_PX + (ex.length() - 1) * BADGE_GAP_PX + TEXT_GAP_PX : 0;
         // (3.56.0) a previa QUEBRA a fala em linhas (igual ao mundo): mais
         // palavras = mais balao PRA CIMA — o texto nunca mais vaza da pilula
-        java.util.List<String> linhasPrev = wrapPrev(falaPrev(), 110);
+        // (5.48.0) ESCALA INTEIRA — só 2x ou 1x.
+        //
+        // O dono: "melhore a qualidade do menu dos balao, tem letras ficando bugadas, corrija".
+        // A causa era o zoom em 1,5x / 1,2x / 0,95x: a fonte do Minecraft é de PIXEL, e num
+        // fator fracionário cada texel da letra cai no meio de um pixel da tela — as letras
+        // saem borradas e "duplicadas" (era o que aparecia na prévia). Em 2x ou 1x, com a
+        // posição arredondada, cada texel vira um quadrado exato de pixels: texto nítido,
+        // igual ao do chat.
+        java.util.List<String> linhasPrev = wrapPrev(falaPrev(), 104);
         float K = 2.0F;
-        // (3.60.0) o rabicho agora e desenhado inteiro na previa: o zoom cai um
-        // degrau mais cedo (2+ linhas) pra pilula + rabicho caberem no card
-        if (linhasPrev.size() > 1) {
-            K = 1.5F;
-            linhasPrev = wrapPrev(falaPrev(), 150);
+        int textWPrev = maiorLargura(linhasPrev);
+        if (Math.round(textWPrev * K) + 28 + Math.round(leftW + rightW) > cardW - 12) {
+            K = 1.0F;                       // não coube em 2x: usa o tamanho normal
+            linhasPrev = wrapPrev(falaPrev(), 180);
+            textWPrev = maiorLargura(linhasPrev);
         }
-        if (linhasPrev.size() > 2) {
-            K = 1.2F;
-            linhasPrev = wrapPrev(falaPrev(), 185);
-        }
-        if (linhasPrev.size() > 3) {
-            K = 0.95F;
-            linhasPrev = wrapPrev(falaPrev(), 220);
-        }
-        int textWPrev = 0;
-        for (String l : linhasPrev) {
-            textWPrev = Math.max(textWPrev, this.font.width(l));
+        if (linhasPrev.size() * this.font.lineHeight * K > cardH - 26) {
+            K = 1.0F;                       // alto demais em 2x: idem
+            linhasPrev = wrapPrev(falaPrev(), 210);
+            textWPrev = maiorLargura(linhasPrev);
         }
         simW = Math.max(170, Math.min(246,
                 Math.round(textWPrev * K) + 28 + Math.round(leftW + rightW)));
@@ -1215,9 +1225,17 @@ public class BubbleStyleScreen extends Screen {
         for (String linha : linhasPrev) {
             int lw = this.font.width(linha);
             g.pose().pushPose();
-            g.pose().translate(tx + (textWPrev - lw) * K / 2.0F, tyText + cumPrev, 0.0F);
-            g.pose().scale(K, K, 1.0F);
-            g.drawString(this.font, linha, 0, 0, textColor, true);
+            // (5.48.0) posição ARREDONDADA: é isso que impede a letra de cair entre dois pixels
+            g.pose().translate(Math.round(tx + (textWPrev - lw) * K / 2.0F),
+                    Math.round(tyText + cumPrev), 0.0F);
+            if (K != 1.0F) {
+                g.pose().scale(K, K, 1.0F);
+            }
+            // (5.48.0) SEM sombra na prévia ampliada: a sombra é desenhada 1 unidade ao lado
+            // NO ESPAÇO DO ZOOM, então em 2x ela saía 2 pixels deslocada e 2 pixels grossa —
+            // era o "contorno gordo"/letra duplicada da foto. O texto do balão no mundo continua
+            // com sombra (lá não tem zoom, então ela é exatamente 1 pixel).
+            g.drawString(this.font, linha, 0, 0, textColor, false);
             g.pose().popPose();
             cumPrev += Math.round(this.font.lineHeight * K);
         }

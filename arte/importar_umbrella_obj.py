@@ -88,10 +88,15 @@ LADRILHOS_TECIDO = [
 # ficou 1/16 mais para trás (o guarda-chuva estava um pouco à frente do rosto).
 # A translação NÃO é chute: é a solução de M·t = (alvo − cabo), onde M são os eixos da mão.
 DISPLAY = {
-    "thirdperson_righthand": {"rotation": [95, 0, 0], "translation": [-2, 0, 8],
-                              "scale": [1.1, 1.6, 1.1]},
-    "thirdperson_lefthand": {"rotation": [95, 0, 0], "translation": [-2, 0, 8],
-                             "scale": [1.1, 1.6, 1.1]},
+    # (5.48.0) A 3ª PESSOA AGORA É DESENHADA PELO MOD (client/UmbrellaNaMao), não por aqui.
+    # Motivo: cinco versões tentando acertar a mão por `display` e o dono sempre via o
+    # guarda-chuva flutuando. `UmbrellaNaMao` ancora o modelo no OSSO DA MÃO do jogador
+    # (`translateToHand`) e desenha ele mesmo — então aqui a escala é ZERO, pra o vanilla não
+    # desenhar um segundo guarda-chuva por cima.
+    "thirdperson_righthand": {"rotation": [0, 0, 0], "translation": [0, 0, 0],
+                              "scale": [0.0, 0.0, 0.0]},
+    "thirdperson_lefthand": {"rotation": [0, 0, 0], "translation": [0, 0, 0],
+                             "scale": [0.0, 0.0, 0.0]},
     "firstperson_righthand": {"rotation": [95, 0, 0], "translation": [0, 4, 0],
                               "scale": [0.9, 1.2, 0.9]},
     "firstperson_lefthand": {"rotation": [95, 0, 0], "translation": [0, 4, 0],
@@ -99,7 +104,9 @@ DISPLAY = {
     # no chão, na moldura e no inventário o modelo só é DEITADO/girado pra caber bonito —
     # são contextos em que ninguém segura nada, então não há mão pra errar.
     "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
-    "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.5, 0.5, 0.5]},
+    # (5.48.0) `fixed` é o contexto que o UmbrellaNaMao usa pra desenhar na mão: aqui ele
+    # PRECISA ser identidade — o modelo cru é que 0,9 bloco de altura, e quem posiciona é o mod.
+    "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1.0, 1.0, 1.0]},
     "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625]},
 }
 
@@ -107,10 +114,10 @@ DISPLAY = {
 # de lugar, ele só desenrola na mão. O que muda é a escala em Y: recolhido ele é um bastão de
 # ~0,95 bloco (a escala 1,6 deixava um poste de 1,5 bloco passando da cabeça).
 DISPLAY_FECHADO = dict(DISPLAY)
-DISPLAY_FECHADO["thirdperson_righthand"] = {
-    "rotation": [95, 0, 0], "translation": [-2, 0, 8], "scale": [1.0, 1.0, 1.0]}
-DISPLAY_FECHADO["thirdperson_lefthand"] = {
-    "rotation": [95, 0, 0], "translation": [-2, 0, 8], "scale": [1.0, 1.0, 1.0]}
+DISPLAY_FECHADO["thirdperson_righthand"] = {"rotation": [0, 0, 0], "translation": [0, 0, 0],
+                                            "scale": [0.0, 0.0, 0.0]}
+DISPLAY_FECHADO["thirdperson_lefthand"] = {"rotation": [0, 0, 0], "translation": [0, 0, 0],
+                                           "scale": [0.0, 0.0, 0.0]}
 
 
 def _mistura(a, b, t):

@@ -1,78 +1,100 @@
-# RP Tag 5.47.0 — pedido 104
+# RP Tag 5.48.0 — pedido 105
 
-**Jar:** `rptag-5.47.0.jar` (37.311.346 bytes, md5 `71ff1aaa08995f96560d276509223ee7`)
-**Servidor:** NeoForge 21.1.249 / Java 21 — subiu limpo (`RP Tag 5.47.0`, `Done (1.736s)`, 0 exceções)
-**Provas:** `python3 check.py` → **1401 PASS / 0 FAIL**
+**Jar:** `rptag-5.48.0.jar` (37.321.196 bytes, md5 `e36f8b3c37c1cbc3993b68b25a8f2a98`)
+**Servidor:** NeoForge 21.1.249 / Java 21 — subiu limpo (`RP Tag 5.48.0`, `Done (1.129s)`, 0 exceções)
+**Provas:** `python3 check.py` → **1408 PASS / 0 FAIL**
 
 ---
 
-## 1. O céu — refeito do zero (o que estava feio e como morreu)
+## 1. O guarda-chuva na mão — agora ancorado no OSSO da mão
 
-Suas palavras: *"esse céu está bonito pra você? tá horrível, muda o céu, deixa mais caótico"*.
-As duas coisas que apareceram na sua foto tinham duas causas separadas:
+Você: *"ainda não está na mão? não fica na minha mão também a umbrella"*.
 
-| O que você viu | Por que acontecia | O que eu fiz |
+Cinco versões tentando acertar a mão pelo bloco `display` do modelo (`thirdperson_righthand`) e
+sempre errava por um pedaço: essa cadeia tem seis matrizes (corpo, pivô do braço,
+`translateToHand`, o giro de 90/180 do item na mão…) e era **tentativa**, não conta.
+
+**Agora o mod desenha o guarda-chuva ele mesmo** (`client/UmbrellaNaMao.java`), em
+`RenderPlayerEvent.Post`:
+
+1. `PlayerRenderer.getModel().translateToHand(braco, pose)` — a **mesma função do jogo** que põe
+   qualquer item na mão. A origem do modelo (o cabo) cai exatamente onde o jogo põe a mão;
+2. dali ele é levantado (180° na base) e recebe os ajustes;
+3. é desenhado no contexto `FIXED`, que no modelo é **identidade** — quem posiciona é o mod.
+
+No modelo, `thirdperson_righthand/lefthand` ficaram com **escala 0**: senão o vanilla desenharia
+um segundo guarda-chuva por cima deste.
+
+### Se ainda não estiver do jeito que você quer, você acerta em 10 segundos — sem jar novo
+
+Como eu não vejo o seu jogo, cada número virou comando de cliente (fica salvo em
+`config/rptag-umbrella.txt` e volta na próxima sessão):
+
+```
+/umbrella                      mostra os valores atuais
+/umbrella pos 0 -0.1 0         desloca em blocos (x y z)
+/umbrella rot 0 0 -20          gira em graus (x y z)
+/umbrella escala 1.4           tamanho
+/umbrella virar                vira a cúpula (se aparecer pra baixo)
+/umbrella reset                volta ao padrão
+```
+
+Se você mandar um print depois de ajustar, eu **gravo os seus números como padrão** na próxima
+versão e o comando deixa de ser necessário.
+
+## 2. Menu dos balões — as letras bugadas
+
+Você: *"melhore a qualidade do menu dos balão, tem letras ficando bugadas"*.
+
+Eram **duas** coisas somadas na prévia do balão:
+
+| O que estava feio | Por que | Correção |
 |---|---|---|
-| **faixas concêntricas** | o domo era feito de anéis com **cor fixa por anel** — cada anel virava um degrau | a cor agora é **por vértice** (`corCeu`): o degradê interpola dentro de cada quadrilátero, não existe mais degrau |
-| **um quadrado em volta da lua** | o halo eram **3 quads chapados** | o halo virou uma **textura de degradê radial** (`halo_de_sangue.png`) — o alfa chega a ZERO na borda, então não tem canto |
-| **veias em faixas de borda dura** | eram 22 quadriláteros de alfa fixo | virou uma **casca contínua** (`veia()`), com alfa **por vértice**: a veia nasce e morre sem borda |
-| **azul vazando / roxo** | o domo tinha alfa baixo (0,42–0,76) e o céu azul do vanilla aparecia por baixo | o domo agora é **opaco** (0,90–1,00) |
+| letra borrada / "tremida" | o zoom caía em **1,5× / 1,2× / 0,95×** — a fonte do Minecraft é de pixel, e num fator fracionário cada texel da letra cai no meio de um pixel da tela | o zoom agora é **só 2× ou 1×** (2× quando cabe, 1× quando a fala é longa) |
+| letra "duplicada"/contorno gordo | a **sombra** do texto é desenhada 1 unidade ao lado **no espaço do zoom** — em 2× ela saía 2 px deslocada e 2 px grossa | a prévia ampliada ficou **sem sombra**; no balão de verdade (que não tem zoom) a sombra continua |
+| texto "andando" | a posição caía em pixel fracionário | toda posição do texto da prévia é **arredondada** |
 
-E para ficar **caótico** de verdade (não um degradê de papel de parede):
-- **nuvens de sangue rolando** numa casca a 142 blocos (ruído de senos animado, alfa por vértice);
-- **veias escuras** atravessando o céu numa casca a 146 (elas se torcem com o tempo);
-- **pulsação** (~2 por segundo) e **clarão** a cada 7 s, que lava o céu inteiro de laranja;
-- a névoa do horizonte fica vermelha junto.
+## 3. A roda de habilidades — virou TELA de verdade
 
-**Prova visual:** `arte/previa_ceu.png` — o `arte/previa_ceu.py` reproduz em Python a MESMA conta
-do Java (`cor_ceu`, `nuvem`, `veia`, o aro e o halo de textura) e renderiza como fica na tela.
-Se mudar a conta no Java, muda aqui também: é a prova de que não sobrou faixa nem quadrado.
+Você: *"a roda de habilidades ainda está bugada, corrija: após selecionar o poder, vai fechar ela,
+e logo após isso, vai poder usar o poder escolhido"*.
 
-## 2. A lua — de volta à sua referência (veios de lava)
+O defeito era estrutural: a roda era só um **desenho por cima do HUD** que, para o mouse
+funcionar, soltava e prendia o cursor na mão (`releaseMouse()` / `grabMouse()`). Daí vinham os
+sintomas: clique que caía no vazio, câmera girando quando o cursor voltava, e o botão direito
+esperando uma borda de clique que nunca vinha.
 
-Você disse que eu mudei completamente o que você mandou. A receita voltou a ser a da referência,
-e agora ficou melhor que a 5.46.0:
+Agora (`client/RodaPoderes.java`) a roda é um **`Screen`**, igual ao inventário:
 
-- pedra de sangue (fBm em 3 oitavas, vinho quase preto → vermelho vivo) + crateras escuras;
-- **rachaduras de lava com RAMOS finos** saindo das grossas (antes eram 18 veios soltos da mesma
-  grossura — parecia um prato de macarrão; agora lê como rachadura em pedra);
-- o **miolo do veio chega perto do branco-amarelo** (lava de verdade, não tinta laranja);
-- halo em volta de cada veio, vinheta de esfera e **aro aceso** na borda.
+- o jogo entrega cursor, posição e clique — nada de soltar mouse na mão;
+- **clicar numa casa arma o poder e fecha na hora**;
+- ao fechar, o Minecraft **prende o mouse de volta sozinho** — então o próximo clique direito já é
+  do jogo e **usa o poder escolhido**;
+- as teclas **1–6** escolhem, **R** e **ESC** fecham;
+- `isPauseScreen()` falso: o mundo continua rodando (não é menu de pausa);
+- a rede de segurança do botão direito é **rearmada** ao escolher (`direitoAntes` passa a refletir
+  a tecla naquele instante), então o clique seguinte nunca é engolido.
 
-## 3. O Fluxo — só o bloco e o fragmento
+O desenho é o **mesmo** de antes — mudou só quem manda no mouse.
 
-*"deixa só o bloco e o fluxo shard, tira as buddy horriveis"* — feito. O mod registra **duas** peças:
+## 4. O rastro do vazio — não esconde mais o mundo
 
-```
-rptag:fluxo_block      → Bloco de Fluxo
-rptag:fluxo_shard      → Fragmento de Fluxo
-```
+Você: *"o rastro do vazio está ficando bugado e deixando as coisas atrás invisível"*.
 
-Saiu do jar: as texturas, os modelos, os blockstates, as tabelas de drop, a receita e os nomes
-dos 3 brotos + do cacho + do bloco em formação. Confirmado no servidor de verdade por RCON:
+Achei a causa exata: o rastro era desenhado com `RenderType.debugQuads()`, que desenha **sem
+transparência** — o alfa do vértice é jogado fora. Então as "manchas de escuridão" saíam
+**pretas e opacas** por cima do chão, tapando o que estava atrás. Não era bug de geometria: era o
+tipo de desenho.
 
-```
-setblock 0 -55 3 rptag:fluxo_block        → Changed the block at 0, -55, 3
-setblock 0 -55 4 rptag:fluxo_cluster      → Unknown block type 'rptag:fluxo_cluster'
-setblock 0 -55 5 rptag:fluxo_bud_pequeno  → Unknown block type 'rptag:fluxo_bud_pequeno'
-summon … {id:"rptag:fluxo_shard"}         → Summoned new Fluxo Shard
-summon … {id:"rptag:fluxo_block"}         → Summoned new Block of Fluxo
-```
-
-## 4. A umbrella — "quase acertando": mais 1/16 para cima e para o lado do corpo
-
-A pose que você aprovou quase toda foi mantida (`[95,0,0]`), só a translação andou:
-
-| | 5.46.0 | **5.47.0** |
-|---|---|---|
-| translação (1/16 de bloco) | `[-1, 1, 7]` | **`[-2, 0, 8]`** |
-| cabo (a mão fica em Y=0,75) | Y=0,74 | **Y=0,81** |
-| centro da cúpula | (0,37 / 1,92 / −0,08) | **(0,31 / 1,98 / −0,02)** |
-
-Ou seja: subiu 1/16, foi 1/16 para o lado do corpo (a cúpula ficou mais centrada na cabeça) e
-1/16 para trás (estava um pouco à frente do rosto). Aberta e fechada continuam com a MESMA rotação
-e a MESMA translação. Prévia: `arte/previa_pose.png` (a conta vem da cadeia real do jogo).
+- o rastro agora usa `RenderType.text(textura)`, que **mistura de verdade** (alfa vale);
+- duas texturas novas (`arte/gerar_rastro.py`): `rastro_mancha.png` (borrão radial, alfa zero na
+  borda — sem canto) e `rastro_lasca.png` (rachadura em zigue-zague com halo quente);
+- a "costura" entre duas marcas virou um quad esticado da mesma textura, então o rastro continua
+  um traço contínuo — só que agora **transparente**.
 
 ## 5. O que ficou pendente
 
+- **Primeira pessoa** do guarda-chuva: a 3ª pessoa está resolvida por âncora; a 1ª pessoa ainda
+  usa o `display` antigo. Se estiver errada aí também, eu aplico o mesmo truque no
+  `RenderHandEvent` (mesma âncora, mesma conta).
 - O **redesenho das 5 molduras do editor de balão** (pedido antigo, ainda na fila).

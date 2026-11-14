@@ -110,7 +110,10 @@ public final class PoderLeque {
         return temAcesso;
     }
 
-    /** a roda está aberta? */
+    /**
+     * (5.48.0) a roda está aberta? Agora quem manda é a TELA ({@link RodaPoderes}); este campo
+     * é só o espelho que o desenho e o resto do mod leem.
+     */
     private static boolean aberto;
     /** (5.42.0) quando o botão direito foi atendido pelo evento (ms) — evita soltar 2x. */
     private static long ultimoCliqueEvento;
@@ -150,7 +153,8 @@ public final class PoderLeque {
     }
 
     public static boolean estaAberto() {
-        return aberto && temAcesso;
+        Minecraft mc = Minecraft.getInstance();
+        return temAcesso && mc != null && mc.screen instanceof RodaPoderes;
     }
 
     /**
@@ -187,13 +191,43 @@ public final class PoderLeque {
         }
     }
 
-    /** (5.33.0) fecha o leque e devolve o cursor para o jogo. */
+    /**
+     * (5.48.0) fecha o leque. Como agora ele é uma TELA, fechar é só tirar a tela da frente —
+     * o Minecraft devolve o cursor pro jogo sozinho (era isso que faltava pra o botão direito
+     * voltar a funcionar logo depois de escolher).
+     */
     private static void fechar() {
-        if (!aberto) {
-            return;
-        }
         aberto = false;
-        soltarMouse(Minecraft.getInstance(), false);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null && mc.screen instanceof RodaPoderes) {
+            mc.setScreen(null);
+        }
+    }
+
+    /**
+     * (5.48.0) <b>ESCOLHER = ARMAR + FECHAR</b>, e o poder tem que sair no clique seguinte.
+     *
+     * <p>É exatamente o que o dono pediu: <i>"após selecionar o poder, vai fechar ela, e logo
+     * após isso, vai poder usar o poder escolhido"</i>. Depois de fechar, a rede de segurança do
+     * botão direito é rearmada ({@code direitoAntes} passa a refletir a tecla AGORA), então o
+     * primeiro clique direito depois da escolha conta como uma borda nova — antes ele podia ser
+     * engolido e o jogador ficava com a habilidade armada sem ela sair.
+     */
+    static void escolher(int poder) {
+        armar(poder);
+        fechar();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null && mc.options != null) {
+            direitoAntes = mc.options.keyUse.isDown();
+        }
+        ultimoCliqueEvento = 0L;
+        apontado = -1;
+        mouseAntes = false;
+    }
+
+    /** (5.48.0) a casa sob o cursor, para a tela chamar no clique. */
+    static int casaEm(double mx, double my, int w, int h) {
+        return casaSobMouse(w, h, mx, my);
     }
 
     // ------------------------------------------------------------- tick
@@ -205,8 +239,11 @@ public final class PoderLeque {
             if (mc.player == null) {
                 return;
             }
+            // (5.48.0) o estado vem da TELA: se ela sumiu (ESC, morte, troca de mundo), a roda
+            // fecha junto — antes o desenho ficava "fantasma" na tela.
+            aberto = mc.screen instanceof RodaPoderes;
             while (TECLA_LEQUE.consumeClick()) {
-                if (mc.screen != null) {
+                if (mc.screen != null && !(mc.screen instanceof RodaPoderes)) {
                     continue;
                 }
                 // (5.41.0) SEM O DOM A RODA NAO ABRE (o servidor manda o estado). Antes ela
@@ -215,16 +252,15 @@ public final class PoderLeque {
                     avisarSemAcesso(mc);
                     continue;
                 }
-                aberto = !aberto;
-                abertoEm = System.currentTimeMillis();
-                apontado = -1;
-                som(aberto ? net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME
-                        : net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), 1.4F, 0.7F);
-                // (5.33.0) O CURSOR PRECISA FICAR LIVRE — era isso que deixava o leque
-                // "travado": no Minecraft o mouse fica preso no centro da tela, então
-                // não dava pra apontar a casa. Abrindo o leque a gente solta o cursor e,
-                // ao fechar, prende de novo (senão a câmera não responde).
-                soltarMouse(mc, aberto);
+                if (aberto) {
+                    fechar();
+                } else {
+                    abertoEm = System.currentTimeMillis();
+                    apontado = -1;
+                    mc.setScreen(new RodaPoderes());   // o jogo entrega o cursor, não a gente
+                }
+                som(aberto ? net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value()
+                        : net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME, 1.4F, 0.7F);
             }
             // a animação roda sempre (para fechar suave)
             long agora = System.nanoTime();
@@ -260,35 +296,11 @@ public final class PoderLeque {
                 selecionado = -1;
                 return;
             }
-            // teclas 1..6
-            long janela = mc.getWindow().getWindow();
-            for (int i = 0; i < NOMES.length; i++) {
-                if (InputConstants.isKeyDown(janela, GLFW.GLFW_KEY_1 + i)) {
-                    armar(i);        // (5.42.0) só arma...
-                    fechar();        // ...e fecha a roda (o botão direito solta depois)
-                    return;
-                }
-            }
-            // mouse: aponta e clica
-            Minecraft m = Minecraft.getInstance();
-            int w = m.getWindow().getGuiScaledWidth();
-            int h = m.getWindow().getGuiScaledHeight();
-            double mx = m.mouseHandler.xpos() * w / (double) m.getWindow().getScreenWidth();
-            double my = m.mouseHandler.ypos() * h / (double) m.getWindow().getScreenHeight();
-            apontado = casaSobMouse(w, h, mx, my);
-            boolean clicando = GLFW.glfwGetMouseButton(janela, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
-            if (clicando && !mouseAntes && apontado >= 0) {
-                armar(apontado);     // (5.42.0) escolher ≠ conjurar
+            // (5.48.0) TECLADO E CLIQUE SÃO DA TELA (RodaPoderes): aqui não se lê mais o
+            // mouse na mão. Ficou só o que é regra do mod: fechar quando não pode mais.
+            if (InputConstants.isKeyDown(mc.getWindow().getWindow(), GLFW.GLFW_KEY_ESCAPE)) {
                 fechar();
-                mouseAntes = false;
-                return;
             }
-            // ESC fecha
-            if (InputConstants.isKeyDown(janela, GLFW.GLFW_KEY_ESCAPE)) {
-                fechar();
-                return;
-            }
-            mouseAntes = clicando;
         } catch (Throwable ignorado) {
             // a roda é enfeite: nunca derruba o jogo
         }
@@ -432,27 +444,6 @@ public final class PoderLeque {
     }
 
     /**
-     * (5.33.0) solta/prende o cursor do jogo.
-     *
-     * <p>Sem isso o mouse fica travado no meio da tela e o jogador não consegue escolher a
-     * habilidade — era exatamente a reclamação ("eu teria que poder mexer para escolher").
-     */
-    private static void soltarMouse(Minecraft mc, boolean soltar) {
-        try {
-            if (mc.screen != null) {
-                return;
-            }
-            if (soltar) {
-                mc.mouseHandler.releaseMouse();
-            } else {
-                mc.mouseHandler.grabMouse();
-            }
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: soltar o cursor do leque falhou", t);
-        }
-    }
-
-    /**
      * (5.42.0) <b>ESCOLHER NA RODA = só ARMAR.</b>
      *
      * <p>O dono: <i>"os poderes não saem mais com o botão direito, e após selecionar o poder
@@ -526,6 +517,18 @@ public final class PoderLeque {
     // ------------------------------------------------------------- desenho
 
     private static void render(GuiGraphics g, net.minecraft.client.DeltaTracker dt) {
+        // (5.48.0) com a tela aberta quem desenha é ela; aqui sobra só a animação de saída.
+        if (estaAberto()) {
+            return;
+        }
+        desenharRoda(g, -1, -1);
+    }
+
+    /**
+     * (5.48.0) desenha a roda. Chamado pela TELA ({@link RodaPoderes}) com a posição do mouse e
+     * pela camada de HUD com (-1,-1), quando a roda está fechando.
+     */
+    static void desenharRoda(GuiGraphics g, double mx, double my) {
         if (animado <= 0.02F || !temAcesso) {   // (5.41.0) sem o dom a roda não é desenhada
             return;
         }
@@ -535,6 +538,11 @@ public final class PoderLeque {
                 return;
             }
             int w = g.guiWidth(), h = g.guiHeight();
+            // a casa apontada vem do MOUSE DA TELA (antes vinha de uma leitura manual que
+            // podia discordar do que estava desenhado — era a "roda bugada")
+            if (mx >= 0.0D && my >= 0.0D) {
+                apontado = casaSobMouse(w, h, mx, my);
+            }
             int lado = ladoRoda(w, h);
             float cx = w / 2.0F, cy = centroY(h);
             float e = animado;                                  // 0..1

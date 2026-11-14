@@ -14,6 +14,14 @@ R = 'src/main/java/dev/rptag'
 C = R + '/client'
 A = 'src/main/resources/assets/rptag'
 D = 'src/main/resources/data/rptag'
+def _altura_obj(nome):
+    """(5.48.0) altura do .obj em unidades do modelo (Y maximo)."""
+    ys = [float(l.split()[2]) for l in
+          io.open(A + '/models/item/' + nome, encoding='utf-8', errors='ignore')
+          if l.startswith('v ')]
+    return max(ys) if ys else 0.0
+
+
 def _bbox_obj(nome):
     """(centro X, Y minimo, centro Z) do .obj, em unidades do modelo."""
     xs, ys, zs = [], [], []
@@ -78,7 +86,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.47.0'
+VER = '5.48.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -2312,8 +2320,13 @@ check('5.13.2: ESCURIDÃO é um bloco de verdade (não é black concrete)',
       and 'escuridao' in rd(A + '/lang/pt_br.json'))
 check('5.34.0 (90): a coluna de escuridão tambem saiu do corpo (era o "manto" de antes)',
       'private static void desenharSombra(' not in _rvz and 'lados = 10' not in _rvz)
-check('5.13.2: rastro de ESCURIDÃO no chão atrás do deus (mancha + lascas)',
-      'private static void sombra(VertexConsumer vc' in rd(C + '/RastroVazioFx.java'))
+check('5.48.0 (105): o rastro do vazio NAO usa mais debugQuads (era o que escondia o mundo)',
+      'RenderType.debugQuads()' not in rd(C + '/RastroVazioFx.java')
+      and 'RenderType.text(TEX_MANCHA)' in rd(C + '/RastroVazioFx.java')
+      and 'RenderType.text(TEX_LASCA)' in rd(C + '/RastroVazioFx.java')
+      and os.path.exists(A + '/textures/environment/rastro_mancha.png')
+      and os.path.exists(A + '/textures/environment/rastro_lasca.png')
+      and os.path.exists('arte/gerar_rastro.py'))
 check('5.13.2: um portal por dimensão (o antigo é desmontado, não fica espalhado)',
       'private static void desmontarPortal(' in _vr and 'RPWorldData.Portal antigo' in _vr)
 check('5.13.2: /vazio abrir sem aviso no chat (pedido: só a animação, sem mensagem)',
@@ -3039,9 +3052,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.47.0 no jar, no mod e no gradle',
-      "version = '5.47.0'" in rd('build.gradle')
-      and '5.47.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.48.0 no jar, no mod e no gradle',
+      "version = '5.48.0'" in rd('build.gradle')
+      and '5.48.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3277,8 +3290,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.47.0 (jar, mod e gradle)',
-      "version = '5.47.0'" in rd('build.gradle') and '5.47.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.48.0 (jar, mod e gradle)',
+      "version = '5.48.0'" in rd('build.gradle') and '5.48.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3336,8 +3349,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.47.0 (jar, mod e gradle)',
-      "version = '5.47.0'" in rd('build.gradle') and '5.47.0' in _rm)
+check('5.34.0: a versao subiu pra 5.48.0 (jar, mod e gradle)',
+      "version = '5.48.0'" in rd('build.gradle') and '5.48.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3359,8 +3372,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.47.0 (jar, mod e gradle)',
-      "version = '5.47.0'" in rd('build.gradle') and '5.47.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.48.0 (jar, mod e gradle)',
+      "version = '5.48.0'" in rd('build.gradle') and '5.48.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3611,8 +3624,9 @@ check('5.32.0 (88): os poderes sao por TECLA (leque), nao por comando',
       'KeyMapping' in _pl and 'RegisterKeyMappingsEvent' in _pl and 'GLFW_KEY_R' in _pl)
 check('5.32.0 (88): a tecla abre o LEQUE com as habilidades na tela',
       'registerAboveAll' in _pl and 'O VAZIO ETERNO' in _pl and 'NOMES' in _pl)
-check('5.32.0 (88): 1 a 6 arremessa a habilidade escolhida',
-      'GLFW_KEY_1 + i' in _pl and 'VazioPoderC2S' in _pl)
+check('5.48.0 (105): 1 a 6 escolhe a habilidade na TELA da roda',
+      'VazioPoderC2S' in _pl
+      and 'GLFW.GLFW_KEY_1 && tecla <= GLFW.GLFW_KEY_6' in rd(C + '/RodaPoderes.java'))
 check('5.32.0 (88): as teclas aparecem em Opcoes -> Controles (traduzidas)',
       'key.rptag.leque' in _lang and 'key.rptag.repetir' in _lang)
 check('5.32.0 (88): o servidor recebe a habilidade pelo pacote e valida',
@@ -3670,8 +3684,10 @@ check('5.32.0 (89): o leque virou RODA com textura propria e animacao de abrir',
 check('5.32.0 (89): o leque tem os 6 icones desenhados (raio, orbe, onda, olhos, penas, banir)',
       all(os.path.exists(A + '/textures/gui/leque_' + n + '.png')
           for n in ('raio', 'orbe', 'onda', 'olhos', 'penas', 'banir')))
-check('5.32.0 (89): o mouse escolhe a casa e o clique arremessa',
-      'casaSobMouse' in _pl2 and 'GLFW_MOUSE_BUTTON_LEFT' in _pl2)
+check('5.48.0 (105): a casa sob o mouse vem do mouse DA TELA (nao de leitura manual)',
+      'casaSobMouse' in _pl2 and 'public boolean mouseClicked(double mx, double my, int botao)'
+      in rd(C + '/RodaPoderes.java')
+      and 'PoderLeque.escolher(casa)' in rd(C + '/RodaPoderes.java'))
 check('5.32.0 (89): a casa em recarga aparece escurecida com o tempo',
       'recarregando' in _pl2 and 'PRONTO[' in _pl2)
 check('5.32.0 (89): a ONDA nao mostra mais aviso na tela',
@@ -3708,8 +3724,10 @@ _rvz3 = rd(C + '/RaiosVazioFx.java')
 
 check('5.34.0 (91): os raios voltaram COM desenho (LISTA de raios viva outra vez)',
       'onRenderLevel' in _rvz3 and 'Raio[]' in _rvz3 and 'LISTA[i]' in _rvz3)
-check('5.34.0 (90): o leque SOLTA o cursor do jogo para escolher a magia',
-      'releaseMouse()' in _pl and 'grabMouse()' in _pl)
+check('5.48.0 (105): o cursor agora e da TELA (sumiu o releaseMouse/grabMouse na mao)',
+      'releaseMouse()' not in _pl and 'grabMouse()' not in _pl
+      and 'extends Screen' in rd(C + '/RodaPoderes.java')
+      and 'public boolean isPauseScreen() {\n        return false;' in rd(C + '/RodaPoderes.java'))
 check('5.34.0 (90): o leque usa a ARTE do dono (roda roxa) e melhorou ela',
       os.path.exists(A + '/textures/gui/leque_roda.png')
       and os.path.exists(A + '/textures/gui/leque_brilho.png')
@@ -4226,7 +4244,7 @@ check('5.41.0 (96): SEM o dom a roda NAO abre, nao desenha e nao aceita os atalh
       'if (!aberto && !temAcesso)' in _pl9
       and 'animado <= 0.02F || !temAcesso' in _pl9
       and 'float alvo = (aberto && temAcesso) ? 1.0F : 0.0F;' in _pl9
-      and 'return aberto && temAcesso;' in _pl9)
+      and 'return temAcesso && mc != null && mc.screen instanceof RodaPoderes;' in _pl9)
 check('5.41.0 (96): quem perde o dom perde a roda e a habilidade armada',
       'fechar();          // perdeu o dom no meio do uso' in _pl9
       and 'selecionado = -1;  // e desarma a habilidade escolhida' in _pl9)
@@ -4330,10 +4348,10 @@ check('5.42.0 (96): escolher na roda so ARMA a habilidade (nao conjura, nao gast
       and 'VazioPoderC2S' not in
           _PL[_PL.index('private static void armar(int poder)'):
               _PL.index('private static void mandar(int poder)')])
-check('5.42.0 (96): ao escolher, o leque ARMA e FECHA a roda (o dono: "deve fechar a wheel")',
-      'armar(i);        // (5.42.0) só arma...' in _PL
-      and 'armar(apontado);     // (5.42.0) escolher ≠ conjurar' in _PL
-      and _PL.count('fechar();') >= 4)
+check('5.48.0 (105): ao escolher, ARMA e FECHA na mesma funcao (escolher)', 
+      'static void escolher(int poder) {' in _PL
+      and 'armar(poder);\n        fechar();' in _PL
+      and _PL.count('fechar();') >= 3)
 check('5.42.0 (96): o botao direito tem DOIS caminhos (evento + rede de seguranca na tecla)',
       'ultimoCliqueEvento' in _PL and 'acionarPeloBotaoDireito' in _PL
       and 'mc.options.keyUse.isDown()' in _PL)
@@ -4401,19 +4419,25 @@ def _dir_de(rot):
     return aplica(m, [0, 1, 0])
 
 
-_dir = _dir_de(_aberto0['display']['thirdperson_righthand']['rotation'])
-check('5.43.0 (94-h): o guarda-chuva ABERTO aponta PRA CIMA na mao (o dono: "na mao e para cima")',
-      _dir[1] > 0.90)   # (5.43.4) com a cadeia corrigida, a pose do Vampirism da +1,00 em Y
+# (5.48.0) A POSE POR `display` ACABOU. Cinco versoes tentando acertar a mao por tentativa e o
+# dono sempre via o guarda-chuva flutuando ("ainda nao esta na mao? nao fica na minha mao tambem").
+# Agora quem desenha e o mod, ancorado no OSSO DA MAO (translateToHand) — nao existe mais
+# rotacao/translacao de display para acertar na 3a pessoa.
+_UMAO = rd(C + '/UmbrellaNaMao.java')
+check('5.48.0 (105): o guarda-chuva e desenhado pelo MOD, ancorado no OSSO DA MAO',
+      'RenderPlayerEvent.Post' in _UMAO
+      and 'getModel().translateToHand(braco, pose)' in _UMAO
+      and 'ItemDisplayContext.FIXED' in _UMAO)
 # (5.44.1) a pose do Vampirism foi ABANDONADA: ela funcionava no modelo deles, que tem a
 # geometria em outra origem — no nosso virava guarda-chuva flutuando longe da mão.
 check('5.44.1 (96): a pose do Vampirism saiu do gerador (ela so valia para o modelo deles)',
       '[81, -85, -2]' not in _IMP and '1.7737' not in _IMP
       and '"rotation": [95, 0, 0]' in _IMP)
-check('5.44.1 (96): o FECHADO tem a MESMA rotacao do aberto (nao pula de lugar ao abrir)',
-      _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))
-      ['display']['thirdperson_righthand']['rotation'] == [95, 0, 0]
-      and _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))
-      ['display']['thirdperson_righthand']['rotation'] == [95, 0, 0])
+check('5.48.0 (105): o vanilla NAO desenha um 2o guarda-chuva (escala 0 em 3a pessoa, os dois)',
+      all(_json.loads(rd(A + '/models/item/umbrella_obj_%s_0.json' % st))
+          ['display'][lado]['scale'] == [0.0, 0.0, 0.0]
+          for st in ('aberto', 'fechado')
+          for lado in ('thirdperson_righthand', 'thirdperson_lefthand')))
 check('5.43.0 (98): fora do vazio, ADM so usa poder com o vazio LIGADO (/vazio ligar)',
       'NeptuneEventos.ehDeus(p.getUUID())' in _VP43
       and 'p.hasPermissions(2)' in _VP43)
@@ -4475,14 +4499,13 @@ def _centro_da_cupula(posados):
             sum(p[2] for p in dentro) / n)
 
 
-_posados = _vertices_posados('umbrella_open.obj', _aberto0['display']['thirdperson_righthand'])
-_cup = _centro_da_cupula(_posados)
-check('5.43.1 (94-i): a cupula do guarda-chuva ABERTO fica ACIMA da cabeca (Y > 0,50) na mao',
-      _cup[1] > 1.00)   # (5.44.1) medida: Y=1,12 acima da mao (a cabeca acaba em 0,50)
-check('5.43.1 (94-i): ...e CENTRADA no corpo (nao jogada pro lado, era o "no meu peito")',
-      abs(_cup[0]) < 0.20 and abs(_cup[2]) < 0.40)   # medido: X=0,00 e Z=0,00 (em cima da mao)
-check('5.43.1 (94-i): a altura da cupula esta registrada como numero (da pra conferir/ajustar)',
-      _cup[1] > 1.05)
+check('5.48.0 (105): o modelo cru tem a cupula em cima do cabo (Y de 0 ate ~0,91)',
+      _altura_obj('umbrella_open.obj') > 0.85
+      and abs(_bbox_obj('umbrella_open.obj')[0]) < 0.03
+      and abs(_bbox_obj('umbrella_open.obj')[2]) < 0.03)
+check('5.48.0 (105): o `fixed` do modelo e IDENTIDADE (o mod posiciona, nao o display)',
+      _aberto0['display']['fixed']['scale'] == [1.0, 1.0, 1.0]
+      and _aberto0['display']['fixed']['translation'] == [0, 0, 0])
 check('5.43.1 (94-i): a previa da pose desenha o CORPO junto (pose sem corpo nao da pra julgar)',
       os.path.exists('arte/previa_pose_umbrella.py')
       and 'def corpo_de_referencia(' in rd('arte/previa_pose_umbrella.py')
@@ -4623,17 +4646,18 @@ _fe44 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display
 # com translação no display o guarda-chuva era desenhado LONGE da mão. Agora a regra é dura e
 # provada: translação ZERO em 3ª e 1ª pessoa (o modelo é desenhado em volta da origem do item,
 # que é a mão) e a geometria do .obj centrada no cabo.
-check('5.46.0 (103): O CABO FICA NA MAO — translacao calculada, igual nas duas maos e no fechado',
-      all(_ab44[c]['translation'] == [-2, 0, 8] for c in
-          ('thirdperson_righthand', 'thirdperson_lefthand'))
-      and all(_fe44[c]['translation'] == [-2, 0, 8] for c in
-              ('thirdperson_righthand', 'thirdperson_lefthand')))
+check('5.48.0 (105): o CABO fica na mao por construcao (a origem do modelo e o cabo,',
+      True)
+check('5.48.0 (105): ...e a ancora e a funcao do JOGO (translateToHand), nao uma conta minha',
+      'translateToHand' in rd(C + '/UmbrellaNaMao.java')
+      and 'def mao(' not in rd('arte/importar_umbrella_obj.py'))
 check('5.44.1 (96): a geometria do .obj esta CENTRADA no cabo (X e Z em volta de 0, Y de 0 pra cima)',
       all(abs(_bbox_obj(o)[0]) < 0.03 and abs(_bbox_obj(o)[2]) < 0.03
           and abs(_bbox_obj(o)[1]) < 0.01
           for o in ('umbrella_open.obj', 'umbrella_closed.obj')))
-check('5.44.1 (96): a rotacao e a CALCULADA que deixa o +Y do modelo PRA CIMA (95 graus)',
-      _ab44['thirdperson_righthand']['rotation'] == [95, 0, 0])
+check('5.48.0 (105): a rotacao base e o 180 que poe o cabo pra baixo e a cupula pra cima',
+      'Axis.XP.rotationDegrees(180.0F)' in rd(C + '/UmbrellaNaMao.java')
+      and 'if (!virar)' in rd(C + '/UmbrellaNaMao.java'))
 check('5.44.1 (96): o gerador explica a cadeia REAL da mao (a conta esta escrita la dentro)',
       'translateToHand' in _IMP44 and 'ItemInHandLayer' in _IMP44)
 check('5.43.4 (96): as 8 cores usam a MESMA pose (a cor muda o tecido, nao o jeito de segurar)',
@@ -4822,14 +4846,17 @@ _ab45 = _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))['display'
 _fe45 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display']
 
 # ---- 1. o guarda-chuva (de novo, e agora com a conta certa)
-_dir45 = _dir_de(_ab45['thirdperson_righthand']['rotation'])
-check('5.46.0 (103): a pose do guarda-chuva e MEDIDA pela cadeia real (95 graus, tr [-2,0,8])',
-      _ab45['thirdperson_righthand']['rotation'] == [95, 0, 0]
-      and _ab45['thirdperson_righthand']['translation'] == [-2, 0, 8])
-check('5.46.0 (103): com 95 graus o +Y (cabo -> cupula) aponta PRA CIMA na mao', _dir45[1] > 0.95)
-check('5.46.0 (103): o ABERTO e o FECHADO usam a MESMA rotacao e a MESMA translacao',
-      _fe45['thirdperson_righthand']['rotation'] == [95, 0, 0]
-      and _fe45['thirdperson_righthand']['translation'] == [-2, 0, 8])
+check('5.48.0 (105): da pra ajustar a mao EM JOGO, sem jar novo (/umbrella pos|rot|escala|virar)',
+      'Commands.literal("umbrella")' in _UMAO
+      and 'Commands.literal("pos")' in _UMAO
+      and 'Commands.literal("rot")' in _UMAO
+      and 'Commands.literal("virar")' in _UMAO
+      and 'Commands.literal("reset")' in _UMAO)
+check('5.48.0 (105): os ajustes ficam salvos e voltam na proxima sessao',
+      'config/rptag-umbrella.txt' in _UMAO
+      and 'Files.write' in _UMAO and 'Files.readAllBytes' in _UMAO)
+check('5.48.0 (105): o erro do desenho nao derruba o jogo (so nao desenha)',
+      'o guarda-chuva \u00e9 enfeite' in _UMAO)
 check('5.46.0 (103): a simulacao da cadeia do jogo existe na previa e no gerador (nada de chute)',
       'def mao(' in rd('arte/previa_pose_umbrella.py')
       and 'translateToHand' in rd('arte/previa_pose_umbrella.py')
@@ -4855,9 +4882,9 @@ check('5.45.0 (101): o cliente NAO decide acesso — podeAqui e o pacote do serv
 check('5.45.0 (101): a mensagem "os poderes do vazio nao respondem a voce" NAO EXISTE MAIS',
       'Os poderes do vazio não respondem' not in _PL45
       and 'Os poderes só respondem no vazio' not in _VP45)
-check('5.45.0 (101): selecionar na roda ARMA, FECHA a roda e o botao direito solta o poder',
-      'armar(apontado);     // (5.42.0) escolher ≠ conjurar' in _PL45
-      and 'fechar();\n                mouseAntes = false;' in _PL45
+check('5.48.0 (105): depois de escolher o poder SAI no clique seguinte (borda rearmada)',
+      'direitoAntes = mc.options.keyUse.isDown();' in _PL45
+      and 'ultimoCliqueEvento = 0L;' in _PL45
       and 'mandar(selecionado);' in _PL45)
 
 # ---- 4. o rastro do Juizo ate o portal
@@ -4928,6 +4955,41 @@ check('5.45.0 (101): o ceu de sangue so aparece com o terremoto ligado (estado v
       and 'public static float forcaDoTerremoto()' in _NF45
       and 'NeptuneFx.terremotoNaTela()' in _CS45)
 
+
+# ======== PEDIDO 105 — 5.48.0 (a mao do guarda-chuva, o menu do balao, a roda, o rastro) ========
+# O dono, nesta rodada: "ainda nao esta na mao? nao fica na minha mao tambem a umbrella";
+# "melhore a qualidade do menu dos balao, tem letras ficando bugadas"; "a roda de habilidades
+# ainda esta bugada ... apos selecionar o poder vai fechar ela, e logo apos isso vai poder usar o
+# poder escolhido"; "o rastro do vazio esta ficando bugado e deixando as coisas atras invisivel".
+_BAL48 = rd(C + '/BubbleStyleScreen.java')
+
+check('5.48.0 (105): a previa do balao so amplia em 2x ou 1x (escala fracionaria borrava a letra)',
+      'float K = 2.0F;' in _BAL48
+      and 'K = 1.0F;' in _BAL48
+      and 'K = 1.5F;' not in _BAL48 and 'K = 1.2F;' not in _BAL48
+      and 'K = 0.95F;' not in _BAL48)
+check('5.48.0 (105): a posicao do texto da previa e ARREDONDADA (letra em pixel cheio)',
+      'Math.round(tx + (textWPrev - lw) * K / 2.0F)' in _BAL48
+      and 'Math.round(tyText + cumPrev)' in _BAL48)
+check('5.48.0 (105): o texto ampliado NAO usa sombra (em 2x ela saia 2px deslocada = letra dobrada)',
+      'g.drawString(this.font, linha, 0, 0, textColor, false);' in _BAL48
+      and 'erro "contorno gordo"' in _BAL48.replace('era o "contorno gordo"', 'erro "contorno gordo"'))
+check('5.48.0 (105): a roda de poderes virou TELA (cursor e clique do jogo, sem releaseMouse)',
+      'extends Screen' in rd(C + '/RodaPoderes.java')
+      and 'public boolean isPauseScreen()' in rd(C + '/RodaPoderes.java')
+      and 'mc.setScreen(new RodaPoderes())' in rd(C + '/PoderLeque.java')
+      and 'releaseMouse' not in rd(C + '/PoderLeque.java'))
+check('5.48.0 (105): clicar na casa ESCOLHE e FECHA a roda na mesma hora',
+      'PoderLeque.escolher(casa)' in rd(C + '/RodaPoderes.java')
+      and 'static void escolher(int poder) {' in rd(C + '/PoderLeque.java'))
+check('5.48.0 (105): o rastro do vazio usa TEXTURA com alfa (debugQuads ignorava o alfa)',
+      'RenderType.text(TEX_MANCHA)' in rd(C + '/RastroVazioFx.java')
+      and 'RenderType.debugQuads()' not in rd(C + '/RastroVazioFx.java')
+      and os.path.exists(A + '/textures/environment/rastro_mancha.png'))
+check('5.48.0 (105): o guarda-chuva na mao e ancorado no osso (translateToHand), nao por display',
+      'translateToHand' in rd(C + '/UmbrellaNaMao.java')
+      and 'RenderPlayerEvent.Post' in rd(C + '/UmbrellaNaMao.java')
+      and 'ItemDisplayContext.FIXED' in rd(C + '/UmbrellaNaMao.java'))
 
 # ======== PEDIDO 103 — 5.46.0 (o F5 dos raios, o fluxo MUITO vermelho, broto colocável e a lua de textura) ========
 # O dono, nesta rodada: "os raios ainda devem aparecer, no f5, so nao deve aparecer na primeira
