@@ -82,12 +82,15 @@ LADRILHOS_TECIDO = [
 #   * o CABO na mão                  -> Y ≈ 0,74
 #   * o guarda-chuva VERTICAL        -> eixo (0, +1,60, -0,02) em 95°
 #   * a CÚPULA acima da cabeça       -> Y 1,70..2,19 (a cabeça acaba em 1,80)
-# dá rotação 95° e translação [-1, 1, 7] em 1/16 de bloco.
+# dá rotação 95° e translação [-2, 0, 8] em 1/16 de bloco.
+# (5.47.0) o dono viu a 5.46.0 e disse "quase acertando o local certo": subiu mais 1/16, foi
+# 1/16 para o lado do corpo (a cúpula saiu de X=0,37 para 0,31, mais centrada na cabeça) e
+# ficou 1/16 mais para trás (o guarda-chuva estava um pouco à frente do rosto).
 # A translação NÃO é chute: é a solução de M·t = (alvo − cabo), onde M são os eixos da mão.
 DISPLAY = {
-    "thirdperson_righthand": {"rotation": [95, 0, 0], "translation": [-1, 1, 7],
+    "thirdperson_righthand": {"rotation": [95, 0, 0], "translation": [-2, 0, 8],
                               "scale": [1.1, 1.6, 1.1]},
-    "thirdperson_lefthand": {"rotation": [95, 0, 0], "translation": [-1, 1, 7],
+    "thirdperson_lefthand": {"rotation": [95, 0, 0], "translation": [-2, 0, 8],
                              "scale": [1.1, 1.6, 1.1]},
     "firstperson_righthand": {"rotation": [95, 0, 0], "translation": [0, 4, 0],
                               "scale": [0.9, 1.2, 0.9]},
@@ -105,9 +108,9 @@ DISPLAY = {
 # ~0,95 bloco (a escala 1,6 deixava um poste de 1,5 bloco passando da cabeça).
 DISPLAY_FECHADO = dict(DISPLAY)
 DISPLAY_FECHADO["thirdperson_righthand"] = {
-    "rotation": [95, 0, 0], "translation": [-1, 1, 7], "scale": [1.0, 1.0, 1.0]}
+    "rotation": [95, 0, 0], "translation": [-2, 0, 8], "scale": [1.0, 1.0, 1.0]}
 DISPLAY_FECHADO["thirdperson_lefthand"] = {
-    "rotation": [95, 0, 0], "translation": [-1, 1, 7], "scale": [1.0, 1.0, 1.0]}
+    "rotation": [95, 0, 0], "translation": [-2, 0, 8], "scale": [1.0, 1.0, 1.0]}
 
 
 def _mistura(a, b, t):

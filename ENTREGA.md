@@ -1,75 +1,78 @@
-# RP Tag 5.46.0 — as cinco correções da rodada
+# RP Tag 5.47.0 — pedido 104
 
-## 1. Raios do `/vazio ligar` — agora é só na PRIMEIRA pessoa
-**Você:** *"os raios ainda devem aparecer, no f5, so nao deve aparecer na primeira pessoa"*.
-Feito: em **F5 (3ª pessoa) o vazio vê a própria aura**, igual todo mundo. Só na **1ª pessoa** não
-aparece raio nenhum (era o que atrapalhava a visão). O corte de 2/3 de antes continua fora.
+**Jar:** `rptag-5.47.0.jar` (37.311.346 bytes, md5 `71ff1aaa08995f96560d276509223ee7`)
+**Servidor:** NeoForge 21.1.249 / Java 21 — subiu limpo (`RP Tag 5.47.0`, `Done (1.736s)`, 0 exceções)
+**Provas:** `python3 check.py` → **1401 PASS / 0 FAIL**
 
-## 2. O guarda-chuva — o problema do player (resolvido com conta, não com chute)
-**Você:** *"a umbrella continua bugada na questão do player"*.
+---
 
-Parei de adivinhar e **simulei a cadeia real do jogo** (a mesma conta que o Minecraft faz para
-desenhar item na mão em 3ª pessoa):
+## 1. O céu — refeito do zero (o que estava feio e como morreu)
+
+Suas palavras: *"esse céu está bonito pra você? tá horrível, muda o céu, deixa mais caótico"*.
+As duas coisas que apareceram na sua foto tinham duas causas separadas:
+
+| O que você viu | Por que acontecia | O que eu fiz |
+|---|---|---|
+| **faixas concêntricas** | o domo era feito de anéis com **cor fixa por anel** — cada anel virava um degrau | a cor agora é **por vértice** (`corCeu`): o degradê interpola dentro de cada quadrilátero, não existe mais degrau |
+| **um quadrado em volta da lua** | o halo eram **3 quads chapados** | o halo virou uma **textura de degradê radial** (`halo_de_sangue.png`) — o alfa chega a ZERO na borda, então não tem canto |
+| **veias em faixas de borda dura** | eram 22 quadriláteros de alfa fixo | virou uma **casca contínua** (`veia()`), com alfa **por vértice**: a veia nasce e morre sem borda |
+| **azul vazando / roxo** | o domo tinha alfa baixo (0,42–0,76) e o céu azul do vanilla aparecia por baixo | o domo agora é **opaco** (0,90–1,00) |
+
+E para ficar **caótico** de verdade (não um degradê de papel de parede):
+- **nuvens de sangue rolando** numa casca a 142 blocos (ruído de senos animado, alfa por vértice);
+- **veias escuras** atravessando o céu numa casca a 146 (elas se torcem com o tempo);
+- **pulsação** (~2 por segundo) e **clarão** a cada 7 s, que lava o céu inteiro de laranja;
+- a névoa do horizonte fica vermelha junto.
+
+**Prova visual:** `arte/previa_ceu.png` — o `arte/previa_ceu.py` reproduz em Python a MESMA conta
+do Java (`cor_ceu`, `nuvem`, `veia`, o aro e o halo de textura) e renderiza como fica na tela.
+Se mudar a conta no Java, muda aqui também: é a prova de que não sobrou faixa nem quadrado.
+
+## 2. A lua — de volta à sua referência (veios de lava)
+
+Você disse que eu mudei completamente o que você mandou. A receita voltou a ser a da referência,
+e agora ficou melhor que a 5.46.0:
+
+- pedra de sangue (fBm em 3 oitavas, vinho quase preto → vermelho vivo) + crateras escuras;
+- **rachaduras de lava com RAMOS finos** saindo das grossas (antes eram 18 veios soltos da mesma
+  grossura — parecia um prato de macarrão; agora lê como rachadura em pedra);
+- o **miolo do veio chega perto do branco-amarelo** (lava de verdade, não tinta laranja);
+- halo em volta de cada veio, vinheta de esfera e **aro aceso** na borda.
+
+## 3. O Fluxo — só o bloco e o fragmento
+
+*"deixa só o bloco e o fluxo shard, tira as buddy horriveis"* — feito. O mod registra **duas** peças:
 
 ```
-mundo = T(0,1.5,0) · S(-1,-1,1)          origem do jogador -> espaço do modelo
-      · T(-5/16, 2/16, 0) · RX(braço)    pivô do braço direito
-      · T(-1/16, 7/16, 1/16)             translateToHand
-      · RX(-90) · RY(180)                ItemInHandLayer
-      · T(1/16, 2/16, -10/16)            posição do item na mão
-      · T(translação/16) · R(rotação) · S(escala)      display do modelo
+rptag:fluxo_block      → Bloco de Fluxo
+rptag:fluxo_shard      → Fragmento de Fluxo
 ```
 
-**Ela foi validada nas suas duas fotos**: com `-100°` (5.44.1) ela prevê cabo em Y=0,31 e cúpula
-em Y=−0,82 (nas pernas, a sua primeira foto); com `80°` (5.45.0) prevê cabo em Y=0,31 e cúpula em
-Y=1,44 (longe da cabeça, a foto de agora). Ou seja: a conta bate com o jogo.
+Saiu do jar: as texturas, os modelos, os blockstates, as tabelas de drop, a receita e os nomes
+dos 3 brotos + do cacho + do bloco em formação. Confirmado no servidor de verdade por RCON:
 
-Resolvendo para **cabo na mão + guarda-chuva vertical + cúpula acima da cabeça**:
-**rotação `[95, 0, 0]`** e **translação `[-1, 1, 7]`** (1/16 de bloco). Medido:
-- **cabo em Y=0,74** — a mão fica em 0,75;
-- **cúpula de 1,70 a 2,19** — a cabeça termina em 1,80, então a cúpula cobre a cabeça;
-- eixo do guarda-chuva: `(0; +1,60; −0,02)` → **vertical**.
+```
+setblock 0 -55 3 rptag:fluxo_block        → Changed the block at 0, -55, 3
+setblock 0 -55 4 rptag:fluxo_cluster      → Unknown block type 'rptag:fluxo_cluster'
+setblock 0 -55 5 rptag:fluxo_bud_pequeno  → Unknown block type 'rptag:fluxo_bud_pequeno'
+summon … {id:"rptag:fluxo_shard"}         → Summoned new Fluxo Shard
+summon … {id:"rptag:fluxo_block"}         → Summoned new Block of Fluxo
+```
 
-O fechado usa a **mesma** rotação e translação (só a escala em Y muda, para virar um bastão de
-~0,95 bloco em vez de um poste de 1,5). A prévia com o corpo do lado está em
-`arte/previa_pose.png` (a 5.45.0 do lado esquerdo, a nova do lado direito).
+## 4. A umbrella — "quase acertando": mais 1/16 para cima e para o lado do corpo
 
-## 3. Ametista vermelha MUITO mais vermelha
-**Você:** *"a ametista vermelha deve ser MAIS VERMELHA, muito mais vermelha"*.
-A 5.44.0 só girava a matiz e **mantinha a saturação** — e a ametista do Minecraft é lavada, então
-saía **rosa/salmão** (RGB médio 192, 99, 103). Agora a saturação é empurrada para 0,92+:
-**RGB médio 185, 3, 7** — sangue. As facetas (claro/escuro da pedra) continuam as originais; a
-prova no `check.py` mede a correlação da estrutura, não a cor chapada.
-Montagem das 6 texturas: `arte/fluxo_5.46.0.png`.
+A pose que você aprovou quase toda foi mantida (`[95,0,0]`), só a translação andou:
 
-## 4. Os brotos de Fluxo agora COLOCAM como bloco
-**Você:** *"as bud eu nao consigo colocar como um bloco"*.
-Era isso mesmo: o `AmethystClusterBlock` da vanilla **recusa** qualquer apoio que não seja a
-ametista em formação (`canSurvive` falso) — o broto sumia no tick seguinte. Os quatro (3 brotos +
-cacho) agora usam `FluxoClusterBlock`, que aceita qualquer apoio: dá para decorar chão, parede e
-teto. Testado no servidor: `/setblock` e os blocos **continuam lá** depois de ticks.
+| | 5.46.0 | **5.47.0** |
+|---|---|---|
+| translação (1/16 de bloco) | `[-1, 1, 7]` | **`[-2, 0, 8]`** |
+| cabo (a mão fica em Y=0,75) | Y=0,74 | **Y=0,81** |
+| centro da cúpula | (0,37 / 1,92 / −0,08) | **(0,31 / 1,98 / −0,02)** |
 
-## 5. A lua do terremoto — virou TEXTURA (a sua referência)
-**Você:** *"a 'Lua' do terremoto, melhore isso, corrija esse erro, coloque essa lua"*.
-A 5.45.0 desenhava a lua com discos em código e virou uma bola vermelha chapada com uma estrela de
-rachaduras no meio. Agora:
-- `textures/environment/lua_de_sangue.png` e `sol_de_sangue.png`, gerados por
-  `arte/gerar_lua_de_sangue.py`: **esfera de pedra de sangue** (ruído fractal em 3 oitavas +
-  granulado fino), **veios de lava que brilham** (rachaduras por segmento, com halo), **manchas
-  escuras** de cratera e **aro aceso** — a mesma receita da referência animada que você mandou;
-- o céu ganhou **48 anéis** no domo (eram 12 — por isso as faixas concêntricas na sua foto):
-  agora o degradê é liso;
-- o sol (de dia) usa a versão mais quente da mesma textura, no lugar exato do sol do vanilla.
+Ou seja: subiu 1/16, foi 1/16 para o lado do corpo (a cúpula ficou mais centrada na cabeça) e
+1/16 para trás (estava um pouco à frente do rosto). Aberta e fechada continuam com a MESMA rotação
+e a MESMA translação. Prévia: `arte/previa_pose.png` (a conta vem da cadeia real do jogo).
 
-## Provas
-`check.py`: **1396 PASS / 0 FAIL**. Jar **37.281.656 B** (não emagreceu).
-Servidor de teste: `RP Tag 5.46.0`, `Done (1.622s)!`, **0 exceções**; `/setblock` dos brotos
-conferido com `execute if block` depois de ticks.
+## 5. O que ficou pendente
 
-## Arquivos
-- `client/RaiosVazioFx.java` (corte só na 1ª pessoa).
-- `arte/importar_umbrella_obj.py` (pose 95° / tr [-1,1,7] + a cadeia escrita) e os 16 modelos;
-  `arte/previa_pose_umbrella.py` (simulação da cadeia real).
-- `arte/gerar_fluxo.py` (saturação) + 7 texturas novas; `FluxoAmetista.java`
-  (`FluxoClusterBlock`).
-- `client/CeuDeSangueFx.java` (textura + domo liso); `arte/gerar_lua_de_sangue.py` e as 2 texturas.
+- O **redesenho das 5 molduras do editor de balão** (pedido antigo, ainda na fila).

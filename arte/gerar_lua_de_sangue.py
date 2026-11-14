@@ -70,7 +70,7 @@ def fbm(x, y, semente, oitavas=4):
     return total / norm
 
 
-def rachaduras(semente, quantas=11, passos=22):
+def rachaduras(semente, quantas=18, passos=26):
     """as rachaduras de lava: caminhada aleatória pela superfície (coordenadas -1..1)."""
     rnd = random.Random(semente)
     veios = []
@@ -89,6 +89,34 @@ def rachaduras(semente, quantas=11, passos=22):
         if len(caminho) > 2:
             veios.append(caminho)
     return veios
+
+
+def ramos(veios, semente, quantos=14, passos=8):
+    """(5.47.0) OS RAMOS: rachaduras finas que saem das grossas.
+
+    A lua da 5.46.0 tinha 18 veios soltos, todos da mesma grossura — parecia um prato de
+    macarrao. A referencia que o dono mandou tem veio GROSSO com ramos FINOS saindo dele, e e
+    isso que faz ler como rachadura de lava em pedra. Cada ramo nasce num ponto qualquer de um
+    veio e sai num angulo diferente.
+    """
+    rnd = random.Random(semente ^ 0x5EED)
+    finos = []
+    for _ in range(quantos):
+        caminho = rnd.choice(veios)
+        i = rnd.randrange(max(1, len(caminho) - 2))
+        x, y = caminho[i]
+        ang = rnd.uniform(0, math.tau)
+        novo = []
+        for _ in range(passos):
+            novo.append((x, y))
+            ang += rnd.uniform(-0.6, 0.6)
+            x += math.cos(ang) * 0.045
+            y += math.sin(ang) * 0.045
+            if x * x + y * y > 0.92 * 0.92:
+                break
+        if len(novo) > 2:
+            finos.append(novo)
+    return finos
 
 
 def distancia_ao_veio(px, py, veios):
@@ -116,6 +144,7 @@ def gerar(nome, brilho, quente):
     img = Image.new("RGBA", (LADO, LADO), (0, 0, 0, 0))
     px = img.load()
     veios = rachaduras(SEMENTE)
+    finos = ramos(veios, SEMENTE)
     raio = LADO * 0.5 - 2
     cx = cy = LADO * 0.5
     for y in range(LADO):
@@ -135,9 +164,9 @@ def gerar(nome, brilho, quente):
             n2 = fbm(sx * 9.0, sy * 9.0, SEMENTE + 31, 2)
             n3 = fbm(sx * 24.0, sy * 24.0, SEMENTE + 53, 2)   # granulado fino da pedra
             mistura = max(0.0, min(1.0, n * 0.62 + n2 * 0.30 + n3 * 0.18))
-            r = 30 + 120 * mistura
-            g = 4 + 22 * mistura
-            b = 6 + 16 * mistura
+            r = 22 + 150 * mistura
+            g = 3 + 26 * mistura
+            b = 5 + 18 * mistura
             # crateras/manchas escuras (as "nuvens" da lua)
             mancha = fbm(sx * 2.1 + 21.0, sy * 2.1 + 3.0, SEMENTE + 77, 3)
             if mancha < 0.42:
@@ -146,10 +175,24 @@ def gerar(nome, brilho, quente):
                 g *= 1.0 - 0.75 * k
                 b *= 1.0 - 0.75 * k
 
-            # 2) rachaduras de lava + halo
+            # 2) rachaduras de lava + halo (grossas primeiro, depois os ramos finos por cima)
             dv = distancia_ao_veio(dx, dy, veios)
-            if dv < 0.030:
-                k = (1.0 - dv / 0.030) ** 2
+            df = distancia_ao_veio(dx, dy, finos)
+            if df < 0.013:
+                k = (1.0 - df / 0.013) ** 1.4
+                r = r * (1 - k) + 255 * k
+                g = g * (1 - k) + (140 * quente) * k
+                b = b * (1 - k) + (34 * quente) * k
+            elif df < 0.055:
+                k = (0.055 - df) / 0.055 * 0.34
+                r = r * (1 - k) + 190 * k
+                g = g * (1 - k) + 48 * k
+                b = b * (1 - k) + 16 * k
+            if dv < 0.034:
+                k = (1.0 - dv / 0.034) ** 1.6
+                # o miolo do veio chega perto do BRANCO-amarelo (lava de verdade, nao tinta)
+                if dv < 0.011:
+                    k = min(1.0, k + (1.0 - dv / 0.011) ** 2.0 * 0.55)
                 r = r * (1 - k) + 255 * k
                 g = g * (1 - k) + (150 * quente) * k
                 b = b * (1 - k) + (40 * quente) * k
@@ -164,7 +207,8 @@ def gerar(nome, brilho, quente):
             r *= (1.0 - 0.45 * borda * borda)
             g *= (1.0 - 0.55 * borda * borda)
             b *= (1.0 - 0.55 * borda * borda)
-            aro = max(0.0, (prof - 0.055) / 0.055) if prof < 0.055 else 0.0
+            aro = max(0.0, (prof - 0.085) / 0.085) if prof < 0.085 else 0.0
+            aro = min(1.0, aro * 1.6)
             if aro > 0:
                 r = r * (1 - aro) + 255 * aro
                 g = g * (1 - aro) + (110 * quente) * aro

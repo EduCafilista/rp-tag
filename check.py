@@ -78,7 +78,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.46.0'
+VER = '5.47.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3039,9 +3039,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.46.0 no jar, no mod e no gradle',
-      "version = '5.46.0'" in rd('build.gradle')
-      and '5.46.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.47.0 no jar, no mod e no gradle',
+      "version = '5.47.0'" in rd('build.gradle')
+      and '5.47.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3277,8 +3277,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.46.0 (jar, mod e gradle)',
-      "version = '5.46.0'" in rd('build.gradle') and '5.46.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.47.0 (jar, mod e gradle)',
+      "version = '5.47.0'" in rd('build.gradle') and '5.47.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3336,8 +3336,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.46.0 (jar, mod e gradle)',
-      "version = '5.46.0'" in rd('build.gradle') and '5.46.0' in _rm)
+check('5.34.0: a versao subiu pra 5.47.0 (jar, mod e gradle)',
+      "version = '5.47.0'" in rd('build.gradle') and '5.47.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3359,8 +3359,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.46.0 (jar, mod e gradle)',
-      "version = '5.46.0'" in rd('build.gradle') and '5.46.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.47.0 (jar, mod e gradle)',
+      "version = '5.47.0'" in rd('build.gradle') and '5.47.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -4624,9 +4624,9 @@ _fe44 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display
 # provada: translação ZERO em 3ª e 1ª pessoa (o modelo é desenhado em volta da origem do item,
 # que é a mão) e a geometria do .obj centrada no cabo.
 check('5.46.0 (103): O CABO FICA NA MAO — translacao calculada, igual nas duas maos e no fechado',
-      all(_ab44[c]['translation'] == [-1, 1, 7] for c in
+      all(_ab44[c]['translation'] == [-2, 0, 8] for c in
           ('thirdperson_righthand', 'thirdperson_lefthand'))
-      and all(_fe44[c]['translation'] == [-1, 1, 7] for c in
+      and all(_fe44[c]['translation'] == [-2, 0, 8] for c in
               ('thirdperson_righthand', 'thirdperson_lefthand')))
 check('5.44.1 (96): a geometria do .obj esta CENTRADA no cabo (X e Z em volta de 0, Y de 0 pra cima)',
       all(abs(_bbox_obj(o)[0]) < 0.03 and abs(_bbox_obj(o)[2]) < 0.03
@@ -4719,12 +4719,23 @@ def _mais_vermelho(caminho):
 # lê o jar do cliente) — a prova confere que a luminância de cada pixel foi preservada, ou seja:
 # não é um retângulo vermelho, é a mesma pedra.
 _FLUXO_JAVA = rd(R + '/FluxoAmetista.java')
-_FLUXO_NOMES = ['fluxo_block', 'fluxo_budding', 'fluxo_bud_pequeno', 'fluxo_bud_medio',
-                'fluxo_bud_grande', 'fluxo_cluster']
+# (5.47.0) o dono: "deixa so o bloco e o fluxo shard, tira as buddy horriveis kkkkk".
+# A família inteira da ametista (em formação + 3 brotos + cacho) saiu do mod.
+_FLUXO_NOMES = ['fluxo_block']
 
-check('5.44.0 (97): o FLUXO existe no mod e registra as 6 formas da ametista',
+check('5.47.0 (104): o FLUXO ficou com DUAS pecas (Bloco de Fluxo + Fragmento de Fluxo)',
       'class FluxoAmetista' in _FLUXO_JAVA
-      and all(('"' + n + '"') in _FLUXO_JAVA for n in _FLUXO_NOMES))
+      and all(('"' + n + '"') in _FLUXO_JAVA for n in _FLUXO_NOMES)
+      and 'fluxo_bud' not in _FLUXO_JAVA and 'fluxo_cluster' not in _FLUXO_JAVA
+      and 'FluxoBuddingBlock' not in _FLUXO_JAVA)
+check('5.47.0 (104): os brotos/cacho sairam do jar (textura, modelo, blockstate, receita e lang)',
+      not any(os.path.exists(A + p + n)
+              for p in ('/textures/block/', '/models/block/', '/models/item/', '/blockstates/')
+              for n in ('fluxo_budding', 'fluxo_bud_pequeno', 'fluxo_bud_medio',
+                        'fluxo_bud_grande', 'fluxo_cluster'))
+      and not os.path.exists(D + '/recipe/fluxo_budding.json')
+      and 'fluxo_bud' not in rd(A + '/lang/pt_br.json')
+      and 'fluxo_cluster' not in rd(A + '/lang/pt_br.json'))
 check('5.44.0 (97): o item FRAGMENTO DE FLUXO existe (o "amethyst shard" vermelho)',
       'fluxo_shard' in _FLUXO_JAVA and os.path.exists(A + '/textures/item/fluxo_shard.png'))
 check('5.44.0 (97): os registros entram no barramento do mod (BLOCKS e ITEMS do Fluxo)',
@@ -4735,23 +4746,8 @@ check('5.44.0 (97): cada forma tem blockstate, modelo de bloco, modelo de item e
       and all(os.path.exists(A + '/models/block/%s.json' % n) for n in _FLUXO_NOMES)
       and all(os.path.exists(A + '/models/item/%s.json' % n) for n in _FLUXO_NOMES)
       and all(os.path.exists(A + '/textures/block/%s.png' % n) for n in _FLUXO_NOMES))
-check('5.44.0 (97): os brotos e o cacho tem as 6 direcoes (dá pra colar em parede e teto)',
-      all(sorted(_json.loads(rd(A + '/blockstates/%s.json' % n))['variants']) ==
-          ['facing=down', 'facing=east', 'facing=north', 'facing=south', 'facing=up', 'facing=west']
-          for n in ('fluxo_bud_pequeno', 'fluxo_bud_medio', 'fluxo_bud_grande', 'fluxo_cluster')))
-check('5.44.0 (97): o FLUXO EM FORMACAO cresce os brotos do Fluxo (nao os azuis da vanilla)',
-      'FluxoBuddingBlock' in _FLUXO_JAVA and 'randomTicks()' in _FLUXO_JAVA
-      and 'BUD_PEQUENO.get()' in _FLUXO_JAVA and 'CLUSTER.get()' in _FLUXO_JAVA
-      and 'Blocks.SMALL_AMETHYST_BUD' not in _FLUXO_JAVA)
-check('5.44.0 (97): as tabelas de drop sao as MESMAS da ametista da vanilla',
-      # cacho: 4 fragmentos (ouro) / 2 com explosao / o bloco com toque suave
-      '"count": 4.0' in rd(D + '/loot_table/blocks/fluxo_cluster.json')
-      and '"count": 2.0' in rd(D + '/loot_table/blocks/fluxo_cluster.json')
-      and 'silk_touch' in rd(D + '/loot_table/blocks/fluxo_cluster.json')
-      # em formacao nao dropa nada, igual a vanilla
-      and _json.loads(rd(D + '/loot_table/blocks/fluxo_budding.json'))['pools'] == []
-      and all('silk_touch' in rd(D + '/loot_table/blocks/%s.json' % n)
-              for n in ('fluxo_bud_pequeno', 'fluxo_bud_medio', 'fluxo_bud_grande')))
+check('5.47.0 (104): o Bloco de Fluxo continua com a tabela de drop da ametista', 
+      os.path.exists(D + '/loot_table/blocks/fluxo_block.json'))
 check('5.44.0 (97): dá para obter o Fluxo sem ser ADM (craftar, tingir e desmontar)',
       os.path.exists(D + '/recipe/fluxo_block.json')
       and os.path.exists(D + '/recipe/fluxo_shard.json')
@@ -4760,18 +4756,16 @@ check('5.44.0 (97): dá para obter o Fluxo sem ser ADM (craftar, tingir e desmon
       and 'minecraft:amethyst_shard' in rd(D + '/recipe/fluxo_shard.json'))
 check('5.44.0 (97): o Fluxo tem nome nos DOIS idiomas (pt e en)',
       all(k in _json.loads(rd(A + '/lang/pt_br.json')) for k in
-          ('block.rptag.fluxo_block', 'item.rptag.fluxo_shard', 'item.rptag.fluxo_cluster'))
+          ('block.rptag.fluxo_block', 'item.rptag.fluxo_shard'))
       and all(k in _json.loads(rd(A + '/lang/en_us.json')) for k in
-              ('block.rptag.fluxo_block', 'item.rptag.fluxo_shard', 'item.rptag.fluxo_cluster')))
+              ('block.rptag.fluxo_block', 'item.rptag.fluxo_shard')))
 check('5.44.0 (97): o gerador da textura le a ametista DO JAR do cliente (nao desenha no olho)',
       os.path.exists('arte/gerar_fluxo.py')
       and 'client-1.21.1' in rd('arte/gerar_fluxo.py')
       and 'amethyst_block.png' in rd('arte/gerar_fluxo.py')
       and 'colorsys' in rd('arte/gerar_fluxo.py'))
-check('5.44.0 (97): as texturas do Fluxo sao a MESMA pedra em vermelho (mesma estrutura de claro/escuro)',
+check('5.44.0 (97): a textura do Fluxo e a MESMA pedra em vermelho (estrutura de claro/escuro)',
       _mesma_luminancia('block/amethyst_block.png', 'block/fluxo_block.png')
-      and _mesma_luminancia('block/budding_amethyst.png', 'block/fluxo_budding.png')
-      and _mesma_luminancia('block/amethyst_cluster.png', 'block/fluxo_cluster.png')
       and _mais_vermelho('block/fluxo_block.png'))
 
 # (5.44.0) a pasta de receitas estava no nome ANTIGO (recipes, plural). No 1.21 quem manda é
@@ -4829,13 +4823,13 @@ _fe45 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display
 
 # ---- 1. o guarda-chuva (de novo, e agora com a conta certa)
 _dir45 = _dir_de(_ab45['thirdperson_righthand']['rotation'])
-check('5.46.0 (103): a pose do guarda-chuva e MEDIDA pela cadeia real (95 graus, tr [-1,1,7])',
+check('5.46.0 (103): a pose do guarda-chuva e MEDIDA pela cadeia real (95 graus, tr [-2,0,8])',
       _ab45['thirdperson_righthand']['rotation'] == [95, 0, 0]
-      and _ab45['thirdperson_righthand']['translation'] == [-1, 1, 7])
+      and _ab45['thirdperson_righthand']['translation'] == [-2, 0, 8])
 check('5.46.0 (103): com 95 graus o +Y (cabo -> cupula) aponta PRA CIMA na mao', _dir45[1] > 0.95)
 check('5.46.0 (103): o ABERTO e o FECHADO usam a MESMA rotacao e a MESMA translacao',
       _fe45['thirdperson_righthand']['rotation'] == [95, 0, 0]
-      and _fe45['thirdperson_righthand']['translation'] == [-1, 1, 7])
+      and _fe45['thirdperson_righthand']['translation'] == [-2, 0, 8])
 check('5.46.0 (103): a simulacao da cadeia do jogo existe na previa e no gerador (nada de chute)',
       'def mao(' in rd('arte/previa_pose_umbrella.py')
       and 'translateToHand' in rd('arte/previa_pose_umbrella.py')
@@ -4887,9 +4881,44 @@ check('5.46.0 (103): o SOL e a LUA de sangue usam TEXTURA e ficam na posicao rea
 check('5.46.0 (103): a lua e uma ESFERA rachada de lava (nao disco com estrela no meio)',
       'RACHADURAS DE LAVA' in rd('arte/gerar_lua_de_sangue.py')
       and 'def gerar(' in rd('arte/gerar_lua_de_sangue.py')
-      and 'def distancia_ao_veio(' in rd('arte/gerar_lua_de_sangue.py'))
-check('5.46.0 (103): o domo do ceu nao tem mais faixa visivel (48 aneis em vez de 12)',
-      'ANEIS = 48' in _CS45 and 'MERIDIANOS = 36' in _CS45)
+      and 'def distancia_ao_veio(' in rd('arte/gerar_lua_de_sangue.py')
+      and 'def ramos(' in rd('arte/gerar_lua_de_sangue.py'))
+# (5.47.0) O dono OLHOU o ceu da 5.46.0 e reprovou: "esse ceu esta bonito para voce? ta horrivel,
+# muda o ceu, deixa mais caotico" — as fotos dele mostravam FAIXAS concentricas em volta do sol e
+# um QUADRADO em volta da lua. As duas causas estao provadas abaixo: a cor agora e POR VERTICE
+# (nao mais uma cor por anel, que vira degrau) e o halo e feito de DISCOS (nao mais de 3 quads,
+# que viram retangulo na tela).
+check('5.47.0 (104): o ceu virou CAOTICO (44 aneis x 40 meridianos, nuvens e veias animadas)',
+      'ANEIS = 44' in _CS45 and 'MERIDIANOS = 40' in _CS45
+      and 'RAIO = 150.0F' in _CS45 and 'RAIO_NUVENS = 142' in _CS45
+      and 'desenharNuvens(' in _CS45 and 'desenharVeias(' in _CS45
+      and 'RAIO_VEIAS = 146.0F' in _CS45)
+check('5.47.0 (104): a cor do domo e POR VERTICE (acaba com as faixas concentricas do ceu anterior)',
+      'private static void corCeu(' in _CS45
+      and 'Mth.lerp(h' in _CS45
+      and _CS45.count('corCeu(') >= 5)
+check('5.47.0 (104): o halo do sol/lua e uma TEXTURA de degrade radial (nem quadrado, nem anel)',
+      'private static final ResourceLocation TEX_HALO' in _CS45
+      and 'quadCor(' in _CS45
+      and os.path.exists(A + '/textures/environment/halo_de_sangue.png')
+      and os.path.exists('arte/gerar_halo.py')
+      and 'o alfa chega a ZERO na' in _CS45)
+check('5.47.0 (104): as veias do ceu sao uma CASCA de alfa por vertice (antes eram 22 quads de borda dura)',
+      'RAIO_VEIAS' in _CS45 and 'private static float veia(' in _CS45
+      and 'corVeia(' in _CS45 and 'quadrilateroCor(' in _CS45
+      and 'k < 22' not in _CS45)
+check('5.47.0 (104): as nuvens tambem tem alfa POR VERTICE (nada de mancha quadrada)',
+      'private static int corNuvem(' in _CS45
+      and _CS45.count('quadrilateroCor(') >= 3)
+check('5.47.0 (104): o domo cobre o ceu azul do vanilla (alfa 0,90 — com alfa baixo vazava roxo)',
+      '255.0F * f * (0.90F + 0.10F * h)' in _CS45
+      and 'vazava por baixo' in _CS45)
+check('5.47.0 (104): a previa do ceu roda e reproduz a MESMA conta do Java (prova visual)',
+      os.path.exists('arte/previa_ceu.py')
+      and 'def veia(' in rd('arte/previa_ceu.py')
+      and 'def cor_ceu(' in rd('arte/previa_ceu.py')
+      and 'halo_de_sangue.png' in rd('arte/previa_ceu.py')
+      and os.path.exists('arte/previa_ceu.png'))
 check('5.45.0 (101): a neblina do horizonte fica vermelha junto com o ceu',
       'ViewportEvent.ComputeFogColor' in _CS45 and 'event.setRed(' in _CS45)
 check('5.45.0 (101): a TELA TOMBA de verdade no terremoto (inclinacao de 9 graus, nao so tremor)',
@@ -4908,17 +4937,14 @@ check('5.45.0 (101): o ceu de sangue so aparece com o terremoto ligado (estado v
 _FA46 = rd(R + '/FluxoAmetista.java')
 _GF46 = rd('arte/gerar_fluxo.py')
 
-check('5.46.0 (103): o broto de Fluxo e COLOCAVEL em qualquer apoio (o dono nao conseguia por)',
-      'class FluxoClusterBlock extends AmethystClusterBlock' in _FA46
-      and 'protected boolean canSurvive' in _FA46
-      and _FA46.count('new FluxoClusterBlock(') >= 4)
+check('5.47.0 (104): os brotos sairam (o pedido seguinte do dono apagou a correcao anterior)',
+      'FluxoClusterBlock' not in _FA46)
 check('5.46.0 (103): a ametista de Fluxo e MUITO mais vermelha (saturacao empurrada, nao so a matiz)',
       'SAT_ESCALA = 2.6' in _GF46 and 'SAT_PISO = 0.92' in _GF46 and 'muito mais vermelha' in _GF46)
-check('5.46.0 (103): as texturas do Fluxo sao sangue de verdade (R alto, G e B quase zero)',
+check('5.46.0 (103): a textura do Fluxo e sangue de verdade (R alto, G e B quase zero)',
       _mais_vermelho('block/fluxo_block.png')
-      and all(sum(p[0] for p in _rgb(A + '/textures/block/' + n) if p[3] > 8)
-              / max(1, len([p for p in _rgb(A + '/textures/block/' + n) if p[3] > 8])) > 150
-              for n in ('fluxo_block.png', 'fluxo_budding.png', 'fluxo_cluster.png')))
+      and sum(p[0] for p in _rgb(A + '/textures/block/fluxo_block.png') if p[3] > 8)
+          / max(1, len([p for p in _rgb(A + '/textures/block/fluxo_block.png') if p[3] > 8])) > 150)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)

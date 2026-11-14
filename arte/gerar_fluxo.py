@@ -32,15 +32,10 @@ ASSETS = os.path.join(RAIZ, "src", "main", "resources", "assets", "rptag")
 CLIENTE = ("/home/user/mcclient/libraries/net/minecraft/client/1.21.1-20240808.144430/"
            "client-1.21.1-20240808.144430-extra.jar")
 
-# (origem no jar, destino no mod). A família INTEIRA da ametista do Mine:
-# bloco, ametista em formação (budding), os 3 brotos, o cacho e o fragmento.
+# (origem no jar, destino no mod). (5.47.0) SO DUAS TEXTURAS: o bloco e o fragmento — o dono
+# mandou tirar "as buddy horriveis" (ametista em formação, brotos e cacho).
 TEXTURAS = [
     ("assets/minecraft/textures/block/amethyst_block.png", "textures/block/fluxo_block.png"),
-    ("assets/minecraft/textures/block/budding_amethyst.png", "textures/block/fluxo_budding.png"),
-    ("assets/minecraft/textures/block/small_amethyst_bud.png", "textures/block/fluxo_bud_pequeno.png"),
-    ("assets/minecraft/textures/block/medium_amethyst_bud.png", "textures/block/fluxo_bud_medio.png"),
-    ("assets/minecraft/textures/block/large_amethyst_bud.png", "textures/block/fluxo_bud_grande.png"),
-    ("assets/minecraft/textures/block/amethyst_cluster.png", "textures/block/fluxo_cluster.png"),
     ("assets/minecraft/textures/item/amethyst_shard.png", "textures/item/fluxo_shard.png"),
 ]
 
