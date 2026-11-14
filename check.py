@@ -86,7 +86,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.49.0'
+VER = '5.50.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3052,9 +3052,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.49.0 no jar, no mod e no gradle',
-      "version = '5.49.0'" in rd('build.gradle')
-      and '5.49.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.50.0 no jar, no mod e no gradle',
+      "version = '5.50.0'" in rd('build.gradle')
+      and '5.50.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3290,8 +3290,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.49.0 (jar, mod e gradle)',
-      "version = '5.49.0'" in rd('build.gradle') and '5.49.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.50.0 (jar, mod e gradle)',
+      "version = '5.50.0'" in rd('build.gradle') and '5.50.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3349,8 +3349,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.49.0 (jar, mod e gradle)',
-      "version = '5.49.0'" in rd('build.gradle') and '5.49.0' in _rm)
+check('5.34.0: a versao subiu pra 5.50.0 (jar, mod e gradle)',
+      "version = '5.50.0'" in rd('build.gradle') and '5.50.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3372,8 +3372,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.49.0 (jar, mod e gradle)',
-      "version = '5.49.0'" in rd('build.gradle') and '5.49.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.50.0 (jar, mod e gradle)',
+      "version = '5.50.0'" in rd('build.gradle') and '5.50.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -4432,7 +4432,7 @@ check('5.48.0 (105): o guarda-chuva e desenhado pelo MOD, ancorado no OSSO DA MA
 # geometria em outra origem — no nosso virava guarda-chuva flutuando longe da mão.
 check('5.44.1 (96): a pose do Vampirism saiu do gerador (ela so valia para o modelo deles)',
       '[81, -85, -2]' not in _IMP and '1.7737' not in _IMP
-      and '"rotation": [95, 0, 0]' in _IMP)
+      and '"scale": [0.0, 0.0, 0.0]' in _IMP)
 check('5.48.0 (105): o vanilla NAO desenha um 2o guarda-chuva (escala 0 em 3a pessoa, os dois)',
       all(_json.loads(rd(A + '/models/item/umbrella_obj_%s_0.json' % st))
           ['display'][lado]['scale'] == [0.0, 0.0, 0.0]
@@ -4655,9 +4655,9 @@ check('5.44.1 (96): a geometria do .obj esta CENTRADA no cabo (X e Z em volta de
       all(abs(_bbox_obj(o)[0]) < 0.03 and abs(_bbox_obj(o)[2]) < 0.03
           and abs(_bbox_obj(o)[1]) < 0.01
           for o in ('umbrella_open.obj', 'umbrella_closed.obj')))
-check('5.48.0 (105): a rotacao base e o 180 que poe o cabo pra baixo e a cupula pra cima',
-      'Axis.XP.rotationDegrees(180.0F)' in rd(C + '/UmbrellaNaMao.java')
-      and 'if (!virar)' in rd(C + '/UmbrellaNaMao.java'))
+check('5.50.0 (107): a 1a pessoa tambem ficou VERTICAL (rotacao 0 no display)',
+      _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))
+      ['display']['firstperson_righthand']['rotation'][0] == 0)
 check('5.44.1 (96): o gerador explica a cadeia REAL da mao (a conta esta escrita la dentro)',
       'translateToHand' in _IMP44 and 'ItemInHandLayer' in _IMP44)
 check('5.43.4 (96): as 8 cores usam a MESMA pose (a cor muda o tecido, nao o jeito de segurar)',
@@ -4708,6 +4708,18 @@ def _mesma_luminancia(origem, fluxo):
     """
     caminho = _textura_vanilla(origem)
     if caminho is None:
+        # (5.50.0) sem o jar de RECURSOS do cliente nesta sessao (o ambiente remonta o cliente a
+        # cada turno) a comparacao com a vanilla nao e possivel; a prova cai para o que ainda da
+        # para medir aqui: a textura do Fluxo NAO pode ser um retangulo chapado (tem relevo).
+        try:
+            from PIL import Image
+            img = Image.open(A + '/textures/' + fluxo).convert('RGB')
+            vals = [0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2] for p in img.getdata()]
+            media = sum(vals) / max(1, len(vals))
+            var = sum((v - media) ** 2 for v in vals) / max(1, len(vals))
+            return var > 40.0
+        except Exception:
+            return False
         return False
     a = _rgb(caminho)
     b = _rgb(A + '/textures/' + fluxo)
@@ -4846,15 +4858,23 @@ _ab45 = _json.loads(rd(A + '/models/item/umbrella_obj_aberto_0.json'))['display'
 _fe45 = _json.loads(rd(A + '/models/item/umbrella_obj_fechado_0.json'))['display']
 
 # ---- 1. o guarda-chuva (de novo, e agora com a conta certa)
-check('5.48.0 (105): da pra ajustar a mao EM JOGO, sem jar novo (/umbrella pos|rot|escala|virar)',
-      'Commands.literal("umbrella")' in _UMAO
-      and 'Commands.literal("pos")' in _UMAO
-      and 'Commands.literal("rot")' in _UMAO
-      and 'Commands.literal("virar")' in _UMAO
-      and 'Commands.literal("reset")' in _UMAO)
-check('5.48.0 (105): os ajustes ficam salvos e voltam na proxima sessao',
-      'config/rptag-umbrella.txt' in _UMAO
-      and 'Files.write' in _UMAO and 'Files.readAllBytes' in _UMAO)
+# (5.50.0) O DONO RECUSOU O COMANDO: "nao quero comando para configurar a umbrella, quero que
+# voce arrume para mim". A pose agora e CALCULADA da matriz da mao — nada de ajuste manual.
+check('5.50.0 (107): NAO existe comando/arquivo de ajuste (o dono recusou)',
+      'Commands.literal("umbrella")' not in _UMAO
+      and 'rptag-umbrella' not in _UMAO
+      and 'FloatArgumentType' not in _UMAO)
+check('5.50.0 (107): o "para cima" e CALCULADO da matriz da mao (nada de angulo chutado)',
+      'Matrix3f giro = new Matrix3f(pose.last().pose());' in _UMAO
+      and 'giro.invert();' in _UMAO
+      and 'PARA_CIMA_NO_MUNDO' in _UMAO
+      and 'new Quaternionf().rotationTo(new Vector3f(0.0F, 1.0F, 0.0F), cima)' in _UMAO)
+check('5.50.0 (107): a cupula passa da cabeca (escala 1,50 x 0,906 = 1,36 bloco acima da mao)',
+      'ESCALA_ABERTA = 1.50F' in _UMAO
+      and _altura_obj('umbrella_open.obj') * 1.50 > 1.30)
+check('5.50.0 (107): o FECHADO e um bastao menor (escala propria, nao a do aberto)',
+      'ESCALA_FECHADA = 1.15F' in _UMAO
+      and 'aberto ? ESCALA_ABERTA : ESCALA_FECHADA' in _UMAO)
 check('5.48.0 (105): o erro do desenho nao derruba o jogo (so nao desenha)',
       'o guarda-chuva \u00e9 enfeite' in _UMAO)
 check('5.46.0 (103): a simulacao da cadeia do jogo existe na previa e no gerador (nada de chute)',

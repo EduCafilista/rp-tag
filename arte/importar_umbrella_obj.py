@@ -97,10 +97,13 @@ DISPLAY = {
                               "scale": [0.0, 0.0, 0.0]},
     "thirdperson_lefthand": {"rotation": [0, 0, 0], "translation": [0, 0, 0],
                              "scale": [0.0, 0.0, 0.0]},
-    "firstperson_righthand": {"rotation": [95, 0, 0], "translation": [0, 4, 0],
-                              "scale": [0.9, 1.2, 0.9]},
-    "firstperson_lefthand": {"rotation": [95, 0, 0], "translation": [0, 4, 0],
-                             "scale": [0.9, 1.2, 0.9]},
+    # (5.50.0) 1a PESSOA: o guarda-chuva é VERTICAL (mesma ideia da 3a, onde quem posiciona é o
+    # UmbrellaNaMao). Aqui o vanilla posiciona pelo display, então a translação leve para baixo e
+    # para o lado deixa o cabo aparecendo no canto e a cúpula subindo pela direita da tela.
+    "firstperson_righthand": {"rotation": [0, 0, -6], "translation": [5, -10, -14],
+                              "scale": [0.85, 0.85, 0.85]},
+    "firstperson_lefthand": {"rotation": [0, 0, 6], "translation": [-5, -10, -14],
+                             "scale": [0.85, 0.85, 0.85]},
     # no chão, na moldura e no inventário o modelo só é DEITADO/girado pra caber bonito —
     # são contextos em que ninguém segura nada, então não há mão pra errar.
     "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
