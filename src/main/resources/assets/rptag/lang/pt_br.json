@@ -27,5 +27,6 @@
   "item.rptag.chave_julgamento": "Chave do Julgamento",
   "block.rptag.fluxo_block": "Bloco de Fluxo",
   "item.rptag.fluxo_shard": "Fragmento de Fluxo",
-  "item.rptag.fluxo_block": "Bloco de Fluxo"
+  "item.rptag.fluxo_block": "Bloco de Fluxo",
+  "item.rptag.porte_de_arma": "Porte de Arma"
 }

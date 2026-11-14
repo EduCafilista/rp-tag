@@ -47,7 +47,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.48.0";
+    public static final String VERSION = "5.49.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -254,6 +254,15 @@ public final class RPTagMod {
                     .rarity(net.minecraft.world.item.Rarity.RARE)));
 
     /**
+     * (5.49.0) PORTE DE ARMA — o contrato. Pedido do dono: "faça um item chamado 'Porte de arma',
+     * apenas um contrato, qualquer coisa do tipo". É só o documento de RP (ver
+     * {@link PorteDeArmaItem}); não tem mecânica nenhuma.
+     */
+    public static final Supplier<PorteDeArmaItem> PORTE_DE_ARMA = ITEMS.register("porte_de_arma",
+            () -> new PorteDeArmaItem(new Item.Properties().stacksTo(1)
+                    .rarity(net.minecraft.world.item.Rarity.UNCOMMON)));
+
+    /**
      * (5.37.0) UMBRELLA DE SOMBRA — o guarda-chuva 3D do vampiro. Só protege do sol com a
      * cúpula ABERTA (clique direito); a arte tem 8 cores (ver {@code arte/gerar_umbrella.py}).
      */
@@ -277,7 +286,7 @@ public final class RPTagMod {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         BE_TYPES.register(modEventBus);
-        // (5.48.0) FLUXO — a ametista vermelha (bloco, em formação, 3 brotos, cacho e fragmento)
+        // (5.49.0) FLUXO — a ametista vermelha (bloco, em formação, 3 brotos, cacho e fragmento)
         dev.rptag.FluxoAmetista.BLOCKS.register(modEventBus);
         dev.rptag.FluxoAmetista.ITEMS.register(modEventBus);
         // (4.5.1) BUG QUE DERRUBA JOGADOR NO LOGIN: argumento de comando custom
