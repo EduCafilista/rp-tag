@@ -64,6 +64,8 @@ public final class BubbleRenderer {
     private static final float FLOAT_UP_PX = 2.5F;
     /** Duracao do FADE no fim da vida do balao. */
     private static final long FADE_MS = 400;
+    /** (5.52.0) abaixo disto o balao nao e desenhado (alfa residual = balao fantasma). */
+    private static final float ALFA_MINIMO = 0.04F;
     /** Respiro ENTRE baloes da pilha (a altura real de cada um ja e somada). */
     private static final float STACK_GAP_BLOCKS = 0.12F;
     /**
@@ -793,9 +795,22 @@ public final class BubbleRenderer {
         long now = System.currentTimeMillis();
         long age = now - bubble.bornMillis();
         long remaining = bubble.expireMillis() - now;
-        // alfa global: entra rapido, sai suave (fade do fim da vida)
-        float alpha = age < POP_MS ? Math.max(0.1F, age / (float) POP_MS)
-                : (remaining < FADE_MS ? Math.max(0.1F, remaining / (float) FADE_MS) : 1.0F);
+        // (5.52.0) O BALAO FANTASMA DO CANTO — o dono: "tem um outro ali no canto".
+        //
+        // Era o balao ANTERIOR da pilha (que sobe pra cima da cabeca) morrendo: o alfa
+        // de saida parava em 0.1 por causa de um Math.max(0.1F, ...), entao ele NUNCA
+        // chegava a zero — ficava na tela um balao de 10% de opacidade, largado em cima
+        // do outro (a pilula some, a letra some, mas o contorno continua la: fantasma).
+        // Agora o fade vai ATE ZERO e o balao que ja morreu (ou que ficou quase
+        // invisivel) simplesmente NAO e desenhado.
+        if (remaining <= 0L) {
+            return;
+        }
+        float alpha = age < POP_MS ? Mth.clamp(age / (float) POP_MS, 0.0F, 1.0F)
+                : (remaining < FADE_MS ? Mth.clamp(remaining / (float) FADE_MS, 0.0F, 1.0F) : 1.0F);
+        if (alpha <= ALFA_MINIMO) {
+            return; // invisivel na pratica: nem entra na fila de desenho (fim do fantasma)
+        }
         // flutuacao suave pra cima nos primeiros FLOAT_MS
         float floatUp = FLOAT_UP_PX * Mth.clamp(age / (float) FLOAT_MS, 0.0F, 1.0F);
 
