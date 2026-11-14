@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "rptag:block/fluxo_block"
+    }
+  }
+}

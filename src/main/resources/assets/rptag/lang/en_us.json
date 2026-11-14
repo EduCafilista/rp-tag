@@ -24,5 +24,18 @@
   "item.rptag.chave_julgamento": "Judgment Key",
   "item.rptag.nucleo_vial": "Vial Energy Core",
   "item.rptag.nucleo_vial_quebrado": "Vial Energy Core (broken)",
-  "item.rptag.fita": "Cassette Tape"
+  "item.rptag.fita": "Cassette Tape",
+  "block.rptag.fluxo_block": "Block of Fluxo",
+  "block.rptag.fluxo_budding": "Budding Fluxo",
+  "block.rptag.fluxo_bud_pequeno": "Small Fluxo Bud",
+  "block.rptag.fluxo_bud_medio": "Medium Fluxo Bud",
+  "block.rptag.fluxo_bud_grande": "Large Fluxo Bud",
+  "block.rptag.fluxo_cluster": "Fluxo Cluster",
+  "item.rptag.fluxo_shard": "Fluxo Shard",
+  "item.rptag.fluxo_block": "Block of Fluxo",
+  "item.rptag.fluxo_budding": "Budding Fluxo",
+  "item.rptag.fluxo_bud_pequeno": "Small Fluxo Bud",
+  "item.rptag.fluxo_bud_medio": "Medium Fluxo Bud",
+  "item.rptag.fluxo_bud_grande": "Large Fluxo Bud",
+  "item.rptag.fluxo_cluster": "Fluxo Cluster"
 }

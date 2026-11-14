@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "rptag:block/fluxo_bud_medio"
+  }
+}

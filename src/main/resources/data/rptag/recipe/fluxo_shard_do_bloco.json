@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "rptag:fluxo_block"
+    }
+  ],
+  "result": {
+    "id": "rptag:fluxo_shard",
+    "count": 9
+  }
+}

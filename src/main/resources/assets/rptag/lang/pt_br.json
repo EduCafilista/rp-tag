@@ -24,5 +24,18 @@
   "item.rptag.umbrella_sombra": "Guarda-chuva de Sombra",
   "item.rptag.escuridao": "Escuridão",
   "item.rptag.coracao_canon": "Coração da Vida Canônica",
-  "item.rptag.chave_julgamento": "Chave do Julgamento"
+  "item.rptag.chave_julgamento": "Chave do Julgamento",
+  "block.rptag.fluxo_block": "Bloco de Fluxo",
+  "block.rptag.fluxo_budding": "Fluxo em Formação",
+  "block.rptag.fluxo_bud_pequeno": "Broto de Fluxo Pequeno",
+  "block.rptag.fluxo_bud_medio": "Broto de Fluxo Médio",
+  "block.rptag.fluxo_bud_grande": "Broto de Fluxo Grande",
+  "block.rptag.fluxo_cluster": "Cacho de Fluxo",
+  "item.rptag.fluxo_shard": "Fragmento de Fluxo",
+  "item.rptag.fluxo_block": "Bloco de Fluxo",
+  "item.rptag.fluxo_budding": "Fluxo em Formação",
+  "item.rptag.fluxo_bud_pequeno": "Broto de Fluxo Pequeno",
+  "item.rptag.fluxo_bud_medio": "Broto de Fluxo Médio",
+  "item.rptag.fluxo_bud_grande": "Broto de Fluxo Grande",
+  "item.rptag.fluxo_cluster": "Cacho de Fluxo"
 }

@@ -13,6 +13,7 @@ def check(nome, cond):
 R = 'src/main/java/dev/rptag'
 C = R + '/client'
 A = 'src/main/resources/assets/rptag'
+D = 'src/main/resources/data/rptag'
 S = A + '/sounds'
 
 def rd(p):
@@ -66,7 +67,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.43.4'
+VER = '5.44.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3027,9 +3028,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.43.4 no jar, no mod e no gradle',
-      "version = '5.43.4'" in rd('build.gradle')
-      and '5.43.4' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.44.0 no jar, no mod e no gradle',
+      "version = '5.44.0'" in rd('build.gradle')
+      and '5.44.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3265,8 +3266,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.43.4 (jar, mod e gradle)',
-      "version = '5.43.4'" in rd('build.gradle') and '5.43.4' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.44.0 (jar, mod e gradle)',
+      "version = '5.44.0'" in rd('build.gradle') and '5.44.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3324,8 +3325,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.43.4 (jar, mod e gradle)',
-      "version = '5.43.4'" in rd('build.gradle') and '5.43.4' in _rm)
+check('5.34.0: a versao subiu pra 5.44.0 (jar, mod e gradle)',
+      "version = '5.44.0'" in rd('build.gradle') and '5.44.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3347,8 +3348,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.43.4 (jar, mod e gradle)',
-      "version = '5.43.4'" in rd('build.gradle') and '5.43.4' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.44.0 (jar, mod e gradle)',
+      "version = '5.44.0'" in rd('build.gradle') and '5.44.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3910,7 +3911,7 @@ check('5.37.0 (94): o item troca de modelo por COR e por ABERTO/FECHADO',
       rd(A + '/models/item/umbrella_sombra.json').count('"custom_model_data"') == 16
       and '"rptag:aberto"' not in rd(A + '/models/item/umbrella_sombra.json'))
 check('5.37.0 (94): as 8 cores se craftam (e da pra tingir depois)',
-      len([f for f in os.listdir('src/main/resources/data/rptag/recipes')
+      len([f for f in os.listdir('src/main/resources/data/rptag/recipe')
            if f.startswith('umbrella_')]) == 16)
 # (5.43.3/96) A CUPULA/PILULA SOBRE A CABECA (camada de render antiga, 5.37.0) FOI REMOVIDA.
 # O dono: "TIRA A ANTIGA ANIMACAO DE GUARDA CHUVA, VOCE ENTENDEU?????" — quem desenha agora e
@@ -4573,7 +4574,7 @@ check('5.43.3 (96): o GUARDA-CHUVA em si continua no jogo (o .obj na mao, 16 mod
       and os.path.exists(A + '/models/item/umbrella_closed.obj')
       and rd(A + '/models/item/umbrella_sombra.json').count('"custom_model_data"') == 16)
 check('5.43.3 (96): os 8 umbrellas continuam craftaveis (nada foi tirado do jogo)',
-      len([f for f in os.listdir('src/main/resources/data/rptag/recipes')
+      len([f for f in os.listdir('src/main/resources/data/rptag/recipe')
            if f.startswith('umbrella_')]) == 16)
 
 # --- a praça do vazio ---
@@ -4621,6 +4622,109 @@ check('5.43.4 (96): a previa das poses candidatas existe e cita o Vampirism',
       os.path.exists('arte/previa_poses_candidatas.py')
       and 'VAMPIRISM_3A_D' in rd('arte/previa_poses_candidatas.py')
       and 'maxanier/Vampirism' in rd('arte/previa_poses_candidatas.py'))
+
+
+def _rgb(caminho):
+    from PIL import Image
+    im = Image.open(caminho).convert("RGBA")
+    return list(im.getdata())
+
+
+def _mesma_luminancia(origem, fluxo):
+    """a textura do Fluxo tem a MESMA luminância da ametista da vanilla, pixel a pixel."""
+    a = _rgb('/tmp/ameth/assets/minecraft/textures/' + origem)
+    b = _rgb(A + '/textures/' + fluxo)
+    if len(a) != len(b):
+        return False
+    for (r1, g1, b1, a1), (r2, g2, b2, a2) in zip(a, b):
+        if a1 != a2:
+            return False
+        l1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1
+        l2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2
+        if abs(l1 - l2) > 60:          # a matiz gira; o clarão/escuro continua no lugar
+            return False
+    return True
+
+
+def _mais_vermelho(caminho):
+    """o Fluxo e VERMELHO de verdade: o vermelho manda na media dos pixels visiveis."""
+    px = [(r, g, b) for (r, g, b, a) in _rgb(A + '/textures/' + caminho) if a > 8]
+    mr = sum(p[0] for p in px) / len(px)
+    mg = sum(p[1] for p in px) / len(px)
+    mb = sum(p[2] for p in px) / len(px)
+    return mr > mg * 1.25 and mr > mb * 1.25
+
+
+
+# ============== PEDIDO 97 — 5.44.0 (FLUXO: a ametista VERMELHA, todas as versões) ==============
+# O dono: "faça uma ametista vermelha chamada fluxo, faça todas as versões da ametista do mine
+# normal so que com textura vermelha". São as 6 formas da ametista (bloco, em formação, 3 brotos
+# e cacho) + o fragmento. As texturas são as da VANILLA com a matiz girada (arte/gerar_fluxo.py
+# lê o jar do cliente) — a prova confere que a luminância de cada pixel foi preservada, ou seja:
+# não é um retângulo vermelho, é a mesma pedra.
+_FLUXO_JAVA = rd(R + '/FluxoAmetista.java')
+_FLUXO_NOMES = ['fluxo_block', 'fluxo_budding', 'fluxo_bud_pequeno', 'fluxo_bud_medio',
+                'fluxo_bud_grande', 'fluxo_cluster']
+
+check('5.44.0 (97): o FLUXO existe no mod e registra as 6 formas da ametista',
+      'class FluxoAmetista' in _FLUXO_JAVA
+      and all(('"' + n + '"') in _FLUXO_JAVA for n in _FLUXO_NOMES))
+check('5.44.0 (97): o item FRAGMENTO DE FLUXO existe (o "amethyst shard" vermelho)',
+      'fluxo_shard' in _FLUXO_JAVA and os.path.exists(A + '/textures/item/fluxo_shard.png'))
+check('5.44.0 (97): os registros entram no barramento do mod (BLOCKS e ITEMS do Fluxo)',
+      'FluxoAmetista.BLOCKS.register(modEventBus)' in rd(R + '/RPTagMod.java')
+      and 'FluxoAmetista.ITEMS.register(modEventBus)' in rd(R + '/RPTagMod.java'))
+check('5.44.0 (97): cada forma tem blockstate, modelo de bloco, modelo de item e textura',
+      all(os.path.exists(A + '/blockstates/%s.json' % n) for n in _FLUXO_NOMES)
+      and all(os.path.exists(A + '/models/block/%s.json' % n) for n in _FLUXO_NOMES)
+      and all(os.path.exists(A + '/models/item/%s.json' % n) for n in _FLUXO_NOMES)
+      and all(os.path.exists(A + '/textures/block/%s.png' % n) for n in _FLUXO_NOMES))
+check('5.44.0 (97): os brotos e o cacho tem as 6 direcoes (dá pra colar em parede e teto)',
+      all(sorted(_json.loads(rd(A + '/blockstates/%s.json' % n))['variants']) ==
+          ['facing=down', 'facing=east', 'facing=north', 'facing=south', 'facing=up', 'facing=west']
+          for n in ('fluxo_bud_pequeno', 'fluxo_bud_medio', 'fluxo_bud_grande', 'fluxo_cluster')))
+check('5.44.0 (97): o FLUXO EM FORMACAO cresce os brotos do Fluxo (nao os azuis da vanilla)',
+      'FluxoBuddingBlock' in _FLUXO_JAVA and 'randomTicks()' in _FLUXO_JAVA
+      and 'BUD_PEQUENO.get()' in _FLUXO_JAVA and 'CLUSTER.get()' in _FLUXO_JAVA
+      and 'Blocks.SMALL_AMETHYST_BUD' not in _FLUXO_JAVA)
+check('5.44.0 (97): as tabelas de drop sao as MESMAS da ametista da vanilla',
+      # cacho: 4 fragmentos (ouro) / 2 com explosao / o bloco com toque suave
+      '"count": 4.0' in rd(D + '/loot_table/blocks/fluxo_cluster.json')
+      and '"count": 2.0' in rd(D + '/loot_table/blocks/fluxo_cluster.json')
+      and 'silk_touch' in rd(D + '/loot_table/blocks/fluxo_cluster.json')
+      # em formacao nao dropa nada, igual a vanilla
+      and _json.loads(rd(D + '/loot_table/blocks/fluxo_budding.json'))['pools'] == []
+      and all('silk_touch' in rd(D + '/loot_table/blocks/%s.json' % n)
+              for n in ('fluxo_bud_pequeno', 'fluxo_bud_medio', 'fluxo_bud_grande')))
+check('5.44.0 (97): dá para obter o Fluxo sem ser ADM (craftar, tingir e desmontar)',
+      os.path.exists(D + '/recipe/fluxo_block.json')
+      and os.path.exists(D + '/recipe/fluxo_shard.json')
+      and os.path.exists(D + '/recipe/fluxo_shard_do_bloco.json')
+      and 'minecraft:red_dye' in rd(D + '/recipe/fluxo_shard.json')
+      and 'minecraft:amethyst_shard' in rd(D + '/recipe/fluxo_shard.json'))
+check('5.44.0 (97): o Fluxo tem nome nos DOIS idiomas (pt e en)',
+      all(k in _json.loads(rd(A + '/lang/pt_br.json')) for k in
+          ('block.rptag.fluxo_block', 'item.rptag.fluxo_shard', 'item.rptag.fluxo_cluster'))
+      and all(k in _json.loads(rd(A + '/lang/en_us.json')) for k in
+              ('block.rptag.fluxo_block', 'item.rptag.fluxo_shard', 'item.rptag.fluxo_cluster')))
+check('5.44.0 (97): o gerador da textura le a ametista DO JAR do cliente (nao desenha no olho)',
+      os.path.exists('arte/gerar_fluxo.py')
+      and 'client-1.21.1' in rd('arte/gerar_fluxo.py')
+      and 'amethyst_block.png' in rd('arte/gerar_fluxo.py')
+      and 'colorsys' in rd('arte/gerar_fluxo.py'))
+check('5.44.0 (97): as texturas do Fluxo sao a MESMA pedra em vermelho (luminancia preservada)',
+      _mesma_luminancia('block/amethyst_block.png', 'block/fluxo_block.png')
+      and _mesma_luminancia('block/budding_amethyst.png', 'block/fluxo_budding.png')
+      and _mesma_luminancia('block/amethyst_cluster.png', 'block/fluxo_cluster.png')
+      and _mais_vermelho('block/fluxo_block.png'))
+
+# (5.44.0) a pasta de receitas estava no nome ANTIGO (recipes, plural). No 1.21 quem manda é
+# `recipe` — com o plural o jogo ignorava os arquivos e NINGUÉM conseguia craftar o umbrella.
+check('5.44.0 (97): as pastas de dados estao no nome do 1.21 (recipe e loot_table, singular)',
+      os.path.isdir('src/main/resources/data/rptag/recipe')
+      and not os.path.isdir('src/main/resources/data/rptag/recipes')
+      and os.path.isdir('src/main/resources/data/rptag/loot_table')
+      and not os.path.isdir('src/main/resources/data/rptag/loot_tables'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
