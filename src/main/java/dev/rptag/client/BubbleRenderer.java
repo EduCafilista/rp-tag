@@ -806,8 +806,11 @@ public final class BubbleRenderer {
         if (remaining <= 0L) {
             return;
         }
-        float alpha = age < POP_MS ? Mth.clamp(age / (float) POP_MS, 0.0F, 1.0F)
-                : (remaining < FADE_MS ? Mth.clamp(remaining / (float) FADE_MS, 0.0F, 1.0F) : 1.0F);
+        // (5.55.0) O BALAO NAO NASCE MAIS TRANSPARENTE. Antes o alfa comecava em 0 e subia em
+        // 130 ms: nesse comecinho o balao novo era um vulto — recheio e letra a 8%, e o
+        // contorno escuro a vista — parecendo um texto repetido atras do nome do jogador.
+        // Quem faz a entrada agora e so o POP DE ESCALA (popScale), com o balao ja opaco.
+        float alpha = remaining < FADE_MS ? Mth.clamp(remaining / (float) FADE_MS, 0.0F, 1.0F) : 1.0F;
         if (alpha <= ALFA_MINIMO) {
             return; // invisivel na pratica: nem entra na fila de desenho (fim do fantasma)
         }
