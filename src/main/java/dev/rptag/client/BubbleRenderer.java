@@ -64,8 +64,6 @@ public final class BubbleRenderer {
     private static final float FLOAT_UP_PX = 2.5F;
     /** Duracao do FADE no fim da vida do balao. */
     private static final long FADE_MS = 400;
-    /** (5.53.0) janela em que dois desenhos do MESMO jogador sao a mesma passada (nao duplica). */
-    private static final long JANELA_MESMO_QUADRO_NS = 4_000_000L;
     /** (5.52.0) abaixo disto o balao nao e desenhado (alfa residual = balao fantasma). */
     private static final float ALFA_MINIMO = 0.04F;
     /** Respiro ENTRE baloes da pilha (a altura real de cada um ja e somada). */
@@ -509,39 +507,9 @@ public final class BubbleRenderer {
                 160.0F / 192.0F, 0.0F, 1.0F, 1.0F, argb);
     }
 
-    /**
-     * (5.53.0) O BALAO DESENHADO DUAS VEZES — o dono: "fica duas vezes a frase digitada".
-     *
-     * <p>O jogo chama o desenho de entidade mais de uma vez no MESMO quadro para o mesmo
-     * jogador (passe normal e passes extras). Cada chamada desenhava o balao inteiro outra vez,
-     * e a copia sobra caia alguns pixels fora do balao — a frase repetida que o dono viu no
-     * print (no canto, sem pilula, mais escura que o normal).
-     *
-     * <p>Agora cada jogador e desenhado UMA vez por quadro: se o mesmo jogador voltar a ser
-     * oferecido para desenho poucos milissegundos depois, e a MESMA passada — ignora.
-     */
-    private static final java.util.Map<java.util.UUID, Long> ULTIMO_DESENHO = new java.util.HashMap<>();
-
-    /** @return true se este jogador JA foi desenhado nesta passada (nao desenhar de novo). */
-    private static boolean jaDesenhado(java.util.UUID id) {
-        long agora = System.nanoTime();
-        Long antes = ULTIMO_DESENHO.get(id);
-        if (antes != null && agora - antes < JANELA_MESMO_QUADRO_NS) {
-            return true; // mesma passada de render: o balao ja saiu
-        }
-        if (ULTIMO_DESENHO.size() > 512) {
-            ULTIMO_DESENHO.clear(); // servidor grande: nao guarda jogador que saiu
-        }
-        ULTIMO_DESENHO.put(id, agora);
-        return false;
-    }
-
     private static void renderBubble(RenderLivingEvent.Post<?, ?> event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
-        }
-        if (jaDesenhado(player.getUUID())) {
-            return; // a copia do mesmo quadro — o balao sai UMA vez so
         }
         List<ClientBubbleCache.Bubble> stack = ClientBubbleCache.get(player.getUUID());
         if (stack.isEmpty()) {
@@ -959,15 +927,7 @@ public final class BubbleRenderer {
             look.h = pillH;
             look.tailCx = x0 + pillW / 2.0F + 1.0F;
             look.tail = false; // (3.62.0) balao flutuante — sem rabicho
-            // (5.53.0) LIBERA NA HORA: a geometria do balao usa o tipo de desenho da GUI
-            // (POSITION_COLOR), e neste ponto estamos dentro do mundo. Se este lote ficar
-            // guardado, o jogo pode reenvia-lo no fim do quadro em espaco de tela — e a
-            // silhueta do balao aparece fantasma no canto. Desenhando aqui mesmo, o balao
-            // sai UMA vez, no lugar certo, e o lote e limpo.
             BubbleGeometry.build(new BubbleSink(matrix, buffers.getBuffer(RenderType.gui()), 0.0F), look);
-            if (buffers instanceof net.minecraft.client.renderer.MultiBufferSource.BufferSource bufferSource) {
-                bufferSource.endBatch(RenderType.gui());
-            }
         } else {
         // ---- SOMBRA (suave, quase sem deslocamento — a antiga era um eco duro
         // deslocado 2px que dava cara de clipart) ----
