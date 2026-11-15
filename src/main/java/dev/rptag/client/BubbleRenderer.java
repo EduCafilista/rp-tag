@@ -64,8 +64,17 @@ public final class BubbleRenderer {
     private static final float FLOAT_UP_PX = 2.5F;
     /** Duracao do FADE no fim da vida do balao. */
     private static final long FADE_MS = 400;
-    /** (5.56.0) deslocamento da sombra do texto, em unidades de texto (o mesmo do vanilla: 1). */
-    private static final float SOMBRA_PX = 1.0F;
+    /**
+     * (5.57.0) DESLOCAMENTO DA SOMBRA DO TEXTO — em unidades de TEXTO, e pequeno de proposito.
+     *
+     * <p>1 unidade de texto NAO e 1 pixel de tela: dentro do balao (desenhado numa matriz
+     * escalada) 1 unidade vale de 2 a 5 pixels, e quanto mais perto da camera, maior. Com 1
+     * unidade a sombra saia ~4 px da letra e a fonte parecia duplicada/borrada (o print do dono).
+     *
+     * <p>0,4 unidade da ~1 pixel na tela no tamanho normal de balao e continua colada na letra
+     * quando o balao cresce perto da camera.
+     */
+    private static final float SOMBRA_PX = 0.4F;
     /** (5.52.0) abaixo disto o balao nao e desenhado (alfa residual = balao fantasma). */
     private static final float ALFA_MINIMO = 0.04F;
     /** Respiro ENTRE baloes da pilha (a altura real de cada um ja e somada). */
