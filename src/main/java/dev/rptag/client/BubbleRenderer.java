@@ -64,17 +64,6 @@ public final class BubbleRenderer {
     private static final float FLOAT_UP_PX = 2.5F;
     /** Duracao do FADE no fim da vida do balao. */
     private static final long FADE_MS = 400;
-    /**
-     * (5.57.0) DESLOCAMENTO DA SOMBRA DO TEXTO — em unidades de TEXTO, e pequeno de proposito.
-     *
-     * <p>1 unidade de texto NAO e 1 pixel de tela: dentro do balao (desenhado numa matriz
-     * escalada) 1 unidade vale de 2 a 5 pixels, e quanto mais perto da camera, maior. Com 1
-     * unidade a sombra saia ~4 px da letra e a fonte parecia duplicada/borrada (o print do dono).
-     *
-     * <p>0,4 unidade da ~1 pixel na tela no tamanho normal de balao e continua colada na letra
-     * quando o balao cresce perto da camera.
-     */
-    private static final float SOMBRA_PX = 0.4F;
     /** (5.52.0) abaixo disto o balao nao e desenhado (alfa residual = balao fantasma). */
     private static final float ALFA_MINIMO = 0.04F;
     /** Respiro ENTRE baloes da pilha (a altura real de cada um ja e somada). */
@@ -312,16 +301,6 @@ public final class BubbleRenderer {
      * Desenha uma linha por segmentos: adesivos em BRANCO (cor verdadeira,
      * herdando o alfa global) e texto na cor normal.
      */
-    /**
-     * (5.43.0) a cor do CONTORNO: o oposto do texto, com alfa proporcional ao fade do balão.
-     * Texto claro ganha contorno escuro; texto escuro ganha contorno claro.
-     */
-    private static int haloDe(int corDoTexto, float alfa) {
-        int r = (corDoTexto >> 16) & 0xFF, g = (corDoTexto >> 8) & 0xFF, b = corDoTexto & 0xFF;
-        float lum = (0.299F * r + 0.587F * g + 0.114F * b) / 255.0F;
-        int a = (int) (Math.max(0.0F, Math.min(1.0F, alfa)) * 190.0F);
-        return (a << 24) | (lum > 0.55F ? 0x101014 : 0xF2F2F2);
-    }
 
     private static float drawLine(Font font, Matrix4f matrix, MultiBufferSource buffers,
             List<Seg> segs, float x, float y, int textColor, float alpha, int tone) {
@@ -367,19 +346,15 @@ public final class BubbleRenderer {
             // Agora é a sombra do próprio Minecraft: UMA cópia, deslocada 1 pixel para baixo e
             // para a direita, na cor oposta. Dá o mesmo contraste (lê em balão claro e escuro) e
             // não pode borrar — é uma sombra, não um contorno duplo.
-            int halo = haloDe(textColor, alpha);
-            if (halo != 0) {
-                // (5.56.0) A SOMBRA ESTAVA CAINDO FORA DO BALAO — era este o "texto repetido".
-                //
-                // Na 5.51.0 eu troquei o deslocamento por 1/escala para "1 pixel de tela". A
-                // conta estava errada: a escala do balao e 0,04, entao 1/escala = 25 unidades
-                // de TEXTO — e 1 unidade de texto vale ~2,5 px na tela. A sombra escura saia
-                // ~60 px abaixo e a direita da letra: a mesma frase desenhada de novo, escura
-                // e sem pilula, do lado de fora (o bug dos prints).
-                // Agora e o deslocamento de sombra do proprio Minecraft: 1 unidade de texto.
-                font.drawInBatch(seq(seg, tom), pen + SOMBRA_PX, y + SOMBRA_PX, halo,
-                        false, matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-            }
+            // (5.58.0) SEM SOMBRA E SEM CONTORNO — a letra e desenhada UMA vez, limpa.
+            //
+            // O dono: "a fonte dos baloes ainda esta meio bugada". O culpado era a sombra que eu
+            // tinha posto na 5.43.0 (e que voltou nas 5.56/5.57): o balao e desenhado numa matriz
+            // ESCALADA por um fator fracionario, entao a letra e amostrada em pixels nao-inteiros
+            // e a copia escura de 1 px se mistura com a letra — os tracos engordam, ficam
+            // irregulares e a fonte parece borrada. O proprio mod ja dizia isso desde a 3.35.0:
+            // "dentro de um balao claro a sombra borrava cada letra e dava aspecto sujo".
+            // O recheio da pilula e opaco: o contraste do texto com ele basta.
             pen = font.drawInBatch(seq(seg, tom), pen, y, textColor, false, matrix, buffers,
                     Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             if (tone == 2) {
