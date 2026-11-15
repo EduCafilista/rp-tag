@@ -56,14 +56,6 @@ public final class ClientBubbleCache {
             if (!extras.isEmpty()) {
                 stack.clear();
             }
-            // (5.55.0) A MESMA FRASE NAO VIRA DOIS BALOES — o dono: "fica duas vezes a frase
-            // digitada". Falar a MESMA frase de novo empilhava um SEGUNDO balao identico, que
-            // ainda entrava quase transparente logo abaixo do primeiro (o "fantasma" que
-            // acompanha o jogador e aparece junto do balao). Agora a repeticao RENOVA o balao
-            // que ja esta na tela: um balao so, com o tempo recomecado.
-            if (!stack.isEmpty() && stack.get(stack.size() - 1).text().equals(text)) {
-                stack.remove(stack.size() - 1);
-            }
             stack.add(new Bubble(text, colorRGB, borderRGB, borderStyle, textRGB, italic, corner,
                     extras, stickerX, stickerY, tone, now, now + duration));
             while (stack.size() > MAX_STACK) {

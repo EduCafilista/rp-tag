@@ -1,35 +1,31 @@
-# RP Tag 5.53.0 — fim da frase repetida no balão
+# RP Tag 5.56.0 — fim do texto repetido (a sombra caía fora do balão)
 
-**Baixar:** https://github.com/EduCafilista/rp-tag/releases/download/v5.53.0/rptag-5.53.0.jar
-(também na sua área de trabalho como `rptag-5.53.0.jar`, 37.030.310 bytes)
-
-Instalar: jogue o `.jar` em `.minecraft/mods` (NeoForge 1.21.1 / Java 21) e **apague o jar antigo**.
+**Baixar:** https://github.com/EduCafilista/rp-tag/releases/download/v5.56.0/rptag-5.56.0.jar
+(também na sua área de trabalho como `rptag-5.56.0.jar`, 37.029.793 bytes)
 
 ---
 
-## O texto aparecendo duas vezes
+## O bug era MEU, e a conta prova
 
-O jogo pede o desenho de uma entidade **mais de uma vez no mesmo quadro** (passe normal e passes
-extras, tipo contorno/brilho). Cada pedido redesenhava o balão inteiro, e a cópia que sobrava
-caía deslocada — sem a pílula, mais escura e menor: era essa a frase repetida do print.
+Na 5.51.0 eu troquei o deslocamento da letra por um "1 pixel de tela" calculado como
+`1 / escala da matriz`. A escala do balão é **0,04**, então isso dava **25 unidades de texto**.
+Só que 1 unidade de texto vale ~2,5 pixels na tela: a **sombra escura** da frase era desenhada
+**~60 px abaixo e à direita** da letra — fora da pílula, sem fundo. Era essa a segunda mensagem.
 
-Agora:
+Não era pilha de balões, não era pacote duplicado, não era outro mod. Era a sombra.
 
-- **um balão por jogador por quadro** — se o mesmo jogador voltar a ser oferecido para desenho
-  poucos milissegundos depois, é a mesma passada e o mod ignora (`jaDesenhado`);
-- **a geometria é liberada na hora** (`endBatch(RenderType.gui())` logo depois de montar a
-  pílula) — assim ela nunca é reenviada no fim do quadro em espaço de tela, que era o fantasma
-  no canto.
+## O que mudou agora
 
-## O que continua da versão anterior
+- a sombra voltou a ser a **do Minecraft**: 1 unidade de texto (`SOMBRA_PX = 1.0F`);
+- o helper errado (`umPixel`) foi **removido**;
+- o negrito falso também voltou a 0,75 unidade de texto;
+- **desfeito** o que eu tinha inventado nas 5.53.0/5.55.0 (flush da geometria, bloqueio de
+  desenho, dedupe de frase repetida): a pilha de balões e o desenho são os de antes.
 
-- fade do balão vai **até zero** (nada de balão morto a 10% de opacidade);
-- letra nítida: sombra única de **1 pixel de tela** (`umPixel`), em qualquer zoom;
-- guarda-chuva continua removido do mod.
+Continua valendo só o que já estava aprovado: letra nítida e fade até zero.
 
 ## Provas
 
-- `check.py`: **1346 PASS / 0 FAIL**;
+- `check.py`: **1347 PASS / 0 FAIL** (entrou a prova de que a sombra é 1 unidade e que `umPixel` não existe mais);
 - compila limpo (186 fontes, Java 21);
-- servidor NeoForge 1.21.1 sobe sem exceção (1293 receitas, 1399 advancements);
-- jar baixado do link e conferido: md5 `a87b01c0b16550ef18fc3114a30a9cd0`.
+- md5 do jar: ver na release.

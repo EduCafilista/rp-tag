@@ -64,6 +64,8 @@ public final class BubbleRenderer {
     private static final float FLOAT_UP_PX = 2.5F;
     /** Duracao do FADE no fim da vida do balao. */
     private static final long FADE_MS = 400;
+    /** (5.56.0) deslocamento da sombra do texto, em unidades de texto (o mesmo do vanilla: 1). */
+    private static final float SOMBRA_PX = 1.0F;
     /** (5.52.0) abaixo disto o balao nao e desenhado (alfa residual = balao fantasma). */
     private static final float ALFA_MINIMO = 0.04F;
     /** Respiro ENTRE baloes da pilha (a altura real de cada um ja e somada). */
@@ -312,20 +314,6 @@ public final class BubbleRenderer {
         return (a << 24) | (lum > 0.55F ? 0x101014 : 0xF2F2F2);
     }
 
-    /**
-     * (5.51.0) QUANTO VALE 1 PIXEL DE TELA, em unidades de texto, para esta matriz.
-     *
-     * <p>É o que impede a sombra (e o negrito falso) de crescer junto com o balão: o balão é
-     * desenhado numa matriz ESCALADA, então 1 unidade de texto pode valer 5 ou 6 pixels na tela.
-     * Dividindo pela escala, o deslocamento vira exatamente 1 pixel de tela em qualquer tamanho
-     * de balão — que é o que a sombra do Minecraft sempre foi.
-     */
-    private static float umPixel(Matrix4f matrix) {
-        float e = (float) Math.sqrt(matrix.m00() * matrix.m00()
-                + matrix.m01() * matrix.m01() + matrix.m02() * matrix.m02());
-        return e > 0.0001F ? 1.0F / e : 1.0F;
-    }
-
     private static float drawLine(Font font, Matrix4f matrix, MultiBufferSource buffers,
             List<Seg> segs, float x, float y, int textColor, float alpha, int tone) {
         float pen = x;
@@ -372,13 +360,21 @@ public final class BubbleRenderer {
             // não pode borrar — é uma sombra, não um contorno duplo.
             int halo = haloDe(textColor, alpha);
             if (halo != 0) {
-                font.drawInBatch(seq(seg, tom), pen + umPixel(matrix), y + umPixel(matrix), halo,
+                // (5.56.0) A SOMBRA ESTAVA CAINDO FORA DO BALAO — era este o "texto repetido".
+                //
+                // Na 5.51.0 eu troquei o deslocamento por 1/escala para "1 pixel de tela". A
+                // conta estava errada: a escala do balao e 0,04, entao 1/escala = 25 unidades
+                // de TEXTO — e 1 unidade de texto vale ~2,5 px na tela. A sombra escura saia
+                // ~60 px abaixo e a direita da letra: a mesma frase desenhada de novo, escura
+                // e sem pilula, do lado de fora (o bug dos prints).
+                // Agora e o deslocamento de sombra do proprio Minecraft: 1 unidade de texto.
+                font.drawInBatch(seq(seg, tom), pen + SOMBRA_PX, y + SOMBRA_PX, halo,
                         false, matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
             pen = font.drawInBatch(seq(seg, tom), pen, y, textColor, false, matrix, buffers,
                     Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             if (tone == 2) {
-                font.drawInBatch(seq(seg, tom), sx + 0.75F * umPixel(matrix), y, textColor, false,
+                font.drawInBatch(seq(seg, tom), sx + 0.75F, y, textColor, false,
                         matrix, buffers, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
         }
@@ -806,11 +802,8 @@ public final class BubbleRenderer {
         if (remaining <= 0L) {
             return;
         }
-        // (5.55.0) O BALAO NAO NASCE MAIS TRANSPARENTE. Antes o alfa comecava em 0 e subia em
-        // 130 ms: nesse comecinho o balao novo era um vulto — recheio e letra a 8%, e o
-        // contorno escuro a vista — parecendo um texto repetido atras do nome do jogador.
-        // Quem faz a entrada agora e so o POP DE ESCALA (popScale), com o balao ja opaco.
-        float alpha = remaining < FADE_MS ? Mth.clamp(remaining / (float) FADE_MS, 0.0F, 1.0F) : 1.0F;
+        float alpha = age < POP_MS ? Mth.clamp(age / (float) POP_MS, 0.0F, 1.0F)
+                : (remaining < FADE_MS ? Mth.clamp(remaining / (float) FADE_MS, 0.0F, 1.0F) : 1.0F);
         if (alpha <= ALFA_MINIMO) {
             return; // invisivel na pratica: nem entra na fila de desenho (fim do fantasma)
         }
