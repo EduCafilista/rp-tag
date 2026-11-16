@@ -1,55 +1,50 @@
-# RP Tag 5.60.0 — AURA DE ILUMINAÇÃO (`/iluminacao`) com poder
+# RP Tag 5.61.0 — o tablet salva a SKIN da pessoa
 
-**Baixar:** https://github.com/EduCafilista/rp-tag/releases/download/v5.60.0/rptag-5.60.0.jar
-(também na sua área de trabalho como `rptag-5.60.0.jar`)
+**Baixar:** https://github.com/EduCafilista/rp-tag/releases/download/v5.61.0/rptag-5.61.0.jar
+(também na sua área de trabalho como `rptag-5.61.0.jar`)
 
 ---
 
-## O que chegou
+## O que você pediu
 
-A aura do zip que você mandou (`fate-aura-neoforge-1.21.1`), integrada no RP Tag — só a dourada,
-como você pediu: **uma aura só, a de ILUMINAÇÃO**.
+> "o tablet deve salvar a skin da pessoa, acha que consegue fazer isso? salvar o modelo que a
+> pessoa tava usando quando criou/salvou o tablet?"
 
-### O desenho (no corpo do jogador, no mundo — todo mundo vê)
-- **círculo mágico dourado** no chão: anel externo, faixa de 24 runas girando ao contrário,
-  hexagrama girando, anel tracejado interno e uma onda que expande do centro;
-- **coluna de luz** (duas, uma clara dentro da outra) que sobe e afina como chama;
-- **hélices de luz** em 3 espirais subindo;
-- **anéis ascendentes** que sobem e apagam;
-- **16 raios dourados** ao redor;
-- **5 PORTÕES DA BABILÓNIA** girando em volta do corpo, cada um com anéis, octagrama e uma arma
-  (espada/lança) saindo e voltando;
-- partículas douradas + `END_ROD` no chão e subindo.
+Consegui. A ficha agora guarda **a skin do momento em que a pessoa preencheu/confirmou** — não a
+skin de agora.
 
-Tudo **procedural** (sem textura), em brilho aditivo — igual ao zip.
+## Como funciona
 
-### O PODER (é o que você pediu: "poder para ser usado")
-**Portões da Babilónia** — uma rajada de **armas douradas** que saem de portais atrás/em volta do
-corpo e voam para onde você está mirando:
-- 2 armas por tick, durante 1,5 s (30 ticks);
-- **5 s de recarga** (avisa quantos segundos faltam);
-- espada e lança alternadas, com rastro de luz e estouro dourado ao acertar;
-- **não machuca jogador** (seguro pra RP) — os bichos levam 8 de dano;
-- **só funciona com a aura ligada** (desligada, avisa e não gasta recarga).
+- **Quem sabe a skin é o cliente** (o servidor nunca vê o arquivo da skin). Então, quando o jogador
+  abre a própria ficha pra editar e quando ele aperta **salvar/confirmar** (etapa 6), o cliente
+  manda pro servidor: o **link da textura** + o **modelo** (Clássico ou Slim).
+- O servidor confere e grava na ficha (`FichaRegistro` → `SkinUrl` + `SkinModel`), junto com o
+  resto — então isso **salva no mundo** e vai no pacote do tablet.
+- **Congela junto com a ficha**: depois que a ficha é confirmada (e sem liberação do admin), a
+  skin **não muda mais**, mesmo que a pessoa troque de skin no launcher. É o retrato do momento.
+- Trocar de skin **não** invalida o texto que o jogador está escrevendo (não mexe na revisão).
 
-### Como usar
-```
-/iluminacao              liga a aura em você
-/iluminacao off          desliga
-/iluminacao portoes      usa o poder (igual à tecla)
-/iluminacao <jogador>    liga em outro            (OP)
-/iluminacao off <jogador> desliga em outro        (OP)
-```
-**Tecla G** = poder (dá pra trocar em Controles → RP Tag → "Portões da Babilônia").
+## O que aparece no tablet
 
-A aura fica **salva no jogador** (sobrevive a morte, relog e troca de dimensão) e é **sincronizada
-pra quem vê** você.
+No painel do personagem, ao lado do boneco 3D, entra um **rosto da skin salva** com o rótulo
+`SKIN SALVA` e o modelo (`Clássico` / `Slim`). O boneco 3D continua sendo o jogador ao vivo — o
+rosto guardado é o registro do momento em que ele salvou.
+
+## Segurança e limites (importante)
+
+- O servidor **só aceita link do servidor de texturas da Mojang**
+  (`http://textures.minecraft.net/texture/...`) — cliente não pode mandar URL arbitrária.
+- A imagem é baixada pelo próprio `HttpTexture` do Minecraft, com **cache em disco**: baixa uma vez
+  e fica. Enquanto não chega, aparece um quadradinho escuro (nada de textura rosa de erro).
+- **Se a skin não tem link** (jogador em servidor offline com skin vinda de arquivo local, sem
+  perfil da Mojang), não há o que salvar — nesse caso a ficha fica sem skin guardada e o tablet
+  mostra só o boneco ao vivo, como antes.
 
 ## Provas
-- `check.py`: **1358 PASS / 0 FAIL** (11 provas novas da aura);
-- `arte/auditar.py`: **0 erro(s)**;
-- **servidor de teste subiu limpo** com a 5.60.0: `/iluminacao` registrado nas 3 formas,
-  `summon rptag:golden_weapon` funcionando, nenhuma exceção no log.
 
-> Nada do resto do mod foi tocado. A única mudança técnica fora da aura foi o canal de rede, que
-> subiu de 18 para 19 (o pacote novo da tecla) — servidor e cliente precisam estar na MESMA versão.
+- `check.py`: **1366 PASS / 0 FAIL** (8 provas novas);
+- `arte/auditar.py`: **0 erro**;
+- **servidor de teste subido com a 5.61.0**: `Done`, comandos do tablet ok, nenhuma exceção.
+
+> O canal de rede subiu de **19 para 20** (o pacote novo da skin) — servidor e cliente precisam
+> estar na MESMA versão.

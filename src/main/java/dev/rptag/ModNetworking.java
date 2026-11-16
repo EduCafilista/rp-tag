@@ -37,7 +37,8 @@ public final class ModNetworking {
         // (5.17.0) v15: BARRA_HUD (a barra que fica sempre na tela) e AXION_HUD (a gatinha)
         // (5.25.1) v16: MORTE_RP (o servidor diz se a morte é de vida canônica)
         // (5.60.0) v19: ILUMINACAO_PORTOES (a tecla do poder da aura dourada)
-        PayloadRegistrar registrar = event.registrar("19");
+        // (5.61.0) v20: FICHA_SKIN (a skin que fica guardada no tablet)
+        PayloadRegistrar registrar = event.registrar("20");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         // (5.13.0) o portal negro do vazio (posicao, pedestais, estado da abertura)
@@ -61,6 +62,9 @@ public final class ModNetworking {
                         dev.rptag.RPTagMod.LOGGER.warn("RP Tag: habilidade do leque falhou", t);
                     }
                 }));
+        // (5.61.0) a skin que o jogador esta usando (o cliente ve; o servidor guarda na ficha)
+        registrar.playToServer(FichaSkinPayload.TYPE, FichaSkinPayload.STREAM_CODEC,
+                TabletService::handleSkin);
         registrar.playToServer(TabletUpdatePayload.TYPE, TabletUpdatePayload.STREAM_CODEC,
                 TabletService::handleUpdate);
         registrar.playToClient(SyncRPStatePayload.TYPE, SyncRPStatePayload.STREAM_CODEC,

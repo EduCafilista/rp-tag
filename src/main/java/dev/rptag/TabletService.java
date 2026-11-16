@@ -153,6 +153,32 @@ public final class TabletService {
         return (persona == null || persona.name() == null) ? "" : persona.name();
     }
 
+    /**
+     * (5.61.0) A SKIN QUE FICA NO TABLET.
+     *
+     * <p>Pedido do dono: <i>"o tablet deve salvar a skin da pessoa, salvar o modelo que a pessoa
+     * tava usando quando criou/salvou o tablet"</i>. O cliente manda o link + o modelo da skin
+     * atual; aqui a gente confere ({@link SkinFicha}) e grava na ficha.
+     *
+     * <p>Regra: so grava enquanto a ficha ainda pode ser editada. Depois de confirmada (e sem
+     * liberacao do admin) a skin fica CONGELADA, como o resto da ficha — e o "modelo que a pessoa
+     * tava usando quando salvou" continua valendo pra sempre.
+     */
+    public static void handleSkin(FichaSkinPayload packet, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                if (!(context.player() instanceof ServerPlayer player)) return;
+                if (!SkinFicha.urlValida(packet.url()) || !SkinFicha.modeloValido(packet.modelo())) return;
+                RPWorldData data = RPWorldData.get(player.server);
+                FichaRegistro ficha = data.getFicha(player.getUUID());
+                if (!ficha.podeEditar()) return;
+                data.setFicha(player.getUUID(), ficha.comSkin(packet.url(), packet.modelo()));
+            } catch (RuntimeException erro) {
+                RPTagMod.LOGGER.warn("RP Tag: skin da ficha ignorada (o jogo segue)", erro);
+            }
+        });
+    }
+
     public static void handleUpdate(TabletUpdatePayload packet, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) return;

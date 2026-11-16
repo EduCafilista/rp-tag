@@ -49,6 +49,9 @@ public final class TabletClientState {
         return dono.isEmpty() ? "Ficha de outro jogador" : "Ficha de " + dono;
     }
     public FichaPersonagem respostas() { return local; }
+    /** (5.61.0) a skin que ficou salva na ficha ("" = ainda nao salva). */
+    public String skinUrl() { return server.skinUrl(); }
+    public String skinModel() { return server.skinModel(); }
     public int etapa() { return step; }
     public boolean readOnly() { return readOnly; }
     public boolean pending() { return pending != null; }

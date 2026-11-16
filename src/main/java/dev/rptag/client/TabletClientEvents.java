@@ -36,6 +36,12 @@ public final class TabletClientEvents {
             else own.accept(packet);
             state = own;
         } else state = new TabletClientState(packet, p -> {}, Util::getMillis);
+        // (5.61.0) abriu a PROPRIA ficha pra editar? manda a skin que ele esta usando agora
+        if (self && !packet.readOnly() && packet.registro().podeEditar()) {
+            try { SkinPessoal.enviar(); } catch (RuntimeException erro) {
+                RPTagMod.LOGGER.warn("RP Tag: skin da ficha nao enviada (o jogo segue)", erro);
+            }
+        }
         if (packet.open()) {
             if (mc.screen instanceof TabletScreen screen && screen.state() == state) screen.refresh();
             else mc.setScreen(new TabletScreen(state));

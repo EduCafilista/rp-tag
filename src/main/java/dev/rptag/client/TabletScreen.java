@@ -152,7 +152,11 @@ public final class TabletScreen extends Screen {
         }
         String error = state.respostas().validationError(state.etapa() == 5);
         if (!error.isEmpty()) { localError = error; return; }
-        if (state.etapa() == 5) state.flush(true);
+        if (state.etapa() == 5) {
+            // (5.61.0) ao SALVAR, a skin que ele esta usando agora fica guardada na ficha
+            SkinPessoal.enviar();
+            state.flush(true);
+        }
         else go(state.etapa()+1);
     }
 
@@ -234,6 +238,14 @@ public final class TabletScreen extends Screen {
                 blackHole(g, x+leftWidth/2+8, y+Math.max(48,(h-20)/3)-blackHoleRadius/3, blackHoleRadius);
             }
             TabletPlayerPreview.render(g, state.target(), x+8, y+37, leftWidth, h-65, state.etapa(), motion());
+            // (5.61.0) A SKIN GUARDADA NA FICHA: rosto + modelo do momento em que ele salvou
+            if (state.skinUrl() != null && !state.skinUrl().isEmpty() && leftWidth > 74) {
+                SkinPessoal.desenhar(g, state.skinUrl(), x+12, y+36, 20);
+                g.renderOutline(x+12, y+36, 20, 20, 0x66b28c68);
+                g.drawString(font, "SKIN SALVA", x+36, y+39, 0xffc9c2d3, false);
+                g.drawString(font, dev.rptag.SkinFicha.nomeDoModelo(state.skinModel()),
+                        x+36, y+49, 0xff9d92ac, false);
+            }
             String name = state.respostas().nome().isBlank() ? "Seu personagem" : state.respostas().nome();
             g.drawCenteredString(font, font.plainSubstrByWidth(name,leftWidth-8), x+leftWidth/2+8, y+h-21, 0xffd4cddc);
         }
