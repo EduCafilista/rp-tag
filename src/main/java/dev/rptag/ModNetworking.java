@@ -36,7 +36,8 @@ public final class ModNetworking {
         // (5.13.6) v14: VAZIO_ALMAS (posicao das almas vazias, desenhadas por geometria)
         // (5.17.0) v15: BARRA_HUD (a barra que fica sempre na tela) e AXION_HUD (a gatinha)
         // (5.25.1) v16: MORTE_RP (o servidor diz se a morte é de vida canônica)
-        PayloadRegistrar registrar = event.registrar("18");
+        // (5.60.0) v19: ILUMINACAO_PORTOES (a tecla do poder da aura dourada)
+        PayloadRegistrar registrar = event.registrar("19");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         // (5.13.0) o portal negro do vazio (posicao, pedestais, estado da abertura)
@@ -113,6 +114,14 @@ public final class ModNetworking {
                 });
         registrar.playToServer(SetBubbleModePayload.TYPE, SetBubbleModePayload.STREAM_CODEC,
                 ServerEvents::handleSetBubbleMode);
+        // (5.60.0) a tecla G da aura de iluminacao: o servidor valida aura + recarga
+        registrar.playToServer(dev.rptag.aura.PoderPortoesPayload.TYPE,
+                dev.rptag.aura.PoderPortoesPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> {
+                    if (ctx.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        dev.rptag.aura.PoderPortoes.tentarDisparar(sp);
+                    }
+                }));
         // (5.4.0) EVENTO NEPTUNE — todos S2C
         registrar.playToClient(NeptunePackets.Terremoto.TYPE, NeptunePackets.Terremoto.STREAM_CODEC,
                 (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.client.NeptuneFx.onTerremoto(p)));

@@ -27,5 +27,7 @@
   "block.rptag.fluxo_block": "Bloco de Fluxo",
   "item.rptag.fluxo_shard": "Fragmento de Fluxo",
   "item.rptag.fluxo_block": "Bloco de Fluxo",
-  "item.rptag.porte_de_arma": "Porte de Arma"
+  "item.rptag.porte_de_arma": "Porte de Arma",
+  "key.rptag.iluminacao": "Portões da Babilônia (aura de iluminação)",
+  "entity.rptag.golden_weapon": "Arma Dourada"
 }

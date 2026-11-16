@@ -27,5 +27,7 @@
   "block.rptag.fluxo_block": "Block of Fluxo",
   "item.rptag.fluxo_shard": "Fluxo Shard",
   "item.rptag.fluxo_block": "Block of Fluxo",
-  "item.rptag.porte_de_arma": "Firearm Permit"
+  "item.rptag.porte_de_arma": "Firearm Permit",
+  "key.rptag.iluminacao": "Gate of Babylon (illumination aura)",
+  "entity.rptag.golden_weapon": "Golden Weapon"
 }

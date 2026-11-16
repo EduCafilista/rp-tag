@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
+import dev.rptag.aura.AuraIluminacao;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -47,7 +48,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.59.0";
+    public static final String VERSION = "5.60.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -290,6 +291,8 @@ public final class RPTagMod {
         // nao consegue serializar a arvore de comandos e o cliente cai com
         // "Invalid player data" (IllegalArgumentException em ArgumentTypeInfos.byClass).
         RpArgumentTypes.ARGUMENT_TYPES.register(modEventBus);
+        // (5.60.0) A AURA DE ILUMINACAO (/iluminacao): o anexo do jogador e a arma dourada
+        AuraIluminacao.init(modEventBus);
         // (5.10.1) /title VANILLA fora do jogo. Registrado NA MAO: o scan de
         // @EventBusSubscriber não pegou esta classe (as outras pegou), e aqui
         // não dá pra depender de sorte — o registro explícito é determinístico.

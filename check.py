@@ -86,7 +86,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.59.0'
+VER = '5.60.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -107,7 +107,7 @@ check('/rp ajuda lista admin p/ admins', 'SO ADMINS' in rp)
 # ---- 4. música custom: payload + registro + cliente
 check('LorezoneMusicPayload existe', os.path.exists(R + '/LorezoneMusicPayload.java'))
 mn = rd(R + '/ModNetworking.java')
-check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("18")' in mn)
+check('payloads registrados no canal atual', 'LorezoneMusicPayload' in mn and 'registrar("19")' in mn)
 mc = rd(C + '/MusicaCustom.java')
 check('MusicaCustom usa pasta config/rptag/musicas', 'musicas' in mc)
 check('MusicaCustom toca em LOOP (AL_LOOPING)', 'AL_LOOPING' in mc)
@@ -234,7 +234,7 @@ cph = rd(C + '/ClientPayloadHandler.java')
 bss = rd(C + '/BubbleStyleScreen.java')
 bal = rd(R + '/BalaoCommands.java')
 rollc = rd(R + '/RollCommands.java')
-check('protocolo atual (3 payloads de musica)', 'registrar("18")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
+check('protocolo atual (3 payloads de musica)', 'registrar("19")' in mn and 'MusicFileQueryPayload' in mn and 'MusicFileChunkPayload' in mn and 'MusicFileAnswerPayload' in mn)
 check('MusicSync: servidor entrega o arquivo', 'MusicSync.pedir' in lzz and 'responder' in sev)
 check('/lorezone baixar com mensagens (iniciado/concluido)', 'literal("baixar")' in lzcmd and 'iniciado' in lzcmd and 'concluido' in lzcmd)
 check('3.99: musica 1x + TEMPO MAXIMO (nunca fica pra sempre)',
@@ -1121,10 +1121,10 @@ check('5.2.0: canais novos tablet_sync/tablet_update no lugar dos antigos ficha_
       'FichaOpenPayload' not in _mn9 and 'FichaSavePayload' not in _mn9
       and 'tablet_sync' in rd(R + '/TabletSyncPayload.java') and 'tablet_update' in rd(R + '/TabletUpdatePayload.java'))
 check('5.2.0/5.4.0: protocolo subiu para v9..v12 e agora v18 (cliente antigo e recusado)',
-      'registrar("9")' not in _mn9 and 'registrar("18")' in _mn9 and 'registrar("8")' not in _mn9)
+      'registrar("9")' not in _mn9 and 'registrar("19")' in _mn9 and 'registrar("8")' not in _mn9)
 # (5.7.2) o canal subiu de novo: TITULOS entrou, cliente 5.7.1 e recusado
 check('5.7.2: protocolo v10 (agora v18) com o pacote de TITULOS',
-      'event.registrar("18")' in rd(R + '/ModNetworking.java')
+      'event.registrar("19")' in rd(R + '/ModNetworking.java')
       and 'TituloSyncPayload.TYPE' in rd(R + '/ModNetworking.java'))
 check('5.2.0: o tablet e entregue no login', 'PlayerLoggedInEvent' in rd(R + '/TabletService.java'))
 check('5.2.0: /tablet existe e /ficha nao voltou',
@@ -1307,7 +1307,7 @@ check('5.2.0: item rptag:tablet registrado (stacksTo 1)', 'ITEMS.register("table
       and 'stacksTo(1)' in rd(R + '/RPTagMod.java'))
 check('5.2.0: tabela de limites da ficha 32/5/240/600/3000', 'LIMITES = {32, 5, 240, 600, 3000}' in _fp)
 check('5.2.0: protocolo com os 2 payloads do tablet',
-      'registrar("18")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
+      'registrar("19")' in _mn and 'TabletSyncPayload.TYPE' in _mn and 'TabletUpdatePayload.TYPE' in _mn)
 check('5.2.0: handler do cliente registrado', 'handleTablet' in rd(C + '/ClientPayloadHandler.java'))
 check('5.2.0: ficha salva no mundo (TabletSheets) e lida com checagem de UUID antes do load',
       'tag.put("TabletSheets", sheets)' in _rw and 'hasUUID("Id")' in _rw
@@ -1389,7 +1389,7 @@ check('5.4.0: blur REAL no pulso travado (processBlurEffect) com fallback',
 check('5.4.0: texto do vazio no chat com a frase do dono',
       'NeptunePackets' in rd(_NPk) and 'neptune_saida' in rd(_NPk))
 check('5.4.0: canal v9 (agora v18) registra os 5 pacotes novos',
-      'event.registrar("18")' in rd('src/main/java/dev/rptag/ModNetworking.java')
+      'event.registrar("19")' in rd('src/main/java/dev/rptag/ModNetworking.java')
       and rd('src/main/java/dev/rptag/ModNetworking.java').count('NeptunePackets') >= 5)
 check('5.4.0: comandos /terremoto, /vazio, /bicho e /neptune so pra OP',
       all(k in rd(_NC) for k in ['literal("terremoto")', 'literal("vazio")', 'literal("bicho")', 'literal("neptune")'])
@@ -1587,7 +1587,7 @@ check('5.7.4: trovao grave pros outros (medo) perto do vazio',
       'proximoTrovao' in rd(R + '/NeptuneEventos.java')
       and 'LIGHTNING_BOLT_THUNDER' in rd(R + '/NeptuneEventos.java'))
 check('5.7.4: canal v11 (o Aura mudou de formato; agora v18 com o portal, as almas e a morte)',
-      'event.registrar("18")' in rd(R + '/ModNetworking.java'))
+      'event.registrar("19")' in rd(R + '/ModNetworking.java'))
 
 # ============ 5.7.3: bicho na tela, música única, som do terremoto ============
 check('5.7.3: BICHO pula na tela de quem esta em CRIATIVO (era o bug do dono)',
@@ -1921,7 +1921,7 @@ check('5.9.0: dá pra voltar pra cor de fábrica (padrao) e a cor fica salva no 
       and 'getInt("CorPessoal")' in _tit)
 check('5.9.0: o título pessoal também tem cor própria (pacote v18)',
       'corPessoal' in _tpay and 'corPessoal' in _ctit
-      and 'event.registrar("18")' in _net)
+      and 'event.registrar("19")' in _net)
 check('5.9.0: /titulo definir e /titulo limpar aceitam VÁRIOS jogadores (@a)',
       'EntityArgument.players()' in _tcmd and 'getPlayers(ctx, "jogadores")' in _tcmd)
 check('5.9.0: TAB do comando sugere as cores',
@@ -2341,7 +2341,7 @@ check('5.13.2: portal animado também FORA do vazio (vórtice no overworld)',
 check('5.13.2: cidade morta já de pé na chegada (anel inicial de ruínas)',
       'private static void anelInicial(' in _vr and 'marcar(nv, "anel")' in _vr)
 check('5.13.1: pacote do portal registrado (canal atual)',
-      'VazioPortalPayload.TYPE' in _net and 'event.registrar("18")' in _net
+      'VazioPortalPayload.TYPE' in _net and 'event.registrar("19")' in _net
       and 'VazioPortalPayload' in _pay)
 check('5.12.0: a volta pelo portal não depende de admin (voltarPeloPortal)',
       'public static void voltarPeloPortal(ServerPlayer alvo)' in _nev)
@@ -2419,7 +2419,7 @@ check('5.13.6: o CORPO da alma e GEOMETRIA no cliente (funciona com particula de
       and 'private static void desenharAlma(' in rd(C + '/VazioAlmasFx.java')
       and os.path.exists(R + '/VazioAlmasPayload.java'))
 check('5.13.6: pacote das almas registrado (canal atual + handler do cliente)',
-      'event.registrar("18")' in rd(R + '/ModNetworking.java')
+      'event.registrar("19")' in rd(R + '/ModNetworking.java')
       and 'VazioAlmasPayload.STREAM_CODEC' in rd(R + '/ModNetworking.java')
       and 'handleVazioAlmas' in rd(C + '/ClientPayloadHandler.java'))
 check('5.13.6 (pedido 56): textura da ESCURIDAO ANIMADA (4 quadros, 32x32, sem emenda)',
@@ -2816,7 +2816,7 @@ check('5.17.0: o estado da Axion também fica no save',
       'setAxionEstado' in rd(R + '/RPWorldData.java')
       and 'tag.putInt("AxionEstado", axionEstado);' in rd(R + '/RPWorldData.java'))
 check('5.17.0/5.26.1: protocolo subiu para v18 (cliente velho é recusado)',
-      'event.registrar("18")' in _mn2)
+      'event.registrar("19")' in _mn2)
 
 # ============ 5.17.1: as três correções do dono ============
 _axc = rd(C + '/AxionHud.java')
@@ -3055,9 +3055,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.59.0 no jar, no mod e no gradle',
-      "version = '5.59.0'" in rd('build.gradle')
-      and '5.59.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.60.0 no jar, no mod e no gradle',
+      "version = '5.60.0'" in rd('build.gradle')
+      and '5.60.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3254,7 +3254,7 @@ check('5.26.1: a tela tem atmosfera propria (poeira subindo, brilho do corpo, vi
 check('5.26.1: o recado do servidor vale para UMA morte so (e limpo ao sair da tela)',
       'public static void esquecer()' in _mt and 'esquecer();' in _mt)
 check('5.26.1: o pacote subiu de versao (v16) — cliente velho e recusado com aviso',
-      'event.registrar("18")' in rd(R + '/ModNetworking.java'))
+      'event.registrar("19")' in rd(R + '/ModNetworking.java'))
 check('5.26.1: o VAMPIRO tem VISAO NOTURNA a noite (nao e so debuff)',
       'private static void visaoNoturna(ServerPlayer p)' in _vs
       and 'MobEffects.NIGHT_VISION' in _vs and 'if (!noiteDele) {' in _vs
@@ -3293,10 +3293,10 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.59.0 (jar, mod e gradle)',
-      "version = '5.59.0'" in rd('build.gradle') and '5.59.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.60.0 (jar, mod e gradle)',
+      "version = '5.60.0'" in rd('build.gradle') and '5.60.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
-      'event.registrar("18")' in rd(R + '/ModNetworking.java'))
+      'event.registrar("19")' in rd(R + '/ModNetworking.java'))
 
 # ============ 5.26.1: SOM DA INFECCAO, LOREZONE POR ENTRADA, CIBERPSICOSE QUE ATACA, ============
 # ============          VISAO NOTURNA EM DUAS CAMADAS E PROTEÇÃO DO ECLIPSE               ============
@@ -3352,10 +3352,10 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.59.0 (jar, mod e gradle)',
-      "version = '5.59.0'" in rd('build.gradle') and '5.59.0' in _rm)
+check('5.34.0: a versao subiu pra 5.60.0 (jar, mod e gradle)',
+      "version = '5.60.0'" in rd('build.gradle') and '5.60.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
-      'event.registrar("18")' in rd(R + '/ModNetworking.java'))
+      'event.registrar("19")' in rd(R + '/ModNetworking.java'))
 
 # ============ 5.26.1: HOTFIX DO CRASH DO CLIENTE (camada registrada duas vezes) ============
 _vv2 = rd(C + '/VisaoVampiroFx.java')
@@ -3375,8 +3375,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.59.0 (jar, mod e gradle)',
-      "version = '5.59.0'" in rd('build.gradle') and '5.59.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.60.0 (jar, mod e gradle)',
+      "version = '5.60.0'" in rd('build.gradle') and '5.60.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -4708,6 +4708,63 @@ check('5.46.0 (103): a textura do Fluxo e sangue de verdade (R alto, G e B quase
       _mais_vermelho('block/fluxo_block.png')
       and sum(p[0] for p in _rgb(A + '/textures/block/fluxo_block.png') if p[3] > 8)
           / max(1, len([p for p in _rgb(A + '/textures/block/fluxo_block.png') if p[3] > 8])) > 150)
+
+
+# ======== PEDIDO 115 — 5.60.0 (a AURA DE ILUMINACAO, /iluminacao, com poder) ========
+# O dono mandou o zip "fate-aura-neoforge-1.21.1" e pediu: "vamos adicionar isso como uma nova
+# aura, /iluminacao, aonde ele vai ter poder para ser usado, add isso no mod". A aura e o circulo
+# dourado (runas + hexagrama + coluna + helices + raios + Portoes da Babilonia) e o PODER e a
+# rajada de armas douradas (tecla G ou /iluminacao portoes).
+_AURA = R + '/aura'
+_at = rd(_AURA + '/AuraAnexos.java')
+_al = rd(_AURA + '/AuraIluminacao.java')
+_pp = rd(_AURA + '/PoderPortoes.java')
+_ar = rd(_AURA + '/ArmaDouradaEntity.java')
+_cmd_il = rd(_AURA + '/IluminacaoCommands.java')
+_ren = rd(_AURA + '/client/AuraRendererIluminacao.java')
+_ren_ar = rd(_AURA + '/client/ArmaDouradaRenderer.java')
+_tec = rd(_AURA + '/client/TeclaIluminacao.java')
+_mn60 = rd(R + '/ModNetworking.java')
+
+check('5.60.0 (115): a aura existe e e pendurada no mod (anexo + entidade no mod bus)',
+      os.path.exists(_AURA + '/AuraIluminacao.java')
+      and 'AuraAnexos.TIPOS.register(modBus)' in _al
+      and 'AuraEntidades.ENTIDADES.register(modBus)' in _al
+      and 'AuraIluminacao.init(modEventBus);' in rd(R + '/RPTagMod.java'))
+check('5.60.0 (115): a aura fica NO JOGADOR, salva no mundo e aparece pra quem ve',
+      'AttachmentType' in _at and 'copyOnDeath()' in _at and '.sync(' in _at
+      and '.serialize(Codec.INT)' in _at)
+check('5.60.0 (115): /iluminacao liga e desliga (em si e, pra OP, em outro jogador)',
+      'literal("iluminacao")' in _cmd_il
+      and 'literal("off")' in _cmd_il
+      and 'EntityArgument.player()' in _cmd_il
+      and 'hasPermission(2)' in _cmd_il)
+check('5.60.0 (115): O PODER - os Portoes da Babilonia (rajada de armas douradas)',
+      'literal("portoes")' in _cmd_il and 'PoderPortoes.tentarDisparar' in _cmd_il
+      and 'RECARGA_TICKS = 100' in _pp and 'DURACAO_TICKS = 30' in _pp
+      and 'POR_TICK = 2' in _pp and 'ArmaDouradaEntity' in _pp)
+check('5.60.0 (115): o poder so dispara com a aura LIGADA (avisa e nao gasta recarga)',
+      'if (!AuraAnexos.ligada(p))' in _pp and 'Ligue a aura primeiro' in _pp)
+check('5.60.0 (115): as armas NAO machucam jogador (seguro pra RP)',
+      'FERE_JOGADOR = false' in _ar and '|| !(alvo instanceof Player)' in _ar)
+check('5.60.0 (115): a tecla do poder (G) e o pacote cliente -> servidor',
+      'GLFW_KEY_G' in _tec and 'PoderPortoesPayload' in _tec
+      and 'registrar("19")' in _mn60 and 'PoderPortoesPayload.CODEC' in _mn60)
+check('5.60.0 (115): o desenho da aura e o circulo magico dourado + raios + portoes',
+      'class AuraRendererIluminacao' in _ren
+      and 'magicCircle(' in _ren and 'helix(' in _ren and 'risingRings(' in _ren
+      and 'rays(vc, m, s, t, pulse, h);' in _ren and 'gates(vc, m, s, t, pulse);' in _ren
+      and 'RenderType.lightning()' in _ren)
+check('5.60.0 (115): a arma dourada tem desenho proprio (espada e lanca em cruz)',
+      'class ArmaDouradaRenderer' in _ren_ar and 'RenderType.lightning()' in _ren_ar
+      and 'GOLD' not in _ren_ar and 'OURO' in _ren_ar)
+check('5.60.0 (115): nenhuma sobra do mod de origem (com.rptag / AuraStyle / GILGAMESH / By the way)',
+      'com.rptag' not in _al + _at + _pp + _ar + _cmd_il + _ren + _ren_ar + _tec
+      and 'AuraStyle' not in _ren and 'GILGAMESH' not in _ren)
+check('5.60.0 (115): o idioma tem o nome da tecla e da arma',
+      'key.rptag.iluminacao' in rd('src/main/resources/assets/rptag/lang/pt_br.json')
+      and 'entity.rptag.golden_weapon' in rd('src/main/resources/assets/rptag/lang/pt_br.json')
+      and 'key.rptag.iluminacao' in rd('src/main/resources/assets/rptag/lang/en_us.json'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
