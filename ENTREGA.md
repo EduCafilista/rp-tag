@@ -1,50 +1,48 @@
-# RP Tag 5.61.0 — o tablet salva a SKIN da pessoa
+# RP Tag 5.62.0 — o que vinha de novo no zip: FORMA MACACO + RUGIDO
 
-**Baixar:** https://github.com/EduCafilista/rp-tag/releases/download/v5.61.0/rptag-5.61.0.jar
-(também na sua área de trabalho como `rptag-5.61.0.jar`)
+**Baixar:** https://github.com/EduCafilista/rp-tag/releases/download/v5.62.0/rptag-5.62.0.jar
+(também na sua área de trabalho como `rptag-5.62.0.jar`)
 
 ---
 
-## O que você pediu
+## O que eu adicionei (e o que pulei)
 
-> "o tablet deve salvar a skin da pessoa, acha que consegue fazer isso? salvar o modelo que a
-> pessoa tava usando quando criou/salvou o tablet?"
+Você mandou: "adiciona o que estiver no arquivo, o que for repetido você não add". Comparei o zip
+novo com o que já estava no mod:
 
-Consegui. A ficha agora guarda **a skin do momento em que a pessoa preencheu/confirmou** — não a
-skin de agora.
+**JÁ TINHA (não dupliquei):** a aura de iluminação (círculo dourado, coluna, hélices, raios,
+portões), o poder dos Portões da Babilônia, as armas douradas, a tecla, os comandos `/iluminacao`.
+O zip velho tinha também 8 estilos de aura (saber, archer, lancer...) e o `/aura` — **não** entraram,
+porque você pediu **uma** aura só (`/iluminacao`).
 
-## Como funciona
+**NOVO (entrou agora):**
 
-- **Quem sabe a skin é o cliente** (o servidor nunca vê o arquivo da skin). Então, quando o jogador
-  abre a própria ficha pra editar e quando ele aperta **salvar/confirmar** (etapa 6), o cliente
-  manda pro servidor: o **link da textura** + o **modelo** (Clássico ou Slim).
-- O servidor confere e grava na ficha (`FichaRegistro` → `SkinUrl` + `SkinModel`), junto com o
-  resto — então isso **salva no mundo** e vai no pacote do tablet.
-- **Congela junto com a ficha**: depois que a ficha é confirmada (e sem liberação do admin), a
-  skin **não muda mais**, mesmo que a pessoa troque de skin no launcher. É o retrato do momento.
-- Trocar de skin **não** invalida o texto que o jogador está escrevendo (não mexe na revisão).
+### 1. Forma Macaco — `/macaco`
+- **5x maior** (escala 5.0), passo alto (sobe blocos andando), alcance de bloco 8 e de entidade 6;
+- **Regeneração II, Força III e Resistência III infinitas**;
+- se reaplica sozinha a cada 2 s (relog, leite, morte) enquanto estiver ligada;
+- `/macaco off` e aceita vários alvos: `/macaco @a`, `/macaco Ana,Beto`, `/macaco off @a`;
+- **precisa de OP (nível 2)**.
 
-## O que aparece no tablet
+### 2. Rugido do Macaco — tecla **V**
+- onda sonora que **se expande de verdade**, 50 blocos pra cada lado (100 de diâmetro), levando 3 s
+  pra chegar na borda — cada alvo só é atingido quando a frente da onda chega nele;
+- **dano 30 colado → 5 na borda** (dano de sonic boom);
+- até 25 blocos: **atordoado** (imobilizado + sem pulo + tontura) por 8 s colado → 3 s no limite;
+- empurrão pra fora, zunido agudo que vai sumindo em quem foi atingido, ecos do grito;
+- **20 s de recarga**, aviso de "garganta cansada" com o tempo que falta;
+- **só o Macaco ruge** (fora da forma, avisa e não gasta recarga);
+- visual: anéis correndo pelo chão **seguindo o relevo**, parede de pressão, clarão + pilar de luz e
+  **tremor de câmera**.
 
-No painel do personagem, ao lado do boneco 3D, entra um **rosto da skin salva** com o rótulo
-`SKIN SALVA` e o modelo (`Clássico` / `Slim`). O boneco 3D continua sendo o jogador ao vivo — o
-rosto guardado é o registro do momento em que ele salvou.
-
-## Segurança e limites (importante)
-
-- O servidor **só aceita link do servidor de texturas da Mojang**
-  (`http://textures.minecraft.net/texture/...`) — cliente não pode mandar URL arbitrária.
-- A imagem é baixada pelo próprio `HttpTexture` do Minecraft, com **cache em disco**: baixa uma vez
-  e fica. Enquanto não chega, aparece um quadradinho escuro (nada de textura rosa de erro).
-- **Se a skin não tem link** (jogador em servidor offline com skin vinda de arquivo local, sem
-  perfil da Mojang), não há o que salvar — nesse caso a ficha fica sem skin guardada e o tablet
-  mostra só o boneco ao vivo, como antes.
+> A tecla do rugido é **V**, não R: no RP Tag a **R** já é "Poderes do Vazio". Dá pra trocar em
+> Controles → RP Tag → "Rugido do Macaco".
 
 ## Provas
-
-- `check.py`: **1366 PASS / 0 FAIL** (8 provas novas);
+- `check.py`: **1377 PASS / 0 FAIL** (11 provas novas);
 - `arte/auditar.py`: **0 erro**;
-- **servidor de teste subido com a 5.61.0**: `Done`, comandos do tablet ok, nenhuma exceção.
+- **servidor de teste subiu com a 5.62.0**: `/macaco` e `/iluminacao` registrados, `Done`, zero
+  exceção no log.
 
-> O canal de rede subiu de **19 para 20** (o pacote novo da skin) — servidor e cliente precisam
-> estar na MESMA versão.
+> O canal de rede subiu de **20 para 21** (pacote do rugido + pacote do visual) — servidor e cliente
+> precisam estar na MESMA versão.

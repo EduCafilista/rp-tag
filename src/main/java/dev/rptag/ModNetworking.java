@@ -38,7 +38,8 @@ public final class ModNetworking {
         // (5.25.1) v16: MORTE_RP (o servidor diz se a morte é de vida canônica)
         // (5.60.0) v19: ILUMINACAO_PORTOES (a tecla do poder da aura dourada)
         // (5.61.0) v20: FICHA_SKIN (a skin que fica guardada no tablet)
-        PayloadRegistrar registrar = event.registrar("20");
+        // (5.62.0) v21: ROAR (a tecla do rugido) e ROAR_FX (a onda sonora no cliente)
+        PayloadRegistrar registrar = event.registrar("21");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         // (5.13.0) o portal negro do vazio (posicao, pedestais, estado da abertura)
@@ -62,6 +63,15 @@ public final class ModNetworking {
                         dev.rptag.RPTagMod.LOGGER.warn("RP Tag: habilidade do leque falhou", t);
                     }
                 }));
+        // (5.62.0) o RUGIDO do macaco: tecla -> servidor, e a onda visual de volta pra quem esta perto
+        registrar.playToServer(dev.rptag.aura.RoarPayload.TYPE, dev.rptag.aura.RoarPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> {
+                    if (ctx.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        dev.rptag.aura.RoarAbility.tryRoar(sp);
+                    }
+                }));
+        registrar.playToClient(dev.rptag.aura.RoarFxPayload.TYPE, dev.rptag.aura.RoarFxPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.aura.client.RoarFx.start(p.x(), p.y(), p.z())));
         // (5.61.0) a skin que o jogador esta usando (o cliente ve; o servidor guarda na ficha)
         registrar.playToServer(FichaSkinPayload.TYPE, FichaSkinPayload.STREAM_CODEC,
                 TabletService::handleSkin);

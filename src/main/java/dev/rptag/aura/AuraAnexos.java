@@ -26,6 +26,15 @@ public final class AuraAnexos {
                     .copyOnDeath()
                     .build());
 
+    /**
+     * (5.62.0) FORMA MACACO: fica no jogador (sem sync — quem usa e so o servidor).
+     * O {@code MacacoForm} reaplica os modificadores sozinho a cada 2 s enquanto estiver ligada.
+     */
+    public static final Supplier<AttachmentType<Boolean>> MACACO = TIPOS.register("macaco", () ->
+            AttachmentType.builder(() -> false)
+                    .serialize(Codec.BOOL)
+                    .build());
+
     private AuraAnexos() {}
 
     /** Atalho: a aura esta ligada neste jogador? */
