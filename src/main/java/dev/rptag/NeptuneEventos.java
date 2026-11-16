@@ -2135,8 +2135,14 @@ public final class NeptuneEventos {
      * apareça quando o player sair do jogo"</i>. Então ela dispara no logout:
      * quem FICA vê, na posição de onde a pessoa desconectou, o corpo sendo
      * engolido — a coluna de sombra sobe em espiral, os códigos do glifo
-     * piscam em volta, o som da expulsão toca e o chat anuncia. O que saiu não
-     * vê nada (ele já foi), e é assim que tem que ser.
+     * piscam em volta e o som da expulsão toca. O que saiu não vê nada (ele já
+     * foi), e é assim que tem que ser.
+     *
+     * <p><b>5.59.0</b> — SAÍRAM AS MENSAGENS. O dono reclamou que o mod escrevia
+     * no chat toda vez que alguém saía ("fica chato, eu só queria a animação da
+     * pessoa saindo"). Foram embora as duas que eu tinha inventado: a linha no
+     * chat e o texto em cima da hotbar. Sobrou só a animação (sombra, códigos,
+     * partículas e som).
      */
     public static void saidaAutomatica(ServerPlayer saiu) {
         try {
@@ -2171,19 +2177,22 @@ public final class NeptuneEventos {
                 PacketDistributor.sendToPlayer(outro, glifos);
                 if (outro.position().distanceTo(pos) <= 32.0) {
                     outro.playNotifySound(RPTagMod.SOM_EXPULSAO.get(), SoundSource.AMBIENT, 0.9F, 0.8F);
-                    outro.displayClientMessage(Component.literal(
-                            "\u00a78" + nome + " se desfez em sombra."), true);
                 }
             }
-            // (3) o som no mundo + o aviso no chat
+            // (3) o som no mundo
+            //
+            // (5.59.0) AQUI NAO TEM MAIS TEXTO NENHUM. O dono: <i>"tira essa mensagem toda
+            // toda vez que alguem sair do sv, fica chato, eu so queria a animacao da pessoa
+            // saindo, nem te pedi aquela mensagem no chat"</i>. Saíram as DUAS mensagens que
+            // eu tinha inventado na 5.7.9: a linha no chat ("Fulano saiu do jogo — e as
+            // sombras o levaram.") e o texto em cima da hotbar ("Fulano se desfez em
+            // sombra."). Fica SÓ a animacao: a coluna de sombra, os codigos girando em volta
+            // do corpo, as particulas e o som. Nada de chat, nada de texto na tela.
             nv.playSound(null, BlockPos.containing(pos), RPTagMod.SOM_EXPULSAO.get(),
                     SoundSource.AMBIENT, 1.0F, 0.8F);
             nv.playSound(null, BlockPos.containing(pos),
                     net.minecraft.sounds.SoundEvents.AMBIENT_CAVE.value(),
                     SoundSource.AMBIENT, 0.5F, 0.7F);
-            nv.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
-                    "\u00a78" + nome + " \u00a77saiu do jogo \u2014 e as sombras o levaram.")
-                    .withStyle(ChatFormatting.DARK_GRAY), false);
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: animacao automatica de saida falhou (o jogo segue)", t);
         }

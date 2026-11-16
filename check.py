@@ -86,7 +86,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.58.0'
+VER = '5.59.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1857,9 +1857,12 @@ check('5.7.9/5.13.1: exilio com praca larga e superficie plana (agora no VazioRe
 check('5.43.3/96: a praca do vazio nao recebe mais coluna nem lanterna (pedido do dono)',
       'public static final boolean PILARES_DA_PRACA = false;' in _vrp
       and 'PILARES_DA_PRACA && i < 8' in _vrp)
-check('5.7.9: ANIMACAO DE SAIDA automatica quando o player sai do jogo',
-      'saidaAutomatica' in rd(R + '/ServerEvents.java') and 'sombraChuva' in _ne2
-      and 'se desfez em sombra' in _ne2)
+_f_saida = _ne2.split('public static void saidaAutomatica')[1].split('==== EX\u00cdLIO')[0]
+check('5.59.0: animacao de saida automatica no logout, SEM mensagem no chat nem na tela',
+      'saidaAutomatica' in rd(R + '/ServerEvents.java') and 'sombraChuva' in _f_saida
+      and 'se desfez em sombra' not in _ne2
+      and 'broadcastSystemMessage' not in _f_saida
+      and 'displayClientMessage' not in _f_saida)
 check('5.7.9: /vazio entrar deixa o admin USAR o lugar (avisa que da pra andar/construir)',
       'd\u00e1 pra andar, construir' in _nc2 or 'pra andar, construir' in _nc2)
 check('5.16.4: o aviso ONE FOR ALL saiu (classe, comando, camada e som)',
@@ -3052,9 +3055,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.58.0 no jar, no mod e no gradle',
-      "version = '5.58.0'" in rd('build.gradle')
-      and '5.58.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.59.0 no jar, no mod e no gradle',
+      "version = '5.59.0'" in rd('build.gradle')
+      and '5.59.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3290,8 +3293,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.58.0 (jar, mod e gradle)',
-      "version = '5.58.0'" in rd('build.gradle') and '5.58.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.59.0 (jar, mod e gradle)',
+      "version = '5.59.0'" in rd('build.gradle') and '5.59.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3349,8 +3352,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.58.0 (jar, mod e gradle)',
-      "version = '5.58.0'" in rd('build.gradle') and '5.58.0' in _rm)
+check('5.34.0: a versao subiu pra 5.59.0 (jar, mod e gradle)',
+      "version = '5.59.0'" in rd('build.gradle') and '5.59.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("18")' in rd(R + '/ModNetworking.java'))
 
@@ -3372,8 +3375,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.58.0 (jar, mod e gradle)',
-      "version = '5.58.0'" in rd('build.gradle') and '5.58.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.59.0 (jar, mod e gradle)',
+      "version = '5.59.0'" in rd('build.gradle') and '5.59.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
