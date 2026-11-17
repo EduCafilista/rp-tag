@@ -27,7 +27,9 @@ public final class AuraRendererIluminacao {
         Player p = e.getEntity();
         if (p.isSpectator() || p.isInvisible()) return;
         float t = p.tickCount + e.getPartialTick();
-        if (RadiacaoFx.ativa(p)) {
+        if (ArcoirisFx.ativa(p)) {            // (5.69.0) estrela de luz + anel colorido
+            ArcoirisFx.render(e, p, t);
+        } else if (RadiacaoFx.ativa(p)) {
             RadiacaoFx.render(e, p, t);
         } else if (AuraFx.ehVazio(p)) {
             AuraFx.renderVazio(e, p, t);

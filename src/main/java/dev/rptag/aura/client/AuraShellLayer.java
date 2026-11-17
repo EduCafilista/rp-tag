@@ -55,6 +55,19 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
     // manchas azul-marinho escuras entre as chamas: {raio, alfa}
     private static final float[][] RAD_SHADOW = {{0.15f, 0.14f}, {0.30f, 0.12f}, {0.50f, 0.10f}, {0.72f, 0.07f}};
 
+    // (5.69.0) Arco-iris: {raio, alfa por copia} — a cor de cada copia vem do hsv() girando
+    private static final float[][] RB = {
+            {0.05f, 0.34f}, {0.11f, 0.26f}, {0.20f, 0.18f}, {0.32f, 0.12f}, {0.48f, 0.08f}, {0.68f, 0.05f},
+    };
+
+    /** HSV -> RGB (h em 0..1). Usado pela aura arco-iris. */
+    static float[] hsv(float h, float s) {
+        float r = Mth.clamp(Math.abs(h * 6f - 3f) - 1f, 0f, 1f);
+        float g = Mth.clamp(2f - Math.abs(h * 6f - 2f), 0f, 1f);
+        float b = Mth.clamp(2f - Math.abs(h * 6f - 4f), 0f, 1f);
+        return new float[]{1f + (r - 1f) * s, 1f + (g - 1f) * s, 1f + (b - 1f) * s};
+    }
+
     public AuraShellLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);
     }
@@ -71,9 +84,11 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
         boolean ouro = id == AuraEstilo.ILUMINACAO.index();
         // (5.67.0) /radiacao: chamas azuis. Vazio = /vazio ligar. /iluminacao off ou /radiacao off = nada.
         boolean radiacao = id == AuraEstilo.RADIACAO.index();
-        boolean vazio = !ouro && !radiacao && dev.rptag.client.VazioAuraFx.ativa(p);
+        boolean arcoiris = id == AuraEstilo.ARCOIRIS.index();          // (5.69.0)
+        boolean vazio = !ouro && !radiacao && !arcoiris && dev.rptag.client.VazioAuraFx.ativa(p);
         if (ouro) gold(ps, buf, t);
         else if (radiacao) radiation(ps, buf, t);
+        else if (arcoiris) rainbow(ps, buf, t);
         else if (vazio) shadow(ps, buf, t);
     }
 
@@ -152,6 +167,31 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
                 ps.translate(DIRS[d][0] * rad, DIRS[d][1] * rad - up, DIRS[d][2] * rad);
                 model.renderToBuffer(ps, vc, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
                         argb(1f, g[1] * k, g[2] * k, g[3] * k));
+                ps.popPose();
+            }
+        }
+    }
+
+    /** (5.69.0) A casca do arco-iris: 6 copias com as cores girando em volta do corpo. */
+    private void rainbow(PoseStack ps, MultiBufferSource buf, float t) {
+        PlayerModel<AbstractClientPlayer> model = getParentModel();
+        float pulse = 0.90f + 0.10f * Mth.sin(t * 0.30f);
+        // corpo incandescente: luz branco-dourada por cima da pele
+        model.renderToBuffer(ps, buf.getBuffer(AuraRenderTypes.GLOW_TINT), LightTexture.FULL_BRIGHT,
+                OverlayTexture.NO_OVERLAY, argb(0.60f, 0.55f * pulse, 0.45f * pulse, 0.22f * pulse));
+
+        VertexConsumer vc = buf.getBuffer(AuraRenderTypes.GLOW_HULL);
+        for (int ring = 0; ring < RB.length; ring++) {
+            float[] g = RB[ring];
+            for (int d = 0; d < DIRS.length; d++) {
+                float hue = (t * 0.010f + ring * 0.13f + d * 0.045f) % 1f;      // faixas de cor girando
+                float[] c = hsv(hue, ring == 0 ? 0.25f : 0.85f);                // 1o anel quase branco
+                float rad = g[0] * (0.75f + 0.25f * Mth.sin(t * 0.33f + d * 1.9f + ring * 2.1f));
+                float k = g[1] * pulse;
+                ps.pushPose();
+                ps.translate(DIRS[d][0] * rad, DIRS[d][1] * rad - g[0] * 0.4f, DIRS[d][2] * rad);
+                model.renderToBuffer(ps, vc, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
+                        argb(1f, c[0] * k, c[1] * k, c[2] * k));
                 ps.popPose();
             }
         }

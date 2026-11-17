@@ -11,7 +11,9 @@ public enum AuraEstilo {
     /** (5.64.0) A AURA DO VAZIO: tinta preta com brilho arroxeado. */
     VAZIO(0.02f, 0.02f, 0.05f, 0.35f, 0.30f, 0.45f),
     /** (5.67.0) A AURA DE RADIACAO (/radiacao): azul-ciano, chamas espectrais. */
-    RADIACAO(0.15f, 0.85f, 1.00f, 0.85f, 1.00f, 1.00f);
+    RADIACAO(0.15f, 0.85f, 1.00f, 0.85f, 1.00f, 1.00f),
+    /** (5.69.0) A AURA ARCO-IRIS (/arcoiris): estrela de luz no peito, cada raio numa cor. */
+    ARCOIRIS(1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f);
 
     public final float r, g, b, r2, g2, b2;
 
@@ -22,10 +24,10 @@ public enum AuraEstilo {
 
     /** (5.67.0) estilo desenhado como casca em volta do corpo? */
     public boolean ehCasca() {
-        return this == ILUMINACAO || this == VAZIO || this == RADIACAO;
+        return this == ILUMINACAO || this == VAZIO || this == RADIACAO || this == ARCOIRIS;
     }
 
-    /** Valor guardado no jogador: 0 = desligada, 1 = iluminacao, 2 = vazio, 3 = radiacao. */
+    /** Valor guardado no jogador: 0 = desligada, 1 = iluminacao, 2 = vazio, 3 = radiacao, 4 = arcoiris. */
     public int index() {
         return ordinal() + 1;
     }

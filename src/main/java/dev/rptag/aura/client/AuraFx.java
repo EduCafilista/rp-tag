@@ -53,6 +53,7 @@ public final class AuraFx {
         int id = p.getData(AuraAnexos.AURA.get());
         if (id == AuraEstilo.ILUMINACAO.index()) return false;
         if (id == AuraEstilo.RADIACAO.index()) return false;   // (5.67.0) radiacao tem o dela
+        if (id == AuraEstilo.ARCOIRIS.index()) return false;   // (5.69.0) arco-iris tem o dele
         return dev.rptag.client.VazioAuraFx.ativa(p);
     }
 
