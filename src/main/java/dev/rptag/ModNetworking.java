@@ -72,6 +72,15 @@ public final class ModNetworking {
                 }));
         registrar.playToClient(dev.rptag.aura.RoarFxPayload.TYPE, dev.rptag.aura.RoarFxPayload.CODEC,
                 (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.aura.client.RoarFx.start(p.x(), p.y(), p.z())));
+        // (5.70.0) o PRISMA CELESTIAL da aura arco-iris: tecla C -> servidor, e o raio de volta
+        registrar.playToServer(dev.rptag.aura.PrismaPayload.TYPE, dev.rptag.aura.PrismaPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> {
+                    if (ctx.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        dev.rptag.aura.PrismaCelestial.tryCast(sp);
+                    }
+                }));
+        registrar.playToClient(dev.rptag.aura.PrismaFxPayload.TYPE, dev.rptag.aura.PrismaFxPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.aura.client.PrismaFx.comeca(p.quemLanca())));
         // (5.61.0) a skin que o jogador esta usando (o cliente ve; o servidor guarda na ficha)
         registrar.playToServer(FichaSkinPayload.TYPE, FichaSkinPayload.STREAM_CODEC,
                 TabletService::handleSkin);
