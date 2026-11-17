@@ -22,15 +22,19 @@ import java.util.*;
 
 /**
  * Grito do Macaco: onda sonora que se expande 50 blocos em todas as direções (círculo de 100 de diâmetro).
- * Dano: 30 colado nele -> 5 na borda. Perto (<= STUN_RADIUS): atordoado e imobilizado. Longe: só o zunido.
+ * Dano: 60 colado nele -> 20 na borda (era 30 -> 5 e o dono achou fraco). Perto (<= STUN_RADIUS): atordoado e imobilizado. Longe: só o zunido.
  * A onda é "de verdade": cada alvo só é atingido quando a frente da onda chega até ele.
  */
 @EventBusSubscriber(modid = dev.rptag.RPTagMod.MODID)
 public final class RoarAbility {
     public static final double RADIUS = 50.0;          // 50 blocos para cada lado
     public static final int TRAVEL_TICKS = 60;         // tempo para a onda chegar na borda (3 s)
-    public static final float DAMAGE_MAX = 30f;        // dano colado no Macaco
-    public static final float DAMAGE_MIN = 5f;         // dano na borda
+    // (5.71.0) O DONO: "o dano do grito por algum motivo esta muito fraco".
+    // O motivo no codigo: a onda batia UMA vez por alvo e o dano caia linear com a distancia —
+    // 30 colado, mas 5 na borda, e qualquer armadura/Resistencia comia boa parte disso. Agora:
+    // 60 colado e 20 na borda, e a queda e curva (^0.6), entao ate na metade do raio ainda doi.
+    public static final float DAMAGE_MAX = 60f;        // dano colado no Macaco
+    public static final float DAMAGE_MIN = 20f;        // dano na borda
     public static final double STUN_RADIUS = 25.0;     // até aqui: lento + imobilizado + tontura
     private static final int COOLDOWN_TICKS = 400;     // 20 s
 
@@ -116,8 +120,8 @@ public final class RoarAbility {
     }
 
     private static void affect(Roar r, LivingEntity t, double d, double dx, double dz) {
-        double k = Mth.clamp(d / RADIUS, 0.0, 1.0);
-        float dmg = (float) Mth.lerp(k, DAMAGE_MAX, DAMAGE_MIN);   // 30 perto -> 5 longe
+        double k = (float) Math.pow(Mth.clamp(d / RADIUS, 0.0, 1.0), 0.6);
+        float dmg = (float) Mth.lerp(k, DAMAGE_MAX, DAMAGE_MIN);   // 60 perto -> 20 longe
         t.invulnerableTime = 0;
         t.hurt(r.level.damageSources().sonicBoom(r.caster), dmg);
 

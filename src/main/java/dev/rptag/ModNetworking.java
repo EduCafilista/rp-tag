@@ -142,7 +142,7 @@ public final class ModNetworking {
                 dev.rptag.aura.PoderPortoesPayload.CODEC,
                 (p, ctx) -> ctx.enqueueWork(() -> {
                     if (ctx.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
-                        dev.rptag.aura.PoderPortoes.tentarDisparar(sp);
+                        dev.rptag.aura.PoderPortoes.tecla(sp, p.segurando());
                     }
                 }));
         // (5.4.0) EVENTO NEPTUNE — todos S2C

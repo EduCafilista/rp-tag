@@ -14,58 +14,65 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.joml.Vector3f;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * (5.60.0) O PODER DA AURA DE ILUMINACAO: os PORTES DA BABILONIA.
  *
- * <p>Uma rajada de armas douradas que sai de portais atras/em volta do corpo e voa para onde o
- * jogador esta mirando. Dura 1,5 s, dispara 2 armas por tick e tem 5 s de recarga.
+ * <p>Uma chuva de armas douradas que sai de portais atras/em volta do corpo e voa para onde o
+ * jogador esta mirando.
  *
- * <p>Como usar: tecla <b>G</b> (mudavel em Controles) ou {@code /iluminacao portoes}.
- * So dispara com a aura LIGADA — desligada, avisa e nao gasta recarga.
+ * <p><b>5.71.0 — SEGURA O BOTAO E NAO PARA.</b> O dono: <i>"o ataque dos portoes pode ser
+ * 'infinito' ate o player soltar o botao, ai para de lancar as lancas douradas"</i>. Antes era uma
+ * rajada fixa de 1,5 s com 5 s de recarga. Agora e igual arma automatica: apertou a tecla (ou o
+ * comando, que faz uma rajada curta de 1 s) comeca a atirar; enquanto estiver segurando, sai arma
+ * a cada tick; soltou, parou na hora.
  *
- * <p>Seguro pra RP: as armas NAO machucam jogadores ({@link ArmaDouradaEntity#FERE_JOGADOR}).
+ * <p><b>So ADM e so com a aura LIGADA</b>, e sem mensagem nenhuma pra quem nao pode — o poder e
+ * segredo (pedido 118). Se a aura for desligada no meio, para sozinho.
  */
 @EventBusSubscriber(modid = dev.rptag.RPTagMod.MODID)
 public final class PoderPortoes {
-    private static final int RECARGA_TICKS = 100;  // 5 s
-    private static final int DURACAO_TICKS = 30;   // 1,5 s de rajada
+    /** Ticks de rajada quando o poder vem do comando (sem tecla pra segurar). */
+    private static final int RAJADA_DO_COMANDO = 20;
+    /** Intervalo minimo entre dois "apertos" (evita macro de clique). */
+    private static final int RECARGA_TICKS = 10;
     private static final int POR_TICK = 2;
     private static final float VELOCIDADE = 3.2f;
 
     private static final Map<UUID, Long> ULTIMO = new HashMap<>();
-    private static final List<Rajada> ATIVAS = new ArrayList<>();
+    /** quem esta com a tecla apertada agora. */
+    private static final Set<UUID> SEGURANDO = new HashSet<>();
+    /** rajadas do comando: uuid -> ticks que faltam. */
+    private static final Map<UUID, Integer> RAJADAS = new HashMap<>();
 
-    private static final class Rajada {
-        final ServerPlayer jogador;
-        int restante = DURACAO_TICKS;
-
-        Rajada(ServerPlayer p) {
-            this.jogador = p;
-        }
-    }
-
-    /**
-     * Chamado pela tecla (pacote) e pelo comando.
-     *
-     * <p><b>5.63.0 — O PODER E SEGREDO.</b> O dono: <i>"se o player nao tiver ativado a habilidade
-     * nao deve aparecer nada, nada de ativar tal poder, pq e segredo, apenas quem tem adm
-     * consegue"</i>. Entao aqui nao existe MAIS NENHUMA MENSAGEM — nem "ligue a aura primeiro", nem
-     * aviso de recarga. Sem aura ligada, sem permissao de OP ou em recarga: simplesmente nao
-     * acontece nada, em silencio (ninguem descobre o poder por acidente).
-     */
-    public static void tentarDisparar(ServerPlayer p) {
-        // (5.63.0) so quem tem ADM usa o poder — e sem aviso nenhum pra quem nao tem
-        if (!p.hasPermissions(2)) {
+    /** Chamado pelo pacote da tecla: true = apertou, false = soltou. */
+    public static void tecla(ServerPlayer p, boolean segurando) {
+        if (!podeUsar(p)) {
+            SEGURANDO.remove(p.getUUID());
             return;
         }
-        if (!AuraAnexos.ligada(p)) {
+        if (!segurando) {
+            SEGURANDO.remove(p.getUUID());   // soltou: a chuva de lancas para aqui
+            return;
+        }
+        long agora = p.serverLevel().getGameTime();
+        Long ultimo = ULTIMO.get(p.getUUID());
+        if (ultimo != null && agora - ultimo < RECARGA_TICKS) {
+            return;                          // cooldown curtinho entre dois apertos
+        }
+        ULTIMO.put(p.getUUID(), agora);
+        SEGURANDO.add(p.getUUID());
+    }
+
+    /** {@code /iluminacao portoes}: rajada curta de 1 s (o comando nao tem "soltar"). */
+    public static void tentarDisparar(ServerPlayer p) {
+        if (!podeUsar(p)) {
             return;
         }
         long agora = p.serverLevel().getGameTime();
@@ -74,27 +81,44 @@ public final class PoderPortoes {
             return;
         }
         ULTIMO.put(p.getUUID(), agora);
-        ATIVAS.add(new Rajada(p));
+        RAJADAS.put(p.getUUID(), RAJADA_DO_COMANDO);
+    }
+
+    /** (5.63.0) so ADM com a aura ligada — em silencio pra todo mundo. */
+    private static boolean podeUsar(ServerPlayer p) {
+        return p.hasPermissions(2) && AuraAnexos.ligada(p) && p.isAlive() && !p.isSpectator();
     }
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post e) {
-        for (Iterator<Rajada> it = ATIVAS.iterator(); it.hasNext(); ) {
-            Rajada r = it.next();
-            if (!r.jogador.isAlive() || r.jogador.hasDisconnected()) {
-                it.remove();
+        // quem esta segurando a tecla: atira todo tick enquanto a aura estiver ligada
+        for (ServerPlayer p : e.getServer().getPlayerList().getPlayers()) {
+            UUID id = p.getUUID();
+            boolean segurando = SEGURANDO.contains(id);
+            if (!segurando) continue;
+            if (!podeUsar(p)) {          // morreu, virou espectador, perdeu ADM ou desligou a aura
+                SEGURANDO.remove(id);
                 continue;
             }
-            disparar(r.jogador, r.restante % 3 == 0);
-            if (--r.restante <= 0) {
-                it.remove();
-            }
+            disparar(p, p.tickCount % 3 == 0);
+        }
+        // rajadas do comando
+        for (Iterator<Map.Entry<UUID, Integer>> it = RAJADAS.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<UUID, Integer> en = it.next();
+            ServerPlayer p = e.getServer().getPlayerList().getPlayer(en.getKey());
+            if (p == null || !podeUsar(p)) { it.remove(); continue; }
+            disparar(p, en.getValue() % 3 == 0);
+            int resto = en.getValue() - 1;
+            if (resto <= 0) it.remove(); else en.setValue(resto);
         }
     }
 
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent e) {
-        ULTIMO.remove(e.getEntity().getUUID());
+        UUID id = e.getEntity().getUUID();
+        ULTIMO.remove(id);
+        SEGURANDO.remove(id);
+        RAJADAS.remove(id);
     }
 
     private static void disparar(ServerPlayer p, boolean som) {

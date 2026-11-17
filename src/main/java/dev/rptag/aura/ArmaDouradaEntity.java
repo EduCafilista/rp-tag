@@ -29,8 +29,12 @@ public class ArmaDouradaEntity extends Projectile {
      * arma). Sao 2 armas por tick durante 1,5 s, entao e um ataque pra acabar com qualquer bicho.
      */
     public static final float DANO = 20.0f;
-    /** false = NAO machuca jogador (seguro pra RP; os bichos levam dano). */
-    public static final boolean FERE_JOGADOR = false;
+    /**
+     * (5.71.0) AGORA MACHUCA JOGADOR. O dono: <i>"os ataques do portao da iluminacao nao esta
+     * pegando em player"</i> — estava em false e o {@code onHitEntity} simplesmente ignorava
+     * jogador. Agora a lanca atravessa quem estiver na frente (menos o proprio dono do poder).
+     */
+    public static final boolean FERE_JOGADOR = true;
 
     private static final int VIDA_MAX = 40;
     private int vida;
@@ -55,7 +59,8 @@ public class ArmaDouradaEntity extends Projectile {
 
     @Override
     protected boolean canHitEntity(Entity e) {
-        return !(e instanceof ArmaDouradaEntity) && super.canHitEntity(e);
+        // (5.71.0) nao acerta outra arma nem o proprio dono do poder; jogador acerta sim
+        return !(e instanceof ArmaDouradaEntity) && e != getOwner() && super.canHitEntity(e);
     }
 
     @Override

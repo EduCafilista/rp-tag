@@ -16,7 +16,11 @@ import org.lwjgl.glfw.GLFW;
 
 /**
  * (5.60.0) A TECLA DO PODER da aura de iluminacao: <b>G</b> (o jogador troca em Controles).
- * O pacote so avisa o servidor — quem valida (aura ligada + recarga) e o {@code PoderPortoes}.
+ *
+ * <p>(5.71.0) <b>SEGURA QUE NAO PARA.</b> O dono: <i>"o ataque dos portoes pode ser 'infinito' ate
+ * o player soltar o botao, ai para de lancar as lancas douradas"</i>. Entao agora a tecla manda
+ * duas coisas: apertou = {@code segurando=true}, soltou = {@code segurando=false}. Quem decide se
+ * pode atirar (ADM + aura ligada) e o {@code PoderPortoes}.
  */
 public final class TeclaIluminacao {
     public static final KeyMapping TECLA_PORTOES = new KeyMapping(
@@ -38,13 +42,20 @@ public final class TeclaIluminacao {
 
     @EventBusSubscriber(modid = dev.rptag.RPTagMod.MODID, value = Dist.CLIENT)
     public static final class EventosDeJogo {
+        /** (5.71.0) estado da tecla no tick anterior — e o que detecta "soltou". */
+        private static boolean apertada;
+
         @SubscribeEvent
         public static void tick(ClientTickEvent.Post e) {
-            while (TECLA_PORTOES.consumeClick()) {
-                if (Minecraft.getInstance().player != null) {
-                    PacketDistributor.sendToServer(new PoderPortoesPayload());
-                }
+            boolean agora = TECLA_PORTOES.isDown();
+            if (agora == apertada) {
+                return;                      // nada mudou
             }
+            apertada = agora;
+            if (Minecraft.getInstance().player == null) {
+                return;
+            }
+            PacketDistributor.sendToServer(new PoderPortoesPayload(agora));
         }
     }
 
