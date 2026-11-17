@@ -10,7 +10,7 @@ consulte o [CHANGELOG.md](CHANGELOG.md); para a lista de comandos, o
 | --- | --- |
 | JDK 21 | Compilação e execução |
 | Git | Controle de versão |
-| Python 3 | Execução de `check.py` e ferramentas de arte |
+| Python 3 | Ferramentas de arte |
 | Pillow | Validação e composição dos arquivos de imagem |
 | Blender 5.2 | Produção das cenas de animação, quando necessário |
 | Editor ou IDE com suporte a Java | Edição e navegação no código |
@@ -26,13 +26,11 @@ Execute os comandos na raiz do repositório.
 ```powershell
 # Windows
 .\gradlew.bat build
-python check.py
 ```
 
 ```bash
 # Linux e macOS
 ./gradlew build
-python3 check.py
 ```
 
 Na versão atual do código, o resultado é `build/libs/rptag-4.5.0.jar`.
@@ -44,7 +42,6 @@ Remova o JAR anterior de `mods/` antes de testar uma atualização.
 | --- | --- |
 | Testes Java | `.\gradlew.bat test` |
 | Build completo | `.\gradlew.bat clean build` |
-| Verificações do projeto | `python check.py` |
 | Ferramentas de arte | `python -m unittest discover -s arte/tests -v` |
 | Integridade dos assets de vídeo | `python arte/validar.py` |
 

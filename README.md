@@ -132,13 +132,11 @@ Utilize o Gradle Wrapper incluído no repositório.
 ```powershell
 # Windows
 .\gradlew.bat build
-python check.py
 ```
 
 ```bash
 # Linux e macOS
 ./gradlew build
-python3 check.py
 ```
 
 O build executa os testes Java e produz `build/libs/rptag-4.7.3.jar`. O primeiro

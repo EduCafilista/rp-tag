@@ -116,13 +116,11 @@ Use the included Gradle Wrapper.
 ```powershell
 # Windows
 .\gradlew.bat build
-python check.py
 ```
 
 ```bash
 # Linux and macOS
 ./gradlew build
-python3 check.py
 ```
 
 The build runs Java tests and produces `build/libs/rptag-4.5.0.jar`. Initial
