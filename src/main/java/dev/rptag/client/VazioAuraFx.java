@@ -21,52 +21,22 @@ public final class VazioAuraFx {
     private VazioAuraFx() {
     }
 
-    /** pulsos curtos (0..1) que o raio/orbe deixam na aura. */
-    private static float pulso;
-
-    /** (5.31.0) quando foi o ultimo poder (a aura fica acesa depois dele). */
-    private static long ultimoPoder;
-
-    /** (5.32.0) quanto tempo (ms) a aura fica acesa depois do ultimo gatilho. */
-    private static long janela = 14000L;
-
-    /** (5.32.0) acende a aura por um tempo maior (usado pelo modo deus do vazio). */
-    public static void acenderPor(long ms) {
-        janela = Math.max(14000L, ms);
-        pulso = 1.0F;
-        ultimoPoder = System.currentTimeMillis();
-    }
-
-    /** chamado pelo FX dos poderes quando o jogador solta algo. */
-    public static void pulsar() {
-        pulso = 1.0F;
-        ultimoPoder = System.currentTimeMillis();
-    }
-
-    /** (5.32.0) a forca da aura: 1,0 logo depois do poder, apagando ate 0 na janela. */
-    private static float desde(long ms) {
-        if (ms < 0) {
-            return 0.0F;
-        }
-        float f = 1.0F - ms / (float) janela;
-        return f < 0.0F ? 0.0F : (f > 1.0F ? 1.0F : f);
-    }
-
     /**
-     * (5.64.0) A AURA ESTA ACESA NESTE JOGADOR?
+     * (5.64.1) O RELOGIO DA AURA ANTIGA SAIU DAQUI.
      *
-     * <p>Regra que ja existia: ela acende por alguns segundos depois de um poder (quem chama
-     * {@link #pulsar()} / {@link #acenderPor(long)}). E o que a casca de tinta usa pra saber se
-     * desenha.
+     * <p>Ele guardava um {@code pulso} que subia pra 1.0 a cada poder e <b>nunca descia</b> — com
+     * isso a aura preta ficava acesa pra sempre, mesmo depois de desligar (o dono viu isso:
+     * <i>"eu desliguei e continuou a aura negra"</i>). Quem decide se a aura aparece agora e o
+     * anexo do jogador ({@code /iluminacao}, {@code /iluminacao vazio}, {@code /iluminacao off}).
+     *
+     * <p>Os dois metodos ficam aqui so pra quem ja chamava eles continuar compilando.
      */
-    public static boolean ativa(Player p) {
-        if (p == null) return false;
-        return pulso > 0.0F || (System.currentTimeMillis() - ultimoPoder) < janela;
+    @Deprecated
+    public static void acenderPor(long ms) {
     }
 
-    /** (5.64.0) forca atual (0..1) — usada pra intensidade da casca de tinta. */
-    public static float forca() {
-        long desde = System.currentTimeMillis() - ultimoPoder;
-        return 0.35F + 0.65F * desde(desde);
+    /** @deprecated a aura nao acende mais sozinha depois de um poder — ver {@link #acenderPor(long)}. */
+    @Deprecated
+    public static void pulsar() {
     }
 }

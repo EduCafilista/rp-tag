@@ -55,9 +55,11 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
         if (p.isSpectator() || p.isInvisible()) return;
         int id = p.getData(AuraAnexos.AURA.get());
         float t = p.tickCount + partialTick;
-        // (5.64.0) A ILUMINACAO pendura no anexo; o VAZIO tambem acende pela aura antiga (pulsar()).
+        // (5.64.1) QUEM MANDA E O ANEXO. Antes o vazio tambem acendia sozinho pelo relogio do
+        // VazioAuraFx e, como aquele pulso nunca zerava, a aura preta ficava presa depois de
+        // desligar ("eu desliguei e continuou a aura negra"). Agora: desligou = sumiu tudo.
         boolean ouro = id == AuraEstilo.ILUMINACAO.index();
-        boolean vazio = id == AuraEstilo.VAZIO.index() || (!ouro && dev.rptag.client.VazioAuraFx.ativa(p));
+        boolean vazio = id == AuraEstilo.VAZIO.index();
         if (ouro) gold(ps, buf, t);
         else if (vazio) shadow(ps, buf, t);
     }

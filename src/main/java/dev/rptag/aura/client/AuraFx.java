@@ -49,9 +49,7 @@ public final class AuraFx {
 
     /** (5.64.0) este jogador esta com a aura do VAZIO? (anexo = vazio, ou a aura antiga acesa) */
     public static boolean ehVazio(Player p) {
-        int id = p.getData(AuraAnexos.AURA.get());
-        if (id == AuraEstilo.ILUMINACAO.index()) return false;
-        return id == AuraEstilo.VAZIO.index() || dev.rptag.client.VazioAuraFx.ativa(p);
+        return p.getData(AuraAnexos.AURA.get()) == AuraEstilo.VAZIO.index();
     }
 
     // ------------------------------------------------------------------ mundo
@@ -127,10 +125,7 @@ public final class AuraFx {
     public static void onTick(PlayerTickEvent.Post e) {
         Player p = e.getEntity();
         if (!p.level().isClientSide() || p.isSpectator()) return;
-        int id = p.getData(AuraAnexos.AURA.get());
-        boolean vazio = id == AuraEstilo.VAZIO.index()
-                || (id != AuraEstilo.ILUMINACAO.index() && dev.rptag.client.VazioAuraFx.ativa(p));
-        if (!vazio) return;
+        if (p.getData(AuraAnexos.AURA.get()) != AuraEstilo.VAZIO.index()) return;
 
         RandomSource rnd = p.getRandom();
         float sc = p.getScale();

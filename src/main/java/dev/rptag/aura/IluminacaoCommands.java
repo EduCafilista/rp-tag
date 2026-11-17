@@ -16,6 +16,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  * <pre>
  * /iluminacao              liga a aura em voce
  * /iluminacao off          desliga em voce
+ * /iluminacao vazio        liga a aura do VAZIO (tinta preta) em voce
  * /iluminacao portoes      usa o poder (os Portoes da Babilonia) — igual a tecla G — SO ADM
  * /iluminacao &lt;jogador&gt;    liga em outro            (OP)
  * /iluminacao off &lt;jogador&gt; desliga em outro        (OP)
@@ -27,7 +28,13 @@ public final class IluminacaoCommands {
     @SubscribeEvent
     public static void registrar(RegisterCommandsEvent e) {
         e.getDispatcher().register(Commands.literal("iluminacao")
-                .executes(c -> aplicar(c, c.getSource().getPlayerOrException(), true))
+                .executes(c -> aplicar(c, c.getSource().getPlayerOrException(), AuraEstilo.LIGADA))
+                .then(Commands.literal("vazio")
+                        // (5.64.1) o jeito de ACENDER o vazio — e o /iluminacao off apaga tudo
+                        .executes(c -> aplicar(c, c.getSource().getPlayerOrException(), 2))
+                        .then(Commands.argument("alvo", EntityArgument.player())
+                                .requires(s -> s.hasPermission(2))
+                                .executes(c -> aplicar(c, EntityArgument.getPlayer(c, "alvo"), 2))))
                 .then(Commands.literal("portoes")
                         // (5.63.0) o poder e SEGREDO: so quem tem ADM (nivel 2) consegue usar
                         .requires(s -> s.hasPermission(2))
@@ -36,23 +43,30 @@ public final class IluminacaoCommands {
                             return 1;
                         }))
                 .then(Commands.literal("off")
-                        .executes(c -> aplicar(c, c.getSource().getPlayerOrException(), false))
+                        .executes(c -> aplicar(c, c.getSource().getPlayerOrException(), 0))
                         .then(Commands.argument("alvo", EntityArgument.player())
                                 .requires(s -> s.hasPermission(2))
-                                .executes(c -> aplicar(c, EntityArgument.getPlayer(c, "alvo"), false))))
+                                .executes(c -> aplicar(c, EntityArgument.getPlayer(c, "alvo"), 0))))
                 .then(Commands.argument("alvo", EntityArgument.player())
                         .requires(s -> s.hasPermission(2))
-                        .executes(c -> aplicar(c, EntityArgument.getPlayer(c, "alvo"), true))));
+                        .executes(c -> aplicar(c, EntityArgument.getPlayer(c, "alvo"), AuraEstilo.LIGADA))));
     }
 
-    private static int aplicar(CommandContext<CommandSourceStack> c, ServerPlayer alvo, boolean ligar) {
-        alvo.setData(AuraAnexos.AURA.get(), ligar ? AuraEstilo.LIGADA : 0);
+    /** 0 = desligada, 1 = iluminacao (ouro), 2 = vazio (tinta preta). */
+    private static int aplicar(CommandContext<CommandSourceStack> c, ServerPlayer alvo, int estilo) {
+        alvo.setData(AuraAnexos.AURA.get(), estilo);
         String quem = alvo.getGameProfile().getName();
-        String msg = ligar
-                ? "\u00a7eAura de ILUMINACAO ligada em \u00a7f" + quem
-                        + "\u00a7e. Poder: tecla \u00a7fG\u00a7e ou \u00a7f/iluminacao portoes\u00a7e."
-                : "\u00a77Aura de iluminacao desligada em \u00a7f" + quem + "\u00a77.";
-        c.getSource().sendSuccess(() -> Component.literal(msg), false);
+        String msg;
+        if (estilo == 0) {
+            msg = "\u00a77Aura desligada em \u00a7f" + quem + "\u00a77. Sumiu tudo.";
+        } else if (estilo == AuraEstilo.VAZIO.index()) {
+            msg = "\u00a78Aura do VAZIO (tinta) ligada em \u00a7f" + quem + "\u00a78.";
+        } else {
+            msg = "\u00a7eAura de ILUMINACAO ligada em \u00a7f" + quem
+                    + "\u00a7e. Poder: tecla \u00a7fG\u00a7e ou \u00a7f/iluminacao portoes\u00a7e.";
+        }
+        final String m = msg;
+        c.getSource().sendSuccess(() -> Component.literal(m), false);
         return 1;
     }
 
