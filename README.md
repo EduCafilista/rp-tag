@@ -150,10 +150,8 @@ do ambiente Minecraft.
 | Documento | Conteúdo |
 | --- | --- |
 | [COMO-EDITAR.md](COMO-EDITAR.md) | Ambiente de desenvolvimento, build e testes |
-| [ENTREGA.md](ENTREGA.md) | Arquitetura, convenções e continuidade do projeto |
-| [PUBLICAR.md](PUBLICAR.md) | Preparação e publicação de releases |
+| [COMANDOS.md](COMANDOS.md) | Lista dos comandos do mod |
 | [CHANGELOG.md](CHANGELOG.md) | Histórico de versões |
-| [WALKTHROUGH.md](WALKTHROUGH.md) | Registro técnico e decisões históricas |
 | [arte/README.md](arte/README.md) | Produção e validação das animações |
 
 A documentação de design em `docs/superpowers/` registra propostas e planos.

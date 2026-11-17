@@ -17,5 +17,4 @@ a disponibilidade do arquivo `portais-da-lore-1.3.2.jar`.
 ## Documentação
 
 - [LORE.md](LORE.md): regras e funcionamento dos portais.
-- [WALKTHROUGH.md](WALKTHROUGH.md): registro técnico e decisões de implementação.
 - [README do repositório](../README.md): visão geral dos projetos.

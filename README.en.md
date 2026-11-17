@@ -133,11 +133,8 @@ builds require additional time to download dependencies and prepare Minecraft.
 | Document | Contents |
 | --- | --- |
 | [COMO-EDITAR.md](COMO-EDITAR.md) | Development setup, builds, and tests (Portuguese) |
-| [ENTREGA.md](ENTREGA.md) | Architecture and project conventions (Portuguese) |
-| [PUBLICAR.md](PUBLICAR.md) | Release preparation and publication (Portuguese) |
+| [COMANDOS.md](COMANDOS.md) | Mod command list (Portuguese) |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
-| [WALKTHROUGH.en.md](WALKTHROUGH.en.md) | Historical technical notes in English |
-| [WALKTHROUGH.md](WALKTHROUGH.md) | Detailed technical record in Portuguese |
 | [arte/README.md](arte/README.md) | Animation production and validation (Portuguese) |
 
 Files under `docs/superpowers/` record designs and implementation plans. Their

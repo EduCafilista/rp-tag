@@ -1,8 +1,8 @@
 # Desenvolvimento e compilação
 
-Este guia descreve o ambiente de desenvolvimento do RP Tag. Consulte
-[ENTREGA.md](ENTREGA.md) para arquitetura e convenções e
-[WALKTHROUGH.md](WALKTHROUGH.md) para o registro técnico histórico.
+Este guia descreve o ambiente de desenvolvimento do RP Tag. Para o histórico de versões,
+consulte o [CHANGELOG.md](CHANGELOG.md); para a lista de comandos, o
+[COMANDOS.md](COMANDOS.md).
 
 ## Requisitos
 
@@ -98,7 +98,7 @@ Os caminhos abreviados da tabela pertencem a `src/main/java/dev/rptag/`.
 3. Execute as verificações relacionadas à alteração e confira o resultado no jogo.
 4. Atualize o changelog e o registro técnico com resultados efetivamente observados.
 5. Revise o diff e inclua no commit apenas os arquivos do trabalho concluído.
-6. Siga [PUBLICAR.md](PUBLICAR.md) para distribuição.
+6. Publique a release com o jar novo e mantenha só a release mais atual.
 
 Não inclua telemetria, dependências ou mudanças visuais fora do escopo aprovado.
 As mensagens de commit devem descrever a alteração sem trailers de ferramentas.
