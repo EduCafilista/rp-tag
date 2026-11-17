@@ -16,7 +16,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  * <pre>
  * /iluminacao              liga a aura em voce
  * /iluminacao off          desliga em voce
- * /iluminacao portoes      usa o poder (os Portoes da Babilonia) — igual a tecla G
+ * /iluminacao portoes      usa o poder (os Portoes da Babilonia) — igual a tecla G — SO ADM
  * /iluminacao &lt;jogador&gt;    liga em outro            (OP)
  * /iluminacao off &lt;jogador&gt; desliga em outro        (OP)
  * </pre>
@@ -29,6 +29,8 @@ public final class IluminacaoCommands {
         e.getDispatcher().register(Commands.literal("iluminacao")
                 .executes(c -> aplicar(c, c.getSource().getPlayerOrException(), true))
                 .then(Commands.literal("portoes")
+                        // (5.63.0) o poder e SEGREDO: so quem tem ADM (nivel 2) consegue usar
+                        .requires(s -> s.hasPermission(2))
                         .executes(c -> {
                             PoderPortoes.tentarDisparar(c.getSource().getPlayerOrException());
                             return 1;

@@ -1,48 +1,40 @@
-# RP Tag 5.62.0 — o que vinha de novo no zip: FORMA MACACO + RUGIDO
+# RP Tag 5.63.0 — aura só brilho, poder secreto (só ADM) e mais dano
 
-**Baixar:** https://github.com/EduCafilista/rp-tag/releases/download/v5.62.0/rptag-5.62.0.jar
-(também na sua área de trabalho como `rptag-5.62.0.jar`)
+**Baixar:** https://github.com/EduCafilista/rp-tag/releases/download/v5.63.0/rptag-5.63.0.jar
+(também na sua área de trabalho como `rptag-5.63.0.jar`)
 
 ---
 
-## O que eu adicionei (e o que pulei)
+## 1. Nada de mensagem
+Saiu o aviso **"Ligue a aura primeiro: /iluminacao"** — e também o da recarga. O poder **não fala
+mais nada**: sem aura ligada, sem permissão ou em recarga, simplesmente não acontece nada.
 
-Você mandou: "adiciona o que estiver no arquivo, o que for repetido você não add". Comparei o zip
-novo com o que já estava no mod:
+## 2. A aura da iluminação agora é SÓ o brilho
+Você pediu: *"tira os efeitos em volta, deixa apenas a aura em volta do player brilhante"*.
 
-**JÁ TINHA (não dupliquei):** a aura de iluminação (círculo dourado, coluna, hélices, raios,
-portões), o poder dos Portões da Babilônia, as armas douradas, a tecla, os comandos `/iluminacao`.
-O zip velho tinha também 8 estilos de aura (saber, archer, lancer...) e o `/aura` — **não** entraram,
-porque você pediu **uma** aura só (`/iluminacao`).
+**Saiu:** o círculo mágico no chão (anel, 24 runas, hexagrama, anel tracejado, onda), a coluna de
+luz, as 3 hélices, os anéis ascendentes, os 16 raios e os **5 Portões** girando em volta do corpo.
 
-**NOVO (entrou agora):**
+**Ficou:** um **brilho dourado em volta do jogador** — três cascas de luz aditivas (uma branca-quente
+colada no corpo, uma média e uma larga e fraca), com pulsar leve e o alpha apagando no chão e no
+topo (nada de cilindro de corte reto), mais as partículas douradas e o `END_ROD` subindo.
 
-### 1. Forma Macaco — `/macaco`
-- **5x maior** (escala 5.0), passo alto (sobe blocos andando), alcance de bloco 8 e de entidade 6;
-- **Regeneração II, Força III e Resistência III infinitas**;
-- se reaplica sozinha a cada 2 s (relog, leite, morte) enquanto estiver ligada;
-- `/macaco off` e aceita vários alvos: `/macaco @a`, `/macaco Ana,Beto`, `/macaco off @a`;
-- **precisa de OP (nível 2)**.
+## 3. Mais dano
+A arma da iluminação foi de **8 → 20 de dano** (10 corações por arma). São 2 armas por tick durante
+1,5 s.
 
-### 2. Rugido do Macaco — tecla **V**
-- onda sonora que **se expande de verdade**, 50 blocos pra cada lado (100 de diâmetro), levando 3 s
-  pra chegar na borda — cada alvo só é atingido quando a frente da onda chega nele;
-- **dano 30 colado → 5 na borda** (dano de sonic boom);
-- até 25 blocos: **atordoado** (imobilizado + sem pulo + tontura) por 8 s colado → 3 s no limite;
-- empurrão pra fora, zunido agudo que vai sumindo em quem foi atingido, ecos do grito;
-- **20 s de recarga**, aviso de "garganta cansada" com o tempo que falta;
-- **só o Macaco ruge** (fora da forma, avisa e não gasta recarga);
-- visual: anéis correndo pelo chão **seguindo o relevo**, parede de pressão, clarão + pilar de luz e
-  **tremor de câmera**.
+## 4. O poder é SEGREDO — só ADM
+- `/iluminacao portoes` agora **exige OP (nível 2)**; quem não é OP **nem vê** o `portoes` no tab.
+- A **tecla G** também só funciona pra OP (o servidor confere e ignora em silêncio).
+- Quem não tem a aura ligada **não recebe aviso nenhum** — nada de descobrir o poder por acidente.
 
-> A tecla do rugido é **V**, não R: no RP Tag a **R** já é "Poderes do Vazio". Dá pra trocar em
-> Controles → RP Tag → "Rugido do Macaco".
+> O `/iluminacao` em si (ligar/desligar a aura) continua livre pra qualquer jogador. Se você quiser
+> que **só adm** possa ligar a aura também, é só falar que eu fecho.
 
 ## Provas
-- `check.py`: **1377 PASS / 0 FAIL** (11 provas novas);
+- `check.py`: **1383 PASS / 0 FAIL** (7 provas novas);
 - `arte/auditar.py`: **0 erro**;
-- **servidor de teste subiu com a 5.62.0**: `/macaco` e `/iluminacao` registrados, `Done`, zero
-  exceção no log.
+- **servidor de teste subiu com a 5.63.0**: `/iluminacao` nas 3 formas, `portoes` só pra OP, `Done`,
+  zero exceção.
 
-> O canal de rede subiu de **20 para 21** (pacote do rugido + pacote do visual) — servidor e cliente
-> precisam estar na MESMA versão.
+> Canal de rede continua **21** (nada de novo no protocolo nesta versão).

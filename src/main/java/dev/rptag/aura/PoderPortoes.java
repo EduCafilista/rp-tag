@@ -2,7 +2,6 @@ package dev.rptag.aura;
 
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -52,18 +51,26 @@ public final class PoderPortoes {
         }
     }
 
-    /** Chamado pela tecla (pacote) e pelo comando. */
+    /**
+     * Chamado pela tecla (pacote) e pelo comando.
+     *
+     * <p><b>5.63.0 — O PODER E SEGREDO.</b> O dono: <i>"se o player nao tiver ativado a habilidade
+     * nao deve aparecer nada, nada de ativar tal poder, pq e segredo, apenas quem tem adm
+     * consegue"</i>. Entao aqui nao existe MAIS NENHUMA MENSAGEM — nem "ligue a aura primeiro", nem
+     * aviso de recarga. Sem aura ligada, sem permissao de OP ou em recarga: simplesmente nao
+     * acontece nada, em silencio (ninguem descobre o poder por acidente).
+     */
     public static void tentarDisparar(ServerPlayer p) {
+        // (5.63.0) so quem tem ADM usa o poder — e sem aviso nenhum pra quem nao tem
+        if (!p.hasPermissions(2)) {
+            return;
+        }
         if (!AuraAnexos.ligada(p)) {
-            p.displayClientMessage(Component.literal("\u00a7eLigue a aura primeiro: \u00a7f/iluminacao"), true);
             return;
         }
         long agora = p.serverLevel().getGameTime();
         Long ultimo = ULTIMO.get(p.getUUID());
         if (ultimo != null && agora - ultimo < RECARGA_TICKS) {
-            long falta = (RECARGA_TICKS - (agora - ultimo)) / 20L + 1L;
-            p.displayClientMessage(Component.literal("\u00a77Os portoes ainda estao se fechando... \u00a78("
-                    + falta + "s)"), true);
             return;
         }
         ULTIMO.put(p.getUUID(), agora);

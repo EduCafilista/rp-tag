@@ -23,8 +23,12 @@ import org.joml.Vector3f;
  * Id par = espada, impar = lanca (quem escolhe e o desenho, ver ArmaDouradaRenderer).
  */
 public class ArmaDouradaEntity extends Projectile {
-    /** Dano por arma. */
-    public static final float DANO = 8.0f;
+    /**
+     * Dano por arma.
+     * (5.63.0) o dono pediu pra AUMENTAR o dano do ataque da iluminacao: 8 -> 20 (10 coracoes por
+     * arma). Sao 2 armas por tick durante 1,5 s, entao e um ataque pra acabar com qualquer bicho.
+     */
+    public static final float DANO = 20.0f;
     /** false = NAO machuca jogador (seguro pra RP; os bichos levam dano). */
     public static final boolean FERE_JOGADOR = false;
 

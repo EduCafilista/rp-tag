@@ -86,7 +86,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.62.0'
+VER = '5.63.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -3055,9 +3055,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.62.0 no jar, no mod e no gradle',
-      "version = '5.62.0'" in rd('build.gradle')
-      and '5.62.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.63.0 no jar, no mod e no gradle',
+      "version = '5.63.0'" in rd('build.gradle')
+      and '5.63.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3293,8 +3293,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.62.0 (jar, mod e gradle)',
-      "version = '5.62.0'" in rd('build.gradle') and '5.62.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.63.0 (jar, mod e gradle)',
+      "version = '5.63.0'" in rd('build.gradle') and '5.63.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("21")' in rd(R + '/ModNetworking.java'))
 
@@ -3352,8 +3352,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.62.0 (jar, mod e gradle)',
-      "version = '5.62.0'" in rd('build.gradle') and '5.62.0' in _rm)
+check('5.34.0: a versao subiu pra 5.63.0 (jar, mod e gradle)',
+      "version = '5.63.0'" in rd('build.gradle') and '5.63.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("21")' in rd(R + '/ModNetworking.java'))
 
@@ -3375,8 +3375,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.62.0 (jar, mod e gradle)',
-      "version = '5.62.0'" in rd('build.gradle') and '5.62.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.63.0 (jar, mod e gradle)',
+      "version = '5.63.0'" in rd('build.gradle') and '5.63.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -4743,18 +4743,17 @@ check('5.60.0 (115): O PODER - os Portoes da Babilonia (rajada de armas douradas
       'literal("portoes")' in _cmd_il and 'PoderPortoes.tentarDisparar' in _cmd_il
       and 'RECARGA_TICKS = 100' in _pp and 'DURACAO_TICKS = 30' in _pp
       and 'POR_TICK = 2' in _pp and 'ArmaDouradaEntity' in _pp)
-check('5.60.0 (115): o poder so dispara com a aura LIGADA (avisa e nao gasta recarga)',
-      'if (!AuraAnexos.ligada(p))' in _pp and 'Ligue a aura primeiro' in _pp)
+check('5.60.0/5.63.0 (115/118): o poder so dispara com a aura LIGADA — e agora sem aviso nenhum',
+      'if (!AuraAnexos.ligada(p)) {' in _pp and 'Ligue a aura primeiro' not in _pp)
 check('5.60.0 (115): as armas NAO machucam jogador (seguro pra RP)',
       'FERE_JOGADOR = false' in _ar and '|| !(alvo instanceof Player)' in _ar)
 check('5.60.0 (115): a tecla do poder (G) e o pacote cliente -> servidor',
       'GLFW_KEY_G' in _tec and 'PoderPortoesPayload' in _tec
       and 'registrar("21")' in _mn60 and 'PoderPortoesPayload.CODEC' in _mn60)
-check('5.60.0 (115): o desenho da aura e o circulo magico dourado + raios + portoes',
+check('5.60.0 (115): a aura desenha no corpo do jogador em brilho aditivo',
       'class AuraRendererIluminacao' in _ren
-      and 'magicCircle(' in _ren and 'helix(' in _ren and 'risingRings(' in _ren
-      and 'rays(vc, m, s, t, pulse, h);' in _ren and 'gates(vc, m, s, t, pulse);' in _ren
-      and 'RenderType.lightning()' in _ren)
+      and 'RenderPlayerEvent.Post' in _ren and 'RenderType.lightning()' in _ren
+      and 'AuraAnexos.ligada(p)' in _ren)
 check('5.60.0 (115): a arma dourada tem desenho proprio (espada e lanca em cruz)',
       'class ArmaDouradaRenderer' in _ren_ar and 'RenderType.lightning()' in _ren_ar
       and 'GOLD' not in _ren_ar and 'OURO' in _ren_ar)
@@ -4856,6 +4855,39 @@ check('5.62.0 (117): o que ja existia NAO foi duplicado (uma aura so, um portao 
       and not os.path.exists(_AURA + '/AuraStyle.java')
       and not os.path.exists(_AURA + '/AuraCommand.java')
       and not os.path.exists(_AURA + '/GatesAbility.java'))
+
+
+# ======== PEDIDO 118 — 5.63.0 (aura so brilho, poder mudo e secreto, mais dano) ========
+# O dono: "nao deve aparecer, ligue a aura primeiro"; "no iluminacao tira os efeitos em volta,
+# deixa apenas a aura em volta do player brilhante, aumentar o dano do ataque do iluminacao";
+# "se o player nao tiver ativado a habilidade nao deve aparecer nada [...] pq e segredo, apenas
+# quem tem adm consegue".
+_pp63 = rd(_AURA + '/PoderPortoes.java')
+_ar63 = rd(_AURA + '/ArmaDouradaEntity.java')
+_cmd63 = rd(_AURA + '/IluminacaoCommands.java')
+_ren63 = rd(_AURA + '/client/AuraRendererIluminacao.java')
+
+check('5.63.0 (118): o poder NAO fala mais nada (nem "ligue a aura primeiro", nem recarga)',
+      'displayClientMessage' not in _pp63
+      and 'Ligue a aura primeiro' not in _pp63
+      and 'se fechando' not in _pp63)
+check('5.63.0 (118): o poder e SEGREDO — so quem tem ADM (nivel 2), e em silencio pra quem nao tem',
+      'if (!p.hasPermissions(2)) {' in _pp63
+      and 'if (!AuraAnexos.ligada(p)) {' in _pp63
+      and 'if (ultimo != null && agora - ultimo < RECARGA_TICKS) {' in _pp63
+      and 'literal("portoes")\n                        // (5.63.0) o poder e SEGREDO' in _cmd63.replace('\r',''))
+check('5.63.0 (118): sem a aura ligada NADA acontece (nenhum aviso no chat nem na tela)',
+      _pp63.count('return;') >= 3 and 'Component' not in _pp63)
+check('5.63.0 (118): o dano da arma da iluminacao subiu de 8 para 20',
+      'public static final float DANO = 20.0f;' in _ar63)
+check('5.63.0 (118): a aura ficou SO o brilho em volta do player (saiu circulo/raios/portoes)',
+      'brilho(vc, m, 0.52f' in _ren63 and 'brilho(vc, m, 0.70f' in _ren63
+      and 'brilho(vc, m, 0.92f' in _ren63
+      and 'magicCircle' not in _ren63 and 'gates(' not in _ren63
+      and 'rays(' not in _ren63 and 'helix(' not in _ren63 and 'risingRings(' not in _ren63
+      and 'column(' not in _ren63)
+check('5.63.0 (118): o brilho tem alpha que apaga no chao e no topo (nao e cilindro de corte reto)',
+      'a * 0.30f' in _ren63 and 'pt(x0, h, z0, 0f)' in _ren63)
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
