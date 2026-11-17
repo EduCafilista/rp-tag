@@ -44,6 +44,17 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
             {0.035f, 0.30f}, {0.090f, 0.26f}, {0.170f, 0.20f}, {0.280f, 0.15f}, {0.430f, 0.10f}, {0.600f, 0.07f},
     };
 
+    // (5.67.0) Radiacao (chamas azuis): {raio, r, g, b, forca}, do branco-ciano ao azul profundo
+    private static final float[][] RAD_GLOW = {
+            {0.050f, 0.85f, 1.00f, 1.00f, 0.30f},
+            {0.110f, 0.25f, 0.90f, 1.00f, 0.20f},
+            {0.200f, 0.10f, 0.60f, 1.00f, 0.14f},
+            {0.320f, 0.06f, 0.35f, 1.00f, 0.09f},
+            {0.460f, 0.05f, 0.20f, 0.90f, 0.05f},
+    };
+    // manchas azul-marinho escuras entre as chamas: {raio, alfa}
+    private static final float[][] RAD_SHADOW = {{0.15f, 0.14f}, {0.30f, 0.12f}, {0.50f, 0.10f}, {0.72f, 0.07f}};
+
     public AuraShellLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);
     }
@@ -58,8 +69,11 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
         // (5.66.0) Ouro = /iluminacao. Vazio = /vazio ligar (quem manda e o RaiosVazioFx, que ja
         // recebe o aviso do servidor) — e /vazio desligar apaga tudo na hora.
         boolean ouro = id == AuraEstilo.ILUMINACAO.index();
-        boolean vazio = !ouro && dev.rptag.client.VazioAuraFx.ativa(p);
+        // (5.67.0) /radiacao: chamas azuis. Vazio = /vazio ligar. /iluminacao off ou /radiacao off = nada.
+        boolean radiacao = id == AuraEstilo.RADIACAO.index();
+        boolean vazio = !ouro && !radiacao && dev.rptag.client.VazioAuraFx.ativa(p);
         if (ouro) gold(ps, buf, t);
+        else if (radiacao) radiation(ps, buf, t);
         else if (vazio) shadow(ps, buf, t);
     }
 
@@ -100,6 +114,44 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
                 ps.translate(DIRS[d][0] * rad, DIRS[d][1] * rad - rise, DIRS[d][2] * rad);
                 model.renderToBuffer(ps, vc, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
                         argb(v[1], 0.01f, 0.0f, 0.02f));
+                ps.popPose();
+            }
+        }
+    }
+
+    /** (5.67.0) A casca da radiacao: chamas azuis ondulando e subindo + manchas escuras. */
+    private void radiation(PoseStack ps, MultiBufferSource buf, float t) {
+        PlayerModel<AbstractClientPlayer> model = getParentModel();
+        float pulse = 0.90f + 0.10f * Mth.sin(t * 0.22f);
+
+        VertexConsumer sh = buf.getBuffer(AuraRenderTypes.SHADOW_HULL);
+        for (int ring = 0; ring < RAD_SHADOW.length; ring++) {
+            float[] v = RAD_SHADOW[ring];
+            for (int d = 0; d < DIRS.length; d++) {
+                float rad = v[0] * (0.70f + 0.50f * Mth.sin(t * 0.11f + d * 2.1f + ring * 1.3f));
+                float rise = v[0] * 0.6f * (1f + Mth.sin(t * 0.08f + d));
+                ps.pushPose();
+                ps.translate(DIRS[d][0] * rad, DIRS[d][1] * rad - rise, DIRS[d][2] * rad);
+                model.renderToBuffer(ps, sh, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
+                        argb(v[1], 0.01f, 0.03f, 0.28f));
+                ps.popPose();
+            }
+        }
+
+        model.renderToBuffer(ps, buf.getBuffer(AuraRenderTypes.GLOW_TINT), LightTexture.FULL_BRIGHT,
+                OverlayTexture.NO_OVERLAY, argb(0.60f, 0.04f * pulse, 0.22f * pulse, 0.34f * pulse));
+
+        VertexConsumer vc = buf.getBuffer(AuraRenderTypes.GLOW_HULL);
+        for (int ring = 0; ring < RAD_GLOW.length; ring++) {
+            float[] g = RAD_GLOW[ring];
+            for (int d = 0; d < DIRS.length; d++) {
+                float rad = g[0] * (0.70f + 0.30f * Mth.sin(t * 0.30f + d * 1.9f + ring * 2.1f));
+                float up = g[0] * 0.5f;                                   // chamas sobem
+                float k = g[4] * pulse;
+                ps.pushPose();
+                ps.translate(DIRS[d][0] * rad, DIRS[d][1] * rad - up, DIRS[d][2] * rad);
+                model.renderToBuffer(ps, vc, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
+                        argb(1f, g[1] * k, g[2] * k, g[3] * k));
                 ps.popPose();
             }
         }

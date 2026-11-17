@@ -9,7 +9,9 @@ public enum AuraEstilo {
     /** Dourado do Rei dos Herois (a aura do /iluminacao). */
     ILUMINACAO(1.00f, 0.80f, 0.15f, 1.00f, 0.96f, 0.70f),
     /** (5.64.0) A AURA DO VAZIO: tinta preta com brilho arroxeado. */
-    VAZIO(0.02f, 0.02f, 0.05f, 0.35f, 0.30f, 0.45f);
+    VAZIO(0.02f, 0.02f, 0.05f, 0.35f, 0.30f, 0.45f),
+    /** (5.67.0) A AURA DE RADIACAO (/radiacao): azul-ciano, chamas espectrais. */
+    RADIACAO(0.15f, 0.85f, 1.00f, 0.85f, 1.00f, 1.00f);
 
     public final float r, g, b, r2, g2, b2;
 
@@ -18,7 +20,12 @@ public enum AuraEstilo {
         this.r2 = r2; this.g2 = g2; this.b2 = b2;
     }
 
-    /** Valor guardado no jogador: 0 = desligada, 1 = iluminacao, 2 = vazio. */
+    /** (5.67.0) estilo desenhado como casca em volta do corpo? */
+    public boolean ehCasca() {
+        return this == ILUMINACAO || this == VAZIO || this == RADIACAO;
+    }
+
+    /** Valor guardado no jogador: 0 = desligada, 1 = iluminacao, 2 = vazio, 3 = radiacao. */
     public int index() {
         return ordinal() + 1;
     }

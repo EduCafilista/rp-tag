@@ -14,7 +14,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  * (5.60.0) /iluminacao — a aura dourada e o poder dela.
  *
  * <pre>
- * /iluminacao              liga a aura em voce
+ * /iluminacao              liga a aura em voce   (SO ADM)
  * /iluminacao off          desliga em voce
  * /iluminacao portoes      usa o poder (os Portoes da Babilonia) — igual a tecla G — SO ADM
  * /iluminacao &lt;jogador&gt;    liga em outro            (OP)
@@ -27,6 +27,8 @@ public final class IluminacaoCommands {
     @SubscribeEvent
     public static void registrar(RegisterCommandsEvent e) {
         e.getDispatcher().register(Commands.literal("iluminacao")
+                // (5.67.0) o dono: "somentes os adms podem ativar esses poderes"
+                .requires(s -> s.hasPermission(2))
                 .executes(c -> aplicar(c, c.getSource().getPlayerOrException(), true))
                 .then(Commands.literal("portoes")
                         // (5.63.0) o poder e SEGREDO: so quem tem ADM (nivel 2) consegue usar

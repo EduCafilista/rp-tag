@@ -50,7 +50,9 @@ public final class AuraFx {
     /** (5.64.0) este jogador esta com a aura do VAZIO? (anexo = vazio, ou a aura antiga acesa) */
     public static boolean ehVazio(Player p) {
         // (5.66.0) vazio = /vazio ligar (nada de comando novo); /vazio desligar apaga tudo
-        if (p.getData(AuraAnexos.AURA.get()) == AuraEstilo.ILUMINACAO.index()) return false;
+        int id = p.getData(AuraAnexos.AURA.get());
+        if (id == AuraEstilo.ILUMINACAO.index()) return false;
+        if (id == AuraEstilo.RADIACAO.index()) return false;   // (5.67.0) radiacao tem o dela
         return dev.rptag.client.VazioAuraFx.ativa(p);
     }
 

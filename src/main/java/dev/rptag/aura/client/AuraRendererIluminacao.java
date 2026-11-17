@@ -21,13 +21,16 @@ import net.neoforged.neoforge.client.event.RenderPlayerEvent;
  */
 @EventBusSubscriber(modid = dev.rptag.RPTagMod.MODID, value = Dist.CLIENT)
 public final class AuraRendererIluminacao {
-    /** (5.64.0) o VAZIO ganha a animacao de tinta (tentaculos + mancha no chao). */
+    /** (5.64.0) o VAZIO ganha a animacao de tinta; (5.67.0) a RADIACAO ganha o anel + os rostos. */
     @SubscribeEvent
     public static void onRender(RenderPlayerEvent.Post e) {
         Player p = e.getEntity();
         if (p.isSpectator() || p.isInvisible()) return;
-        if (AuraFx.ehVazio(p)) {
-            AuraFx.renderVazio(e, p, p.tickCount + e.getPartialTick());
+        float t = p.tickCount + e.getPartialTick();
+        if (RadiacaoFx.ativa(p)) {
+            RadiacaoFx.render(e, p, t);
+        } else if (AuraFx.ehVazio(p)) {
+            AuraFx.renderVazio(e, p, t);
         }
     }
 
