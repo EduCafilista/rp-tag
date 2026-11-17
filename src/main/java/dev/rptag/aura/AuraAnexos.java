@@ -35,6 +35,16 @@ public final class AuraAnexos {
                     .serialize(Codec.BOOL)
                     .build());
 
+    /**
+     * (5.73.0) ESTADO DA GRAVIDADE (bits em {@link GravState}): aura/escudo, campo, modo proprio e
+     * pes na parede. Sincronizado, porque o visual roda no cliente.
+     */
+    public static final Supplier<AttachmentType<Integer>> GRAV = TIPOS.register("grav", () ->
+            AttachmentType.builder(() -> 1)
+                    .serialize(Codec.INT)
+                    .sync(ByteBufCodecs.VAR_INT)
+                    .build());
+
     private AuraAnexos() {}
 
     /** Atalho: a aura esta ligada neste jogador? */

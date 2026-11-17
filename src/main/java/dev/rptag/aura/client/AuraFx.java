@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.client.resources.PlayerSkin;
@@ -73,6 +74,201 @@ public final class AuraFx {
         }
     }
 
+    /**
+     * (5.73.0) O VISUAL DA GRAVIDADE (zip do pedido 130): anel do campo no chao (cor por modo,
+     * com ondas entrando/saindo em atrair/repelir), aneis de bolhas, fissuras no ar e fumaca
+     * conforme o modo (pesada/leve). Sempre preso ao jogador.
+     */
+    public static void renderGravidade(RenderPlayerEvent.Post e, Player p, float t) {
+        if (p.isSpectator() || p.isInvisible()) return;
+        try {
+            int bits = dev.rptag.aura.GravState.get(p);
+            PoseStack ps = e.getPoseStack();
+            MultiBufferSource buf = e.getMultiBufferSource();
+            int campo = dev.rptag.aura.GravState.field(bits);
+            if (campo != 0) {                       // campo: tamanho fixo, segue o jogador
+                ps.pushPose();
+                fieldRing(buf.getBuffer(RenderType.lightning()), ps.last().pose(), p, t, campo);
+                ps.popPose();
+            }
+            float sc = p.getScale();
+            ps.pushPose();
+            ps.scale(sc, sc, sc);
+            if (dev.rptag.aura.GravState.aura(bits)) {
+                VertexConsumer gv = buf.getBuffer(RenderType.lightning());
+                Matrix4f gm = ps.last().pose();
+                bubbleRings(gv, gm, t);
+                cracks(gv, gm, t);
+            }
+            ps.popPose();
+        } catch (RuntimeException erro) {
+            // erro aqui some com o efeito, nunca com o jogo
+        }
+    }
+
+    /** Anel do campo gravitacional no chao (cor por modo) + ondas entrando/saindo. */
+    private static void fieldRing(VertexConsumer vc, Matrix4f m, Player p, float t, int modo) {
+        float R = (float) dev.rptag.aura.GravityPowers.FIELD_RADIUS;
+        float[][] COL = {{0.55f, 0.35f, 1f}, {0.70f, 0.95f, 1f}, {0.35f, 0.50f, 1f}, {1f, 1f, 1f}};
+        float[] c = COL[Math.max(0, Math.min(3, modo - 1))];
+        terrainRing(vc, m, p, R, 0.14f, c, 0.55f, 1.2f, t);
+        if (modo == 3 || modo == 4) {
+            float f = (t * 0.03f) % 1f;
+            float r = modo == 3 ? R * (1f - f) : R * f;
+            terrainRing(vc, m, p, Math.max(0.5f, r), 0.10f, c, 0.45f * (1f - f), 0.6f, t);
+        }
+    }
+
+    private static void terrainRing(VertexConsumer vc, Matrix4f m, Player p, float R, float half,
+                                    float[] c, float alpha, float wallH, float t) {
+        final int N = 96;
+        float[] ys = new float[N + 1];
+        for (int i = 0; i <= N; i++) {
+            float a = i * TAU / N;
+            int h = p.level().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                    Mth.floor(p.getX() + Mth.cos(a) * R), Mth.floor(p.getZ() + Mth.sin(a) * R));
+            ys[i] = (h <= p.level().getMinBuildHeight() ? (float) p.getY() : h) - (float) p.getY() + 0.1f;
+        }
+        float r0 = R - half, r1 = R + half;
+        for (int i = 0; i < N; i++) {
+            int j = i + 1;
+            float a0 = i * TAU / N, a1 = j * TAU / N;
+            float al = alpha * (0.6f + 0.4f * Mth.sin(a0 * 18f - t * 0.2f));
+            float c0 = Mth.cos(a0), s0 = Mth.sin(a0), c1 = Mth.cos(a1), s1 = Mth.sin(a1);
+            quad2(vc, m, gcv(c0 * r0, ys[i], s0 * r0, c, 0f), gcv(c0 * R, ys[i], s0 * R, c, al),
+                    gcv(c1 * R, ys[j], s1 * R, c, al), gcv(c1 * r0, ys[j], s1 * r0, c, 0f));
+            quad2(vc, m, gcv(c0 * R, ys[i], s0 * R, c, al), gcv(c0 * r1, ys[i], s0 * r1, c, 0f),
+                    gcv(c1 * r1, ys[j], s1 * r1, c, 0f), gcv(c1 * R, ys[j], s1 * R, c, al));
+            quad2(vc, m, gcv(c0 * R, ys[i], s0 * R, c, 0.4f * al), gcv(c1 * R, ys[j], s1 * R, c, 0.4f * al),
+                    gcv(c1 * R, ys[j] + wallH, s1 * R, c, 0f), gcv(c0 * R, ys[i] + wallH, s0 * R, c, 0f));
+        }
+    }
+
+    /** Aneis de bolhas ao redor do corpo (aura ligada). */
+    private static void bubbleRings(VertexConsumer vc, Matrix4f m, float t) {
+        float[] c = {0.80f, 0.92f, 1.00f};
+        final int N = 40;
+        final float A = 0.42f, B = 0.72f;
+        for (int k = 0; k < 2; k++) {
+            float ang = t * 0.012f + k * (float) Math.PI;
+            float cx = Mth.cos(ang) * 1.7f, cz = Mth.sin(ang) * 1.7f;
+            float cy = 1.25f + 0.15f * Mth.sin(t * 0.05f + k * 3f);
+            float ux = -Mth.sin(ang), uz = Mth.cos(ang);
+            for (int i = 0; i < N; i++) {
+                float a0 = i * TAU / N, a1 = (i + 1) * TAU / N;
+                quad2(vc, m, gep(cx, cy, cz, ux, uz, 0, 0, c, 0.14f), gep(cx, cy, cz, ux, uz, 0, 0, c, 0.14f),
+                        gep(cx, cy, cz, ux, uz, Mth.cos(a1) * A, Mth.sin(a1) * B, c, 0.02f),
+                        gep(cx, cy, cz, ux, uz, Mth.cos(a0) * A, Mth.sin(a0) * B, c, 0.02f));
+                quad2(vc, m, gep(cx, cy, cz, ux, uz, Mth.cos(a0) * A * 0.93f, Mth.sin(a0) * B * 0.93f, c, 0.45f),
+                        gep(cx, cy, cz, ux, uz, Mth.cos(a0) * A, Mth.sin(a0) * B, c, 0.45f),
+                        gep(cx, cy, cz, ux, uz, Mth.cos(a1) * A, Mth.sin(a1) * B, c, 0.45f),
+                        gep(cx, cy, cz, ux, uz, Mth.cos(a1) * A * 0.93f, Mth.sin(a1) * B * 0.93f, c, 0.45f));
+            }
+            for (int j = 0; j < 12; j++) {
+                float phi = j * TAU / 12 + t * 0.02f;
+                float bx = Mth.cos(phi) * A * 1.12f, by = Mth.sin(phi) * B * 1.12f;
+                float br = 0.05f + 0.03f * Mth.sin(j * 2.3f + t * 0.1f);
+                for (int q = 0; q < 6; q++) {
+                    float b0 = q * TAU / 6, b1 = (q + 1) * TAU / 6;
+                    quad2(vc, m, gep(cx, cy, cz, ux, uz, bx + Mth.cos(b0) * br * 0.8f, by + Mth.sin(b0) * br * 0.8f, c, 0.6f),
+                            gep(cx, cy, cz, ux, uz, bx + Mth.cos(b0) * br, by + Mth.sin(b0) * br, c, 0.6f),
+                            gep(cx, cy, cz, ux, uz, bx + Mth.cos(b1) * br, by + Mth.sin(b1) * br, c, 0.6f),
+                            gep(cx, cy, cz, ux, uz, bx + Mth.cos(b1) * br * 0.8f, by + Mth.sin(b1) * br * 0.8f, c, 0.6f));
+                }
+            }
+        }
+    }
+
+    /** Fissuras de espaco rachando em volta do corpo. */
+    private static void cracks(VertexConsumer vc, Matrix4f m, float t) {
+        float[] c = {0.90f, 0.97f, 1.00f};
+        for (int k = 0; k < 4; k++) {
+            float cyc = t * 0.016f + k * 0.25f;
+            int n = (int) Math.floor(cyc);
+            float vis = Mth.sin((cyc - n) * (float) Math.PI);
+            if (vis < 0.05f) continue;
+            float s2 = k * 17.3f + n * 5.7f;
+            float ang = frac(Mth.sin(s2) * 437.58f) * TAU;
+            float cx = Mth.cos(ang) * 2.0f, cz = Mth.sin(ang) * 2.0f;
+            float cy = 0.8f + frac(Mth.sin(s2 * 1.9f) * 951.2f) * 1.2f;
+            float ux = -Mth.sin(ang), uz = Mth.cos(ang);
+            float x = 0f, y = 0f, w = 0.025f * vis, al = 0.8f * vis;
+            for (int i = 0; i < 7; i++) {
+                float dx = (frac(Mth.sin(s2 + i * 3.1f) * 437.58f) - 0.5f) * 0.38f;
+                float dy = (frac(Mth.sin(s2 + i * 5.3f) * 951.2f) - 0.5f) * 0.38f;
+                pline(vc, m, cx, cy, cz, ux, uz, x, y, x + dx, y + dy, w, c, al);
+                if (i == 2 || i == 4) {
+                    float bx = x, by = y;
+                    for (int b = 0; b < 3; b++) {
+                        float ex = (frac(Mth.sin(s2 + i * 7f + b * 2.1f) * 321.7f) - 0.3f) * 0.3f;
+                        float ey = (frac(Mth.sin(s2 + i * 4f + b * 3.7f) * 611.3f) - 0.5f) * 0.3f;
+                        pline(vc, m, cx, cy, cz, ux, uz, bx, by, bx + ex, by + ey, w * 0.7f, c, al * 0.8f);
+                        bx += ex; by += ey;
+                    }
+                }
+                x += dx; y += dy;
+            }
+        }
+    }
+
+    /** Particulas da gravidade (aura, modo proprio e campo). */
+    private static void gravityParticles(Player p, RandomSource rnd) {
+        int bits = dev.rptag.aura.GravState.get(p);
+        var lv = p.level();
+        float sc = p.getScale();
+        if (dev.rptag.aura.GravState.aura(bits) && rnd.nextFloat() < 0.25f) {
+            double a = rnd.nextDouble() * TAU, r = (0.4 + rnd.nextDouble() * 0.4) * sc;
+            lv.addParticle(ParticleTypes.END_ROD, p.getX() + Math.cos(a) * r,
+                    p.getY() + rnd.nextDouble() * 1.9 * sc, p.getZ() + Math.sin(a) * r, 0, 0.01, 0);
+        }
+        int self = dev.rptag.aura.GravState.self(bits);
+        if (self == 1) {
+            lv.addParticle(new DustParticleOptions(new Vector3f(0.35f, 0.40f, 0.75f), 1.2f),
+                    p.getX() + rnd.nextDouble() - 0.5, p.getY() + 1.0 + rnd.nextDouble(),
+                    p.getZ() + rnd.nextDouble() - 0.5, 0, -0.06, 0);
+        } else if (self == 2 && rnd.nextFloat() < 0.5f) {
+            lv.addParticle(ParticleTypes.END_ROD, p.getX() + rnd.nextDouble() - 0.5, p.getY() + 0.1,
+                    p.getZ() + rnd.nextDouble() - 0.5, 0, 0.05, 0);
+        }
+        int campo = dev.rptag.aura.GravState.field(bits);
+        if (campo != 0) {
+            double R = dev.rptag.aura.GravityPowers.FIELD_RADIUS;
+            for (int i = 0; i < 2; i++) {
+                double a = rnd.nextDouble() * TAU, r = Math.sqrt(rnd.nextDouble()) * R;
+                double x = p.getX() + Math.cos(a) * r, z = p.getZ() + Math.sin(a) * r;
+                double y = p.getY() + rnd.nextDouble() * 5.0;
+                double ix = -Math.cos(a), iz = -Math.sin(a);
+                switch (campo) {
+                    case 1 -> lv.addParticle(new DustParticleOptions(new Vector3f(0.55f, 0.35f, 1f), 1.2f), x, y, z, 0, -0.12, 0);
+                    case 2 -> lv.addParticle(ParticleTypes.END_ROD, x, p.getY() + rnd.nextDouble() * 1.5, z, 0, 0.10, 0);
+                    case 3 -> lv.addParticle(new DustParticleOptions(new Vector3f(0.35f, 0.5f, 1f), 1.1f), x, y, z, ix * 0.18, 0, iz * 0.18);
+                    default -> lv.addParticle(new DustParticleOptions(new Vector3f(1f, 1f, 1f), 1.1f),
+                            p.getX() + Math.cos(a) * 1.5, y, p.getZ() + Math.sin(a) * 1.5, -ix * 0.25, 0, -iz * 0.25);
+                }
+            }
+        }
+    }
+
+    /** Vertice de gravidade (posicao absoluta). */
+    private static float[] gcv(float x, float y, float z, float[] c, float a) {
+        return new float[]{x, y, z, c[0], c[1], c[2], a};
+    }
+
+    /** Ponto no plano tangente (x) + vertical (y) ao redor do centro. */
+    private static float[] gep(float cx, float cy, float cz, float ux, float uz, float x, float y,
+                               float[] c, float a) {
+        return new float[]{cx + ux * x, cy + y, cz + uz * x, c[0], c[1], c[2], a};
+    }
+
+    private static void pline(VertexConsumer vc, Matrix4f m, float cx, float cy, float cz, float ux, float uz,
+                              float x0, float y0, float x1, float y1, float w, float[] c, float a) {
+        float dx = x1 - x0, dy = y1 - y0, l = Mth.sqrt(dx * dx + dy * dy);
+        if (l < 1e-5f) return;
+        float nx = -dy / l * w / 2, ny = dx / l * w / 2;
+        quad2(vc, m, gep(cx, cy, cz, ux, uz, x0 + nx, y0 + ny, c, a), gep(cx, cy, cz, ux, uz, x0 - nx, y0 - ny, c, a),
+                gep(cx, cy, cz, ux, uz, x1 - nx, y1 - ny, c, a), gep(cx, cy, cz, ux, uz, x1 + nx, y1 + ny, c, a));
+    }
+
     /** Tentáculos de tinta negra (rasgados, com espinhos) + sombra no chão. */
     private static void ink(VertexConsumer vc, Matrix4f m, float t) {
         // mancha de sombra irregular no chão
@@ -130,6 +326,10 @@ public final class AuraFx {
     public static void onTick(PlayerTickEvent.Post e) {
         Player p = e.getEntity();
         if (!p.level().isClientSide() || p.isSpectator()) return;
+        if (p.getData(AuraAnexos.AURA.get()) == AuraEstilo.GRAVIDADE.index()) {
+            try { gravityParticles(p, p.getRandom()); } catch (RuntimeException ignorado) { }
+            return;
+        }
         if (!ehVazio(p)) return;
 
         RandomSource rnd = p.getRandom();

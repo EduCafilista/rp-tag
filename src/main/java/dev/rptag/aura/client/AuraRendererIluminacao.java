@@ -27,7 +27,9 @@ public final class AuraRendererIluminacao {
         Player p = e.getEntity();
         if (p.isSpectator() || p.isInvisible()) return;
         float t = p.tickCount + e.getPartialTick();
-        if (ArcoirisFx.ativa(p)) {            // (5.69.0) estrela de luz + anel colorido
+        if (p.getData(dev.rptag.aura.AuraAnexos.AURA.get()) == dev.rptag.aura.AuraEstilo.GRAVIDADE.index()) {
+            AuraFx.renderGravidade(e, p, t);      // (5.73.0) campo + bolhas + fissuras
+        } else if (ArcoirisFx.ativa(p)) {            // (5.69.0) estrela de luz + anel colorido
             ArcoirisFx.render(e, p, t);
         } else if (RadiacaoFx.ativa(p)) {
             RadiacaoFx.render(e, p, t);

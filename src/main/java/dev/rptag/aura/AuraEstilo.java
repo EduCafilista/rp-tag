@@ -13,7 +13,9 @@ public enum AuraEstilo {
     /** (5.67.0) A AURA DE RADIACAO (/radiacao): azul-ciano, chamas espectrais. */
     RADIACAO(0.15f, 0.85f, 1.00f, 0.85f, 1.00f, 1.00f),
     /** (5.69.0) A AURA ARCO-IRIS (/arcoiris): estrela de luz no peito, cada raio numa cor. */
-    ARCOIRIS(1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f);
+    ARCOIRIS(1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f),
+    /** (5.73.0) A AURA DE GRAVIDADE (/gravidade): contorno branco-azulado, bolhas e fissuras. */
+    GRAVIDADE(0.75f, 0.90f, 1.00f, 1.00f, 1.00f, 1.00f);
 
     public final float r, g, b, r2, g2, b2;
 
@@ -24,10 +26,10 @@ public enum AuraEstilo {
 
     /** (5.67.0) estilo desenhado como casca em volta do corpo? */
     public boolean ehCasca() {
-        return this == ILUMINACAO || this == VAZIO || this == RADIACAO || this == ARCOIRIS;
+        return this == ILUMINACAO || this == VAZIO || this == RADIACAO || this == ARCOIRIS || this == GRAVIDADE;
     }
 
-    /** Valor guardado no jogador: 0 = desligada, 1 = iluminacao, 2 = vazio, 3 = radiacao, 4 = arcoiris. */
+    /** Valor guardado no jogador: 0 = desligada, 1 = iluminacao, 2 = vazio, 3 = radiacao, 4 = arcoiris, 5 = gravidade. */
     public int index() {
         return ordinal() + 1;
     }

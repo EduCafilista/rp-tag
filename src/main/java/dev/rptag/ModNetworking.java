@@ -81,6 +81,18 @@ public final class ModNetworking {
                 }));
         registrar.playToClient(dev.rptag.aura.PrismaFxPayload.TYPE, dev.rptag.aura.PrismaFxPayload.CODEC,
                 (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.aura.client.PrismaFx.comeca(p.quemLanca())));
+        // (5.73.0) GRAVIDADE: tecla da roda/aura -> servidor, e o impacto de queda de volta
+        registrar.playToServer(dev.rptag.aura.GravityActionPayload.TYPE,
+                dev.rptag.aura.GravityActionPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> {
+                    if (ctx.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        dev.rptag.aura.GravityPowers.handle(sp, p.action(), p.arg());
+                    }
+                }));
+        registrar.playToClient(dev.rptag.aura.GravityImpactFxPayload.TYPE,
+                dev.rptag.aura.GravityImpactFxPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.aura.client.ImpactFx.start(
+                        p.x(), p.y(), p.z(), p.radius())));
         // (5.61.0) a skin que o jogador esta usando (o cliente ve; o servidor guarda na ficha)
         registrar.playToServer(FichaSkinPayload.TYPE, FichaSkinPayload.STREAM_CODEC,
                 TabletService::handleSkin);

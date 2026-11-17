@@ -1,6 +1,5 @@
 package dev.rptag.aura;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -55,16 +54,14 @@ public final class RoarAbility {
     }
 
     public static void tryRoar(ServerPlayer p) {
+        // (5.73.0) SEM AVISO: o dono mandou tirar as frases ("tem que ter o macaco para usar isso")
         if (!p.getData(AuraAnexos.MACACO.get())) {
-            p.displayClientMessage(Component.literal("Só o Macaco pode rugir."), true);
             return;
         }
         long now = p.serverLevel().getGameTime();
         Long last = LAST.get(p.getUUID());
         if (last != null && now - last < COOLDOWN_TICKS) {
-            long s = (COOLDOWN_TICKS - (now - last)) / 20 + 1;
-            p.displayClientMessage(Component.literal("Garganta cansada... " + s + "s"), true);
-            return;
+            return;      // em recarga, calado
         }
         LAST.put(p.getUUID(), now);
 

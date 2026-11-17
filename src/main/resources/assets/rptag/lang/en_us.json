@@ -31,5 +31,7 @@
   "key.rptag.iluminacao": "Gate of Babylon (illumination aura)",
   "entity.rptag.golden_weapon": "Golden Weapon",
   "key.rptag.rugido": "Monkey Roar",
-  "key.rptag.prisma": "Celestial Prism"
+  "key.rptag.prisma": "Celestial Prism",
+  "key.rptag.gravity_wheel": "Gravity Wheel",
+  "key.rptag.gravity_aura": "Gravity Aura (toggle)"
 }

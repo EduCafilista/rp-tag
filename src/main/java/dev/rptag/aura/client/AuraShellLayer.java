@@ -68,6 +68,12 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
         return new float[]{1f + (r - 1f) * s, 1f + (g - 1f) * s, 1f + (b - 1f) * s};
     }
 
+    // (5.73.0) Gravidade: contorno branco-azulado bem translucido {raio, r, g, b, forca}
+    private static final float[][] GR = {
+            {0.04f, 0.85f, 0.95f, 1.00f, 0.14f}, {0.10f, 0.60f, 0.80f, 1.00f, 0.09f},
+            {0.20f, 0.40f, 0.65f, 1.00f, 0.05f},
+    };
+
     public AuraShellLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);
     }
@@ -89,6 +95,8 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
         if (ouro) gold(ps, buf, t);
         else if (radiacao) radiation(ps, buf, t);
         else if (arcoiris) rainbow(ps, buf, t);
+        else if (id == AuraEstilo.GRAVIDADE.index()
+                && dev.rptag.aura.GravState.aura(dev.rptag.aura.GravState.get(p))) gravity(ps, buf, t);
         else if (vazio) shadow(ps, buf, t);
     }
 
@@ -192,6 +200,27 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
                 ps.translate(DIRS[d][0] * rad, DIRS[d][1] * rad - g[0] * 0.4f, DIRS[d][2] * rad);
                 model.renderToBuffer(ps, vc, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
                         argb(1f, c[0] * k, c[1] * k, c[2] * k));
+                ps.popPose();
+            }
+        }
+    }
+
+    /** (5.73.0) A casca da gravidade: contorno palido branco-azulado, quase transparente. */
+    private void gravity(PoseStack ps, MultiBufferSource buf, float t) {
+        PlayerModel<AbstractClientPlayer> model = getParentModel();
+        float pulse = 0.90f + 0.10f * Mth.sin(t * 0.15f);
+        model.renderToBuffer(ps, buf.getBuffer(AuraRenderTypes.GLOW_TINT), LightTexture.FULL_BRIGHT,
+                OverlayTexture.NO_OVERLAY, argb(1f, 0.05f * pulse, 0.07f * pulse, 0.10f * pulse));
+        VertexConsumer vc = buf.getBuffer(AuraRenderTypes.GLOW_HULL);
+        for (int ring = 0; ring < GR.length; ring++) {
+            float[] g = GR[ring];
+            for (int d = 0; d < DIRS.length; d++) {
+                float rad = g[0] * (0.75f + 0.25f * Mth.sin(t * 0.20f + d * 1.7f + ring * 2.3f));
+                float k = g[4] * pulse;
+                ps.pushPose();
+                ps.translate(DIRS[d][0] * rad, DIRS[d][1] * rad, DIRS[d][2] * rad);
+                model.renderToBuffer(ps, vc, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
+                        argb(1f, g[1] * k, g[2] * k, g[3] * k));
                 ps.popPose();
             }
         }
