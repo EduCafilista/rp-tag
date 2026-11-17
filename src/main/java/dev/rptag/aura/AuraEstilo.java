@@ -6,7 +6,10 @@ package dev.rptag.aura;
  * <p>{@code r,g,b} = cor principal; {@code r2,g2,b2} = brilho interno (o miolo claro).
  */
 public enum AuraEstilo {
-    ILUMINACAO(1.00f, 0.80f, 0.15f, 1.00f, 0.96f, 0.70f);
+    /** Dourado do Rei dos Herois (a aura do /iluminacao). */
+    ILUMINACAO(1.00f, 0.80f, 0.15f, 1.00f, 0.96f, 0.70f),
+    /** (5.64.0) A AURA DO VAZIO: tinta preta com brilho arroxeado. */
+    VAZIO(0.02f, 0.02f, 0.05f, 0.35f, 0.30f, 0.45f);
 
     public final float r, g, b, r2, g2, b2;
 
@@ -15,10 +18,16 @@ public enum AuraEstilo {
         this.r2 = r2; this.g2 = g2; this.b2 = b2;
     }
 
-    /** Valor guardado no jogador: 0 = desligada, 1 = ligada. */
+    /** Valor guardado no jogador: 0 = desligada, 1 = iluminacao, 2 = vazio. */
     public int index() {
         return ordinal() + 1;
     }
 
     public static final int LIGADA = 1;
+
+    /** (5.64.0) volta o estilo pelo valor guardado no jogador (0 = desligada, devolve null). */
+    public static AuraEstilo byIndex(int id) {
+        for (AuraEstilo e : values()) if (e.index() == id) return e;
+        return null;
+    }
 }
