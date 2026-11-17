@@ -86,7 +86,7 @@ def _tam_png(caminho):
     return struct.unpack('>II', cab[16:24])
 
 # ---- 1. versão em 3 lugares
-VER = '5.67.0'
+VER = '5.68.0'
 ver = all(VER in rd(f) for f in [R + '/RPTagMod.java', 'build.gradle',
         'src/main/resources/META-INF/neoforge.mods.toml'])
 check(f'versão {VER} em RPTagMod/build.gradle/mods.toml', ver)
@@ -1568,17 +1568,18 @@ check('5.11.1: os raios vermelhos voltaram (pedido do dono) e os tentaculos de p
       os.path.exists(C + '/RaiosVazioFx.java')
       and not os.path.exists(C + '/TentaculosVazioFx.java')
       and 'class RaiosVazioFx' in _rvz)
-check('5.34.0 (91): os RAIOS vermelhos VOLTARAM ao /vazio ligar (o dono reclamou)',
-      'RenderType.debugQuads()' in _rvz and 'Mth.cos(el)' in _rvz)
-check('5.34.0 (91): os raios sao longos e grossos (relampago, nao espinho)',
-      'LONGOS = 16' in _rvz and '0.045F + SORTE.nextFloat() * 0.055F' in _rvz)
-check('5.34.0 (91): nenhuma CERDA curta colada no corpo (era o "espinho" horrivel)',
-      'CERDAS = 0' in _rvz and 'boolean cerda = i >= LONGOS' not in _rvz
-      and 'r.alcance = 0.35F + SORTE.nextFloat() * 0.75F' not in _rvz)
+check('5.68.0 (123): os RAIOS antigos do /vazio ligar NAO existem mais (so o visual novo)',
+      'RenderType.debugQuads()' not in _rvz and 'Mth.cos(el)' not in _rvz
+      and 'onRenderLevel' not in _rvz)
+check('5.68.0 (123): nada de relampago saindo do corpo (o desenho antigo foi apagado)',
+      'LONGOS' not in _rvz and 'SORTE' not in _rvz and 'Raio[]' not in _rvz)
+check('5.68.0 (123): nenhuma cerda/espinho — e nenhuma geometria antiga sobrou',
+      'CERDAS' not in _rvz and 'boolean cerda = i >= LONGOS' not in _rvz
+      and 'r.alcance' not in _rvz)
 check('5.34.0 (91): a coluna preta em volta do corpo SAIU (era a "caixa preta" da foto)',
       'desenharSombra' not in _rvz and 'lados = 10' not in _rvz)
 _vz119 = rd(C + '/VazioAuraFx.java')
-check('5.34.0 (91): a aura de penas nao desenha mais — e na 5.67.0 o desenho foi APAGADO de vez',
+check('5.34.0 (91): a aura de penas nao desenha mais — e na 5.68.0 o desenho foi APAGADO de vez',
       'PENAS' not in _vz119 and 'pena(' not in _vz119
       and 'LASCAS' not in _vz119 and 'desenharAuraAntiga' not in _vz119)
 check('5.7.4: o pacote AURA leva o UUID de quem e o vazio (todos os clientes veem)',
@@ -3056,9 +3057,9 @@ check('5.24.0: quem nao e o dono recebe a Axion escondida (ela mora com uma pess
       'if (d.axionDono() != null && !d.axionDono().equals(alvo.getUUID()))' in _rp7
       and 'private java.util.UUID axionDono;' in _d
       and 'tag.putUUID("AxionDono", axionDono);' in _d)
-check('5.34.0: a versao subiu pra 5.67.0 no jar, no mod e no gradle',
-      "version = '5.67.0'" in rd('build.gradle')
-      and '5.67.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.68.0 no jar, no mod e no gradle',
+      "version = '5.68.0'" in rd('build.gradle')
+      and '5.68.0' in rd(R + '/RPTagMod.java'))
 check('5.24.0: nenhum comando escondido de teste do vazio vai no jar',
       all(k not in _rp7 for k in ['testechao', 'testebicho', '"simular"', '"_prova"', '_prova']))
 
@@ -3294,8 +3295,8 @@ check('5.26.1: na morte pelo sol a tela troca a poeira cinza por BRASA (laranja,
       '0xE8873A' in _mt2 and 'peloSol ? 0x6B2A08 : 0x3A0A0E' in _mt2)
 check('5.26.1: morte sem ser o sol continua com o aviso de sempre (nao vira fogo)',
       'morte fora de RP' in _mt2 and 'if (peloSol) {' in _mt2)
-check('5.34.0: a versao subiu pra 5.67.0 (jar, mod e gradle)',
-      "version = '5.67.0'" in rd('build.gradle') and '5.67.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.68.0 (jar, mod e gradle)',
+      "version = '5.68.0'" in rd('build.gradle') and '5.68.0' in rd(R + '/RPTagMod.java'))
 check('5.26.1: o protocolo subiu pra v17 (o pacote da morte mudou de formato)',
       'event.registrar("21")' in rd(R + '/ModNetworking.java'))
 
@@ -3353,8 +3354,8 @@ check('5.26.1: o cliente acende a VISAO DE VAMPIRO (clarao prateado) quando esta
 check('5.26.1: o efeito se chama PROTEÇÃO DO ECLIPSE (era "Eclipse Shade"/"Sombra")',
       'PROTE\u00c7\u00c3O DO ECLIPSE' in _pt and 'Eclipse Shade' not in _en
       and 'Eclipse Protection' in _en)
-check('5.34.0: a versao subiu pra 5.67.0 (jar, mod e gradle)',
-      "version = '5.67.0'" in rd('build.gradle') and '5.67.0' in _rm)
+check('5.34.0: a versao subiu pra 5.68.0 (jar, mod e gradle)',
+      "version = '5.68.0'" in rd('build.gradle') and '5.68.0' in _rm)
 check('5.26.1: o protocolo subiu pra v18 (o pacote do vampiro e novo)',
       'event.registrar("21")' in rd(R + '/ModNetworking.java'))
 
@@ -3376,8 +3377,8 @@ check('5.26.1: o registro das camadas e a prova de bala (um erro nao derruba mai
       'private static void seguro(String nome, Runnable registro)' in _cgl
       and 'catch (Throwable erro)' in _cgl
       and _cgl.count('seguro("') >= 37)
-check('5.34.0: a versao subiu pra 5.67.0 (jar, mod e gradle)',
-      "version = '5.67.0'" in rd('build.gradle') and '5.67.0' in rd(R + '/RPTagMod.java'))
+check('5.34.0: a versao subiu pra 5.68.0 (jar, mod e gradle)',
+      "version = '5.68.0'" in rd('build.gradle') and '5.68.0' in rd(R + '/RPTagMod.java'))
 
 # ============ 5.27.0: OS 7 PEDIDOS DO DONO (84) ============
 _vamp = rd(R + '/VampiroSistema.java')
@@ -3414,7 +3415,7 @@ check('5.27.0 (4): a fenda cava 3 blocos de fundo (o player cai e fica preso)',
       re.search(r'for \(int (d|prof)\w* = 1; \1 \w*= ?3', _ne) is not None
       or _ne.count('cavarFendaFundo') >= 2)
 _rv = rd(C + '/RaiosVazioFx.java')
-check('5.34.0 (91): o metodo antigo da aura nao e mais chamado — e nem existe (5.67.0 apagou)',
+check('5.34.0 (91): o metodo antigo da aura nao e mais chamado — e nem existe (5.68.0 apagou)',
       'desenharAuraAntiga' not in _vz119
       and 'VazioAuraFx.desenharAuraAntiga' not in rd(C + '/ClientEvents.java'))
 _vp = rd(C + '/VazioPortalFx.java')
@@ -3565,7 +3566,7 @@ check('5.32.0 (88): SEM comando de ligar/desligar poder — o gate e o LUGAR ou 
       and 'vazio.then(Commands.literal("poder")' not in rd(R + '/NeptuneCommands.java'))
 check('5.32.0 (86): a aura em volta nao e mais a de penas carmesim do Ronova',
       'PENAS' not in _va and 'pena(' not in _va and '0x0A0204' not in _va)
-check('5.32.0 (86): a aura e GEOMETRIA (na 5.67.0 a do vazio virou tinta de verdade, com tentaculos)',
+check('5.32.0 (86): a aura e GEOMETRIA (na 5.68.0 a do vazio virou tinta de verdade, com tentaculos)',
       'renderVazio' in rd(R + '/aura/client/AuraFx.java')
       and 'ink(' in rd(R + '/aura/client/AuraFx.java'))
 check('5.32.0 (86): o PORTAL DO JUIZO foi refeito (o olho, nao mais o retangulo)',
@@ -3729,8 +3730,9 @@ _pl = rd(C + '/PoderLeque.java')
 _vp3 = rd(R + '/VazioPoderes.java')
 _rvz3 = rd(C + '/RaiosVazioFx.java')
 
-check('5.34.0 (91): os raios voltaram COM desenho (LISTA de raios viva outra vez)',
-      'onRenderLevel' in _rvz3 and 'Raio[]' in _rvz3 and 'LISTA[i]' in _rvz3)
+check('5.68.0 (123): sem desenho de raio (a classe virou so o estado de quem e o vazio)',
+      'onRenderLevel' not in _rvz3 and 'Raio[]' not in _rvz3 and 'LISTA[i]' not in _rvz3
+      and 'public static UUID alvoUuid()' in _rvz3)
 check('5.48.0 (105): o cursor agora e da TELA (sumiu o releaseMouse/grabMouse na mao)',
       'releaseMouse()' not in _pl and 'grabMouse()' not in _pl
       and 'extends Screen' in rd(C + '/RodaPoderes.java')
@@ -4189,10 +4191,10 @@ check('5.43.0 (98): fora do vazio, ADM so usa poder com o vazio LIGADO (/vazio l
       and 'p.hasPermissions(2)' in _VP43)
 check('5.43.0 (98): o terremoto NAO desenha mais nada por cima da tela',
       'TERREMOTO_DESENHA_NA_TELA = false' in _NF43)
-check('5.43.0 (98): os raios do vazio ligar sao AMARELO e NEGRO (nao mais vermelhos)',
-      'cor(0.030F, 0.028F, 0.035F, 0.50F * forca)' in _RY43
-      and 'cor(0.86F, 0.70F, 0.10F, 0.82F * forca)' in _RY43
-      and 'cor(0.44F, 0.012F, 0.025F, 0.80F * forca)' not in _RY43)
+check('5.68.0 (123): os raios amarelos e negros do /vazio ligar sairam (so o visual novo)',
+      'cor(0.86F, 0.70F, 0.10F' not in _RY43
+      and 'cor(0.030F, 0.028F, 0.035F' not in _RY43
+      and 'private static void cor(' not in _RY43)
 check('5.58.0 (114): o texto do balao e UMA passada LIMPA (sem sombra/contorno que borrava)',
       'haloDe' not in _BR43 and 'SOMBRA_PX' not in _BR43 and 'umPixel' not in _BR43
       and 'pen, y, textColor, false, matrix, buffers' in _BR43
@@ -4558,10 +4560,9 @@ _JR45 = rd(R + '/JuizoRastro.java')
 
 
 # ---- 2. os raios do /vazio ligar nao aparecem pra quem tem o poder
-check('5.46.0 (103): os raios SO somem na PRIMEIRA pessoa (no F5 o dono quer ver a aura)',
-      'if (euSou && mc.options.getCameraType().isFirstPerson()) {' in _RV45
-      and 'os raios ainda devem aparecer, no f5' in _RV45
-      and 'nao deve aparecer na primeira pessoa' in _RV45)
+check('5.68.0 (123): nao existe mais raio pra somar/atrapalhar — nada de corte de F5',
+      'getCameraType()' not in _RV45 and 'RenderLevelStageEvent' not in _RV45
+      and 'public static boolean ligado()' in _RV45)
 check('5.45.0 (101): quem olha de fora continua vendo a aura inteira (nao sobrou corte de 2/3)',
       'idx % 3 == 0' not in _RV45)
 
@@ -4747,7 +4748,7 @@ check('5.60.0 (115): O PODER - os Portoes da Babilonia (rajada de armas douradas
       'literal("portoes")' in _cmd_il and 'PoderPortoes.tentarDisparar' in _cmd_il
       and 'RECARGA_TICKS = 100' in _pp and 'DURACAO_TICKS = 30' in _pp
       and 'POR_TICK = 2' in _pp and 'ArmaDouradaEntity' in _pp)
-check('5.60.0/5.67.0 (115/118): o poder so dispara com a aura LIGADA — e agora sem aviso nenhum',
+check('5.60.0/5.68.0 (115/118): o poder so dispara com a aura LIGADA — e agora sem aviso nenhum',
       'if (!AuraAnexos.ligada(p)) {' in _pp and 'Ligue a aura primeiro' not in _pp)
 check('5.60.0 (115): as armas NAO machucam jogador (seguro pra RP)',
       'FERE_JOGADOR = false' in _ar and '|| !(alvo instanceof Player)' in _ar)
@@ -4757,7 +4758,7 @@ check('5.60.0 (115): a tecla do poder (G) e o pacote cliente -> servidor',
 _shell64 = rd(R + '/aura/client/AuraShellLayer.java')
 _rt64 = rd(R + '/aura/client/AuraRenderTypes.java')
 _afx64 = rd(R + '/aura/client/AuraFx.java')
-check('5.60.0 (115): a aura desenha no corpo do jogador (5.67.0: casca do proprio modelo, brilho aditivo)',
+check('5.60.0 (115): a aura desenha no corpo do jogador (5.68.0: casca do proprio modelo, brilho aditivo)',
       'class AuraRendererIluminacao' in _ren and 'RenderPlayerEvent.Post' in _ren
       and 'AuraFx.ehVazio(p)' in _ren
       and 'class AuraShellLayer' in _shell64
@@ -4866,7 +4867,7 @@ check('5.62.0 (117): o que ja existia NAO foi duplicado (uma aura so, um portao 
       and not os.path.exists(_AURA + '/GatesAbility.java'))
 
 
-# ======== PEDIDO 118 — 5.67.0 (aura so brilho, poder mudo e secreto, mais dano) ========
+# ======== PEDIDO 118 — 5.68.0 (aura so brilho, poder mudo e secreto, mais dano) ========
 # O dono: "nao deve aparecer, ligue a aura primeiro"; "no iluminacao tira os efeitos em volta,
 # deixa apenas a aura em volta do player brilhante, aumentar o dano do ataque do iluminacao";
 # "se o player nao tiver ativado a habilidade nao deve aparecer nada [...] pq e segredo, apenas
@@ -4876,125 +4877,135 @@ _ar63 = rd(_AURA + '/ArmaDouradaEntity.java')
 _cmd63 = rd(_AURA + '/IluminacaoCommands.java')
 _ren63 = rd(_AURA + '/client/AuraRendererIluminacao.java')
 
-check('5.67.0 (118): o poder NAO fala mais nada (nem "ligue a aura primeiro", nem recarga)',
+check('5.68.0 (118): o poder NAO fala mais nada (nem "ligue a aura primeiro", nem recarga)',
       'displayClientMessage' not in _pp63
       and 'Ligue a aura primeiro' not in _pp63
       and 'se fechando' not in _pp63)
-check('5.67.0 (118): o poder e SEGREDO — so quem tem ADM (nivel 2), e em silencio pra quem nao tem',
+check('5.68.0 (118): o poder e SEGREDO — so quem tem ADM (nivel 2), e em silencio pra quem nao tem',
       'if (!p.hasPermissions(2)) {' in _pp63
       and 'if (!AuraAnexos.ligada(p)) {' in _pp63
       and 'if (ultimo != null && agora - ultimo < RECARGA_TICKS) {' in _pp63
       and 'literal(\"portoes\")' in _cmd63
       and '.requires(s -> s.hasPermission(2))' in _cmd63.replace('\r',''))
-check('5.67.0 (118): sem a aura ligada NADA acontece (nenhum aviso no chat nem na tela)',
+check('5.68.0 (118): sem a aura ligada NADA acontece (nenhum aviso no chat nem na tela)',
       _pp63.count('return;') >= 3 and 'Component' not in _pp63)
-check('5.67.0 (118): o dano da arma da iluminacao subiu de 8 para 20',
+check('5.68.0 (118): o dano da arma da iluminacao subiu de 8 para 20',
       'public static final float DANO = 20.0f;' in _ar63)
 _tudo118 = _ren63 + _shell64 + _rt64 + _afx64
-check('5.67.0 (118): a iluminacao ficou SO o brilho (nada de circulo magico, raios, portoes)',
+check('5.68.0 (118): a iluminacao ficou SO o brilho (nada de circulo magico, raios, portoes)',
       all(k not in _tudo118 for k in
           ('magicCircle', 'gates(', 'rays(', 'helix(', 'risingRings(', 'column(', 'flames('))
       and 'GLOW_HULL' in _shell64)
-check('5.67.0 (118): o brilho abraca a silhueta (10 direcoes, so as faces de tras = sem corte reto)',
+check('5.68.0 (118): o brilho abraca a silhueta (10 direcoes, so as faces de tras = sem corte reto)',
       'new float[10][]' in _shell64 and 'CULL_FRONT' in _rt64
       and 'GL_FRONT' in _rt64 and 'renderToBuffer' in _shell64)
 
-# ===================== PEDIDO 119 — 5.67.0 (a aura nova do zip) =====================
+# ===================== PEDIDO 119 — 5.68.0 (a aura nova do zip) =====================
 _cmd119 = rd(R + '/aura/client/AuraShellLayer.java')
-check('5.67.0 (119): a casca de aura esta registrada no render do jogador (todas as skins)',
+check('5.68.0 (119): a casca de aura esta registrada no render do jogador (todas as skins)',
       'addLayer(new AuraShellLayer(pr))' in _afx64
       and 'EntityRenderersEvent.AddLayers' in _afx64)
-check('5.67.0 (119): ouro = /iluminacao, tinta = /vazio ligar (cada um com o seu desenho)',
+check('5.68.0 (119): ouro = /iluminacao, tinta = /vazio ligar (cada um com o seu desenho)',
       'AuraEstilo.ILUMINACAO.index()' in _shell64
       and 'VazioAuraFx.ativa(p)' in _shell64
       and 'private void gold(' in _shell64 and 'private void shadow(' in _shell64)
-check('5.67.0 (119): a tinta do vazio ondula e sobe (nao e um bloco preto parado)',
+check('5.68.0 (119): a tinta do vazio ondula e sobe (nao e um bloco preto parado)',
       'wob' in _shell64 and 'rise' in _shell64)
-check('5.67.0 (119): o VAZIO ganhou tentaculos de tinta + mancha no chao',
+check('5.68.0 (119): o VAZIO ganhou tentaculos de tinta + mancha no chao',
       'Tent' in _afx64 and 'final int N = 16, M = 20;' in _afx64
       and 'mancha de sombra' in _afx64)
-check('5.67.0 (119): a animacao de vazio ANTIGA saiu e a nova entrou no lugar',
+check('5.68.0 (119): a animacao de vazio ANTIGA saiu e a nova entrou no lugar',
       'PENAS' not in _vz119 and 'class VazioAuraFx' in _vz119
       and 'AuraFx.ehVazio(p)' in _ren63)
-check('5.67.0 (119): o fogo dourado do zip nao voltou (o dono ja tinha mandado tirar)',
+check('5.68.0 (119): o fogo dourado do zip nao voltou (o dono ja tinha mandado tirar)',
       'flames(' not in _afx64 and 'Fogo dourado' not in _afx64)
-check('5.67.0 (119): a textura branca usada pelo brilho existe no jar',
+check('5.68.0 (119): a textura branca usada pelo brilho existe no jar',
       os.path.exists(A + '/textures/misc/branco.png')
       and 'textures/misc/branco.png' in _rt64)
 
-# ===================== PEDIDO 120 — 5.67.0 (os raios amarelos e o desligar) =====================
+# ===================== PEDIDO 120 — 5.68.0 (os raios amarelos e o desligar) =====================
 _cmd65 = rd(_AURA + '/IluminacaoCommands.java')
 _shell65 = rd(R + '/aura/client/AuraShellLayer.java')
 _fx65 = rd(R + '/aura/client/AuraFx.java')
 _vz65 = rd(C + '/VazioAuraFx.java')
-check('5.67.0 (120): os raios/particulas amarelos antigos sairam da iluminacao',
+check('5.68.0 (120): os raios/particulas amarelos antigos sairam da iluminacao',
       'ParticleTypes.END_ROD' not in _ren63 and 'new DustParticleOptions' not in _ren63
       and 'PlayerTickEvent' not in _ren63)
-check('5.67.0 (120): sobrou so a casca nova na iluminacao (nada desenhando por cima)',
+check('5.68.0 (120): sobrou so a casca nova na iluminacao (nada desenhando por cima)',
       'GLOW_HULL' in _shell65 and 'ParticleTypes' not in _ren63)
-check('5.67.0 (120): desLIGAR apaga TUDO (a aura preta nao fica presa)',
+check('5.68.0 (120): desLIGAR apaga TUDO (a aura preta nao fica presa)',
       'dev.rptag.client.VazioAuraFx.ativa(p)' in _shell65
       and 'dev.rptag.client.VazioAuraFx.ativa(p)' in _fx65
       and 'RaiosVazioFx.ligado()' in _vz65)
-check('5.67.0 (120): o relogio que nunca zerava (a causa da aura negra presa) foi apagado',
+check('5.68.0 (120): o relogio que nunca zerava (a causa da aura negra presa) foi apagado',
       'private static float pulso' not in _vz65 and 'ultimoPoder =' not in _vz65
       and 'public static void pulsar()' in _vz65)
-# ===================== PEDIDO 121 — 5.67.0 (nada de comando novo) =====================
-check('5.67.0 (121): NAO existe /iluminacao vazio (o dono nao pediu isso)',
+# ===================== PEDIDO 121 — 5.68.0 (nada de comando novo) =====================
+check('5.68.0 (121): NAO existe /iluminacao vazio (o dono nao pediu isso)',
       'literal(\"vazio\")' not in _cmd65 and 'literal(\"off\")' in _cmd65
       and 'literal(\"portoes\")' in _cmd65)
-check('5.67.0 (121): a aura do vazio continua sendo a do /vazio ligar (como sempre foi)',
+check('5.68.0 (121): a aura do vazio continua sendo a do /vazio ligar (como sempre foi)',
       'RaiosVazioFx.ligado()' in _vz65
       and 'RaiosVazioFx.alvoUuid()' in _vz65
       and 'VazioAuraFx.ativa(p)' in _shell65)
-check('5.67.0 (121): /vazio desligar manda Aura.desligada() e a aura some junto',
+check('5.68.0 (121): /vazio desligar manda Aura.desligada() e a aura some junto',
       'NeptunePackets.Aura.desligada()' in rd(R + '/NeptuneEventos.java')
       and 'public static void desligar()' in rd(C + '/RaiosVazioFx.java'))
 
-# ===================== PEDIDO 122 — 5.67.0 (o /radiacao, so pra ADM) =====================
+# ===================== PEDIDO 122 — 5.68.0 (o /radiacao, so pra ADM) =====================
 _rad = rd(_AURA + '/Radiacao.java')
 _radc = rd(_AURA + '/RadiacaoCommands.java')
 _radfx = rd(R + '/aura/client/RadiacaoFx.java')
 _est = rd(_AURA + '/AuraEstilo.java')
-check('5.67.0 (122): /radiacao existe e SO ADM liga (inclusive no proprio jogador)',
+check('5.68.0 (122): /radiacao existe e SO ADM liga (inclusive no proprio jogador)',
       'literal(\"radiacao\")' in _radc
       and '.requires(s -> s.hasPermission(2))' in _radc
       and 'setData(AuraAnexos.AURA.get()' in _radc)
-check('5.67.0 (122): a radiacao e um estilo de aura de verdade (indice proprio)',
+check('5.68.0 (122): a radiacao e um estilo de aura de verdade (indice proprio)',
       'RADIACAO(0.15f, 0.85f, 1.00f' in _est
       and 'AuraEstilo.RADIACAO.index()' in _radc)
-check('5.67.0 (122): a zona irradia 10 blocos, mais forte quanto mais perto (1 a 4 por segundo)',
+check('5.68.0 (122): a zona irradia 10 blocos, mais forte quanto mais perto (1 a 4 por segundo)',
       'public static final double RAIO = 10.0;' in _rad
       and 'DANO_MIN = 1.0f, DANO_MAX = 4.0f' in _rad
       and 'Mth.lerp(k, DANO_MIN, DANO_MAX)' in _rad)
-check('5.67.0 (122): fraqueza, fome, tontura e lentidao (5 s de efeito residual)',
+check('5.68.0 (122): fraqueza, fome, tontura e lentidao (5 s de efeito residual)',
       'MobEffects.WEAKNESS' in _rad and 'MobEffects.HUNGER' in _rad
       and 'MobEffects.CONFUSION' in _rad and 'MobEffects.MOVEMENT_SLOWDOWN' in _rad
       and 'TICKS_EFEITO = 100' in _rad)
-check('5.67.0 (122): quem tambem esta irradiado e imune (e o dono nao se machuca)',
+check('5.68.0 (122): quem tambem esta irradiado e imune (e o dono nao se machuca)',
       'en != portador' in _rad and 'AuraEstilo.RADIACAO.index()' in _rad)
-check('5.67.0 (122): so ADM irradia — quem perdeu o cargo para de irradiar',
+check('5.68.0 (122): so ADM irradia — quem perdeu o cargo para de irradiar',
       'if (!portador.hasPermissions(2)) continue;' in _rad)
-check('5.67.0 (122): o visual da radiacao entrou (anel da zona + chamas azuis + rostos)',
+check('5.68.0 (122): o visual da radiacao entrou (anel da zona + chamas azuis + rostos)',
       'private static void anelDaZona(' in _radfx and 'private static void rostos(' in _radfx
       and 'private static void chamas(' in _radfx
       and 'Heightmap.Types.MOTION_BLOCKING_NO_LEAVES' in _radfx)
-check('5.67.0 (122): a casca azul no corpo (5 camadas + manchas escuras)',
+check('5.68.0 (122): a casca azul no corpo (5 camadas + manchas escuras)',
       'RAD_GLOW' in rd(R + '/aura/client/AuraShellLayer.java')
       and 'private void radiation(' in rd(R + '/aura/client/AuraShellLayer.java'))
-check('5.67.0 (122): o anel acompanha o RAIO da zona (nao e um numero solto)',
+check('5.68.0 (122): o anel acompanha o RAIO da zona (nao e um numero solto)',
       'Radiacao.RAIO' in _radfx)
-check('5.67.0 (122): as particulas sao de fogo de alma (azul) e somem ao desligar',
+check('5.68.0 (122): as particulas sao de fogo de alma (azul) e somem ao desligar',
       'ParticleTypes.SOUL_FIRE_FLAME' in _radfx and 'if (!ativa(p)) return;' in _radfx)
-check('5.67.0 (122): desLIGAR a radiacao apaga tudo (o render so roda com a aura ligada)',
+check('5.68.0 (122): desLIGAR a radiacao apaga tudo (o render so roda com a aura ligada)',
       'if (RadiacaoFx.ativa(p))' in rd(R + '/aura/client/AuraRendererIluminacao.java')
       and 'public static boolean ativa(Player p)' in _radfx)
-check('5.67.0 (122): /iluminacao tambem passou a exigir ADM (so adms ativam esses poderes)',
+check('5.68.0 (122): /iluminacao tambem passou a exigir ADM (so adms ativam esses poderes)',
       '.requires(s -> s.hasPermission(2))' in rd(_AURA + '/IluminacaoCommands.java')
       and 'literal("iluminacao")' in rd(_AURA + '/IluminacaoCommands.java'))
-check('5.67.0 (122): nada do zip que ja existia foi duplicado (sem /aura de 8 estilos)',
+check('5.68.0 (122): nada do zip que ja existia foi duplicado (sem /aura de 8 estilos)',
       not os.path.exists(_AURA + '/AuraCommand.java')
       and 'SABER' not in _est and 'GILGAMESH' not in _est)
+
+# ===================== PEDIDO 123 — 5.68.0 (fora os raios do /vazio ligar) =====================
+check('5.68.0 (123): o vazio ficou so com a casca de tinta + tentaculos (nada de raio por cima)',
+      'public static boolean ligado()' in _RV45
+      and 'alvoUuid()' in rd(C + '/VazioAuraFx.java')
+      and 'private void shadow(' in _shell64
+      and 'Tent' in _afx64)
+check('5.68.0 (123): o estado do vazio continua chegando (o pacote de aura nao mudou)',
+      'RaiosVazioFx.definir(p.alvo(), eu)' in rd(C + '/NeptuneFx.java')
+      and 'RaiosVazioFx.desligar()' in rd(C + '/ClientEvents.java'))
 
 print(f'\n{OK} PASS / {FAIL} FAIL')
 sys.exit(1 if FAIL else 0)
