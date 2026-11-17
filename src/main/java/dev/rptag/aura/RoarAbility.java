@@ -131,7 +131,11 @@ public final class RoarAbility {
 
         boolean near = d <= STUN_RADIUS;
         if (near) {
-            int dur = (int) Mth.lerp(d / STUN_RADIUS, 160.0, 60.0);   // 8 s colado -> 3 s
+            // (5.72.0) O DONO: "quem estiver colado tem que tomar mais tempo de lentidao".
+            // Antes: 8 s colado -> 3 s a 25 blocos. Agora: 15 s colado -> 5 s na borda do atrito,
+            // e a queda e curva (^0.55), entao a lentidao continua longa boa parte do raio.
+            double kd = Math.pow(Mth.clamp(d / STUN_RADIUS, 0.0, 1.0), 0.55);
+            int dur = (int) Mth.lerp(kd, 300.0, 100.0);               // 15 s colado -> 5 s
             t.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, dur, 7, false, true));  // imobilizado
             t.addEffect(new MobEffectInstance(MobEffects.JUMP, dur, 128, false, false));            // sem pulo
             t.addEffect(new MobEffectInstance(MobEffects.CONFUSION, dur, 0, false, false));         // tontura
