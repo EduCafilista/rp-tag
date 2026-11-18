@@ -193,5 +193,10 @@ public final class ModNetworking {
         // (5.7.2) SISTEMA DE TÍTULOS (etiqueta colorida + título pessoal)
         registrar.playToClient(TituloSyncPayload.TYPE, TituloSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTitulo);
+        // (5.76.0) PEDIDO 133: o TERREMOTO ganhou o VISUAL NOVO do dono (ceu carmesim, lua de
+        // sangue, tela balançando como corrida, neblina carmesim e filtro vermelho na tela).
+        registrar.playToClient(dev.rptag.aura.QuakeStatePayload.TYPE,
+                dev.rptag.aura.QuakeStatePayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.aura.client.QuakeFx.setState(p.active(), p.intensity())));
     }
 }

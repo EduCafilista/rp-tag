@@ -241,23 +241,11 @@ public final class NeptuneFx {
                 return;
             }
             float t = now * 0.001F;
-            // o tremor tem DUAS vozes: uma grave (o chão balançando) e outra
-            // rápida (o tranco dos escombros) — igual à sensação de terremoto
-            float f = quakeForca;
-            // (5.45.0) PEDIDO 101: "esse terremoto tem que tombar a tela, ficar meio inclinado
-            // para mostrar que tem algo acontecendo". Antes o rolo era só tremor (±3,7°); agora
-            // soma uma INCLINAÇÃO de verdade (~9°), que respira devagar — o mundo fica torto o
-            // tempo todo, e é isso que dá o susto de "o chão não é mais confiável".
-            float inclinacao = 9.0F * f * (1.0F + 0.16F * (float) Math.sin(t * 0.9F));
-            float roll = inclinacao + (2.6F * (float) Math.sin(t * 5.1)
-                    + 1.1F * (float) Math.sin(t * 17.3)) * f;
-            float yaw = (1.3F * (float) Math.sin(t * 4.3 + 1.1) + 0.5F * (float) Math.sin(t * 21.7)) * f;
-            float pitch = (1.0F * (float) Math.sin(t * 6.7 + 0.4) + 0.4F * (float) Math.sin(t * 25.1)) * f;
-            // tremor forte (pulso "travado") = soma um chacoalho curto
-            if (tremorCampea) {
-                roll += 1.2F * f * (float) Math.sin(t * 40.0);
-                pitch += 0.8F * f * (float) Math.sin(t * 37.0);
-            }
+            // (5.76.0) PEDIDO 133: o TREMOR da camera agora e o do QuakeFx (codigo novo do dono:
+            // cabeceio de corrida, tombo lateral, rajadas e pulso de FOV). Aqui fica so o que e
+            // NOSSO e ele nao faz: o tombo de quem caiu na fenda.
+            float f = 0.0F;
+            float roll = 0.0F, yaw = 0.0F, pitch = 0.0F;
             // (5.6.0) QUEDA: ele está no fundo da fenda -> a câmera tomba e
             // olha pro chão (é o "não consegue se levantar" que dá pra ver)
             if (quedaInicio != 0L && now < quedaFim) {

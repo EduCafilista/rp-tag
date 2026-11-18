@@ -236,6 +236,13 @@ public final class NeptuneEventos {
             }
         }
         enviarTerremoto(server, true, 1.0F, segundos, true);
+        // (5.76.0) PEDIDO 133: o VISUAL do terremoto agora e o codigo novo do dono (QuakeFx).
+        // A nossa forca (0..1,5) vira a intensidade dele (0,2..3).
+        try {
+            dev.rptag.aura.QuakeEvent.start(server, Math.max(0.2F, 1.5F * terremotoForca));
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: o visual novo do terremoto falhou (o evento segue)", t);
+        }
     }
 
     /**
@@ -361,6 +368,12 @@ public final class NeptuneEventos {
         }
         fecharFendas(server);
         enviarTerremoto(server, false, 0.0F, 0, false);
+        // (5.76.0) desliga o visual novo junto (ele sai com fade)
+        try {
+            dev.rptag.aura.QuakeEvent.stop(server);
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: nao consegui desligar o visual novo do terremoto", t);
+        }
         if (estava && !silencioso) {
             server.getPlayerList().broadcastSystemMessage(Component.literal(
                     "\u00a77\u00a7oO chão parou. Por enquanto.").withStyle(ChatFormatting.GRAY), false);

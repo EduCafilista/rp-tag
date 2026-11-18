@@ -84,6 +84,11 @@ public final class CeuDeSangueFx {
             if (!NeptuneFx.terremotoNaTela()) {
                 return 0.0F;
             }
+            // (5.76.0) PEDIDO 133: o ceu do terremoto agora e o QuakeFx (codigo novo do dono).
+            // Este domo antigo nao desenha mais nada durante o terremoto — fica guardado.
+            if (dev.rptag.aura.client.QuakeFx.ligado()) {
+                return 0.0F;
+            }
             return Math.max(0.0F, Math.min(1.0F, NeptuneFx.forcaDoTerremoto()));
         } catch (Throwable t) {
             return 0.0F;
