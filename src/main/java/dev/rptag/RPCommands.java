@@ -502,7 +502,6 @@ public final class RPCommands {
             case "sangue" -> 9;
             case "demoniaco" -> 10;
             case "pesadelo2" -> 11;   // (3.98.0) Sono Sem Descanso (antigo)
-            case "egipicio", "egipcio" -> 12;   // (4.5.0) O Olho de Horus
             case "expurgo" -> 13;   // (4.9.2) Hora do Expurgo (TV de emergencia)
             case "ciberpsicose", "ciber" -> 14;   // (4.9.3) Alerta de Ciberpsicose (glitch)
             case "louco" -> 25;   // (5.14.0) O Louco (nevoa cinzenta, sigilo, relogio)
@@ -543,17 +542,7 @@ public final class RPCommands {
                 style = 0;                     // sem fantasia: é ela falando
             }
         }
-        // (4.7.3) Grafia "egipcio" (sem o "i"): nao tem literal proprio, para nao
-        // aparecer duas vezes no tab-complete — mas se a primeira palavra do texto
-        // for "egipcio", o aviso vira egipicio e o resto e a mensagem.
-        if (style == 0 && texto != null) {
-            String t = texto.trim();
-            int sp = t.indexOf(' ');
-            if (sp > 0 && t.substring(0, sp).toLowerCase(java.util.Locale.ROOT).equals("egipcio")) {
-                style = 12;
-                texto = t.substring(sp + 1).trim();
-            }
-        }
+        // (5.75.0) PEDIDO 132: o aviso EGIPCIO saiu — nao ha mais estilo 12.
         final int estiloFinal = style;   // lambda do sendSuccess exige effectively final
         String traduzido = translateAmp(texto);
         if (vozDaAxion) {
@@ -780,23 +769,6 @@ public final class RPCommands {
 
     /** (3.64.0) som do aviso direto no alvo (assustador pede som).
      *  (3.86.0) os 6 estilos novos ganharam som proprio. */
-    /** (4.5.0) EGIPICIO: o deserto responde no servidor (areia + incenso + ouro). */
-    private static void particulasEgipcio(ServerPlayer p) {
-        var lv = p.serverLevel();
-        double x = p.getX(), y = p.getY(), z = p.getZ();
-        var areiaCai = new net.minecraft.core.particles.BlockParticleOption(
-                net.minecraft.core.particles.ParticleTypes.FALLING_DUST,
-                net.minecraft.world.level.block.Blocks.SAND.defaultBlockState());
-        var areiaSol = new net.minecraft.core.particles.BlockParticleOption(
-                net.minecraft.core.particles.ParticleTypes.BLOCK,
-                net.minecraft.world.level.block.Blocks.SAND.defaultBlockState());
-        lv.sendParticles(areiaCai, x, y + 3.2, z, 40, 1.2, 0.8, 1.2, 0.02);
-        lv.sendParticles(areiaSol, x, y + 0.2, z, 30, 0.9, 0.1, 0.9, 0.06);
-        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.CAMPFIRE_COSY_SMOKE,
-                x, y + 0.4, z, 18, 0.7, 0.2, 0.7, 0.012);
-        lv.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
-                x, y + 1.6, z, 10, 0.8, 1.0, 0.8, 0.01);
-    }
 
     private static void somAviso(ServerPlayer alvo, int style) {
         switch (style) {
@@ -843,9 +815,6 @@ public final class RPCommands {
             // splash + pingos de dripstone) — o servidor so faz as
             // PARTICULAS (espirro de bloco de redstone + poeira caindo)
             case 9 -> particulasSangue(alvo);
-            // (4.5.0) EGIPICIO: o FX do cliente tem TRILHA propria (alaude
-            // pentatonica) — o servidor faz a AREIA e o incenso
-            case 12 -> particulasEgipcio(alvo);
             // (3.93.0) DEMONIACO: o FX do cliente tem TRILHA propria
             // (crescendo do dragao + batidas sincronizadas) — o servidor
             // so faz as PARTICULAS (pentagrama de fogo de alma no chao)
@@ -939,7 +908,7 @@ public final class RPCommands {
                     + "/rp admin vampiro <jogadores> ligar|desligar \u00a77\u2014 o ATRIBUTO rptag:vampiro: o sol passa a queimar\u00a7c\n"
                     + "/rp admin vampiro ver <jogadores> \u00a77\u2014 mostra quem \u00e9 vampiro / est\u00e1 no sol / est\u00e1 protegido\u00a7c\n"
                     + "/rp admin eclipse dar <jogadores> \u00a77\u2014 entrega o AMULETO DO ECLIPSE (na m\u00e3o: o sol n\u00e3o queima)\u00a7c\n"
-                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, egipicio, expurgo, ciberpsicose, energia, conhecimento (alvos: nomes ou @a), morteop, medoop, infeccao, infeccao2\u00a7c\n"
+                    + "/rp admin avisar <jogadores> [estilo] <texto> \u00a77\u2014 texto na tela; estilos: classico, pesadelo, pesadelo2, runico, real, morte, inferno, gelo, divino, void, sangue, demoniaco, expurgo, ciberpsicose, energia, conhecimento (alvos: nomes ou @a), morteop, medoop, infeccao, infeccao2\u00a7c\n"
                     + "/rp admin avisar2 <jogadores> <estilo> <texto> \u00a77\u2014 a SECAO NOVA (Lord of the Mysteries + cartas de taro; nada disso existe no avisar): louco, tolo/foulo, marinheiro/enforcado, espectador/justica, eremita, julgamento, lua, mago, morte2, sol, torre, estrela, fita\u00a7c\n"
                 + "/rp admin avisozona <id> <texto> \u00a77\u2014 avisa TODO DENTRO da lorezone\u00a7c\n"
                     + "/rp admin chatlocal on|off \u00a77\u2014 chat normal por proximidade\u00a7c\n"
@@ -1163,7 +1132,7 @@ public final class RPCommands {
                                 // /rp admin avisar2 (mesmo código de estilo, nenhum FX se perdeu).
                                 // O que sobra aqui é a seção antiga: classico (sem literal), pesadelo,
                                 // pesadelo2, morte, inferno, gelo, divino, void, sangue, demoniaco,
-                                // runico, real, egipicio, expurgo, ciberpsicose, energia, conhecimento,
+                                // runico, real, expurgo, ciberpsicose, energia, conhecimento,
                                 // morteop e medoop.
                         .then(Commands.argument("jogadores", net.minecraft.commands.arguments.EntityArgument.players())
                                 .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
@@ -1261,19 +1230,6 @@ public final class RPCommands {
                                                     avisar(ctx, alvos, "real", texto);
                                                     return Command.SINGLE_SUCCESS;
                                                 })))
-                                // (4.7.3) EGIPICIO: UM literal so (egipicio) — antes eu tinha
-                                // posto "egipcio" tambem e o tab-complete mostrava DUAS
-                                // entradas quase iguais. A grafia "egipcio" continua
-                                // funcionando pelo fallback dentro de avisar().
-                                .then(Commands.literal("egipicio")
-                                        .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
-                                                .executes(ctx -> {
-                                                    var alvos = net.minecraft.commands.arguments.EntityArgument.getPlayers(ctx, "jogadores");
-                                                    String texto = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "texto");
-                                                    avisar(ctx, alvos, "egipicio", texto);
-                                                    return Command.SINGLE_SUCCESS;
-                                                })))
-                                // (4.9.2) EXPURGO: a TV de emergencia do prototipo
                                 .then(Commands.literal("expurgo")
                                         .then(Commands.argument("texto", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
                                                 .executes(ctx -> {

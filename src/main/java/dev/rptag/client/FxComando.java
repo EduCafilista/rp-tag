@@ -78,7 +78,6 @@ public final class FxComando {
             case "sangue" -> 9;
             case "demoniaco" -> 10;
             case "pesadelo2" -> 11;
-            case "egipicio", "egipcio" -> 12;
             case "expurgo" -> 13;
             case "ciberpsicose", "cyberpsicose", "ciber" -> 14;
             case "louco" -> 25;

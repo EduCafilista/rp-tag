@@ -48,7 +48,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.74.0";
+    public static final String VERSION = "5.75.0";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -65,12 +65,7 @@ public final class RPTagMod {
             SOUNDS.register("inferno_aviso", () -> SoundEvent.createVariableRangeEvent(
                     ResourceLocation.fromNamespaceAndPath(MODID, "inferno_aviso")));
 
-    /** (4.7.7) TRILHA do aviso EGIPCIO: alaúde, ney e tambor de moldura,
-     *  sintetizados em arte/audio_egipcio.py e SINCRONIZADOS com a animação
-     *  (riser -> clarão -> asas -> cartucho -> sino). 7,6 s. */
-    public static final Supplier<SoundEvent> SOM_EGIPCIO =
-            SOUNDS.register("egipcio_aviso", () -> SoundEvent.createVariableRangeEvent(
-                    ResourceLocation.fromNamespaceAndPath(MODID, "egipcio_aviso")));
+    // (5.75.0) PEDIDO 132: a trilha do aviso EGIPCIO saiu junto com o aviso.
 
     /** (4.9.5) SOM do aviso CIBERPSICOSE: o áudio que o dono mandou (catbox
      *  mkqz2x.mp3, 4,05 s), convertido pra .ogg/Vorbis em arte/previa_mascara3d.py.

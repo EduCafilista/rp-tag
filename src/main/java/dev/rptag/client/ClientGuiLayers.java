@@ -57,8 +57,6 @@ public final class ClientGuiLayers {
         // linha reta + cranio pixel art + cinzas) — vale pro aviso de morte
         // do /rp admin avisar e pro ritual da VIDA CANONICA
         seguro("morte_aviso_fx", () -> MorteAvisoFx.registrar(event));
-        // (4.5.0) estilo 12 = EGIPICIO "O Olho de Horus" (cartucho + hieroglifos + areia)
-        seguro("egipcio_aviso_fx", () -> EgipcioAvisoFx.registrar(event));
         // (4.9.9) estilo 3 = REAL "Decreto da Coroa"
         seguro("real_aviso_fx", () -> RealAvisoFx.registrar(event));
         // (4.9.2) estilo 13 = EXPURGO "Hora do Expurgo" (TV de emergencia:

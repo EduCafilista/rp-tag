@@ -75,7 +75,6 @@ public final class ClientEvents {
         GeloAvisoFx.parar();
         VoidAvisoFx.parar();
         DivinoAvisoFx.parar();
-        EgipcioAvisoFx.parar();
         RealAvisoFx.parar();
         ExpurgoAvisoFx.parar();
         CiberpsicoseAvisoFx.parar();
