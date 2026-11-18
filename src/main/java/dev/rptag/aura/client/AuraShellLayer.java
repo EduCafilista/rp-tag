@@ -77,6 +77,16 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
             {0.20f, 0.40f, 0.65f, 1.00f, 0.05f},
     };
 
+    /**
+     * (5.77.0) OTIMIZACAO — LOD da casca. Cada anel desenha o MODELO INTEIRO do jogador em 10
+     * direcoes: a aura dourada, por exemplo, fazia 50 desenhos de modelo por jogador por quadro.
+     * Numa cena com 10 players de aura isso e meio milhar de modelos por quadro — era o maior
+     * custo do mod. Agora quem esta longe recebe menos copias (e some depois do corte da
+     * {@link dev.rptag.client.FxQualidade}). De perto NADA muda.
+     */
+    private int passo = 1;
+    private int maxAneis = 99;
+
     public AuraShellLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);
     }
@@ -86,7 +96,12 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
                        float limbSwing, float limbSwingAmount, float partialTick,
                        float ageInTicks, float netHeadYaw, float headPitch) {
         if (p.isSpectator() || p.isInvisible()) return;
+        // (5.77.0) OTIMIZACAO: longe demais (pela qualidade atual) nem entra no desenho.
+        if (dev.rptag.client.FxQualidade.longe(p)) return;
         int id = p.getData(AuraAnexos.AURA.get());
+        if (id == 0 && !dev.rptag.client.VazioAuraFx.ativa(p)) return;   // sem aura: nao gasta nada
+        this.passo = dev.rptag.client.FxQualidade.passoDir();            // (5.77.0) LOD
+        this.maxAneis = dev.rptag.client.FxQualidade.aneis(6);
         float t = p.tickCount + partialTick;
         // (5.66.0) Ouro = /iluminacao. Vazio = /vazio ligar (quem manda e o RaiosVazioFx, que ja
         // recebe o aviso do servidor) — e /vazio desligar apaga tudo na hora.
@@ -111,9 +126,9 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
                 OverlayTexture.NO_OVERLAY, argb(0.12f, 0.34f * pulse, 0.15f * pulse, 0.02f * pulse));
 
         VertexConsumer vc = buf.getBuffer(AuraRenderTypes.GLOW_HULL);
-        for (int ring = 0; ring < GOLD.length; ring++) {
+        for (int ring = 0; ring < Math.min(GOLD.length, maxAneis); ring++) {
             float[] g = GOLD[ring];
-            for (int d = 0; d < DIRS.length; d++) {
+            for (int d = 0; d < DIRS.length; d += passo) {
                 float flick = 0.75f + 0.25f * Mth.sin(t * 0.35f + d * 1.7f + ring * 2.3f);  // borda "queimando"
                 float rad = g[0] * flick;
                 float up = (ring >= 2) ? g[0] * 0.35f : 0f;                                    // chama sobe um pouco
@@ -130,9 +145,9 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
     private void shadow(PoseStack ps, MultiBufferSource buf, float t) {
         PlayerModel<AbstractClientPlayer> model = getParentModel();
         VertexConsumer vc = buf.getBuffer(AuraRenderTypes.SHADOW_HULL);
-        for (int ring = 0; ring < VOID.length; ring++) {
+        for (int ring = 0; ring < Math.min(VOID.length, maxAneis); ring++) {
             float[] v = VOID[ring];
-            for (int d = 0; d < DIRS.length; d++) {
+            for (int d = 0; d < DIRS.length; d += passo) {
                 float wob = 0.70f + 0.50f * Mth.sin(t * 0.13f + d * 2.1f + ring * 1.3f);       // borda de tinta ondulando
                 float rad = v[0] * wob;
                 float rise = v[0] * 0.5f * (1f + Mth.sin(t * 0.09f + d));                      // fumaça subindo
@@ -151,9 +166,9 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
         float pulse = 0.90f + 0.10f * Mth.sin(t * 0.22f);
 
         VertexConsumer sh = buf.getBuffer(AuraRenderTypes.SHADOW_HULL);
-        for (int ring = 0; ring < RAD_SHADOW.length; ring++) {
+        for (int ring = 0; ring < Math.min(RAD_SHADOW.length, maxAneis); ring++) {
             float[] v = RAD_SHADOW[ring];
-            for (int d = 0; d < DIRS.length; d++) {
+            for (int d = 0; d < DIRS.length; d += passo) {
                 float rad = v[0] * (0.70f + 0.50f * Mth.sin(t * 0.11f + d * 2.1f + ring * 1.3f));
                 float rise = v[0] * 0.6f * (1f + Mth.sin(t * 0.08f + d));
                 ps.pushPose();
@@ -168,9 +183,9 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
                 OverlayTexture.NO_OVERLAY, argb(0.60f, 0.04f * pulse, 0.22f * pulse, 0.34f * pulse));
 
         VertexConsumer vc = buf.getBuffer(AuraRenderTypes.GLOW_HULL);
-        for (int ring = 0; ring < RAD_GLOW.length; ring++) {
+        for (int ring = 0; ring < Math.min(RAD_GLOW.length, maxAneis); ring++) {
             float[] g = RAD_GLOW[ring];
-            for (int d = 0; d < DIRS.length; d++) {
+            for (int d = 0; d < DIRS.length; d += passo) {
                 float rad = g[0] * (0.70f + 0.30f * Mth.sin(t * 0.30f + d * 1.9f + ring * 2.1f));
                 float up = g[0] * 0.5f;                                   // chamas sobem
                 float k = g[4] * pulse;
@@ -192,9 +207,9 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
                 OverlayTexture.NO_OVERLAY, argb(0.60f, 0.55f * pulse, 0.45f * pulse, 0.22f * pulse));
 
         VertexConsumer vc = buf.getBuffer(AuraRenderTypes.GLOW_HULL);
-        for (int ring = 0; ring < RB.length; ring++) {
+        for (int ring = 0; ring < Math.min(RB.length, maxAneis); ring++) {
             float[] g = RB[ring];
-            for (int d = 0; d < DIRS.length; d++) {
+            for (int d = 0; d < DIRS.length; d += passo) {
                 float hue = (t * 0.010f + ring * 0.13f + d * 0.045f) % 1f;      // faixas de cor girando
                 float[] c = hsv(hue, ring == 0 ? 0.25f : 0.85f);                // 1o anel quase branco
                 float rad = g[0] * (0.75f + 0.25f * Mth.sin(t * 0.33f + d * 1.9f + ring * 2.1f));
@@ -215,9 +230,9 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
         model.renderToBuffer(ps, buf.getBuffer(AuraRenderTypes.GLOW_TINT), LightTexture.FULL_BRIGHT,
                 OverlayTexture.NO_OVERLAY, argb(1f, 0.05f * pulse, 0.07f * pulse, 0.10f * pulse));
         VertexConsumer vc = buf.getBuffer(AuraRenderTypes.GLOW_HULL);
-        for (int ring = 0; ring < GR.length; ring++) {
+        for (int ring = 0; ring < Math.min(GR.length, maxAneis); ring++) {
             float[] g = GR[ring];
-            for (int d = 0; d < DIRS.length; d++) {
+            for (int d = 0; d < DIRS.length; d += passo) {
                 float rad = g[0] * (0.75f + 0.25f * Mth.sin(t * 0.20f + d * 1.7f + ring * 2.3f));
                 float k = g[4] * pulse;
                 ps.pushPose();

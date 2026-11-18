@@ -39,6 +39,9 @@ public final class RadiacaoFx {
     private static final float TAU = (float) (Math.PI * 2.0);
     private static final float[] CIANO = {0.20f, 0.85f, 1.00f};
     private static final float[] CIANO0 = {0.85f, 1.00f, 1.00f}, CIANO1 = {0.10f, 0.45f, 1.00f};
+    /** (5.77.0) OTIMIZACAO: poeira ciano reaproveitada (antes era `new` por particula). */
+    private static final net.minecraft.core.particles.DustParticleOptions POEIRA_CIANO =
+            new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.2f, 0.85f, 1f), 1.0f);
 
     /** true = esta com a aura de radiacao ligada. */
     public static boolean ativa(Player p) {
@@ -52,6 +55,7 @@ public final class RadiacaoFx {
     /** Chamado pelo render do jogador (junto com a casca). */
     public static void render(RenderPlayerEvent.Post e, Player p, float t) {
         if (p.isSpectator() || p.isInvisible()) return;
+        if (dev.rptag.client.FxQualidade.longe(p)) return;   // (5.77.0) OTIMIZACAO
         try {
             // anel da zona: tamanho fixo no mundo, nao escala com o corpo
             e.getPoseStack().pushPose();
@@ -75,27 +79,27 @@ public final class RadiacaoFx {
 
     /** Anel ciano no chao marcando o raio da radiacao (segue o relevo) + parede suave. */
     private static void anelDaZona(VertexConsumer vc, Matrix4f m, Player p, float t) {
-        final int N = 96;
+        // (5.77.0) OTIMIZACAO: anel de altura em cache (era 96 consultas de heightmap por
+        // quadro por jogador; agora recalcula a cada 4 ticks ou quando o jogador anda 1 bloco).
+        final int N = dev.rptag.client.FxAlturas.N;
         final float R = (float) Radiacao.RAIO;
-        float[] ys = new float[N + 1];
-        for (int i = 0; i <= N; i++) {
-            float a = i * TAU / N;
-            int h = p.level().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                    Mth.floor(p.getX() + Mth.cos(a) * R), Mth.floor(p.getZ() + Mth.sin(a) * R));
-            ys[i] = (h <= p.level().getMinBuildHeight() ? (float) p.getY() : h) - (float) p.getY() + 0.1f;
-        }
+        float[] ys = dev.rptag.client.FxAlturas.anel(p, R);
         for (int i = 0; i < N; i++) {
             int j = i + 1;
             float a0 = i * TAU / N, a1 = j * TAU / N;
             float al = 0.30f + 0.25f * Mth.sin(a0 * 24f - t * 0.2f);       // pulsos correndo pelo anel
-            for (float[] lado : new float[][]{{R - 0.14f, R}, {R, R + 0.14f}}) {
-                float r0 = lado[0], r1 = lado[1];
-                float aIn = lado[0] == R ? al : 0f, aOut = lado[0] == R ? 0f : al;
-                quad2(vc, m, cv(Mth.cos(a0) * r0, ys[i], Mth.sin(a0) * r0, CIANO, aIn),
-                        cv(Mth.cos(a0) * r1, ys[i], Mth.sin(a0) * r1, CIANO, aOut),
-                        cv(Mth.cos(a1) * r1, ys[j], Mth.sin(a1) * r1, CIANO, aOut),
-                        cv(Mth.cos(a1) * r0, ys[j], Mth.sin(a1) * r0, CIANO, aIn));
-            }
+            // (5.77.0) OTIMIZACAO: antes era `for (float[] lado : new float[][]{...})` — dois
+            // arrays novos a cada passo do anel, a cada quadro. Agora as duas faixas (dentro e
+            // fora) saem na mao, sem alocar nada.
+            float r0 = R - 0.14f, r1 = R;
+            quad2(vc, m, cv(Mth.cos(a0) * r0, ys[i], Mth.sin(a0) * r0, CIANO, 0f),
+                    cv(Mth.cos(a0) * r1, ys[i], Mth.sin(a0) * r1, CIANO, al),
+                    cv(Mth.cos(a1) * r1, ys[j], Mth.sin(a1) * r1, CIANO, al),
+                    cv(Mth.cos(a1) * r0, ys[j], Mth.sin(a1) * r0, CIANO, 0f));
+            quad2(vc, m, cv(Mth.cos(a0) * r1, ys[i], Mth.sin(a0) * r1, CIANO, al),
+                    cv(Mth.cos(a0) * (R + 0.14f), ys[i], Mth.sin(a0) * (R + 0.14f), CIANO, 0f),
+                    cv(Mth.cos(a1) * (R + 0.14f), ys[j], Mth.sin(a1) * (R + 0.14f), CIANO, 0f),
+                    cv(Mth.cos(a1) * r1, ys[j], Mth.sin(a1) * r1, CIANO, al));
             quad2(vc, m, cv(Mth.cos(a0) * R, ys[i], Mth.sin(a0) * R, CIANO, 0.20f),
                     cv(Mth.cos(a1) * R, ys[j], Mth.sin(a1) * R, CIANO, 0.20f),
                     cv(Mth.cos(a1) * R, ys[j] + 1.4f, Mth.sin(a1) * R, CIANO, 0f),
@@ -189,7 +193,7 @@ public final class RadiacaoFx {
         try {
             RandomSource rnd = p.getRandom();
             float sc = p.getScale();
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0, n = dev.rptag.client.FxQualidade.particulas(3); i < n; i++) {   // (5.77.0)
                 double ang = rnd.nextDouble() * TAU, rad = (0.35 + rnd.nextDouble() * 0.5) * sc;
                 double x = p.getX() + Math.cos(ang) * rad, z = p.getZ() + Math.sin(ang) * rad;
                 double y = p.getY() + rnd.nextDouble() * 1.9 * sc;
@@ -197,7 +201,7 @@ public final class RadiacaoFx {
                 p.level().addParticle(ParticleTypes.SOUL_FIRE_FLAME, x, y, z, 0, vy * 0.6, 0);
                 if (i == 0) {
                     double za = rnd.nextDouble() * TAU, zr = Math.sqrt(rnd.nextDouble()) * Radiacao.RAIO;
-                    p.level().addParticle(new DustParticleOptions(new Vector3f(0.2f, 0.85f, 1f), 1.0f),
+                    p.level().addParticle(POEIRA_CIANO,
                             p.getX() + Math.cos(za) * zr, p.getY() + rnd.nextDouble() * 2.5,
                             p.getZ() + Math.sin(za) * zr, 0, 0.02, 0);
                 }

@@ -47,6 +47,7 @@ public final class ArcoirisFx {
     /** Chamado pelo render do jogador (junto com a casca). */
     public static void render(RenderPlayerEvent.Post e, Player p, float t) {
         if (p.isSpectator() || p.isInvisible()) return;
+        if (dev.rptag.client.FxQualidade.longe(p)) return;   // (5.77.0) OTIMIZACAO
         try {
             float sc = p.getScale();                 // acompanha o tamanho (Macaco 5x)
             e.getPoseStack().pushPose();
@@ -129,7 +130,7 @@ public final class ArcoirisFx {
         try {
             RandomSource rnd = p.getRandom();
             float sc = p.getScale();
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0, n = dev.rptag.client.FxQualidade.particulas(3); i < n; i++) {   // (5.77.0)
                 double ang = rnd.nextDouble() * TAU, rad = (0.35 + rnd.nextDouble() * 0.5) * sc;
                 double x = p.getX() + Math.cos(ang) * rad, z = p.getZ() + Math.sin(ang) * rad;
                 double y = p.getY() + rnd.nextDouble() * 1.9 * sc;

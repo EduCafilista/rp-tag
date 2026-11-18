@@ -40,6 +40,8 @@ public final class FxConfig {
         Properties p = new Properties();
         try (InputStream in = Files.newInputStream(arq)) {
             p.load(in);
+            String q = p.getProperty("fxQualidade", "auto").trim();
+            FxQualidade.carregar(q);
             String v = p.getProperty("fxVideo", "true").trim();
             if (v.equalsIgnoreCase("false")) video = false;
             else if (!v.equalsIgnoreCase("true")) ultimoAviso = "fxVideo invalido (" + v + "), usando true";
@@ -58,10 +60,11 @@ public final class FxConfig {
         if (arquivo == null) return;
         Properties p = new Properties();
         p.setProperty("fxVideo", Boolean.toString(video));
+        p.setProperty("fxQualidade", FxQualidade.nome(FxQualidade.preferida()));
         try {
             if (arquivo.getParent() != null) Files.createDirectories(arquivo.getParent());
             try (Writer w = Files.newBufferedWriter(arquivo)) {
-                p.store(w, "RP Tag - config do cliente (fxVideo=false: avisos sem video)");
+                p.store(w, "RP Tag - config do cliente (fxVideo=false: avisos sem video; fxQualidade=auto|alto|medio|baixo: peso dos efeitos)");
             }
         } catch (IOException e) {
             ultimoAviso = "nao consegui gravar cliente.properties: " + e;

@@ -36,6 +36,9 @@ import org.joml.Vector3f;
 @EventBusSubscriber(modid = dev.rptag.RPTagMod.MODID, value = Dist.CLIENT)
 public final class AuraFx {
     private static final float TAU = (float) (Math.PI * 2.0);
+    /** (5.77.0) OTIMIZACAO: era `new DustParticleOptions(...)` a cada particula, a cada tick. */
+    private static final DustParticleOptions POEIRA_TINTA =
+            new DustParticleOptions(new Vector3f(0.02f, 0.0f, 0.04f), 2.0f);
 
     @EventBusSubscriber(modid = dev.rptag.RPTagMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
     public static final class ModEvents {
@@ -62,6 +65,7 @@ public final class AuraFx {
     /** Desenha os tentaculos de tinta + a mancha de sombra (so a aura do VAZIO). */
     public static void renderVazio(RenderPlayerEvent.Post e, Player p, float t) {
         if (p.isSpectator() || p.isInvisible()) return;
+        if (dev.rptag.client.FxQualidade.longe(p)) return;   // (5.77.0) OTIMIZACAO: fora do alcance
         try {
             PoseStack ps = e.getPoseStack();
             float sc = p.getScale();                   // acompanha o tamanho (Macaco 5x)
@@ -81,6 +85,7 @@ public final class AuraFx {
      */
     public static void renderGravidade(RenderPlayerEvent.Post e, Player p, float t) {
         if (p.isSpectator() || p.isInvisible()) return;
+        if (dev.rptag.client.FxQualidade.longe(p)) return;   // (5.77.0) OTIMIZACAO: fora do alcance
         try {
             int bits = dev.rptag.aura.GravState.get(p);
             PoseStack ps = e.getPoseStack();
@@ -121,14 +126,10 @@ public final class AuraFx {
 
     private static void terrainRing(VertexConsumer vc, Matrix4f m, Player p, float R, float half,
                                     float[] c, float alpha, float wallH, float t) {
-        final int N = 96;
-        float[] ys = new float[N + 1];
-        for (int i = 0; i <= N; i++) {
-            float a = i * TAU / N;
-            int h = p.level().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                    Mth.floor(p.getX() + Mth.cos(a) * R), Mth.floor(p.getZ() + Mth.sin(a) * R));
-            ys[i] = (h <= p.level().getMinBuildHeight() ? (float) p.getY() : h) - (float) p.getY() + 0.1f;
-        }
+        // (5.77.0) OTIMIZACAO: o anel de altura vem do cache (recalcula a cada 4 ticks, nao a
+        // cada quadro) — antes eram 96 consultas de heightmap por quadro por jogador.
+        final int N = dev.rptag.client.FxAlturas.N;
+        float[] ys = dev.rptag.client.FxAlturas.anel(p, R);
         float r0 = R - half, r1 = R + half;
         for (int i = 0; i < N; i++) {
             int j = i + 1;
@@ -334,13 +335,12 @@ public final class AuraFx {
 
         RandomSource rnd = p.getRandom();
         float sc = p.getScale();
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0, n = dev.rptag.client.FxQualidade.particulas(3); i < n; i++) {   // (5.77.0)
             double ang = rnd.nextDouble() * TAU, rad = (0.35 + rnd.nextDouble() * 0.5) * sc;
             double x = p.getX() + Math.cos(ang) * rad, z = p.getZ() + Math.sin(ang) * rad;
             double y = p.getY() + rnd.nextDouble() * 1.9 * sc;
             double vy = (0.03 + rnd.nextDouble() * 0.05) * Math.sqrt(sc);
-            p.level().addParticle(new DustParticleOptions(new Vector3f(0.02f, 0.0f, 0.04f), 2.0f),
-                    x, y, z, 0, vy * 0.7, 0);
+            p.level().addParticle(POEIRA_TINTA, x, y, z, 0, vy * 0.7, 0);
             if (i == 0 && rnd.nextFloat() < 0.5f) {
                 p.level().addParticle(ParticleTypes.SQUID_INK, x, y, z, 0, vy, 0);
             }

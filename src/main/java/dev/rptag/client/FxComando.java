@@ -32,7 +32,9 @@ public final class FxComando {
 
     static String status() {
         return "RP Tag FX: video " + (FxConfig.video() ? "LIGADO" : "DESLIGADO")
-                + " — " + VideoFx.contarVideos() + " aviso(s) com video";
+                + " — " + VideoFx.contarVideos() + " aviso(s) com video"
+                + " · qualidade " + FxQualidade.nome(FxQualidade.preferida())
+                + " (usando " + FxQualidade.nome(FxQualidade.efetiva()) + ")";
     }
 
     public static void registrarComando(RegisterClientCommandsEvent event) {
@@ -54,6 +56,14 @@ public final class FxComando {
                     ctx.getSource().sendSuccess(() -> Component.literal("RP Tag FX: video desligado (FX procedural)."), false);
                     return 1;
                 }))
+                // (5.77.0) OTIMIZACAO: peso dos efeitos (auto = olha o FPS)
+                .then(Commands.literal("qualidade")
+                        .executes(ctx -> {
+                            ctx.getSource().sendSuccess(() -> Component.literal(status()), false);
+                            return 1;
+                        })
+                        .then(Commands.argument("nivel", StringArgumentType.word())
+                                .executes(ctx -> qualidade(ctx, StringArgumentType.getString(ctx, "nivel")))))
                 // (4.7.4) teste do FX sem passar pelo servidor
                 .then(Commands.literal("teste")
                         .then(Commands.argument("estilo", StringArgumentType.word())
@@ -61,6 +71,18 @@ public final class FxComando {
                                 .then(Commands.argument("texto", StringArgumentType.greedyString())
                                         .executes(ctx -> teste(ctx, StringArgumentType.getString(ctx, "estilo"),
                                                 StringArgumentType.getString(ctx, "texto")))))));
+    }
+
+    /** (5.77.0) troca a qualidade dos efeitos e salva no cliente.properties. */
+    private static int qualidade(CommandContext<CommandSourceStack> ctx, String nivel) {
+        int q = FxQualidade.deNome(nivel);
+        FxQualidade.definir(q);
+        FxConfig.definirVideo(FxConfig.video());     // forca gravar o arquivo com a escolha nova
+        logarAviso();
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "RP Tag FX: qualidade " + FxQualidade.nome(FxQualidade.preferida())
+                        + " (usando " + FxQualidade.nome(FxQualidade.efetiva()) + ")"), false);
+        return 1;
     }
 
     /** (4.7.4) nome -> numero do estilo (o MESMO switch do avisar()). */
