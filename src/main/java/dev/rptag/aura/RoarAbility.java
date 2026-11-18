@@ -1,6 +1,7 @@
 package dev.rptag.aura;
 
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -10,6 +11,9 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -47,6 +51,31 @@ public final class RoarAbility {
     private static final Map<UUID, Long> LAST = new HashMap<>();
     private static final Map<UUID, int[]> RINGING = new HashMap<>(); // {restante, total}
 
+    // (5.74.0) PEDIDO 131: "nao e para o player conseguir pular quando tomar o grito".
+    // O efeito JUMP 128 nao segurava o pulo nas versoes novas (o nivel do efeito virou int, nao estoura
+    // mais para negativo) e o dono continuava pulando. Agora a gente mexe direto no atributo
+    // JUMP_STRENGTH do alvo: modificador multiplicativo de -100%, ou seja, forca de pulo ZERO enquanto
+    // durar a tontura. Vale para jogador e para mob. Some sozinho quando o tempo acaba.
+    private static final ResourceLocation JUMP_LOCK =
+            ResourceLocation.fromNamespaceAndPath(dev.rptag.RPTagMod.MODID, "roar_jump_lock");
+    private static final Map<UUID, int[]> STUNNED = new HashMap<>();  // {restante} — quem esta tonto
+
+    /** Trava o pulo de quem esta com a tontura do grito. */
+    private static void lockJump(LivingEntity t) {
+        AttributeInstance at = t.getAttribute(Attributes.JUMP_STRENGTH);
+        if (at == null) return;
+        if (!at.hasModifier(JUMP_LOCK)) {
+            at.addTransientModifier(new AttributeModifier(JUMP_LOCK, -1.0,
+                    AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+        }
+    }
+
+    /** Devolve o pulo normal (usado quando a tontura passa). */
+    private static void unlockJump(LivingEntity t) {
+        AttributeInstance at = t.getAttribute(Attributes.JUMP_STRENGTH);
+        if (at != null) at.removeModifier(JUMP_LOCK);
+    }
+
     /** Raio da frente da onda após t ticks (desacelera ao chegar na borda). Usado também no cliente. */
     public static double radiusAt(float t) {
         float u = Mth.clamp(t / TRAVEL_TICKS, 0f, 1f);
@@ -83,6 +112,14 @@ public final class RoarAbility {
             if (r.age >= TRAVEL_TICKS) it.remove();
         }
         MinecraftServer srv = e.getServer();
+        // (5.74.0) PEDIDO 131: enquanto durar a tontura, o pulo fica travado no atributo.
+        for (Iterator<Map.Entry<UUID, int[]>> it = STUNNED.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<UUID, int[]> en = it.next();
+            int[] v = en.getValue();
+            ServerPlayer sp = srv.getPlayerList().getPlayer(en.getKey());
+            if (sp == null || --v[0] <= 0) { it.remove(); if (sp != null) unlockJump(sp); continue; }
+            lockJump(sp);
+        }
         for (Iterator<Map.Entry<UUID, int[]>> it = RINGING.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<UUID, int[]> en = it.next();
             int[] v = en.getValue();
@@ -133,9 +170,13 @@ public final class RoarAbility {
             // e a queda e curva (^0.55), entao a lentidao continua longa boa parte do raio.
             double kd = Math.pow(Mth.clamp(d / STUN_RADIUS, 0.0, 1.0), 0.55);
             int dur = (int) Mth.lerp(kd, 300.0, 100.0);               // 15 s colado -> 5 s
+            // (5.74.0) MOVEMENT_SLOWDOWN continua; o "sem pulo" agora e no atributo (o JUMP 128 nao
+            // segurava nada) e a tontura (nausea de verdade, o mundo girando) fica ate um pouco mais
+            // tempo que a lentidao, para o alvo ficar cambaleando depois que as pernas voltam.
             t.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, dur, 7, false, true));  // imobilizado
-            t.addEffect(new MobEffectInstance(MobEffects.JUMP, dur, 128, false, false));            // sem pulo
-            t.addEffect(new MobEffectInstance(MobEffects.CONFUSION, dur, 0, false, false));         // tontura
+            t.addEffect(new MobEffectInstance(MobEffects.CONFUSION, dur + 60, 0, false, false));    // tontura
+            if (t instanceof ServerPlayer sp0) { lockJump(sp0); STUNNED.put(sp0.getUUID(), new int[]{dur}); }
+            t.setDeltaMovement(t.getDeltaMovement().x, Math.min(0.0, t.getDeltaMovement().y), t.getDeltaMovement().z);
         }
         if (t instanceof ServerPlayer sp) {
             int ticks = near ? 140 : 80;

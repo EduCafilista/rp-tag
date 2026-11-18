@@ -31,12 +31,15 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
     }
 
     // Dourado estilo Escanor: {raio(blocos), r, g, b, intensidade por cópia} do mais perto ao mais longe
+    // (5.74.0) PEDIDO 131: "consegue diminuir o brilho da iluminacao? nao da para ver a skin".
+    // Metade da forca de antes em cada anel: o brilho continua, mas vira contorno e nao um borrao
+    // branco por cima do corpo — da para ver a skin, a armadura e o nome.
     private static final float[][] GOLD = {
-            {0.045f, 1.00f, 0.98f, 0.78f, 0.30f},   // borda branco-amarelada
-            {0.100f, 1.00f, 0.86f, 0.35f, 0.20f},   // dourado
-            {0.180f, 1.00f, 0.62f, 0.14f, 0.13f},   // laranja
-            {0.290f, 1.00f, 0.38f, 0.10f, 0.08f},   // laranja-avermelhado
-            {0.430f, 0.95f, 0.28f, 0.30f, 0.05f},   // halo rosado
+            {0.045f, 1.00f, 0.98f, 0.78f, 0.13f},   // borda branco-amarelada
+            {0.100f, 1.00f, 0.86f, 0.35f, 0.09f},   // dourado
+            {0.180f, 1.00f, 0.62f, 0.14f, 0.06f},   // laranja
+            {0.290f, 1.00f, 0.38f, 0.10f, 0.035f},  // laranja-avermelhado
+            {0.430f, 0.95f, 0.28f, 0.30f, 0.02f},   // halo rosado
     };
 
     // Vazio: {raio, alfa por cópia}
@@ -103,9 +106,9 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
     private void gold(PoseStack ps, MultiBufferSource buf, float t) {
         PlayerModel<AbstractClientPlayer> model = getParentModel();
         float pulse = 0.92f + 0.08f * Mth.sin(t * 0.25f);
-        // pele alaranjada como na imagem (por cima do corpo)
+        // (5.74.0) a "pele alaranjada" cobria a skin: caiu de 0.55 para 0.12, so um calor de leve
         model.renderToBuffer(ps, buf.getBuffer(AuraRenderTypes.GLOW_TINT), LightTexture.FULL_BRIGHT,
-                OverlayTexture.NO_OVERLAY, argb(0.55f, 0.34f * pulse, 0.15f * pulse, 0.02f * pulse));
+                OverlayTexture.NO_OVERLAY, argb(0.12f, 0.34f * pulse, 0.15f * pulse, 0.02f * pulse));
 
         VertexConsumer vc = buf.getBuffer(AuraRenderTypes.GLOW_HULL);
         for (int ring = 0; ring < GOLD.length; ring++) {
