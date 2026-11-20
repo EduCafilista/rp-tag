@@ -202,7 +202,6 @@ public final class RPWorldData extends SavedData {
     private final Set<UUID> vazios = new HashSet<>();
 
     // ==== (4.5.0) REGRAS EM RP (padrao: tudo LIBERADO) ====
-    /** PvP permitido em RP (false = bloqueia; vale se qualquer lado estiver em RP). */
     /** Quebrar bloco permitido em RP. */
     /** Colocar bloco (e balde) permitido em RP. */
     /** (4.5.0) segundos parado ate virar AFK sozinho (0 = desligado). */

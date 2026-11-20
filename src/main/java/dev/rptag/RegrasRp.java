@@ -10,8 +10,6 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.TriState;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.fluids.FluidUtil;
@@ -23,10 +21,10 @@ import net.neoforged.neoforge.fluids.FluidUtil;
  * (e que ninguém achava: o comando era mais um passo). O comando SAIU — quem está
  * em RP já está protegido, sem configurar nada. Vale para TODOS os mundos:
  * <ul>
- *   <li><b>PvP</b> — cancela o golpe corpo a corpo ANTES do knockback/animação
- *       ({@link AttackEntityEvent}) <b>e</b> o dano indireto ({@link LivingIncomingDamageEvent}:
- *       flecha, tridente, poção, TNT — o que nomeia um jogador como responsável).
- *       Vale se QUALQUER um dos dois está em RP (a vítima em RP também é protegida);</li>
+ *   <li><b>PvP</b> — <b>REMOVIDO (5.78.2)</b>. O mod NÃO cancela mais golpe nem dano entre
+ *       jogadores: em RP ou fora dele, os players podem se bater normalmente. A regra antiga
+ *       barrava o soco e o dano indireto (flecha, tridente, poção, TNT) quando qualquer um dos
+ *       dois estava em RP — era ela que impedia as lutas;</li>
  *   <li><b>quebrar</b> — cancela {@link BlockEvent.BreakEvent} de quem está em RP;</li>
  *   <li><b>colocar</b> — cancela {@link BlockEvent.EntityPlaceEvent} e também o
  *       BALDE (água/lava/balde de mob), que não passa por EntityPlaceEvent.</li>
@@ -39,31 +37,6 @@ import net.neoforged.neoforge.fluids.FluidUtil;
 public final class RegrasRp {
 
     private RegrasRp() {
-    }
-
-    // ================================================================ PvP
-    /** Golpe corpo a corpo: barra cedo (sem knockback, sem animação de dano). */
-    @SubscribeEvent
-    public static void aoAtacar(AttackEntityEvent e) {
-        if (!(e.getEntity() instanceof ServerPlayer atacante) || !(e.getTarget() instanceof Player vitima)) return;
-        RPWorldData wd = RPWorldData.get(atacante.server);
-        if (!(wd.isInRp(atacante.getUUID()) || wd.isInRp(vitima.getUUID()))) return;
-        if (atacante.hasPermissions(2)) return;          // staff passa
-        e.setCanceled(true);
-        avisar(atacante, "PvP bloqueado: um dos dois está em RP");
-    }
-
-    /** Dano indireto (flecha, tridente, poção, TNT): sem isto o PvP cairia com um arco. */
-    @SubscribeEvent
-    public static void aoTomarDano(LivingIncomingDamageEvent e) {
-        if (!(e.getEntity() instanceof Player vitima)) return;
-        Entity responsavel = e.getSource().getEntity();
-        if (!(responsavel instanceof Player atacante) || atacante == vitima) return;
-        RPWorldData wd = RPWorldData.get(atacante.getServer());
-        if (!(wd.isInRp(atacante.getUUID()) || wd.isInRp(vitima.getUUID()))) return;
-        if (atacante.hasPermissions(2)) return;
-        e.setCanceled(true);
-        if (atacante instanceof ServerPlayer sp) avisar(sp, "PvP bloqueado: um dos dois está em RP");
     }
 
     // ================================================================ quebrar
