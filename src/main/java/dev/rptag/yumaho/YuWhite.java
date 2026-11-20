@@ -11,12 +11,14 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
  * Dimensão Branca e Amarela + troca segura de inventário.
@@ -90,9 +92,31 @@ public final class YuWhite {
         e.hasRet = true;
         v.setDirty();
         swapIn(sp);                                          // 1) cofre + troca  2) só então teleporta
-        int y = w.getHeight(Heightmap.Types.MOTION_BLOCKING, 0, 0);
-        sp.teleportTo(w, 0.5, y, 0.5, sp.getYRot(), 0f);
+        BlockPos p = spawnPos(w);
+        w.setDefaultSpawnPos(p, 0f);                         // renascer aqui também cai no chão
+        sp.teleportTo(w, p.getX() + 0.5, p.getY(), p.getZ() + 0.5, sp.getYRot(), 0f);
         return true;
+    }
+
+    /**
+     * (5.78.1) Ponto SEGURO no branco.
+     * O bug: o chunk central ainda não existia quando getHeight() foi chamado, então ele devolvia
+     * o min_y (y=0) e o jogador nascia DENTRO da bedrock. Agora o chunk é gerado antes e, se o
+     * chão não vier, um piso de quartzo é assentado na hora.
+     */
+    public static BlockPos spawnPos(ServerLevel w) {
+        final int x = 0, z = 0;
+        w.getChunk(x >> 4, z >> 4);                                  // 1) gera o chunk (isso é o conserto)
+        int min = w.getMinBuildHeight();
+        int y = w.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        if (y <= min + 1) y = min + 64;                              // 2) piso do branco: topo em min_y + 63
+        BlockPos p = new BlockPos(x, y, z);
+        if (!w.getBlockState(p.below()).isSolid()) {                 // 3) sem chão? assenta um
+            for (int dx = -2; dx <= 2; dx++)
+                for (int dz = -2; dz <= 2; dz++)
+                    w.setBlockAndUpdate(p.offset(dx, -1, dz), Blocks.QUARTZ_BLOCK.defaultBlockState());
+        }
+        return p;
     }
 
     public static boolean exit(ServerPlayer sp) {
@@ -122,6 +146,19 @@ public final class YuWhite {
     public static void changed(PlayerEvent.PlayerChangedDimensionEvent e) {
         if (!(e.getEntity() instanceof ServerPlayer sp)) return;
         if (e.getTo().equals(WHITE)) swapIn(sp); else swapOut(sp);
+    }
+
+    /**
+     * (5.78.1) Rede de segurança: quem já ficou preso abaixo da bedrock (posição salva de antes
+     * do conserto, /tp errado, portal) é puxado para a superfície do branco no tick seguinte.
+     */
+    @SubscribeEvent
+    public static void tick(PlayerTickEvent.Post e) {
+        if (!(e.getEntity() instanceof ServerPlayer sp) || !inWhite(sp)) return;
+        ServerLevel w = sp.server.getLevel(WHITE);
+        if (w == null || sp.getY() >= w.getMinBuildHeight() + 1) return;
+        BlockPos p = spawnPos(w);
+        sp.teleportTo(w, p.getX() + 0.5, p.getY(), p.getZ() + 0.5, sp.getYRot(), sp.getXRot());
     }
 
     /** Login: se o estado do cofre e a dimensão não batem (crash, dimensão removida), corrige. */
