@@ -53,6 +53,10 @@ public final class ClientEffects {
 
     private static volatile long fearStart = 0;
     private static volatile long fearUntil = 0;
+    /** (5.78.4) NÍVEL do medo: 1 = normal (RP), 2+ = medo do VAZIO (empurra mais forte). */
+    private static volatile int fearNivel = 1;
+    /** (5.78.4) último batimento de coração tocado (medo do vazio). */
+    private static volatile long ultimoBatimento = 0L;
     private static volatile String screenText = null;
     private static volatile long textStart = 0;
     private static volatile long textDuration = 0;
@@ -590,11 +594,24 @@ public final class ClientEffects {
     /** Mede o quanto o MEDO esta ativo (0..1), com entrada/saida suaves. */
     private static float fearAmp(long now) {
         if (now >= fearUntil) {
+            fearNivel = 1;
             return 0.0F;
         }
         float elapsed = (now - fearStart) / 1000.0F;
         float remaining = (fearUntil - now) / 1000.0F;
-        return Math.min(1.0F, elapsed / 0.25F) * Math.min(1.0F, remaining);
+        // (5.78.4) o medo do vazio vem em nível 1 e por isso EMPURRA mais que o medo comum
+        float forca = Math.min(1.45F, 1.0F + 0.30F * Math.max(0, fearNivel - 1));
+        return Math.min(1.0F, elapsed / 0.22F) * Math.min(1.0F, remaining) * forca;
+    }
+
+    /** (5.78.4) "dor de cabeça": a tela aperta e afrouxa no ritmo do coração (medo do vazio). */
+    private static float apertoDeCabeca(long now, float amp) {
+        if (fearNivel < 2) {
+            return 0.0F;
+        }
+        float t = now * 0.001F;
+        float bate = (float) Math.sin(t * 5.4F);          // ~1,16 s por batida
+        return amp * (0.18F + 0.82F * bate * bate);       // pancada forte, pausa curta
     }
 
     /**
@@ -624,6 +641,21 @@ public final class ClientEffects {
             // O MEDO ESCONDE: veu azul-noite REFORCADO pulsando com a tremedeira
             int veil = (int) (208 * amp);
             g.fill(0, 0, w, h, (veil << 24) | 0x05070F);
+            // (5.78.4) MEDO DO VAZIO: a tela aperta no ritmo do coração (a "dor de cabeça")
+            float cabeca = apertoDeCabeca(now, amp);
+            if (cabeca > 0.01F) {
+                int aperto = (int) Math.min(150.0F, 150.0F * cabeca);
+                g.fill(0, 0, w, h, (aperto << 24) | 0x0A0206);
+                // e as bordas fecham mais: uma moldura escura de 8% da tela em cada lado
+                int bx = Math.max(6, w / 14);
+                int by = Math.max(6, h / 14);
+                int borda = (int) Math.min(190.0F, 190.0F * cabeca);
+                int cor = (borda << 24) | 0x03010A;
+                g.fill(0, 0, w, by, cor);
+                g.fill(0, h - by, w, h, cor);
+                g.fill(0, 0, bx, h, cor);
+                g.fill(w - bx, 0, w, h, cor);
+            }
             // icone do efeito piscando no canto (igual HUD vanilla)
             com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F,
                     Math.min(1.0F, amp * 1.2F));
@@ -653,10 +685,11 @@ public final class ClientEffects {
                 return;
             }
             float t = now * 0.001F;
-            float roll = 2.1F * amp * (float) Math.sin(t * 18.0)
-                    + 0.8F * amp * (float) Math.sin(t * 31.7);
-            float yaw = 0.9F * amp * (float) Math.sin(t * 13.3 + 1.7);
-            float pitch = 0.7F * amp * (float) Math.sin(t * 16.1 + 0.6);
+            float empurra = (float) Math.min(2.2F, 1.0F + 0.55F * Math.max(0, fearNivel - 1));
+            float roll = (2.1F * amp * (float) Math.sin(t * 18.0)
+                    + 0.8F * amp * (float) Math.sin(t * 31.7)) * empurra;
+            float yaw = 0.9F * amp * (float) Math.sin(t * 13.3 + 1.7) * empurra;
+            float pitch = 0.7F * amp * (float) Math.sin(t * 16.1 + 0.6) * empurra;
             event.setRoll(event.getRoll() + roll);
             event.setYaw(event.getYaw() + yaw);
             event.setPitch(event.getPitch() + pitch);
@@ -688,6 +721,17 @@ public final class ClientEffects {
             if (local != null) {
                 var inst = local.getEffect(RPEffects.MEDO);
                 if (inst != null) {
+                    // (5.78.4) o NÍVEL do efeito diz se é o medo do vazio (>= 1)
+                    fearNivel = Math.max(1, inst.getAmplifier() + 1);
+                    if (fearNivel >= 2 && now - ultimoBatimento > 900L) {
+                        ultimoBatimento = now;
+                        try {   // o coração do Warden: batida grave, baixa, no ouvido
+                            local.playSound(net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT,
+                                    0.55F, 0.78F);
+                        } catch (Throwable ignorado) {
+                            // som indisponível: o resto do medo continua
+                        }
+                    }
                     long restoMs = Math.max(300L, Math.min(inst.getDuration() * 50L, 600_000L));
                     if (fearUntil < now) {
                         fearStart = now; // (re)comecou agora

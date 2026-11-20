@@ -68,6 +68,24 @@ public final class VazioPoderes {
 
     private static final Map<String, Long> PRONTO = new ConcurrentHashMap<>();
 
+    // ================================================================ DANO (5.78.4)
+    /**
+     * (5.78.4) PEDIDO DO DONO: <i>"aumentar o dano das habilidades do vazio"</i>.
+     *
+     * <p>Antes: raio e orbe tiravam <b>16</b>, a onda 9, os olhos 7 e as penas 10 — com uma
+     * armadura boa dava para atravessar um combo inteiro e sair vivo. Agora o vazio morde de
+     * verdade. Todo dano aqui passa por {@link #ferir}, que zera a invulnerabilidade e usa
+     * fonte que <b>ignora armadura</b>: número alto é número que entra.
+     *
+     * <p>Ajustar é só mexer nestas constantes (nada espalhado pelo arquivo).
+     */
+    public static final float DANO_RAIO = 34.0F;       // era 16
+    public static final float DANO_ORBE = 30.0F;       // era 16 (impacto direto)
+    public static final float DANO_ORBE_AREA = 18.0F;  // era 9  (estouro em volta)
+    public static final float DANO_ONDA = 22.0F;       // era 9
+    public static final float DANO_OLHOS = 16.0F;      // era 7
+    public static final float DANO_PENAS = 20.0F;      // era 10
+
     /** (5.31.0) a ORDEM DO LEQUE (teclas 1..6) — igual ao {@code PoderLeque} do cliente. */
     public static Poder poderPorIndice(int i) {
         Poder[] ordem = {Poder.RAIO, Poder.ORBE, Poder.ONDA, Poder.OLHOS, Poder.PENAS, Poder.BANIR};
@@ -206,7 +224,7 @@ public final class VazioPoderes {
             if (distancia > 2.2D) {
                 continue;   // fora do cano do raio
             }
-            if (ferir(p, alvo, 16.0F)) {
+            if (ferir(p, alvo, DANO_RAIO)) {
                 acertos++;
             }
             alvo.setRemainingFireTicks(100);
@@ -274,7 +292,7 @@ public final class VazioPoderes {
 
         // o dano direto em quem foi atingido
         if (acertado != null) {
-            ferir(p, acertado, 16.0F);
+            ferir(p, acertado, DANO_ORBE);
             acertado.setRemainingFireTicks(100);
             acertado.push(dir.x * 0.8D, 0.35D, dir.z * 0.8D);
         }
@@ -285,7 +303,7 @@ public final class VazioPoderes {
                 new AABB(onde.x - 4.0D, onde.y - 4.0D, onde.z - 4.0D,
                         onde.x + 4.0D, onde.y + 4.0D, onde.z + 4.0D),
                 e -> e != p && e != jaAtingido && e.isAlive())) {
-            ferir(p, perto, 9.0F);
+            ferir(p, perto, DANO_ORBE_AREA);
             perto.setRemainingFireTicks(60);
             Vec3 fora = perto.position().subtract(onde).normalize().scale(0.6D);
             perto.push(fora.x, 0.35D, fora.z);
@@ -325,7 +343,7 @@ public final class VazioPoderes {
             if (ate.normalize().dot(dir) < 0.45D) {
                 continue;   // só o que está na frente
             }
-            ferir(p, alvo, 9.0F);
+            ferir(p, alvo, DANO_ONDA);
             alvo.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 6, false, false));
             alvo.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 100, 1, false, false));
             alvo.push(ate.x * 0.25D, 0.4D, ate.z * 0.25D);
@@ -350,7 +368,7 @@ public final class VazioPoderes {
             if (ate.normalize().dot(dir) < 0.5D) {
                 continue;
             }
-            ferir(p, alvo, 7.0F);
+            ferir(p, alvo, DANO_OLHOS);
             mandar(lv, p, 3, olho, alvo.position().add(0, alvo.getBbHeight() * 0.5D, 0));
             n++;
             if (n >= 8) {
@@ -375,7 +393,7 @@ public final class VazioPoderes {
         for (LivingEntity e : lv.getEntitiesOfClass(LivingEntity.class,
                 new AABB(alvo.x - 8, alvo.y - 5, alvo.z - 8, alvo.x + 8, alvo.y + 5, alvo.z + 8),
                 e -> e != p && e.isAlive())) {
-            ferir(p, e, 10.0F);
+            ferir(p, e, DANO_PENAS);
             e.setRemainingFireTicks(60);
             atingidos++;
         }

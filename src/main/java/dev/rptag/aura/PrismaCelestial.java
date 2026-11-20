@@ -34,11 +34,15 @@ import java.util.*;
 public final class PrismaCelestial {
     public static final int CHARGE_TICKS = 20;        // concentração
     public static final int FIRE_TICKS = 40;          // raio ativo
-    public static final double RANGE = 60.0;
-    private static final double BEAM_RADIUS = 1.2;    // largura de acerto do raio
-    private static final float DAMAGE = 6.0f;         // por pulso (5 pulsos/s = 30/s no centro do raio)
+    // (5.78.4) PEDIDO DO DONO: "aumenta o range e dano do arcoiris (nao pega em player)".
+    public static final double RANGE = 90.0;          // era 60 — o raio agora cruza o horizonte
+    private static final double BEAM_RADIUS = 2.0;    // era 1,2 — mais grosso, mais facil de acertar
+    private static final float DAMAGE = 14.0f;        // era 6 (por pulso: 5 pulsos/s = 70/s no centro)
     private static final int PULSE_EVERY = 4;
-    /** false = o raio não machuca jogadores (seguro para RP); mude para true para PvP. */
+    /**
+     * false = o raio NÃO machuca jogadores (seguro para RP).
+     * (5.78.4) o dono confirmou de novo: <i>"nao pega em player"</i> — continua false.
+     */
     private static final boolean HURTS_PLAYERS = false;
     private static final int COOLDOWN_TICKS = 240;    // 12 s
 

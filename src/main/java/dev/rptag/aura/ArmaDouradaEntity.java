@@ -28,7 +28,7 @@ public class ArmaDouradaEntity extends Projectile {
      * (5.63.0) o dono pediu pra AUMENTAR o dano do ataque da iluminacao: 8 -> 20 (10 coracoes por
      * arma). Sao 2 armas por tick durante 1,5 s, entao e um ataque pra acabar com qualquer bicho.
      */
-    public static final float DANO = 20.0f;
+    public static final float DANO = 34.0f;   // (5.78.4) era 20 — o dono pediu mais dano na iluminacao
     /**
      * (5.71.0) AGORA MACHUCA JOGADOR. O dono: <i>"os ataques do portao da iluminacao nao esta
      * pegando em player"</i> — estava em false e o {@code onHitEntity} simplesmente ignorava

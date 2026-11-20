@@ -1207,7 +1207,7 @@ public final class NeptuneEventos {
                     long prox = PROXIMO_MEDO.getOrDefault(outro.getUUID(), 0L);
                     if (agora >= prox) {
                         PROXIMO_MEDO.put(outro.getUUID(), agora + 6000);
-                        outro.addEffect(new MobEffectInstance(RPEffects.MEDO, 140, 0, false, false, true));
+                        medoDoVazio(outro, 220);          // (5.78.4) era MEDO nivel 0 por 7 s
                         PacketDistributor.sendToPlayer(outro, new FearPayload(7));
                         outro.displayClientMessage(Component.literal(
                                 "\u00a78O ar fica pesado. Alguma coisa aqui não é daqui."), true);
@@ -1572,6 +1572,38 @@ public final class NeptuneEventos {
 
     // =================================================================== SAÍDA
     /** Agenda a saída: sombras crescem agora, kick depois de segundos. */
+    /**
+     * (5.78.4) <b>O MEDO DO VAZIO, AGORA DE VERDADE</b> — pedido do dono:
+     * <i>"esse medo que o vazio coloca, deixa de forma mais eficaz"</i>.
+     *
+     * <p>Antes era o efeito MEDO em nível 0 por 5 a 10 segundos: tremia um pouco e passava.
+     * Agora o vazio aplica o medo em <b>nível 1</b> (o cliente lê o nível e empurra mais forte:
+     * tremida maior, véu mais fechado e a tela apertando no ritmo do coração) e soma o que dá
+     * a sensação de <b>dor de cabeça</b>:
+     * <ul>
+     *   <li>{@code rptag:medo} nível 1 — o pânico em si;</li>
+     *   <li><b>náusea</b> ({@link MobEffects#CONFUSION}) — a tela ondula e embaralha, é o que
+     *       dá aquele aperto na cabeça;</li>
+     *   <li><b>escuridão</b> ({@link MobEffects#DARKNESS}) — o ar parece faltar;</li>
+     *   <li><b>lentidão</b> leve — as pernas pesam.</li>
+     * </ul>
+     *
+     * @param ticks duração do MEDO em ticks (o resto entra proporcional)
+     */
+    public static void medoDoVazio(ServerPlayer p, int ticks) {
+        if (p == null) {
+            return;
+        }
+        try {
+            p.addEffect(new MobEffectInstance(RPEffects.MEDO, ticks, 1, false, false, true));
+            p.addEffect(new MobEffectInstance(MobEffects.CONFUSION, Math.max(60, ticks / 2), 0, false, false, true));
+            p.addEffect(new MobEffectInstance(MobEffects.DARKNESS, Math.max(40, ticks / 3), 0, false, false, true));
+            p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, Math.max(40, ticks / 4), 0, false, false, false));
+        } catch (Throwable t) {
+            RPTagMod.LOGGER.warn("RP Tag: medo do vazio falhou (o jogo segue)", t);
+        }
+    }
+
     public static void sairDoServidor(ServerPlayer p, int segundos, String motivo) {
         PacketDistributor.sendToPlayer(p, new NeptunePackets.Saida(segundos, p.getName().getString()));
         ServerLevel nv = (ServerLevel) p.level();
@@ -1591,7 +1623,7 @@ public final class NeptuneEventos {
             }
             double d = outro.position().distanceTo(pos);
             if (d <= 24.0) {
-                outro.addEffect(new MobEffectInstance(RPEffects.MEDO, 100, 0, false, false, true));
+                medoDoVazio(outro, 200);          // (5.78.4) era MEDO nivel 0 por 5 s
                 outro.playNotifySound(net.minecraft.sounds.SoundEvents.SOUL_ESCAPE.value(),
                         SoundSource.AMBIENT, 0.7F, 0.5F);
                 outro.displayClientMessage(Component.literal(
@@ -1861,7 +1893,7 @@ public final class NeptuneEventos {
         nv.sendParticles(ParticleTypes.SMOKE, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                 40, 0.4, 0.4, 0.4, 0.02);
         nv.removeBlock(pos, false);
-        quem.addEffect(new MobEffectInstance(RPEffects.MEDO, 200, 0, false, false, true));
+        medoDoVazio(quem, 300);           // (5.78.4) era MEDO nivel 0 por 10 s
         quem.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 1, false, false, false));
         nv.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
                 "\u00a78\u00a7oA caixinha parou de tocar.").withStyle(ChatFormatting.DARK_GRAY), false);
