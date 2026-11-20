@@ -31,7 +31,12 @@ def javas():
 
 
 # ---------------------------------------------------------------- 1. pacotes registrados
+# (5.78.0) pacotes podem ser registrados em arquivo proprio (YuNetwork do yumaho):
+# vale qualquer arquivo que tenha o PayloadRegistrar.
 fonte_net = ler(os.path.join(JAVA, "ModNetworking.java"))
+for _caminho, _txt in javas():
+    if "PayloadRegistrar" in _txt and _caminho.endswith(".java"):
+        fonte_net += "\n" + _txt
 for caminho, txt in javas():
     nome = os.path.basename(caminho)[:-5]
     if "implements CustomPacketPayload" not in txt:

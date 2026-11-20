@@ -39,7 +39,8 @@ public final class ModNetworking {
         // (5.60.0) v19: ILUMINACAO_PORTOES (a tecla do poder da aura dourada)
         // (5.61.0) v20: FICHA_SKIN (a skin que fica guardada no tablet)
         // (5.62.0) v21: ROAR (a tecla do rugido) e ROAR_FX (a onda sonora no cliente)
-        PayloadRegistrar registrar = event.registrar("21");
+        // (5.78.0) v22: entraram os canais do YU-MAHO (yu_action / yu_fx)
+        PayloadRegistrar registrar = event.registrar("22");
         registrar.playToClient(TabletSyncPayload.TYPE, TabletSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTablet);
         // (5.13.0) o portal negro do vazio (posicao, pedestais, estado da abertura)
@@ -193,6 +194,8 @@ public final class ModNetworking {
         // (5.7.2) SISTEMA DE TÍTULOS (etiqueta colorida + título pessoal)
         registrar.playToClient(TituloSyncPayload.TYPE, TituloSyncPayload.STREAM_CODEC,
                 ClientPayloadHandler::handleTitulo);
+        // (5.78.0) PEDIDO 136: YU-MAHO (poder, smokescreen, fa jin, blackwhip, gearshift)
+        dev.rptag.yumaho.YuNetwork.register(registrar);
         // (5.76.0) PEDIDO 133: o TERREMOTO ganhou o VISUAL NOVO do dono (ceu carmesim, lua de
         // sangue, tela balançando como corrida, neblina carmesim e filtro vermelho na tela).
         registrar.playToClient(dev.rptag.aura.QuakeStatePayload.TYPE,

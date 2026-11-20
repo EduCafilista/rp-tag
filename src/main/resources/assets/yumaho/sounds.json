@@ -1,0 +1,5 @@
+{
+  "hit":     { "sounds": [ { "name": "yumaho:hit" } ],     "subtitle": "subtitles.yumaho.hit" },
+  "release": { "sounds": [ { "name": "yumaho:release" } ], "subtitle": "subtitles.yumaho.release" },
+  "whip":    { "sounds": [ { "name": "yumaho:whip" } ],    "subtitle": "subtitles.yumaho.whip" }
+}

@@ -32,6 +32,10 @@
   "entity.rptag.golden_weapon": "Arma Dourada",
   "key.rptag.rugido": "Rugido do Macaco",
   "key.rptag.prisma": "Prisma Celestial",
-  "key.rptag.gravity_wheel": "Roda da Gravidade",
-  "key.rptag.gravity_aura": "Aura da Gravidade (liga/desliga)"
+  "key.rptag.gravity_wheel": "Roda de Gravidade",
+  "key.rptag.gravity_aura": "Aura de Gravidade",
+  "key.rptag.gates": "Portões da Babilônia",
+  "key.rptag.roar": "Rugido do Macaco",
+  "key.rptag.rainbow": "Prisma Celestial",
+  "entity.rptag.smoke_cloud": "Nuvem de Fumaça"
 }

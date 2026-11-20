@@ -1,0 +1,18 @@
+{
+  "type": "yumaho:white",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "yumaho:white",
+      "features": false,
+      "lakes": false,
+      "layers": [
+        { "block": "minecraft:bedrock",        "height": 1 },
+        { "block": "minecraft:white_concrete", "height": 60 },
+        { "block": "minecraft:quartz_block",   "height": 2 },
+        { "block": "minecraft:yellow_concrete", "height": 1 }
+      ],
+      "structure_overrides": []
+    }
+  }
+}

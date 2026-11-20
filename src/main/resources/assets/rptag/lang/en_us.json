@@ -33,5 +33,9 @@
   "key.rptag.rugido": "Monkey Roar",
   "key.rptag.prisma": "Celestial Prism",
   "key.rptag.gravity_wheel": "Gravity Wheel",
-  "key.rptag.gravity_aura": "Gravity Aura (toggle)"
+  "key.rptag.gravity_aura": "Gravity Aura",
+  "key.rptag.gates": "Gate of Babylon",
+  "key.rptag.roar": "Monkey Roar",
+  "key.rptag.rainbow": "Celestial Prism",
+  "entity.rptag.smoke_cloud": "Smoke Cloud"
 }
