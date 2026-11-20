@@ -64,6 +64,12 @@ public final class MorteTelaRp extends DeathScreen {
      *                  sol tem que ser um aviso, que morreu pegando fogo por causa do sol"</i>
      */
     public static void definirMorte(boolean canonVida, boolean foiOSol) {
+        // (5.78.3) com mod de revive instalado a tela é do vanilla: o PlayerRevive mostra o
+        // recado de "te levantam em 60 s" DENTRO dela e o clique de reviver acontece ali.
+        if (!dev.rptag.ReviveCompat.podeUsarTelaPropria()) {
+            esquecer();
+            return;
+        }
         canon = canonVida;
         peloSol = foiOSol;
         avisado = true;
@@ -80,7 +86,7 @@ public final class MorteTelaRp extends DeathScreen {
      */
     @SubscribeEvent
     public static void aoAbrirTela(ScreenEvent.Opening event) {
-        if (canon || !avisado) {
+        if (canon || !avisado || !dev.rptag.ReviveCompat.podeUsarTelaPropria()) {
             return;
         }
         var nova = event.getNewScreen();

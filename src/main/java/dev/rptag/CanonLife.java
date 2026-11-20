@@ -102,11 +102,15 @@ public final class CanonLife {
         //   canon = false -> morte FORA DE RP: o cliente escurece a tela e deixa só os botões;
         //   canon = true  -> vida canônica: o ritual (véu, trovão, aviso) continua igual.
         // (5.25.2) vai também "esta morte foi o sol?" (sol = true) pra trocar a atmosfera da tela.
-        try {
-            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(vitima,
-                    new MorteRpPayload(wd.isCanonEvent(), peloSol));
-        } catch (Throwable t) {
-            RPTagMod.LOGGER.warn("RP Tag: aviso da tela de morte falhou", t);
+        // (5.78.3) COM MOD DE REVIVE NÃO MANDA NADA: a tela tem que ser a do vanilla para o
+        // PlayerRevive mostrar o "te levantam em 60 s" e aceitar o clique de quem revive.
+        if (!dev.rptag.ReviveCompat.temRevive()) {
+            try {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(vitima,
+                        new MorteRpPayload(wd.isCanonEvent(), peloSol));
+            } catch (Throwable t) {
+                RPTagMod.LOGGER.warn("RP Tag: aviso da tela de morte falhou", t);
+            }
         }
         if (!wd.isCanonEvent()) {
             return;
