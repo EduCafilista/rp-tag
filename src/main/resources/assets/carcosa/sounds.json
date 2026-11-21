@@ -1,0 +1,104 @@
+{
+ "whisper": {
+  "sounds": [
+   {
+    "name": "carcosa:whisper1",
+    "stream": false
+   },
+   {
+    "name": "carcosa:whisper2",
+    "stream": false
+   },
+   {
+    "name": "carcosa:whisper3",
+    "stream": false
+   }
+  ],
+  "subtitle": "subtitles.carcosa.whisper"
+ },
+ "laugh": {
+  "sounds": [
+   {
+    "name": "carcosa:laugh1",
+    "stream": false
+   },
+   {
+    "name": "carcosa:laugh2",
+    "stream": false
+   }
+  ],
+  "subtitle": "subtitles.carcosa.laugh"
+ },
+ "decree": {
+  "sounds": [
+   {
+    "name": "carcosa:decree",
+    "stream": false
+   }
+  ],
+  "subtitle": "subtitles.carcosa.decree"
+ },
+ "chains": {
+  "sounds": [
+   {
+    "name": "carcosa:chains",
+    "stream": false
+   }
+  ],
+  "subtitle": "subtitles.carcosa.chains"
+ },
+ "portal": {
+  "sounds": [
+   {
+    "name": "carcosa:portal",
+    "stream": false
+   }
+  ],
+  "subtitle": "subtitles.carcosa.portal"
+ },
+ "hastur_charge": {
+  "sounds": [
+   {
+    "name": "carcosa:hastur_charge",
+    "stream": false
+   }
+  ],
+  "subtitle": "subtitles.carcosa.hastur_charge"
+ },
+ "hastur_beam": {
+  "sounds": [
+   {
+    "name": "carcosa:hastur_beam",
+    "stream": false
+   }
+  ],
+  "subtitle": "subtitles.carcosa.hastur_beam"
+ },
+ "meteor": {
+  "sounds": [
+   {
+    "name": "carcosa:meteor",
+    "stream": false
+   }
+  ],
+  "subtitle": "subtitles.carcosa.meteor"
+ },
+ "realm": {
+  "sounds": [
+   {
+    "name": "carcosa:realm",
+    "stream": false
+   }
+  ],
+  "subtitle": "subtitles.carcosa.realm"
+ },
+ "wave": {
+  "sounds": [
+   {
+    "name": "carcosa:wave",
+    "stream": false
+   }
+  ],
+  "subtitle": "subtitles.carcosa.wave"
+ }
+}

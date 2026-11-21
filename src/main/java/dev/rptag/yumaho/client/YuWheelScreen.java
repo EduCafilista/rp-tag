@@ -33,6 +33,21 @@ public final class YuWheelScreen extends Screen {
             "Prende no alvo/bloco e puxa VOCÊ até lá"};
     private static final float RI0 = 44f, RI1 = 88f, RO0 = 94f, RO1 = 132f;
     private int hoverIn = -1, hoverOut = -1;
+    /**
+     * (5.78.6) BOTOES DAS HABILIDADES na propria roda — o dono: <i>"tem que ter essa roda de
+     * habilidades, se nao fica muitos comandos e teclas, em modpack vai ficar ruim"</i>.
+     * Cada botao manda a acao da habilidade; as teclas continuam valendo, mas viram opcionais.
+     */
+    private static final String[][] BOTOES = {
+            {"Fumaça", "Z", "smoke"},
+            {"Fa Jin", "F", "fajin_full"},
+            {"Blackwhip", "B", "whip"},
+            {"Acelerar", "N", "gear"},
+            {"Desacelerar", "M", "gear_slow"},
+            {"Agarrar", "K", "grab"},
+    };
+    private static final int BTN_W = 150, BTN_H = 20, BTN_GAP = 26;
+    private int hoverBtn = -1;
 
     public YuWheelScreen() { super(Component.translatable("screen.yumaho.power")); }
 
@@ -88,6 +103,7 @@ public final class YuWheelScreen extends Screen {
             boolean act = i == md, hov = i == hoverOut;
             sector(g, cx, cy, RO0, hov ? RO1 + 6 : RO1, i * 90 - 45, i * 90 + 45, ((hov ? 0xE0 : act ? 0xB8 : 0x55) << 24) | modeCol[i]);
         }
+        botoes(g, cx, cy, mx, my);
         gear(g, cx, cy, 34f, 28f, tms * (0.6f + pw / 40f), pw);
         RenderSystem.disableBlend();
 
@@ -109,7 +125,7 @@ public final class YuWheelScreen extends Screen {
             g.drawCenteredString(font, Component.literal("Poder " + LEVELS[hoverIn] + "%"), cx, cy + 150, 0xFFFFFF);
             g.drawCenteredString(font, Component.literal("Define a intensidade de todas as habilidades"), cx, cy + 162, 0xFFE9A0);
         } else {
-            g.drawCenteredString(font, Component.literal("Dentro: poder · Fora: modo do chicote · Roda do mouse: ±5% · U ou ESC fecha"), cx, cy + 150, 0xAAAAAA);
+            g.drawCenteredString(font, Component.literal("Esquerda: habilidades · Dentro: poder · Fora: modo do chicote · Roda do mouse: ±5% · U ou ESC fecha"), cx, cy + 150, 0xAAAAAA);
         }
     }
 
@@ -145,9 +161,41 @@ public final class YuWheelScreen extends Screen {
         BufferUploader.drawWithShader(bb.buildOrThrow());
     }
 
+    /** Coluna de botoes das habilidades (esquerda da roda). */
+    private void botoes(GuiGraphics g, int cx, int cy, int mx, int my) {
+        int x = cx - 250, y0 = cy - (BOTOES.length * BTN_GAP) / 2;
+        hoverBtn = -1;
+        g.drawString(font, "HABILIDADES", x + 4, y0 - 14, 0xFFE566, true);
+        for (int i = 0; i < BOTOES.length; i++) {
+            int y = y0 + i * BTN_GAP;
+            boolean hov = mx >= x && mx <= x + BTN_W && my >= y && my <= y + BTN_H;
+            if (hov) hoverBtn = i;
+            int fundo = hov ? 0xD8F0C040 : 0x8A201A08;
+            g.fill(x, y, x + BTN_W, y + BTN_H, fundo);
+            g.fill(x, y, x + 2, y + BTN_H, 0xFFFFD84A);
+            g.drawString(font, BOTOES[i][0], x + 8, y + 6, hov ? 0xFF202A : 0xFFF3E0, true);
+            g.drawString(font, "[" + BOTOES[i][1] + "]", x + BTN_W - 26, y + 6, 0xFFC060, true);
+        }
+    }
+
+    /** Manda a acao da habilidade escolhida na roda. */
+    private void lancar(int i) {
+        int acao = switch (BOTOES[i][2]) {
+            case "fajin_full" -> YuAbilities.A_FAJIN_FULL;
+            case "whip" -> YuAbilities.A_WHIP;
+            case "gear" -> YuAbilities.A_GEAR;
+            case "gear_slow" -> YuAbilities.A_GEAR_SLOW;
+            case "grab" -> YuAbilities.A_GRAB;
+            default -> YuAbilities.A_SMOKE;
+        };
+        PacketDistributor.sendToServer(new YuActionPayload(acao, 0));
+        onClose();                                  // fecha para a habilidade aparecer na hora
+    }
+
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (button != 0) return super.mouseClicked(mx, my, button);
+        if (hoverBtn >= 0) { lancar(hoverBtn); return true; }
         if (hoverIn >= 0) { setPower(LEVELS[hoverIn]); return true; }
         if (hoverOut >= 0) { setMode(hoverOut); return true; }
         return super.mouseClicked(mx, my, button);

@@ -43,7 +43,9 @@ public final class YuAbilities {
     public static final int A_SET_POWER = 0, A_SMOKE = 1, A_FAJIN_START = 2, A_FAJIN_RELEASE = 3,
             A_WHIP = 4, A_GEAR = 5, A_POWER_DELTA = 6,
             // (5.78.5) o que veio no pacote do Drive: soltar o chicote, modo do chicote, agarrar e desacelerar
-            A_WHIP_RELEASE = 7, A_WHIP_MODE = 8, A_GRAB = 9, A_GEAR_SLOW = 10;
+            A_WHIP_RELEASE = 7, A_WHIP_MODE = 8, A_GRAB = 9, A_GEAR_SLOW = 10,
+            /** (5.78.6) Fa Jin de um clique (usado pela roda, para nao precisar segurar tecla). */
+            A_FAJIN_FULL = 11;
     private static final int SM = 0, FJ = 1, WH = 2, GR = 3, GS = 4;
     private static final String[] NAMES = {"smoke", "fajin", "whip", "gear", "gear_slow"};
 
@@ -79,6 +81,7 @@ public final class YuAbilities {
             case A_WHIP_MODE -> sp.setData(YuAttachments.WHIP_MODE.get(), Mth.clamp(arg, 0, 3));
             case A_GEAR -> gear(sp);
             case A_GEAR_SLOW -> gearSlow(sp);
+            case A_FAJIN_FULL -> fajinFull(sp);
             default -> {}
         }
     }
@@ -135,6 +138,21 @@ public final class YuAbilities {
     private static void setEnergy(ServerPlayer sp, int v) {
         v = Mth.clamp(v, 0, 100);
         if (sp.getData(YuAttachments.ENERGY.get()) != v) sp.setData(YuAttachments.ENERGY.get(), v);
+    }
+
+    /**
+     * (5.78.6) FA JIN DE UM CLIQUE — para a RODA (U). Em modpack ninguem quer decorar teclas:
+     * o botao da roda enche a carga e libera na hora, como se tivesse segurado o F.
+     */
+    private static void fajinFull(ServerPlayer sp) {
+        if (CHARGE.containsKey(sp.getUUID())) {          // ja estava carregando: solta o que tem
+            fajinRelease(sp);
+            return;
+        }
+        if (needsPower(sp) || !ready(sp, FJ)) return;
+        CHARGE.put(sp.getUUID(), Math.max(1, Math.round(YuConfig.FJ_CHARGE.get().floatValue() * 20f)));
+        setEnergy(sp, 100);
+        fajinRelease(sp);
     }
 
     private static void fajinRelease(ServerPlayer sp) {

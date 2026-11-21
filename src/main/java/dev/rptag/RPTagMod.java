@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.78.5";
+    public static final String VERSION = "5.78.6";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -66,7 +66,7 @@ public final class RPTagMod {
             SOUNDS.register("inferno_aviso", () -> SoundEvent.createVariableRangeEvent(
                     ResourceLocation.fromNamespaceAndPath(MODID, "inferno_aviso")));
 
-    // (5.78.5) PEDIDO 132: a trilha do aviso EGIPCIO saiu junto com o aviso.
+    // (5.78.6) PEDIDO 132: a trilha do aviso EGIPCIO saiu junto com o aviso.
 
     /** (4.9.5) SOM do aviso CIBERPSICOSE: o áudio que o dono mandou (catbox
      *  mkqz2x.mp3, 4,05 s), convertido pra .ogg/Vorbis em arte/previa_mascara3d.py.
@@ -287,12 +287,14 @@ public final class RPTagMod {
         // nao consegue serializar a arvore de comandos e o cliente cai com
         // "Invalid player data" (IllegalArgumentException em ArgumentTypeInfos.byClass).
         RpArgumentTypes.ARGUMENT_TYPES.register(modEventBus);
-        // (5.78.5) PEDIDO 136: as habilidades de YU-MAHO entraram no mod
+        // (5.78.6) PEDIDO 136: as habilidades de YU-MAHO entraram no mod
         // (anexos, entidade da nuvem, sons e a config rptag-yumaho.toml).
         dev.rptag.yumaho.YuMaho.init(modEventBus, modContainer);
-        // (5.78.5) config do proprio mod: ligar/desligar a tela de morte
+        // (5.78.6) O REI DE AMARELO (Carcosa): aura /rei, roda de 7 habilidades e passiva
+        dev.rptag.king.King.init(modEventBus, modContainer);
+        // (5.78.6) config do proprio mod: ligar/desligar a tela de morte
         modContainer.registerConfig(ModConfig.Type.CLIENT, RpConfig.SPEC, "rptag-client.toml");
-        // (5.78.5) deixa no log, logo na subida, se existe mod de revive (fica facil de conferir)
+        // (5.78.6) deixa no log, logo na subida, se existe mod de revive (fica facil de conferir)
         ReviveCompat.temRevive();
         // (5.60.0) A AURA DE ILUMINACAO (/iluminacao): o anexo do jogador e a arma dourada
         AuraIluminacao.init(modEventBus);

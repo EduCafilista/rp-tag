@@ -196,6 +196,7 @@ public final class ModNetworking {
                 ClientPayloadHandler::handleTitulo);
         // (5.78.0) PEDIDO 136: YU-MAHO (poder, smokescreen, fa jin, blackwhip, gearshift)
         dev.rptag.yumaho.YuNetwork.register(registrar);
+        dev.rptag.king.KingNetwork.register(registrar);      // (5.78.6) roda e efeitos do Rei de Amarelo
         // (5.76.0) PEDIDO 133: o TERREMOTO ganhou o VISUAL NOVO do dono (ceu carmesim, lua de
         // sangue, tela balançando como corrida, neblina carmesim e filtro vermelho na tela).
         registrar.playToClient(dev.rptag.aura.QuakeStatePayload.TYPE,

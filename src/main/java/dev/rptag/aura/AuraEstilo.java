@@ -15,7 +15,12 @@ public enum AuraEstilo {
     /** (5.69.0) A AURA ARCO-IRIS (/arcoiris): estrela de luz no peito, cada raio numa cor. */
     ARCOIRIS(1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 1.00f),
     /** (5.73.0) A AURA DE GRAVIDADE (/gravidade): contorno branco-azulado, bolhas e fissuras. */
-    GRAVIDADE(0.75f, 0.90f, 1.00f, 1.00f, 1.00f, 1.00f);
+    GRAVIDADE(0.75f, 0.90f, 1.00f, 1.00f, 1.00f, 1.00f),
+    /**
+     * (5.78.6) O REI DE AMARELO — Carcosa (/rei): amarelo do Rei, com o miolo dourado.
+     * O desenho e do pacote do Rei (client/KingAuraFx): aneis de 15/8/4 blocos, letras e sinal amarelo.
+     */
+    REI(0.94f, 0.78f, 0.10f, 1.00f, 0.95f, 0.45f);
 
     public final float r, g, b, r2, g2, b2;
 
@@ -26,7 +31,8 @@ public enum AuraEstilo {
 
     /** (5.67.0) estilo desenhado como casca em volta do corpo? */
     public boolean ehCasca() {
-        return this == ILUMINACAO || this == VAZIO || this == RADIACAO || this == ARCOIRIS || this == GRAVIDADE;
+        return this == ILUMINACAO || this == VAZIO || this == RADIACAO || this == ARCOIRIS || this == GRAVIDADE
+                || this == REI;
     }
 
     /** Valor guardado no jogador: 0 = desligada, 1 = iluminacao, 2 = vazio, 3 = radiacao, 4 = arcoiris, 5 = gravidade. */
