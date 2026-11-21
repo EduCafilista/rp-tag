@@ -58,9 +58,9 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
     // manchas azul-marinho escuras entre as chamas: {raio, alfa}
     private static final float[][] RAD_SHADOW = {{0.15f, 0.14f}, {0.30f, 0.12f}, {0.50f, 0.10f}, {0.72f, 0.07f}};
 
-    // (5.69.0) Arco-iris: {raio, alfa por copia} — a cor de cada copia vem do hsv() girando
+    // (5.78.7) Arco-iris: menos copias e mais finas (pacote novo): so as cores coladas no corpo
     private static final float[][] RB = {
-            {0.05f, 0.34f}, {0.11f, 0.26f}, {0.20f, 0.18f}, {0.32f, 0.12f}, {0.48f, 0.08f}, {0.68f, 0.05f},
+            {0.04f, 0.13f}, {0.09f, 0.10f}, {0.16f, 0.07f}, {0.26f, 0.045f},
     };
 
     /** HSV -> RGB (h em 0..1). Usado pela aura arco-iris. */
@@ -202,16 +202,14 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
     private void rainbow(PoseStack ps, MultiBufferSource buf, float t) {
         PlayerModel<AbstractClientPlayer> model = getParentModel();
         float pulse = 0.90f + 0.10f * Mth.sin(t * 0.30f);
-        // corpo incandescente: luz branco-dourada por cima da pele
-        model.renderToBuffer(ps, buf.getBuffer(AuraRenderTypes.GLOW_TINT), LightTexture.FULL_BRIGHT,
-                OverlayTexture.NO_OVERLAY, argb(0.60f, 0.55f * pulse, 0.45f * pulse, 0.22f * pulse));
-
+        // (5.78.7) estilo luz RGB: SO as cores em volta do corpo, sem clarao na pele (o dono pediu
+        // no pacote novo: nada de branco/dourado por cima da skin)
         VertexConsumer vc = buf.getBuffer(AuraRenderTypes.GLOW_HULL);
         for (int ring = 0; ring < Math.min(RB.length, maxAneis); ring++) {
             float[] g = RB[ring];
             for (int d = 0; d < DIRS.length; d += passo) {
                 float hue = (t * 0.010f + ring * 0.13f + d * 0.045f) % 1f;      // faixas de cor girando
-                float[] c = hsv(hue, ring == 0 ? 0.25f : 0.85f);                // 1o anel quase branco
+                float[] c = hsv(hue, 1f);                                       // (5.78.7) cores puras, sem branco
                 float rad = g[0] * (0.75f + 0.25f * Mth.sin(t * 0.33f + d * 1.9f + ring * 2.1f));
                 float k = g[1] * pulse;
                 ps.pushPose();
