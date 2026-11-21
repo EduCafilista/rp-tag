@@ -34,6 +34,10 @@ public final class YuClient {
     public static final KeyMapping UP = key("power_up", GLFW.GLFW_KEY_PAGE_UP);
     public static final KeyMapping DOWN = key("power_down", GLFW.GLFW_KEY_PAGE_DOWN);
     public static final KeyMapping SCREEN = key("power_screen", GLFW.GLFW_KEY_U);
+    // (5.78.5) pacote do Drive: AGARRAR (K), DESACELERAR o alvo (M) e SOLTAR os chicotes (Alt esquerdo)
+    public static final KeyMapping GRAB = key("grab", GLFW.GLFW_KEY_K);
+    public static final KeyMapping SLOW = key("gear_slow", GLFW.GLFW_KEY_M);
+    public static final KeyMapping WHIP_RELEASE = key("whip_release", GLFW.GLFW_KEY_LEFT_ALT);
 
     private static KeyMapping key(String n, int k) {
         return new KeyMapping("key.yumaho." + n, InputConstants.Type.KEYSYM, k, CAT);
@@ -49,11 +53,13 @@ public final class YuClient {
         public static void keys(RegisterKeyMappingsEvent e) {
             e.register(SMOKE); e.register(FAJIN); e.register(WHIP); e.register(GEAR);
             e.register(UP); e.register(DOWN); e.register(SCREEN);
+            e.register(GRAB); e.register(SLOW); e.register(WHIP_RELEASE);
         }
 
         @SubscribeEvent
         public static void renderers(EntityRenderersEvent.RegisterRenderers e) {
             e.registerEntityRenderer(YuEntities.SMOKE.get(), NoopRenderer::new);
+            e.registerEntityRenderer(YuEntities.WHIP.get(), WhipRenderer::new);
         }
 
         @SubscribeEvent
@@ -68,7 +74,15 @@ public final class YuClient {
         public static void tick(ClientTickEvent.Post e) {
             Minecraft mc = Minecraft.getInstance();
             LocalPlayer p = mc.player;
-            if (p == null || !p.getData(YuAttachments.ENABLED.get())) { drain(); wasFajin = false; return; }
+            if (p == null) { drain(); wasFajin = false; return; }
+            // (5.78.5) agarrar NAO exige Yu-Maho: qualquer personagem com aura pega (o servidor decide)
+            if (mc.screen == null) {
+                while (GRAB.consumeClick()) send(YuAbilities.A_GRAB,
+                        net.minecraft.client.gui.screens.Screen.hasShiftDown() ? 1 : 0);
+            } else {
+                while (GRAB.consumeClick()) {}
+            }
+            if (!p.getData(YuAttachments.ENABLED.get())) { drain(); wasFajin = false; return; }
             if (mc.screen != null) {                       // menu aberto: solta a carga do Fa Jin se estava segurando
                 drain();
                 if (wasFajin) { send(YuAbilities.A_FAJIN_RELEASE, 0); wasFajin = false; }
@@ -79,7 +93,9 @@ public final class YuClient {
             while (GEAR.consumeClick()) send(YuAbilities.A_GEAR, 0);
             while (UP.consumeClick()) send(YuAbilities.A_POWER_DELTA, net.minecraft.client.gui.screens.Screen.hasShiftDown() ? 1 : 5);
             while (DOWN.consumeClick()) send(YuAbilities.A_POWER_DELTA, net.minecraft.client.gui.screens.Screen.hasShiftDown() ? -1 : -5);
-            while (SCREEN.consumeClick()) mc.setScreen(new YuPowerScreen());
+            while (SCREEN.consumeClick()) mc.setScreen(new YuWheelScreen());
+            while (SLOW.consumeClick()) send(YuAbilities.A_GEAR_SLOW, 0);
+            while (WHIP_RELEASE.consumeClick()) send(YuAbilities.A_WHIP_RELEASE, 0);
             boolean down = FAJIN.isDown();
             if (down && !wasFajin) send(YuAbilities.A_FAJIN_START, 0);
             if (!down && wasFajin) send(YuAbilities.A_FAJIN_RELEASE, 0);
@@ -92,6 +108,8 @@ public final class YuClient {
             while (GEAR.consumeClick()) {}
             while (UP.consumeClick()) {}
             while (DOWN.consumeClick()) {}
+            while (SLOW.consumeClick()) {}
+            while (WHIP_RELEASE.consumeClick()) {}
         }
     }
 
@@ -102,9 +120,12 @@ public final class YuClient {
         if (p == null || mc.options.hideGui || !p.getData(YuAttachments.ENABLED.get())) return;
         int pct = Mth.clamp(p.getData(YuAttachments.POWER.get()), 0, 100);
         int energy = Mth.clamp(p.getData(YuAttachments.ENERGY.get()), 0, 100);
+        int modoChicote = Mth.clamp(p.getData(YuAttachments.WHIP_MODE.get()), 0, 3);
         int w = 90, x = g.guiWidth() - w - 10, y = g.guiHeight() / 2 + 30;
         g.fill(x - 4, y - 14, x + w + 4, y + (energy > 0 ? 26 : 16), 0x88000000);
         g.drawString(mc.font, Component.translatable("hud.yumaho.power", pct), x, y - 10, 0xFFE566, true);
+        // (5.78.5) qual modo do chicote esta escolhido na engrenagem
+        g.drawString(mc.font, Component.translatable("hud.yumaho.whipmode." + modoChicote), x, y - 19, 0xFFB0FF, true);
         bar(g, x, y, w, 5, pct / 100f, 0xFFFFD84A, 0xFFFFFFFF);
         if (energy > 0) {
             g.drawString(mc.font, Component.translatable("hud.yumaho.energy", energy), x, y + 8, 0xFFFFFF, true);

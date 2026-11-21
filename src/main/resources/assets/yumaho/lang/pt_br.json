@@ -28,5 +28,18 @@
   "subtitles.yumaho.hit": "Golpe de raio",
   "subtitles.yumaho.release": "Fa Jin",
   "subtitles.yumaho.whip": "Chicote",
-  "dimension.yumaho.white": "Dimensão Branca"
+  "dimension.yumaho.white": "Dimensão Branca",
+  "key.yumaho.grab": "Yu-Maho: Agarrar pelo pescoço (Shift: arremessar)",
+  "key.yumaho.gear_slow": "Yu-Maho: Desacelerar o alvo (M)",
+  "key.yumaho.whip_release": "Yu-Maho: Soltar os chicotes (Alt esquerdo)",
+  "hud.yumaho.whipmode.0": "Chicote: golpe",
+  "hud.yumaho.whipmode.1": "Chicote: puxar",
+  "hud.yumaho.whipmode.2": "Chicote: prender",
+  "hud.yumaho.whipmode.3": "Chicote: gancho",
+  "ability.yumaho.grab": "Agarrar",
+  "ability.yumaho.gear_slow": "Desacelerar",
+  "msg.yumaho.grab.notallowed": "Este personagem não pode agarrar (Gravidade e Radiação não têm essa habilidade).",
+  "msg.yumaho.grab.body": "Segurando o alvo PELO CORPO. K solta, Shift+K arremessa.",
+  "msg.yumaho.grab.neck": "Segurando o alvo PELO PESCOÇO. K solta, Shift+K joga no chão.",
+  "msg.yumaho.notarget": "Ninguém na mira."
 }

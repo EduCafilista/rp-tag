@@ -28,5 +28,18 @@
   "subtitles.yumaho.hit": "Lightning strike",
   "subtitles.yumaho.release": "Fa Jin",
   "subtitles.yumaho.whip": "Whip crack",
-  "dimension.yumaho.white": "White Dimension"
+  "dimension.yumaho.white": "White Dimension",
+  "key.yumaho.grab": "Yu-Maho: Grab by the neck (Shift: throw)",
+  "key.yumaho.gear_slow": "Yu-Maho: Slow the target (M)",
+  "key.yumaho.whip_release": "Yu-Maho: Release the whips (Left Alt)",
+  "hud.yumaho.whipmode.0": "Whip: lash",
+  "hud.yumaho.whipmode.1": "Whip: pull",
+  "hud.yumaho.whipmode.2": "Whip: bind",
+  "hud.yumaho.whipmode.3": "Whip: grapple",
+  "ability.yumaho.grab": "Grab",
+  "ability.yumaho.gear_slow": "Slow",
+  "msg.yumaho.grab.notallowed": "This character cannot grab (Gravity and Radiation do not have this ability).",
+  "msg.yumaho.grab.body": "Holding the target BY THE BODY. K releases, Shift+K throws.",
+  "msg.yumaho.grab.neck": "Holding the target BY THE NECK. K releases, Shift+K slams.",
+  "msg.yumaho.notarget": "Nobody in your sights."
 }

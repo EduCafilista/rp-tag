@@ -16,5 +16,13 @@ public final class YuEntities {
                     .sized(1f, 1f).clientTrackingRange(12).updateInterval(20).noSave().fireImmune()
                     .build("smoke_cloud"));
 
+    /** (5.78.5) O CHICOTE do Blackwhip agora é ENTIDADE (pedido do dono: veio no pacote do Drive). */
+    public static final Supplier<EntityType<WhipEntity>> WHIP =
+            ENTITIES.register("black_whip", () -> EntityType.Builder
+                    .<WhipEntity>of(WhipEntity::new,
+                            MobCategory.MISC)
+                    .sized(0.3f, 0.3f).clientTrackingRange(16).updateInterval(1).noSave().fireImmune()
+                    .build("black_whip"));
+
     private YuEntities() {}
 }

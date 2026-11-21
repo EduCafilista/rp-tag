@@ -58,8 +58,19 @@ public final class YuFxClient {
             case YuFxPayload.RELEASE -> release(lv, a, b, f, p.b());
             case YuFxPayload.WHIP -> whip(lv, a, b, f);
             case YuFxPayload.GEAR -> gear(lv, a, f);
+            case YuFxPayload.CRACK -> crack(lv, a, f);          // (5.78.5) estalo do chicote
             default -> {}
         }
+    }
+
+    /** (5.78.5) estalo do Blackwhip: faíscas amarelas curtas no ponto do impacto. */
+    private static void crack(ClientLevel lv, Vec3 c, float f) {
+        for (int i = 0; i < 10 + (int) (10 * f); i++) {
+            double dx = (RND.nextDouble() - 0.5) * 0.9, dy = (RND.nextDouble() - 0.5) * 0.9, dz = (RND.nextDouble() - 0.5) * 0.9;
+            lv.addParticle(new DustParticleOptions(new Vector3f(1f, 0.9f, 0.25f), 0.8f + 0.6f * f),
+                    c.x, c.y, c.z, dx, dy, dz);
+        }
+        lv.addParticle(ParticleTypes.END_ROD, c.x, c.y, c.z, 0, 0.06, 0);
     }
 
     private static void addShake(Vec3 at, float amp, double reach) {

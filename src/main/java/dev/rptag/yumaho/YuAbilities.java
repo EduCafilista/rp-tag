@@ -41,9 +41,11 @@ import java.util.UUID;
 @EventBusSubscriber(modid = YuMaho.MODID)
 public final class YuAbilities {
     public static final int A_SET_POWER = 0, A_SMOKE = 1, A_FAJIN_START = 2, A_FAJIN_RELEASE = 3,
-            A_WHIP = 4, A_GEAR = 5, A_POWER_DELTA = 6;
-    private static final int SM = 0, FJ = 1, WH = 2, GR = 3;
-    private static final String[] NAMES = {"smoke", "fajin", "whip", "gear"};
+            A_WHIP = 4, A_GEAR = 5, A_POWER_DELTA = 6,
+            // (5.78.5) o que veio no pacote do Drive: soltar o chicote, modo do chicote, agarrar e desacelerar
+            A_WHIP_RELEASE = 7, A_WHIP_MODE = 8, A_GRAB = 9, A_GEAR_SLOW = 10;
+    private static final int SM = 0, FJ = 1, WH = 2, GR = 3, GS = 4;
+    private static final String[] NAMES = {"smoke", "fajin", "whip", "gear", "gear_slow"};
 
     /** true enquanto uma habilidade causa dano, para o efeito de raio dos golpes não disparar junto. */
     public static boolean busy;
@@ -59,7 +61,13 @@ public final class YuAbilities {
 
     // ------------------------------------------------------------------ entrada
     public static void handle(ServerPlayer sp, int action, int arg) {
-        if (!YuPower.enabled(sp) || !sp.isAlive() || sp.isSpectator()) return;
+        if (sp == null || !sp.isAlive() || sp.isSpectator()) return;
+        // (5.78.5) AGARRAR nao exige Yu-Maho: qualquer personagem com aura pega (o servidor decide)
+        if (action == A_GRAB) {
+            GrabAbility.toggle(sp, arg != 0);
+            return;
+        }
+        if (!YuPower.enabled(sp)) return;
         switch (action) {
             case A_SET_POWER -> YuPower.set(sp, arg);
             case A_POWER_DELTA -> YuPower.set(sp, YuPower.percent(sp) + Mth.clamp(arg, -100, 100));
@@ -67,14 +75,17 @@ public final class YuAbilities {
             case A_FAJIN_START -> fajinStart(sp);
             case A_FAJIN_RELEASE -> fajinRelease(sp);
             case A_WHIP -> whip(sp);
+            case A_WHIP_RELEASE -> releaseWhips(sp);
+            case A_WHIP_MODE -> sp.setData(YuAttachments.WHIP_MODE.get(), Mth.clamp(arg, 0, 3));
             case A_GEAR -> gear(sp);
+            case A_GEAR_SLOW -> gearSlow(sp);
             default -> {}
         }
     }
 
     // ------------------------------------------------------------------ cooldown
     private static boolean ready(ServerPlayer sp, int idx) {
-        long left = CD.computeIfAbsent(sp.getUUID(), k -> new long[4])[idx] - sp.level().getGameTime();
+        long left = CD.computeIfAbsent(sp.getUUID(), k -> new long[5])[idx] - sp.level().getGameTime();
         if (left > 0) {
             sp.displayClientMessage(Component.translatable("msg.yumaho.cooldown",
                     Component.translatable("ability.yumaho." + NAMES[idx]), String.format("%.1f", left / 20.0)), true);
@@ -84,7 +95,7 @@ public final class YuAbilities {
     }
 
     private static void startCd(ServerPlayer sp, int idx, int ticks) {
-        CD.computeIfAbsent(sp.getUUID(), k -> new long[4])[idx] = sp.level().getGameTime() + ticks;
+        CD.computeIfAbsent(sp.getUUID(), k -> new long[5])[idx] = sp.level().getGameTime() + ticks;
     }
 
     private static boolean needsPower(ServerPlayer sp) {
@@ -165,69 +176,109 @@ public final class YuAbilities {
         startCd(sp, FJ, YuConfig.ticks(YuConfig.FJ_CD));
     }
 
-    // ------------------------------------------------------------------ 3. Blackwhip
+    // ------------------------------------------------------------------ 3. Blackwhip (entidade)
+    /** (5.78.5) todos os chicotes vivos deste jogador. */
+    private static java.util.List<WhipEntity> myWhips(ServerPlayer sp) {
+        return sp.serverLevel().getEntitiesOfClass(WhipEntity.class, sp.getBoundingBox().inflate(96),
+                w -> w.ownerId() == sp.getId());
+    }
+
+    /** Tecla de soltar (Alt esquerdo) ou apertar B de novo: todos os fios voltam. */
+    public static void releaseWhips(ServerPlayer sp) {
+        java.util.List<WhipEntity> ws = myWhips(sp);
+        if (ws.isEmpty()) return;
+        for (WhipEntity w : ws) w.release();
+        startCd(sp, WH, YuConfig.ticks(YuConfig.WH_CD) / 2);
+    }
+
+    /**
+     * (5.78.5) BLACKWHIP COMO ENTIDADE (pacote do Drive).
+     *
+     * <p>Cada fio é uma {@link WhipEntity} que sai da mão, voa, e faz uma coisa conforme o MODO
+     * escolhido na engrenagem (U): chicote (dano + empurrão), puxar, prender ou gancho.
+     * O número de fios cresce com o poder (1 com 10%, até 4 com 100%); os extras caçam outros
+     * alvos na frente e, se não houver, abrem em leque.
+     */
     private static void whip(ServerPlayer sp) {
+        if (!myWhips(sp).isEmpty()) {
+            releaseWhips(sp);
+            return;                       // apertar B de novo solta os fios
+        }
         if (needsPower(sp) || !ready(sp, WH)) return;
         float f = YuPower.frac(sp);
         ServerLevel lv = sp.serverLevel();
-        double range = YuPower.lerp(YuConfig.WH_R_MIN.get(), YuConfig.WH_R_MAX.get(), f);
-        Vec3 eye = sp.getEyePosition(), look = sp.getLookAngle(), end = eye.add(look.scale(range));
-        Vec3 hand = eye.add(look.scale(0.5)).add(0, -0.35, 0);
+        int mode = sp.getData(YuAttachments.WHIP_MODE.get());
+        int max = YuConfig.WH_MAX_COUNT.get();
+        int count = Mth.clamp(1 + (int) (f * max * 0.999f), 1, max);
+        float range = YuPower.lerp(YuConfig.WH_R_MIN.get(), YuConfig.WH_R_MAX.get(), f);
+        float speed = YuPower.lerp(2.2, 3.6, f);
+        float dmg = (float) (YuConfig.WH_DMG.get() * (0.3 + 0.7 * f));
+        int hold = Math.round(YuPower.lerp(YuConfig.WH_HOLD_MIN.get(), YuConfig.WH_HOLD_MAX.get(), f) * 20f);
+        float pull = YuPower.lerp(0.8, YuConfig.WH_PULL.get(), f);
+        float grapple = YuPower.lerp(1.0, YuConfig.WH_GRAPPLE.get(), f);
 
-        BlockHitResult bh = lv.clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, sp));
-        double blockDist = bh.getType() == HitResult.Type.BLOCK ? eye.distanceTo(bh.getLocation()) : Double.MAX_VALUE;
-        AABB box = sp.getBoundingBox().expandTowards(look.scale(range)).inflate(1.0);
-        EntityHitResult eh = ProjectileUtil.getEntityHitResult(sp, eye, end, box,
-                e -> !e.isSpectator() && e.isPickable() && e instanceof LivingEntity, range * range);
-        double entDist = eh == null ? Double.MAX_VALUE : eye.distanceTo(eh.getLocation());
-
-        Vec3 tip = end;
-        int cd = YuConfig.ticks(YuConfig.WH_CD);
-        long now = lv.getGameTime();
-        if (eh != null && entDist <= blockDist && eh.getEntity() instanceof LivingEntity t && !pvpBlocked(t)) {
-            tip = eh.getLocation();
-            if (sp.isShiftKeyDown()) {
-                grapple(sp, t.getBoundingBox().getCenter(), f, now);           // agachado: puxa a si mesmo
-            } else if (t.getMaxHealth() <= YuConfig.WH_MAX_PULL_HP.get()) {
-                Vec3 dir = sp.position().subtract(t.position());
-                double d = dir.length();
-                if (d > 1.0) {
-                    t.setDeltaMovement(dir.normalize().scale(Math.min(d * 0.25, YuPower.lerp(0.8, YuConfig.WH_PULL.get(), f))).add(0, 0.3, 0));
-                    t.hurtMarked = true;
+        Vec3 look = sp.getLookAngle();
+        java.util.List<Vec3> dirs = new java.util.ArrayList<>();
+        dirs.add(look);
+        if (count > 1) {
+            Vec3 eye = sp.getEyePosition();
+            java.util.List<LivingEntity> perto = new java.util.ArrayList<>(lv.getEntitiesOfClass(LivingEntity.class,
+                    sp.getBoundingBox().inflate(range),
+                    e -> e != sp && e.isAlive() && !e.isSpectator() && !pvpBlocked(e)
+                            && e.getBoundingBox().getCenter().subtract(eye).normalize().dot(look) > 0.5));
+            perto.sort(java.util.Comparator.comparingDouble(e -> e.distanceToSqr(sp)));
+            for (int i = 1; i < count; i++) {
+                if (i - 1 < perto.size()) {
+                    dirs.add(perto.get(i - 1).getBoundingBox().getCenter().subtract(eye).normalize());
+                } else {
+                    double off = Math.toRadians(9 * ((i + 1) / 2)) * (i % 2 == 0 ? 1 : -1);
+                    dirs.add(new Vec3(look.x * Math.cos(off) - look.z * Math.sin(off), look.y,
+                            look.x * Math.sin(off) + look.z * Math.cos(off)).normalize());
                 }
-                busy = true;
-                try { t.hurt(sp.damageSources().playerAttack(sp), (float) (YuConfig.WH_DMG.get() * (0.4 + 0.6 * f))); }
-                finally { busy = false; }
-                t.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 30, 1, false, true, true));
             }
-        } else if (blockDist != Double.MAX_VALUE) {
-            tip = bh.getLocation();
-            grapple(sp, tip, f, now);                                              // bloco: gancho
-        } else {
-            cd = cd / 2;                                                           // errou: recarga menor
         }
-        YuFx.send(lv, YuFxPayload.WHIP, hand, tip, f, 0f);
-        lv.playSound(null, sp.blockPosition(), YuSounds.WHIP, SoundSource.PLAYERS, 0.8f + 0.5f * f, 0.95f + lv.random.nextFloat() * 0.2f);
-        startCd(sp, WH, cd);
+        Vec3 hand = WhipEntity.hand(sp, 1f);
+        for (Vec3 d : dirs) {
+            WhipEntity w = new WhipEntity(YuEntities.WHIP.get(), lv);
+            w.setPos(hand.x, hand.y, hand.z);
+            w.setup(sp, d, mode, f, range, speed, dmg, hold, pull, grapple);
+            lv.addFreshEntity(w);
+        }
+        lv.playSound(null, sp.blockPosition(), YuSounds.WHIP, SoundSource.PLAYERS,
+                0.8f + 0.5f * f, 0.9f + lv.random.nextFloat() * 0.2f);
+        startCd(sp, WH, YuConfig.ticks(YuConfig.WH_CD));
     }
 
-    private static void grapple(ServerPlayer sp, Vec3 target, float f, long now) {
-        Vec3 to = target.subtract(sp.position().add(0, sp.getBbHeight() * 0.5, 0));
-        double d = to.length();
-        if (d < 2.0) return;
-        double speed = Math.min(d * 0.18, YuPower.lerp(1.0, YuConfig.WH_GRAPPLE.get(), f));
-        sp.setDeltaMovement(to.normalize().scale(speed).add(0, 0.25, 0));
-        sp.hurtMarked = true;
-        sp.fallDistance = 0;
-        NOFALL.put(sp.getUUID(), now + 60);
+    /** (5.78.5) M — DESACELERAR o alvo na mira (Lentidão com nível e duração pelo poder). */
+    private static void gearSlow(ServerPlayer sp) {
+        if (needsPower(sp) || !ready(sp, GS)) return;
+        float f = YuPower.frac(sp);
+        EntityHitResult eh = rayEntity(sp, YuConfig.GS_RANGE.get() * (0.5 + 0.5 * f));
+        if (eh == null || !(eh.getEntity() instanceof LivingEntity t) || pvpBlocked(t)) {
+            sp.displayClientMessage(Component.translatable("msg.yumaho.notarget"), true);
+            return;
+        }
+        int amp = Math.min(YuConfig.GS_MAX_AMP.get(), (int) (f * (YuConfig.GS_MAX_AMP.get() + 1)));
+        int dur = Math.round(YuPower.lerp(YuConfig.GS_T_MIN.get(), YuConfig.GS_T_MAX.get(), f) * 20f);
+        t.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, dur, amp, false, true, true));
+        ServerLevel lv = sp.serverLevel();
+        YuFx.send(lv, YuFxPayload.CRACK, t.position().add(0, t.getBbHeight() * 0.5, 0), Vec3.ZERO, f, 0f);
+        lv.playSound(null, t.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS,
+                0.7f + 0.4f * f, 1.4f - 0.5f * f);
+        startCd(sp, GS, YuConfig.ticks(YuConfig.GS_CD));
     }
 
-    @SubscribeEvent
-    public static void fall(LivingFallEvent e) {
-        if (e.getEntity() instanceof ServerPlayer sp) {
-            Long until = NOFALL.get(sp.getUUID());
-            if (until != null && sp.level().getGameTime() < until) e.setDistance(0f);
-        }
+    /** Alvo na mira (usado pelo M). */
+    private static EntityHitResult rayEntity(ServerPlayer sp, double range) {
+        Vec3 eye = sp.getEyePosition(), end = eye.add(sp.getLookAngle().scale(range));
+        AABB box = sp.getBoundingBox().expandTowards(sp.getLookAngle().scale(range)).inflate(1.0);
+        return ProjectileUtil.getEntityHitResult(sp, eye, end, box,
+                e -> !e.isSpectator() && e.isPickable() && e instanceof LivingEntity, range * range);
+    }
+
+    /** (5.78.5) usado pelo chicote/gancho/agarrar: nada de queda por alguns ticks. */
+    public static void noFall(ServerPlayer sp, int ticks) {
+        NOFALL.put(sp.getUUID(), sp.level().getGameTime() + ticks);
     }
 
     // ------------------------------------------------------------------ 4. Gearshift (nerfado)

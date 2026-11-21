@@ -34,5 +34,16 @@ public final class YuAttachments {
                     .sync(ByteBufCodecs.VAR_INT)
                     .build());
 
+    /**
+     * (5.78.5) MODO do Blackwhip escolhido na engrenagem (roda de fora):
+     * 0 = chicote (dano + empurrão), 1 = puxar, 2 = prender, 3 = gancho.
+     */
+    public static final Supplier<AttachmentType<Integer>> WHIP_MODE = TYPES.register("yu_whip_mode", () ->
+            AttachmentType.builder(() -> 1)
+                    .serialize(Codec.INT)
+                    .sync(ByteBufCodecs.VAR_INT)
+                    .copyOnDeath()
+                    .build());
+
     private YuAttachments() {}
 }

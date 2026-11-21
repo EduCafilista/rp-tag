@@ -8,7 +8,9 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 // (5.78.0) o campo do record NAO pode se chamar `type` (colide com o type() do CustomPacketPayload)
 public record YuFxPayload(int kind, double x, double y, double z, double x2, double y2, double z2, float a, float b)
         implements CustomPacketPayload {
-    public static final int HIT = 0, RELEASE = 1, WHIP = 2, GEAR = 3;
+    public static final int HIT = 0, RELEASE = 1, WHIP = 2, GEAR = 3,
+            /** (5.78.5) a ponta do chicote estalou (bateu em algo). */
+            CRACK = 4;
 
     public static final Type<YuFxPayload> TYPE = new Type<>(YuMaho.rl("fx"));
     public static final StreamCodec<io.netty.buffer.ByteBuf, YuFxPayload> CODEC = StreamCodec.of(
