@@ -7,7 +7,6 @@ public final class YuConfig {
     public static final ModConfigSpec SPEC;
 
     public static final ModConfigSpec.BooleanValue PVP;
-    public static final ModConfigSpec.DoubleValue HIT_BONUS, CRIT_CHANCE_MAX;
     public static final ModConfigSpec.DoubleValue SMOKE_CD, SMOKE_R_MIN, SMOKE_R_MAX, SMOKE_T_MIN, SMOKE_T_MAX;
     public static final ModConfigSpec.DoubleValue FJ_DMG, FJ_CHARGE, FJ_RANGE, FJ_CD, FJ_KB;
     public static final ModConfigSpec.DoubleValue WH_CD, WH_R_MIN, WH_R_MAX, WH_DMG, WH_PULL, WH_GRAPPLE;
@@ -23,13 +22,7 @@ public final class YuConfig {
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
         PVP = b.comment("Habilidades podem ferir/puxar outros jogadores").define("pvp", true);
-
-        b.push("hit");
-        HIT_BONUS = b.comment("Dano extra por golpe corpo a corpo com 100% de poder (cresce com o quadrado do %)")
-                .defineInRange("bonusDamageAt100", 6.0, 0.0, 200.0);
-        CRIT_CHANCE_MAX = b.comment("Chance do 'golpe perfeito' (raio gigante, dano x2 do bônus) com 100% de poder")
-                .defineInRange("critChanceAt100", 0.15, 0.0, 1.0);
-        b.pop();
+        // (5.78.8) o dano do golpe corpo a corpo NAO e mais alterado pelo mod (ver YuHit)
 
         b.push("smokescreen");
         SMOKE_CD = b.defineInRange("cooldownSec", 20.0, 0.0, 3600.0);

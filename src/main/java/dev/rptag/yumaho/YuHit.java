@@ -11,8 +11,16 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
- * Raio amarelo + som em todo golpe corpo a corpo de quem tem as habilidades.
- * Tudo escala com a % de poder: dano extra, quantidade/tamanho dos raios, volume e tom do som.
+ * (5.78.8) <b>RAIO E SOM — E SÓ ISSO.</b>
+ *
+ * <p>O dono: <i>"verifica o negócio do dano, de atacar — se ele não mexer nisso mais"</i>.
+ * Até a 5.78.7 este evento <b>somava dano</b> a cada golpe corpo a corpo de quem tinha as
+ * habilidades (bônus por poder + "golpe perfeito" que dobrava o bônus): o mod estava alterando
+ * a luta sem o jogador pedir. <b>Isso saiu.</b> O dano do golpe é exatamente o do vanilla/do mod
+ * de armas que estiver instalado — o RP Tag não soma, não multiplica e não cancela nada.
+ *
+ * <p>O que continua: o raio amarelo, a faísca e o som do golpe, escalando com a % de poder
+ * (só visual, zero efeito na vida do alvo).
  */
 @EventBusSubscriber(modid = YuMaho.MODID)
 public final class YuHit {
@@ -26,17 +34,13 @@ public final class YuHit {
         int pct = YuPower.percent(sp);
         if (pct <= 0) return;
         float f = pct / 100f;
-        if (target instanceof net.minecraft.world.entity.player.Player && !YuConfig.PVP.get()) return;
-
-        boolean crit = sp.getRandom().nextFloat() < YuConfig.CRIT_CHANCE_MAX.get() * f;
-        float bonus = (float) (YuConfig.HIT_BONUS.get() * f * f) * (crit ? 2f : 1f);
-        e.setAmount(e.getAmount() + bonus);
+        // (5.78.8) NADA de e.setAmount(...): o dano quem decide é o jogo, não o RP Tag.
 
         ServerLevel lv = sp.serverLevel();
         Vec3 c = target.getBoundingBox().getCenter();
-        YuFx.send(lv, YuFxPayload.HIT, c, c, f, crit ? 1f : 0f);
-        float vol = (0.5f + 0.9f * f) * (crit ? 1.4f : 1f);
-        float pitch = (1.25f - 0.4f * f) * (crit ? 0.85f : 1f) + (sp.getRandom().nextFloat() - 0.5f) * 0.08f;
+        YuFx.send(lv, YuFxPayload.HIT, c, c, f, 0f);
+        float vol = 0.5f + 0.9f * f;
+        float pitch = 1.25f - 0.4f * f + (sp.getRandom().nextFloat() - 0.5f) * 0.08f;
         lv.playSound(null, c.x, c.y, c.z, YuSounds.HIT, SoundSource.PLAYERS, vol, pitch);
     }
 
