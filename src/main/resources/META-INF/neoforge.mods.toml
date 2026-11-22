@@ -4,7 +4,7 @@ license="MIT"
 
 [[mods]]
 modId="rptag"
-version="5.78.11"
+version="5.78.12"
 logoFile="rptag_logo.png"
 displayName="RP Tag"
 authors="RP Tag"
@@ -26,6 +26,13 @@ A tag aparece no nome acima da cabeca, no chat e na lista de jogadores (TAB).
     versionRange="[1.21.1,1.22)"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.rptag]]
+    modId="cpm"
+    type="optional"
+    versionRange="[0.6.0,)"
+    ordering="AFTER"
+    side="CLIENT"
 
 [[mixins]]
     config="rptag.mixins.json"
