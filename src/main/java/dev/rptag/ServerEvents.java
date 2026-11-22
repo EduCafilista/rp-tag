@@ -356,9 +356,26 @@ public final class ServerEvents {
 
     /** Alterna o estado do jogador. @return o novo estado. */
     public static boolean toggle(ServerPlayer player) {
+        RPWorldData data = RPWorldData.get(player.server);
+        if (isInRp(player) && (data.isCanonEvent() || data.isCanonRpTodos()) && !player.hasPermissions(2)) {
+            player.sendSystemMessage(Component.literal(
+                    "Modo CANON ativo — todos permanecem em RP ON durante o evento.")
+                    .withStyle(ChatFormatting.LIGHT_PURPLE));
+            return true;
+        }
         boolean newValue = !isInRp(player);
         setState(player, newValue, true);
         return newValue;
+    }
+
+    /** (5.78.11) Coloca todos os jogadores conectados em RP ON ou OFF de uma vez. */
+    public static int setAllRp(MinecraftServer server, boolean inRp, boolean notifyEach) {
+        int n = 0;
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            setState(p, inRp, notifyEach);
+            n++;
+        }
+        return n;
     }
 
     // ================================================================
@@ -388,6 +405,9 @@ public final class ServerEvents {
         }
         MinecraftServer server = joined.server;
         RPWorldData data = RPWorldData.get(server);
+        if (data.isCanonEvent() || data.isCanonRpTodos()) {
+            data.setInRp(joined.getUUID(), true);
+        }
 
         // Estado e persona do novo jogador para quem ja estava online.
         PacketDistributor.sendToAllPlayers(new SyncRPStatePayload(joined.getUUID(), data.isInRp(joined.getUUID())));

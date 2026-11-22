@@ -1597,7 +1597,8 @@ public final class NeptuneEventos {
         try {
             p.addEffect(new MobEffectInstance(RPEffects.MEDO, ticks, 1, false, false, true));
             p.addEffect(new MobEffectInstance(MobEffects.CONFUSION, Math.max(60, ticks / 2), 0, false, false, true));
-            p.addEffect(new MobEffectInstance(MobEffects.DARKNESS, Math.max(40, ticks / 3), 0, false, false, true));
+            // (5.78.11) sem MobEffects.DARKNESS por cima (somava com a vinheta/véu e deixava a tela preta demais)
+            p.removeEffect(MobEffects.DARKNESS);
             p.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, Math.max(40, ticks / 4), 0, false, false, false));
         } catch (Throwable t) {
             RPTagMod.LOGGER.warn("RP Tag: medo do vazio falhou (o jogo segue)", t);

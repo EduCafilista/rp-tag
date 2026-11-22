@@ -400,6 +400,7 @@ public final class RPWorldData extends SavedData {
     /** O jogador desligou os proprios baloes. */
     /** (3.65.0) typewriter do balao (padrao LIGADO). */
     // ==== (3.80.0) modo de perder vidas ====
+    private boolean canonRpTodos = false;
 
     /** @return true se o MODO está ligado (quem morrer perde uma vida). */
     public boolean isCanonEvent() {
@@ -409,6 +410,16 @@ public final class RPWorldData extends SavedData {
     /** Liga/desliga o modo (persiste no mundo). */
     public void setCanonEvent(boolean on) {
         this.canonEvent = on;
+        setDirty();
+    }
+
+    /** (5.78.11) modo canon de RP: mantém todos os jogadores em RP ON enquanto ativo. */
+    public boolean isCanonRpTodos() {
+        return canonRpTodos;
+    }
+
+    public void setCanonRpTodos(boolean on) {
+        this.canonRpTodos = on;
         setDirty();
     }
 
@@ -810,6 +821,7 @@ public final class RPWorldData extends SavedData {
 
         // (3.80.0) modo de perder vidas
         tag.putBoolean("CanonEvent", canonEvent);
+        tag.putBoolean("CanonRpTodos", canonRpTodos);
 
         // (3.82.0) vidas canônicas por jogador
         ListTag vidasList = new ListTag();
@@ -997,6 +1009,7 @@ public final class RPWorldData extends SavedData {
         }
 
         data.canonEvent = tag.getBoolean("CanonEvent");
+        data.canonRpTodos = tag.getBoolean("CanonRpTodos");
 
         ListTag vidasList = tag.getList("CanonLives", Tag.TAG_COMPOUND);
         for (int i = 0; i < vidasList.size(); i++) {

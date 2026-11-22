@@ -109,7 +109,7 @@ public final class AfkSistema {
                 p.getYRot(), p.getXRot(), Util.getMillis()));
 
         RPWorldData wd = RPWorldData.get(p.server);
-        if (wd.isInRp(p.getUUID())) {
+        if (wd.isInRp(p.getUUID()) && !wd.isCanonEvent() && !wd.isCanonRpTodos()) {
             wd.setInRp(p.getUUID(), false);
             ServerEvents.setState(p, false, false);
             p.displayClientMessage(Component.literal(

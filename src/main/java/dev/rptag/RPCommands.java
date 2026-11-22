@@ -900,7 +900,9 @@ public final class RPCommands {
             ctx.getSource().sendSuccess(() -> Component.literal(
                     "\u00a7c\u2014\u2014\u2014 SO ADMINS \u2014\u2014\u2014"), false);
             ctx.getSource().sendSuccess(() -> Component.literal(
-                    "\u00a7c/rp set <jogador> on|off \u00a77\u2014 define o RP de outro\u00a7c\n"
+                    "\u00a7c/rp set <jogadores|canon> [on|off] \u00a77\u2014 define o RP de jogadores ou liga canon (todos em RP ON)\u00a7c\n"
+                    + "/rp on|off <jogadores> \u00a77\u2014 coloca um ou mais jogadores (@a) em RP ON/OFF\u00a7c\n"
+                    + "/rp canon [on|off] \u00a77\u2014 coloca todos em RP ON na hora\u00a7c\n"
                     + "/rp admin medo <jogador> [1-30s] \u00a77\u2014 tela ESCONDE + treme de medo\u00a7c\n"
                     // (5.25.0) a ciberpsicose como EFEITO e o vampiro (atributo + amuleto)
                     + "/rp admin ciberpsicose <jogadores> [1-600s] \u00a77\u2014 EFEITO rptag:ciberpsicose: a tela quebra do come\u00e7o ao fim\u00a7c\n"
@@ -955,17 +957,40 @@ public final class RPCommands {
         root.then(Commands.literal("ajuda").executes(ctx -> ajuda(ctx)));
         root.then(Commands.literal("help").executes(ctx -> ajuda(ctx)));
 
-        // /rp on
-        root.then(Commands.literal("on").executes(ctx -> {
-            ServerEvents.setState(ctx.getSource().getPlayerOrException(), true, true);
-            return Command.SINGLE_SUCCESS;
-        }));
+        // /rp on [jogadores]
+        root.then(Commands.literal("on")
+                .executes(ctx -> {
+                    ServerEvents.setState(ctx.getSource().getPlayerOrException(), true, true);
+                    return Command.SINGLE_SUCCESS;
+                })
+                .then(Commands.argument("jogadores", EntityArgument.players())
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> setRpJogadores(ctx, EntityArgument.getPlayers(ctx, "jogadores"), true))));
 
-        // /rp off
-        root.then(Commands.literal("off").executes(ctx -> {
-            ServerEvents.setState(ctx.getSource().getPlayerOrException(), false, true);
-            return Command.SINGLE_SUCCESS;
-        }));
+        // /rp off [jogadores]
+        root.then(Commands.literal("off")
+                .executes(ctx -> {
+                    ServerPlayer sp = ctx.getSource().getPlayerOrException();
+                    RPWorldData data = RPWorldData.get(sp.server);
+                    if ((data.isCanonEvent() || data.isCanonRpTodos()) && !sp.hasPermissions(2)) {
+                        sp.sendSystemMessage(Component.literal(
+                                "Modo CANON ativo — todos permanecem em RP ON durante o evento.")
+                                .withStyle(ChatFormatting.LIGHT_PURPLE));
+                        return Command.SINGLE_SUCCESS;
+                    }
+                    ServerEvents.setState(sp, false, true);
+                    return Command.SINGLE_SUCCESS;
+                })
+                .then(Commands.argument("jogadores", EntityArgument.players())
+                        .requires(src -> src.hasPermission(2))
+                        .executes(ctx -> setRpJogadores(ctx, EntityArgument.getPlayers(ctx, "jogadores"), false))));
+
+        // (5.78.11) /rp canon [on|off] — coloca todos em RP ON na hora (atalho direto de admin)
+        root.then(Commands.literal("canon")
+                .requires(src -> src.hasPermission(2))
+                .executes(ctx -> setModoCanonRp(ctx, true, false))
+                .then(Commands.literal("on").executes(ctx -> setModoCanonRp(ctx, true, true)))
+                .then(Commands.literal("off").executes(ctx -> setModoCanonRp(ctx, false, true))));
 
         // /rp status
         root.then(Commands.literal("status").executes(ctx -> {
@@ -1598,24 +1623,43 @@ public final class RPCommands {
                 // com o modo ligado, quem morrer perde uma). SEM mensagem
                 // no chat: o aviso é o BANNER LORE ON/OFF pro servidor todo.
                 .then(Commands.literal("canon")
+                        .executes(ctx -> setModoCanonRp(ctx, true, true))
                         .then(Commands.literal("on").executes(ctx -> {
-                            RPWorldData.get(ctx.getSource().getServer()).setCanonEvent(true);
+                            RPWorldData data = RPWorldData.get(ctx.getSource().getServer());
+                            data.setCanonEvent(true);
+                            data.setCanonRpTodos(true);
+                            int n = ServerEvents.setAllRp(ctx.getSource().getServer(), true, false);
                             net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
                                     new CanonBannerPayload("\u2740 LORE ON \u2740",
                                             "\u2740 HARD-RP ON | VIDAS CANNON ON \u2740", 5, true));
+                            final int quantos = n;
                             ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "Vidas canônicas: modo de PERDER LIGADO (quem morrer perde uma)."), false);
+                                    "Vidas canônicas: modo de PERDER LIGADO (quem morrer perde uma) — "
+                                    + quantos + " jogador(es) colocado(s) em RP ON."), false);
                             return Command.SINGLE_SUCCESS;
                         }))
                         .then(Commands.literal("off").executes(ctx -> {
-                            RPWorldData.get(ctx.getSource().getServer()).setCanonEvent(false);
+                            RPWorldData data = RPWorldData.get(ctx.getSource().getServer());
+                            data.setCanonEvent(false);
+                            data.setCanonRpTodos(false);
                             net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
                                     new CanonBannerPayload("\u2740 LORE OFF \u2740",
                                             "\u2740 HARD-RP ON | VIDAS CANNON OFF \u2740", 5, false));
                             ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "Vidas canônicas: modo de perder DESLIGADO."), false);
+                                    "Vidas canônicas: modo de perder DESLIGADO (RP individual liberado)."), false);
                             return Command.SINGLE_SUCCESS;
                         })))
+                // (5.78.11) /rp admin set <jogadores|canon> [on|off]
+                .then(Commands.literal("set")
+                        .then(Commands.literal("canon")
+                                .executes(ctx -> setModoCanonRp(ctx, true, false))
+                                .then(Commands.literal("on").executes(ctx -> setModoCanonRp(ctx, true, false)))
+                                .then(Commands.literal("off").executes(ctx -> setModoCanonRp(ctx, false, false))))
+                        .then(Commands.argument("jogadores", EntityArgument.players())
+                                .then(Commands.literal("on").executes(ctx ->
+                                        setRpJogadores(ctx, EntityArgument.getPlayers(ctx, "jogadores"), true)))
+                                .then(Commands.literal("off").executes(ctx ->
+                                        setRpJogadores(ctx, EntityArgument.getPlayers(ctx, "jogadores"), false)))))
                 .then(Commands.literal("balao")
                         .then(Commands.argument("jogador", EntityArgument.player())
                                 .then(Commands.literal("on").executes(ctx -> {
@@ -1679,24 +1723,18 @@ public final class RPCommands {
                             return Command.SINGLE_SUCCESS;
                         }))));
 
-        // /rp set <jogador> on|off — apenas admins
+        // (5.78.11) /rp set <jogadores|canon> [on|off] — apenas admins
         root.then(Commands.literal("set")
                 .requires(src -> src.hasPermission(2))
-                .then(Commands.argument("jogador", EntityArgument.player())
-                        .then(Commands.literal("on").executes(ctx -> {
-                            ServerPlayer target = EntityArgument.getPlayer(ctx, "jogador");
-                            ServerEvents.setState(target, true, true);
-                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "RP ativado para " + target.getName().getString() + "."), true);
-                            return Command.SINGLE_SUCCESS;
-                        }))
-                        .then(Commands.literal("off").executes(ctx -> {
-                            ServerPlayer target = EntityArgument.getPlayer(ctx, "jogador");
-                            ServerEvents.setState(target, false, true);
-                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                    "RP desativado para " + target.getName().getString() + "."), true);
-                            return Command.SINGLE_SUCCESS;
-                        }))));
+                .then(Commands.literal("canon")
+                        .executes(ctx -> setModoCanonRp(ctx, true, false))
+                        .then(Commands.literal("on").executes(ctx -> setModoCanonRp(ctx, true, false)))
+                        .then(Commands.literal("off").executes(ctx -> setModoCanonRp(ctx, false, false))))
+                .then(Commands.argument("jogadores", EntityArgument.players())
+                        .then(Commands.literal("on").executes(ctx ->
+                                setRpJogadores(ctx, EntityArgument.getPlayers(ctx, "jogadores"), true)))
+                        .then(Commands.literal("off").executes(ctx ->
+                                setRpJogadores(ctx, EntityArgument.getPlayers(ctx, "jogadores"), false)))));
 
         // (5.24.0) /barra [on|off] — o jogador tira a barra da PRÓPRIA tela (todo mundo pode)
         event.getDispatcher().register(Commands.literal("barra")
@@ -2354,6 +2392,58 @@ public final class RPCommands {
         }
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(alvo,
                 new AxionPayload(estado, d.axionEscala(), 0.995F, 0.995F));
+    }
+
+    /** (5.78.11) Define RP ON ou OFF para um ou mais jogadores selecionados pelo admin. */
+    private static int setRpJogadores(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            java.util.Collection<ServerPlayer> alvos, boolean inRp) {
+        int n = 0;
+        ServerPlayer unico = null;
+        for (ServerPlayer target : alvos) {
+            ServerEvents.setState(target, inRp, true);
+            unico = target;
+            n++;
+        }
+        final int quantos = n;
+        final String quem = n == 1 && unico != null ? unico.getName().getString() : (quantos + " jogador(es)");
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                (inRp ? "RP ativado para " : "RP desativado para ") + quem + ".")
+                .withStyle(inRp ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /**
+     * (5.78.11) Modo canon de RP: quando ligado, coloca todos os jogadores online em RP ON
+     * imediatamente (e quem entrar depois também já entra em RP ON).
+     */
+    private static int setModoCanonRp(
+            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> ctx,
+            boolean on, boolean bannerLore) {
+        var server = ctx.getSource().getServer();
+        RPWorldData data = RPWorldData.get(server);
+        data.setCanonRpTodos(on);
+        if (bannerLore) {
+            data.setCanonEvent(on);
+            net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
+                    new CanonBannerPayload(
+                            on ? "\u2740 LORE ON \u2740" : "\u2740 LORE OFF \u2740",
+                            on ? "\u2740 HARD-RP ON | VIDAS CANNON ON \u2740"
+                                    : "\u2740 HARD-RP ON | VIDAS CANNON OFF \u2740",
+                            5, on));
+        }
+        if (on) {
+            int n = ServerEvents.setAllRp(server, true, false);
+            final int quantos = n;
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "Modo CANON ativado — todos os jogadores (" + quantos + ") estão em RP ON.")
+                    .withStyle(ChatFormatting.LIGHT_PURPLE), true);
+        } else {
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "Modo CANON desativado — jogadores podem alternar RP normalmente.")
+                    .withStyle(ChatFormatting.GRAY), true);
+        }
+        return Command.SINGLE_SUCCESS;
     }
 
 }

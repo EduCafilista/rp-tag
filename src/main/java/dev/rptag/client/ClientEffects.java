@@ -633,23 +633,25 @@ public final class ClientEffects {
             int w = g.guiWidth();
             int h = g.guiHeight();
             float pulse = 0.6F + 0.4F * (float) Math.sin(now * 0.011);
+            boolean medoVazio = fearNivel >= 2;
             com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+            float vinhetaAlpha = medoVazio ? Math.min(0.45F, amp * 0.35F * pulse) : Math.min(1.0F, amp * pulse);
             com.mojang.blaze3d.systems.RenderSystem.setShaderColor(
-                    1.0F, 1.0F, 1.0F, Math.min(1.0F, amp * pulse));
+                    1.0F, 1.0F, 1.0F, vinhetaAlpha);
             // vinheta HD esticada na tela inteira (gradiente radial suave)
             g.blit(VINHETA_TEX, 0, 0, 0, 0, w, h, w, h);
-            // O MEDO ESCONDE: veu azul-noite REFORCADO pulsando com a tremedeira
-            int veil = (int) (208 * amp);
+            // O MEDO ESCONDE: no medo do vazio (5.78.11) o véu fica suave para não deixar a tela preta demais
+            int veil = medoVazio ? (int) Math.min(58.0F, 45.0F * amp) : (int) (208 * amp);
             g.fill(0, 0, w, h, (veil << 24) | 0x05070F);
-            // (5.78.4) MEDO DO VAZIO: a tela aperta no ritmo do coração (a "dor de cabeça")
+            // (5.78.4 / 5.78.11) MEDO DO VAZIO: pulso leve no ritmo do coração sem cegar a visão
             float cabeca = apertoDeCabeca(now, amp);
             if (cabeca > 0.01F) {
-                int aperto = (int) Math.min(150.0F, 150.0F * cabeca);
+                int aperto = (int) Math.min(34.0F, 26.0F * cabeca);
                 g.fill(0, 0, w, h, (aperto << 24) | 0x0A0206);
-                // e as bordas fecham mais: uma moldura escura de 8% da tela em cada lado
-                int bx = Math.max(6, w / 14);
-                int by = Math.max(6, h / 14);
-                int borda = (int) Math.min(190.0F, 190.0F * cabeca);
+                // moldura discreta nas bordas
+                int bx = Math.max(4, w / 22);
+                int by = Math.max(4, h / 22);
+                int borda = (int) Math.min(68.0F, 52.0F * cabeca);
                 int cor = (borda << 24) | 0x03010A;
                 g.fill(0, 0, w, by, cor);
                 g.fill(0, h - by, w, h, cor);

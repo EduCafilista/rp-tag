@@ -202,5 +202,9 @@ public final class ModNetworking {
         registrar.playToClient(dev.rptag.aura.QuakeStatePayload.TYPE,
                 dev.rptag.aura.QuakeStatePayload.CODEC,
                 (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.aura.client.QuakeFx.setState(p.active(), p.intensity())));
+        // (5.78.11) PEDIDO 151: efeito ao atacar corpo a corpo de cada aura (Radiação, Arco-íris, Vazio e Iluminação)
+        registrar.playToClient(dev.rptag.aura.AuraHitPayload.TYPE,
+                dev.rptag.aura.AuraHitPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> dev.rptag.aura.client.AuraHitClient.start(p)));
     }
 }
