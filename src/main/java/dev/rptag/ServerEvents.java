@@ -413,6 +413,13 @@ public final class ServerEvents {
         // quem já estava online do título DELE (senão o nametag fica sem).
         Titulos.enviarTodos(joined);
         Titulos.avisar(server, joined.getUUID());
+        // (5.78.9) se o Hidden Names está instalado, coloca o título em prefixes/suffixes
+        try {
+            Titulos.Titulo tJoin = Titulos.de(server, joined.getUUID());
+            Titulos.sincronizarAfixos(joined, tJoin.etiqueta(), tJoin.cor(),
+                    tJoin.personalizado(), tJoin.corPessoal());
+        } catch (Throwable ignorado) {
+        }
         // (5.11.0) quem entra depois do /vazio ligar também precisa da aura
         NeptuneEventos.reenviarAura(server);
     }
@@ -601,9 +608,13 @@ public final class ServerEvents {
     //  Nomes (chat/TAB/servidor)
     // ================================================================
 
-    /** Nome base do jogador: personagem (se houver) ou nick, com tooltip da descricao. */
+    /** Nome base do jogador: personagem (se houver), nome do Hidden Names (se setado), ou nick. */
     private static MutableComponent baseName(ServerPlayer player, Persona persona) {
         if (persona.isEmpty()) {
+            Component hn = HiddenNamesCompat.nomeCustomizado(player.getUUID(), player.getName().getString());
+            if (hn != null) {
+                return hn.copy();
+            }
             return Component.literal(player.getName().getString());
         }
         MutableComponent name = Component.literal(persona.name());

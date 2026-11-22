@@ -406,6 +406,12 @@ public final class PoderLeque {
      */
     private static boolean cliqueTemDono(Minecraft mc) {
         try {
+            // (5.78.9) olhando para outro JOGADOR (ex.: amigo deitado/sangrando no PlayerRevive,
+            // que usa clique direito na entidade para levantar): NUNCA roubar o botão direito!
+            if (mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult eh
+                    && eh.getEntity() instanceof net.minecraft.world.entity.player.Player) {
+                return true;
+            }
             var mao = mc.player.getMainHandItem();
             if (mao != null && !mao.isEmpty()) {
                 String id = mao.getItem().builtInRegistryHolder().key().location().toString();

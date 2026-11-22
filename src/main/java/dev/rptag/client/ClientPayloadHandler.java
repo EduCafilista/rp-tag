@@ -74,6 +74,8 @@ public final class ClientPayloadHandler {
                 if (minecraft.level != null) {
                     Player player = minecraft.level.getPlayerByUUID(payload.playerId());
                     if (player != null) {
+                        dev.rptag.Titulos.sincronizarAfixos(player, payload.etiqueta(),
+                                payload.cor(), payload.personalizado(), payload.corPessoal());
                         player.refreshDisplayName();
                     }
                 }

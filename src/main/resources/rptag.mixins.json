@@ -1,0 +1,12 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.rptag.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "PlayerTabOverlayTituloMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

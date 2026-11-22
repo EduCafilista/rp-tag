@@ -26,6 +26,8 @@ public final class ReviveCompat {
     private static final String[] MODS_DE_REVIVE = {
             "playerrevive",      // CreativeMD — o mais usado (60 s para ser levantado)
             "hardcorerevival",   // Hardcore Revival
+            "incapacitated",     // Incapacitated
+            "down_but_not_out",  // Down But Not Out
             "reviveme",
             "revive",
             "corpse",            // Corpse / Corpse Complex (corpo no chão)

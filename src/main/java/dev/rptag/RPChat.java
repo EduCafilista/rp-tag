@@ -35,6 +35,16 @@ public final class RPChat {
         Persona persona = data.getPersona(player.getUUID());
         boolean inRp = data.isInRp(player.getUUID());
 
+        if (persona.isEmpty()) {
+            // (5.78.9) se o jogador teve o nome setado pelo Hidden Names (/hiddennames setName),
+            // usa esse nome (com a cor dele!) e envolve com o nosso título + tag RP
+            Component hn = HiddenNamesCompat.nomeCustomizado(
+                    player.getUUID(), player.getName().getString());
+            if (hn != null) {
+                MutableComponent comTitulo = Titulos.aplicar(player.server, player.getUUID(), hn).copy();
+                return comTitulo.append(RPTags.tag(inRp));
+            }
+        }
         String nomeBruto = persona.isEmpty() ? player.getName().getString() : persona.name();
         return montarNome(player.server, player.getUUID(), nomeBruto, inRp);
     }

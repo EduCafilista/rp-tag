@@ -14,6 +14,7 @@ import net.minecraft.world.entity.EntityAttachment;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderNameTagEvent;
@@ -62,11 +63,20 @@ public final class NameplateRenderer {
      * {@link #BADGE_ENABLED}) e só troca o TEXTO do nametag pelo
      * {@code [Sagrado] Nome [O Ferreiro]} de quem tem título. Quem não tem
      * não é tocado — o vanilla desenha igual a antes.
+     *
+     * <p>(5.78.9) {@link EventPriority#LOWEST}: mods que trocam/animam o nome no nametag — em
+     * especial o <b>Hidden Names</b> ({@code ClientEvents.onRenderNameplate}, que roda em
+     * {@code NORMAL} e faz {@code event.setContent(...)}) — escrevem o nome novo primeiro, e nós
+     * embrulhamos o resultado com o título logo depois. Se o Hidden Names escondeu o nametag
+     * ({@code TriState.FALSE}), respeitamos e não forçamos aparecer.
      */
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRenderNameTagTitulo(RenderNameTagEvent event) {
         try {
             if (!(event.getEntity() instanceof Player player)) {
+                return;
+            }
+            if (event.canRender() == TriState.FALSE) {
                 return;
             }
             if (ClientTitulos.get(player.getUUID()) == null) {

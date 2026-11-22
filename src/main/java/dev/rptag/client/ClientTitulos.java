@@ -60,6 +60,11 @@ public final class ClientTitulos {
             if (t == null || t.vazio()) {
                 return nome;
             }
+            // (5.78.9) anti-duplicação: se outro mod (ex.: Hidden Names sem animação) preservou o
+            // displayName que já trazia o título, não empilha [Classe] [Classe] Nome.
+            if (dev.rptag.HiddenNamesCompat.jaTemTitulo(nome, t.etiqueta(), t.personalizado())) {
+                return nome;
+            }
             MutableComponent out = Component.empty();
             if (!t.etiqueta().isEmpty()) {
                 // (5.10.1) o MESMO TituloEstilo do servidor: o nametag fica

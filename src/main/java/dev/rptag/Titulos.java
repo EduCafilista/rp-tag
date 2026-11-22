@@ -338,6 +338,8 @@ public final class Titulos {
         avisar(server, id);
         ServerPlayer p = server.getPlayerList().getPlayer(id);
         if (p != null) {
+            Titulo atual = Dados.get(server).de(id);
+            sincronizarAfixos(p, atual.etiqueta(), atual.cor(), atual.personalizado(), atual.corPessoal());
             p.refreshTabListName();
             p.refreshDisplayName();
         }
@@ -380,6 +382,10 @@ public final class Titulos {
             if (t.vazio()) {
                 return nome;
             }
+            // (5.78.9) anti-duplicação quando outro mod (Hidden Names) já manteve ou reenviou o nome
+            if (HiddenNamesCompat.jaTemTitulo(nome, t.etiqueta(), t.personalizado())) {
+                return nome;
+            }
             MutableComponent out = Component.empty();
             if (!t.etiqueta().isEmpty()) {
                 // (5.10.1) [Chronos] com gradiente metálico e colchetes apagados
@@ -397,5 +403,51 @@ public final class Titulos {
         } catch (Throwable erro) {
             return nome;
         }
+    }
+
+    /**
+     * (5.78.9) Sincroniza o título com {@link net.minecraft.world.entity.player.Player#getPrefixes()}
+     * e {@link net.minecraft.world.entity.player.Player#getSuffixes()} quando o mod
+     * <b>Hidden Names</b> está ativo.
+     *
+     * <p>Por quê? O {@code PlayerMixin} do Hidden Names substitui o {@code displayname} central por
+     * {@code NameData.getDisplayName()}, jogando fora o que saiu do {@code PlayerEvent.NameFormat} —
+     * MAS ele preserva {@code player.prefixes} e {@code player.suffixes} na hora de montar
+     * {@code Player.getDisplayName()}! Colocando o título ali, mensagens do servidor, mortes,
+     * comandos e qualquer mod que chame {@code player.getDisplayName()} continuam vendo
+     * {@code [Etiqueta] NomeDoHiddenNames [Pessoal]} sem precisarmos mexer no jar do Hidden Names.
+     */
+    private static final String MARCA_AFIXO = "rptag:titulo_afixo";
+
+    public static void sincronizarAfixos(net.minecraft.world.entity.player.Player p,
+            String etiqueta, int cor, String personalizado, int corPessoal) {
+        if (p == null) {
+            return;
+        }
+        try {
+            p.getPrefixes().removeIf(Titulos::ehNossoAfixo);
+            p.getSuffixes().removeIf(Titulos::ehNossoAfixo);
+            if (!HiddenNamesCompat.ativo()) {
+                return;
+            }
+            if (etiqueta != null && !etiqueta.isEmpty()) {
+                MutableComponent pre = marcarAfixo(TituloEstilo.etiqueta(etiqueta, cor)
+                        .append(Component.literal(" ")));
+                p.getPrefixes().add(pre);
+            }
+            if (personalizado != null && !personalizado.isEmpty()) {
+                MutableComponent suf = marcarAfixo(TituloEstilo.pessoal(personalizado, corPessoal));
+                p.getSuffixes().add(suf);
+            }
+        } catch (Throwable ignorado) {
+        }
+    }
+
+    private static MutableComponent marcarAfixo(MutableComponent c) {
+        return c.withStyle(s -> s.withInsertion(MARCA_AFIXO));
+    }
+
+    private static boolean ehNossoAfixo(Component c) {
+        return c != null && MARCA_AFIXO.equals(c.getStyle().getInsertion());
     }
 }
