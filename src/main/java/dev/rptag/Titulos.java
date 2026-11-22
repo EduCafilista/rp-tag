@@ -421,6 +421,15 @@ public final class Titulos {
 
     public static void sincronizarAfixos(net.minecraft.world.entity.player.Player p,
             String etiqueta, int cor, String personalizado, int corPessoal) {
+        boolean emRp = p instanceof ServerPlayer sp
+                ? RPWorldData.get(sp.server).isInRp(sp.getUUID())
+                : dev.rptag.client.ClientRPStates.isInRp(p == null ? null : p.getUUID());
+        sincronizarAfixos(p, etiqueta, cor, personalizado, corPessoal, emRp, true);
+    }
+
+    public static void sincronizarAfixos(net.minecraft.world.entity.player.Player p,
+            String etiqueta, int cor, String personalizado, int corPessoal,
+            boolean emRp, boolean incluirTagRp) {
         if (p == null) {
             return;
         }
@@ -438,6 +447,12 @@ public final class Titulos {
             if (personalizado != null && !personalizado.isEmpty()) {
                 MutableComponent suf = marcarAfixo(TituloEstilo.pessoal(personalizado, corPessoal));
                 p.getSuffixes().add(suf);
+            }
+            if (incluirTagRp) {
+                Component hn = HiddenNamesCompat.componente(p.getUUID());
+                if (hn == null || !RPTags.hasTag(hn)) {
+                    p.getSuffixes().add(marcarAfixo(RPTags.tag(emRp)));
+                }
             }
         } catch (Throwable ignorado) {
         }

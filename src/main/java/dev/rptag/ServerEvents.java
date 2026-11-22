@@ -331,6 +331,12 @@ public final class ServerEvents {
         RPWorldData data = RPWorldData.get(server);
         data.setInRp(target.getUUID(), inRp);
 
+        try {
+            Titulos.Titulo tAtual = Titulos.de(server, target.getUUID());
+            Titulos.sincronizarAfixos(target, tAtual.etiqueta(), tAtual.cor(),
+                    tAtual.personalizado(), tAtual.corPessoal(), inRp, true);
+        } catch (Throwable ignorado) {
+        }
         target.refreshDisplayName();
         target.refreshTabListName();
         PacketDistributor.sendToAllPlayers(new SyncRPStatePayload(target.getUUID(), inRp));

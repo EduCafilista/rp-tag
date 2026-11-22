@@ -93,18 +93,20 @@ public final class RPTags {
      */
     public static MutableComponent tag(boolean inRp) {
         return inRp
-                ? Component.literal("\u25CF ").withStyle(ChatFormatting.AQUA)
+                ? Component.literal(" \u25CF ").withStyle(ChatFormatting.AQUA)
                         .append(Component.literal(tagText(true)).withStyle(ChatFormatting.AQUA))
-                : Component.literal("\u25CB ").withStyle(ChatFormatting.DARK_GRAY)
+                : Component.literal(" \u25CB ").withStyle(ChatFormatting.DARK_GRAY)
                         .append(Component.literal(tagText(false)).withStyle(ChatFormatting.GRAY));
     }
 
-    /** @return true se o texto do componente ja termina com alguma das tags. */
+    /** @return true se o texto do componente ja contem alguma das tags (fim ou com sufixo de time). */
     public static boolean hasTag(Component component) {
         if (component == null) {
             return false;
         }
         String text = component.getString();
-        return text.endsWith(tagText(true)) || text.endsWith(tagText(false));
+        return text.endsWith(tagText(true)) || text.endsWith(tagText(false))
+                || text.contains("\u25CF " + tagText(true))
+                || text.contains("\u25CB " + tagText(false));
     }
 }

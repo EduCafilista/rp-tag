@@ -111,6 +111,7 @@ public final class AfkSistema {
         RPWorldData wd = RPWorldData.get(p.server);
         if (wd.isInRp(p.getUUID())) {
             wd.setInRp(p.getUUID(), false);
+            ServerEvents.setState(p, false, false);
             p.displayClientMessage(Component.literal(
                     "Você saiu do RP automaticamente (AFK). Ao voltar, ligue com /rp on.")
                     .withStyle(ChatFormatting.GRAY), false);

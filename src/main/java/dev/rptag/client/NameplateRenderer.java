@@ -59,15 +59,15 @@ public final class NameplateRenderer {
     }
 
     /**
-     * (5.7.2) TÍTULOS NO NAMETAG: roda SEMPRE (independente de
-     * {@link #BADGE_ENABLED}) e só troca o TEXTO do nametag pelo
-     * {@code [Sagrado] Nome [O Ferreiro]} de quem tem título. Quem não tem
-     * não é tocado — o vanilla desenha igual a antes.
+     * (5.7.2) TÍTULOS E TAG RP NO NAMETAG: roda SEMPRE (independente de
+     * {@link #BADGE_ENABLED}) e garante {@code [Sagrado] Nome [O Ferreiro] ● ʀᴘ}
+     * acima da cabeça.
      *
-     * <p>(5.78.9) {@link EventPriority#LOWEST}: mods que trocam/animam o nome no nametag — em
-     * especial o <b>Hidden Names</b> ({@code ClientEvents.onRenderNameplate}, que roda em
-     * {@code NORMAL} e faz {@code event.setContent(...)}) — escrevem o nome novo primeiro, e nós
-     * embrulhamos o resultado com o título logo depois. Se o Hidden Names escondeu o nametag
+     * <p>(5.78.9 / 5.78.10) {@link EventPriority#LOWEST}: mods que trocam/animam o nome no
+     * nametag — em especial o <b>Hidden Names</b> ({@code ClientEvents.onRenderNameplate}, que
+     * roda em {@code NORMAL} e faz {@code event.setContent(...)}) — escrevem o nome novo primeiro,
+     * e nós embrulhamos o resultado com o título <b>e com a tag viva {@code ● ʀᴘ} /
+     * {@code ○ ᴏꜰꜰ ʀᴘ}</b> logo depois. Se o Hidden Names escondeu o nametag
      * ({@code TriState.FALSE}), respeitamos e não forçamos aparecer.
      */
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -79,10 +79,28 @@ public final class NameplateRenderer {
             if (event.canRender() == TriState.FALSE) {
                 return;
             }
-            if (ClientTitulos.get(player.getUUID()) == null) {
+            java.util.UUID id = player.getUUID();
+            boolean temTitulo = ClientTitulos.get(id) != null;
+            boolean temDadosRp = !BADGE_ENABLED && ClientRPStates.hasData();
+            if (!temTitulo && !temDadosRp) {
                 return;
             }
-            event.setContent(ClientTitulos.aplicar(player.getUUID(), event.getContent()));
+            Component base = event.getContent();
+            if (dev.rptag.HiddenNamesCompat.ativo()) {
+                String persona = ClientPersonaCache.getName(id);
+                if (persona != null && !persona.isEmpty()) {
+                    base = Component.literal(persona);
+                } else {
+                    base = dev.rptag.HiddenNamesCompat.removerTagAntiga(base);
+                }
+            }
+            Component comTitulo = ClientTitulos.aplicar(id, base);
+            if (temDadosRp && !RPTags.hasTag(comTitulo)) {
+                comTitulo = comTitulo.copy().append(RPTags.tag(ClientRPStates.isInRp(id)));
+            }
+            if (comTitulo != event.getContent()) {
+                event.setContent(comTitulo);
+            }
         } catch (Throwable erro) {
             RPTagMod.LOGGER.warn("RP Tag: titulo do nametag desligado nesta render", erro);
         }

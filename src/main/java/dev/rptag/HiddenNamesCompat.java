@@ -114,6 +114,40 @@ public final class HiddenNamesCompat {
      */
     public static Component nomeCustomizado(UUID id, String nickReal) {
         Component c = componente(id);
+        return limparEspelhoDoLogin(c, nickReal);
+    }
+
+    /**
+     * (5.78.10) Limpa o componente que o Hidden Names gravou automaticamente no login (quando
+     * ninguém rodou {@code /hiddennames setName}): naquele caso ele copiou o próprio
+     * {@code unmodifiedDisplayName} do jogador, que já vinha com a nossa tag {@code ● ʀᴘ} /
+     * {@code ○ ᴏꜰꜰ ʀᴘ} daquele instante (congelada!). Se o jogador trocou depois com {@code /rp on}
+     * ou {@code /rp off}, essa tag congelada ficaria errada — então arrancamos o sufixo da tag
+     * antiga antes de recolocar a tag viva atual.
+     */
+    public static Component removerTagAntiga(Component c) {
+        if (c == null) {
+            return null;
+        }
+        String s = c.getString();
+        if (s == null || !RPTags.hasTag(c)) {
+            return c;
+        }
+        String tOn = " \u25CF " + RPTags.tagText(true);
+        String tOff = " \u25CB " + RPTags.tagText(false);
+        String tOnSemEsp = "\u25CF " + RPTags.tagText(true);
+        String tOffSemEsp = "\u25CB " + RPTags.tagText(false);
+        for (String sufixo : new String[]{tOn, tOff, tOnSemEsp, tOffSemEsp}) {
+            int idx = s.lastIndexOf(sufixo);
+            if (idx >= 0) {
+                String limpo = s.substring(0, idx);
+                return Component.literal(limpo).withStyle(c.getStyle());
+            }
+        }
+        return c;
+    }
+
+    private static Component limparEspelhoDoLogin(Component c, String nickReal) {
         if (c == null) {
             return null;
         }
