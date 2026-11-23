@@ -40,10 +40,9 @@ public final class PrismaCelestial {
     private static final float DAMAGE = 14.0f;        // era 6 (por pulso: 5 pulsos/s = 70/s no centro)
     private static final int PULSE_EVERY = 4;
     /**
-     * false = o raio NÃO machuca jogadores (seguro para RP).
-     * (5.78.4) o dono confirmou de novo: <i>"nao pega em player"</i> — continua false.
+     * (5.78.13) AGORA MACHUCA JOGADOR: o dono pediu <i>"o arcoiris ainda nao esta pegando em player o ataque"</i>.
      */
-    private static final boolean HURTS_PLAYERS = false;
+    public static final boolean HURTS_PLAYERS = true;
     private static final int COOLDOWN_TICKS = 240;    // 12 s
 
     private static final class Cast {
@@ -115,10 +114,13 @@ public final class PrismaCelestial {
         AABB box = new AABB(start, end).inflate(BEAM_RADIUS + 1.0);
         for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, box,
                 en -> en != p && en.isAlive() && !en.isSpectator())) {
-            if (t instanceof Player && !HURTS_PLAYERS) continue;
+            if (t instanceof Player pl && (!HURTS_PLAYERS || pl.isCreative())) continue;
             if (distToSegment(t.getBoundingBox().getCenter(), start, end) > BEAM_RADIUS + t.getBbWidth() / 2.0) continue;
             t.invulnerableTime = 0;
-            t.hurt(level.damageSources().indirectMagic(p, p), DAMAGE);
+            boolean feriu = t.hurt(level.damageSources().indirectMagic(p, p), DAMAGE);
+            if (!feriu && t instanceof Player) {
+                t.hurt(level.damageSources().magic(), DAMAGE);
+            }
             t.push(dir.x * 0.4, 0.15, dir.z * 0.4);
             t.hurtMarked = true;
             t.addEffect(new MobEffectInstance(MobEffects.GLOWING, 60, 0, false, false));   // marcado pela luz
