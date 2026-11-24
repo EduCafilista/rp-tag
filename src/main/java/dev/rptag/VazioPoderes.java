@@ -141,14 +141,16 @@ public final class VazioPoderes {
             // (5.45.0) sem mensagem de recusa: o dono pediu "só não precisa de mensagem".
             return 0;
         }
-        long agora = System.currentTimeMillis();
+        // (v2) a recarga conta em TICKS DO SERVIDOR (recarga em ms / 50): não adianta mexer no
+        // relógio do PC e o tempo não corre com o servidor pausado. O valor é o mesmo de antes.
+        long agora = p.serverLevel().getGameTime();
         String chave = p.getUUID() + ":" + poder.id;
         Long pronto = PRONTO.get(chave);
         if (pronto != null && agora < pronto) {
             // (5.32.0) sem texto de recarga: o próprio leque mostra o que está pronto
             return 0;
         }
-        PRONTO.put(chave, agora + poder.recarga);
+        PRONTO.put(chave, agora + Math.max(1L, poder.recarga / 50L));
         try {
             switch (poder) {
                 case RAIO -> raio(p);
@@ -268,24 +270,33 @@ public final class VazioPoderes {
         LivingEntity acertado = null;
         double limite = olho.distanceTo(impacto);
         Vec3 ponto = impacto;
-        for (double d = 0.6D; d <= limite; d += 0.4D) {
-            Vec3 amostra = olho.add(dir.scale(d));
-            LivingEntity achou = null;
-            double menor = Double.MAX_VALUE;
-            for (LivingEntity e : lv.getEntitiesOfClass(LivingEntity.class,
-                    new AABB(amostra.x - 0.9D, amostra.y - 0.9D, amostra.z - 0.9D,
-                            amostra.x + 0.9D, amostra.y + 0.9D, amostra.z + 0.9D),
-                    e -> e != p && e.isAlive())) {
-                double q = e.position().add(0, e.getBbHeight() * 0.5D, 0).distanceToSqr(amostra);
-                if (q < menor) {
-                    menor = q;
-                    achou = e;
+        // (v2) UMA busca ao longo do trajeto inteiro (antes era uma busca no mundo a cada 0,4
+        // bloco, até 70 por disparo). O resultado é o mesmo: a primeira criatura cuja caixa toca
+        // o ponto (folga de 0,9) é o alvo; se duas tocam, vale a mais perto do centro.
+        final java.util.List<LivingEntity> candidatos = lv.getEntitiesOfClass(LivingEntity.class,
+                new AABB(olho, impacto).inflate(1.0D), e -> e != p && e.isAlive());
+        if (!candidatos.isEmpty()) {
+            for (double d = 0.6D; d <= limite; d += 0.4D) {
+                Vec3 amostra = olho.add(dir.scale(d));
+                AABB zona = new AABB(amostra.x - 0.9D, amostra.y - 0.9D, amostra.z - 0.9D,
+                        amostra.x + 0.9D, amostra.y + 0.9D, amostra.z + 0.9D);
+                LivingEntity achou = null;
+                double menor = Double.MAX_VALUE;
+                for (LivingEntity e : candidatos) {
+                    if (!e.getBoundingBox().intersects(zona)) {
+                        continue;
+                    }
+                    double q = e.position().add(0, e.getBbHeight() * 0.5D, 0).distanceToSqr(amostra);
+                    if (q < menor) {
+                        menor = q;
+                        achou = e;
+                    }
                 }
-            }
-            if (achou != null) {
-                acertado = achou;
-                ponto = amostra;
-                break;
+                if (achou != null) {
+                    acertado = achou;
+                    ponto = amostra;
+                    break;
+                }
             }
         }
         impacto = ponto;
@@ -400,7 +411,8 @@ public final class VazioPoderes {
         lv.sendParticles(ParticleTypes.CRIMSON_SPORE, alvo.x, alvo.y + 4, alvo.z, 160, 5.0D, 0.5D, 5.0D, 0.02D);
         lv.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, alvo.x, alvo.y, alvo.z, 40, 3.0D, 0.2D, 3.0D, 0.05D);
         lv.playSound(null, alvo.x, alvo.y, alvo.z, SoundEvents.PHANTOM_SWOOP, SoundSource.PLAYERS, 1.0F, 0.7F);
-        mandar(lv, p, 5, olho, fim);
+        // (v2) o visual agora cai sobre a área REAL do dano (antes era enviado 8 blocos além)
+        mandar(lv, p, 5, olho, alvo);
     }
 
     // ------------------------------------------------------------------ BANIR
@@ -529,15 +541,11 @@ public final class VazioPoderes {
     private static void mandar(ServerLevel lv, ServerPlayer p, int tipo, Vec3 de, Vec3 ate) {
         VazioPoderPayload pacote = new VazioPoderPayload(tipo,
                 de.x, de.y, de.z, ate.x, ate.y, ate.z);
-        for (ServerPlayer outro : lv.players()) {
-            if (outro.distanceToSqr(p) > 96.0D * 96.0D) {
-                continue;
-            }
-            try {
-                PacketDistributor.sendToPlayer(outro, pacote);
-            } catch (Throwable ignorado) {
-                // jogador de teste (sem rede)
-            }
+        try {
+            // (v2) o distribuidor já filtra por distância e dimensão (antes: laço em todos os jogadores)
+            PacketDistributor.sendToPlayersNear(lv, null, p.getX(), p.getY(), p.getZ(), 96.0D, pacote);
+        } catch (Throwable ignorado) {
+            // jogador de teste (sem rede)
         }
     }
 

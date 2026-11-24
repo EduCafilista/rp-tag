@@ -64,7 +64,8 @@ public final class PoderLeque {
     /** o piso de recarga de cada uma (ms) — o servidor é quem manda, isto é só o desenho. */
     public static final long[] RECARGA = {1200L, 600L, 6000L, 4000L, 3500L, 12000L};
     /** (5.36.0) o dano de cada uma, só para mostrar no miolo (quem aplica é o servidor). */
-    public static final float[] DANO = {16.0F, 16.0F, 9.0F, 7.0F, 10.0F, 0.0F};
+    public static final float[] DANO = {dev.rptag.VazioPoderes.DANO_RAIO, dev.rptag.VazioPoderes.DANO_ORBE,
+        dev.rptag.VazioPoderes.DANO_ONDA, dev.rptag.VazioPoderes.DANO_OLHOS, dev.rptag.VazioPoderes.DANO_PENAS, 0.0F};
 
     private static final ResourceLocation TEX_RODA =
             ResourceLocation.fromNamespaceAndPath(RPTagMod.MODID, "textures/gui/leque_roda.png");
