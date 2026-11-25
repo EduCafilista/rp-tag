@@ -35,10 +35,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Personagem Gravidade (/aura gravidade). Roda de poderes (tecla G), aura liga/desliga (tecla H).
+ * Personagem Gravidade (/gravidade). Roda de poderes (tecla J), aura liga/desliga (tecla H).
  *  0 Pés na parede | 1 Gravidade pesada | 2 Gravidade leve | 3 Queda meteoro
  *  4 Campo esmagar | 5 Campo flutuar | 6 Campo atrair | 7 Campo repelir   (o campo acompanha o jogador)
- * Passivo: qualquer queda >= 4 blocos vira um impacto no chão, mais forte quanto maior a altura.
+ * Impacto no chão (onda de choque) só na Queda meteoro; queda normal não faz efeito.
  * Aura ligada = escudo de gravidade: +7 de armadura. Desligar a aura NÃO desliga os poderes.
  */
 @EventBusSubscriber(modid = dev.rptag.RPTagMod.MODID)
@@ -175,12 +175,19 @@ public final class GravityPowers {
             if (++st.meteorT >= 12) { st.meteor = 2; st.meteorT = 0; }
             return;
         }
+        if (p.onGround() && st.meteorT > 2) {         // pousou sem disparar LivingFallEvent (ex.: água rasa / teto baixo)
+            float d = p.fallDistance + 12f;
+            p.fallDistance = 0;
+            st.meteor = 0;
+            impact(p, d);
+            return;
+        }
         Vec3 mv = p.getDeltaMovement();               // despenca
         p.setDeltaMovement(mv.x * 0.3, -3.0, mv.z * 0.3);
         p.hurtMarked = true;
         p.serverLevel().sendParticles(ParticleTypes.END_ROD, p.getX(), p.getY() + 1, p.getZ(), 4, 0.3, 0.5, 0.3, 0.02);
         st.meteorT++;
-        if ((p.onGround() && st.meteorT > 2) || st.meteorT > 100) st.meteor = 0;
+        if (st.meteorT > 100) st.meteor = 0;
     }
 
     // --------------------------------------------------------------------- campo
@@ -254,9 +261,14 @@ public final class GravityPowers {
         if (!(e.getEntity() instanceof ServerPlayer p) || !GravState.isGravity(p)) return;
         float d = e.getDistance();
         PS st = STATES.get(p.getUUID());
-        if (st != null && st.meteor != 0) { if (st.meteor == 2) d += 12f; st.meteor = 0; }
         e.setDamageMultiplier(0f);                    // o personagem não sofre dano de queda
-        if (d >= 4f) impact(p, d);
+        // SÓ o ataque Queda meteoro gera impacto. Queda normal (pulo, cair de um bloco alto,
+        // gravidade leve...) pousa em silêncio: sem onda de choque e sem jogar ninguém longe.
+        if (st != null && st.meteor != 0) {
+            if (st.meteor == 2) d += 12f;
+            st.meteor = 0;
+            impact(p, d);
+        }
     }
 
     /** Quanto maior a altura da queda, maior o raio e o dano. */
