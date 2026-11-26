@@ -94,6 +94,7 @@ public final class KingFxClient {
         MultiBufferSource.BufferSource bs = mc.renderBuffers().bufferSource();
         VertexConsumer vc = bs.getBuffer(RenderType.lightning());
         for (Fx f : FX) {
+            if (dev.rptag.client.FxQualidade.longePoder(cam, f.a, 80.0)) continue;
             float t = f.age + pt;
             switch (f.type) {
                 case KingFxPayload.DECREE -> decree(vc, m, cam, f, t);

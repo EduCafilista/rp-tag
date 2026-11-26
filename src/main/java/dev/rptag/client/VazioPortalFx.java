@@ -216,15 +216,16 @@ public final class VazioPortalFx {
 
         // a câmera está na frente (+z) ou atrás (-z)? desenha ligeiro para o lado dela
         float desloca = cam.z > z ? 0.012F : -0.012F;
+        int sub = FxQualidade.minimoOuMenos() ? 1 : (FxQualidade.baixoOuMenos() ? 2 : SUB);
 
         for (int linha = 0; linha < linhasAbertas; linha++) {
             for (int col = 0; col < larg; col++) {
-                for (int sy = 0; sy < SUB; sy++) {
-                    for (int sx = 0; sx < SUB; sx++) {
-                        float u0 = x0 + col + sx / (float) SUB;
-                        float u1 = x0 + col + (sx + 1) / (float) SUB;
-                        float v0 = py + linha + sy / (float) SUB;
-                        float v1 = py + linha + (sy + 1) / (float) SUB;
+                for (int sy = 0; sy < sub; sy++) {
+                    for (int sx = 0; sx < sub; sx++) {
+                        float u0 = x0 + col + sx / (float) sub;
+                        float u1 = x0 + col + (sx + 1) / (float) sub;
+                        float v0 = py + linha + sy / (float) sub;
+                        float v1 = py + linha + (sy + 1) / (float) sub;
 
                         // coordenadas relativas ao centro do portal
                         float rx = (u0 + u1) * 0.5F - (px + 0.5F);

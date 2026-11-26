@@ -65,12 +65,13 @@ public final class YuFxClient {
 
     /** (5.78.5) estalo do Blackwhip: faíscas amarelas curtas no ponto do impacto. */
     private static void crack(ClientLevel lv, Vec3 c, float f) {
-        for (int i = 0; i < 10 + (int) (10 * f); i++) {
+        int qtd = dev.rptag.client.FxQualidade.particulas(10 + (int) (10 * f));
+        for (int i = 0; i < qtd; i++) {
             double dx = (RND.nextDouble() - 0.5) * 0.9, dy = (RND.nextDouble() - 0.5) * 0.9, dz = (RND.nextDouble() - 0.5) * 0.9;
             lv.addParticle(new DustParticleOptions(new Vector3f(1f, 0.9f, 0.25f), 0.8f + 0.6f * f),
                     c.x, c.y, c.z, dx, dy, dz);
         }
-        lv.addParticle(ParticleTypes.END_ROD, c.x, c.y, c.z, 0, 0.06, 0);
+        if (qtd > 0) lv.addParticle(ParticleTypes.END_ROD, c.x, c.y, c.z, 0, 0.06, 0);
     }
 
     private static void addShake(Vec3 at, float amp, double reach) {
@@ -81,7 +82,8 @@ public final class YuFxClient {
     }
 
     private static void sparks(ClientLevel lv, Vec3 c, int n, double speed) {
-        for (int i = 0; i < n; i++) {
+        int qtd = dev.rptag.client.FxQualidade.particulas(n);
+        for (int i = 0; i < qtd; i++) {
             Vec3 d = randDir().scale(speed * (0.4 + RND.nextDouble()));
             lv.addParticle(ParticleTypes.ELECTRIC_SPARK, c.x, c.y, c.z, d.x, d.y, d.z);
             if ((i & 1) == 0) lv.addParticle(new DustParticleOptions(new Vector3f(1f, 0.88f, 0.2f), 1.1f), c.x, c.y, c.z, d.x * 0.4, d.y * 0.4, d.z * 0.4);
@@ -165,7 +167,10 @@ public final class YuFxClient {
         Matrix4f m = e.getPoseStack().last().pose();
         MultiBufferSource.BufferSource bs = mc.renderBuffers().bufferSource();
         VertexConsumer vc = bs.getBuffer(RenderType.lightning());
-        for (Bolt b : BOLTS) draw(vc, m, cam, b, b.age + pt);
+        for (Bolt b : BOLTS) {
+            if (dev.rptag.client.FxQualidade.longePoder(cam, b.a, 64.0) && dev.rptag.client.FxQualidade.longePoder(cam, b.b, 64.0)) continue;
+            draw(vc, m, cam, b, b.age + pt);
+        }
         bs.endBatch(RenderType.lightning());
     }
 
@@ -174,7 +179,7 @@ public final class YuFxClient {
         if (fade <= 0.01f) return;
         Vec3 d = b.b.subtract(b.a);
         double len = d.length();
-        int n = Mth.clamp((int) (len * 2.2), 4, 40);
+        int n = dev.rptag.client.FxQualidade.segmentos(Mth.clamp((int) (len * 2.2), 4, 40));
         Random r = new Random(b.seed + (long) (t * 0.5f) * 7919L);          // muda a cada 2 ticks: efeito de tremida
         Vec3[] pts = new Vec3[n + 1];
         pts[0] = b.a; pts[n] = b.b;
@@ -183,10 +188,11 @@ public final class YuFxClient {
             pts[i] = b.a.add(d.scale((double) i / n)).add(
                     (r.nextDouble() - 0.5) * 2 * b.jag * env, (r.nextDouble() - 0.5) * 2 * b.jag * env, (r.nextDouble() - 0.5) * 2 * b.jag * env);
         }
+        boolean leve = dev.rptag.client.FxQualidade.baixoOuMenos();
         for (int i = 0; i < n; i++) {
-            ribbon(vc, m, cam, pts[i], pts[i + 1], b.w * 2.6f, 1f, 0.80f, 0.10f, 0.30f * fade);   // brilho amarelo
-            ribbon(vc, m, cam, pts[i], pts[i + 1], b.w, 1f, 0.95f, 0.55f, 0.85f * fade);          // miolo
-            ribbon(vc, m, cam, pts[i], pts[i + 1], b.w * 0.35f, 1f, 1f, 1f, fade);                // núcleo branco
+            if (!leve) ribbon(vc, m, cam, pts[i], pts[i + 1], b.w * 2.6f, 1f, 0.80f, 0.10f, 0.30f * fade);   // brilho amarelo
+            ribbon(vc, m, cam, pts[i], pts[i + 1], b.w, 1f, 0.95f, 0.55f, 0.85f * fade);                      // miolo
+            ribbon(vc, m, cam, pts[i], pts[i + 1], b.w * 0.35f, 1f, 1f, 1f, fade);                            // núcleo branco
         }
     }
 

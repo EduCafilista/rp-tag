@@ -73,6 +73,39 @@ public final class FxAlturas {
         return d.ys;
     }
 
+    /** Alturas em cache para pontos fixos ou entidades sem UUID de Player (ex: Rei de Amarelo). */
+    private static final Map<Long, Dados> CACHE_CHAVE = new HashMap<>();
+
+    public static float[] anelPos(Level lv, long chave, double cx, double cy, double cz, float raio) {
+        long agora = lv == null ? 0L : lv.getGameTime();
+        Dados d = CACHE_CHAVE.get(chave);
+
+        boolean refazer = d == null
+                || Math.abs(d.raio - raio) > 0.01f
+                || agora - d.tick >= 4
+                || Math.abs(d.x - cx) > 0.8 || Math.abs(d.z - cz) > 0.8
+                || Math.abs(d.y - cy) > 1.0;
+
+        if (!refazer) return d.ys;
+
+        if (d == null) { d = new Dados(); d.ys = new float[N + 1]; CACHE_CHAVE.put(chave, d); }
+        d.raio = raio; d.x = cx; d.y = cy; d.z = cz; d.tick = agora;
+
+        float py = (float) cy;
+        int minY = lv == null ? Integer.MIN_VALUE : lv.getMinBuildHeight();
+        for (int i = 0; i <= N; i++) {
+            float a = i * (float) (Math.PI * 2.0) / N;
+            if (lv == null) { d.ys[i] = 0.04f; continue; }
+            int h = lv.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                    Mth.floor(cx + Mth.cos(a) * raio), Mth.floor(cz + Mth.sin(a) * raio));
+            d.ys[i] = (h <= minY + 1 || Math.abs(h - cy) > 3.5) ? 0.04f : (h - py + 0.04f);
+        }
+        if (CACHE_CHAVE.size() > 48) {
+            CACHE_CHAVE.entrySet().removeIf(en -> agora - en.getValue().tick > 200);
+        }
+        return d.ys;
+    }
+
     /** tira do cache quem saiu do mundo (senao o mapa cresce a cada reconexao). */
     private static void limpar(long agora) {
         if (CACHE.size() <= 24) return;

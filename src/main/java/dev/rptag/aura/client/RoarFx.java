@@ -69,9 +69,11 @@ public final class RoarFx {
         VertexConsumer vc = bs.getBuffer(RenderType.lightning());
 
         for (Wave w : WAVES) {
+            if (dev.rptag.client.FxQualidade.longePoder(cam, new Vec3(w.x, w.y, w.z), 96.0)) continue;
             float t = w.age + pt;
             flash(vc, m, cam, w, t);
-            for (int i = 0; i < DELAY.length; i++) ring(vc, m, lv, cam, w, t, DELAY[i], STRENGTH[i], COLOR[i]);
+            int ecos = dev.rptag.client.FxQualidade.minimoOuMenos() ? 1 : (dev.rptag.client.FxQualidade.baixoOuMenos() ? 2 : DELAY.length);
+            for (int i = 0; i < ecos; i++) ring(vc, m, lv, cam, w, t, DELAY[i], STRENGTH[i], COLOR[i]);
         }
         bs.endBatch(RenderType.lightning());
     }
@@ -87,13 +89,17 @@ public final class RoarFx {
         if (tt > RoarAbility.TRAVEL_TICKS) fade *= Math.max(0f, 1f - (tt - RoarAbility.TRAVEL_TICKS) / 30f);
         if (fade <= 0.01f) return;
 
-        int n = (int) Mth.clamp(r * 4.0, 48.0, 240.0);
+        int n = dev.rptag.client.FxQualidade.segmentos((int) Mth.clamp(r * 4.0, 48.0, 240.0));
         float half = 0.9f + (float) r * 0.025f;
         double[] cs = new double[n + 1], sn = new double[n + 1], ys = new double[n + 1];
+        long chave = (((long) Mth.floor(w.x)) << 36) ^ ((((long) Mth.floor(w.z)) & 0xFFFFFL) << 16) ^ ((long) (r * 4) & 0xFFFFL);
+        float[] cacheY = dev.rptag.client.FxAlturas.anelPos(lv, chave, w.x, w.y, w.z, (float) r);
+        int totalN = dev.rptag.client.FxAlturas.N;
         for (int i = 0; i <= n; i++) {
             double a = i * TAU / n;
             cs[i] = Math.cos(a); sn[i] = Math.sin(a);
-            ys[i] = groundY(lv, w, w.x + cs[i] * r, w.z + sn[i] * r) + 0.12;   // acompanha o relevo
+            int idx = Math.min(totalN, (int) ((double) i / n * totalN + 0.5));
+            ys[i] = w.y + cacheY[idx] + 0.08;   // acompanha o relevo via cache
         }
         double ri = r - half, ro = r + half;
         float A = 0.8f * fade;

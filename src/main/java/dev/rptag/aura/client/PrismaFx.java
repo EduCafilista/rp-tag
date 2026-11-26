@@ -74,9 +74,11 @@ public final class PrismaFx {
             if (++c.age > CHARGE + FIRE + FADE) { it.remove(); continue; }
             Entity en = lv.getEntity(c.id);
             if (en == null || c.age < CHARGE || c.age > CHARGE + FIRE) continue;
+            int nPart = dev.rptag.client.FxQualidade.particulas(3);
+            if (nPart <= 0) continue;
             Geo g = geo(lv, en, 1f);
             var rnd = lv.random;
-            for (int i = 0; i < 3; i++) {      // fagulhas arco-íris no impacto
+            for (int i = 0; i < nPart; i++) {      // fagulhas arco-íris no impacto
                 float[] col = AuraShellLayer.hsv(rnd.nextFloat(), 0.85f);
                 lv.addParticle(new DustParticleOptions(new Vector3f(col[0], col[1], col[2]), 1.3f),
                         g.end.x, g.end.y, g.end.z, rnd.nextGaussian() * 0.25, rnd.nextGaussian() * 0.25 + 0.1, rnd.nextGaussian() * 0.25);
@@ -106,6 +108,7 @@ public final class PrismaFx {
         for (Cast c : CASTS) {
             Entity en = lv.getEntity(c.id);
             if (!(en instanceof LivingEntity)) continue;
+            if (dev.rptag.client.FxQualidade.longePoder(cam, en.position(), 72.0)) continue;
             Geo g = geo(lv, en, pt);
             float t = c.age + pt;
             if (t < CHARGE + 4) circle(vc, m, cam, g, t);
@@ -132,8 +135,10 @@ public final class PrismaFx {
                     v(pl(C, g, Math.cos(a0) * R * 1.1, Math.sin(a0) * R * 1.1), glow, 0f));
         }
         // anéis arco-íris
-        planeRing(vc, m, cam, C, g, R * 0.93, R * 1.0, 64, t * 0.02f, 0.95f * alpha);
-        planeRing(vc, m, cam, C, g, R * 0.55, R * 0.58, 48, -t * 0.03f, 0.7f * alpha);
+        planeRing(vc, m, cam, C, g, R * 0.93, R * 1.0, dev.rptag.client.FxQualidade.segmentos(64), t * 0.02f, 0.95f * alpha);
+        if (!dev.rptag.client.FxQualidade.minimoOuMenos()) {
+            planeRing(vc, m, cam, C, g, R * 0.55, R * 0.58, dev.rptag.client.FxQualidade.segmentos(48), -t * 0.03f, 0.7f * alpha);
+        }
         // anel tracejado girando ao contrário (cada traço numa cor)
         for (int j = 0; j < 14; j++) {
             double a0 = -t * 0.05 + j * TAU / 14;
@@ -179,9 +184,11 @@ public final class PrismaFx {
             }
         }
         // 7 hélices, uma para cada cor do arco-íris, girando ao redor do raio
-        final double STEP = 0.6;
+        final double STEP = dev.rptag.client.FxQualidade.baixoOuMenos() ? 1.4 : 0.6;
         int n = (int) Math.min(100, L / STEP);
+        int passoH = dev.rptag.client.FxQualidade.desligado() ? 99 : (dev.rptag.client.FxQualidade.minimoOuMenos() ? 3 : (dev.rptag.client.FxQualidade.baixoOuMenos() ? 2 : 1));
         for (int j = 0; j < 7; j++) {
+            if (j % passoH != 0) continue;
             float[] c = AuraShellLayer.hsv(j / 7f, 0.9f);
             Vec3 pP = null, pR = null, pT = null;
             float pa = 0f;

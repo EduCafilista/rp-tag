@@ -116,8 +116,8 @@ public final class GlifosSaidaFx {
                 return;
             }
             Vec3 cam = event.getCamera().getPosition();
-            if (pos.distanceToSqr(cam) > 64 * 64) {
-                return;                       // longe demais: não gasta quadro
+            if (FxQualidade.desligado() || FxQualidade.longePoder(cam, pos, 64.0)) {
+                return;                       // longe demais ou desligado: não gasta quadro
             }
             float u = (agora - inicio) / (float) Math.max(1L, fim - inicio);   // 0..1
 
@@ -135,7 +135,7 @@ public final class GlifosSaidaFx {
             double t = (agora - inicio) / 1000.0;
 
             // ---- (1) TRÊS ANÉIS EM VOLTA DO CORPO -------------------------
-            int porAnel = GLIFOS / 3;
+            int porAnel = FxQualidade.escala(GLIFOS / 3, 4);
             for (int anel = 0; anel < 3; anel++) {
                 float raio = 0.62F + anel * 0.30F;
                 float vel = (anel % 2 == 0 ? 1.0F : -0.75F);

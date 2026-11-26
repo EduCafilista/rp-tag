@@ -218,6 +218,9 @@ public final class VazioPoderFx {
                 pose.translate(-cam.x, -cam.y, -cam.z);
                 Matrix4f mat = pose.last().pose();
                 for (Efeito e : VIVOS) {
+                    if (FxQualidade.longePoder(cam, e.de(), 72.0) && FxQualidade.longePoder(cam, e.ate(), 72.0)) {
+                        continue;
+                    }
                     float vida = Math.min(0.999F, (agora - e.nasceu()) / (float) e.dura());
                     try {
                         desenhar(vc, mat, e, vida, brilho);
@@ -225,11 +228,11 @@ public final class VazioPoderFx {
                         // um efeito com defeito não derruba os outros
                     }
                 }
-                if (!brilho && portalFixo != null) {
+                if (!brilho && portalFixo != null && !FxQualidade.desligado()) {
                     float vida = (agora - portalFixo.nasceu()) / (float) portalFixo.dura();
                     if (vida >= 1.0F) {
                         portalFixo = null;
-                    } else {
+                    } else if (!FxQualidade.longePoder(cam, portalFixo.de(), 64.0)) {
                         portal(vc, mat, portalFixo.de(), (agora - portalFixo.nasceu()) / 1_000_000_000.0, vida);
                     }
                 }
@@ -341,7 +344,8 @@ public final class VazioPoderFx {
                 tubo(vc, m, eixo[i], eixo[i + 1], 0.04F * env, 0.04F * env, c(env, QUENTE), c(env, QUENTE));
             }
             // três fios em hélice
-            for (int f = 0; f < 3; f++) {
+            int fios = FxQualidade.minimoOuMenos() ? 1 : (FxQualidade.baixoOuMenos() ? 2 : 3);
+            for (int f = 0; f < fios; f++) {
                 Vec3 prev = null;
                 for (int i = 0; i <= n * 2; i++) {
                     float s = i / (float) (n * 2);
@@ -433,7 +437,7 @@ public final class VazioPoderFx {
         } else {
             esferaUV(vc, m, ate, 3.6F * ke, c(0.30F * fade, SANGUE), 8, 14);
             aroPlano(vc, m, g, new Vec3(1, 0, 0), new Vec3(0, 0, 1), 4.0F * ke - 0.2F, 4.0F * ke, c(0.0F, ROSA), c(0.85F * fade, ROSA), 40, 0.0F, 0.0F, 6.2832F);
-            for (int i = 0; i < 12; i++) {                                     // tentáculos curvos
+            for (int i = 0; i < FxQualidade.escala(12, 4); i++) {                                     // tentáculos curvos
                 double ang = i / 12.0 * 6.2832 + hash(i) * 0.4;
                 Vec3 base = ate;
                 Vec3 prev = base;
@@ -600,7 +604,8 @@ public final class VazioPoderFx {
             }
         }
         // as penas
-        for (int i = 0; i < 80; i++) {
+        int totalPenas = FxQualidade.escala(80, 16);
+        for (int i = 0; i < totalPenas; i++) {
             float atraso = 0.10F + 0.40F * hash(i + 1);
             float f = (vida - atraso) / 0.34F;
             double ang = hash(i + 100) * 6.2832, rr = R * Math.sqrt(hash(i + 200));

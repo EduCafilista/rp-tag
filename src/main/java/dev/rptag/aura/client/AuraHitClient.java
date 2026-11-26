@@ -49,7 +49,8 @@ public final class AuraHitClient {
     private static final float[] INKC = {0.015f, 0f, 0.04f}, VIOLET = {0.40f, 0.22f, 0.55f};
 
     public static void start(AuraHitPayload p) {
-        if (HITS.size() > 40) return;
+        if (dev.rptag.client.FxQualidade.desligado()) return;
+        if (HITS.size() > (dev.rptag.client.FxQualidade.baixoOuMenos() ? 16 : 40)) return;
         AuraEstilo s = AuraEstilo.byIndex(p.style());
         if (s == null) return;
         int life = switch (s) {
@@ -78,6 +79,7 @@ public final class AuraHitClient {
         MultiBufferSource.BufferSource bs = mc.renderBuffers().bufferSource();
         VertexConsumer glow = bs.getBuffer(RenderType.lightning());
         for (Hit h : HITS) {
+            if (dev.rptag.client.FxQualidade.longePoder(cam, h.c, 48.0)) continue;
             float t = h.age + pt, u = Mth.clamp(t / h.life, 0f, 1f);
             switch (h.style) {
                 case RADIACAO -> radiation(glow, m, cam, h, t, u);
@@ -89,18 +91,20 @@ public final class AuraHitClient {
         bs.endBatch(RenderType.lightning());
         VertexConsumer ink = bs.getBuffer(AuraRenderTypes.INK);
         for (Hit h : HITS) {
-            if (h.style == AuraEstilo.VAZIO) {
+            if (h.style == AuraEstilo.VAZIO && !dev.rptag.client.FxQualidade.longePoder(cam, h.c, 48.0)) {
                 void_(ink, m, cam, h, h.age + pt, Mth.clamp((h.age + pt) / h.life, 0f, 1f));
             }
         }
         bs.endBatch(AuraRenderTypes.INK);
-        VertexConsumer rim = bs.getBuffer(RenderType.lightning());                          // contorno violeta fraco do respingo
-        for (Hit h : HITS) {
-            if (h.style == AuraEstilo.VAZIO) {
-                voidRim(rim, m, cam, h, h.age + pt, Mth.clamp((h.age + pt) / h.life, 0f, 1f));
+        if (!dev.rptag.client.FxQualidade.minimoOuMenos()) {
+            VertexConsumer rim = bs.getBuffer(RenderType.lightning());                          // contorno violeta fraco do respingo
+            for (Hit h : HITS) {
+                if (h.style == AuraEstilo.VAZIO && !dev.rptag.client.FxQualidade.longePoder(cam, h.c, 48.0)) {
+                    voidRim(rim, m, cam, h, h.age + pt, Mth.clamp((h.age + pt) / h.life, 0f, 1f));
+                }
             }
+            bs.endBatch(RenderType.lightning());
         }
-        bs.endBatch(RenderType.lightning());
     }
 
     // ------------------------------------------------------------------ helpers

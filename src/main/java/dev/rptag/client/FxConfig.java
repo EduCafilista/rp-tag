@@ -64,7 +64,7 @@ public final class FxConfig {
         try {
             if (arquivo.getParent() != null) Files.createDirectories(arquivo.getParent());
             try (Writer w = Files.newBufferedWriter(arquivo)) {
-                p.store(w, "RP Tag - config do cliente (fxVideo=false: avisos sem video; fxQualidade=auto|alto|medio|baixo: peso dos efeitos)");
+                p.store(w, "RP Tag - config do cliente (fxVideo=false: avisos sem video; fxQualidade=auto|alto|medio|baixo|minimo|desligado: peso dos efeitos)");
             }
         } catch (IOException e) {
             ultimoAviso = "nao consegui gravar cliente.properties: " + e;

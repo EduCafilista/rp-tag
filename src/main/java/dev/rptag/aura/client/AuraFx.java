@@ -128,27 +128,35 @@ public final class AuraFx {
                                     float[] c, float alpha, float wallH, float t) {
         // (5.77.0) OTIMIZACAO: o anel de altura vem do cache (recalcula a cada 4 ticks, nao a
         // cada quadro) — antes eram 96 consultas de heightmap por quadro por jogador.
-        final int N = dev.rptag.client.FxAlturas.N;
+        final int total = dev.rptag.client.FxAlturas.N;
         float[] ys = dev.rptag.client.FxAlturas.anel(p, R);
+        int passo = dev.rptag.client.FxQualidade.minimoOuMenos() ? 4
+                : (dev.rptag.client.FxQualidade.baixoOuMenos() ? 3
+                : (dev.rptag.client.FxQualidade.efetiva() == dev.rptag.client.FxQualidade.MEDIO ? 2 : 1));
         float r0 = R - half, r1 = R + half;
-        for (int i = 0; i < N; i++) {
-            int j = i + 1;
-            float a0 = i * TAU / N, a1 = j * TAU / N;
+        boolean parede = !dev.rptag.client.FxQualidade.minimoOuMenos();
+        for (int i = 0; i < total; i += passo) {
+            int j = Math.min(total, i + passo);
+            float a0 = i * TAU / total, a1 = j * TAU / total;
             float al = alpha * (0.6f + 0.4f * Mth.sin(a0 * 18f - t * 0.2f));
             float c0 = Mth.cos(a0), s0 = Mth.sin(a0), c1 = Mth.cos(a1), s1 = Mth.sin(a1);
             quad2(vc, m, gcv(c0 * r0, ys[i], s0 * r0, c, 0f), gcv(c0 * R, ys[i], s0 * R, c, al),
                     gcv(c1 * R, ys[j], s1 * R, c, al), gcv(c1 * r0, ys[j], s1 * r0, c, 0f));
             quad2(vc, m, gcv(c0 * R, ys[i], s0 * R, c, al), gcv(c0 * r1, ys[i], s0 * r1, c, 0f),
                     gcv(c1 * r1, ys[j], s1 * r1, c, 0f), gcv(c1 * R, ys[j], s1 * R, c, al));
-            quad2(vc, m, gcv(c0 * R, ys[i], s0 * R, c, 0.4f * al), gcv(c1 * R, ys[j], s1 * R, c, 0.4f * al),
-                    gcv(c1 * R, ys[j] + wallH, s1 * R, c, 0f), gcv(c0 * R, ys[i] + wallH, s0 * R, c, 0f));
+            if (parede) {
+                quad2(vc, m, gcv(c0 * R, ys[i], s0 * R, c, 0.4f * al), gcv(c1 * R, ys[j], s1 * R, c, 0.4f * al),
+                        gcv(c1 * R, ys[j] + wallH, s1 * R, c, 0f), gcv(c0 * R, ys[i] + wallH, s0 * R, c, 0f));
+            }
         }
     }
 
     /** Aneis de bolhas ao redor do corpo (aura ligada). */
     private static void bubbleRings(VertexConsumer vc, Matrix4f m, float t) {
+        if (dev.rptag.client.FxQualidade.minimoOuMenos()) return;
         float[] c = {0.80f, 0.92f, 1.00f};
-        final int N = 40;
+        final int N = dev.rptag.client.FxQualidade.segmentos(40);
+        final int bolhas = dev.rptag.client.FxQualidade.escala(12, 4);
         final float A = 0.42f, B = 0.72f;
         for (int k = 0; k < 2; k++) {
             float ang = t * 0.012f + k * (float) Math.PI;
@@ -165,8 +173,8 @@ public final class AuraFx {
                         gep(cx, cy, cz, ux, uz, Mth.cos(a1) * A, Mth.sin(a1) * B, c, 0.45f),
                         gep(cx, cy, cz, ux, uz, Mth.cos(a1) * A * 0.93f, Mth.sin(a1) * B * 0.93f, c, 0.45f));
             }
-            for (int j = 0; j < 12; j++) {
-                float phi = j * TAU / 12 + t * 0.02f;
+            for (int j = 0; j < bolhas; j++) {
+                float phi = j * TAU / bolhas + t * 0.02f;
                 float bx = Mth.cos(phi) * A * 1.12f, by = Mth.sin(phi) * B * 1.12f;
                 float br = 0.05f + 0.03f * Mth.sin(j * 2.3f + t * 0.1f);
                 for (int q = 0; q < 6; q++) {
@@ -182,8 +190,10 @@ public final class AuraFx {
 
     /** Fissuras de espaco rachando em volta do corpo. */
     private static void cracks(VertexConsumer vc, Matrix4f m, float t) {
+        int qtd = dev.rptag.client.FxQualidade.escala(4, 1);
+        if (qtd <= 0) return;
         float[] c = {0.90f, 0.97f, 1.00f};
-        for (int k = 0; k < 4; k++) {
+        for (int k = 0; k < qtd; k++) {
             float cyc = t * 0.016f + k * 0.25f;
             int n = (int) Math.floor(cyc);
             float vis = Mth.sin((cyc - n) * (float) Math.PI);
@@ -214,9 +224,11 @@ public final class AuraFx {
 
     /** Particulas da gravidade (aura, modo proprio e campo). */
     private static void gravityParticles(Player p, RandomSource rnd) {
+        if (dev.rptag.client.FxQualidade.minimoOuMenos() || dev.rptag.client.FxQualidade.longe(p)) return;
         int bits = dev.rptag.aura.GravState.get(p);
         var lv = p.level();
         float sc = p.getScale();
+        if (dev.rptag.client.FxQualidade.particulas(3) <= 0) return;
         if (dev.rptag.aura.GravState.aura(bits) && rnd.nextFloat() < 0.25f) {
             double a = rnd.nextDouble() * TAU, r = (0.4 + rnd.nextDouble() * 0.4) * sc;
             lv.addParticle(ParticleTypes.END_ROD, p.getX() + Math.cos(a) * r,
@@ -272,15 +284,20 @@ public final class AuraFx {
 
     /** Tentáculos de tinta negra (rasgados, com espinhos) + sombra no chão. */
     private static void ink(VertexConsumer vc, Matrix4f m, float t) {
+        if (dev.rptag.client.FxQualidade.desligado()) return;
         // mancha de sombra irregular no chão
-        for (int i = 0; i < 28; i++) {
-            float a0 = i * TAU / 28, a1 = (i + 1) * TAU / 28;
+        int fatias = dev.rptag.client.FxQualidade.segmentos(28);
+        for (int i = 0; i < fatias; i++) {
+            float a0 = i * TAU / fatias, a1 = (i + 1) * TAU / fatias;
             float r0 = 1.9f * (1f + 0.22f * Mth.sin(a0 * 5f + t * 0.05f));
             float r1 = 1.9f * (1f + 0.22f * Mth.sin(a1 * 5f + t * 0.05f));
             quad1(vc, m, iv(0, 0.03f, 0, 0.60f), iv(0, 0.03f, 0, 0.60f),
                     iv(Mth.cos(a1) * r1, 0.03f, Mth.sin(a1) * r1, 0f), iv(Mth.cos(a0) * r0, 0.03f, Mth.sin(a0) * r0, 0f));
         }
-        final int N = 16, M = 20;
+        final int N_MAX = 16, M_MAX = 20; // base: final int N = 16, M = 20;
+        final int N = dev.rptag.client.FxQualidade.escala(N_MAX, 4);
+        final int M = dev.rptag.client.FxQualidade.escala(M_MAX, 7);
+        final boolean espinhos = !dev.rptag.client.FxQualidade.baixoOuMenos();
         for (int k = 0; k < N; k++) {
             float seed = k * 7.31f;
             float f1 = frac(Mth.sin(seed) * 43758.55f), f2 = frac(Mth.sin(seed * 1.7f + 3.1f) * 24634.63f);
@@ -309,7 +326,7 @@ public final class AuraFx {
                         iv(q[0] + q[3] * q[5], q[1], q[2] + q[4] * q[5], q[6]),
                         iv(q[0] - q[3] * q[5], q[1], q[2] - q[4] * q[5], q[6]));
                 // espinhos rasgados saindo do tentáculo
-                if ((i + k) % 3 == 0 && i > 2 && i < 15) {
+                if (espinhos && (i + k) % 3 == 0 && i > 2 && i < M - 4) {
                     float L = 0.30f * (1f - i / (float) M) * (0.6f + 0.4f * Mth.sin(seed + i));
                     float sgn = ((i + k) & 1) == 0 ? 1f : -1f;
                     float tx = p[0] + p[7] * L * 0.6f + p[3] * L * sgn, ty = p[1] + L * 0.7f, tz = p[2] + p[8] * L * 0.6f + p[4] * L * sgn;
@@ -331,7 +348,7 @@ public final class AuraFx {
             try { gravityParticles(p, p.getRandom()); } catch (RuntimeException ignorado) { }
             return;
         }
-        if (!ehVazio(p)) return;
+        if (!ehVazio(p) || dev.rptag.client.FxQualidade.longe(p)) return;
 
         RandomSource rnd = p.getRandom();
         float sc = p.getScale();

@@ -49,9 +49,11 @@ public final class ImpactFx {
             W w = it.next();
             if (++w.age > LIFE) { it.remove(); continue; }
             if (w.age > 20) continue;
+            int nPart = dev.rptag.client.FxQualidade.particulas(6);
+            if (nPart <= 0) continue;
             double r = w.R * ease(w.age);
             var rnd = lv.random;
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < nPart; i++) {
                 double a = rnd.nextDouble() * TAU, x = w.x + Math.cos(a) * r, z = w.z + Math.sin(a) * r;
                 double y = groundY(lv, w, x, z) + 0.2;
                 lv.addParticle(ParticleTypes.CLOUD, x, y, z, Math.cos(a) * 0.12, 0.10, Math.sin(a) * 0.12);
@@ -73,11 +75,14 @@ public final class ImpactFx {
         MultiBufferSource.BufferSource bs = mc.renderBuffers().bufferSource();
         VertexConsumer vc = bs.getBuffer(RenderType.lightning());
         for (W w : WAVES) {
+            if (dev.rptag.client.FxQualidade.longePoder(cam, new Vec3(w.x, w.y, w.z), 72.0)) continue;
             float t = w.age + pt, fade = Mth.clamp(1f - t / 45f, 0f, 1f);
             float en = ease(t);
             ring(vc, m, cam, lv, w, w.R * en, 0.5f + w.R * 0.04f, fade, 0.8f + w.R * 0.12f);
-            ring(vc, m, cam, lv, w, w.R * ease(Math.max(0f, t - 5f)) * 0.7f, 0.3f, fade * 0.6f, 0.5f);   // eco
-            cracks(vc, m, cam, lv, w, en, fade);
+            if (!dev.rptag.client.FxQualidade.minimoOuMenos()) {
+                ring(vc, m, cam, lv, w, w.R * ease(Math.max(0f, t - 5f)) * 0.7f, 0.3f, fade * 0.6f, 0.5f);   // eco
+                cracks(vc, m, cam, lv, w, en, fade);
+            }
             if (t < 8f) flash(vc, m, cam, w, t);
         }
         bs.endBatch(RenderType.lightning());
@@ -90,12 +95,16 @@ public final class ImpactFx {
 
     private static void ring(VertexConsumer vc, Matrix4f m, Vec3 cam, ClientLevel lv, W w, float r, float half, float fade, float wallH) {
         if (r < 0.5f || fade <= 0.01f) return;
-        int n = (int) Mth.clamp(r * 4f, 40f, 200f);
+        int n = dev.rptag.client.FxQualidade.segmentos((int) Mth.clamp(r * 4f, 40f, 200f));
         double[] cs = new double[n + 1], sn = new double[n + 1], ys = new double[n + 1];
+        long chave = (((long) Mth.floor(w.x)) << 36) ^ ((((long) Mth.floor(w.z)) & 0xFFFFFL) << 16) ^ ((long) (r * 4) & 0xFFFFL);
+        float[] cacheY = dev.rptag.client.FxAlturas.anelPos(lv, chave, w.x, w.y, w.z, r);
+        int totalN = dev.rptag.client.FxAlturas.N;
         for (int i = 0; i <= n; i++) {
             double a = i * TAU / n;
             cs[i] = Math.cos(a); sn[i] = Math.sin(a);
-            ys[i] = groundY(lv, w, w.x + cs[i] * r, w.z + sn[i] * r) + 0.12;
+            int idx = Math.min(totalN, (int) ((double) i / n * totalN + 0.5));
+            ys[i] = w.y + cacheY[idx] + 0.08;
         }
         double ri = r - half, ro = r + half;
         float A = 0.8f * fade;
@@ -112,16 +121,18 @@ public final class ImpactFx {
 
     /** Fissuras irregulares que se abrem no chão a partir do ponto de impacto. */
     private static void cracks(VertexConsumer vc, Matrix4f m, Vec3 cam, ClientLevel lv, W w, float en, float fade) {
-        final int M = 10;
-        for (int j = 0; j < 14; j++) {
-            double a = j * TAU / 14 + 0.3 * Math.sin(j * 12.9);
+        final int M = dev.rptag.client.FxQualidade.baixoOuMenos() ? 5 : 10;
+        int ramos = dev.rptag.client.FxQualidade.escala(14, 5);
+        double yBase = groundY(lv, w, w.x, w.z) + 0.1;
+        for (int j = 0; j < ramos; j++) {
+            double a = j * TAU / ramos + 0.3 * Math.sin(j * 12.9);
             double len = w.R * 0.95 * en, px = -Math.sin(a), pz = Math.cos(a);
-            double lx = w.x, ly = groundY(lv, w, w.x, w.z) + 0.1, lz = w.z;
+            double lx = w.x, ly = yBase, lz = w.z;
             for (int i = 1; i <= M; i++) {
                 double d = len * i / M;
                 double jit = (frac(Math.sin(j * 7.1 + i * 3.3) * 437.58) - 0.5) * 0.9;
                 double x = w.x + Math.cos(a) * d + px * jit, z = w.z + Math.sin(a) * d + pz * jit;
-                double y = groundY(lv, w, x, z) + 0.1;
+                double y = dev.rptag.client.FxQualidade.baixoOuMenos() ? yBase : (groundY(lv, w, x, z) + 0.1);
                 double wd = 0.14 * (1.0 - i / (double) M), al = 0.85 * fade * (1.0 - 0.6 * i / M);
                 q(vc, m, cam, lx - px * wd, ly, lz - pz * wd, (float) al, lx + px * wd, ly, lz + pz * wd, (float) al,
                         x + px * wd, y, z + pz * wd, (float) al, x - px * wd, y, z - pz * wd, (float) al);

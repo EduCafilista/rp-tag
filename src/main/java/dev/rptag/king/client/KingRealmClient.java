@@ -281,6 +281,7 @@ public final class KingRealmClient {
     @SubscribeEvent
     public static void ground(RenderLevelStageEvent e) {
         if (e.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || !active || intensity <= 0.02f) return;
+        if (dev.rptag.client.FxQualidade.desligado()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
         float pt = e.getPartialTick().getGameTimeDeltaPartialTick(false);
@@ -292,30 +293,37 @@ public final class KingRealmClient {
         double R = radius;
         float grow = KingGfx.ease((t - startTick) / 50f);
         float rot = t * 0.004f;
-        double[] rr = {0.28, 0.52, 0.80};
+        boolean min = dev.rptag.client.FxQualidade.minimoOuMenos();
+        boolean baixo = dev.rptag.client.FxQualidade.baixoOuMenos();
+        double[] rr = min ? new double[]{0.80} : new double[]{0.28, 0.52, 0.80};
         for (int i = 0; i < rr.length; i++) {
             KingGfx.ringGround(vc, m, cam, mc.level, center, R * rr[i] * grow, 0.20f, 96, (i % 2 == 0 ? rot : -rot) * (1 + i), 18 + i * 6, 0.55f, i == 1 ? KingGfx.GOLD : KingGfx.AMBER, 0.55f * I);
-            KingGfx.ringGround(vc, m, cam, mc.level, center, R * rr[i] * grow * 1.03, 0.07f, 96, 0, 0, 1f, KingGfx.GOLD, 0.35f * I);
+            if (!baixo) {
+                KingGfx.ringGround(vc, m, cam, mc.level, center, R * rr[i] * grow * 1.03, 0.07f, 96, 0, 0, 1f, KingGfx.GOLD, 0.35f * I);
+            }
         }
-        for (int i = 0; i < 12; i++)
-            KingGfx.spokeGround(vc, m, cam, mc.level, center, rot * 2 + i * 0.5236f, R * 0.28 * grow, R * 0.80 * grow, 0.07f, KingGfx.AMBER, 0.28f * I);
-        for (int ring = 0; ring < 2; ring++) {                                      // símbolos amarelos gravados no chão
-            int n = ring == 0 ? 7 : 11;
+        int raios = min ? 0 : dev.rptag.client.FxQualidade.escala(12, 4);
+        for (int i = 0; i < raios; i++)
+            KingGfx.spokeGround(vc, m, cam, mc.level, center, rot * 2 + i * (float) (Math.PI * 2 / raios), R * 0.28 * grow, R * 0.80 * grow, 0.07f, KingGfx.AMBER, 0.28f * I);
+        int aneisSimbolos = min ? 0 : (baixo ? 1 : 2);
+        for (int ring = 0; ring < aneisSimbolos; ring++) {                          // símbolos amarelos gravados no chão
+            int n = dev.rptag.client.FxQualidade.escala(ring == 0 ? 7 : 11, 4);
             double r = R * (ring == 0 ? 0.40 : 0.66) * grow;
             for (int i = 0; i < n; i++) {
                 float a = (ring == 0 ? rot : -rot) * 3 + i * (float) (Math.PI * 2 / n);
                 double x = center.x + Math.cos(a) * r, z = center.z + Math.sin(a) * r;
-                Vec3 p = new Vec3(x, KingGfx.gy(mc.level, x, z, center.y) + 0.02, z);
+                Vec3 p = new Vec3(x, center.y + 0.06, z);
                 float fl = 0.6f + 0.4f * Mth.sin(t * 0.08f + i * 1.7f);
                 KingGfx.glyph(vc, m, cam, i + ring * 3, p, KingGfx.flat(a + 1.5708f), 1.8f, 0f, 0.12f, KingGfx.GOLD, 0.8f * I * fl);
             }
         }
-        KingGfx.sign(vc, m, cam, new Vec3(center.x, KingGfx.gy(mc.level, center.x, center.z, center.y) + 0.03, center.z), KingGfx.flat(t * 0.01f), (float) (R * 0.22), 0f, 0.14f, 0.7f * I);
+        KingGfx.sign(vc, m, cam, new Vec3(center.x, center.y + 0.07, center.z), KingGfx.flat(t * 0.01f), (float) (R * 0.22), 0f, 0.14f, 0.7f * I);
 
-        for (int s = 0; s < 14; s++) {                                              // torres espectrais subindo do chão
+        int torres = dev.rptag.client.FxQualidade.escala(14, 3);
+        for (int s = 0; s < torres; s++) {                                          // torres espectrais subindo do chão
             float ang = KingGfx.hash(s * 3 + 1) * 6.2832f, rad = (float) (R * (0.45 + 0.5 * KingGfx.hash(s * 7 + 2)));
             double x = center.x + Math.cos(ang) * rad, z = center.z + Math.sin(ang) * rad;
-            double y0 = KingGfx.gy(mc.level, x, z, center.y);
+            double y0 = center.y;
             float rise = KingGfx.ease((t - startTick - s * 3f) / 55f);
             float h = (9f + 16f * KingGfx.hash(s * 11 + 5)) * rise, w = 0.9f + 0.9f * KingGfx.hash(s * 5 + 9);
             float fl = (0.55f + 0.25f * Mth.sin(t * 0.07f + s * 2.3f)) * I * rise;
@@ -327,15 +335,17 @@ public final class KingRealmClient {
                 KingGfx.glow(vc, m, cam, bot, shoulder, 0.12f, KingGfx.GOLD, 0.8f * fl);
                 KingGfx.glow(vc, m, cam, shoulder, tip, 0.09f, KingGfx.AMBER, 0.8f * fl);
             }
-            for (int lv = 1; lv <= 4; lv++) {                                      // aros horizontais
-                float u = lv / 5f, sc = 1f - 0.45f * u;
-                for (int c = 0; c < 4; c++) {
-                    Vec3 a = new Vec3(x + cn[c].x * sc, y0 + h * u, z + cn[c].z * sc), b = new Vec3(x + cn[(c + 1) % 4].x * sc, y0 + h * u, z + cn[(c + 1) % 4].z * sc);
-                    KingGfx.ribbon(vc, m, cam, a, b, 0.07f, KingGfx.GOLD, 0.55f * fl);
+            if (!baixo) {
+                for (int lv = 1; lv <= 4; lv++) {                                  // aros horizontais
+                    float u = lv / 5f, sc = 1f - 0.45f * u;
+                    for (int c = 0; c < 4; c++) {
+                        Vec3 a = new Vec3(x + cn[c].x * sc, y0 + h * u, z + cn[c].z * sc), b = new Vec3(x + cn[(c + 1) % 4].x * sc, y0 + h * u, z + cn[(c + 1) % 4].z * sc);
+                        KingGfx.ribbon(vc, m, cam, a, b, 0.07f, KingGfx.GOLD, 0.55f * fl);
+                    }
                 }
+                Vec3 win = new Vec3(x, y0 + h * 0.55f, z);
+                KingGfx.glyph(vc, m, cam, s, win, KingGfx.facing(cam, win), 1.1f, 0f, 0.06f, KingGfx.PALE, 0.7f * fl);
             }
-            Vec3 win = new Vec3(x, y0 + h * 0.55f, z);
-            KingGfx.glyph(vc, m, cam, s, win, KingGfx.facing(cam, win), 1.1f, 0f, 0.06f, KingGfx.PALE, 0.7f * fl);
         }
         bs.endBatch(RenderType.lightning());
     }

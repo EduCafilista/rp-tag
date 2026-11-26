@@ -124,11 +124,12 @@ public final class VazioAlmasFx {
             pose.translate(-cam.x, -cam.y, -cam.z);
             org.joml.Matrix4f mat = pose.last().pose();
 
+            double alcAlma = FxQualidade.distanciaPoder(140.0);
             int quantas = Math.min(VazioAlmasPayload.MAX, pontos.length / 3);
             for (int i = 0; i < quantas; i++) {
                 float x = pontos[i * 3], y = pontos[i * 3 + 1], z = pontos[i * 3 + 2];
                 double d = cam.distanceTo(new Vec3(x, y, z));
-                if (d > 140.0) {
+                if (d > alcAlma) {
                     continue;
                 }
                 try {
@@ -192,7 +193,7 @@ public final class VazioAlmasFx {
                 0.95F * (0.55F + 0.45F * afina), LUZ, 0.30F * base, 6);
 
         // 2/3) CORPO: contorno 10% maior atrás, silhueta preta na frente
-        int passos = 26;
+        int passos = FxQualidade.escala(26, 8);
         for (int i = 0; i < passos; i++) {
             float u0 = CORPO_ATE * i / (float) passos;
             float u1 = CORPO_ATE * (i + 1) / (float) passos;

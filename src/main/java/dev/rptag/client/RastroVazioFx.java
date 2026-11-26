@@ -126,6 +126,9 @@ public final class RastroVazioFx {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
             return;
         }
+        if (FxQualidade.desligado()) {
+            return;
+        }
         try {
             Minecraft mc = Minecraft.getInstance();
             if (mc.level == null || mc.player == null) {
@@ -175,7 +178,7 @@ public final class RastroVazioFx {
                     int frio = cor(0.20F * força, 0.02F * força, 0.05F * força, 0.65F * forca2);
 
                     double dist = Math.hypot(m.x - cam.x, m.z - cam.z);
-                    if (dist > ALCANCE) {
+                    if (dist > FxQualidade.distanciaPoder(ALCANCE)) {
                         anterior = m;
                         continue;
                     }

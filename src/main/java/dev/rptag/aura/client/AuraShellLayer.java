@@ -102,6 +102,16 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
         if (id == 0 && !dev.rptag.client.VazioAuraFx.ativa(p)) return;   // sem aura: nao gasta nada
         this.passo = dev.rptag.client.FxQualidade.passoDir();            // (5.77.0) LOD
         this.maxAneis = dev.rptag.client.FxQualidade.aneis(6);
+        if (this.maxAneis <= 0 || this.passo >= DIRS.length) return;     // (5.78.16) desligado ou CPM em minimo
+        // (5.78.16) LOD adicional por distancia: acima de 14 blocos, corta ainda mais as copias do modelo
+        double dist2 = net.minecraft.client.Minecraft.getInstance().getEntityRenderDispatcher().distanceToSqr(p);
+        if (dist2 > 14.0 * 14.0) {
+            this.maxAneis = Math.min(this.maxAneis, 1);
+            this.passo = Math.max(this.passo, 5);
+        } else if (dist2 > 8.0 * 8.0) {
+            this.maxAneis = Math.min(this.maxAneis, 2);
+            this.passo = Math.max(this.passo, 3);
+        }
         float t = p.tickCount + partialTick;
         // (5.66.0) Ouro = /iluminacao. Vazio = /vazio ligar (quem manda e o RaiosVazioFx, que ja
         // recebe o aviso do servidor) — e /vazio desligar apaga tudo na hora.
@@ -165,17 +175,19 @@ public class AuraShellLayer extends RenderLayer<AbstractClientPlayer, PlayerMode
         PlayerModel<AbstractClientPlayer> model = getParentModel();
         float pulse = 0.90f + 0.10f * Mth.sin(t * 0.22f);
 
-        VertexConsumer sh = buf.getBuffer(AuraRenderTypes.SHADOW_HULL);
-        for (int ring = 0; ring < Math.min(RAD_SHADOW.length, maxAneis); ring++) {
-            float[] v = RAD_SHADOW[ring];
-            for (int d = 0; d < DIRS.length; d += passo) {
-                float rad = v[0] * (0.70f + 0.50f * Mth.sin(t * 0.11f + d * 2.1f + ring * 1.3f));
-                float rise = v[0] * 0.6f * (1f + Mth.sin(t * 0.08f + d));
-                ps.pushPose();
-                ps.translate(DIRS[d][0] * rad, DIRS[d][1] * rad - rise, DIRS[d][2] * rad);
-                model.renderToBuffer(ps, sh, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
-                        argb(v[1], 0.01f, 0.03f, 0.28f));
-                ps.popPose();
+        if (!dev.rptag.client.FxQualidade.baixoOuMenos()) {
+            VertexConsumer sh = buf.getBuffer(AuraRenderTypes.SHADOW_HULL);
+            for (int ring = 0; ring < Math.min(RAD_SHADOW.length, maxAneis); ring++) {
+                float[] v = RAD_SHADOW[ring];
+                for (int d = 0; d < DIRS.length; d += passo) {
+                    float rad = v[0] * (0.70f + 0.50f * Mth.sin(t * 0.11f + d * 2.1f + ring * 1.3f));
+                    float rise = v[0] * 0.6f * (1f + Mth.sin(t * 0.08f + d));
+                    ps.pushPose();
+                    ps.translate(DIRS[d][0] * rad, DIRS[d][1] * rad - rise, DIRS[d][2] * rad);
+                    model.renderToBuffer(ps, sh, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
+                            argb(v[1], 0.01f, 0.03f, 0.28f));
+                    ps.popPose();
+                }
             }
         }
 

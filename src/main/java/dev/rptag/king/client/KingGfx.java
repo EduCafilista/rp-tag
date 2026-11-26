@@ -61,9 +61,15 @@ final class KingGfx {
         v(vc, m, cam, p1.add(side), c, a);
     }
 
-    /** Fita com brilho: halo largo + miolo + núcleo claro. */
+    /** Fita com brilho: halo largo + miolo + núcleo claro (no modo baixo/minimo reduz para 1 ou 2 fitas). */
     static void glow(VertexConsumer vc, Matrix4f m, Vec3 cam, Vec3 p0, Vec3 p1, float w, float[] c, float a) {
-        ribbon(vc, m, cam, p0, p1, w * 2.6f, c, a * 0.18f);
+        if (dev.rptag.client.FxQualidade.minimoOuMenos()) {
+            ribbon(vc, m, cam, p0, p1, w * 1.15f, c, a * 0.9f);
+            return;
+        }
+        if (!dev.rptag.client.FxQualidade.baixoOuMenos()) {
+            ribbon(vc, m, cam, p0, p1, w * 2.6f, c, a * 0.18f);
+        }
         ribbon(vc, m, cam, p0, p1, w, c, a * 0.75f);
         ribbon(vc, m, cam, p0, p1, w * 0.35f, PALE, a);
     }
@@ -95,6 +101,7 @@ final class KingGfx {
     /** Anel num plano qualquer (base b), opcionalmente tracejado. */
     static void ring(VertexConsumer vc, Matrix4f m, Vec3 cam, Vec3 o, Vec3[] b, double rx, double ry, float w, int segs, float rot,
                      int dashes, float dashFrac, float[] c, float a) {
+        segs = dev.rptag.client.FxQualidade.segmentos(segs);
         int per = dashes > 0 ? Math.max(1, segs / dashes) : segs;
         Vec3 prev = null;
         for (int k = 0; k <= segs; k++) {
@@ -112,15 +119,21 @@ final class KingGfx {
         return h + 0.04;
     }
 
-    /** Anel colado no chão. */
+    /** Anel colado no chão — usa cache de alturas em FxAlturas (antes fazia getHeight a cada frame!). */
     static void ringGround(VertexConsumer vc, Matrix4f m, Vec3 cam, Level lv, Vec3 c, double radius, float w, int segs, float rot,
                            int dashes, float dashFrac, float[] col, float a) {
+        segs = dev.rptag.client.FxQualidade.segmentos(segs);
         int per = dashes > 0 ? Math.max(1, segs / dashes) : segs;
+        long chave = (((long) Mth.floor(c.x * 2)) << 36) ^ ((((long) Mth.floor(c.z * 2)) & 0xFFFFFL) << 16) ^ ((long) (radius * 20) & 0xFFFFL);
+        float[] ys = dev.rptag.client.FxAlturas.anelPos(lv, chave, c.x, c.y, c.z, (float) radius);
+        int totalN = dev.rptag.client.FxAlturas.N;
         Vec3 prev = null;
         for (int k = 0; k <= segs; k++) {
             float ang = rot + (float) (Math.PI * 2 * k / segs);
             double x = c.x + Math.cos(ang) * radius, z = c.z + Math.sin(ang) * radius;
-            Vec3 p = new Vec3(x, gy(lv, x, z, c.y), z);
+            float norm = ((ang % 6.2831855f) + 6.2831855f) % 6.2831855f;
+            int idx = Math.min(totalN, (int) (norm / 6.2831855f * totalN + 0.5f));
+            Vec3 p = new Vec3(x, c.y + ys[idx], z);
             if (prev != null && (dashes <= 0 || ((k - 1) % per) < per * dashFrac)) ribbon(vc, m, cam, prev, p, w, col, a);
             prev = p;
         }

@@ -56,12 +56,19 @@ public final class FxComando {
                     ctx.getSource().sendSuccess(() -> Component.literal("RP Tag FX: video desligado (FX procedural)."), false);
                     return 1;
                 }))
-                // (5.77.0) OTIMIZACAO: peso dos efeitos (auto = olha o FPS)
+                // (5.77.0 / 5.78.16) OTIMIZACAO: peso dos efeitos (auto|alto|medio|baixo|minimo|desligado)
                 .then(Commands.literal("qualidade")
                         .executes(ctx -> {
-                            ctx.getSource().sendSuccess(() -> Component.literal(status()), false);
+                            ctx.getSource().sendSuccess(() -> Component.literal(status()
+                                    + " — niveis: auto | alto | medio | baixo | minimo | desligado"), false);
                             return 1;
                         })
+                        .then(Commands.literal("auto").executes(ctx -> qualidade(ctx, "auto")))
+                        .then(Commands.literal("alto").executes(ctx -> qualidade(ctx, "alto")))
+                        .then(Commands.literal("medio").executes(ctx -> qualidade(ctx, "medio")))
+                        .then(Commands.literal("baixo").executes(ctx -> qualidade(ctx, "baixo")))
+                        .then(Commands.literal("minimo").executes(ctx -> qualidade(ctx, "minimo")))
+                        .then(Commands.literal("desligado").executes(ctx -> qualidade(ctx, "desligado")))
                         .then(Commands.argument("nivel", StringArgumentType.word())
                                 .executes(ctx -> qualidade(ctx, StringArgumentType.getString(ctx, "nivel")))))
                 // (4.7.4) teste do FX sem passar pelo servidor
@@ -73,14 +80,16 @@ public final class FxComando {
                                                 StringArgumentType.getString(ctx, "texto")))))));
     }
 
-    /** (5.77.0) troca a qualidade dos efeitos e salva no cliente.properties. */
+    /** (5.77.0 / 5.78.16) troca a qualidade dos efeitos e salva no cliente.properties + rptag-client.toml. */
     private static int qualidade(CommandContext<CommandSourceStack> ctx, String nivel) {
         int q = FxQualidade.deNome(nivel);
         FxQualidade.definir(q);
+        String salvo = FxQualidade.nome(FxQualidade.preferida());
         FxConfig.definirVideo(FxConfig.video());     // forca gravar o arquivo com a escolha nova
+        dev.rptag.RpConfig.salvarQualidadeEfeitos(salvo);
         logarAviso();
         ctx.getSource().sendSuccess(() -> Component.literal(
-                "RP Tag FX: qualidade " + FxQualidade.nome(FxQualidade.preferida())
+                "RP Tag FX: qualidade " + salvo
                         + " (usando " + FxQualidade.nome(FxQualidade.efetiva()) + ")"), false);
         return 1;
     }

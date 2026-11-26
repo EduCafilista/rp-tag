@@ -69,8 +69,9 @@ public final class RadiacaoFx {
             e.getPoseStack().scale(sc, sc, sc);
             Matrix4f m = e.getPoseStack().last().pose();
             VertexConsumer vc = e.getMultiBufferSource().getBuffer(RenderType.lightning());
-            chamas(vc, m, t, CIANO0, CIANO1, 36, 1.5f);
-            rostos(vc, m, t);
+            int qtdChamas = dev.rptag.client.FxQualidade.escala(36, 8);
+            if (qtdChamas > 0) chamas(vc, m, t, CIANO0, CIANO1, qtdChamas, 1.5f);
+            if (!dev.rptag.client.FxQualidade.minimoOuMenos()) rostos(vc, m, t);
             e.getPoseStack().popPose();
         } catch (RuntimeException erro) {
             // some com o efeito, nunca com o jogo
@@ -84,8 +85,12 @@ public final class RadiacaoFx {
         final int N = dev.rptag.client.FxAlturas.N;
         final float R = (float) Radiacao.RAIO;
         float[] ys = dev.rptag.client.FxAlturas.anel(p, R);
-        for (int i = 0; i < N; i++) {
-            int j = i + 1;
+        int passo = dev.rptag.client.FxQualidade.minimoOuMenos() ? 4
+                : (dev.rptag.client.FxQualidade.baixoOuMenos() ? 3
+                : (dev.rptag.client.FxQualidade.efetiva() == dev.rptag.client.FxQualidade.MEDIO ? 2 : 1));
+        boolean parede = !dev.rptag.client.FxQualidade.minimoOuMenos();
+        for (int i = 0; i < N; i += passo) {
+            int j = Math.min(N, i + passo);
             float a0 = i * TAU / N, a1 = j * TAU / N;
             float al = 0.30f + 0.25f * Mth.sin(a0 * 24f - t * 0.2f);       // pulsos correndo pelo anel
             // (5.77.0) OTIMIZACAO: antes era `for (float[] lado : new float[][]{...})` — dois
@@ -100,17 +105,20 @@ public final class RadiacaoFx {
                     cv(Mth.cos(a0) * (R + 0.14f), ys[i], Mth.sin(a0) * (R + 0.14f), CIANO, 0f),
                     cv(Mth.cos(a1) * (R + 0.14f), ys[j], Mth.sin(a1) * (R + 0.14f), CIANO, 0f),
                     cv(Mth.cos(a1) * r1, ys[j], Mth.sin(a1) * r1, CIANO, al));
-            quad2(vc, m, cv(Mth.cos(a0) * R, ys[i], Mth.sin(a0) * R, CIANO, 0.20f),
-                    cv(Mth.cos(a1) * R, ys[j], Mth.sin(a1) * R, CIANO, 0.20f),
-                    cv(Mth.cos(a1) * R, ys[j] + 1.4f, Mth.sin(a1) * R, CIANO, 0f),
-                    cv(Mth.cos(a0) * R, ys[i] + 1.4f, Mth.sin(a0) * R, CIANO, 0f));
+            if (parede) {
+                quad2(vc, m, cv(Mth.cos(a0) * R, ys[i], Mth.sin(a0) * R, CIANO, 0.20f),
+                        cv(Mth.cos(a1) * R, ys[j], Mth.sin(a1) * R, CIANO, 0.20f),
+                        cv(Mth.cos(a1) * R, ys[j] + 1.4f, Mth.sin(a1) * R, CIANO, 0f),
+                        cv(Mth.cos(a0) * R, ys[i] + 1.4f, Mth.sin(a0) * R, CIANO, 0f));
+            }
         }
     }
 
     /** Rostos espectrais de chamas azuis orbitando o jogador: olhos em fenda e dentes serrilhados. */
     private static void rostos(VertexConsumer vc, Matrix4f m, float t) {
         float[] brilho = {0.15f, 0.70f, 1.00f}, claro = {0.90f, 1.00f, 1.00f};
-        for (int k = 0; k < 3; k++) {
+        int qtdRostos = dev.rptag.client.FxQualidade.baixoOuMenos() ? 1 : 3;
+        for (int k = 0; k < qtdRostos; k++) {
             float ang = t * 0.012f + k * TAU / 3f;
             float ca = Mth.cos(ang), sa = Mth.sin(ang);
             float S = 1.15f + 0.15f * Mth.sin(t * 0.07f + k * 2f);
@@ -154,7 +162,7 @@ public final class RadiacaoFx {
     /** Linguas de chama: fitas cruzadas subindo ondulando, branco-ciano na base -> azul na ponta. */
     private static void chamas(VertexConsumer vc, Matrix4f m, float t, float[] c0, float[] c1,
                                int N, float lenMul) {
-        final int M = 7;
+        final int M = dev.rptag.client.FxQualidade.baixoOuMenos() ? 4 : 7;
         for (int k = 0; k < N; k++) {
             float seed = k * 12.9898f;
             float f = frac(Mth.sin(seed) * 43758.55f);
@@ -190,6 +198,7 @@ public final class RadiacaoFx {
         Player p = e.getEntity();
         if (!p.level().isClientSide() || p.isSpectator()) return;
         if (!ativa(p)) return;
+        if (dev.rptag.client.FxQualidade.longe(p)) return;
         try {
             RandomSource rnd = p.getRandom();
             float sc = p.getScale();

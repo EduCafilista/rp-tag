@@ -105,6 +105,7 @@ public final class KingPassiveClient {
     @SubscribeEvent
     public static void render(RenderLevelStageEvent e) {
         if (e.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
+        if (dev.rptag.client.FxQualidade.desligado()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
         float f = smooth, cf = Mth.clamp(confuse / 40f, 0f, 1f);
@@ -117,22 +118,26 @@ public final class KingPassiveClient {
         MultiBufferSource.BufferSource bs = mc.renderBuffers().bufferSource();
         Vec3 me = mc.player.position();
 
-        VertexConsumer ink = bs.getBuffer(AuraRenderTypes.INK);                           // vultos escuros
-        int slotLen = 90;
-        for (int i = 0; i < 3; i++) {
-            long slot = (long) (t / slotLen) + i * 101L;
-            float u = (t % slotLen) / slotLen;
-            if (KingGfx.hash((int) slot * 3 + i) > 0.35f + 0.5f * k) continue;
-            float ang = KingGfx.hash((int) slot * 5 + 1) * 6.283f, rad = 7f + KingGfx.hash((int) slot * 9 + 2) * 8f;
-            double x = me.x + Math.cos(ang) * rad, z = me.z + Math.sin(ang) * rad;
-            Vec3 p = new Vec3(x, KingGfx.gy(mc.level, x, z, me.y) - 0.04, z);
-            float al = (float) Math.sin(Math.PI * u) * Math.min(1f, k * 1.6f);
-            figure(ink, m, cam, p, al);
+        int vultos = dev.rptag.client.FxQualidade.minimoOuMenos() ? 0 : dev.rptag.client.FxQualidade.escala(3, 1);
+        if (vultos > 0) {
+            VertexConsumer ink = bs.getBuffer(AuraRenderTypes.INK);                           // vultos escuros
+            int slotLen = 90;
+            for (int i = 0; i < vultos; i++) {
+                long slot = (long) (t / slotLen) + i * 101L;
+                float u = (t % slotLen) / slotLen;
+                if (KingGfx.hash((int) slot * 3 + i) > 0.35f + 0.5f * k) continue;
+                float ang = KingGfx.hash((int) slot * 5 + 1) * 6.283f, rad = 7f + KingGfx.hash((int) slot * 9 + 2) * 8f;
+                double x = me.x + Math.cos(ang) * rad, z = me.z + Math.sin(ang) * rad;
+                Vec3 p = new Vec3(x, KingGfx.gy(mc.level, x, z, me.y) - 0.04, z);
+                float al = (float) Math.sin(Math.PI * u) * Math.min(1f, k * 1.6f);
+                figure(ink, m, cam, p, al);
+            }
+            bs.endBatch(AuraRenderTypes.INK);
         }
-        bs.endBatch(AuraRenderTypes.INK);
 
+        int qtdGlifos = dev.rptag.client.FxQualidade.escala(9, 3);
         VertexConsumer vc = bs.getBuffer(RenderType.lightning());
-        for (int i = 0; i < 9; i++) {                                                     // letras/símbolos amarelos no ar
+        for (int i = 0; i < qtdGlifos; i++) {                                                 // letras/símbolos amarelos no ar
             float life = (t * 0.016f + KingGfx.hash(i * 23)) % 1f;
             int gen = (int) (t * 0.016f + KingGfx.hash(i * 23));
             float ang = KingGfx.hash(i * 3 + gen * 17) * 6.283f, rad = 2.5f + KingGfx.hash(i * 5 + gen * 29) * 5f;
