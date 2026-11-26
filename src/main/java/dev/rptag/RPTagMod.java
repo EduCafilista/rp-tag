@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.78.16";
+    public static final String VERSION = "5.78.17";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -296,6 +296,9 @@ public final class RPTagMod {
         modContainer.registerConfig(ModConfig.Type.CLIENT, RpConfig.SPEC, "rptag-client.toml");
         // (5.78.10) deixa no log, logo na subida, se existe mod de revive (fica facil de conferir)
         ReviveCompat.temRevive();
+        // (5.78.17) PEDIDO 159: garante no Lootr 1 único loot por conta (UUID) tanto em RP ON quanto em RP OFF
+        // (aplicado no FMLCommonSetupEvent, quando os DeferredHolders do Lootr já estão registrados)
+        modEventBus.addListener((net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent ev) -> LootrCompat.aplicar());
         // (5.60.0) A AURA DE ILUMINACAO (/iluminacao): o anexo do jogador e a arma dourada
         AuraIluminacao.init(modEventBus);
         // (5.10.1) /title VANILLA fora do jogo. Registrado NA MAO: o scan de

@@ -42,6 +42,7 @@ public final class ServerEvents {
     // ---- (5.11.0) o DEUS DO VAZIO volta com o servidor ----
     @SubscribeEvent
     public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
+        LootrCompat.aplicar();
         NeptuneEventos.restaurarDeuses(event.getServer());
     }
 
@@ -330,6 +331,7 @@ public final class ServerEvents {
         MinecraftServer server = target.server;
         RPWorldData data = RPWorldData.get(server);
         data.setInRp(target.getUUID(), inRp);
+        LootrCompat.aplicar();
 
         try {
             Titulos.Titulo tAtual = Titulos.de(server, target.getUUID());
@@ -403,6 +405,7 @@ public final class ServerEvents {
         if (!(event.getEntity() instanceof ServerPlayer joined)) {
             return;
         }
+        LootrCompat.aoEntrarJogador(joined);
         MinecraftServer server = joined.server;
         RPWorldData data = RPWorldData.get(server);
         if (data.isCanonEvent() || data.isCanonRpTodos()) {

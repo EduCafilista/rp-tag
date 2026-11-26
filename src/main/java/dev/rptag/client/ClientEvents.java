@@ -62,6 +62,12 @@ public final class ClientEvents {
     }
 
 
+    @SubscribeEvent
+    public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
+        dev.rptag.LootrCompat.aplicar();
+    }
+
+    @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientRPStates.clear();
         ClientPersonaCache.clear();
