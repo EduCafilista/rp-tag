@@ -49,7 +49,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class RPTagMod {
 
     public static final String MODID = "rptag";
-    public static final String VERSION = "5.78.17";
+    public static final String VERSION = "5.78.18";
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /** (3.76.0) SONS proprios — o da vida perdida e o ogg da lore (catbox). */
@@ -292,6 +292,8 @@ public final class RPTagMod {
         dev.rptag.yumaho.YuMaho.init(modEventBus, modContainer);
         // (5.78.10) O REI DE AMARELO (Carcosa): aura /rei, roda de 7 habilidades e passiva
         dev.rptag.king.King.init(modEventBus, modContainer);
+        // (5.78.18) PEDIDO 160: VAMPIROS completo (roda V, mordida, gotas de sangue, garrafas e morcego)
+        dev.rptag.vampire.Vampire.init(modEventBus);
         // (5.78.10) config do proprio mod: ligar/desligar a tela de morte
         modContainer.registerConfig(ModConfig.Type.CLIENT, RpConfig.SPEC, "rptag-client.toml");
         // (5.78.10) deixa no log, logo na subida, se existe mod de revive (fica facil de conferir)

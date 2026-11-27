@@ -1,0 +1,24 @@
+{
+ "type": "minecraft:crafting_shaped",
+ "category": "misc",
+ "pattern": [
+  "BMB",
+  "MFM",
+  "BMB"
+ ],
+ "key": {
+  "B": {
+   "item": "minecraft:black_dye"
+  },
+  "M": {
+   "item": "minecraft:phantom_membrane"
+  },
+  "F": {
+   "item": "rptag:blood_flask"
+  }
+ },
+ "result": {
+  "id": "rptag:bat_amulet",
+  "count": 1
+ }
+}

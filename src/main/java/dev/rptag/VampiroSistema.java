@@ -82,19 +82,32 @@ public final class VampiroSistema {
     }
 
     public static boolean ehVampiro(ServerPlayer p) {
-        return nivel(p) > LIMIAR;
+        return nivel(p) > LIMIAR || dev.rptag.vampire.VampireLogic.isVampire(p);
     }
 
-    /** liga/desliga o atributo e devolve o estado novo (true = virou vampiro). */
+    /** liga/desliga o atributo + anexo sincronizado e devolve o estado novo (true = virou vampiro). */
     public static boolean definir(ServerPlayer p, boolean ligado) {
         var inst = p.getAttribute(RPAttributes.VAMPIRO);
-        if (inst == null) {
-            return false;
+        if (inst != null) {
+            inst.setBaseValue(ligado ? 1.0D : 0.0D);
         }
-        inst.setBaseValue(ligado ? 1.0D : 0.0D);
+        try {
+            p.setData(dev.rptag.vampire.VampireAttachments.VAMPIRE.get(), ligado);
+        } catch (Throwable ignored) {
+        }
+        dev.rptag.vampire.VampireLogic.clearVisionMute(p.getUUID());
         if (!ligado) {
             ACESO_PELO_SOL.remove(p.getUUID());
             p.clearFire();
+            dev.rptag.vampire.VampireLogic.exitBat(p);
+            p.removeEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION);
+            if (AVISADO.remove(p.getUUID()) != null) {
+                try {
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p,
+                            new VampiroNoitePayload(false));
+                } catch (Throwable ignored) {
+                }
+            }
         }
         return ligado;
     }
@@ -167,8 +180,21 @@ public final class VampiroSistema {
             }
             return;
         }
-        if (!noSol(p)) {
+        if (!noSol(p) || p.isCreative() || p.isSpectator()
+                || p.hasEffect(net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE)) {
             ACESO_PELO_SOL.remove(p.getUUID());
+            return;
+        }
+        // (5.78.18) Capacete protege do sol e gasta durabilidade (igual zumbi / pacote Vampiros)
+        var capacete = p.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD);
+        if (!capacete.isEmpty()) {
+            if (capacete.isDamageableItem()) {
+                capacete.hurtAndBreak(1, p, net.minecraft.world.entity.EquipmentSlot.HEAD);
+            }
+            Long quando = ACESO_PELO_SOL.remove(p.getUUID());
+            if (quando != null && System.currentTimeMillis() - quando < 4000L) {
+                p.clearFire();
+            }
             return;
         }
         // ---- o sol está queimando ----
@@ -241,14 +267,22 @@ public final class VampiroSistema {
      *       não depende de shader nenhum.</li>
      * </ol>
      */
+    public static boolean visaoAtivaNoServidor(ServerPlayer p) {
+        return Boolean.TRUE.equals(AVISADO.get(p.getUUID()));
+    }
+
     private static void visaoNoturna(ServerPlayer p) {
+        if (dev.rptag.vampire.VampireLogic.isVisionMuted(p.getUUID())) {
+            avisarCliente(p, false);
+            return;   // jogador desligou manualmente na roda da tecla V
+        }
         boolean noiteDele = escuro(p);
         avisarCliente(p, noiteDele);
         if (!noiteDele) {
             return;   // de dia o vampiro não ganha nada (e a queimadura continua valendo)
         }
         var atual = p.getEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION);
-        if (atual != null && atual.getDuration() > 1200) {
+        if (atual != null && (atual.isInfiniteDuration() || atual.getDuration() > 1200)) {
             return;   // já tem visão noturna de sobra: não gasta pacote à toa
         }
         p.addEffect(new MobEffectInstance(net.minecraft.world.effect.MobEffects.NIGHT_VISION,
@@ -278,6 +312,9 @@ public final class VampiroSistema {
     public static String estado(ServerPlayer p) {
         StringBuilder sb = new StringBuilder();
         sb.append(ehVampiro(p) ? "VAMPIRO (sol queima)" : "normal");
+        if (ehVampiro(p) && dev.rptag.vampire.VampireLogic.isBat(p)) {
+            sb.append(" · forma de morcego");
+        }
         if (ehVampiro(p) && noite(p)) {
             sb.append(" · vis\u00e3o noturna");
         }
